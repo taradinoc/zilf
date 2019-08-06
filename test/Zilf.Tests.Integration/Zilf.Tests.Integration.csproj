@@ -1,18 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup Label="Globals">
-    <SccProjectName></SccProjectName>
-    <SccProvider></SccProvider>
-    <SccAuxPath></SccAuxPath>
-    <SccLocalPath></SccLocalPath>
-  </PropertyGroup>
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
-    <Product>ZILF</Product>
-    <Version>0.8</Version>
-    <Authors>Jesse McGrew</Authors>
-    <Company />
     <Description>Integration tests exercising multiple subsystems of ZILF and ZAPF.</Description>
-    <Copyright>Copyright 2010-2018 Jesse McGrew</Copyright>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>

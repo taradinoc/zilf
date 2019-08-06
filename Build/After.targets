@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copied from IronPython and modified. See Build/IronPython-License.txt. -->
+<!--EXTERNAL_PROPERTIES: PdbFile;StageDir;TargetFramework;Staging-->
+<Project ToolsVersion="16.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Choose>
+    <When Condition=" '$(OutputType)' == 'Library' ">
+      <ItemGroup>
+        <StageItem Include="$(TargetPath)" />
+        <!--<StageItem Include="$(DocumentationFile)" />-->
+        <StageItem Include="$(PdbFile)" />
+        <StageItem Include="$(TargetDir)$(TargetName).xml" Condition=" Exists('$(TargetDir)$(TargetName).xml') " />
+        <StageItem Include="$(TargetDir)$(TargetName).pdb" Condition=" Exists('$(TargetDir)$(TargetName).pdb') " />
+      </ItemGroup>
+    </When>
+    <When Condition=" '$(OutputType)' == 'Exe' or '$(OutputType)' == 'WinExe' ">
+      <!--<PropertyGroup>
+        <_TargetPathAsExe>$([System.IO.Path]::ChangeExtension('$(TargetPath)', '.exe'))</_TargetPathAsExe>
+      </PropertyGroup>-->
+      <ItemGroup>
+        <StageItem Include="$(TargetPath)" />
+        <!--<StageItem Include="$(TargetDir)$(TargetName).exe" Condition=" Exists('$(TargetDir)$(TargetName).exe') " />-->
+        <!--<StageItem Include="$(_TargetPathAsExe)" Condition="'$(_TargetPathAsExe)' != '$(TargetPath)' AND (TRUE OR Exists('$(_TargetPathAsExe)'))" />-->
+        <StageItem Include="$(TargetPath).config" Condition=" Exists('$(TargetPath).config') " />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <PropertyGroup>
+    <!--<MainStageDir>$(StageDir)\$(TargetFramework)</MainStageDir>-->
+    <MainStageDir>$(StageDir)\bin</MainStageDir>
+    <!--<MainStageDir Condition=" '$(StoreInDLLs)' == 'true' ">$(StageDir)\$(TargetFramework)\DLLs</MainStageDir>-->
+    <UnsignedItems>@(StageItem)</UnsignedItems>
+    <UnsignedMainStaged>@(StageItem->'$(MainStageDir)\%(RecursiveDir)\%(Filename)%(Extension)')</UnsignedMainStaged>
+  </PropertyGroup>
+
+  <Target Name="_LateStage"
+          DependsOnTargets="CoreBuild"
+          Condition=" '$(Staging)' == 'true' ">
+    <CreateItem Include="@(LateStageItem)">
+      <Output TaskParameter="Include" ItemName="StageItem" />
+    </CreateItem>
+  </Target>
+
+  <Target Name="_MainStage"
+          DependsOnTargets="CoreBuild"
+          Inputs="$(UnsignedItems)"
+          Outputs="$(UnsignedMainStaged)"
+          Condition=" '$(Staging)' == 'true' ">
+    <Error Text="StageDir is not set." Condition=" '$(StageDir)' == '' " />
+    <ItemGroup>
+      <_StageItemDest Include="@(StageItem->'$(MainStageDir)\%(RecursiveDir)\%(Filename)%(Extension)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(StageItem)" DestinationFiles="@(_StageItemDest)" />
+  </Target>
+
+  <!--<Target Name="_StoreInDLLs" Condition=" '$(StoreInDLLs)' == 'true' ">
+    <Move SourceFiles="@(StageItem)" DestinationFolder="$(TargetDir)\%(StageItem.RecursiveDir)\DLLs" />
+  </Target>-->
+
+  <Target Name="_StagePublishFiles"
+          DependsOnTargets="ComputeFilesToPublish"
+          Condition=" '$(Staging)' == 'true' ">
+    <ItemGroup>
+      <StageItem Include="@(ResolvedFileToPublish)" />
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
+    <_StageDependsOn>
+      _StagePublishFiles;
+      _LateStage;
+      _MainStage
+      <!--; _StoreInDLLs-->
+    </_StageDependsOn>
+  </PropertyGroup>
+
+  <Target Name="Stage" DependsOnTargets="$(_StageDependsOn)" />
+</Project>

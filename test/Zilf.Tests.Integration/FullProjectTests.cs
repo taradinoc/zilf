@@ -30,7 +30,8 @@ namespace Zilf.Tests.Integration
     [TestClass, TestCategory("Compiler"), TestCategory("Slow"), TestCategory("Library")]
     public class FullProjectTests
     {
-        const string ProjectsDirName = "FullTestProjects";
+        const string TestDirName = "test";
+        const string ProjectsSubDirName = "FullTestProjects";
         const string LibraryDirName = "zillib";
         const int PerTestTimeoutMilliseconds = 60000;
 
@@ -42,13 +43,15 @@ namespace Zilf.Tests.Integration
         {
             projectsDir = libraryDir = null;
 
+            var projectsDirName = Path.Combine(TestDirName, ProjectsSubDirName);
+
             // find directories containing ProjectsDirName and LibraryDirName
             var dir = Directory.GetCurrentDirectory();
 
             do
             {
-                if (projectsDir == null && Directory.Exists(Path.Combine(dir, ProjectsDirName)))
-                    projectsDir = Path.Combine(dir, ProjectsDirName);
+                if (projectsDir == null && Directory.Exists(Path.Combine(dir, projectsDirName)))
+                    projectsDir = Path.Combine(dir, projectsDirName);
 
                 if (libraryDir == null && Directory.Exists(Path.Combine(dir, LibraryDirName)))
                     libraryDir = Path.Combine(dir, LibraryDirName);
@@ -146,7 +149,7 @@ namespace Zilf.Tests.Integration
         static readonly Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
 
         [NotNull]
-        static readonly Regex ZilfVersionRegex = new Regex(@"ZILF \d+\.\d+ lib \S+");
+        static readonly Regex ZilfVersionRegex = new Regex(@"ZILF [0-9.a-z]+ lib \S+");
 
         [NotNull]
         static string MassageText([NotNull] string text)

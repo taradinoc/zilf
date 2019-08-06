@@ -394,7 +394,7 @@ namespace Zilf.Interpreter
             // compile-time constants
             SetGlobalVal(GetStdAtom(StdAtom.ZILCH), TRUE);
             SetGlobalVal(GetStdAtom(StdAtom.ZILF), TRUE);
-            SetGlobalVal(GetStdAtom(StdAtom.ZIL_VERSION), ZilString.FromString(Program.VERSION));
+            SetGlobalVal(GetStdAtom(StdAtom.ZIL_VERSION), ZilString.FromString(Program.GetBanner()));
             SetGlobalVal(GetStdAtom(StdAtom.PREDGEN), TRUE);
             SetGlobalVal(GetStdAtom(StdAtom.PLUS_MODE), zenv.ZVersion > 3 ? TRUE : FALSE);
             SetGlobalVal(GetStdAtom(StdAtom.SIBREAKS), ZilString.FromString(",.\""));

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28803.156
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Analyzers", "src\Analyzers", "{598B603F-F081-440B-BD43-4813EC6E043C}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Analyzers", "Analyzers", "{598B603F-F081-440B-BD43-4813EC6E043C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf", "src\Zilf\Zilf.csproj", "{B043E397-658B-412C-93F7-2F705FEE885E}"
 EndProject
@@ -27,8 +27,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Common", "src\Zilf.Com
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zapf.Parsing", "src\Zapf.Parsing\Zapf.Parsing.csproj", "{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}"
 EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "MakeDist", "build\MakeDist\MakeDist.pyproj", "{B6BE475F-4F21-4FED-9F49-506DC59F140A}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZilfAnalyzers", "src\Analyzers\ZilfAnalyzers\ZilfAnalyzers.csproj", "{43F63D35-FA4B-4C7F-892C-E9A6A01AD60A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZilfAnalyzers.Test", "src\Analyzers\ZilfAnalyzers.Test\ZilfAnalyzers.Test.csproj", "{55BC8693-4255-4F7C-B69D-734406DE6C88}"
@@ -39,11 +37,33 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{639D8160-38E
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{65A2B38C-4851-42E5-900C-DAD903A288F8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{6BBC3638-AC21-4186-89D1-E3A699469C9B}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1E9A9589-73D4-466C-9A3D-D44D058B2359}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{1E9A9589-73D4-466C-9A3D-D44D058B2359}"
 	ProjectSection(SolutionItems) = preProject
+		Build.proj = Build.proj
+		CurrentVersion.props = CurrentVersion.props
 		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Helpers", "Helpers", "{7FFC5410-FA1A-4777-870B-A8BBB5AE555E}"
+	ProjectSection(SolutionItems) = preProject
+		build\After.targets = build\After.targets
+		Build\Tasks.targets = Build\Tasks.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ZIL Samples", "ZIL Samples", "{7C9E4970-9997-451B-BCDA-FB869C753F59}"
+	ProjectSection(SolutionItems) = preProject
+		sample\Samples.proj = sample\Samples.proj
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ZIL Library", "ZIL Library", "{25194AC6-1151-463C-82EA-5D5AD9B56F8D}"
+	ProjectSection(SolutionItems) = preProject
+		zillib\ZilLib.proj = zillib\ZilLib.proj
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Package", "Package", "{3E280263-C59C-4A3B-B9ED-466D22C25333}"
+	ProjectSection(SolutionItems) = preProject
+		Package\zip\Zip.Packaging.targets = Package\zip\Zip.Packaging.targets
 	EndProjectSection
 EndProject
 Global
@@ -131,10 +151,6 @@ Global
 		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Release|x86.ActiveCfg = Release|Any CPU
 		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7}.Release|x86.Build.0 = Release|Any CPU
-		{B6BE475F-4F21-4FED-9F49-506DC59F140A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B6BE475F-4F21-4FED-9F49-506DC59F140A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B6BE475F-4F21-4FED-9F49-506DC59F140A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B6BE475F-4F21-4FED-9F49-506DC59F140A}.Release|x86.ActiveCfg = Release|Any CPU
 		{43F63D35-FA4B-4C7F-892C-E9A6A01AD60A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{43F63D35-FA4B-4C7F-892C-E9A6A01AD60A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{43F63D35-FA4B-4C7F-892C-E9A6A01AD60A}.Debug|x86.ActiveCfg = Debug|Any CPU
@@ -176,17 +192,16 @@ Global
 		{F65C13C3-7A12-4FBB-AA4A-4BBC69A548E6} = {65A2B38C-4851-42E5-900C-DAD903A288F8}
 		{433B6DA6-FF85-4370-9012-4C6B7177FC0D} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
 		{F05EFB4A-9B94-4E4C-B158-BF1EE09584C7} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
-		{B6BE475F-4F21-4FED-9F49-506DC59F140A} = {6BBC3638-AC21-4186-89D1-E3A699469C9B}
 		{43F63D35-FA4B-4C7F-892C-E9A6A01AD60A} = {598B603F-F081-440B-BD43-4813EC6E043C}
 		{55BC8693-4255-4F7C-B69D-734406DE6C88} = {598B603F-F081-440B-BD43-4813EC6E043C}
 		{1451DB23-3FE9-4207-9903-9B5395934806} = {598B603F-F081-440B-BD43-4813EC6E043C}
+		{7FFC5410-FA1A-4777-870B-A8BBB5AE555E} = {1E9A9589-73D4-466C-9A3D-D44D058B2359}
+		{7C9E4970-9997-451B-BCDA-FB869C753F59} = {1E9A9589-73D4-466C-9A3D-D44D058B2359}
+		{25194AC6-1151-463C-82EA-5D5AD9B56F8D} = {1E9A9589-73D4-466C-9A3D-D44D058B2359}
+		{3E280263-C59C-4A3B-B9ED-466D22C25333} = {1E9A9589-73D4-466C-9A3D-D44D058B2359}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {774D42F0-105F-4B51-BC60-F4661B610BAC}
-	EndGlobalSection
-	GlobalSection(MercurialSourceControlSolutionProperties) = preSolution
-		SolutionIsControlled = True
-		SolutionBindings = <Solution Location In Database>
 	EndGlobalSection
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = Zilf.vsmdi

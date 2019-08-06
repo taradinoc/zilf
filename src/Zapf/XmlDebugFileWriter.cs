@@ -42,7 +42,7 @@ namespace Zapf
             xml.WriteStartElement("inform-story-file");
             xml.WriteAttributeString("content-creator", "ZAPF");
 
-            xml.WriteAttributeString("content-creator-version", Program.VERSION);
+            xml.WriteAttributeString("content-creator-version", Program.GetVersion());
         }
 
         public void Close()

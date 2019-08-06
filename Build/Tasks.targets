@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copied from IronPython and modified. See Build/IronPython-License.txt. -->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="16.0">
+  <UsingTask TaskName="GetProjectsFromSolution"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll" >
+    <ParameterGroup>
+      <Solution ParameterType="System.String" Required="true" />
+      <Projects ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="Microsoft.Build" />
+      <Using Namespace="Microsoft.Build.Construction" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+        var _solutionFile = SolutionFile.Parse(Solution); 
+        Projects = _solutionFile.ProjectsInOrder
+            .Where(proj => proj.ProjectType == SolutionProjectType.KnownToBeMSBuildFormat)
+            .Select(proj => new TaskItem(proj.AbsolutePath))
+            .ToArray();
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+</Project>

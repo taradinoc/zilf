@@ -36,7 +36,13 @@ namespace Zilf
 {
     static class Program
     {
-        public const string VERSION = "ZILF 0.8";
+        [NotNull]
+        internal static string GetVersion() =>
+            typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                .InformationalVersion ?? "<?.??>";
+
+        [NotNull]
+        internal static string GetBanner() => $"ZILF {GetVersion()}";
 
         internal static int Main([ItemNotNull] [NotNull] string[] args)
         {
@@ -47,7 +53,7 @@ namespace Zilf
 
             if (!ctx.Quiet)
             {
-                Console.Write(VERSION);
+                Console.Write(GetBanner());
                 Console.Write(" built ");
                 Console.WriteLine(RetrieveLinkerTimestamp());
             }
@@ -526,7 +532,7 @@ namespace Zilf
 
         static void Usage()
         {
-            Console.WriteLine(VERSION);
+            Console.WriteLine(GetBanner());
             Console.WriteLine(
 @"Interact: zilf [switches] [-i]
 Evaluate: zilf [switches] -e ""<expression>""

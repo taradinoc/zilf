@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copied from IronPython and modified. See Build/IronPython-License.txt. -->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MajorVersion>0</MajorVersion>
+    <MinorVersion>9</MinorVersion>
+    <MicroVersion>0</MicroVersion>
+    <!-- Allowed: alpha,beta,candidate,final -->
+    <ReleaseLevel>beta</ReleaseLevel>
+    <ReleaseSerial>1</ReleaseSerial>
+
+    <AssemblyRevision>0</AssemblyRevision>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Product>ZILF</Product>
+    <Company />
+    <Version>$(MajorVersion).$(MinorVersion)</Version>
+    <Authors>Jesse McGrew</Authors>
+    <Copyright>Copyright 2010-2019 Jesse McGrew</Copyright>
+  </PropertyGroup>
+</Project>

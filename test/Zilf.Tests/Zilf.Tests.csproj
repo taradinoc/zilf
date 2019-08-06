@@ -1,19 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup Label="Globals">
-    <SccProjectName></SccProjectName>
-    <SccProvider></SccProvider>
-    <SccAuxPath></SccAuxPath>
-    <SccLocalPath></SccLocalPath>
-  </PropertyGroup>
   <PropertyGroup>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <LangVersion>7.3</LangVersion>
-    <Product>ZILF</Product>
-    <Version>0.8</Version>
-    <Authors>Jesse McGrew</Authors>
-    <Company />
     <Description>Tests for Zilf.</Description>
-    <Copyright>Copyright 2010-2018 Jesse McGrew</Copyright>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>

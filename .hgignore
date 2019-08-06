@@ -33,3 +33,5 @@ Examples/**/*.code-workspace
 Examples/**/*.bat
 .mypy_cache
 venv
+Package/Debug/**
+Package/Release/**

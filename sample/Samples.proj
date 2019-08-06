@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--EXTERNAL_PROPERTIES: MSBuildThisFileDirectory;OutputPath;Staging-->
+<Project DefaultTargets="Stage" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="16.0">
+  <PropertyGroup>
+    <ContentGroupName>ZIL Samples</ContentGroupName>
+    <StagingSubDir>sample</StagingSubDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="**\*.zil;**\*.mud;**\*.xzap;**\*.txt" Exclude="**\tests\**\*" />
+  </ItemGroup>
+
+  <Target Name="Stage">
+    <Error Text="OutputPath must be specified." Condition="'$(OutputPath)' == ''" />
+    <Message Importance="high" Text="Staging $(ContentGroupName) into $(OutputPath)\$(StagingSubDir)" />
+    <Message Importance="high" Text="    %(Content.RecursiveDir)%(Content.Filename)%(Content.Extension)" />
+    <Copy SourceFiles="@(Content)" DestinationFiles="@(Content->'$(OutputPath)\$(StagingSubDir)\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+</Project>

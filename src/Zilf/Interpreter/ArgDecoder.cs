@@ -831,7 +831,7 @@ namespace Zilf.Interpreter
                      * the possibility that the inner step will consume multiple
                      * arguments. */
 
-                    var output = new System.Collections.ArrayList(a.Length - i);
+                    var output = new List<object>(a.Length - i);
                     var outerReady = c.Ready;
 
                     c.Ready = obj => output.Add(obj);
@@ -848,7 +848,11 @@ namespace Zilf.Interpreter
                         i = next;
                     }
 
-                    outerReady(output.ToArray(elemType));
+                    var typedArray = Array.CreateInstance(elemType, output.Count);
+                    for (int j = 0; j < output.Count; j++)
+                        typedArray.SetValue(output[j], j);
+
+                    outerReady(typedArray);
                     return i;
                 },
                 LowerBound = 0,

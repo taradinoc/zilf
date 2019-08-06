@@ -22,6 +22,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using JetBrains.Annotations;
 using Zapf.Parsing;
@@ -37,8 +38,6 @@ namespace Zapf
     {
         // TODO: Blorb output
 
-        public const string VERSION = "0.8";
-        public const string BANNER = "ZAPF " + VERSION;
         public const byte DEFAULT_ZVERSION = 3;
 
         public static int Main([ItemNotNull] [NotNull] string[] args)
@@ -52,7 +51,7 @@ namespace Zapf
 
             // show banner
             if (!ctx.Quiet)
-                Console.Error.WriteLine(BANNER);
+                Console.Error.WriteLine(GetBanner());
 
             // TODO: move all of this logic into ZapfAssembler and use that instead
 
@@ -113,6 +112,14 @@ namespace Zapf
                 ctx.CloseDebugFile();
             }
         }
+
+        [NotNull]
+        internal static string GetVersion() =>
+            typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                .InformationalVersion ?? "<?.??>";
+
+        [NotNull]
+        internal static string GetBanner() => $"ZAPF {GetVersion()}";
 
         static void FindAndPrintAbbreviations([NotNull] Context ctx)
         {
@@ -310,7 +317,7 @@ namespace Zapf
 
         static void Usage()
         {
-            Console.Error.WriteLine(BANNER);
+            Console.Error.WriteLine(GetBanner());
             Console.Error.WriteLine(
 @"Assemble: zapf [switches] <inFile.zap> [<outFile.z#>]
 

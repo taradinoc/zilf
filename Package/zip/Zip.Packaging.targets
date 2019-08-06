@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--EXTERNAL_PROPERTIES: PackageDir-->
+<!--EXTERNAL_PROPERTIES: StageDir-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="16.0">
+  <PropertyGroup>
+    <ZipOutputFile>$(PackageDir)\$(PackageName).zip</ZipOutputFile>
+    <ZipStageDir>$(PackageDir)\zip_temp_$(PackageName)</ZipStageDir>
+  </PropertyGroup>
+
+  <Target Name="ZipPackage"
+          DependsOnTargets="Stage"
+          AfterTargets="Package"
+          Outputs="$(ZipOutputFile)">
+    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
+    <MakeDir Directories="$(ZipStageDir)" Condition="!Exists('$(ZipStageDir)')" />
+
+    <ItemGroup>
+      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\*.Tests.*;$(StageDir)\**\*.pdb" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ZipFiles)" DestinationFolder="$(ZipStageDir)\%(RecursiveDir)" />
+
+    <ZipDirectory SourceDirectory="$(ZipStageDir)"
+                  DestinationFile="$(ZipOutputFile)"
+                  Overwrite="true" />
+    <!--<Zip Files="@(ZipFiles)" ZipFileName="$(PackageDir)\zilf-$(PackageVersion).zip" WorkingDirectory="$(StageDir)" />-->
+
+    <RemoveDir Directories="$(ZipStageDir)" />
+  </Target>
+</Project>
