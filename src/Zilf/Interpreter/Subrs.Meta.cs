@@ -390,8 +390,10 @@ namespace Zilf.Interpreter
             [ParamDesc("all-none-or-codes")]
             public struct CodesOrWildcard
             {
+#pragma warning disable CS0649
                 [Either(typeof(Wildcard), typeof(AtomParams.StringOrAtom[]))]
                 public object Content;
+#pragma warning restore CS0649
 
                 public StdAtom? GetWildcard()
                 {
@@ -410,8 +412,10 @@ namespace Zilf.Interpreter
             [ZilSequenceParam]
             public struct Wildcard
             {
+#pragma warning disable CS0649
                 [Decl("<OR 'ALL 'NONE>")]
                 public ZilAtom Atom;
+#pragma warning restore CS0649
 
                 public StdAtom StdAtom => Atom.StdAtom;
             }

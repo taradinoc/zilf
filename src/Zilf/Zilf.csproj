@@ -39,7 +39,7 @@
 
   <!-- only use the analyzer if it's been built for this target -->
   <PropertyGroup>
-    <ZilfAnalyzersAssembly>..\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
+    <ZilfAnalyzersAssembly>..\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\$(Configuration)\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Analyzer Condition="Exists('$(ZilfAnalyzersAssembly)')" Include="$(ZilfAnalyzersAssembly)" />

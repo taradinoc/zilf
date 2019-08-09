@@ -85,7 +85,10 @@ namespace Zapf
 
         public OpenFileDelegate InterceptOpenFile;
         public FileExistsDelegate InterceptFileExists;
+
+#pragma warning disable CS0649
         public GetDebugWriterDelegate InterceptGetDebugWriter;
+#pragma warning restore CS0649
 
         char? LanguageEscapeChar { get; set; }
 
