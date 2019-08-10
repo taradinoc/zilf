@@ -63,6 +63,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ZIL Library", "ZIL Library"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Package", "Package", "{3E280263-C59C-4A3B-B9ED-466D22C25333}"
 	ProjectSection(SolutionItems) = preProject
+		Package\tar\Tar.Packaging.targets = Package\tar\Tar.Packaging.targets
 		Package\zip\Zip.Packaging.targets = Package\zip\Zip.Packaging.targets
 	EndProjectSection
 EndProject

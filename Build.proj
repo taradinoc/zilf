@@ -15,6 +15,12 @@ dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release
     <MainBuildPrefix Condition=" '$(MainBuildPrefix)' == '' "></MainBuildPrefix>
     <Mono Condition="'$(OS)' != 'Windows_NT' AND !$(TargetFramework.StartsWith('netcore'))">true</Mono>
     <MacOS Condition="'$(OS)' == 'Unix' AND Exists('/Applications') AND Exists('/Library') AND Exists('/System') AND Exists('/Volumes')">true</MacOS>
+    <WindowsTarget>false</WindowsTarget>
+    <WindowsTarget Condition="$(RuntimeIdentifier.StartsWith('win'))">true</WindowsTarget>
+    <PortableTarget>false</PortableTarget>
+    <PortableTarget Condition="'$(RuntimeIdentifier)' == ''">true</PortableTarget>
+    <UnixTarget>false</UnixTarget>
+    <UnixTarget Condition="!($(WindowsTarget) OR $(PortableTarget))">true</UnixTarget>
 
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
     <Solution>$(RootDir)Zilf.sln</Solution>
@@ -28,7 +34,7 @@ dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release
     <!-- Allows one restore to apply to multiple builds -->
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
 
-    <BuildInParallel Condition=" '$(BuildInParallel)' == '' ">false</BuildInParallel>
+    <!--<BuildInParallel Condition=" '$(BuildInParallel)' == '' ">false</BuildInParallel>-->
   </PropertyGroup>
 
   <Import Project="$(BuildSysDir)\Tasks.targets" />
@@ -51,7 +57,8 @@ dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release
       BinDir=$(BinDir);
       StageDir=$(StageDir);
       BuildSysDir=$(BuildSysDir);
-      Mono=$(Mono);
+      WindowsTarget=$(WindowsTarget);
+      UnixTarget=$(UnixTarget)
     </BuildProperties>
   </PropertyGroup>
 
@@ -179,8 +186,8 @@ dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release
     </ItemGroup>
 
     <MSBuild Projects="@(ProjectToPackage)"
-             Targets="Package"
-             BuildInParallel="$(BuildInParallel)" />
+             Targets="Package" />
+             <!--BuildInParallel="$(BuildInParallel)" />-->
 
     <MSBuild Projects="$(MSBuildProjectFullPath)"
              Targets="Package"
@@ -203,8 +210,8 @@ dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release
     </ItemGroup>
 
     <MSBuild Projects="@(ProjectToClean)"
-             Targets="Clean"
-             BuildInParallel="$(BuildInParallel)" />
+             Targets="Clean" />
+             <!--BuildInParallel="$(BuildInParallel)" />-->
   </Target>
 
   <Import Project="$(RootDir)\Package\**\*.Packaging.targets" />

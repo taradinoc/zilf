@@ -11,6 +11,12 @@
     <ReferenceDir Condition=" '$(ReferenceDir)' == '' ">$(RootDir)Util\References</ReferenceDir>
 
     <Mono Condition=" '$(Mono)' == '' AND '$(OS)' != 'Windows_NT' ">true</Mono>
+    <WindowsTarget Condition="'$(WindowsTarget)' == '' AND $(RuntimeIdentifier.StartsWith('win'))">true</WindowsTarget>
+    <WindowsTarget Condition="'$(WindowsTarget)' == ''">false</WindowsTarget>
+    <PortableTarget Condition="'$(PortableTarget)' == '' AND '$(RuntimeIdentifier)' == ''">true</PortableTarget>
+    <PortableTarget Condition="'$(PortableTarget)' == ''">false</PortableTarget>
+    <UnixTarget Condition="'$(UnixTarget)' == '' AND !($(WindowsTarget) OR $(PortableTarget))">true</UnixTarget>
+    <UnixTarget Condition="'$(UnixTarget)' == ''">false</UnixTarget>
 
     <!-- The following two lines prevent csc.rsp and Microsoft.NETFramework.props from adding
          additional assembly references. -->

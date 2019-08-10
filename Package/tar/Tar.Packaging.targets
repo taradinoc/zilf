@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="16.0">
+  <PropertyGroup>
+    <TarOutputFile>$(PackageDir)\$(PackageName).tar.gz</TarOutputFile>
+    <TarStageDir>$(PackageDir)\tar_temp_$(PackageName)</TarStageDir>
+  </PropertyGroup>
+
+  <Target Name="TarPackage"
+          DependsOnTargets="Stage"
+          AfterTargets="Package"
+          Outputs="$(TarOutputFile)"
+          Condition="$(UnixTarget) AND '$(OS)' == 'Unix'">
+    <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
+    <MakeDir Directories="$(TarStageDir)" Condition="!Exists('$(TarStageDir)')" />
+
+    <ItemGroup>
+      <TarFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\*.Tests.*;$(StageDir)\**\*.pdb" />
+    </ItemGroup>
+
+    <!--
+    We rename the executable wrappers to lowercase for convenience on case-sensitive filesystems.
+    Luckily, the wrappers are the only files with no extensions.
+    -->
+
+    <Copy SourceFiles="@(TarFiles)"
+          DestinationFolder="$(TarStageDir)\$(PackageName)\%(RecursiveDir)">
+      <Output TaskParameter="CopiedFiles" ItemName="CopiedTarFiles" />
+    </Copy>
+
+    <ItemGroup>
+      <_TarExe Include="@(CopiedTarFiles)" Condition="'%(Extension)' == ''">
+        <_LowerFilename>$([MSBuild]::ValueOrDefault('%(Filename)', '').ToLower())</_LowerFilename>
+      </_TarExe>
+      <_TarExeLowered Include="@(_TarExe->'%(RootDir)%(Directory)%(_LowerFilename)')" />
+    </ItemGroup>
+
+    <Move SourceFiles="@(_TarExe)"
+          DestinationFiles="@(_TarExeLowered)" />
+
+    <Exec WorkingDirectory="$(TarStageDir)"
+          Command="tar cvfz $(TarOutputFile) $(PackageName)" />
+
+    <RemoveDir Directories="$(TarStageDir)" />
+  </Target>
+</Project>

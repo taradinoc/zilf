@@ -11,7 +11,8 @@
   <Target Name="ZipPackage"
           DependsOnTargets="Stage"
           AfterTargets="Package"
-          Outputs="$(ZipOutputFile)">
+          Outputs="$(ZipOutputFile)"
+          Condition="$(WindowsTarget) OR $(PortableTarget)">
     <MakeDir Directories="$(PackageDir)" Condition="!Exists('$(PackageDir)')" />
     <MakeDir Directories="$(ZipStageDir)" Condition="!Exists('$(ZipStageDir)')" />
 
