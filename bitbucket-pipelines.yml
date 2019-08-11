@@ -16,7 +16,7 @@ pipelines:
         caches:
           - dotnetcore
         script:
-          - sudo apt-get update && sudo apt-get install -y zip
+          - apt-get update -y && apt-get install -y zip
           - "dotnet msbuild -t:PackageAllRids -p:Configuration=Release Build.proj"
         artifacts:
           - Package/*/Packages/*
