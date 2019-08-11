@@ -1,0 +1,20 @@
+# This is a sample build configuration for .NET Core.
+# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+
+# TODO: run zillib tests
+
+image: microsoft/dotnet:sdk
+
+pipelines:
+  default:
+    - step:
+        caches:
+          - dotnetcore
+        script:
+          - dotnet test Zilf.sln
+          - "dotnet msbuild -t:PackageAllRids -p:Configuration=Release Build.proj"
+        artifacts:
+          - Package/*/Packages/*
