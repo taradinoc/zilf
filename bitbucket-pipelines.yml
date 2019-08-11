@@ -4,7 +4,9 @@
 # -----
 # You can specify a custom docker image from Docker Hub as your build environment.
 
-# TODO: run zillib tests
+# TODO: run zillib tests (needs PowerShell)
+# TODO: run unit tests, dotnet test Zilf.sln (need to fix CRLF test issues)
+# TODO: build custom Docker image instead of apt-get
 
 image: microsoft/dotnet:sdk
 
@@ -14,7 +16,7 @@ pipelines:
         caches:
           - dotnetcore
         script:
-          #- dotnet test Zilf.sln    # TODO: re-enable once tests work on Linux
+          - sudo apt-get update && sudo apt-get install -y zip
           - "dotnet msbuild -t:PackageAllRids -p:Configuration=Release Build.proj"
         artifacts:
           - Package/*/Packages/*
