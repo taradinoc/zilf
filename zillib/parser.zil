@@ -1,6 +1,6 @@
 "Library header"
 
-<SETG ZILLIB-VERSION "J4">
+<SETG ZILLIB-VERSION "J5">
 
 <VERSION?
     (ZIP)
