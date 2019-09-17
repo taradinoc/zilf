@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -54,16 +55,31 @@ namespace Zilf.Interpreter
             {
                 switch (first)
                 {
-                    case ZilList pair when pair.Matches(out ZilString key, out ZilAtom value):
-                        result[key.Text] = value;
+                    case ZilListoidBase bucket:
+                    {
+                        foreach (var elem in bucket)
+                        {
+                            switch (elem)
+                            {
+                                case ZilAtom atom:
+                                    result[atom.Text] = atom;
+                                    break;
+
+                                default:
+                                    throw new InterpreterError(
+                                        InterpreterMessages._0_In_1_Must_Be_2,
+                                        "elements",
+                                        "OBLIST bucket",
+                                        "atoms");
+                            }
+                        }
+
                         break;
+                    }
 
-                    case ZilList pair when !pair.HasLength(2):
-                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Have_2_Element2s, "elements", "OBLIST", 2);
-
-                    case ZilList _:
-                        throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "OBLIST",
-                            "string-atom pairs");
+                    default:
+                        throw new InterpreterError(
+                            InterpreterMessages._0_In_1_Must_Be_2, "buckets", "OBLIST", "lists");
                 }
 
                 list = rest;
@@ -74,27 +90,21 @@ namespace Zilf.Interpreter
 
         protected override TiedLayout GetLayout()
         {
-            return TiedLayout.Create<ObList>().WithCatchAll<ObList>(x => x.PairsList);
+            return TiedLayout.Create<ObList>().WithCatchAll<ObList>(x => x.BucketList);
         }
 
         [NotNull]
-        public ZilList PairsList
+        public ZilList BucketList
         {
             get
             {
-                var result = new List<ZilObject>(dict.Count);
+                var empty = new ZilList(null, null);
 
-                foreach (var pair in dict)
-                {
-                    Debug.Assert(pair.Key != null, "pair.Key != null");
-                    Debug.Assert(pair.Value != null, "pair.Value != null");
-                    result.Add(
-                        new ZilList(ZilString.FromString(pair.Key),
-                            new ZilList(pair.Value,
-                                new ZilList(null, null))));
-                }
+                if (dict.Count == 0)
+                    return empty;
 
-                return new ZilList(result);
+                var bucket = new ZilList(dict.Values);
+                return new ZilList(bucket, empty);
             }
         }
 

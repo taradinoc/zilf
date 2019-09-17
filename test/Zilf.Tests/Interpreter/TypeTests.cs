@@ -22,6 +22,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Common;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -1413,5 +1414,27 @@ namespace Zilf.Tests.Interpreter
         {
             TestHelpers.EvalAndAssert(ctx, "<REST '<1> 0>", new ZilList(new ZilFix(1), new ZilList(null, null)));
         }
+
+        [TestMethod]
+        public void OBLIST_Primitive_Structure_Should_Resemble_MDL()
+        {
+            if (!(ctx.RootObList.GetPrimitive(ctx) is ZilList prim))
+            {
+                Assert.Fail("expected primitive to be a list");
+                throw new UnreachableCodeException();
+            }
+
+            var items = prim.ToArray();
+            CollectionAssert.AllItemsAreInstancesOfType(items, typeof(ZilList));
+
+            // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
+            foreach (ZilList i in items)
+            {
+                var subItems = i.ToArray();
+                foreach (var j in subItems)
+                    Assert.IsInstanceOfType(j, typeof(ZilAtom), "expected bucket item to be atom, but found '{0}'", j);
+            }
+        }
+
     }
 }
