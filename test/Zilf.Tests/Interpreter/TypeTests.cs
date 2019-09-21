@@ -1436,5 +1436,16 @@ namespace Zilf.Tests.Interpreter
             }
         }
 
+        [TestMethod]
+        public void OBLIST_Should_Work_With_MAPF()
+        {
+            TestHelpers.Evaluate(ctx, "SAMPLE-ATOM-1!-SAMPLE-OBLIST SAMPLE-ATOM-2!-SAMPLE-OBLIST");
+
+            TestHelpers.EvalAndAssert(
+                ctx,
+                "<MAPF ,+ ,LENGTH <MOBLIST SAMPLE-OBLIST>>",
+                new ZilFix(2));
+        }
+
     }
 }

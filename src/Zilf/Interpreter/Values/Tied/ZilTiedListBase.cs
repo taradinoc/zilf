@@ -163,7 +163,7 @@ namespace Zilf.Interpreter.Values.Tied
             }
         }
 
-        public sealed override bool IsEmpty => GetLength(1) != 0;
+        public sealed override bool IsEmpty => GetLength(1) == 0;
 
         public sealed override IEnumerator<ZilObject> GetEnumerator()
         {
@@ -261,7 +261,7 @@ namespace Zilf.Interpreter.Values.Tied
 
             public override StdAtom StdTypeAtom => StdAtom.LIST;
 
-            public override bool IsEmpty => GetLength(1) != 0;
+            public override bool IsEmpty => GetLength(1) == 0;
 
             public override IEnumerator<ZilObject> GetEnumerator()
             {

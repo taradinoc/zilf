@@ -190,13 +190,23 @@ namespace Zilf.Interpreter
             if (list.IsEmpty)
                 throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "PUTREST");
 
-            if (newRest is ZilList newRestList)
+            try
             {
-                list.Rest = newRestList;
+                if (newRest is ZilList newRestList)
+                {
+                    list.Rest = newRestList;
+                }
+                else
+                {
+                    list.Rest = new ZilList(newRest);
+                }
             }
-            else
+            catch (NotSupportedException)
             {
-                list.Rest = new ZilList(newRest);
+                throw new InterpreterError(
+                    InterpreterMessages._0_Element_1_Is_Read_Only,
+                    "PUTREST",
+                    "'REST'");
             }
 
             return list;
