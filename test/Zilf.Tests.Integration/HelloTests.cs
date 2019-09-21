@@ -23,89 +23,26 @@ namespace Zilf.Tests.Integration
     [TestClass, TestCategory("Compiler")]
     public class HelloTests : IntegrationTestClass
     {
-        [TestMethod]
-        public void HelloWorld_V3()
+        [DataTestMethod]
+        [DataRow("ZIP", DisplayName = "V3")]
+        [DataRow("EZIP", DisplayName = "V4")]
+        [DataRow("XZIP", DisplayName = "V5")]
+        [DataRow("YZIP", DisplayName = "V6")]
+        [DataRow("7", DisplayName = "V7")]
+        [DataRow("8", DisplayName = "V8")]
+        public void HelloWorld(string zversion)
         {
-            const string code = @"
-<VERSION ZIP>
+            string code = $@"
+<VERSION {zversion}>
+
+<ROUTINE GREET (WHOM)
+    <PRINTI ""Hello, "">
+    <PRINT .WHOM>
+    <PRINTC !\!>
+    <CRLF>>
 
 <ROUTINE GO ()
-    <PRINTI ""Hello, world!"">
-    <CRLF>
-    <QUIT>>";
-
-            const string expectedOutput = "Hello, world!\n";
-            AssertRaw(code).Outputs(expectedOutput);
-        }
-
-        [TestMethod]
-        public void HelloWorld_V4()
-        {
-            const string code = @"
-<VERSION EZIP>
-
-<ROUTINE GO ()
-    <PRINTI ""Hello, world!"">
-    <CRLF>
-    <QUIT>>";
-
-            const string expectedOutput = "Hello, world!\n";
-            AssertRaw(code).Outputs(expectedOutput);
-        }
-
-        [TestMethod]
-        public void HelloWorld_V5()
-        {
-            const string code = @"
-<VERSION XZIP>
-
-<ROUTINE GO ()
-    <PRINTI ""Hello, world!"">
-    <CRLF>
-    <QUIT>>";
-
-            const string expectedOutput = "Hello, world!\n";
-            AssertRaw(code).Outputs(expectedOutput);
-        }
-
-        [TestMethod]
-        public void HelloWorld_V6()
-        {
-            const string code = @"
-<VERSION 6>
-
-<ROUTINE GO ()
-    <PRINTI ""Hello, world!"">
-    <CRLF>
-    <QUIT>>";
-            const string expectedOutput = "Hello, world!\n";
-            AssertRaw(code).Outputs(expectedOutput);
-        }
-
-        [TestMethod]
-        public void HelloWorld_V7()
-        {
-            const string code = @"
-<VERSION 7>
-
-<ROUTINE GO ()
-    <PRINTI ""Hello, world!"">
-    <CRLF>
-    <QUIT>>";
-
-            const string expectedOutput = "Hello, world!\n";
-            AssertRaw(code).Outputs(expectedOutput);
-        }
-
-        [TestMethod]
-        public void HelloWorld_V8()
-        {
-            const string code = @"
-<VERSION 8>
-
-<ROUTINE GO ()
-    <PRINTI ""Hello, world!"">
-    <CRLF>
+    <GREET ""world"">
     <QUIT>>";
 
             const string expectedOutput = "Hello, world!\n";

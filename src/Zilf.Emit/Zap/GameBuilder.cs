@@ -149,10 +149,7 @@ namespace Zilf.Emit.Zap
             }
         }
 
-        static bool IsSupportedZversion(int zversion)
-        {
-            return zversion >= 1 && zversion <= 8;
-        }
+        static bool IsSupportedZversion(int zversion) => zversion >= 1 && zversion <= 8;
 
         void Begin()
         {
@@ -216,8 +213,8 @@ namespace Zilf.Emit.Zap
                     writer.WriteLine(INDENT + ".WORD 0");       // $22 screen width (units)
                     writer.WriteLine(INDENT + ".WORD 0");       // $24 screen height (units)
                     writer.WriteLine(INDENT + ".WORD 0");       // $26 font width/height (units) (height/width in V6)
-                    writer.WriteLine(INDENT + ".WORD {0}", zversion == 6 ? "FOFF" : "0");     // $28 routines offset (V6)
-                    writer.WriteLine(INDENT + ".WORD {0}", zversion == 6 ? "SOFF" : "0");     // $2A strings offset (V6)
+                    writer.WriteLine(INDENT + ".WORD {0}", UsePackingOffsets ? "FOFF" : "0");     // $28 routines offset (V6-7)
+                    writer.WriteLine(INDENT + ".WORD {0}", UsePackingOffsets ? "SOFF" : "0");     // $2A strings offset (V6-7)
                     writer.WriteLine(INDENT + ".WORD 0");       // $2C default background/foreground color
                     writer.WriteLine(INDENT + ".WORD TCHARS");  // $2E terminating characters table
                     writer.WriteLine(INDENT + ".WORD 0");       // $30 output stream 3 width accumulator (V6)
@@ -347,8 +344,7 @@ namespace Zilf.Emit.Zap
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
-            int max = (zversion >= 4) ? 63 : 31;
-            int num = max - props.Count;
+            int num = MaxProperties - props.Count;  // property numbers start at 1
 
             var result = new PropertyBuilder(name, num);
             props.Add(name, result);
@@ -363,7 +359,7 @@ namespace Zilf.Emit.Zap
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
-            int max = (zversion >= 4) ? 47 : 31;
+            int max = MaxFlags - 1;     // flag numbers start at 0
             int num = max - flags.Count;
 
             var result = new FlagBuilder(name, num);
@@ -430,8 +426,7 @@ namespace Zilf.Emit.Zap
             for (int i = 0; i < sb.Length; i++)
             {
                 char c = sb[i];
-                if (char.IsLetterOrDigit(c) ||
-                    c == '?' || c == '#' || c == '-')
+                if (char.IsLetterOrDigit(c) || c == '?' || c == '#' || c == '-')
                     continue;
 
                 sb[i] = '$';
@@ -477,14 +472,13 @@ namespace Zilf.Emit.Zap
         public int MaxFlags => zversion > 3 ? 48 : 32;
         public int MaxCallArguments => zversion > 3 ? 7 : 3;
 
+        bool UsePackingOffsets => zversion == 6 || zversion == 7;
+
         public INumericOperand Zero => ZERO;
         public INumericOperand One => ONE;
         public IConstantOperand VocabularyTable => VOCAB;
 
-        public bool IsGloballyDefined(string name, out string type)
-        {
-            return symbols.TryGetValue(name, out type);
-        }
+        public bool IsGloballyDefined(string name, out string type) => symbols.TryGetValue(name, out type);
 
         public void Finish()
         {
@@ -523,12 +517,15 @@ namespace Zilf.Emit.Zap
             if (debug != null)
             {
                 foreach (var pair in from p in debug.Files
-                    orderby p.Value
-                    select p)
+                                     orderby p.Value
+                                     select p)
+                {
                     writer.WriteLine(INDENT + ".DEBUG-FILE {0},\"{1}\",\"{2}\"",
                         pair.Value,
                         Path.GetFileNameWithoutExtension(pair.Key),
                         pair.Key);
+                }
+
                 foreach (string name in from f in flags.Keys orderby f select f)
                     writer.WriteLine(INDENT + ".DEBUG-ATTR {0},\"{0}\"", name);
                 foreach (string name in from p in props.Keys orderby p select p)
@@ -536,8 +533,8 @@ namespace Zilf.Emit.Zap
                 foreach (string name in from g in globals orderby g.Name select g.Name)
                     writer.WriteLine(INDENT + ".DEBUG-GLOBAL {0},\"{0}\"", name);
                 foreach (string name in from t in impureTables.Concat(pureTables)
-                    orderby t.Name
-                    select t.Name)
+                                        orderby t.Name
+                                        select t.Name)
                     writer.WriteLine(INDENT + ".DEBUG-ARRAY {0},\"{0}\"", name);
                 foreach (string line in debug.StoredLines)
                     writer.WriteLine(INDENT + line);
@@ -665,7 +662,9 @@ namespace Zilf.Emit.Zap
             foreach (var pair in from cp in constants
                                  orderby cp.Key
                                  select cp)
+            {
                 writer.WriteLine(INDENT + "{0}={1}", pair.Key, pair.Value.StripIndirect());
+            }
 
             // release number
             if (zversion >= 5 && !constants.ContainsKey("RELEASEID"))
@@ -681,7 +680,7 @@ namespace Zilf.Emit.Zap
             writer.WriteLine("OBJECT:: .TABLE");
 
             // property defaults
-            var propNums = Enumerable.Range(1, (zversion >= 4) ? 63 : 31);
+            var propNums = Enumerable.Range(1, MaxProperties);
             var propDefaults = from num in propNums
                                join p in props on num equals p.Value.Number into propGroup
                                from prop in propGroup.DefaultIfEmpty()
@@ -704,6 +703,7 @@ namespace Zilf.Emit.Zap
                 writer.WriteLine();
 
             foreach (var ob in objects)
+            {
                 writer.WriteLine(INDENT + ".OBJECT {0},{1},{2}{3},{4},{5},{6},{7}",
                     ob.SymbolicName,
                     ob.Flags1,
@@ -713,6 +713,7 @@ namespace Zilf.Emit.Zap
                     (object)ob.Sibling ?? "0",
                     (object)ob.Child ?? "0",
                     "?PTBL?" + ob.SymbolicName);
+            }
 
             writer.WriteLine(INDENT + ".ENDT");
 
@@ -782,8 +783,10 @@ namespace Zilf.Emit.Zap
             foreach (char c in siBreaks)
             {
                 if ((byte)c != c)
+                {
                     throw new InvalidOperationException(
                         $"Self-inserting break character out of range (${(ushort)c:x4})");
+                }
 
                 writer.WriteLine(INDENT + ".BYTE {0}", (byte)c);
             }
@@ -802,7 +805,7 @@ namespace Zilf.Emit.Zap
                 writer.WriteLine(INDENT + ".WORD {0}", vocabulary.Count);
 
                 writer.WriteLine(INDENT + ".VOCBEG {0},{1}", zwordBytes + dataBytes, zwordBytes);
-                vocabulary.Sort((a, b) => string.Compare(a.Word, b.Word, StringComparison.Ordinal));
+                vocabulary.Sort((a, b) => string.CompareOrdinal(a.Word, b.Word));
                 foreach (var wb in vocabulary)
                 {
                     writer.WriteLine("{0}:: .ZWORD \"{1}\"", wb.Name, SanitizeString(wb.Word));
@@ -846,11 +849,7 @@ namespace Zilf.Emit.Zap
             if (stringPool.Count > 0)
                 writer.WriteLine();
 
-            var query = from p in stringPool
-                        orderby p.Key
-                        select p;
-
-            foreach (var pair in query)
+            foreach (var pair in stringPool.OrderBy(p => p.Key))
                 writer.WriteLine(INDENT + ".GSTR {0},\"{1}\"", pair.Value, SanitizeString(pair.Key));
         }
 
