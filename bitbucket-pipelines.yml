@@ -8,7 +8,7 @@
 # TODO: run unit tests, dotnet test Zilf.sln (need to fix CRLF test issues)
 # TODO: build custom Docker image instead of apt-get
 
-image: microsoft/dotnet:sdk
+image: mcr.microsoft.com/dotnet/core/sdk:2.2
 
 pipelines:
   default:
