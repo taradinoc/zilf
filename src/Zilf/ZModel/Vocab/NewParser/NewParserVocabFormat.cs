@@ -788,16 +788,16 @@ namespace Zilf.ZModel.Vocab.NewParser
                     if (!wordFlagsList.StartsWith(out ZilObject vword, out ZilObject flags))
                         throw new CompilerError(CompilerMessages.WORDFLAGSLIST_Must_Have_An_Even_Number_Of_Elements);
 
-                    if (!seen.Add(vword))
-                        continue;
+                    if (seen.Add(vword))
+                    {
+                        var nw = NewParserWord.FromVword(ctx, (ZilHash)vword);
+                        var atom = nw.Atom;
+                        var word = ctx.ZEnvironment.Vocabulary[atom];
+                        var zword = helpers.Vocabulary[word];
 
-                    var nw = NewParserWord.FromVword(ctx, (ZilHash)vword);
-                    var atom = nw.Atom;
-                    var word = ctx.ZEnvironment.Vocabulary[atom];
-                    var zword = helpers.Vocabulary[word];
-
-                    filtered.Add(zword);
-                    filtered.Add(helpers.CompileConstant(flags));
+                        filtered.Add(zword);
+                        filtered.Add(helpers.CompileConstant(flags));
+                    }
 
                     wordFlagsList = wordFlagsList.GetRest(2);
                     Debug.Assert(wordFlagsList != null);

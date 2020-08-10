@@ -323,6 +323,19 @@ namespace Zilf.Tests.Integration
                     "<=? <GET ,WORD-FLAG-TABLE 2> 12345>");
         }
 
+        [TestMethod, Timeout(5000)]
+        public void WORD_FLAGS_LIST_With_Duplicates_Should_Compile()
+        {
+            AssertGlobals(
+                SNewParserBootstrap,
+                "<COMPILATION-FLAG WORD-FLAGS-IN-TABLE T>",
+                "<NEW-ADD-WORD FOO TBUZZ 123 456>",
+                "<NEW-ADD-WORD BAR TBUZZ 234 567>",
+                "<NEW-ADD-WORD FOO TADJ 345 678>")
+                .InV6()
+                .Compiles();
+        }
+
         [TestMethod, TestCategory("NEW-PARSER?")]
         public void NEW_PARSER_P_Synonyms_Should_Use_Pointers()
         {
