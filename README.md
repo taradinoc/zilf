@@ -20,4 +20,4 @@ To report a bug or request a feature, please use our JIRA server at [vaporware.a
 
 ### What else do I need to know? ###
 
-This project's ongoing development is made possible by the hosting services generously provided by [Octobus](https://octobus.net/) and [Clever Cloud](https://www.clever-cloud.com>).
+This project's ongoing development is made possible by the hosting services generously provided by [Octobus](https://octobus.net/) and [Clever Cloud](https://www.clever-cloud.com/).
