@@ -1253,12 +1253,12 @@ Returns:
     <RESTORE-PARSER-RESULT ,AGAIN-STORAGE>
     <PROG ()
         ;"if PRSO and/or PRSI are set, make sure the object(s) still pass the checks"
-        <COND (<AND ,PRSO
+        <COND (<AND <N==? ,PRSO <> ,ROOMS>
                     <NOT ,PRSO-DIR>
                     <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSOS>
                               <HAVE-TAKE-CHECK-TBL ,P-PRSOS <GETB ,P-SYNTAX ,SYN-OPTS1>>>>>
                <RETURN>)
-              (<AND ,PRSI
+              (<AND <N==? ,PRSI <> ,ROOMS>
                     <NOT <AND <STILL-VISIBLE-CHECK ,P-PRSIS>
                               <HAVE-TAKE-CHECK-TBL ,P-PRSIS <GETB ,P-SYNTAX ,SYN-OPTS2>>>>>
                <RETURN>)>

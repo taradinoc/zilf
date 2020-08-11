@@ -46,4 +46,16 @@
     <COMMAND [WAKE]>
     <EXPECT "Whom do you want to wake?|">>
 
+<TEST-CASE ("AGAIN after KLUDGEBIT action (PRSO)")
+    <COMMAND [TAKE INVENTORY]>
+    <EXPECT "You are empty-handed.|">
+    <COMMAND [AGAIN]>
+    <EXPECT "You are empty-handed.|">>
+
+<TEST-CASE ("AGAIN after KLUDGEBIT action (PRSI)")
+    <COMMAND [WAKE ME UP]>
+    <EXPECT "If only this were a dream.|">
+    <COMMAND [AGAIN]>
+    <EXPECT "If only this were a dream.|">>
+
 <TEST-GO ,STARTROOM>
