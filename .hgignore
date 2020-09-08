@@ -35,3 +35,4 @@ Examples/**/*.bat
 venv
 Package/Debug/**
 Package/Release/**
+.nuget

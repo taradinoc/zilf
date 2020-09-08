@@ -90,7 +90,7 @@ cache:
 before_script:
   - 'apt-get update'
   - 'apt-get install -y zip'
-  - 'dotnet restore --packages $NUGET_PACKAGES_DIRECTORY'
+  - 'dotnet restore Zilf.sln --packages $NUGET_PACKAGES_DIRECTORY'
 
 build:
   stage: build
@@ -119,4 +119,4 @@ tests:
   # You may want to define separate testing jobs for different types of testing
   # (e.g. integration tests, unit tests etc).
   script:
-    - 'dotnet test --no-restore'
+    - 'dotnet test Zilf.sln --no-restore'
