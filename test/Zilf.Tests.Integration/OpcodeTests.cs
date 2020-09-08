@@ -1693,17 +1693,17 @@ namespace Zilf.Tests.Integration
             AssertExpr("<PRINTT ,MYTEXT 6>")
                 .InV5()
                 .WithGlobal("<GLOBAL MYTEXT <TABLE (STRING) \"hansprestige\">>")
-                .Outputs("hanspr\r\n");
+                .Outputs($"hanspr{System.Environment.NewLine}");
 
             AssertExpr("<PRINTT ,MYTEXT 4 3>")
                 .InV5()
                 .WithGlobal("<GLOBAL MYTEXT <TABLE (STRING) \"hansprestige\">>")
-                .Outputs("hans\r\npres\r\ntige\r\n");
+                .Outputs($"hans{System.Environment.NewLine}pres{System.Environment.NewLine}tige{System.Environment.NewLine}");
 
             AssertExpr("<PRINTT ,MYTEXT 3 3 1>")
                 .InV5()
                 .WithGlobal("<GLOBAL MYTEXT <TABLE (STRING) \"hansprestige\">>")
-                .Outputs("han\r\npre\r\ntig\r\n");
+                .Outputs($"han{System.Environment.NewLine}pre{System.Environment.NewLine}tig{System.Environment.NewLine}");
         }
 
         [TestMethod]

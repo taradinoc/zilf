@@ -1595,7 +1595,7 @@ namespace Zilf.Emit.Zap
                     text1 == null ? text2
                     : text2 == null ? text1
                     : text1 == text2 ? text1
-                    : $"{text1}\r\n{INDENT}{text2}";
+                    : $"{text1}{Environment.NewLine}{INDENT}{text2}";
             }
 
             public bool AreIdentical(ZapCode a, ZapCode b)
