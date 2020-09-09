@@ -468,7 +468,7 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void Test_DeclArg_Fail()
         {
-            const string SExpectedMessage = "dummy: arg 1: expected ATOM and 'ZILF";
+            const string SExpectedMessage = "dummy: arg 1: expected 'ZILF and ATOM";
 
             var methodInfo = GetMethod(nameof(Dummy_DeclArg));
 

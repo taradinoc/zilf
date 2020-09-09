@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -533,7 +534,7 @@ namespace Zilf.Language.Signatures
 
             public override string ToString()
             {
-                return EnglishList(Constraints.Select(c => c.ToString()).OrderBy(s => s), "and");
+                return EnglishList(Constraints.Select(c => c.ToString()).OrderBy(s => s, StringComparer.Ordinal), "and");
             }
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitConjunctionConstraint(Constraints);
@@ -650,7 +651,7 @@ namespace Zilf.Language.Signatures
 
             public override string ToString()
             {
-                return EnglishList(Constraints.Select(c => c.ToString()).OrderBy(s => s), "or");
+                return EnglishList(Constraints.Select(c => c.ToString()).OrderBy(s => s, StringComparer.Ordinal), "or");
             }
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitDisjunctionConstraint(Constraints);
