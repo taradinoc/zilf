@@ -28,11 +28,10 @@ variables:
 
 # ### Define stage list
 #
-# In this example there are only two stages.
-# Initially, the project will be built and then tested.
 stages:
   - build
   - test
+  - package
 
 # ### Define global cache rule
 #
@@ -88,28 +87,23 @@ cache:
 #
 # Learn more about GitLab cache: https://docs.gitlab.com/ee/ci/caching/index.html
 before_script:
-  - 'apt-get update'
-  - 'apt-get install -y zip'
   - 'dotnet restore Zilf.sln --packages $NUGET_PACKAGES_DIRECTORY'
 
-build:
+debug:build:
   stage: build
-  # ### Build all projects discovered from solution file.
-  #
-  # Note: this will fail if you have any projects in your solution that are not
-  # .NET Core-based projects (e.g. WCF service), which is based on .NET Framework,
-  # not .NET Core. In this scenario, you will need to build every .NET Core-based
-  # project by explicitly specifying a relative path to the directory
-  # where it is located (e.g. 'dotnet build ./src/ConsoleApp').
-  # Only one project path can be passed as a parameter to 'dotnet build' command.
+  needs: []
   script:
-    - 'dotnet msbuild -t:PackageAllRids -p:Configuration=Release Build.proj'
-  artifacts:
-    paths:
-      - 'Package/*/Packages/*'
+    - 'dotnet msbuild -t:Build -p:Configuration=Debug Build.proj'
+
+release:build:
+  stage: build
+  needs: []
+  script:
+    - 'dotnet msbuild -t:Build -p:Configuration=Release Build.proj'
 
 tests:
   stage: test
+  needs: ['debug:build']
   # ### Run the tests
   #
   # You can either run tests for all test projects that are defined in your solution
@@ -120,3 +114,22 @@ tests:
   # (e.g. integration tests, unit tests etc).
   script:
     - 'dotnet test Zilf.sln --no-restore -c CI'
+
+package:
+  stage: package
+  needs: ['release:build']
+  # ### Build all projects discovered from solution file.
+  #
+  # Note: this will fail if you have any projects in your solution that are not
+  # .NET Core-based projects (e.g. WCF service), which is based on .NET Framework,
+  # not .NET Core. In this scenario, you will need to build every .NET Core-based
+  # project by explicitly specifying a relative path to the directory
+  # where it is located (e.g. 'dotnet build ./src/ConsoleApp').
+  # Only one project path can be passed as a parameter to 'dotnet build' command.
+  script:
+    - 'apt-get update'
+    - 'apt-get install -y zip'
+    - 'dotnet msbuild -t:PackageAllRids -p:Configuration=Release Build.proj'
+  artifacts:
+    paths:
+      - 'Package/*/Packages/*'
