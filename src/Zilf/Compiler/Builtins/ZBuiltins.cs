@@ -172,7 +172,6 @@ namespace Zilf.Compiler.Builtins
 
                 void InnerError(string msg)
                 {
-                    Debug.Assert(msg != null, nameof(msg) + " != null");
                     error(i, msg);
                 }
 
@@ -681,31 +680,16 @@ namespace Zilf.Compiler.Builtins
             out Func<ValueCall, IOperand, IOperand, IOperand> compileUnary)
         {
             // a delegate implementing the actual arithmetic operation
-#pragma warning disable IDE0066 // Convert switch statement to expression
-            switch (op)
-#pragma warning restore IDE0066 // Convert switch statement to expression
+            operation = op switch
             {
-                case BinaryOp.Add:
-                    operation = (a, b) => (short)(a + b);
-                    break;
-                case BinaryOp.Sub:
-                    operation = (a, b) => (short)(a - b);
-                    break;
-                case BinaryOp.Mul:
-                    operation = (a, b) => (short)(a * b);
-                    break;
-                case BinaryOp.Div:
-                    operation = (a, b) => (short)(a / b);
-                    break;
-                case BinaryOp.And:
-                    operation = (a, b) => (short)(a & b);
-                    break;
-                case BinaryOp.Or:
-                    operation = (a, b) => (short)(a | b);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(op), op, null);
-            }
+                BinaryOp.Add => (Func<short, short, short>)((a, b) => (short)(a + b)),
+                BinaryOp.Sub => (a, b) => (short)(a - b),
+                BinaryOp.Mul => (a, b) => (short)(a * b),
+                BinaryOp.Div => (a, b) => (short)(a / b),
+                BinaryOp.And => (a, b) => (short)(a & b),
+                BinaryOp.Or => (a, b) => (short)(a | b),
+                _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
+            };
 
             // the initial value, which is returned as-is if there are no args,
             // or possibly combined with the single arg if there's only one
@@ -827,19 +811,12 @@ namespace Zilf.Compiler.Builtins
         public static IOperand RestOp(ValueCall c, IOperand left, IOperand? right = null)
         {
             // if left and right are constants, we can add them at assembly time
-            if (left is IConstantOperand lconst)
+            return (left, right) switch
             {
-                switch (right)
-                {
-                    case IConstantOperand rconst:
-                        return lconst.Add(rconst);
-
-                    case null:
-                        return lconst.Add(c.cc.Game.One);
-                }
-            }
-
-            return ArithmeticOp(c, BinaryOp.Add, left, right ?? c.cc.Game.One);
+                (IConstantOperand lconst, IConstantOperand rconst) => lconst.Add(rconst),
+                (IConstantOperand lconst, null) => lconst.Add(c.cc.Game.One),
+                _ => ArithmeticOp(c, BinaryOp.Add, left, right ?? c.cc.Game.One),
+            };
         }
 
         [Builtin("BACK", "ZBACK")]

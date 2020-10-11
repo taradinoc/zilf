@@ -28,178 +28,177 @@ namespace Dezapf
     {
         public static void Main(string[] args)
         {
-            using (Stream stream = new FileStream(args[0], FileMode.Open, FileAccess.Read))
+            using Stream stream = new FileStream(args[0], FileMode.Open, FileAccess.Read);
+
+            var fileLength = (int)stream.Length;
+            var rdr = new BinaryReader(stream);
+
+            var ctx = new Context();
+            var ranges = new RangeList<Chunk>();
+            var hdr = new Header(rdr);
+
+            ctx.Header = hdr;
+            ctx.OutputStyle = new ZapRoundTripStyle();
+
+            ranges.AddRange(0, 64, new HeaderChunk(0, 64, hdr));
+
+            // find instructions
+            var todo = new Stack<int>();
+            var pendingFuncs = new Queue<int>();
+            var pastFuncs = new HashSet<int>();
+            var maxGlobal = 0;
+            todo.Push(hdr.Start);
+
+            while (todo.Count > 0)
             {
-                var fileLength = (int)stream.Length;
-                var rdr = new BinaryReader(stream);
+                var pc = todo.Pop();
 
-                var ctx = new Context();
-                var ranges = new RangeList<Chunk>();
-                var hdr = new Header(rdr);
-
-                ctx.Header = hdr;
-                ctx.OutputStyle = new ZapRoundTripStyle();
-
-                ranges.AddRange(0, 64, new HeaderChunk(0, 64, hdr));
-
-                // find instructions
-                var todo = new Stack<int>();
-                var pendingFuncs = new Queue<int>();
-                var pastFuncs = new HashSet<int>();
-                var maxGlobal = 0;
-                todo.Push(hdr.Start);
-
-                while (todo.Count > 0)
+                if (ranges.TryGetValue(pc, out _) == false)
                 {
-                    var pc = todo.Pop();
+                    stream.Seek(pc, SeekOrigin.Begin);
+                    var inst = Instruction.Decode(ctx, rdr, pc);
 
-                    if (ranges.TryGetValue(pc, out _) == false)
+                    if (inst != null)
                     {
-                        stream.Seek(pc, SeekOrigin.Begin);
-                        var inst = Instruction.Decode(ctx, rdr, pc);
+                        ranges.AddRange(pc, inst.Length, inst);
 
-                        if (inst != null)
+                        for (var i = 0; i < inst.OperandTypes.Length; i++)
+                            if (inst.OperandTypes[i] == OperandType.Variable && inst.Operands[i] >= 16)
+                                maxGlobal = Math.Max(maxGlobal, inst.Operands[i]);
+
+                        if (inst.BranchType != BranchType.None &&
+                            inst.BranchOffset != 0 && inst.BranchOffset != 1)
                         {
-                            ranges.AddRange(pc, inst.Length, inst);
+                            todo.Push(pc + inst.Length + inst.BranchOffset - 2);
+                        }
 
-                            for (var i = 0; i < inst.OperandTypes.Length; i++)
-                                if (inst.OperandTypes[i] == OperandType.Variable && inst.Operands[i] >= 16)
-                                    maxGlobal = Math.Max(maxGlobal, inst.Operands[i]);
+                        var attr = ctx.GetOpcodeInfo(inst.Op);
 
-                            if (inst.BranchType != BranchType.None &&
-                                inst.BranchOffset != 0 && inst.BranchOffset != 1)
+                        if ((attr.Flags & ZOpFlags.Terminates) == 0)
+                            todo.Push(pc + inst.Length);
+
+                        if ((attr.Flags & ZOpFlags.Call) != 0)
+                        {
+                            switch (inst.OperandTypes[0])
                             {
-                                todo.Push(pc + inst.Length + inst.BranchOffset - 2);
-                            }
-
-                            var attr = ctx.GetOpcodeInfo(inst.Op);
-
-                            if ((attr.Flags & ZOpFlags.Terminates) == 0)
-                                todo.Push(pc + inst.Length);
-
-                            if ((attr.Flags & ZOpFlags.Call) != 0)
-                            {
-                                switch (inst.OperandTypes[0])
-                                {
-                                    case OperandType.Word:
-                                    case OperandType.Byte:
-                                        pendingFuncs.Enqueue(ctx.UnpackAddress(inst.Operands[0], hdr.RoutineOffset));
-                                        break;
-                                }
-                            }
-                            else if ((attr.Flags & ZOpFlags.Label) != 0)
-                            {
-                                switch (inst.OperandTypes[0])
-                                {
-                                    case OperandType.Word:
-                                    case OperandType.Byte:
-                                        todo.Push(pc + inst.Length + (short)inst.Operands[0] - 2);
-                                        break;
-                                }
+                                case OperandType.Word:
+                                case OperandType.Byte:
+                                    pendingFuncs.Enqueue(ctx.UnpackAddress(inst.Operands[0], hdr.RoutineOffset));
+                                    break;
                             }
                         }
-                        else
+                        else if ((attr.Flags & ZOpFlags.Label) != 0)
                         {
-                            //XXX
-                            Console.WriteLine("* Invalid instruction at PC={0:x5}", pc);
+                            switch (inst.OperandTypes[0])
+                            {
+                                case OperandType.Word:
+                                case OperandType.Byte:
+                                    todo.Push(pc + inst.Length + (short)inst.Operands[0] - 2);
+                                    break;
+                            }
                         }
                     }
-
-                    while (todo.Count == 0 && pendingFuncs.Count > 0)
+                    else
                     {
-                        var funcAddr = pendingFuncs.Dequeue();
-                        if (!pastFuncs.Contains(funcAddr))
-                        {
-                            pastFuncs.Add(funcAddr);
-                            stream.Seek(funcAddr, SeekOrigin.Begin);
-                            funcAddr++;
-
-                            // skip function header
-                            int locals = rdr.ReadByte();
-                            if (ctx.ZVersion < 5)
-                                funcAddr += 2 * locals;
-
-                            todo.Push(funcAddr);
-                        }
+                        //XXX
+                        Console.WriteLine("* Invalid instruction at PC={0:x5}", pc);
                     }
                 }
 
-                // combine instructions into routines
-                foreach (var address in pastFuncs)
-                    ComposeFunc(ctx, stream, rdr, ranges, address);
-
-                // mark global variables
-                maxGlobal -= 15;
-                if (maxGlobal > 0)
+                while (todo.Count == 0 && pendingFuncs.Count > 0)
                 {
-                    var globalsChunk = GlobalsChunk.FromStream(stream, hdr.Globals, maxGlobal * 2);
-                    ranges.AddRange(hdr.Globals, maxGlobal * 2, globalsChunk);
-                }
-
-                // mark memory borders
-                if (!ranges.Contains(hdr.EndLod))
-                    ranges.AddRange(hdr.EndLod, 1, DataChunk.FromStream(stream, hdr.EndLod, 1));
-
-                if (!ranges.Contains(hdr.Impure))
-                    ranges.AddRange(hdr.Impure, 1, DataChunk.FromStream(stream, hdr.Impure, 1));
-
-                // fill in gaps with data chunks
-                var gapChunks = new Queue<DataChunk>();
-                foreach (var gap in ranges.FindGaps(0, fileLength))
-                    gapChunks.Enqueue(DataChunk.FromStream(stream, gap.Start, gap.Length));
-                while (gapChunks.Count > 0)
-                {
-                    var chunk = gapChunks.Dequeue();
-
-                    // skip padding chunks filled with zeroes
-                    if (ranges.TryGetValue(chunk.PC + chunk.Length, out var nextChunk) &&
-                        chunk.Length < nextChunk.GetAlignment(ctx) &&
-                        chunk.Bytes.All(b => b == 0))
+                    var funcAddr = pendingFuncs.Dequeue();
+                    if (!pastFuncs.Contains(funcAddr))
                     {
-                        continue;
+                        pastFuncs.Add(funcAddr);
+                        stream.Seek(funcAddr, SeekOrigin.Begin);
+                        funcAddr++;
+
+                        // skip function header
+                        int locals = rdr.ReadByte();
+                        if (ctx.ZVersion < 5)
+                            funcAddr += 2 * locals;
+
+                        todo.Push(funcAddr);
                     }
-
-                    ranges.AddRange(chunk.PC, chunk.Length, chunk);
                 }
+            }
 
-                // output
-                Chunk lastChunk = null;
-                foreach (var r in ranges)
+            // combine instructions into routines
+            foreach (var address in pastFuncs)
+                ComposeFunc(ctx, stream, rdr, ranges, address);
+
+            // mark global variables
+            maxGlobal -= 15;
+            if (maxGlobal > 0)
+            {
+                var globalsChunk = GlobalsChunk.FromStream(stream, hdr.Globals, maxGlobal * 2);
+                ranges.AddRange(hdr.Globals, maxGlobal * 2, globalsChunk);
+            }
+
+            // mark memory borders
+            if (!ranges.Contains(hdr.EndLod))
+                ranges.AddRange(hdr.EndLod, 1, DataChunk.FromStream(stream, hdr.EndLod, 1));
+
+            if (!ranges.Contains(hdr.Impure))
+                ranges.AddRange(hdr.Impure, 1, DataChunk.FromStream(stream, hdr.Impure, 1));
+
+            // fill in gaps with data chunks
+            var gapChunks = new Queue<DataChunk>();
+            foreach (var gap in ranges.FindGaps(0, fileLength))
+                gapChunks.Enqueue(DataChunk.FromStream(stream, gap.Start, gap.Length));
+            while (gapChunks.Count > 0)
+            {
+                var chunk = gapChunks.Dequeue();
+
+                // skip padding chunks filled with zeroes
+                if (ranges.TryGetValue(chunk.PC + chunk.Length, out var nextChunk) &&
+                    chunk.Length < nextChunk.GetAlignment(ctx) &&
+                    chunk.Bytes.All(b => b == 0))
                 {
-                    if (lastChunk != null && r.Value.WantNewParagraph(lastChunk))
-                        Console.WriteLine();
-
-                    if (r.Start > 0)
-                    {
-                        if (r.Start == hdr.AlphabetTable)
-                            Console.WriteLine("ALPHABET::");
-                        if (r.Start == hdr.EndLod)
-                            Console.WriteLine("ENDLOD::");
-                        if (r.Start == hdr.ExtensionTable)
-                            Console.WriteLine("HDREXT::");
-                        if (r.Start == hdr.Words)
-                            Console.WriteLine("WORDS::");
-                        if (r.Start == hdr.Globals)
-                            Console.WriteLine("GLOBAL::");
-                        if (r.Start == hdr.Impure)
-                            Console.WriteLine("IMPURE::");
-                        if (r.Start == hdr.Objects)
-                            Console.WriteLine("OBJECT::");
-                        if (r.Start == hdr.RoutineOffset * 8)
-                            Console.WriteLine("ROUTINES::");
-                        if (r.Start == hdr.Start)
-                            Console.WriteLine("START::");
-                        if (r.Start == hdr.StringOffset * 8)
-                            Console.WriteLine("STRINGS::");
-                        if (r.Start == hdr.TCharsTable)
-                            Console.WriteLine("TCHARS::");
-                        if (r.Start == hdr.Vocab)
-                            Console.WriteLine("VOCAB::");
-                    }
-
-                    r.Value.WriteTo(Console.Out, ctx);
-                    lastChunk = r.Value;
+                    continue;
                 }
+
+                ranges.AddRange(chunk.PC, chunk.Length, chunk);
+            }
+
+            // output
+            Chunk lastChunk = null;
+            foreach (var r in ranges)
+            {
+                if (lastChunk != null && r.Value.WantNewParagraph(lastChunk))
+                    Console.WriteLine();
+
+                if (r.Start > 0)
+                {
+                    if (r.Start == hdr.AlphabetTable)
+                        Console.WriteLine("ALPHABET::");
+                    if (r.Start == hdr.EndLod)
+                        Console.WriteLine("ENDLOD::");
+                    if (r.Start == hdr.ExtensionTable)
+                        Console.WriteLine("HDREXT::");
+                    if (r.Start == hdr.Words)
+                        Console.WriteLine("WORDS::");
+                    if (r.Start == hdr.Globals)
+                        Console.WriteLine("GLOBAL::");
+                    if (r.Start == hdr.Impure)
+                        Console.WriteLine("IMPURE::");
+                    if (r.Start == hdr.Objects)
+                        Console.WriteLine("OBJECT::");
+                    if (r.Start == hdr.RoutineOffset * 8)
+                        Console.WriteLine("ROUTINES::");
+                    if (r.Start == hdr.Start)
+                        Console.WriteLine("START::");
+                    if (r.Start == hdr.StringOffset * 8)
+                        Console.WriteLine("STRINGS::");
+                    if (r.Start == hdr.TCharsTable)
+                        Console.WriteLine("TCHARS::");
+                    if (r.Start == hdr.Vocab)
+                        Console.WriteLine("VOCAB::");
+                }
+
+                r.Value.WriteTo(Console.Out, ctx);
+                lastChunk = r.Value;
             }
 
             //Console.ReadKey();

@@ -46,7 +46,7 @@ namespace Dezapf
         }
     }
 
-    class DataChunk : Chunk
+    sealed class DataChunk : Chunk
     {
         public byte[] Bytes { get; }
 
@@ -137,7 +137,7 @@ namespace Dezapf
         }
     }
 
-    class GlobalsChunk : Chunk
+    sealed class GlobalsChunk : Chunk
     {
         public ushort[] Values { get; }
 
@@ -150,7 +150,7 @@ namespace Dezapf
         public static GlobalsChunk FromStream(Stream stream, int offset, int length)
         {
             stream.Seek(offset, SeekOrigin.Begin);
-            BinaryReader rdr = new BinaryReader(stream);
+            var rdr = new BinaryReader(stream);
             int count = length / 2;
             ushort[] values = new ushort[count];
             for (int i = 0; i < count; i++)

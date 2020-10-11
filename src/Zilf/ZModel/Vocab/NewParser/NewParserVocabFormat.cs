@@ -354,25 +354,14 @@ namespace Zilf.ZModel.Vocab.NewParser
             var nsyn = (NewParserWord)synonym;
             var norig = (NewParserWord)original;
 
-            int classification;
-            switch (partOfSpeech)
+            var classification = partOfSpeech switch
             {
-                case PartOfSpeech.Adjective:
-                    classification = adjClass;
-                    break;
-                case PartOfSpeech.Direction:
-                    classification = dirClass;
-                    break;
-                case PartOfSpeech.Preposition:
-                    classification = prepClass;
-                    break;
-                case PartOfSpeech.Verb:
-                    classification = verbClass;
-                    break;
-                default:
-                    // shouldn't get here due to contract
-                    throw new UnreachableCodeException();
-            }
+                PartOfSpeech.Adjective => adjClass,
+                PartOfSpeech.Direction => dirClass,
+                PartOfSpeech.Preposition => prepClass,
+                PartOfSpeech.Verb => verbClass,
+                _ => throw new UnreachableCodeException()
+            };
 
             if (!norig.HasClass(classification))
                 throw new InterpreterError(InterpreterMessages.Word_0_Is_Not_A_1, norig.Atom, partOfSpeech);
@@ -522,13 +511,10 @@ namespace Zilf.ZModel.Vocab.NewParser
             return verbStuffId != null;
         }
 
-        static bool IsVerbPointer(ZilObject? verbStuff)
-        {
-            return verbStuff != null && verbStuff.StdTypeAtom == StdAtom.VERB_POINTER;
-        }
+        static bool IsVerbPointer(ZilObject? verbStuff) => verbStuff?.StdTypeAtom == StdAtom.VERB_POINTER;
 
         void ConditionalAddShort(IWordBuilder wb, string word, CompileConstantDelegate compileConstant,
-             ZilObject? value)
+            ZilObject? value)
         {
             if (value == null)
             {
@@ -554,7 +540,7 @@ namespace Zilf.ZModel.Vocab.NewParser
         }
 
         void ConditionalAddByte(IWordBuilder wb, string word, CompileConstantDelegate compileConstant,
-             ZilObject? value)
+            ZilObject? value)
         {
             if (value == null)
             {
@@ -649,7 +635,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             if (flags.Value != 0)
             {
                 var compFlag = ctx.GetCompilationFlagValue("WORD-FLAGS-IN-TABLE");
-                if (compFlag != null && compFlag.IsTrue)
+                if (compFlag?.IsTrue == true)
                 {
                     // prepend .WORD .FLAGS to ,WORD-FLAGS-LIST
                     var wordFlagsList = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST)) ?? new ZilList(null, null);
@@ -697,25 +683,15 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         static ZilFix TranslateType(Context ctx, ZilAtom type)
         {
-            // ReSharper disable once SwitchStatementMissingSomeCases
-            switch (type.StdAtom)
+            type = type.StdAtom switch
             {
-                case StdAtom.TADJ:
-                    type = ctx.GetStdAtom(StdAtom.ADJ);
-                    break;
-                case StdAtom.TOBJECT:
-                    type = ctx.GetStdAtom(StdAtom.NOUN);
-                    break;
-                case StdAtom.TPREP:
-                    type = ctx.GetStdAtom(StdAtom.PREP);
-                    break;
-                case StdAtom.TDIR:
-                    type = ctx.GetStdAtom(StdAtom.DIR);
-                    break;
-                case StdAtom.TVERB:
-                    type = ctx.GetStdAtom(StdAtom.VERB);
-                    break;
-            }
+                StdAtom.TADJ => ctx.GetStdAtom(StdAtom.ADJ),
+                StdAtom.TOBJECT => ctx.GetStdAtom(StdAtom.NOUN),
+                StdAtom.TPREP => ctx.GetStdAtom(StdAtom.PREP),
+                StdAtom.TDIR => ctx.GetStdAtom(StdAtom.DIR),
+                StdAtom.TVERB => ctx.GetStdAtom(StdAtom.VERB),
+                _ => type
+            };
 
             ZilFix? classification;
 

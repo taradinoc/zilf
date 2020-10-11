@@ -207,16 +207,15 @@ namespace Zilf.Compiler
 
         public static T FirstOrCombine<T>(this IEnumerable<T> sequence, SequenceCombiner<T> combiner)
         {
-            using (var tor = sequence.GetEnumerator())
-            {
-                if (!tor.MoveNext())
-                    throw new InvalidOperationException("No items in sequence");
+            using var tor = sequence.GetEnumerator();
 
-                var first = tor.Current;
-                Debug.Assert(first != null);
+            if (!tor.MoveNext())
+                throw new InvalidOperationException("No items in sequence");
 
-                return tor.MoveNext() ? combiner(ReconstructSequence(first, tor)) : first;
-            }
+            var first = tor.Current;
+            Debug.Assert(first != null);
+
+            return tor.MoveNext() ? combiner(ReconstructSequence(first, tor)) : first;
         }
     }
 }

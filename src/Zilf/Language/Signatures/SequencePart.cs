@@ -36,17 +36,12 @@ namespace Zilf.Language.Signatures
         {
             var seqParts = parts.SelectMany(ExpandSequenceParts).ToArray();
 
-            switch (seqParts.Length)
+            return seqParts.Length switch
             {
-                case 0:
-                    throw new ArgumentException("No sequence provided");
-
-                case 1:
-                    return seqParts[0];
-
-                default:
-                    return new SequencePart(seqParts);
-            }
+                0 => throw new ArgumentException("No sequence provided"),
+                1 => seqParts[0],
+                _ => new SequencePart(seqParts),
+            };
         }
 
         public static IEnumerable<SignaturePart> ExpandSequenceParts(SignaturePart p)

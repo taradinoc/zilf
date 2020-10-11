@@ -252,12 +252,15 @@ namespace Zilf.ZModel
 
             Syntax ValidateAndBuild()
             {
+                Debug.Assert(verb != null);
+
                 if (numObjects < 1)
                 {
                     prep1 = null;
                     find1 = null;
                     bits1 = null;
                 }
+
                 if (numObjects < 2)
                 {
                     prep2 = null;

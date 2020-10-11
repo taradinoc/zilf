@@ -38,10 +38,10 @@ namespace Zilf.Interpreter.Values
         public IStructure? GetBack(int skip) => primValue.GetBack(skip);
         public IStructure GetTop() => primValue.GetTop();
 
-        [MaybeNull]
-        public ZilObject this[int index]
+        [DisallowNull]
+        public ZilObject? this[int index]
         {
-            get => primValue[index]!;
+            get => primValue[index];
             set => primValue[index] = value;
         }
 

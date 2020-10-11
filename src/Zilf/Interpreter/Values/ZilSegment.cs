@@ -86,7 +86,8 @@ namespace Zilf.Interpreter.Values
 
         public bool IsEmpty => form.IsEmpty;
 
-        public ZilObject this[int index]
+        [DisallowNull]
+        public ZilObject? this[int index]
         {
             get => form[index];
             set => form[index] = value;

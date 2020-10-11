@@ -98,7 +98,8 @@ namespace Zilf.Interpreter.Values.Tied
 
         /// <exception cref="NotSupportedException" accessor="set">The element being written is tied to a read-only property.</exception>
         /// <exception cref="ArgumentOutOfRangeException" accessor="set"><paramref name="index"/> is out of range.</exception>
-        public sealed override ZilObject this[int index]
+        [DisallowNull]
+        public sealed override ZilObject? this[int index]
         {
             get
             {
@@ -248,7 +249,8 @@ namespace Zilf.Interpreter.Values.Tied
                 this.offset = offset;
             }
 
-            public override ZilObject this[int index]
+            [DisallowNull]
+            public override ZilObject? this[int index]
             {
                 get => orig[offset + index];
                 set => orig[offset + index] = value;
@@ -258,15 +260,13 @@ namespace Zilf.Interpreter.Values.Tied
 
             public override bool IsEmpty => GetLength(1) == 0;
 
-            public override IEnumerator<ZilObject> GetEnumerator()
-            {
-                return orig.Skip(offset).GetEnumerator();
-            }
+            public override IEnumerator<ZilObject> GetEnumerator() => orig.Skip(offset).GetEnumerator();
 
+            [DisallowNull]
             public override ZilObject? First
             {
                 get => orig[offset];
-                set => orig[offset] = value!;
+                set => orig[offset] = value;
             }
 
             // ReSharper disable once AnnotationConflictInHierarchy

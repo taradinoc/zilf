@@ -862,24 +862,18 @@ namespace Zilf.Interpreter
                     text = str.Text;
 
                 HandleNamedVersion:
-                    switch (text.ToUpperInvariant())
+                    newVersion = text.ToUpperInvariant() switch
                     {
-                        case "ZIP":
-                            newVersion = 3;
-                            break;
-                        case "EZIP":
-                            newVersion = 4;
-                            break;
-                        case "XZIP":
-                            newVersion = 5;
-                            break;
-                        case "YZIP":
-                            newVersion = 6;
-                            break;
-                        default:
-                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version name", text)
-                                .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
-                    }
+                        "ZIP" => 3,
+                        "EZIP" => 4,
+                        "XZIP" => 5,
+                        "YZIP" => 6,
+                        _ => throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2,
+                            name,
+                            "version name",
+                            text).Combine(new InterpreterError(InterpreterMessages
+                            .Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38))
+                    };
                     break;
 
                 case ZilFix fix:

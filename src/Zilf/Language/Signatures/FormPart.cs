@@ -33,17 +33,12 @@ namespace Zilf.Language.Signatures
         {
             var elements = parts.SelectMany(SequencePart.ExpandSequenceParts).ToArray();
 
-            switch (elements.Length)
+            return elements.Length switch
             {
-                case 0:
-                    throw new ArgumentException("No elements provided");
-
-                case 2 when elements[0] is LiteralPart lp1 && lp1.Text == "QUOTE" && elements[1] is LiteralPart lp2:
-                    return LiteralPart.From("'" + lp2.Text);
-
-                default:
-                    return new FormPart(elements);
-            }
+                0 => throw new ArgumentException("No elements provided"),
+                2 when elements[0] is LiteralPart lp1 && lp1.Text == "QUOTE" && elements[1] is LiteralPart lp2 => LiteralPart.From("'" + lp2.Text),
+                _ => new FormPart(elements),
+            };
         }
 
         public override void Accept(ISignatureVisitor visitor) => visitor.Visit(this);

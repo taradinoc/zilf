@@ -212,10 +212,10 @@ namespace Zilf.Interpreter.Values
         public bool IsEmpty => storage.GetLength(offset) <= 0;
 
         /// <exception cref="ArgumentOutOfRangeException" accessor="set"><paramref name="index"/> is out of range.</exception>
-        [MaybeNull]
-        public ZilObject this[int index]
+        [DisallowNull]
+        public ZilObject? this[int index]
         {
-            get => storage.GetItem(offset, index)!;
+            get => storage.GetItem(offset, index);
             set => storage.PutItem(offset, index, value);
         }
 

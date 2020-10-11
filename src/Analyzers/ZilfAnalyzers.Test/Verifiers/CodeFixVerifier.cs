@@ -40,9 +40,17 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("AsyncUsage", "AsyncFixer01:Unnecessary async/await usage", Justification = "VS template code")]
         protected async Task VerifyCSharpFixAsync(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
         {
-            await VerifyFixAsync(LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), GetCSharpCodeFixProvider(), oldSource, newSource, codeFixIndex, allowNewCompilerDiagnostics);
+            await VerifyFixAsync(LanguageNames.CSharp,
+                    GetCSharpDiagnosticAnalyzer(),
+                    GetCSharpCodeFixProvider(),
+                    oldSource,
+                    newSource,
+                    codeFixIndex,
+                    allowNewCompilerDiagnostics)
+                .ConfigureAwait(false);
         }
 
         /// <summary>
@@ -52,9 +60,17 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("AsyncUsage", "AsyncFixer01:Unnecessary async/await usage", Justification = "VS template code")]
         protected async Task VerifyBasicFixAsync(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
         {
-            await VerifyFixAsync(LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), GetBasicCodeFixProvider(), oldSource, newSource, codeFixIndex, allowNewCompilerDiagnostics);
+            await VerifyFixAsync(LanguageNames.VisualBasic,
+                    GetBasicDiagnosticAnalyzer(),
+                    GetBasicCodeFixProvider(),
+                    oldSource,
+                    newSource,
+                    codeFixIndex,
+                    allowNewCompilerDiagnostics)
+                .ConfigureAwait(false);
         }
 
         /// <summary>
@@ -85,21 +101,21 @@ namespace ZilfAnalyzers.Test.Helpers
             for (int i = 0; i < attempts; ++i)
             {
                 var actions = new List<CodeAction>();
-                var context = new CodeFixContext(document, analyzerDiagnostics[0], (a, d) => actions.Add(a), CancellationToken.None);
+                var context = new CodeFixContext(document, analyzerDiagnostics[0], (a, _) => actions.Add(a), CancellationToken.None);
                 await codeFixProvider.RegisterCodeFixesAsync(context).ConfigureAwait(false);
 
-                if (!actions.Any())
+                if (actions.Count == 0)
                 {
                     break;
                 }
 
                 if (codeFixIndex != null)
                 {
-                    document = ApplyFix(document, actions.ElementAt((int)codeFixIndex));
+                    document = ApplyFix(document, actions[(int)codeFixIndex]);
                     break;
                 }
 
-                document = ApplyFix(document, actions.ElementAt(0));
+                document = ApplyFix(document, actions[0]);
                 analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, new[] { document }).ConfigureAwait(false);
                 analyzerDiagnostics = analyzerDiagnostics.Where(d => fixableIds.Contains(d.Id)).ToArray();
 
@@ -109,17 +125,17 @@ namespace ZilfAnalyzers.Test.Helpers
                 if (!allowNewCompilerDiagnostics && newCompilerDiagnostics.Any())
                 {
                     // Format and get the compiler diagnostics again so that the locations make sense in the output
-                    document = document.WithSyntaxRoot(Formatter.Format(document.GetSyntaxRootAsync().Result, Formatter.Annotation, document.Project.Solution.Workspace));
+                    document = document.WithSyntaxRoot(Formatter.Format(await document.GetSyntaxRootAsync().ConfigureAwait(false), Formatter.Annotation, document.Project.Solution.Workspace));
                     newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, GetCompilerDiagnostics(document));
 
                     Assert.Fail(
                         "Fix introduced new compiler diagnostics:\r\n{0}\r\n\r\nNew document:\r\n{1}\r\n",
                         string.Join("\r\n", newCompilerDiagnostics.Select(d => d.ToString())),
-                        document.GetSyntaxRootAsync().Result.ToFullString());
+                        (await document.GetSyntaxRootAsync().ConfigureAwait(false)).ToFullString());
                 }
 
                 //check if there are analyzer diagnostics left after the code fix
-                if (!analyzerDiagnostics.Any())
+                if (analyzerDiagnostics.Length == 0)
                 {
                     break;
                 }

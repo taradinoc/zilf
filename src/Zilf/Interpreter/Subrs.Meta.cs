@@ -16,10 +16,13 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
-using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
@@ -39,18 +42,16 @@ namespace Zilf.Interpreter
 
                 using (ctx.PushFileContext(newFile))
                 {
-                    using (var stream = ctx.OpenFile(newFile, false))
-                    {
-                        Program.Evaluate(ctx, stream);
-                    }
+                    using var stream = ctx.OpenFile(newFile, false);
+                    Program.Evaluate(ctx, stream);
                     return ZilString.FromString("DONE");
                 }
             }
-            catch (System.IO.FileNotFoundException ex)
+            catch (FileNotFoundException ex)
             {
                 throw new InterpreterError(InterpreterMessages._0_File_Not_Found_1, name, file, ex);
             }
-            catch (System.IO.IOException ex)
+            catch (IOException ex)
             {
                 throw new InterpreterError(InterpreterMessages._0_Error_Loading_File_1, name, ex.Message, ex);
             }
@@ -270,16 +271,12 @@ namespace Zilf.Interpreter
         {
             var body = form.Select(zo =>
             {
-                ZilObject? value;
-
-                switch (zo)
+                if (zo is ZilAtom atom && ctx.GetCompilationFlagValue(atom) is { } value)
                 {
-                    case ZilAtom atom when ((value = ctx.GetCompilationFlagValue(atom)) != null):
-                        return value;
-
-                    default:
-                        return zo;
+                    return value;
                 }
+
+                return zo;
             });
 
             return new ZilForm(body) { SourceLine = form.SourceLine };
@@ -295,21 +292,12 @@ namespace Zilf.Interpreter
         [Subr("QUIT")]
         public static ZilObject QUIT(Context ctx, ZilObject? exitCode = null)
         {
-            int code;
-            switch (exitCode)
+            var code = exitCode switch
             {
-                case null:
-                    code = 0;
-                    break;
-
-                case ZilFix fix:
-                    code = fix.Value;
-                    break;
-
-                default:
-                    code = 4;
-                    break;
-            }
+                null => 0,
+                ZilFix fix => fix.Value,
+                _ => 4
+            };
 
             Environment.Exit(code);
 
@@ -346,7 +334,7 @@ namespace Zilf.Interpreter
             return ctx.FALSE;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
+        [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
         [Subr]
         public static ZilObject GC(Context ctx, ZilObject[] args)
         {
@@ -423,10 +411,10 @@ namespace Zilf.Interpreter
 
                 default:
                     var codes = codesOrWildcard.GetCodes();
-                    System.Diagnostics.Debug.Assert(codes != null);
+                    Debug.Assert(codes != null);
 
                     foreach (var code in codes)
-                        ctx.DiagnosticManager.Suppress(code.ToString());
+                        ctx.DiagnosticManager.Suppress(code);
                     break;
             }
 
@@ -440,18 +428,9 @@ namespace Zilf.Interpreter
         {
             var result = new JObject();
 
-            // Z-code builtins
-            foreach (var name in ZBuiltins.GetBuiltinNames())
+            foreach (var (name, signature) in GetBuiltinSignatures(ctx))
             {
-                var jsigs = ZBuiltins.GetBuiltinSignatures(name).Select(JsonDescriber.Describe);
-                result[name] = new JArray(jsigs);
-            }
-
-            // add SUBRs
-            foreach (var (name, mi, isFSubr) in ctx.GetSubrDefinitions())
-            {
-                var sig = SubrSignature.FromMethodInfo(mi, isFSubr);
-                var desc = JsonDescriber.Describe(sig);
+                var desc = JsonDescriber.Describe(signature);
 
                 var array = (JArray)result[name];
                 if (array == null)
@@ -465,6 +444,62 @@ namespace Zilf.Interpreter
             }
 
             return ZilString.FromString(result.ToString());
+        }
+
+        [Subr("SUMMARIZE-BUILTINS", ObList = "YOMIN")]
+        public static ZilObject SUMMARIZE_BUILTINS(Context ctx)
+        {
+            var result = new JObject();
+
+            var sigs = from pair in GetBuiltinSignatures(ctx)
+                       group pair.signature by pair.name;
+
+            foreach (var g in sigs.OrderBy(g => g.Key))
+            {
+                var groupItem = new JArray();
+
+                foreach (var signature in g)
+                {
+                    var sigItem = new JObject()
+                    {
+                        ["params"] = PlainDescriber.Describe(signature)
+                    };
+
+                    switch (signature)
+                    {
+                        case SubrSignature _:
+                            sigItem["context"] = "mdl";
+                            break;
+
+                        case ZBuiltinSignature bs:
+                            sigItem["context"] = "zcode";
+                            sigItem["minVersion"] = bs.MinVersion;
+                            sigItem["maxVersion"] = bs.MaxVersion;
+                            break;
+                    }
+
+                    groupItem.Add(sigItem);
+                }
+
+                result.Add(g.Key, groupItem);
+            }
+
+            return ZilString.FromString(result.ToString());
+        }
+
+        private static IEnumerable<(string name, ISignature signature)> GetBuiltinSignatures(Context ctx)
+        {
+            var zcodeSignatures =
+                from name in ZBuiltins.GetBuiltinNames()
+                from signature in ZBuiltins.GetBuiltinSignatures(name)
+                select (name, signature);
+
+            var subrSignatures =
+                from def in ctx.GetSubrDefinitions()
+                let signature = SubrSignature.FromMethodInfo(def.methodInfo, def.isFSubr)
+                select (def.name, signature);
+
+            return zcodeSignatures.Concat(subrSignatures);
         }
 
         #endregion

@@ -51,8 +51,8 @@ namespace Zilf.Interpreter.Values
         public ZilOffset(int index, ZilObject structurePattern, ZilObject valuePattern)
         {
             Index = index;
-            StructurePattern = structurePattern ?? throw new ArgumentNullException(nameof(structurePattern));
-            ValuePattern = valuePattern ?? throw new ArgumentNullException(nameof(valuePattern));
+            StructurePattern = structurePattern;
+            ValuePattern = valuePattern;
         }
 
         public override bool StructurallyEquals(ZilObject? obj)
@@ -156,19 +156,16 @@ namespace Zilf.Interpreter.Values
         public bool IsEmpty => false;
 
         /// <exception cref="InterpreterError" accessor="set">Always thrown.</exception>
-        [MaybeNull]
-        public ZilObject this[int index]
+        [DisallowNull]
+        public ZilObject? this[int index]
         {
-            get
+            get => index switch
             {
-                return index switch
-                {
-                    0 => new ZilFix(Index),
-                    1 => StructurePattern,
-                    2 => ValuePattern,
-                    _ => null!
-                };
-            }
+                0 => new ZilFix(Index),
+                1 => StructurePattern,
+                2 => ValuePattern,
+                _ => null
+            };
 
             [DoesNotReturn]
             set => throw new InterpreterError(InterpreterMessages.OFFSET_Is_Immutable);

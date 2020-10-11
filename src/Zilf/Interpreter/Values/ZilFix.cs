@@ -71,22 +71,15 @@ namespace Zilf.Interpreter.Values
         {
             try
             {
-                switch (args.Length)
+                return args.Length switch
                 {
-                    case 1:
-                        return Subrs.NTH(ctx, (IStructure)args[0], value);
-
-                    case 2:
-                        return Subrs.PUT(ctx, (IStructure)args[0], value, args[1]);
-
-                    default:
-                        throw new InterpreterError(
-                            InterpreterMessages._0_Expected_1_After_2,
-                            InterpreterMessages.NoFunction,
-                            "1 or 2 args",
-                            "the FIX");
-                            
-                }
+                    1 => Subrs.NTH(ctx, (IStructure)args[0], value),
+                    2 => Subrs.PUT(ctx, (IStructure)args[0], value, args[1]),
+                    _ => throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2,
+                        InterpreterMessages.NoFunction,
+                        "1 or 2 args",
+                        "the FIX")
+                };
             }
             catch (InvalidCastException)
             {

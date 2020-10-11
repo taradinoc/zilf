@@ -56,25 +56,18 @@ namespace ZilfAnalyzers.Test.Helpers
         [JetBrains.Annotations.NotNull]
         static string ToSafeString(this char c)
         {
-            switch (c)
+            return c switch
             {
-                case '\r':
-                    return @"\r";
-                case '\n':
-                    return @"\n";
-                case '\t':
-                    return @"\t";
-                case '\a':
-                    return @"\a";
-                case '\v':
-                    return @"\v";
-                case '\f':
-                    return @"\f";
-                default:
-                    return char.IsControl(c) || char.IsWhiteSpace(c)
-                        ? $"\\u{(int)c:X};"
-                        : c.ToString(CultureInfo.InvariantCulture);
-            }
+                '\r' => @"\r",
+                '\n' => @"\n",
+                '\t' => @"\t",
+                '\a' => @"\a",
+                '\v' => @"\v",
+                '\f' => @"\f",
+                _ => char.IsControl(c) || char.IsWhiteSpace(c)
+                    ? $"\\u{(int)c:X};"
+                    : c.ToString(CultureInfo.InvariantCulture),
+            };
         }
     }
 

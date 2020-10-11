@@ -126,7 +126,7 @@ namespace Zilf.Tests.Compiler
     <QUIT>>
 ");
 
-            helper.SetInputFile(@"foofreq.xzap", "; use me");
+            helper.SetInputFile("foofreq.xzap", "; use me");
 
             helper.Compile("foo.zil");
 

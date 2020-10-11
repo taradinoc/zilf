@@ -35,16 +35,12 @@ namespace Zilf.Language.Signatures
 
         public static SignaturePart From(SignaturePart inner, bool isRequired)
         {
-            switch (inner)
+            inner = inner switch
             {
-                case VarArgsPart vp:
-                    inner = vp.Inner;
-                    break;
-
-                case OptionalPart op:
-                    inner = op.Inner;
-                    break;
-            }
+                VarArgsPart vp => vp.Inner,
+                OptionalPart op => op.Inner,
+                _ => inner
+            };
 
             return new VarArgsPart(inner, isRequired);
         }

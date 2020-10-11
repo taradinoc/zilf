@@ -48,30 +48,29 @@ namespace Zilf.Diagnostics
         {
             //Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
-            using (var tor = sequence.GetEnumerator())
+            using var tor = sequence.GetEnumerator();
+
+            if (!tor.MoveNext())
+                yield break;
+
+            var last = tor.Current;
+
+            while (tor.MoveNext())
             {
-                if (!tor.MoveNext())
-                    yield break;
-
-                var last = tor.Current;
-
-                while (tor.MoveNext())
+                var current = tor.Current;
+                if (match(last, current))
                 {
-                    var current = tor.Current;
-                    if (match(last, current))
-                    {
-                        last = combine(last, current);
-                    }
-                    else
-                    {
-                        yield return last;
-
-                        last = current;
-                    }
+                    last = combine(last, current);
                 }
+                else
+                {
+                    yield return last;
 
-                yield return last;
+                    last = current;
+                }
             }
+
+            yield return last;
         }
 
         static string EnglishJoin(IEnumerable<string> sequence, string conjunction)

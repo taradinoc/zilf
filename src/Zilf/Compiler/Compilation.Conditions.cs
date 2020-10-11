@@ -340,7 +340,7 @@ namespace Zilf.Compiler
             var endLabel = rb.DefineLabel();
             bool elsePart = false;
 
-            resultStorage = resultStorage ?? rb.Stack;
+            resultStorage ??= rb.Stack;
             while (!clauses.IsEmpty)
             {
                 ZilObject clause, origCondition, condition;

@@ -39,7 +39,7 @@ namespace Dezapf
 
         protected string FormatFlags1(Context ctx, byte flags1)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             if (ctx.ZVersion <= 3)
             {
                 if ((flags1 & 1) != 0)

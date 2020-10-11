@@ -219,7 +219,7 @@ namespace Zilf.Tests.Integration
 
             initializeFrontEnd?.Invoke(frontEnd);
 
-            //XXX need to intercept <INSERT_FILE> too
+            //XXX need to intercept <INSERT-FILE> too
 
             // run compilation
             PrintZilCode();

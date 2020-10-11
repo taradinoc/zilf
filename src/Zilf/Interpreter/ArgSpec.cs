@@ -29,7 +29,7 @@ using Zilf.Common;
 
 namespace Zilf.Interpreter
 {
-    class ArgSpec : IEnumerable<ArgItem>
+    sealed class ArgSpec : IEnumerable<ArgItem>
     {
         // name of the function to which this spec belongs
         // reference to the "QUOTE" atom used for any quoted args
@@ -42,7 +42,7 @@ namespace Zilf.Interpreter
         readonly ZilObject?[] argDecls;
         readonly bool[] argQuoted;
         readonly ZilObject?[] argDefaults;
-        readonly int optArgsStart, auxArgsStart;
+        readonly int auxArgsStart;
 
         // "ARGS" or "TUPLE"
         readonly ZilObject? varargsDecl;
@@ -61,7 +61,7 @@ namespace Zilf.Interpreter
         {
             this.Name = name;
             this.ActivationAtom = activationAtom;
-            this.optArgsStart = optArgsStart;
+            this.MinArgCount = optArgsStart;
             this.auxArgsStart = auxArgsStart;
             this.VarargsAtom = varargsAtom;
             this.varargsQuoted = varargsQuoted;
@@ -316,7 +316,7 @@ namespace Zilf.Interpreter
                 argAtoms.ToArray(), argDecls.ToArray(), argQuoted.ToArray(), argDefaults.ToArray());
         }
 
-        public int MinArgCount => optArgsStart;
+        public int MinArgCount { get; }
 
         public int? MaxArgCount => VarargsAtom != null ? null : (int?)auxArgsStart;
 
@@ -328,7 +328,7 @@ namespace Zilf.Interpreter
             {
                 if (i == auxArgsStart)
                     type = ArgItem.ArgType.Auxiliary;
-                else if (i == optArgsStart)
+                else if (i == MinArgCount)
                     type = ArgItem.ArgType.Optional;
 
                 yield return new ArgItem(argAtoms[i], argQuoted[i], argDefaults[i], type);
@@ -372,7 +372,7 @@ namespace Zilf.Interpreter
 
             int numArgs = argAtoms.Length;
             if (other.argAtoms.Length != numArgs ||
-                other.optArgsStart != optArgsStart ||
+                other.MinArgCount != MinArgCount ||
                 other.auxArgsStart != auxArgsStart ||
                 other.VarargsAtom != VarargsAtom ||
                 other.varargsQuoted != varargsQuoted)
@@ -401,7 +401,7 @@ namespace Zilf.Interpreter
 
         public override int GetHashCode()
         {
-            int result = (argAtoms.Length << 1) ^ (optArgsStart << 2) ^ (auxArgsStart << 3);
+            int result = (argAtoms.Length << 1) ^ (MinArgCount << 2) ^ (auxArgsStart << 3);
 
             if (VarargsAtom != null)
                 result ^= VarargsAtom.GetHashCode();
@@ -500,16 +500,20 @@ namespace Zilf.Interpreter
             void DoThrowWrongCount()
             {
                 throwWrongCount();
+                throw new UnreachableCodeException();
             }
 
             /// <exception cref="InterpreterError">Too few arguments were provided.</exception>
             [ContractAnnotation("=> src: notnull")]
-            public ZilResult GetOne(bool eval, [System.Diagnostics.CodeAnalysis.NotNull] out IProvideSourceLine? src)
+            public ZilResult GetOne(bool eval, out IProvideSourceLine src)
             {
-                var result = GetOneOptional(eval, out src);
+                var result = GetOneOptional(eval, out var src2);
 
                 if (result != null)
+                {
+                    src = src2!;
                     return result.Value;
+                }
 
                 DoThrowWrongCount();
                 throw new UnreachableCodeException();
@@ -621,83 +625,82 @@ namespace Zilf.Interpreter
             {
                 throw ArgumentCountError.WrongCount(
                     new FunctionCallSite(Name?.ToString() ?? "user-defined function"),
-                    optArgsStart,
+                    MinArgCount,
                     auxArgsStart);
             }
 
             try
             {
-                using (var evaluator = new ArgEvaluator(ctx, outerEnv, args, ThrowWrongCount))
+                using var evaluator = new ArgEvaluator(ctx, outerEnv, args, ThrowWrongCount);
+
+                if (EnvironmentAtom != null)
                 {
-                    if (EnvironmentAtom != null)
-                    {
-                        innerEnv.Rebind(EnvironmentAtom,
-                            new ZilEnvironment(outerEnv, EnvironmentAtom),
-                            ctx.GetStdAtom(StdAtom.ENVIRONMENT));
-                    }
-
-                    IProvideSourceLine? src;
-
-                    for (int i = 0; i < optArgsStart; i++)
-                    {
-                        var zr = evaluator.GetOne(eval && !argQuoted[i], out src);
-                        if (zr.ShouldPass())
-                            return new Application(ctx, zr, wasTopLevel);
-                        ctx.MaybeCheckDecl(src, (ZilObject)zr, argDecls[i], "argument {0}", argAtoms[i]);
-                        innerEnv.Rebind(argAtoms[i], (ZilObject)zr, argDecls[i]);
-                    }
-
-                    for (int i = optArgsStart; i < auxArgsStart; i++)
-                    {
-                        var zr = evaluator.GetOneOptional(eval && !argQuoted[i], out src);
-                        if (zr != null)
-                        {
-                            if (zr.Value.ShouldPass())
-                                return new Application(ctx, zr.Value, wasTopLevel);
-
-                            ctx.MaybeCheckDecl(src!, (ZilObject)zr.Value, argDecls[i], "argument {0}", argAtoms[i]);
-                            innerEnv.Rebind(argAtoms[i], (ZilObject)zr.Value, argDecls[i]);
-                        }
-                        else
-                        {
-                            var init = argDefaults[i]?.Eval(ctx);
-                            if (init != null)
-                            {
-                                if (init.Value.ShouldPass())
-                                    return new Application(ctx, init.Value, wasTopLevel);
-
-                                ctx.MaybeCheckDecl(argDefaults[i]!, (ZilObject)init.Value, argDecls[i], "default for argument {0}", argAtoms[i]);
-                            }
-                            innerEnv.Rebind(argAtoms[i], init == null ? null : (ZilObject)init.Value, argDecls[i]);
-                        }
-                    }
-
-                    for (int i = auxArgsStart; i < argAtoms.Length; i++)
-                    {
-                        var zr = argDefaults[i]?.Eval(ctx);
-                        if (zr != null)
-                        {
-                            if (zr.Value.ShouldPass())
-                                return new Application(ctx, zr.Value, wasTopLevel);
-
-                            ctx.MaybeCheckDecl(argDefaults[i]!, (ZilObject)zr.Value, argDecls[i], "default for argument {0}", argAtoms[i]);
-                        }
-                        innerEnv.Rebind(argAtoms[i], zr == null ? null : (ZilObject)zr.Value, argDecls[i]);
-                    }
-
-                    if (VarargsAtom != null)
-                    {
-                        var result = evaluator.GetRest(eval && !varargsQuoted).ToZilListResult(null);
-                        if (result.ShouldPass())
-                            return new Application(ctx, result, wasTopLevel);
-
-                        var value = (ZilObject)result;
-                        ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", VarargsAtom);
-                        innerEnv.Rebind(VarargsAtom, value, varargsDecl);
-                    }
-
-                    evaluator.NoMoreArguments();
+                    innerEnv.Rebind(EnvironmentAtom,
+                        new ZilEnvironment(outerEnv, EnvironmentAtom),
+                        ctx.GetStdAtom(StdAtom.ENVIRONMENT));
                 }
+
+                IProvideSourceLine? src;
+
+                for (int i = 0; i < MinArgCount; i++)
+                {
+                    var zr = evaluator.GetOne(eval && !argQuoted[i], out src);
+                    if (zr.ShouldPass())
+                        return new Application(ctx, zr, wasTopLevel);
+                    ctx.MaybeCheckDecl(src, (ZilObject)zr, argDecls[i], "argument {0}", argAtoms[i]);
+                    innerEnv.Rebind(argAtoms[i], (ZilObject)zr, argDecls[i]);
+                }
+
+                for (int i = MinArgCount; i < auxArgsStart; i++)
+                {
+                    var zr = evaluator.GetOneOptional(eval && !argQuoted[i], out src);
+                    if (zr != null)
+                    {
+                        if (zr.Value.ShouldPass())
+                            return new Application(ctx, zr.Value, wasTopLevel);
+
+                        ctx.MaybeCheckDecl(src!, (ZilObject)zr.Value, argDecls[i], "argument {0}", argAtoms[i]);
+                        innerEnv.Rebind(argAtoms[i], (ZilObject)zr.Value, argDecls[i]);
+                    }
+                    else
+                    {
+                        var init = argDefaults[i]?.Eval(ctx);
+                        if (init != null)
+                        {
+                            if (init.Value.ShouldPass())
+                                return new Application(ctx, init.Value, wasTopLevel);
+
+                            ctx.MaybeCheckDecl(argDefaults[i]!, (ZilObject)init.Value, argDecls[i], "default for argument {0}", argAtoms[i]);
+                        }
+                        innerEnv.Rebind(argAtoms[i], init == null ? null : (ZilObject)init.Value, argDecls[i]);
+                    }
+                }
+
+                for (int i = auxArgsStart; i < argAtoms.Length; i++)
+                {
+                    var zr = argDefaults[i]?.Eval(ctx);
+                    if (zr != null)
+                    {
+                        if (zr.Value.ShouldPass())
+                            return new Application(ctx, zr.Value, wasTopLevel);
+
+                        ctx.MaybeCheckDecl(argDefaults[i]!, (ZilObject)zr.Value, argDecls[i], "default for argument {0}", argAtoms[i]);
+                    }
+                    innerEnv.Rebind(argAtoms[i], zr == null ? null : (ZilObject)zr.Value, argDecls[i]);
+                }
+
+                if (VarargsAtom != null)
+                {
+                    var result = evaluator.GetRest(eval && !varargsQuoted).ToZilListResult(null);
+                    if (result.ShouldPass())
+                        return new Application(ctx, result, wasTopLevel);
+
+                    var value = (ZilObject)result;
+                    ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", VarargsAtom);
+                    innerEnv.Rebind(VarargsAtom, value, varargsDecl);
+                }
+
+                evaluator.NoMoreArguments();
 
                 ZilActivation? activation;
                 if (ActivationAtom != null)
@@ -778,7 +781,7 @@ namespace Zilf.Interpreter
 
                     yield return ZilString.FromString("AUX");
                 }
-                else if (i == optArgsStart)
+                else if (i == MinArgCount)
                 {
                     yield return ZilString.FromString("OPT");
                 }

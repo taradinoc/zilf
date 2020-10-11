@@ -223,15 +223,18 @@ namespace Zilf
             string filePath = Assembly.GetCallingAssembly().Location;
             const int c_PeHeaderOffset = 60;
             const int c_LinkerTimestampOffset = 8;
-            var b = new byte[2048];
+            Span<byte> b = stackalloc byte[2048];
 
             using (var s = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
-                s.Read(b, 0, 2048);
+                s.Read(b);
             }
 
-            var i = BitConverter.ToInt32(b, c_PeHeaderOffset);
-            var secondsSince1970 = BitConverter.ToInt32(b, i + c_LinkerTimestampOffset);
+#pragma warning disable PC001 // API not supported on all platforms
+            // false alarm: https://github.com/dotnet/platform-compat/issues/123
+            var i = BitConverter.ToInt32(b.Slice(c_PeHeaderOffset, 4));
+            var secondsSince1970 = BitConverter.ToInt32(b.Slice(i + c_LinkerTimestampOffset, 4));
+#pragma warning restore PC001 // API not supported on all platforms
             var dt = new DateTime(1970, 1, 1, 0, 0, 0);
             dt = dt.AddSeconds(secondsSince1970);
             dt = dt.ToLocalTime();
@@ -609,13 +612,12 @@ Warning message options:
 
         static IEnumerable<char> ReadAllChars(Stream stream)
         {
-            using (var rdr = new StreamReader(stream))
+            using var rdr = new StreamReader(stream);
+
+            int c;
+            while ((c = rdr.Read()) >= 0)
             {
-                int c;
-                while ((c = rdr.Read()) >= 0)
-                {
-                    yield return (char)c;
-                }
+                yield return (char)c;
             }
         }
 

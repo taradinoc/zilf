@@ -1460,18 +1460,13 @@ B * <PRINTB .X>
         }
 
         [SuppressMessage("ReSharper", "PatternAlwaysOfType")]
-        public ReturnQuirkMode ReturnQuirkMode
-        {
-            get
+        public ReturnQuirkMode ReturnQuirkMode =>
+            GetGlobalVal(GetStdAtom(StdAtom.DO_FUNNY_RETURN_P))?.IsTrue switch
             {
-                return GetGlobalVal(GetStdAtom(StdAtom.DO_FUNNY_RETURN_P))?.IsTrue switch
-                {
-                    true => ReturnQuirkMode.PreferRoutine,
-                    false => ReturnQuirkMode.PreferBlock,
-                    _ => ReturnQuirkMode.ByVersion
-                };
-            }
-        }
+                true => ReturnQuirkMode.PreferRoutine,
+                false => ReturnQuirkMode.PreferBlock,
+                _ => ReturnQuirkMode.ByVersion
+            };
 
         #region IParserSite
 

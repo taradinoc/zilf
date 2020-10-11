@@ -52,7 +52,7 @@ namespace Zilf.Interpreter.Values
         {
             (first, rest) = (this.First, this.Rest);
             Debug.Assert(first == null && rest == null || first != null && rest != null);
-            return first != null;
+            return first != null && rest != null;
         }
 
         public sealed override PrimType PrimType => PrimType.LIST;
@@ -71,8 +71,8 @@ namespace Zilf.Interpreter.Values
         public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
 
-        [MaybeNull]
-        public abstract ZilObject this[int index] { get; set; }
+        [DisallowNull]
+        public abstract ZilObject? this[int index] { get; set; }
         public abstract int GetLength();
         public abstract int? GetLength(int limit);
 

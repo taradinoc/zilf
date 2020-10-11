@@ -60,51 +60,40 @@ namespace Zilf.Language.Signatures
         {
             switch (pattern)
             {
-                case ZilForm form:
-                    if (form.First is ZilAtom head)
+                case ZilForm { First: ZilAtom head, Rest: var tail }:
+                    Debug.Assert(tail != null);
+
+                    switch (head.StdAtom)
                     {
-                        Debug.Assert(form.Rest != null);
+                        case StdAtom.OR:
+                            return tail
+                                .Select(zo => FromDecl(ctx, zo))
+                                .Aggregate(Forbidden, Disjunction.From);
 
-                        switch (head.StdAtom)
-                        {
-                            case StdAtom.OR:
-                                return form.Rest
-                                    .Select(zo => FromDecl(ctx, zo))
-                                    .Aggregate(Forbidden, Disjunction.From);
-
-                            case StdAtom.PRIMTYPE:
-                                Debug.Assert(form.Rest.First != null);
-                                return OfPrimType(ctx.GetTypePrim((ZilAtom)form.Rest.First));
-
-                            case StdAtom.None:
-                                break;
-
-                                // XXX may need to combine this with a contents constraint
-                                //default:
-                                //    return OfType(head.StdAtom);
-                        }
-                    }
-                    break;
-
-                case ZilAtom atom:
-                    switch (atom.StdAtom)
-                    {
-                        case StdAtom.ANY:
-                            return AnyObject;
-
-                        case StdAtom.APPLICABLE:
-                            return Applicable;
-
-                        case StdAtom.STRUCTURED:
-                            return Structured;
+                        case StdAtom.PRIMTYPE:
+                            Debug.Assert(tail.First != null);
+                            return OfPrimType(ctx.GetTypePrim((ZilAtom)tail.First));
 
                         case StdAtom.None:
                             break;
 
-                        default:
-                            return OfType(atom.StdAtom);
+                        // XXX may need to combine this with a contents constraint
+                        //default:
+                        //    return OfType(head.StdAtom);
                     }
                     break;
+
+                case ZilAtom { StdAtom: StdAtom.None }:
+                    break;
+
+                case ZilAtom atom:
+                    return atom.StdAtom switch
+                    {
+                        StdAtom.ANY => AnyObject,
+                        StdAtom.APPLICABLE => Applicable,
+                        StdAtom.STRUCTURED => Structured,
+                        _ => OfType(atom.StdAtom)
+                    };
             }
 
             return new DeclConstraint(pattern);
@@ -112,38 +101,25 @@ namespace Zilf.Language.Signatures
 
         public Constraint And(Constraint other)
         {
-            switch (CompareImpl(other) ?? Invert(other.CompareImpl(this)))
+            return CompareTo(other) switch
             {
-                case CompareOutcome.Looser:
-                    return other;
-
-                case CompareOutcome.Stricter:
-                    return this;
-
-                default:
-                    return Conjunction.From(this, other);
-            }
+                CompareOutcome.Looser => other,
+                CompareOutcome.Stricter => this,
+                _ => Conjunction.From(this, other)
+            };
         }
 
         public Constraint Or(Constraint other)
         {
-            switch (CompareImpl(other) ?? Invert(other.CompareImpl(this)))
+            return CompareTo(other) switch
             {
-                case CompareOutcome.Looser:
-                    return this;
-
-                case CompareOutcome.Stricter:
-                    return other;
-
-                default:
-                    return Disjunction.From(this, other);
-            }
+                CompareOutcome.Looser => this,
+                CompareOutcome.Stricter => other,
+                _ => Disjunction.From(this, other)
+            };
         }
 
-        protected CompareOutcome? CompareTo(Constraint other)
-        {
-            return CompareImpl(other) ?? Invert(other.CompareImpl(this));
-        }
+        protected CompareOutcome? CompareTo(Constraint other) => CompareImpl(other) ?? Invert(other.CompareImpl(this));
 
         protected abstract CompareOutcome? CompareImpl(Constraint other);
 
@@ -161,95 +137,64 @@ namespace Zilf.Language.Signatures
         protected static CompareOutcome? Invert(CompareOutcome? co)
         {
             // ReSharper disable once SwitchStatementMissingSomeCases
-            switch (co)
+            return co switch
             {
-                case CompareOutcome.Looser:
-                    return CompareOutcome.Stricter;
-
-                case CompareOutcome.Stricter:
-                    return CompareOutcome.Looser;
-
-                default:
-                    return co;
-            }
+                CompareOutcome.Looser => CompareOutcome.Stricter,
+                CompareOutcome.Stricter => CompareOutcome.Looser,
+                _ => co,
+            };
         }
 
         static string EnglishList(IEnumerable<string> items, string connector)
         {
             var array = items.ToArray();
 
-            switch (array.Length)
+            return array.Length switch
             {
-                case 1:
-                    return array[0];
-
-                case 2:
-                    return array[0] + " " + connector + " " + array[1];
-
-                default:
-                    return string.Join(", ", array.Take(array.Length - 1)) + ", " + connector + " " +
-                           array[array.Length - 1];
-            }
+                1 => array[0],
+                2 => array[0] + " " + connector + " " + array[1],
+                _ => string.Join(", ", array.Take(array.Length - 1)) + ", " + connector + " " +
+                     array[^1],
+            };
         }
 
         class AnyObjectConstraint : Constraint
         {
-            public override bool Allows(Context ctx, ZilObject arg)
-            {
-                return true;
-            }
+            public override bool Allows(Context ctx, ZilObject arg) => true;
 
-            protected override CompareOutcome? CompareImpl(Constraint other)
-            {
-                return other is AnyObjectConstraint ? CompareOutcome.Equal : CompareOutcome.Looser;
-            }
+            protected override CompareOutcome? CompareImpl(Constraint other) =>
+                other is AnyObjectConstraint ? CompareOutcome.Equal : CompareOutcome.Looser;
 
-            public override string ToString()
-            {
-                return "anything";
-            }
+            public override string ToString() => "anything";
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitAnyObjectConstraint();
         }
 
         class BooleanConstraint : Constraint
         {
-            public override bool Allows(Context ctx, ZilObject arg)
-            {
-                return true;
-            }
+            public override bool Allows(Context ctx, ZilObject arg) => true;
 
-            protected override CompareOutcome? CompareImpl(Constraint other)
-            {
-                return other is AnyObjectConstraint ? CompareOutcome.Stricter
-                    : other is BooleanConstraint ? CompareOutcome.Equal
-                    : CompareOutcome.Looser;
-            }
+            protected override CompareOutcome? CompareImpl(Constraint other) =>
+                other switch
+                {
+                    AnyObjectConstraint _ => CompareOutcome.Stricter,
+                    BooleanConstraint _ => CompareOutcome.Equal,
+                    _ => CompareOutcome.Looser
+                };
 
-            public override string ToString()
-            {
-                return "anything";
-            }
+            public override string ToString() => "anything";
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitAnyObjectConstraint();
         }
 
         class ForbiddenConstraint : Constraint
         {
-            public override bool Allows(Context ctx, ZilObject arg)
-            {
-                return false;
-            }
+            public override bool Allows(Context ctx, ZilObject arg) => false;
 
-            public override string ToString()
-            {
-                return "nothing";
-            }
+            public override string ToString() => "nothing";
 
-            protected override CompareOutcome? CompareImpl(Constraint other)
-            {
-                return other is ForbiddenConstraint ? CompareOutcome.Equal : CompareOutcome.Stricter;
-            }
+            protected override CompareOutcome? CompareImpl(Constraint other) =>
+                other is ForbiddenConstraint ? CompareOutcome.Equal : CompareOutcome.Stricter;
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitForbiddenConstraint();
         }
@@ -273,15 +218,9 @@ namespace Zilf.Language.Signatures
                 return null;
             }
 
-            public override bool Allows(Context ctx, ZilObject arg)
-            {
-                return arg.StdTypeAtom == TypeAtom;
-            }
+            public override bool Allows(Context ctx, ZilObject arg) => arg.StdTypeAtom == TypeAtom;
 
-            public override string ToString()
-            {
-                return TypeAtom.ToString();
-            }
+            public override string ToString() => TypeAtom.ToString();
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitTypeConstraint(TypeAtom);
         }
@@ -297,88 +236,55 @@ namespace Zilf.Language.Signatures
 
             protected override CompareOutcome? CompareImpl(Constraint other)
             {
-                switch (other)
+                return other switch
                 {
-                    case PrimTypeConstraint otherPrimType when otherPrimType.PrimType == PrimType:
-                        return CompareOutcome.Equal;
-
-                    case TypeConstraint otherType when Context.GetTypePrim(otherType.TypeAtom) == PrimType:
-                        return CompareOutcome.Looser;
-
-                    default:
-                        return null;
-                }
+                    PrimTypeConstraint { PrimType: var pt } when pt == PrimType => CompareOutcome.Equal,
+                    TypeConstraint { TypeAtom: var ta } when Context.GetTypePrim(ta) == PrimType => CompareOutcome.Looser,
+                    _ => null,
+                };
             }
 
-            public override bool Allows(Context ctx, ZilObject arg)
-            {
-                return arg.PrimType == PrimType;
-            }
+            public override bool Allows(Context ctx, ZilObject arg) => arg.PrimType == PrimType;
 
-            public override string ToString()
-            {
-                return "PRIMTYPE " + PrimType.ToString();
-            }
+            public override string ToString() => "PRIMTYPE " + PrimType.ToString();
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitPrimTypeConstraint(PrimType);
         }
 
         class StructuredConstraint : Constraint
         {
-            public override bool Allows(Context ctx, ZilObject arg)
-            {
-                return arg is IStructure;
-            }
+            public override bool Allows(Context ctx, ZilObject arg) => arg is IStructure;
 
             protected override CompareOutcome? CompareImpl(Constraint other)
             {
-                switch (other)
+                return other switch
                 {
-                    case StructuredConstraint _:
-                        return CompareOutcome.Equal;
-
-                    case TypeConstraint otherType when Context.IsStructuredType(otherType.TypeAtom):
-                        return CompareOutcome.Looser;
-
-                    default:
-                        return null;
-                }
+                    StructuredConstraint _ => CompareOutcome.Equal,
+                    TypeConstraint { TypeAtom: var ta } when Context.IsStructuredType(ta) => CompareOutcome.Looser,
+                    _ => null,
+                };
             }
 
-            public override string ToString()
-            {
-                return "structured value";
-            }
+            public override string ToString() => "structured value";
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitStructuredConstraint();
         }
 
         class ApplicableConstraint : Constraint
         {
-            public override bool Allows(Context ctx, ZilObject arg)
-            {
-                return arg.IsApplicable(ctx);
-            }
+            public override bool Allows(Context ctx, ZilObject arg) => arg.IsApplicable(ctx);
 
             protected override CompareOutcome? CompareImpl(Constraint other)
             {
-                switch (other)
+                return other switch
                 {
-                    case ApplicableConstraint _:
-                        return CompareOutcome.Equal;
-
-                    case TypeConstraint otherType when Context.IsApplicableType(otherType.TypeAtom):
-                        return CompareOutcome.Looser;
-
-                    default:
-                        return null;
-                }
+                    ApplicableConstraint _ => CompareOutcome.Equal,
+                    TypeConstraint { TypeAtom: var ta } when Context.IsApplicableType(ta) => CompareOutcome.Looser,
+                    _ => null,
+                };
             }
 
-            public override string ToString()
-            {
-                return "applicable value";
-            }
+            public override string ToString() => "applicable value";
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitApplicableConstraint();
         }
@@ -394,25 +300,16 @@ namespace Zilf.Language.Signatures
 
             protected override CompareOutcome? CompareImpl(Constraint other)
             {
-                switch (other)
+                return other switch
                 {
-                    case DeclConstraint otherDecl when Pattern.StructurallyEquals(otherDecl.Pattern):
-                        return CompareOutcome.Equal;
-
-                    default:
-                        return null;
-                }
+                    DeclConstraint { Pattern: var p } when Pattern.StructurallyEquals(p) => CompareOutcome.Equal,
+                    _ => null,
+                };
             }
 
-            public override bool Allows(Context ctx, ZilObject arg)
-            {
-                return Decl.Check(ctx, arg, Pattern);
-            }
+            public override bool Allows(Context ctx, ZilObject arg) => Decl.Check(ctx, arg, Pattern);
 
-            public override string ToString()
-            {
-                return Pattern.ToString();
-            }
+            public override string ToString() => Pattern.ToString();
 
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitDeclConstraint(Pattern);
         }

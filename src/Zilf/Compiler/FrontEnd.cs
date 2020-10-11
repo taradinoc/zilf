@@ -249,54 +249,53 @@ namespace Zilf.Compiler
             Debug.Assert(!wantCompile || outputFileName != null);
 
             // open input file
-            using (var inputStream = OpenFile(inputFileName, false))
+            using var inputStream = OpenFile(inputFileName, false);
+
+            // evaluate source text
+            using (ctx.PushFileContext(inputFileName))
             {
-                // evaluate source text
-                using (ctx.PushFileContext(inputFileName))
+                ctx.InterceptOpenFile = OpenFile;
+                ctx.InterceptFileExists = CheckFileExists;
+                ctx.IncludePaths.AddRange(IncludePaths);
+                try
                 {
-                    ctx.InterceptOpenFile = OpenFile;
-                    ctx.InterceptFileExists = CheckFileExists;
-                    ctx.IncludePaths.AddRange(IncludePaths);
+                    Program.Evaluate(ctx, inputStream);
+                }
+                catch (ZilErrorBase ex)
+                {
+                    ctx.HandleError(ex);
+                }
+
+                // compile, if there were no evaluation errors
+                if (wantCompile && ctx.ErrorCount == 0)
+                {
+                    Debug.Assert(outputFileName != null);
+
+                    ctx.RunHook("PRE-COMPILE");
+                    ctx.SetDefaultConstants();
+
                     try
                     {
-                        Program.Evaluate(ctx, inputStream);
+                        var zversion = ctx.ZEnvironment.ZVersion;
+                        var streamFactory = new ZapStreamFactory(this, outputFileName);
+                        var options = MakeGameOptions(ctx);
+
+                        using var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
+                        Compilation.Compile(ctx, gameBuilder);
                     }
-                    catch (ZilErrorBase ex)
+                    catch (ZilErrorBase ex)     // catch fatals too
                     {
                         ctx.HandleError(ex);
                     }
-
-                    // compile, if there were no evaluation errors
-                    if (wantCompile && ctx.ErrorCount == 0)
-                    {
-                        Debug.Assert(outputFileName != null);
-
-                        ctx.RunHook("PRE-COMPILE");
-                        ctx.SetDefaultConstants();
-
-                        try
-                        {
-                            var zversion = ctx.ZEnvironment.ZVersion;
-                            var streamFactory = new ZapStreamFactory(this, outputFileName);
-                            var options = MakeGameOptions(ctx);
-
-                            using var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
-                            Compilation.Compile(ctx, gameBuilder);
-                        }
-                        catch (ZilErrorBase ex)     // catch fatals too
-                        {
-                            ctx.HandleError(ex);
-                        }
-                    }
                 }
-
-                result.ErrorCount = ctx.ErrorCount;
-                result.WarningCount = ctx.WarningCount;
-                result.SuppressedWarningCount = ctx.SuppressedWarningCount;
-                result.Success = (ctx.ErrorCount == 0);
-                result.Diagnostics = ctx.Diagnostics;
-                return result;
             }
+
+            result.ErrorCount = ctx.ErrorCount;
+            result.WarningCount = ctx.WarningCount;
+            result.SuppressedWarningCount = ctx.SuppressedWarningCount;
+            result.Success = (ctx.ErrorCount == 0);
+            result.Diagnostics = ctx.Diagnostics;
+            return result;
         }
 
         static GameOptions MakeGameOptions(Context ctx)

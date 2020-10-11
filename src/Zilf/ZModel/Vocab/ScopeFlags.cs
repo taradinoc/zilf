@@ -132,23 +132,14 @@ namespace Zilf.ZModel.Vocab
                         var name = sflagsVector[i];
                         var value = sflagsVector[i + 1];
 
-                        string nameStr;
-                        switch (name)
+                        var nameStr = name switch
                         {
-                            case ZilString zstr:
-                                nameStr = zstr.Text;
-                                break;
-
-                            case ZilAtom atom:
-                                nameStr = atom.Text;
-                                break;
-
-                            default:
-                                throw new InterpreterError(
-                                    InterpreterMessages._0_Must_Be_1,
-                                    "NEW-SFLAGS names",
-                                    "strings or atoms");
-                        }
+                            ZilString zstr => zstr.Text,
+                            ZilAtom atom => atom.Text,
+                            _ => throw new InterpreterError(InterpreterMessages._0_Must_Be_1,
+                                "NEW-SFLAGS names",
+                                "strings or atoms")
+                        };
 
                         if (value is ZilFix fix && (fix.Value & ~255) == 0)
                         {

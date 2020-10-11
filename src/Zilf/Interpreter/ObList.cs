@@ -51,33 +51,27 @@ namespace Zilf.Interpreter
 
             while (list.IsCons(out var first, out var rest))
             {
-                switch (first)
+                if (!(first is ZilListoidBase bucket))
                 {
-                    case ZilListoidBase bucket:
-                        {
-                            foreach (var elem in bucket)
-                            {
-                                switch (elem)
-                                {
-                                    case ZilAtom atom:
-                                        result[atom.Text] = atom;
-                                        break;
+                    throw new InterpreterError(
+                        InterpreterMessages._0_In_1_Must_Be_2,
+                        "buckets",
+                        "OBLIST",
+                        "lists");
+                }
 
-                                    default:
-                                        throw new InterpreterError(
-                                            InterpreterMessages._0_In_1_Must_Be_2,
-                                            "elements",
-                                            "OBLIST bucket",
-                                            "atoms");
-                                }
-                            }
-
-                            break;
-                        }
-
-                    default:
+                foreach (var elem in bucket)
+                {
+                    if (!(elem is ZilAtom atom))
+                    {
                         throw new InterpreterError(
-                            InterpreterMessages._0_In_1_Must_Be_2, "buckets", "OBLIST", "lists");
+                            InterpreterMessages._0_In_1_Must_Be_2,
+                            "elements",
+                            "OBLIST bucket",
+                            "atoms");
+                    }
+
+                    result[atom.Text] = atom;
                 }
 
                 list = rest;

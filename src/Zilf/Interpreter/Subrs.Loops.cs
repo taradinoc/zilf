@@ -120,79 +120,76 @@ namespace Zilf.Interpreter
             BindingParams.BindingList bindings, ZilDecl? bodyDecl, ZilObject[] body,
              string name, bool repeat, bool catchy)
         {
-            using (var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG)))
+            using var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG));
+            using var innerEnv = ctx.PushEnvironment();
+
+            if (activationAtom != null)
             {
-                using (var innerEnv = ctx.PushEnvironment())
-                {
-                    if (activationAtom != null)
-                    {
-                        innerEnv.Rebind(activationAtom, activation);
-                    }
-
-                    var bodyAtomDecls = bodyDecl?.GetAtomDeclPairs().ToLookup(p => p.Key, p => p.Value);
-
-                    foreach (var b in bindings.Bindings)
-                    {
-                        var atom = b.Atom;
-                        var initializer = b.Initializer;
-
-                        ZilObject? value;
-
-                        if (initializer != null)
-                        {
-                            var initResult = initializer.Eval(ctx);
-                            if (initResult.ShouldPass(activation, ref initResult))
-                                return initResult;
-                            value = (ZilObject)initResult;
-                        }
-                        else
-                        {
-                            value = null;
-                        }
-
-                        var previousDecl = b.Decl;
-                        var firstBodyDecl = bodyAtomDecls?[atom].FirstOrDefault();
-                        if (firstBodyDecl != null && (previousDecl != null || bodyAtomDecls![atom].Skip(1).Any()))
-                            throw new InterpreterError(InterpreterMessages._0_Conflicting_DECLs_For_Atom_1, name, atom);
-
-                        var decl = previousDecl ?? firstBodyDecl;
-
-                        if (value != null)
-                        {
-                            Debug.Assert(initializer != null);
-                            ctx.MaybeCheckDecl(initializer, value, decl, "LVAL of {0}", atom);
-                        }
-
-                        innerEnv.Rebind(atom, value, decl);
-                    }
-
-                    if (catchy)
-                        innerEnv.Rebind(ctx.EnclosingProgActivationAtom, activation);
-
-                    // evaluate body
-                    ZilResult result = default;
-                    bool again;
-                    do
-                    {
-                        again = false;
-                        foreach (var expr in body)
-                        {
-                            result = expr.Eval(ctx);
-
-                            if (result.IsAgain(activation))
-                            {
-                                again = true;
-                            }
-                            else if (result.ShouldPass(activation, ref result))
-                            {
-                                return result;
-                            }
-                        }
-                    } while (repeat || again);
-
-                    return result;
-                }
+                innerEnv.Rebind(activationAtom, activation);
             }
+
+            var bodyAtomDecls = bodyDecl?.GetAtomDeclPairs().ToLookup(p => p.Key, p => p.Value);
+
+            foreach (var b in bindings.Bindings)
+            {
+                var atom = b.Atom;
+                var initializer = b.Initializer;
+
+                ZilObject? value;
+
+                if (initializer != null)
+                {
+                    var initResult = initializer.Eval(ctx);
+                    if (initResult.ShouldPass(activation, ref initResult))
+                        return initResult;
+                    value = (ZilObject)initResult;
+                }
+                else
+                {
+                    value = null;
+                }
+
+                var previousDecl = b.Decl;
+                var firstBodyDecl = bodyAtomDecls?[atom].FirstOrDefault();
+                if (firstBodyDecl != null && (previousDecl != null || bodyAtomDecls![atom].Skip(1).Any()))
+                    throw new InterpreterError(InterpreterMessages._0_Conflicting_DECLs_For_Atom_1, name, atom);
+
+                var decl = previousDecl ?? firstBodyDecl;
+
+                if (value != null)
+                {
+                    Debug.Assert(initializer != null);
+                    ctx.MaybeCheckDecl(initializer, value, decl, "LVAL of {0}", atom);
+                }
+
+                innerEnv.Rebind(atom, value, decl);
+            }
+
+            if (catchy)
+                innerEnv.Rebind(ctx.EnclosingProgActivationAtom, activation);
+
+            // evaluate body
+            ZilResult result = default;
+            bool again;
+            do
+            {
+                again = false;
+                foreach (var expr in body)
+                {
+                    result = expr.Eval(ctx);
+
+                    if (result.IsAgain(activation))
+                    {
+                        again = true;
+                    }
+                    else if (result.ShouldPass(activation, ref result))
+                    {
+                        return result;
+                    }
+                }
+            } while (repeat || again);
+
+            return result;
         }
 
         /// <exception cref="InterpreterError">No enclosing PROG/REPEAT.</exception>

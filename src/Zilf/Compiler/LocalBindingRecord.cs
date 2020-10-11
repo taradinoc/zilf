@@ -38,30 +38,24 @@ namespace Zilf.Compiler
     {
         public static LocalBindingType ToLocalBindingType(this ArgItem.ArgType argType)
         {
-            switch (argType)
+            return argType switch
             {
-                case ArgItem.ArgType.Required:
-                    return LocalBindingType.RoutineRequired;
-                case ArgItem.ArgType.Optional:
-                    return LocalBindingType.RoutineOptional;
-                case ArgItem.ArgType.Auxiliary:
-                    return LocalBindingType.RoutineAuxiliary;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(argType), argType, null);
-            }
+                ArgItem.ArgType.Required => LocalBindingType.RoutineRequired,
+                ArgItem.ArgType.Optional => LocalBindingType.RoutineOptional,
+                ArgItem.ArgType.Auxiliary => LocalBindingType.RoutineAuxiliary,
+                _ => throw new ArgumentOutOfRangeException(nameof(argType), argType, null)
+            };
         }
 
         public static bool ShouldWarnIfUnused(this LocalBindingType type)
         {
-            switch (type)
+            return type switch
             {
-                case LocalBindingType.ProgAuxiliary:
-                case LocalBindingType.RoutineAuxiliary:
-                case LocalBindingType.RoutineOptional:
-                    return true;
-                default:
-                    return false;
-            }
+                LocalBindingType.ProgAuxiliary => true,
+                LocalBindingType.RoutineAuxiliary => true,
+                LocalBindingType.RoutineOptional => true,
+                _ => false
+            };
         }
     }
     

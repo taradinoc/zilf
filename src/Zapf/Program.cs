@@ -325,7 +325,6 @@ General switches:
   -c ####               set creator version
   -ab                   also optimize abbreviations and print ZAPF code
   -dx                   use XML debug format");
-
         }
 
         /// <exception cref="FatalError">An <see cref="IOException"/> occurred while reading the input file(s).</exception>
@@ -1314,7 +1313,7 @@ General switches:
                     break;
 
                 case DebugArrayDirective darr:
-                    if (ctx.GlobalSymbols.TryGetValue("GLOBAL", out var sym1) == false)
+                    if (!ctx.GlobalSymbols.TryGetValue("GLOBAL", out var sym1))
                     {
                         Errors.Serious(ctx, node, "define GLOBAL before using .DEBUG-ARRAY");
                         return;
@@ -1450,7 +1449,7 @@ General switches:
             AlignRoutine(ctx);
 
             int paddr = (ctx.Position - ctx.FunctionsOffset) / ctx.PackingDivisor;
-            if (ctx.GlobalSymbols.TryGetValue(name, out var sym) == false)
+            if (!ctx.GlobalSymbols.TryGetValue(name, out var sym))
             {
                 sym = new Symbol(name, SymbolType.Function, paddr);
                 ctx.GlobalSymbols.Add(name, sym);
@@ -1523,7 +1522,7 @@ General switches:
             AlignString(ctx);
 
             int paddr = (ctx.Position - ctx.StringsOffset) / ctx.PackingDivisor;
-            if (ctx.GlobalSymbols.TryGetValue(name, out var sym) == false)
+            if (!ctx.GlobalSymbols.TryGetValue(name, out var sym))
             {
                 sym = new Symbol(name, SymbolType.String, paddr);
                 ctx.GlobalSymbols.Add(name, sym);
@@ -1731,8 +1730,8 @@ General switches:
                 }
                 else
                 {
-                    if ((ctx.LocalSymbols.TryGetValue(node.StoreTarget, out var sym) == false &&
-                        ctx.GlobalSymbols.TryGetValue(node.StoreTarget, out sym) == false) ||
+                    if (!ctx.LocalSymbols.TryGetValue(node.StoreTarget, out var sym) &&
+                        !ctx.GlobalSymbols.TryGetValue(node.StoreTarget, out sym) ||
                         sym!.Type != SymbolType.Variable)
                     {
                         Errors.ThrowSerious(node, "expected local or global variable as store target");
@@ -1819,6 +1818,8 @@ General switches:
 
                             void CheckMismatch()
                             {
+                                Debug.Assert(sym != null);
+
                                 if (sym.Value == expected)
                                     return;
 
@@ -1857,7 +1858,7 @@ General switches:
                         Errors.ThrowSerious(node, "local labels not allowed outside a function");
 
                     name = localNode.Name;
-                    if (ctx.LocalSymbols.TryGetValue(name, out sym) == false)
+                    if (!ctx.LocalSymbols.TryGetValue(name, out sym))
                     {
                         if (ctx.CausesReassembly(name))
                             nodeIndex = ctx.Reassemble(name) - 1;

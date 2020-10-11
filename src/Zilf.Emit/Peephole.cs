@@ -726,7 +726,7 @@ namespace Zilf.Emit
 
                             var newLine = new Line(
                                 null,
-                                Combiner == null ? default : Combiner.SynthesizeBranchAlways(),
+                                Combiner == null ? default! : Combiner.SynthesizeBranchAlways(),
                                 line.TargetLabel,
                                 PeepholeLineType.BranchAlways)
                             {

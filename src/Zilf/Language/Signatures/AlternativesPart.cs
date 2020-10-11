@@ -36,23 +36,16 @@ namespace Zilf.Language.Signatures
         {
             var alts = parts.SelectMany(ExpandAlternatives).ToArray();
 
-            switch (alts.Length)
+            return alts.Length switch
             {
-                case 0:
-                    throw new ArgumentException("No alternatives provided");
-
-                case 1:
-                    return alts[0];
-
-                default:
-                    return new AlternativesPart(alts);
-            }
+                0 => throw new ArgumentException("No alternatives provided"),
+                1 => alts[0],
+                _ => new AlternativesPart(alts)
+            };
         }
 
-        static IEnumerable<SignaturePart> ExpandAlternatives(SignaturePart p)
-        {
-            return p is AlternativesPart ap ? ap.Alternatives : Enumerable.Repeat(p, 1);
-        }
+        static IEnumerable<SignaturePart> ExpandAlternatives(SignaturePart p) =>
+            p is AlternativesPart ap ? ap.Alternatives : Enumerable.Repeat(p, 1);
 
         public override void Accept(ISignatureVisitor visitor) => visitor.Visit(this);
 
@@ -72,9 +65,6 @@ namespace Zilf.Language.Signatures
             return Math.Max(a.Value, b.Value);
         }
 
-        protected override IEnumerable<SignaturePart> GetChildren()
-        {
-            return Alternatives;
-        }
+        protected override IEnumerable<SignaturePart> GetChildren() => Alternatives;
     }
 }

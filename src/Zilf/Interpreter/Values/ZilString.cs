@@ -77,7 +77,8 @@ namespace Zilf.Interpreter.Values
 
         public sealed override PrimType PrimType => PrimType.STRING;
 
-        public abstract ZilObject this[int index] { get; set; }
+        [DisallowNull]
+        public abstract ZilObject? this[int index] { get; set; }
 
         public sealed override ZilObject GetPrimitive(Context ctx) => this;
 
@@ -126,14 +127,14 @@ namespace Zilf.Interpreter.Values
 
             public override bool IsEmpty => Text.Length == 0;
 
-            [MaybeNull]
-            public override ZilObject this[int index]
+            [DisallowNull]
+            public override ZilObject? this[int index]
             {
                 get
                 {
                     if (index >= 0 && index < Text.Length)
                         return new ZilChar(Text[index]);
-                    return null!;
+                    return null;
                 }
                 set
                 {
@@ -202,15 +203,15 @@ namespace Zilf.Interpreter.Values
 
             public override bool IsEmpty => offset >= orig.Text.Length;
 
-            [MaybeNull]
-            public override ZilObject this[int index]
+            [DisallowNull]
+            public override ZilObject? this[int index]
             {
                 get
                 {
                     index += offset;
                     if (index >= 0 && index < orig.Text.Length)
                         return new ZilChar(orig.Text[index]);
-                    return null!;
+                    return null;
                 }
                 set
                 {

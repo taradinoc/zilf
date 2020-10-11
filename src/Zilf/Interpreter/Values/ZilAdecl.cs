@@ -20,6 +20,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
@@ -122,21 +123,18 @@ namespace Zilf.Interpreter.Values
         public bool IsEmpty => false;
 
         /// <exception cref="ArgumentOutOfRangeException" accessor="set"><paramref name="index"/> is out of range.</exception>
-        public ZilObject this[int index]
+        [DisallowNull]
+        public ZilObject? this[int index]
         {
-            get
+            get => index switch
             {
-                return index switch
-                {
-                    0 => First,
-                    1 => Second,
-                    _ => null!
-                };
-            }
+                0 => First,
+                1 => Second,
+                _ => null
+            };
+
             set
             {
-                Debug.Assert(value != null);
-
                 switch (index)
                 {
                     case 0:

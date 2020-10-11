@@ -67,12 +67,7 @@ namespace Dezapf
             }
         }
 
-        readonly List<Range> list;
-
-        public RangeList()
-        {
-            list = new List<Range>();
-        }
+        readonly List<Range> list = new List<Range>();
 
         public void Add(Range range)
         {
@@ -106,7 +101,7 @@ namespace Dezapf
         {
             if (list.Count > 0)
             {
-                Range r = new Range(position, 0, default(T));
+                var r = new Range(position, 0, default);
                 int idx = list.BinarySearch(r);
 
                 if (idx < 0)
@@ -133,7 +128,7 @@ namespace Dezapf
                 }
             }
 
-            value = default(T);
+            value = default;
             return false;
         }
 

@@ -60,23 +60,16 @@ namespace Zilf.Interpreter
 
         static StdAtom PrimTypeToType(PrimType pt)
         {
-            switch (pt)
+            return pt switch
             {
-                case PrimType.ATOM:
-                    return StdAtom.ATOM;
-                case PrimType.FIX:
-                    return StdAtom.FIX;
-                case PrimType.LIST:
-                    return StdAtom.LIST;
-                case PrimType.STRING:
-                    return StdAtom.STRING;
-                case PrimType.TABLE:
-                    return StdAtom.TABLE;
-                case PrimType.VECTOR:
-                    return StdAtom.VECTOR;
-                default:
-                    throw UnhandledCaseException.FromEnum(pt, "primtype");
-            }
+                PrimType.ATOM => StdAtom.ATOM,
+                PrimType.FIX => StdAtom.FIX,
+                PrimType.LIST => StdAtom.LIST,
+                PrimType.STRING => StdAtom.STRING,
+                PrimType.TABLE => StdAtom.TABLE,
+                PrimType.VECTOR => StdAtom.VECTOR,
+                _ => throw UnhandledCaseException.FromEnum(pt, "primtype")
+            };
         }
 
         [Subr]
@@ -176,25 +169,28 @@ namespace Zilf.Interpreter
             }
 
             var result = setter(ctx, atom, handler);
-            switch (result)
+            return result switch
             {
-                case Context.SetTypeHandlerResult.OK:
-                    return atom;
-
-                case Context.SetTypeHandlerResult.BadHandlerType:
+                Context.SetTypeHandlerResult.OK =>
+                    atom,
+                Context.SetTypeHandlerResult.BadHandlerType =>
                     // the caller should check the handler type, but just in case...
-                    throw new InterpreterError(InterpreterMessages._0_Must_Be_1, "handler", "atom or applicable value");
-
-                case Context.SetTypeHandlerResult.OtherTypeNotRegistered:
-                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "type", handler.ToStringContext(ctx, false));
-
-                case Context.SetTypeHandlerResult.OtherTypePrimDiffers:
+                    throw new InterpreterError(InterpreterMessages._0_Must_Be_1, "handler", "atom or applicable value"),
+                Context.SetTypeHandlerResult.OtherTypeNotRegistered =>
                     throw new InterpreterError(
-                        InterpreterMessages._0_Primtypes_Of_1_And_2_Differ, name, atom.ToStringContext(ctx, false), handler.ToStringContext(ctx, false));
-
-                default:
-                    throw UnhandledCaseException.FromEnum(result);
-            }
+                        InterpreterMessages._0_Unrecognized_1_2,
+                        name,
+                        "type",
+                        handler.ToStringContext(ctx, false)),
+                Context.SetTypeHandlerResult.OtherTypePrimDiffers =>
+                    throw new InterpreterError(
+                        InterpreterMessages._0_Primtypes_Of_1_And_2_Differ,
+                        name,
+                        atom.ToStringContext(ctx, false),
+                        handler.ToStringContext(ctx, false)),
+                _ =>
+                    throw UnhandledCaseException.FromEnum(result)
+            };
         }
 
         [Subr("MAKE-GVAL")]

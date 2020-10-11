@@ -616,7 +616,6 @@ namespace Zilf.ZModel
             return word.Sum(c => (c <= 255) ? zcharCountCache![c] : 4);
         }
 
-
         /// <summary>
         /// Merges words that are indistinguishable because of the vocabulary resolution.
         /// </summary>

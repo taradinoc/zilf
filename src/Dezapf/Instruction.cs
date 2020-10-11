@@ -41,7 +41,7 @@ namespace Dezapf
         ShortPositive = 0xc0,
     }
 
-    class Instruction : Chunk
+    sealed class Instruction : Chunk
     {
         ushort op;
         ushort[] operands;
@@ -204,7 +204,7 @@ namespace Dezapf
             ushort[] encodedText = null;
             if ((attr.Flags & ZOpFlags.String) != 0)
             {
-                List<ushort> list = new List<ushort>();
+                var list = new List<ushort>();
                 ushort w;
                 do
                 {

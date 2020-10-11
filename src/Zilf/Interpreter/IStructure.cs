@@ -89,8 +89,8 @@ namespace Zilf.Interpreter
         /// <exception cref="NotSupportedException" accessor="set">
         /// The structure is read-only.
         /// </exception>
-        [MaybeNull]
-        ZilObject this[int index]
+        [DisallowNull]
+        ZilObject? this[int index]
         {
             [System.Diagnostics.Contracts.Pure]
             get;

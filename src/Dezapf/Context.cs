@@ -165,7 +165,7 @@ namespace Dezapf
         {
             System.Diagnostics.Debug.Assert(zversion >= 3);
 
-            StringBuilder sb = new StringBuilder(encodedText.Length * 3);
+            var sb = new StringBuilder(encodedText.Length * 3);
             int mode = 0;       // 0/1/2 = alphabets, 3 = ASCII state 1, 4 = ASCII state 2
             int pendingAscii = 0;
 

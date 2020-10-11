@@ -39,24 +39,31 @@ namespace Zilf.Interpreter.Values
             if (templateParams == null)
                 throw new InterpreterError(InterpreterMessages.Templates_Cannot_Be_Used_Here);
 
-            switch (selector)
+            bool IsSpliceAdecl(ZilAdecl adecl, out IEnumerable<ZilObject>? values)
             {
-                case ZilFix fix
-                    when fix.Value >= 0 && fix.Value < templateParams.Length:
+                if (adecl.First is ZilFix idx &&
+                    idx.Value >= 0 && idx.Value < templateParams!.Length &&
+                    adecl.Second is ZilAtom atom &&
+                    atom.StdAtom == StdAtom.SPLICE &&
+                    templateParams[idx.Value] is IEnumerable<ZilObject> result)
+                {
+                    values = result;
+                    return true;
+                }
 
-                    return new[] { templateParams[fix.Value] };
-
-                case ZilAdecl adecl
-                    when adecl.First is ZilFix idx &&
-                         idx.Value >= 0 && idx.Value < templateParams.Length &&
-                         adecl.Second is ZilAtom atom &&
-                         atom.StdAtom == StdAtom.SPLICE &&
-                         templateParams[idx.Value] is IEnumerable<ZilObject> result:
-
-                    return result;
+                values = default;
+                return false;
             }
 
-            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "template reference", selector);
+            return selector switch
+            {
+                ZilFix fix when fix.Value >= 0 && fix.Value < templateParams.Length =>
+                    new[] { templateParams[fix.Value] },
+                ZilAdecl adecl when IsSpliceAdecl(adecl, out var result) =>
+                    result!,
+                _ =>
+                    throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "template reference", selector),
+            };
         }
 
         /// <summary>

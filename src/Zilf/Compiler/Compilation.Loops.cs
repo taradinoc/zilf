@@ -271,17 +271,12 @@ namespace Zilf.Compiler
         static ZilAtom? GetUninitializedAtomFromBindingListItem(ZilObject zo)
         {
             // ReSharper disable once SwitchStatementMissingSomeCases
-            switch (zo.StdTypeAtom)
+            return zo.StdTypeAtom switch
             {
-                case StdAtom.ATOM:
-                    return (ZilAtom)zo;
-
-                case StdAtom.ADECL:
-                    return ((ZilAdecl)zo).First as ZilAtom;
-
-                default:
-                    return null;
-            }
+                StdAtom.ATOM => (ZilAtom)zo,
+                StdAtom.ADECL => (((ZilAdecl)zo).First as ZilAtom),
+                _ => null
+            };
         }
 
         static bool RecursivelyContains(ZilObject haystack, ZilObject needle)

@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Zilf.Interpreter.Values
@@ -183,17 +184,14 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        public sealed override ZilObject this[int index]
+        [DisallowNull]
+        public sealed override ZilObject? this[int index]
         {
-            get
-            {
-                var rested = GetRest(index);
-                return rested?.GetFirst()!;
-            }
+            get => GetRest(index)?.GetFirst();
 
             set
             {
-                if (GetRest(index) is { } rested && !rested.IsEmpty)
+                if (GetRest(index) is { IsEmpty: false } rested)
                 {
                     rested.First = value;
                 }

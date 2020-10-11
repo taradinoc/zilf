@@ -31,20 +31,13 @@ namespace Zilf.Emit.Zap
 
         public static AsmExpr ToAsmExpr(this IOperand operand)
         {
-            switch (operand)
+            return operand switch
             {
-                case NumericOperand num:
-                    return new NumericLiteral(num.Value);
-
-                case IndirectOperand indirect:
-                    return new QuoteExpr(indirect.Variable.ToAsmExpr());
-
-                case SumOperand sum:
-                    return new AdditionExpr(sum.Left.ToAsmExpr(), sum.Right.ToAsmExpr());
-
-                default:
-                    return new SymbolExpr(operand.ToString());
-            }
+                NumericOperand num => (AsmExpr)new NumericLiteral(num.Value),
+                IndirectOperand indirect => new QuoteExpr(indirect.Variable.ToAsmExpr()),
+                SumOperand sum => new AdditionExpr(sum.Left.ToAsmExpr(), sum.Right.ToAsmExpr()),
+                _ => new SymbolExpr(operand.ToString())
+            };
         }
 
         public static bool IsStack(this AsmExpr asmExpr) => asmExpr is SymbolExpr sym && sym.Text == "STACK";

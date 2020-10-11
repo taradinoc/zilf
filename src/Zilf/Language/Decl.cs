@@ -168,22 +168,16 @@ namespace Zilf.Language
 
                             // special cases for GVAL and LVAL
                             // ReSharper disable once SwitchStatementMissingSomeCases
-                            switch (atom.StdAtom)
+                            return atom.StdAtom switch
                             {
-                                case StdAtom.GVAL:
-                                    return value.IsGVAL(out _);
-
-                                case StdAtom.LVAL:
-                                    return value.IsLVAL(out _);
-
-                                default:
-                                    return ignoreErrors
-                                        ? false
-                                        : throw new InterpreterError(
-                                            InterpreterMessages.Unrecognized_0_1,
-                                            "atom in DECL pattern",
-                                            atom);
-                            }
+                                StdAtom.GVAL => value.IsGVAL(out _),
+                                StdAtom.LVAL => value.IsLVAL(out _),
+                                _ => (ignoreErrors
+                                    ? false
+                                    : throw new InterpreterError(InterpreterMessages.Unrecognized_0_1,
+                                        "atom in DECL pattern",
+                                        atom))
+                            };
                     }
 
                 case ZilSegment seg:
@@ -266,7 +260,7 @@ namespace Zilf.Language
                 {
                     // noncircular, or not an alias
                     decl = value;
-                    return value != null;
+                    return decl != null;
                 }
 
                 if (!seen.Contains(atm))
@@ -315,6 +309,7 @@ namespace Zilf.Language
 
                                 // !<FOO [REST A B C]> must repeat A B C a whole number of times
                                 // (ZILF extension)
+                                // ReSharper disable once ConvertIfStatementToReturnStatement (hard to understand if converted)
                                 if (segment && i != 1)
                                 {
                                     return false;

@@ -215,11 +215,7 @@ namespace Zilf.Compiler
                         compilation.PopInnerLocal(tempAtom);
             }
 
-            public int Count
-            {
-                [System.Diagnostics.Contracts.Pure]
-                get => values.Length;
-            }
+            public int Count => values.Length;
 
             public IOperand this[int index] => values[index];
 

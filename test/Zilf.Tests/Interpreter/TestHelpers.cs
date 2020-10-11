@@ -114,7 +114,7 @@ namespace Zilf.Tests.Interpreter
 
             if (!ok)
             {
-                message = message ?? $"{nameof(TestHelpers)}.{nameof(AssertStructurallyEqual)} failed";
+                message ??= $"{nameof(TestHelpers)}.{nameof(AssertStructurallyEqual)} failed";
                 throw new AssertFailedException($"{message}. Expected:<{expected}>. Actual:<{actual}>.");
             }
         }
@@ -161,9 +161,12 @@ namespace Zilf.Tests.Interpreter
         }
 
         [AssertionMethod]
-        public static void AssertStructurallyEqual([JetBrains.Annotations.NotNull] ZilObject[] expected, [JetBrains.Annotations.NotNull] ZilObject[] actual, [CanBeNull] string message = null)
+        public static void AssertStructurallyEqual(
+            [JetBrains.Annotations.NotNull, ItemNotNull] ZilObject[] expected,
+            [JetBrains.Annotations.NotNull, ItemNotNull] ZilObject[] actual,
+            [CanBeNull] string message = null)
         {
-            message = message ?? $"{nameof(TestHelpers)}.{nameof(AssertStructurallyEqual)} failed";
+            message ??= $"{nameof(TestHelpers)}.{nameof(AssertStructurallyEqual)} failed";
 
             Assert.AreEqual(expected.Length, actual.Length, $"{message}. Array lengths differ");
 

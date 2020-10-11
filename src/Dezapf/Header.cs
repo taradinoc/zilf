@@ -132,18 +132,13 @@ namespace Dezapf
 
     class HeaderChunk : Chunk
     {
-        readonly Header hdr;
-
         public HeaderChunk(int pc, int length, Header hdr)
             : base(pc, length)
         {
-            this.hdr = hdr;
+            Header = hdr;
         }
 
-        public Header Header
-        {
-            get { return hdr; }
-        }
+        public Header Header { get; }
 
         public override void WriteTo(TextWriter writer, Context ctx)
         {

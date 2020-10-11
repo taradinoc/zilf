@@ -138,25 +138,24 @@ namespace Zilf.Interpreter
             var crlf = ctx.GetStdAtom(StdAtom.PRMANY_CRLF);
             var result = ctx.TRUE;
 
-            using (var innerEnv = ctx.PushEnvironment())
+            using var innerEnv = ctx.PushEnvironment();
+
+            innerEnv.Rebind(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);
+
+            var printArgs = new ZilObject[1];
+
+            foreach (var item in items)
             {
-                innerEnv.Rebind(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);
+                result = item;
 
-                var printArgs = new ZilObject[1];
-
-                foreach (var item in items)
+                if (result == crlf)
                 {
-                    result = item;
-
-                    if (result == crlf)
-                    {
-                        CRLF(ctx);
-                    }
-                    else
-                    {
-                        printArgs[0] = result;
-                        applicablePrinter.ApplyNoEval(ctx, printArgs);
-                    }
+                    CRLF(ctx);
+                }
+                else
+                {
+                    printArgs[0] = result;
+                    applicablePrinter.ApplyNoEval(ctx, printArgs);
                 }
             }
 
