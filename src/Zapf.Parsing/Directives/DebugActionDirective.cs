@@ -23,7 +23,7 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class DebugActionDirective : NumberAndNameDebugDirective
     {
-        public DebugActionDirective([NotNull] AsmExpr number, [NotNull] string name)
+        public DebugActionDirective(AsmExpr number, string name)
             : base(number, name) { }
     }
 }

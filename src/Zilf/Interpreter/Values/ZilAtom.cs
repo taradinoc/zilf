@@ -29,10 +29,9 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.ATOM, PrimType.ATOM)]
     class ZilAtom : ZilObject
     {
-        [CanBeNull]
-        ObList list;
+        ObList? list;
 
-        public ZilAtom([NotNull] string text, [CanBeNull] ObList list, StdAtom stdAtom)
+        public ZilAtom(string text, ObList? list, StdAtom stdAtom)
         {
             if (string.IsNullOrEmpty(text))
                 throw new ArgumentException("Value cannot be null or empty.", nameof(text));
@@ -42,16 +41,13 @@ namespace Zilf.Interpreter.Values
             StdAtom = stdAtom;
         }
 
-        [NotNull]
         [ChtypeMethod]
         // we can't construct a new atom since it wouldn't be equal to the old one
-        public static ZilAtom FromAtom([NotNull] ZilAtom other) => other;
+        public static ZilAtom FromAtom(ZilAtom other) => other;
 
-        [NotNull]
         public string Text { get; }
 
-        [CanBeNull]
-        public ObList ObList
+        public ObList? ObList
         {
             get => list;
 
@@ -80,8 +76,7 @@ namespace Zilf.Interpreter.Values
         /// <returns>The parsed atom.</returns>
         /// <remarks>This method does not strip backslashes from <see cref="text"/>.</remarks>
         /// <exception cref="InterpreterError">No OBLIST path.</exception>
-        [NotNull]
-        public static ZilAtom Parse([NotNull] string text, [NotNull] Context ctx)
+        public static ZilAtom Parse(string text, Context ctx)
         {
             ZilAtom result;
             var idx = text.IndexOf("!-", StringComparison.Ordinal);
@@ -93,7 +88,7 @@ namespace Zilf.Interpreter.Values
                 if (!(pathspec is IEnumerable<ZilObject> zos))
                     throw new InterpreterError(InterpreterMessages.No_OBLIST_Path);
 
-                ObList insertList = null;
+                ObList? insertList = null;
                 var gotDefault = false;
 
                 foreach (var obj in zos)
@@ -148,7 +143,7 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        bool NeedsObListTrailer([ItemNotNull] [NotNull] [InstantHandle] IEnumerable<ZilObject> obListPath)
+        bool NeedsObListTrailer([InstantHandle] IEnumerable<ZilObject> obListPath)
         {
             // if this atom can be found by looking up its name in the oblist path, no trailer is needed.
             // thus, the trailer is only needed if (1) looking up that name returns a different atom first
@@ -210,7 +205,7 @@ namespace Zilf.Interpreter.Values
             var oblistAtom = ctx.GetStdAtom(StdAtom.OBLIST);
             var oblistPath = ctx.GetLocalVal(oblistAtom) as IStructure;
 
-            var name = this;
+            ZilAtom? name = this;
             var oblist = ObList;
 
             if (oblist == null)
@@ -245,7 +240,6 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.ATOM;
 
-        [NotNull]
         public override ZilObject GetPrimitive(Context ctx) => this;
     }
 }

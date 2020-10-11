@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
@@ -25,14 +24,12 @@ namespace Zilf.Interpreter
     interface IMayExpandBeforeEvaluation
     {
         bool ShouldExpandBeforeEvaluation { get; }
-        [NotNull]
-        IEnumerable<ZilResult> ExpandBeforeEvaluation(Context ctx, LocalEnvironment env);
+        IEnumerable<ZilResult> ExpandBeforeEvaluation(Context ctx, LocalEnvironment? env);
     }
 
     interface IMayExpandAfterEvaluation
     {
         bool ShouldExpandAfterEvaluation { get; }
-        [NotNull]
         IEnumerable<ZilObject> ExpandAfterEvaluation();
     }
 }

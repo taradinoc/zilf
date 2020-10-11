@@ -23,15 +23,13 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class EqualsDirective : Directive
     {
-        public EqualsDirective([NotNull] string left, [NotNull] AsmExpr right)
+        public EqualsDirective(string left, AsmExpr right)
         {
             Left = left;
             Right = right;
         }
 
-        [NotNull]
         public string Left { get; }
-        [NotNull]
         public AsmExpr Right { get; }
     }
 }

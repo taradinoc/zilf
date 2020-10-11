@@ -26,7 +26,7 @@ namespace Zapf.Parsing.Diagnostics
     [Serializable]
     public class FatalError : AssemblerError
     {
-        public FatalError(ISourceLine node, string message)
+        public FatalError(ISourceLine? node, string message)
             : base(node, message)
         {
         }

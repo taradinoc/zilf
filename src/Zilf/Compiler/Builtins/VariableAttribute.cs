@@ -35,6 +35,6 @@ namespace Zilf.Compiler.Builtins
         /// as referring to its index. Use &lt;VALUE X&gt; to force the
         /// value to be used.
         /// </summary>
-        public QuirksMode QuirksMode { get; set; }
+        public VariableScopeQuirks VariableScopeQuirks { get; set; }
     }
 }

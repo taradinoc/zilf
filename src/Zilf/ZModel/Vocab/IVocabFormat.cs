@@ -24,41 +24,21 @@ using Zilf.Language;
 
 namespace Zilf.ZModel.Vocab
 {
-    [CanBeNull]
     delegate IOperand DirIndexToPropertyOperandDelegate(byte dirIndex);
 
-    [CanBeNull]
-    delegate IOperand CompileConstantDelegate([NotNull] ZilObject zo);
+    delegate IOperand? CompileConstantDelegate(ZilObject zo);
 
     struct WriteToBuilderHelpers
     {
         public DirIndexToPropertyOperandDelegate DirIndexToPropertyOperandDelegate;
         public CompileConstantDelegate CompileConstantDelegate;
 
-        [CanBeNull]
-        public IOperand DirIndexToPropertyOperand(byte dirIndex)
-        {
-            return DirIndexToPropertyOperandDelegate(dirIndex);
-        }
+        public IOperand DirIndexToPropertyOperand(byte dirIndex) => DirIndexToPropertyOperandDelegate(dirIndex);
 
-        [CanBeNull]
-        public IOperand CompileConstant([NotNull] ZilObject zo)
-        {
-            return CompileConstantDelegate(zo);
-        }
-
-        public bool IsValid
-        {
-            [System.Diagnostics.Contracts.Pure]
-            get
-            {
-                return DirIndexToPropertyOperandDelegate != null && CompileConstantDelegate != null;
-            }
-        }
+        public IOperand? CompileConstant(ZilObject zo) => CompileConstantDelegate(zo);
     }
 
-    [NotNull]
-    delegate IGlobalBuilder GetGlobalDelegate([NotNull] ZilAtom name);
+    delegate IGlobalBuilder GetGlobalDelegate(ZilAtom name);
 
     struct BuildLateSyntaxTablesHelpers
     {
@@ -66,73 +46,51 @@ namespace Zilf.ZModel.Vocab
         public CompileConstantDelegate CompileConstantDelegate;
         public GetGlobalDelegate GetGlobalDelegate;
 
-        [NotNull]
-        public IGlobalBuilder GetGlobal([NotNull] ZilAtom name)
-        {
-            return GetGlobalDelegate(name);
-        }
+        public IGlobalBuilder GetGlobal(ZilAtom name) => GetGlobalDelegate(name);
 
-        [CanBeNull]
-        public IOperand CompileConstant([NotNull] ZilObject zo)
-        {
-            return CompileConstantDelegate(zo);
-        }
-
-        public bool IsValid
-        {
-            [System.Diagnostics.Contracts.Pure]
-            get
-            {
-                return Vocabulary != null && CompileConstantDelegate != null && GetGlobalDelegate != null;
-            }
-        }
+        public IOperand? CompileConstant(ZilObject zo) => CompileConstantDelegate(zo);
     }
+
     [PublicAPI]
     interface IVocabFormat
     {
-        [NotNull]
-        IWord CreateWord([NotNull] ZilAtom text);
-        void WriteToBuilder([NotNull] IWord word, [NotNull] IWordBuilder wb, WriteToBuilderHelpers helpers);
+        IWord CreateWord(ZilAtom text);
+        void WriteToBuilder(IWord word, IWordBuilder wb, WriteToBuilderHelpers helpers);
 
-        [ItemNotNull]
-        [NotNull]
         string[] GetReservedGlobalNames();
 
-        [ItemNotNull]
-        [NotNull]
         string[] GetLateSyntaxTableNames();
 
         void BuildLateSyntaxTables(BuildLateSyntaxTablesHelpers helpers);
 
-        void MergeWords([NotNull] IWord dest, [NotNull] IWord src);
-        void MakeSynonym([NotNull] IWord synonym, [NotNull] IWord original);
-        void MakeSynonym([NotNull] IWord synonymWord, [NotNull] IWord originalWord, PartOfSpeech partOfSpeech);
-        bool IsSynonym([NotNull] IWord word);
+        void MergeWords(IWord dest, IWord src);
+        void MakeSynonym(IWord synonym, IWord original);
+        void MakeSynonym(IWord synonymWord, IWord originalWord, PartOfSpeech partOfSpeech);
+        bool IsSynonym(IWord word);
 
-        void MakePreposition([NotNull] IWord word, [CanBeNull] ISourceLine location);
-        void MakeAdjective([NotNull] IWord word, [CanBeNull] ISourceLine location);
-        void MakeObject([NotNull] IWord word, [CanBeNull] ISourceLine location);
-        void MakeBuzzword([NotNull] IWord word, [CanBeNull] ISourceLine location);
-        void MakeVerb([NotNull] IWord word, [CanBeNull] ISourceLine location);
-        void MakeDirection([NotNull] IWord word, [CanBeNull] ISourceLine location);
+        void MakePreposition(IWord word, ISourceLine location);
+        void MakeAdjective(IWord word, ISourceLine location);
+        void MakeObject(IWord word, ISourceLine location);
+        void MakeBuzzword(IWord word, ISourceLine location);
+        void MakeVerb(IWord word, ISourceLine location);
+        void MakeDirection(IWord word, ISourceLine location);
 
         // Used for prepositions defined in syntax lines, as opposed to ones defined with VOC.
-        void MakeSyntaxPreposition([NotNull] IWord word, [CanBeNull] ISourceLine location);
+        void MakeSyntaxPreposition(IWord word, ISourceLine location);
 
-        bool IsPreposition([NotNull] IWord word);
-        bool IsAdjective([NotNull] IWord word);
-        bool IsObject([NotNull] IWord word);
-        bool IsBuzzword([NotNull] IWord word);
-        bool IsVerb([NotNull] IWord word);
-        bool IsDirection([NotNull] IWord word);
+        bool IsPreposition(IWord word);
+        bool IsAdjective(IWord word);
+        bool IsObject(IWord word);
+        bool IsBuzzword(IWord word);
+        bool IsVerb(IWord word);
+        bool IsDirection(IWord word);
 
-        [NotNull]
-        IEnumerable<KeyValuePair<string, int>> GetVocabConstants([NotNull] IWord word);
+        IEnumerable<KeyValuePair<string, int>> GetVocabConstants(IWord word);
 
-        byte GetPrepositionValue([NotNull] IWord word);
-        byte GetAdjectiveValue([NotNull] IWord word);
-        byte GetVerbValue([NotNull] IWord word);
-        byte GetDirectionValue([NotNull] IWord word);
+        byte GetPrepositionValue(IWord word);
+        byte GetAdjectiveValue(IWord word);
+        byte GetVerbValue(IWord word);
+        byte GetDirectionValue(IWord word);
 
         int MaxActionCount { get; }
     }

@@ -27,10 +27,9 @@ namespace Zilf.ZModel
         public string Charset0 { get; }
         public string Charset1 { get; }
         public string Charset2 { get; }
-        [NotNull]
         public IReadOnlyDictionary<char, char> SpecialChars { get; }
 
-        Language(int id, string charset0, string charset1, string charset2, [NotNull] params char[] specialChars)
+        Language(int id, string charset0, string charset1, string charset2, params char[] specialChars)
         {
             Id = id;
             Charset0 = charset0;
@@ -46,14 +45,12 @@ namespace Zilf.ZModel
             SpecialChars = specialCharDict;
         }
 
-        [NotNull]
         public static readonly Language Default = new Language(
             0,
             "abcdefghijklmnopqrstuvwxyz",
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
             "0123456789.,!?_#'\"/\\-:()");
 
-        [NotNull]
         public static readonly Language German = new Language(
             1,
             "abcdefghiklmnoprstuwzäöü.,",
@@ -75,9 +72,8 @@ namespace Zilf.ZModel
             { "GERMAN", German }
         };
 
-        [CanBeNull]
         [System.Diagnostics.Contracts.Pure]
-        public static Language Get([NotNull] string name)
+        public static Language? Get(string name)
         {
             allLanguages.TryGetValue(name, out var result);
             return result;

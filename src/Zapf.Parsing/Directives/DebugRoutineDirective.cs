@@ -24,18 +24,15 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class DebugRoutineDirective : LineDebugDirective
     {
-        public DebugRoutineDirective([NotNull] AsmExpr file, [NotNull] AsmExpr line, [NotNull] AsmExpr column,
-            [NotNull] string name, [ItemNotNull] [NotNull] IEnumerable<string> locals)
+        public DebugRoutineDirective(AsmExpr file, AsmExpr line, AsmExpr column,
+             string name, IEnumerable<string> locals)
             : base(file, line, column)
         {
             Name = name;
             Locals = new List<string>(locals);
         }
 
-        [NotNull]
         public string Name { get; }
-        [ItemNotNull]
-        [NotNull]
         public IList<string> Locals { get; }
     }
 }

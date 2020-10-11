@@ -38,7 +38,7 @@ namespace Zilf.Interpreter
         /// <param name="second">The second object in the pair.</param>
         /// <returns>The associated value, or null if no value is associated with the pair.</returns>
         [System.Diagnostics.Contracts.Pure]
-        public ZilObject GetProp([NotNull] ZilObject first, [NotNull] ZilObject second)
+        public ZilObject? GetProp(ZilObject first, ZilObject second)
         {
             if (associations.TryGetValue(first, out var innerTable) && innerTable.TryGetValue(second, out var result))
                 return result;
@@ -53,7 +53,7 @@ namespace Zilf.Interpreter
         /// <param name="second">The second object in the pair.</param>
         /// <param name="value">The value to be associated with the pair, or
         /// null to clear the association.</param>
-        public void PutProp([NotNull] ZilObject first, [NotNull] ZilObject second, [CanBeNull] ZilObject value)
+        public void PutProp(ZilObject first, ZilObject second, ZilObject? value)
         {
             if (value == null)
             {
@@ -90,7 +90,6 @@ namespace Zilf.Interpreter
             }
         }
 
-        [NotNull]
         public AsocResult[] ToArray()
         {
             var result = new List<AsocResult>();

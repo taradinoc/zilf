@@ -49,7 +49,7 @@ namespace Zapf
             stream.Close();
         }
 
-        public void WriteMap([NotNull] IEnumerable<KeyValuePair<string, int>> map)
+        public void WriteMap(IEnumerable<KeyValuePair<string, int>> map)
         {
             WriteDebugByte(DEBF.MAP_DBR);
             foreach (var pair in map)
@@ -60,34 +60,34 @@ namespace Zapf
             WriteDebugByte(0);
         }
 
-        public void WriteHeader([NotNull] byte[] header)
+        public void WriteHeader(byte[] header)
         {
             WriteDebugByte(DEBF.HEADER_DBR);
             stream.Write(header, 0, 64);
         }
 
-        public void WriteAction(ushort value, [NotNull] string name)
+        public void WriteAction(ushort value, string name)
         {
             WriteDebugByte(DEBF.ACTION_DBR);
             WriteDebugWord(value);
             WriteDebugString(name);
         }
 
-        public void WriteArray(ushort offsetFromGlobal, [NotNull] string name)
+        public void WriteArray(ushort offsetFromGlobal, string name)
         {
             WriteDebugByte(DEBF.ARRAY_DBR);
             WriteDebugWord(offsetFromGlobal);
             WriteDebugString(name);
         }
         
-        public void WriteAttr(ushort value, [NotNull] string name)
+        public void WriteAttr(ushort value, string name)
         {
             WriteDebugByte(DEBF.ATTR_DBR);
             WriteDebugWord(value);
             WriteDebugString(name);
         }
 
-        public void WriteClass([NotNull] string name, LineRef start, LineRef end)
+        public void WriteClass(string name, LineRef start, LineRef end)
         {
             WriteDebugByte(DEBF.CLASS_DBR);
             WriteDebugString(name);
@@ -95,14 +95,14 @@ namespace Zapf
             WriteDebugLineRef(end);
         }
 
-        public void WriteFakeAction(ushort value, [NotNull] string name)
+        public void WriteFakeAction(ushort value, string name)
         {
             WriteDebugByte(DEBF.FAKE_ACTION_DBR);
             WriteDebugWord(value);
             WriteDebugString(name);
         }
 
-        public void WriteFile(byte number, [NotNull] string includeName, [NotNull] string actualName)
+        public void WriteFile(byte number, string includeName, string actualName)
         {
             WriteDebugByte(DEBF.FILE_DBR);
             WriteDebugByte(number);
@@ -110,7 +110,7 @@ namespace Zapf
             WriteDebugString(actualName);
         }
 
-        public void WriteGlobal(byte number, [NotNull] string name)
+        public void WriteGlobal(byte number, string name)
         {
             WriteDebugByte(DEBF.GLOBAL_DBR);
             WriteDebugByte(number);
@@ -128,7 +128,7 @@ namespace Zapf
             routinePoints++;
         }
 
-        public void WriteObject(ushort number, [NotNull] string name, LineRef start, LineRef end)
+        public void WriteObject(ushort number, string name, LineRef start, LineRef end)
         {
             WriteDebugByte(DEBF.OBJECT_DBR);
             WriteDebugWord(number);
@@ -137,14 +137,14 @@ namespace Zapf
             WriteDebugLineRef(end);
         }
 
-        public void WriteProp(ushort number, [NotNull] string name)
+        public void WriteProp(ushort number, string name)
         {
             WriteDebugByte(DEBF.PROP_DBR);
             WriteDebugWord(number);
             WriteDebugString(name);
         }
 
-        public void StartRoutine(LineRef start, int address, [NotNull] string name, [NotNull] IEnumerable<string> locals)
+        public void StartRoutine(LineRef start, int address, string name, IEnumerable<string> locals)
         {
             WriteDebugByte(DEBF.ROUTINE_DBR);
             WriteDebugWord(nextRoutineNumber);
@@ -218,7 +218,7 @@ namespace Zapf
             stream.WriteByte(lineRef.Col);
         }
 
-        void WriteDebugString([NotNull] string s)
+        void WriteDebugString(string s)
         {
             var bytes = Encoding.ASCII.GetBytes(s);
             stream.Write(bytes, 0, bytes.Length);

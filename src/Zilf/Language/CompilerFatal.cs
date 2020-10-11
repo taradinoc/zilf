@@ -31,7 +31,7 @@ namespace Zilf.Language
         {
         }
 
-        public CompilerFatal(int code, [ItemNotNull] params object[] messageArgs)
+        public CompilerFatal(int code, params object[]? messageArgs)
             : this(DiagnosticContext.Current.SourceLine, code, messageArgs)
         {
         }
@@ -41,29 +41,41 @@ namespace Zilf.Language
         {
         }
 
-        public CompilerFatal(ISourceLine sourceLine, int code, [ItemNotNull] params object[] messageArgs)
+        public CompilerFatal(ISourceLine sourceLine, int code, params object[]? messageArgs)
             : base(MakeDiagnostic(sourceLine, code, messageArgs))
         {
         }
 
-        public CompilerFatal([NotNull] IProvideSourceLine sourceLine, int code)
-           : this(sourceLine, code, null)
+        public CompilerFatal(IProvideSourceLine sourceLine, int code)
+            : this(sourceLine, code, null)
         {
         }
 
-        public CompilerFatal([NotNull] IProvideSourceLine node, int code, params object[] messageArgs)
+        public CompilerFatal(IProvideSourceLine node, int code, params object[]? messageArgs)
             : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
         {
         }
 
         [UsedImplicitly]
-        public CompilerFatal([NotNull] Diagnostic diagnostic)
+        public CompilerFatal(Diagnostic diagnostic)
             : base(diagnostic)
         {
         }
 
-        protected CompilerFatal([NotNull] SerializationInfo si, StreamingContext sc)
+        protected CompilerFatal(SerializationInfo si, StreamingContext sc)
             : base(si, sc)
+        {
+        }
+
+        public CompilerFatal()
+        {
+        }
+
+        protected CompilerFatal(string message) : base(message)
+        {
+        }
+
+        protected CompilerFatal(string message, Exception innerException) : base(message, innerException)
         {
         }
     }

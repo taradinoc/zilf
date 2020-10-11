@@ -28,7 +28,7 @@ namespace Zilf.Language.Signatures
 {
     interface IConstraint
     {
-        bool Allows([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilObject arg);
+        bool Allows([ProvidesContext] Context ctx, ZilObject arg);
     }
 
     interface IConstraintVisitor
@@ -36,9 +36,9 @@ namespace Zilf.Language.Signatures
         void VisitAnyObjectConstraint();
         void VisitApplicableConstraint();
         void VisitBooleanConstraint();
-        void VisitConjunctionConstraint([ItemNotNull] [NotNull] [InstantHandle] IEnumerable<Constraint> parts);
-        void VisitDeclConstraint([NotNull] ZilObject pattern);
-        void VisitDisjunctionConstraint([ItemNotNull] [NotNull] [InstantHandle] IEnumerable<Constraint> alts);
+        void VisitConjunctionConstraint([InstantHandle] IEnumerable<Constraint> parts);
+        void VisitDeclConstraint(ZilObject pattern);
+        void VisitDisjunctionConstraint([InstantHandle] IEnumerable<Constraint> alts);
         void VisitForbiddenConstraint();
         void VisitPrimTypeConstraint(PrimType primType);
         void VisitStructuredConstraint();
@@ -52,14 +52,11 @@ namespace Zilf.Language.Signatures
         public static readonly Constraint Applicable = new ApplicableConstraint();
         public static readonly Constraint Boolean = new BooleanConstraint();
 
-        [NotNull]
         public static Constraint OfType(StdAtom typeAtom) => new TypeConstraint(typeAtom);
 
-        [NotNull]
         public static Constraint OfPrimType(PrimType primtype) => new PrimTypeConstraint(primtype);
 
-        [NotNull]
-        public static Constraint FromDecl([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilObject pattern)
+        public static Constraint FromDecl([ProvidesContext] Context ctx, ZilObject pattern)
         {
             switch (pattern)
             {
@@ -82,9 +79,9 @@ namespace Zilf.Language.Signatures
                             case StdAtom.None:
                                 break;
 
-                            // XXX may need to combine this with a contents constraint
-                            //default:
-                            //    return OfType(head.StdAtom);
+                                // XXX may need to combine this with a contents constraint
+                                //default:
+                                //    return OfType(head.StdAtom);
                         }
                     }
                     break;
@@ -113,8 +110,7 @@ namespace Zilf.Language.Signatures
             return new DeclConstraint(pattern);
         }
 
-        [NotNull]
-        public Constraint And([NotNull] Constraint other)
+        public Constraint And(Constraint other)
         {
             switch (CompareImpl(other) ?? Invert(other.CompareImpl(this)))
             {
@@ -129,8 +125,7 @@ namespace Zilf.Language.Signatures
             }
         }
 
-        [NotNull]
-        public Constraint Or([NotNull] Constraint other)
+        public Constraint Or(Constraint other)
         {
             switch (CompareImpl(other) ?? Invert(other.CompareImpl(this)))
             {
@@ -145,16 +140,16 @@ namespace Zilf.Language.Signatures
             }
         }
 
-        protected CompareOutcome? CompareTo([NotNull] Constraint other)
+        protected CompareOutcome? CompareTo(Constraint other)
         {
             return CompareImpl(other) ?? Invert(other.CompareImpl(this));
         }
 
-        protected abstract CompareOutcome? CompareImpl([NotNull] Constraint other);
+        protected abstract CompareOutcome? CompareImpl(Constraint other);
 
         public abstract bool Allows([ProvidesContext] Context ctx, ZilObject arg);
         public abstract override string ToString();
-        public abstract void Accept([NotNull] IConstraintVisitor visitor);
+        public abstract void Accept(IConstraintVisitor visitor);
 
         protected enum CompareOutcome
         {
@@ -179,8 +174,7 @@ namespace Zilf.Language.Signatures
             }
         }
 
-        [NotNull]
-        static string EnglishList([ItemNotNull] [NotNull] IEnumerable<string> items, [NotNull] string connector)
+        static string EnglishList(IEnumerable<string> items, string connector)
         {
             var array = items.ToArray();
 
@@ -432,9 +426,8 @@ namespace Zilf.Language.Signatures
                 Constraints = constraints;
             }
 
-            [NotNull]
-            public static Conjunction From([NotNull] Constraint left,
-                [NotNull] Constraint right)
+            public static Conjunction From(Constraint left,
+                 Constraint right)
             {
                 var parts = new List<Constraint>();
 
@@ -549,9 +542,8 @@ namespace Zilf.Language.Signatures
                 Constraints = constraints;
             }
 
-            [NotNull]
-            public static Disjunction From([NotNull] Constraint left,
-                [NotNull] Constraint right)
+            public static Disjunction From(Constraint left,
+                Constraint right)
             {
                 var parts = new List<Constraint>();
 

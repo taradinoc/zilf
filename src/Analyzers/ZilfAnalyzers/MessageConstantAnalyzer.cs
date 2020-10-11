@@ -51,6 +51,8 @@ namespace ZilfAnalyzers
 
         public override void Initialize([NotNull] AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
             context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.ClassDeclaration);
         }
 

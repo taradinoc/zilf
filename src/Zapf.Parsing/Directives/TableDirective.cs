@@ -23,12 +23,11 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class TableDirective : Directive
     {
-        public TableDirective([CanBeNull] AsmExpr size)
+        public TableDirective(AsmExpr? size)
         {
             Size = size;
         }
 
-        [CanBeNull]
-        public AsmExpr Size { get; }
+        public AsmExpr? Size { get; }
     }
 }

@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -25,7 +26,7 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.LINK, PrimType.ATOM)]
     sealed class ZilLink : ZilAtom
     {
-        public ZilLink([NotNull] string pname, ObList list)
+        public ZilLink(string pname, ObList list)
             : base(pname, list, StdAtom.None)
         {
         }
@@ -33,9 +34,15 @@ namespace Zilf.Interpreter.Values
         public override StdAtom StdTypeAtom => StdAtom.LINK;
 
         [ChtypeMethod]
+        [DoesNotReturn]
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        [SuppressMessage("Performance", "CA1801:Unused parameter")]
         public new static ZilLink FromAtom(ZilAtom atom) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "LINK");
 
+        [DoesNotReturn]
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        [SuppressMessage("Performance", "CA1801:Unused parameter")]
         public override ZilObject GetPrimitive(Context ctx) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_Away_From_0_Not_Supported, "LINK");
     }

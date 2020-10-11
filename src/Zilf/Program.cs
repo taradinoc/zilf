@@ -36,15 +36,13 @@ namespace Zilf
 {
     static class Program
     {
-        [NotNull]
         internal static string GetVersion() =>
             typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                .InformationalVersion ?? "<?.??>";
+                ?.InformationalVersion ?? "<?.??>";
 
-        [NotNull]
         internal static string GetBanner() => $"ZILF {GetVersion()}";
 
-        internal static int Main([ItemNotNull] [NotNull] string[] args)
+        internal static int Main(string[] args)
         {
             var ctx = ParseArgs(args, out var inFile, out var outFile);
 
@@ -65,6 +63,7 @@ namespace Zilf
                     return 0;
 
                 case RunMode.Expression:
+                    Debug.Assert(inFile != null);
                     using (ctx.PushFileContext("<cmdline>"))
                     {
                         Console.WriteLine(Evaluate(ctx, inFile));
@@ -74,17 +73,19 @@ namespace Zilf
                     return 0;
 
                 case RunMode.Compiler:
+                    Debug.Assert(inFile != null);
                     Debug.Assert(outFile != null);
                     return WrapInFrontEnd(frontEnd => frontEnd.Compile(ctx, inFile, outFile, ctx.WantDebugInfo));
 
                 case RunMode.Interpreter:
+                    Debug.Assert(inFile != null);
                     return WrapInFrontEnd(frontEnd => frontEnd.Interpret(ctx, inFile));
 
                 default:
                     throw new UnreachableCodeException();
             }
 
-            int WrapInFrontEnd(Func<FrontEnd, FrontEndResult> func)
+            static int WrapInFrontEnd(Func<FrontEnd, FrontEndResult> func)
             {
                 var frontEnd = new FrontEnd();
                 try
@@ -132,7 +133,7 @@ namespace Zilf
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "This is a top-level loop that reports unhandled exceptions to the user.")]
-        static void DoREPL([NotNull] Context ctx)
+        static void DoREPL(Context ctx)
         {
             using (ctx.PushFileContext("<stdin>"))
             using (new Completer(ctx).Attach())
@@ -237,12 +238,12 @@ namespace Zilf
             return dt;
         }
 
-        [CanBeNull]
         [ContractAnnotation("=> null, inFile: null, outFile: null; => notnull, inFile: notnull, outFile: canbenull")]
-        static Context ParseArgs([NotNull] string[] args, [CanBeNull] out string inFile, [CanBeNull] out string outFile)
+        [return: NotNullIfNotNull("inFile")]
+        static Context? ParseArgs(string[] args, [NotNullIfNotNull("outFile")] out string? inFile, out string? outFile)
         {
-            string newInFile = inFile = null;
-            string newOutFile = outFile = null;
+            string? newInFile = inFile = null;
+            string? newOutFile = outFile = null;
 
             bool traceRoutines = false, debugInfo = false, warningsAsErrors = false, suppressNoisyWarnings = true;
             bool? caseSensitive = null;
@@ -286,45 +287,45 @@ namespace Zilf
             {
                 for (int i = 0; i < args.Length; i++)
                 {
-                    switch (args[i].ToLowerInvariant())
+                    switch (args[i].ToUpperInvariant())
                     {
-                        case "-c":
+                        case "-C":
                             mode = RunMode.Compiler;
                             break;
 
-                        case "-e":
+                        case "-E":
                             mode = RunMode.Expression;
                             break;
 
-                        case "-i":
+                        case "-I":
                             mode = RunMode.Interactive;
                             break;
 
-                        case "-q":
+                        case "-Q":
                             quiet = true;
                             break;
 
-                        case "-cs":
+                        case "-CS":
                             caseSensitive = true;
                             break;
 
-                        case "-ci":
+                        case "-CI":
                             caseSensitive = false;
                             break;
 
-                        case "-tr":
+                        case "-TR":
                             traceRoutines = true;
                             break;
 
-                        case "-d":
+                        case "-D":
                             debugInfo = true;
                             break;
 
-                        case "-x":
+                        case "-X":
                             mode = RunMode.Interpreter;
                             break;
 
-                        case "-ip":
+                        case "-IP":
                             i++;
                             if (i < args.Length)
                             {
@@ -338,15 +339,15 @@ namespace Zilf
 
                             break;
 
-                        case "-w":
+                        case "-W":
                             suppressNoisyWarnings = false;
                             break;
 
-                        case "-we":
+                        case "-WE":
                             warningsAsErrors = true;
                             break;
 
-                        case "-ws":
+                        case "-WS":
                             i++;
                             if (i < args.Length)
                             {
@@ -361,7 +362,7 @@ namespace Zilf
                             break;
 
                         case "-?":
-                        case "--help":
+                        case "--HELP":
                         case "/?":
                             Usage();
                             return false;
@@ -447,11 +448,11 @@ namespace Zilf
             }
         }
 
-        static void AddImplicitIncludePaths([ItemNotNull] [NotNull] IList<string> includePaths, [CanBeNull] string inFile, RunMode mode)
+        static void AddImplicitIncludePaths(IList<string> includePaths, string? inFile, RunMode mode)
         {
-            if (inFile != null && mode != RunMode.Expression)
+            if (inFile != null && mode != RunMode.Expression && Path.GetDirectoryName(Path.GetFullPath(inFile)) is string dir)
             {
-                includePaths.Insert(0, Path.GetDirectoryName(Path.GetFullPath(inFile)));
+                includePaths.Insert(0, dir);
             }
 
             if (includePaths.Count == 0)
@@ -503,16 +504,16 @@ namespace Zilf
                 break;
             }
 
-            IEnumerable<string> RecursiveLibraryIncludePaths(string parent)
+            static IEnumerable<string> RecursiveLibraryIncludePaths(string parent)
             {
                 var first = Enumerable.Repeat(parent, 1);
 
-                bool Excluded(string name)
+                static bool Excluded(string name)
                 {
-                    switch (name.ToLowerInvariant())
+                    switch (name.ToUpperInvariant())
                     {
-                        case "test":
-                        case "tests":
+                        case "TEST":
+                        case "TESTS":
                         case var _ when name[0] == '.' || name[0] == '_':
                             return true;
                     }
@@ -560,19 +561,19 @@ Warning message options:
 
         // TODO: move Parse somewhere more sensible
         /// <exception cref="InterpreterError">Syntax error.</exception>
-        public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, [NotNull] IEnumerable<char> chars)
+        public static IEnumerable<ZilObject> Parse(Context ctx, IEnumerable<char> chars)
         {
             return Parse(ctx, null, chars, null);
         }
 
         /// <exception cref="InterpreterError">Syntax error.</exception>
-        public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, [NotNull] IEnumerable<char> chars, params ZilObject[] templateParams)
+        public static IEnumerable<ZilObject> Parse(Context ctx, IEnumerable<char> chars, params ZilObject[] templateParams)
         {
             return Parse(ctx, null, chars, templateParams);
         }
 
         /// <exception cref="InterpreterError">Syntax error.</exception>
-        public static IEnumerable<ZilObject> Parse([NotNull] Context ctx, ISourceLine src, [NotNull] IEnumerable<char> chars, params ZilObject[] templateParams)
+        public static IEnumerable<ZilObject> Parse(Context ctx, ISourceLine? src, IEnumerable<char> chars, params ZilObject[]? templateParams)
         {
             var parser = new Parser(ctx, src, templateParams);
 
@@ -606,7 +607,7 @@ Warning message options:
             }
         }
 
-        static IEnumerable<char> ReadAllChars([NotNull] Stream stream)
+        static IEnumerable<char> ReadAllChars(Stream stream)
         {
             using (var rdr = new StreamReader(stream))
             {
@@ -618,10 +619,9 @@ Warning message options:
             }
         }
 
-        [CanBeNull]
         [ContractAnnotation("wantExceptions: true => notnull")]
         // ReSharper disable once UnusedMethodReturnValue.Global
-        public static ZilObject Evaluate([NotNull] Context ctx, [NotNull] Stream stream, bool wantExceptions = false)
+        public static ZilObject? Evaluate(Context ctx, Stream stream, bool wantExceptions = false)
         {
             return Evaluate(ctx, ReadAllChars(stream), wantExceptions);
         }
@@ -636,14 +636,13 @@ Warning message options:
         /// <returns>The result of evaluating the last object in the code; or <see langword="null"/> if either the code contained
         /// no objects, or <paramref name="wantExceptions"/> was <see langword="false"/> and an <see cref="InterpreterError"/> was caught.</returns>
         [SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]
-        [CanBeNull]
-        public static ZilObject Evaluate([NotNull] Context ctx, [NotNull] IEnumerable<char> chars, bool wantExceptions = false)
+        public static ZilObject? Evaluate(Context ctx, IEnumerable<char> chars, bool wantExceptions = false)
         {
             try
             {
                 var ztree = Parse(ctx, chars);
 
-                ZilObject result = null;
+                ZilObject? result = null;
                 bool first = true;
                 foreach (var node in ztree)
                 {

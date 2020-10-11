@@ -20,9 +20,10 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zapf.Parsing.Directives;
 using Zapf.Parsing.Expressions;
+
+#nullable enable
 
 namespace Zapf.Parsing.Instructions
 {
@@ -31,56 +32,51 @@ namespace Zapf.Parsing.Instructions
         public const string BranchTrue = "TRUE";
         public const string BranchFalse = "FALSE";
 
-        public Instruction([NotNull] string name)
+        public Instruction(string name)
         {
             Name = name;
         }
 
-        public Instruction([NotNull] string name, [NotNull] IEnumerable<AsmExpr> operands)
+        public Instruction(string name, IEnumerable<AsmExpr> operands)
             : this(name)
         {
             ((List<AsmExpr>)Operands).AddRange(operands);
         }
 
-        public Instruction([NotNull] string name, [NotNull] AsmExpr operand1)
+        public Instruction(string name, AsmExpr operand1)
             : this(name)
         {
             Operands.Add(operand1);
         }
 
-        public Instruction([NotNull] string name, [NotNull] AsmExpr operand1, [NotNull] AsmExpr operand2)
+        public Instruction(string name, AsmExpr operand1, AsmExpr operand2)
             : this(name, operand1)
         {
             Operands.Add(operand2);
         }
 
-        public Instruction([NotNull] string name, [NotNull] AsmExpr operand1, [NotNull] AsmExpr operand2, [NotNull] AsmExpr operand3)
+        public Instruction(string name, AsmExpr operand1, AsmExpr operand2, AsmExpr operand3)
             : this(name, operand1, operand2)
         {
             Operands.Add(operand3);
         }
 
-        public Instruction([NotNull] string name, [NotNull] AsmExpr operand1, [NotNull] AsmExpr operand2, [NotNull] AsmExpr operand3, [NotNull] AsmExpr operand4)
+        public Instruction(string name, AsmExpr operand1, AsmExpr operand2, AsmExpr operand3, AsmExpr operand4)
             : this(name, operand1, operand2, operand3)
         {
             Operands.Add(operand4);
         }
 
-        [NotNull]
         public string Name { get; }
 
-        [NotNull]
         public IList<AsmExpr> Operands { get; } = new List<AsmExpr>();
 
-        [CanBeNull]
-        public string StoreTarget { get; set; }
+        public string? StoreTarget { get; set; }
 
         public bool? BranchPolarity { get; set; }
-        [CanBeNull]
-        public string BranchTarget { get; set; }
+        public string? BranchTarget { get; set; }
 
-        [NotNull]
-        public Instruction WithStoreTarget([CanBeNull] string newStoreTarget)
+        public Instruction WithStoreTarget(string? newStoreTarget)
         {
             var result = new Instruction(Name);
             ((List<AsmExpr>)result.Operands).AddRange(Operands);
@@ -88,8 +84,7 @@ namespace Zapf.Parsing.Instructions
             return result;
         }
 
-        [NotNull]
-        public Instruction WithName([NotNull] string newName)
+        public Instruction WithName(string newName)
         {
             var result = new Instruction(newName) { StoreTarget = StoreTarget };
             ((List<AsmExpr>)result.Operands).AddRange(Operands);
@@ -120,7 +115,7 @@ namespace Zapf.Parsing.Instructions
             return sb.ToString();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is Instruction other &&
                    other.Name == Name &&

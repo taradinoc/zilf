@@ -22,13 +22,12 @@ namespace Zilf.Emit.Zap
 {
     class WordBuilder : TableBuilder, IWordBuilder
     {
-        public WordBuilder([NotNull] string tableName, [NotNull] string word)
+        public WordBuilder(string tableName, string word)
             : base(tableName)
         {
             Word = word;
         }
 
-        [NotNull]
         public string Word { get; }
     }
 }

@@ -25,9 +25,9 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [FSubr]
-        public static ZilResult COND(Context ctx, [NotNull] [Required] CondClause[] clauses)
+        public static ZilResult COND(Context ctx, [Required] CondClause[] clauses)
         {
-            ZilResult result = null;
+            ZilResult result = ctx.FALSE;
 
             foreach (var clause in clauses)
             {
@@ -35,17 +35,17 @@ namespace Zilf.Interpreter
                 if (result.ShouldPass())
                     break;
 
-                if (((ZilObject)result).IsTrue)
-                {
-                    foreach (var inner in clause.Body)
-                    {
-                        result = inner.Eval(ctx);
-                        if (result.ShouldPass())
-                            break;
-                    }
+                if (!((ZilObject)result).IsTrue)
+                    continue;
 
-                    break;
+                foreach (var inner in clause.Body)
+                {
+                    result = inner.Eval(ctx);
+                    if (result.ShouldPass())
+                        break;
                 }
+
+                break;
             }
 
             return result;
@@ -61,7 +61,7 @@ namespace Zilf.Interpreter
 #pragma warning restore CS0649
 
         [FSubr]
-        public static ZilResult OR([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
+        public static ZilResult OR(Context ctx, ZilObject[] args)
         {
             var resultObj = ctx.FALSE;
 
@@ -81,7 +81,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilResult AND([NotNull] Context ctx, [NotNull] [ItemNotNull] ZilObject[] args)
+        public static ZilResult AND(Context ctx, ZilObject[] args)
         {
             var resultObj = ctx.TRUE;
 

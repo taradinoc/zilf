@@ -31,13 +31,10 @@ namespace Zilf.Emit
         /// <see cref="IGameBuilder.DefineRoutine"/>
         bool CleanStack { get; }
 
-        [NotNull]
         ILabel RTrue { get; }
 
-        [NotNull]
         ILabel RFalse { get; }
 
-        [NotNull]
         IVariable Stack { get; }
 
         /// <exception cref="ArgumentException">
@@ -46,8 +43,7 @@ namespace Zilf.Emit
         /// <exception cref="InvalidOperationException">
         /// The routine is the entry point and thus not allowed to have local variables.
         /// </exception>
-        [NotNull]
-        ILocalBuilder DefineRequiredParameter([NotNull] string name);
+        ILocalBuilder DefineRequiredParameter(string name);
 
         /// <exception cref="ArgumentException">
         /// A local variable already exists by that paramName.
@@ -55,8 +51,7 @@ namespace Zilf.Emit
         /// <exception cref="InvalidOperationException">
         /// The routine is the entry point and thus not allowed to have local variables.
         /// </exception>
-        [NotNull]
-        ILocalBuilder DefineOptionalParameter([NotNull] string paramName);
+        ILocalBuilder DefineOptionalParameter(string paramName);
 
         /// <exception cref="ArgumentException">
         /// A local variable already exists by that localName.
@@ -64,34 +59,31 @@ namespace Zilf.Emit
         /// <exception cref="InvalidOperationException">
         /// The routine is the entry point and thus not allowed to have local variables.
         /// </exception>
-        [NotNull]
-        ILocalBuilder DefineLocal([NotNull] string localName);
+        ILocalBuilder DefineLocal(string localName);
 
-        [NotNull]
         ILabel RoutineStart { get; }
 
-        [NotNull]
         ILabel DefineLabel();
 
-        void MarkLabel([NotNull] ILabel label);
+        void MarkLabel(ILabel label);
 
         /// <summary>
         /// Gets a value indicating whether <see cref="Condition.ArgProvided"/> is supported.
         /// </summary>
         bool HasArgCount { get; }
 
-        void Branch([NotNull] ILabel label);
-        void Branch(Condition cond, [CanBeNull] IOperand left, [CanBeNull] IOperand right, [NotNull] ILabel label, bool polarity);
-        void BranchIfZero([NotNull] IOperand operand, [NotNull] ILabel label, bool polarity);
-        void BranchIfEqual([NotNull] IOperand value, [NotNull] IOperand option1, [NotNull] ILabel label, bool polarity);
+        void Branch(ILabel label);
+        void Branch(Condition cond, IOperand? left, IOperand? right, ILabel label, bool polarity);
+        void BranchIfZero(IOperand operand, ILabel label, bool polarity);
+        void BranchIfEqual(IOperand value, IOperand option1, ILabel label, bool polarity);
 
-        void BranchIfEqual([NotNull] IOperand value, [NotNull] IOperand option1, [NotNull] IOperand option2,
-            [NotNull] ILabel label, bool polarity);
+        void BranchIfEqual(IOperand value, IOperand option1, IOperand option2,
+            ILabel label, bool polarity);
 
-        void BranchIfEqual([NotNull] IOperand value, [NotNull] IOperand option1, [NotNull] IOperand option2,
-            [NotNull] IOperand option3, [NotNull] ILabel label, bool polarity);
+        void BranchIfEqual(IOperand value, IOperand option1, IOperand option2,
+            IOperand option3, ILabel label, bool polarity);
 
-        void Return([NotNull] IOperand result);
+        void Return(IOperand result);
         void EmitRestart();
         void EmitQuit();
 
@@ -101,8 +93,8 @@ namespace Zilf.Emit
         /// </summary>
         bool HasBranchSave { get; }
 
-        void EmitSave([NotNull] ILabel label, bool polarity);
-        void EmitRestore([NotNull] ILabel label, bool polarity);
+        void EmitSave(ILabel label, bool polarity);
+        void EmitRestore(ILabel label, bool polarity);
 
         /// <summary>
         /// Gets a value indicating whether the forms of <see cref="EmitSave(IVariable)"/> and <see cref="EmitRestore(IVariable)"/>
@@ -110,8 +102,8 @@ namespace Zilf.Emit
         /// </summary>
         bool HasStoreSave { get; }
 
-        void EmitSave([NotNull] IVariable result);
-        void EmitRestore([NotNull] IVariable result);
+        void EmitSave(IVariable result);
+        void EmitRestore(IVariable result);
 
         /// <summary>
         /// Gets a value indicating whether the forms of <see cref="EmitSave(IOperand,IOperand,IOperand,IVariable)"/> and <see cref="EmitRestore(IOperand,IOperand,IOperand,IVariable)"/>
@@ -119,19 +111,19 @@ namespace Zilf.Emit
         /// </summary>
         bool HasExtendedSave { get; }
 
-        void EmitSave([NotNull] IOperand table, [NotNull] IOperand size, [NotNull] IOperand name,
-            [NotNull] IVariable result);
+        void EmitSave(IOperand table, IOperand size, IOperand name,
+            IVariable result);
 
-        void EmitRestore([NotNull] IOperand table, [NotNull] IOperand size, [NotNull] IOperand name,
-            [NotNull] IVariable result);
+        void EmitRestore(IOperand table, IOperand size, IOperand name,
+            IVariable result);
 
         // form may be null
-        void EmitScanTable([NotNull] IOperand value, [NotNull] IOperand table, [NotNull] IOperand length, [CanBeNull] IOperand form,
-            [NotNull] IVariable result, [NotNull] ILabel label, bool polarity);
+        void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form,
+            IVariable result, ILabel label, bool polarity);
 
-        void EmitGetChild([NotNull] IOperand value, [NotNull] IVariable result, [NotNull] ILabel label, bool polarity);
+        void EmitGetChild(IOperand value, IVariable result, ILabel label, bool polarity);
 
-        void EmitGetSibling([NotNull] IOperand value, [NotNull] IVariable result, [NotNull] ILabel label,
+        void EmitGetSibling(IOperand value, IVariable result, ILabel label,
             bool polarity);
 
         /// <summary>
@@ -140,48 +132,48 @@ namespace Zilf.Emit
         /// </summary>
         bool HasUndo { get; }
 
-        void EmitNullary(NullaryOp op, [CanBeNull] IVariable result);
-        void EmitUnary(UnaryOp op, [NotNull] IOperand value, [CanBeNull] IVariable result);
-        void EmitBinary(BinaryOp op, [NotNull] IOperand left, [NotNull] IOperand right, [CanBeNull] IVariable result);
+        void EmitNullary(NullaryOp op, IVariable? result);
+        void EmitUnary(UnaryOp op, IOperand value, IVariable? result);
+        void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable? result);
 
-        void EmitTernary(TernaryOp op, [NotNull] IOperand left, [NotNull] IOperand center, [NotNull] IOperand right,
-            [CanBeNull] IVariable result);
+        void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right,
+            IVariable? result);
 
-        void EmitPrint([NotNull] string text, bool crlfRtrue);
+        void EmitPrint(string text, bool crlfRtrue);
 
-        void EmitPrint(PrintOp op, [NotNull] IOperand value);
+        void EmitPrint(PrintOp op, IOperand value);
 
         // height and skip may be null
-        void EmitPrintTable([NotNull] IOperand table, [NotNull] IOperand width, [CanBeNull] IOperand height, [CanBeNull] IOperand skip);
+        void EmitPrintTable(IOperand table, IOperand width, IOperand? height, IOperand? skip);
 
         void EmitPrintNewLine();
 
         // V3: interval, routine, and result must be null
         // V4: interval and routine may be null, result must be null
         // V5+: lexbuf, interval, and routine may be null
-        void EmitRead([NotNull] IOperand chrbuf, [CanBeNull] IOperand lexbuf, [CanBeNull] IOperand interval, [CanBeNull] IOperand routine,
-            [CanBeNull] IVariable result);
+        void EmitRead(IOperand chrbuf, IOperand? lexbuf, IOperand? interval, IOperand? routine,
+            IVariable? result);
 
         // interval and routine may be null
-        void EmitReadChar([CanBeNull] IOperand interval, [CanBeNull] IOperand routine, [NotNull] IVariable result);
+        void EmitReadChar(IOperand? interval, IOperand? routine, IVariable result);
 
         // V3: routine must be null
         // effect, volume, and routine may always be null
-        void EmitPlaySound([NotNull] IOperand number, [CanBeNull] IOperand effect, [CanBeNull] IOperand volume, [CanBeNull] IOperand routine);
+        void EmitPlaySound(IOperand number, IOperand? effect, IOperand? volume, IOperand? routine);
 
         // TODO: make EmitQuaternary for EncodeText, PlaySound, Read, and Tokenize?
-        void EmitEncodeText([NotNull] IOperand src, [NotNull] IOperand length, [NotNull] IOperand srcOffset,
-            [NotNull] IOperand dest);
+        void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset,
+            IOperand dest);
 
-        void EmitTokenize([NotNull] IOperand text, [NotNull] IOperand parse, [CanBeNull] IOperand dictionary, [CanBeNull] IOperand flag);
+        void EmitTokenize(IOperand text, IOperand parse, IOperand? dictionary, IOperand? flag);
 
         // result may be null
-        void EmitCall([NotNull] IOperand routine, [NotNull] IOperand[] args, [CanBeNull] IVariable result);
+        void EmitCall(IOperand routine, IOperand[] args, IVariable? result);
 
-        void EmitStore([NotNull] IVariable dest, [NotNull] IOperand src);
+        void EmitStore(IVariable dest, IOperand src);
         void EmitPopStack();
 
-        void EmitPushUserStack([NotNull] IOperand value, [NotNull] IOperand stack, [NotNull] ILabel label,
+        void EmitPushUserStack(IOperand value, IOperand stack, ILabel label,
             bool polarity);
 
         void Finish();

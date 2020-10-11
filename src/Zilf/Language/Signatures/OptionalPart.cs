@@ -23,16 +23,14 @@ namespace Zilf.Language.Signatures
 {
     sealed class OptionalPart : SignaturePart
     {
-        [NotNull]
         public SignaturePart Inner { get; }
 
-        OptionalPart([NotNull] SignaturePart inner)
+        OptionalPart(SignaturePart inner)
         {
             Inner = inner;
         }
 
-        [NotNull]
-        public static SignaturePart From([NotNull] SignaturePart inner)
+        public static SignaturePart From(SignaturePart inner)
         {
             switch (inner)
             {

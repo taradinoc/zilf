@@ -26,10 +26,10 @@ namespace Zilf.Interpreter
 
         public readonly ZilAtom Atom;
         public readonly bool Quoted;
-        public readonly ZilObject DefaultValue;
+        public readonly ZilObject? DefaultValue;
         public readonly ArgType Type;
 
-        public ArgItem(ZilAtom atom, bool quoted, ZilObject defaultValue, ArgType type)
+        public ArgItem(ZilAtom atom, bool quoted, ZilObject? defaultValue, ArgType type)
         {
             Atom = atom;
             Quoted = quoted;

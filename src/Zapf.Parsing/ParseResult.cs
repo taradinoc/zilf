@@ -24,8 +24,6 @@ namespace Zapf.Parsing
 {
     public struct ParseResult
     {
-        [ItemNotNull]
-        [NotNull]
         public IEnumerable<AsmLine> Lines;
         public int NumberOfSyntaxErrors;
     }

@@ -23,15 +23,13 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class PropDirective : Directive
     {
-        public PropDirective([NotNull] AsmExpr size, [NotNull] AsmExpr prop)
+        public PropDirective(AsmExpr size, AsmExpr prop)
         {
             Size = size;
             Prop = prop;
         }
 
-        [NotNull]
         public AsmExpr Size { get; }
-        [NotNull]
         public AsmExpr Prop { get; }
     }
 }

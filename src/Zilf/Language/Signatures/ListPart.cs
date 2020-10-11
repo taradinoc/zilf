@@ -24,12 +24,11 @@ namespace Zilf.Language.Signatures
 {
     sealed class ListPart : StructurePart
     {
-        ListPart([ItemNotNull, NotNull] IReadOnlyList<SignaturePart> parts) : base(parts)
+        ListPart(IReadOnlyList<SignaturePart> parts) : base(parts)
         {
         }
 
-        [NotNull]
-        public static SignaturePart From([NotNull] [ItemNotNull] IEnumerable<SignaturePart> parts)
+        public static SignaturePart From(IEnumerable<SignaturePart> parts)
         {
             return new ListPart(parts.SelectMany(SequencePart.ExpandSequenceParts).ToArray());
         }

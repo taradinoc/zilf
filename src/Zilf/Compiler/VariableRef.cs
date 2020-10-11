@@ -23,18 +23,16 @@ namespace Zilf.Compiler
 {
     struct VariableRef
     {
-        [CanBeNull]
-        public readonly IVariable Hard;
-        [CanBeNull]
-        public readonly SoftGlobal Soft;
+        public readonly IVariable? Hard;
+        public readonly SoftGlobal? Soft;
 
-        public VariableRef([NotNull] IVariable hard)
+        public VariableRef(IVariable hard)
         {
             Hard = hard;
             Soft = null;
         }
 
-        public VariableRef([NotNull] SoftGlobal soft)
+        public VariableRef(SoftGlobal soft)
         {
             Soft = soft;
             Hard = null;

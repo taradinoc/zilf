@@ -23,15 +23,13 @@ namespace Zilf.Language.Signatures
 {
     sealed class AdeclPart : SignaturePart
     {
-        public AdeclPart([NotNull] SignaturePart left, [NotNull] SignaturePart right)
+        public AdeclPart(SignaturePart left, SignaturePart right)
         {
             Left = left;
             Right = right;
         }
 
-        [NotNull]
         public SignaturePart Left { get; }
-        [NotNull]
         public SignaturePart Right { get; }
 
         public override void Accept(ISignatureVisitor visitor) => visitor.Visit(this);

@@ -22,24 +22,17 @@ namespace Zilf.Emit.Zap
 {
     class LocalBuilder : ILocalBuilder
     {
-        [NotNull]
-        readonly string name;
-
-        public LocalBuilder([NotNull] string name)
+        public LocalBuilder(string name)
         {
-            this.name = name;
+            this.Name = name;
         }
 
         public IIndirectOperand Indirect => new IndirectOperand(this);
 
-        public IOperand DefaultValue { get; set; }
+        public IOperand? DefaultValue { get; set; }
 
-        [NotNull]
-        public string Name => name;
+        public string Name { get; }
 
-        public override string ToString()
-        {
-            return name;
-        }
+        public override string ToString() => Name;
     }
 }

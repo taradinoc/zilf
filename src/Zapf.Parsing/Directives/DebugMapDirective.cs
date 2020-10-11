@@ -23,15 +23,13 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class DebugMapDirective : DebugDirective
     {
-        public DebugMapDirective([NotNull] string key, [CanBeNull] AsmExpr value)
+        public DebugMapDirective(string key, AsmExpr? value)
         {
             Key = key;
             Value = value;
         }
 
-        [NotNull]
         public string Key { get; }
-        [CanBeNull]
-        public AsmExpr Value { get; }
+        public AsmExpr? Value { get; }
     }
 }

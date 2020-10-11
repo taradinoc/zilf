@@ -22,7 +22,7 @@ namespace Zapf.Parsing.Directives
 {
     public abstract class AsmLine : ISourceLine
     {
-        public string SourceFile { get; set; }
+        public string? SourceFile { get; set; }
         public int LineNum { get; set; }
     }
 }

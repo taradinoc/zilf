@@ -28,7 +28,7 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.GLOBAL, PrimType.LIST)]
     class ZilGlobal : ZilTiedListBase
     {
-        public ZilGlobal([NotNull] ZilAtom name, [CanBeNull] ZilObject value, GlobalStorageType storageType = GlobalStorageType.Any)
+        public ZilGlobal(ZilAtom name, ZilObject? value, GlobalStorageType storageType = GlobalStorageType.Any)
         {
             Name = name;
             Value = value;
@@ -37,24 +37,21 @@ namespace Zilf.ZModel.Values
         }
 
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
-        [NotNull]
         [ChtypeMethod]
-        public static ZilGlobal FromList([NotNull] ZilListBase list)
+        public static ZilGlobal FromList(ZilListBase list)
         {
             if (!list.HasLength(2))
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to GLOBAL", 2);
 
-            if (!list.Matches(out ZilAtom nameAtom, out ZilObject value))
+            if (!list.Matches(out ZilAtom? nameAtom, out ZilObject? value))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to GLOBAL", "an atom");
 
             return new ZilGlobal(nameAtom, value);
         }
 
-        [NotNull]
         public ZilAtom Name { get; }
 
-        [CanBeNull]
-        public ZilObject Value { get; }
+        public ZilObject? Value { get; }
 
         public GlobalStorageType StorageType { get; set; }
         public bool IsWord { get; set; }

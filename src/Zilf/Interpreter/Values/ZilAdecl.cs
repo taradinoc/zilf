@@ -29,38 +29,34 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.ADECL, PrimType.VECTOR)]
     sealed class ZilAdecl : ZilObject, IStructure
     {
-        [NotNull]
         public ZilObject First;
-        [NotNull]
         public ZilObject Second;
 
         /// <exception cref="InterpreterError"><paramref name="vector"/> has the wrong number of elements.</exception>
         [ChtypeMethod]
-        public ZilAdecl([NotNull] ZilVector vector)
+        public ZilAdecl(ZilVector vector)
         {
             if (vector.GetLength() != 2)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "vector coerced to ADECL", 2);
 
-            First = vector[0];
-            Second = vector[1];
+            First = vector[0]!;
+            Second = vector[1]!;
         }
 
-        public ZilAdecl([NotNull] ZilObject first, [NotNull] ZilObject second)
+        public ZilAdecl(ZilObject first, ZilObject second)
         {
             First = first ?? throw new ArgumentNullException(nameof(first));
             Second = second ?? throw new ArgumentNullException(nameof(second));
         }
 
-        public void Deconstruct([NotNull] out ZilObject first, [NotNull] out ZilObject second)
+        public void Deconstruct(out ZilObject first, out ZilObject second)
         {
             first = this.First;
             second = this.Second;
         }
 
-        public override bool StructurallyEquals(ZilObject obj)
-        {
-            return obj is ZilAdecl other && other.First.StructurallyEquals(First) && other.Second.StructurallyEquals(Second);
-        }
+        public override bool StructurallyEquals(ZilObject? obj) =>
+            obj is ZilAdecl other && other.First.StructurallyEquals(First) && other.Second.StructurallyEquals(Second);
 
         public override string ToString()
         {
@@ -78,22 +74,16 @@ namespace Zilf.Interpreter.Values
             return ":...";
         }
 
-        protected override string ToStringContextImpl(Context ctx, bool friendly)
-        {
-            return First.ToStringContext(ctx, friendly) + ":" + Second.ToStringContext(ctx, friendly);
-        }
+        protected override string ToStringContextImpl(Context ctx, bool friendly) =>
+            First.ToStringContext(ctx, friendly) + ":" + Second.ToStringContext(ctx, friendly);
 
         public override StdAtom StdTypeAtom => StdAtom.ADECL;
 
         public override PrimType PrimType => PrimType.VECTOR;
 
-        [NotNull]
-        public override ZilObject GetPrimitive(Context ctx)
-        {
-            return new ZilVector(First, Second);
-        }
+        public override ZilObject GetPrimitive(Context ctx) => new ZilVector(First, Second);
 
-        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
+        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment? environment, ZilAtom? originalType)
         {
             var result = First.Eval(ctx, environment);
             if (!result.ShouldPass())
@@ -105,38 +95,23 @@ namespace Zilf.Interpreter.Values
 
         #region IStructure Members
 
-        [NotNull]
-        public ZilObject GetFirst()
-        {
-            return First;
-        }
+        public ZilObject GetFirst() => First;
 
-        public IStructure GetRest(int skip)
+        public IStructure? GetRest(int skip)
         {
-            switch (skip)
+            return skip switch
             {
-                case 0:
-                    return this;
-
-                case 1:
-                    return new ZilVector(Second);
-
-                default:
-                    return null;
-            }
+                0 => (IStructure)this,
+                1 => new ZilVector(Second),
+                _ => null,
+            };
         }
 
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        public IStructure GetBack(int skip)
-        {
-            throw new NotSupportedException();
-        }
+        public IStructure? GetBack(int skip) => throw new NotSupportedException();
 
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        public IStructure GetTop()
-        {
-            throw new NotSupportedException();
-        }
+        public IStructure GetTop() => throw new NotSupportedException();
 
         /// <exception cref="NotSupportedException">Always thrown.</exception>
         public void Grow(int end, int beginning, ZilObject defaultValue)
@@ -147,22 +122,16 @@ namespace Zilf.Interpreter.Values
         public bool IsEmpty => false;
 
         /// <exception cref="ArgumentOutOfRangeException" accessor="set"><paramref name="index"/> is out of range.</exception>
-        [CanBeNull]
         public ZilObject this[int index]
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0:
-                        return First;
-
-                    case 1:
-                        return Second;
-
-                    default:
-                        return null;
-                }
+                    0 => First,
+                    1 => Second,
+                    _ => null!
+                };
             }
             set
             {
@@ -184,15 +153,9 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public int GetLength()
-        {
-            return 2;
-        }
+        public int GetLength() => 2;
 
-        public int? GetLength(int limit)
-        {
-            return 2 <= limit ? 2 : (int?)null;
-        }
+        public int? GetLength(int limit) => 2 <= limit ? 2 : (int?)null;
 
         #endregion
 
@@ -202,9 +165,6 @@ namespace Zilf.Interpreter.Values
             yield return Second;
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

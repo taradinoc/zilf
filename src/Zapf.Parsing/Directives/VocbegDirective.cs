@@ -23,15 +23,13 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class VocbegDirective : Directive
     {
-        public VocbegDirective([NotNull] AsmExpr recordSize, [NotNull] AsmExpr keySize)
+        public VocbegDirective(AsmExpr recordSize, AsmExpr keySize)
         {
             RecordSize = recordSize;
             KeySize = keySize;
         }
 
-        [NotNull]
         public AsmExpr RecordSize { get; }
-        [NotNull]
         public AsmExpr KeySize { get; }
     }
 }

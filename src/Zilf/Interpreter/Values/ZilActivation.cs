@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using JetBrains.Annotations;
@@ -41,7 +42,10 @@ namespace Zilf.Interpreter.Values
         /// <exception cref="InterpreterError">Always thrown.</exception>
         [ChtypeMethod]
         [ContractAnnotation("=> halt")]
-        public static ZilActivation FromAtom([NotNull] Context ctx, [NotNull] ZilAtom name) =>
+        [DoesNotReturn]
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        [SuppressMessage("Performance", "CA1801:Unused parameter")]
+        public static ZilActivation FromAtom(Context ctx, ZilAtom name) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ACTIVATION");
 
         public override StdAtom StdTypeAtom => StdAtom.ACTIVATION;

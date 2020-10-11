@@ -23,10 +23,10 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class ObjectDirective : NamedDirective
     {
-        public ObjectDirective([NotNull] string name,
-            [NotNull] AsmExpr flags1, [NotNull] AsmExpr flags2, [CanBeNull] AsmExpr flags3,
-            [NotNull] AsmExpr parent, [NotNull] AsmExpr sibling, [NotNull] AsmExpr child,
-            [NotNull] AsmExpr propTable)
+        public ObjectDirective(string name,
+             AsmExpr flags1, AsmExpr flags2, AsmExpr? flags3,
+             AsmExpr parent, AsmExpr sibling, AsmExpr child,
+             AsmExpr propTable)
             : base(name)
         {
             Flags1 = flags1;
@@ -38,19 +38,12 @@ namespace Zapf.Parsing.Directives
             PropTable = propTable;
         }
 
-        [NotNull]
         public AsmExpr Flags1 { get; }
-        [NotNull]
         public AsmExpr Flags2 { get; }
-        [CanBeNull]
-        public AsmExpr Flags3 { get; }
-        [NotNull]
+        public AsmExpr? Flags3 { get; }
         public AsmExpr Parent { get; }
-        [NotNull]
         public AsmExpr Sibling { get; }
-        [NotNull]
         public AsmExpr Child { get; }
-        [NotNull]
         public AsmExpr PropTable { get; }
     }
 }

@@ -23,19 +23,15 @@ namespace Zilf.Emit
     [PublicAPI]
     public interface IObjectBuilder : IConstantOperand
     {
-        [NotNull]
         string DescriptiveName { get; set; }
-        [CanBeNull]
-        IObjectBuilder Parent { get; set; }
-        [CanBeNull]
-        IObjectBuilder Child { get; set; }
-        [CanBeNull]
-        IObjectBuilder Sibling { get; set; }
+        IObjectBuilder? Parent { get; set; }
+        IObjectBuilder? Child { get; set; }
+        IObjectBuilder? Sibling { get; set; }
 
-        void AddByteProperty([NotNull] IPropertyBuilder prop, [NotNull] IOperand value);
-        void AddWordProperty([NotNull] IPropertyBuilder prop, [NotNull] IOperand value);
-        [NotNull] ITableBuilder AddComplexProperty([NotNull] IPropertyBuilder prop);
+        void AddByteProperty(IPropertyBuilder prop, IOperand value);
+        void AddWordProperty(IPropertyBuilder prop, IOperand value);
+        ITableBuilder AddComplexProperty(IPropertyBuilder prop);
 
-        void AddFlag([NotNull] IFlagBuilder flag);
+        void AddFlag(IFlagBuilder flag);
     }
 }

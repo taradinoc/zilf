@@ -17,31 +17,30 @@
  */
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.LIST, PrimType.LIST)]
     sealed class ZilList : ZilListBase
     {
-        public ZilList([NotNull] IEnumerable<ZilObject> sequence)
+        public ZilList(IEnumerable<ZilObject> sequence)
             : base(sequence)
         {
         }
 
-        public ZilList(ZilObject first, ZilListoidBase rest)
+        public ZilList([NotNullIfNotNull("rest")] ZilObject? first, [NotNullIfNotNull("first")] ZilListoidBase? rest)
             : base(first, rest) { }
 
-        [NotNull]
         [ChtypeMethod]
-        public static ZilList FromList([NotNull] ZilListBase list) => new ZilList(list.First, list.Rest);
+        public static ZilList FromList(ZilListBase list) => new ZilList(list.First, list.Rest);
 
         public override StdAtom StdTypeAtom => StdAtom.LIST;
 
         protected override string OpenBracket => "(";
 
-        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
+        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment? environment, ZilAtom? originalType)
         {
             var result = EvalSequence(ctx, this, environment).ToZilListResult(SourceLine);
             if (result.ShouldPass())

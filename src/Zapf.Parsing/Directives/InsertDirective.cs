@@ -22,12 +22,11 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class InsertDirective : Directive
     {
-        public InsertDirective([NotNull] string filename)
+        public InsertDirective(string filename)
         {
             InsertFileName = filename;
         }
 
-        [NotNull]
         public string InsertFileName { get; }
     }
 }

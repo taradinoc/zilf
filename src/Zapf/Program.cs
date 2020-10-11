@@ -40,7 +40,7 @@ namespace Zapf
 
         public const byte DEFAULT_ZVERSION = 3;
 
-        public static int Main([ItemNotNull] [NotNull] string[] args)
+        public static int Main(string[] args)
         {
             var ctx = ParseArgs(args);
             if (ctx == null)
@@ -113,15 +113,13 @@ namespace Zapf
             }
         }
 
-        [NotNull]
         internal static string GetVersion() =>
             typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                .InformationalVersion ?? "<?.??>";
+                ?.InformationalVersion ?? "<?.??>";
 
-        [NotNull]
         internal static string GetBanner() => $"ZAPF {GetVersion()}";
 
-        static void FindAndPrintAbbreviations([NotNull] Context ctx)
+        static void FindAndPrintAbbreviations(Context ctx)
         {
             if (ctx.AbbreviateMode)
             {
@@ -154,7 +152,7 @@ namespace Zapf
             }
         }
 
-        static void PrintLabelAddresses([NotNull] Context ctx)
+        static void PrintLabelAddresses(Context ctx)
         {
             if (ctx.ListAddresses)
             {
@@ -197,7 +195,6 @@ namespace Zapf
             }
         }
 
-        [NotNull]
         static string SanitizeString(string text)
         {
             var sb = new StringBuilder(text);
@@ -209,7 +206,6 @@ namespace Zapf
             return sb.ToString();
         }
 
-        [NotNull]
         internal static Dictionary<string, KeyValuePair<ushort, ZOpAttribute>> MakeOpcodeDict(
             int zversion, bool inform)
         {
@@ -227,7 +223,7 @@ namespace Zapf
                 foreach (ZOpAttribute attr in attrs)
                     if (effectiveVersion >= attr.MinVer && effectiveVersion <= attr.MaxVer)
                     {
-                        var pair = new KeyValuePair<ushort, ZOpAttribute>((ushort)fi.GetValue(null), attr);
+                        var pair = new KeyValuePair<ushort, ZOpAttribute>((ushort)fi.GetValue(null)!, attr);
                         result.Add(inform ? attr.InformName : attr.ClassicName, pair);
                         break;
                     }
@@ -236,10 +232,9 @@ namespace Zapf
             return result;
         }
 
-        [CanBeNull]
-        internal static Context ParseArgs([ItemNotNull] [NotNull] IReadOnlyList<string> args)
+        internal static Context? ParseArgs(IReadOnlyList<string> args)
         {
-            var result = new Context();
+            using var result = new Context();
 
             for (int i = 0; i < args.Count; i++)
             {
@@ -334,9 +329,10 @@ General switches:
         }
 
         /// <exception cref="FatalError">An <see cref="IOException"/> occurred while reading the input file(s).</exception>
-        internal static void Assemble([NotNull] Context ctx)
+        internal static void Assemble(Context ctx)
         {
             List<AsmLine> file;
+            Debug.Assert(ctx.InFile != null);
             ctx.PushFile(ctx.InFile);
             try
             {
@@ -418,6 +414,8 @@ General switches:
                 if (sym.Value < 65536)
                     continue;
 
+                Debug.Assert(sym.Name != null);
+
                 switch (sym.Type)
                 {
                     case SymbolType.Function:
@@ -480,7 +478,7 @@ General switches:
         /// <param name="node">The node to process.</param>
         /// <param name="nodeIndex">The current node's index. The method may change this
         /// to rewind the source file.</param>
-        static void PassOne(Context ctx, [NotNull] AsmLine node, ref int nodeIndex)
+        static void PassOne(Context ctx, AsmLine node, ref int nodeIndex)
         {
             switch (node)
             {
@@ -545,7 +543,7 @@ General switches:
             }
         }
 
-        static void WriteHeader([NotNull] Context ctx, bool strict)
+        static void WriteHeader(Context ctx, bool strict)
         {
             ctx.WriteByte(ctx.ZVersion);
             ctx.WriteByte(ctx.ZFlags);
@@ -591,14 +589,13 @@ General switches:
                 Errors.ThrowSerious("ENDLOD must be after IMPURE");
         }
 
-        [CanBeNull]
-        static Symbol GetDebugMapValue([NotNull] Context ctx, [NotNull] string name)
+        static Symbol? GetDebugMapValue(Context ctx, string name)
         {
             ctx.GlobalSymbols.TryGetValue(name, out var sym);
             return sym;
         }
 
-        static void FinalizeOutput([NotNull] Context ctx)
+        static void FinalizeOutput(Context ctx)
         {
             const int MINSIZE = 512;
 
@@ -704,27 +701,29 @@ General switches:
                 Debug.Assert(ctx.DebugWriter != null);
 
                 // finish map
-                if (!ctx.DebugFileMap.ContainsKey(DEBF.AbbrevMapName))
-                    ctx.DebugFileMap[DEBF.AbbrevMapName] = GetDebugMapValue(ctx, "WORDS");
-                if (!ctx.DebugFileMap.ContainsKey(DEBF.GlobalsMapName))
-                    ctx.DebugFileMap[DEBF.GlobalsMapName] = GetDebugMapValue(ctx, "GLOBAL");
+                void CopyDebugMapValue(string debfName, string symbolName)
+                {
+                    if (!ctx.DebugFileMap.ContainsKey(debfName) && GetDebugMapValue(ctx, symbolName) is Symbol sym)
+                        ctx.DebugFileMap[debfName] = sym;
+                }
+
+                CopyDebugMapValue(DEBF.AbbrevMapName, "WORDS");
+                CopyDebugMapValue(DEBF.GlobalsMapName, "GLOBAL");
+                CopyDebugMapValue(DEBF.PropsMapName, "OBJECT");
+                CopyDebugMapValue(DEBF.VocabMapName, "VOCAB");
+
                 if (!ctx.DebugFileMap.ContainsKey(DEBF.ObjectsMapName))
                 {
                     var objTable = GetDebugMapValue(ctx, "OBJECT");
                     if (objTable != null)
                     {
-                        var objTree = new Symbol
+                        ctx.DebugFileMap[DEBF.ObjectsMapName] = new Symbol
                         {
                             Type = objTable.Type,
                             Value = objTable.Value + (ctx.ZVersion < 4 ? 31 : 63)
                         };
-                        ctx.DebugFileMap[DEBF.ObjectsMapName] = objTree;
                     }
                 }
-                if (!ctx.DebugFileMap.ContainsKey(DEBF.PropsMapName))
-                    ctx.DebugFileMap[DEBF.PropsMapName] = GetDebugMapValue(ctx, "OBJECT");
-                if (!ctx.DebugFileMap.ContainsKey(DEBF.VocabMapName))
-                    ctx.DebugFileMap[DEBF.VocabMapName] = GetDebugMapValue(ctx, "VOCAB");
 
                 // write map
                 ctx.DebugWriter.WriteMap(
@@ -754,7 +753,7 @@ General switches:
         /// <param name="node">The node to process.</param>
         /// <param name="nodeIndex">The current node's index. The method may change this
         /// to rewind the source file.</param>
-        static void PassTwo(Context ctx, [NotNull] AsmLine node, ref int nodeIndex)
+        static void PassTwo(Context ctx, AsmLine node, ref int nodeIndex)
         {
             switch (node)
             {
@@ -773,7 +772,7 @@ General switches:
             }
         }
 
-        static IEnumerable<AsmLine> ReadAllCode(Context ctx, [NotNull] IEnumerable<AsmLine> roots)
+        static IEnumerable<AsmLine> ReadAllCode(Context ctx, IEnumerable<AsmLine> roots)
         {
             foreach (var node in roots)
             {
@@ -807,22 +806,20 @@ General switches:
             }
         }
 
-        static IEnumerable<AsmLine> ReadRootsFromFile([NotNull] Context ctx, [NotNull] string path)
+        static IEnumerable<AsmLine> ReadRootsFromFile(Context ctx, string path)
         {
-            using (var stream = ctx.OpenFile(path, false))
-            {
-                Debug.Assert(ctx.OpcodeDict != null);
-                var parser = new ZapParser(ctx, ctx.OpcodeDict);
-                var result = parser.Parse(stream, path);
+            using var stream = ctx.OpenFile(path, false);
+            Debug.Assert(ctx.OpcodeDict != null);
+            var parser = new ZapParser(ctx, ctx.OpcodeDict);
+            var result = parser.Parse(stream, path);
 
-                if (result.NumberOfSyntaxErrors > 0)
-                    Errors.ThrowFatal("syntax error");
+            if (result.NumberOfSyntaxErrors > 0)
+                Errors.ThrowFatal("syntax error");
 
-                return result.Lines;
-            }
+            return result.Lines;
         }
 
-        static Symbol EvalExpr(Context ctx, [NotNull] AsmExpr node)
+        static Symbol EvalExpr(Context ctx, AsmExpr node)
         {
             switch (node)
             {
@@ -859,7 +856,7 @@ General switches:
                     throw new NotImplementedException($"Unimplemented symbol addition: {left.Type} + {right.Type}");
 
                     // we can add numbers and non-packed addresses
-                    bool Addable(SymbolType type)
+                    static bool Addable(SymbolType type)
                     {
                         switch (type)
                         {
@@ -878,12 +875,12 @@ General switches:
             }
         }
 
-        static void EvalOperand(Context ctx, AsmExpr node, out byte type, out ushort value, [CanBeNull] out Fixup fixup)
+        static void EvalOperand(Context ctx, AsmExpr node, out byte type, out ushort value, out Fixup? fixup)
         {
             EvalOperand(ctx, node, out type, out value, out fixup, false);
         }
 
-        static void EvalOperand(Context ctx, AsmExpr node, out byte type, out ushort value, [CanBeNull] out Fixup fixup,
+        static void EvalOperand(Context ctx, AsmExpr node, out byte type, out ushort value, out Fixup? fixup,
             bool allowLocalLabel)
         {
             fixup = null;
@@ -957,7 +954,7 @@ General switches:
                 type = OPERAND_BYTE;
         }
 
-        static bool IsLongConstant(Context ctx, [NotNull] AsmExpr node)
+        static bool IsLongConstant(Context ctx, AsmExpr node)
         {
             switch (node)
             {
@@ -998,7 +995,7 @@ General switches:
             }
         }
 
-        static void HandleDirective(Context ctx, [NotNull] AsmLine node, int nodeIndex, bool assembling)
+        static void HandleDirective(Context ctx, AsmLine node, int nodeIndex, bool assembling)
         {
             // local scope is terminated by any directive except .DEBUG_LINE (not counting labels)
             if (!(node is DebugLineDirective))
@@ -1139,6 +1136,7 @@ General switches:
                             {
                                 // global labels inside the vocab table need to be fixed up at .VOCEND,
                                 // since they may refer to other vocab words
+                                Debug.Assert(sym.Name != null);
                                 var fixup = new Fixup(sym.Name) { Location = ctx.Position };
                                 ctx.Fixups.Add(fixup);
                             }
@@ -1288,7 +1286,7 @@ General switches:
             }
         }
 
-        static void HandleDebugDirective([NotNull] Context ctx, [NotNull] DebugDirective node)
+        static void HandleDebugDirective(Context ctx, DebugDirective node)
         {
             Debug.Assert(ctx.DebugWriter != null);
 
@@ -1323,7 +1321,7 @@ General switches:
                     }
                     var sym2 = EvalExpr(ctx, darr.Number);
                     ctx.DebugWriter.WriteArray(
-                        (ushort)(sym2.Value - sym1.Value),
+                        (ushort)(sym2.Value - sym1!.Value),
                         darr.Name);
                     break;
 
@@ -1415,7 +1413,7 @@ General switches:
             }
         }
 
-        static void BeginFunction([NotNull] [ProvidesContext] Context ctx, [NotNull] FunctDirective node, int nodeIndex)
+        static void BeginFunction([ProvidesContext] Context ctx, FunctDirective node, int nodeIndex)
         {
             var localNames = new List<string>();
             var localValues = new List<ushort>();
@@ -1457,7 +1455,7 @@ General switches:
                 sym = new Symbol(name, SymbolType.Function, paddr);
                 ctx.GlobalSymbols.Add(name, sym);
             }
-            else if (sym.Type != SymbolType.Unknown && (!sym.Phantom || sym.Type != SymbolType.Function))
+            else if (sym!.Type != SymbolType.Unknown && (!sym.Phantom || sym.Type != SymbolType.Function))
             {
                 Errors.ThrowSerious("function redefined: " + name);
             }
@@ -1487,13 +1485,13 @@ General switches:
             }
         }
 
-        static void AlignUnpacked([NotNull] Context ctx, int divisor)
+        static void AlignUnpacked(Context ctx, int divisor)
         {
             while (ctx.Position % divisor != 0)
                 ctx.WriteByte(0);
         }
 
-        static void AlignPacked([NotNull] Context ctx, ref int offset)
+        static void AlignPacked(Context ctx, ref int offset)
         {
             if (ctx.UsePackingOffsets && offset == 0)
             {
@@ -1508,17 +1506,17 @@ General switches:
                 ctx.WriteByte(0);
         }
 
-        static void AlignRoutine([NotNull] Context ctx)
+        static void AlignRoutine(Context ctx)
         {
             AlignPacked(ctx, ref ctx.FunctionsOffset);
         }
 
-        static void AlignString([NotNull] Context ctx)
+        static void AlignString(Context ctx)
         {
             AlignPacked(ctx, ref ctx.StringsOffset);
         }
 
-        static void PackString([NotNull] Context ctx, [NotNull] GstrDirective node)
+        static void PackString(Context ctx, GstrDirective node)
         {
             string name = node.Name;
 
@@ -1530,7 +1528,7 @@ General switches:
                 sym = new Symbol(name, SymbolType.String, paddr);
                 ctx.GlobalSymbols.Add(name, sym);
             }
-            else if (sym.Type != SymbolType.Unknown && (!sym.Phantom || sym.Type != SymbolType.String))
+            else if (sym!.Type != SymbolType.Unknown && (!sym.Phantom || sym.Type != SymbolType.String))
             {
                 Errors.ThrowSerious("string redefined: " + name);
             }
@@ -1548,7 +1546,7 @@ General switches:
             ctx.WriteZString(node.Text, false);
         }
 
-        static void AddAbbreviation([NotNull] Context ctx, [NotNull] FstrDirective node)
+        static void AddAbbreviation(Context ctx, FstrDirective node)
         {
             if (ctx.StringEncoder.Frozen)
                 Errors.ThrowSerious(node, "abbreviations must be defined before strings");
@@ -1574,9 +1572,9 @@ General switches:
 
         static readonly byte[] tmpOperandTypes = new byte[8];
         static readonly ushort[] tmpOperandValues = new ushort[8];
-        static readonly Fixup[] tmpOperandFixups = new Fixup[8];
+        static readonly Fixup?[] tmpOperandFixups = new Fixup[8];
 
-        static void HandleInstruction([NotNull] Context ctx, [NotNull] Instruction node)
+        static void HandleInstruction(Context ctx, Instruction node)
         {
             Debug.Assert(ctx.OpcodeDict != null);
             var pair = ctx.OpcodeDict[node.Name];
@@ -1641,8 +1639,8 @@ General switches:
                 ctx.WriteByte(b);
                 if (tmpOperandFixups[0] != null)
                 {
-                    tmpOperandFixups[0].Location = ctx.Position;
-                    ctx.Fixups.Add(tmpOperandFixups[0]);
+                    tmpOperandFixups[0]!.Location = ctx.Position;
+                    ctx.Fixups.Add(tmpOperandFixups[0]!);
                     tmpOperandFixups[0] = null;
                 }
                 if (tmpOperandTypes[0] == OPERAND_WORD)
@@ -1712,8 +1710,8 @@ General switches:
                 {
                     if (tmpOperandFixups[i] != null)
                     {
-                        tmpOperandFixups[i].Location = ctx.Position;
-                        ctx.Fixups.Add(tmpOperandFixups[i]);
+                        tmpOperandFixups[i]!.Location = ctx.Position;
+                        ctx.Fixups.Add(tmpOperandFixups[i]!);
                         tmpOperandFixups[i] = null;
                     }
 
@@ -1733,9 +1731,9 @@ General switches:
                 }
                 else
                 {
-                    if (ctx.LocalSymbols.TryGetValue(node.StoreTarget, out var sym) == false &&
-                        ctx.GlobalSymbols.TryGetValue(node.StoreTarget, out sym) == false ||
-                        sym.Type != SymbolType.Variable)
+                    if ((ctx.LocalSymbols.TryGetValue(node.StoreTarget, out var sym) == false &&
+                        ctx.GlobalSymbols.TryGetValue(node.StoreTarget, out sym) == false) ||
+                        sym!.Type != SymbolType.Variable)
                     {
                         Errors.ThrowSerious(node, "expected local or global variable as store target");
                     }
@@ -1793,7 +1791,7 @@ General switches:
             }
         }
 
-        static void HandleLabel([NotNull] Context ctx, [NotNull] AsmLine node, ref int nodeIndex)
+        static void HandleLabel(Context ctx, AsmLine node, ref int nodeIndex)
         {
             string name;
 
@@ -1866,7 +1864,7 @@ General switches:
                         else
                             ctx.LocalSymbols.Add(name, new Symbol(name, SymbolType.Label, ctx.Position));
                     }
-                    else if (sym.Type == SymbolType.Label && sym.Phantom)
+                    else if (sym!.Type == SymbolType.Label && sym.Phantom)
                     {
                         if (sym.Value != ctx.Position)
                             nodeIndex = ctx.Reassemble(name) - 1;

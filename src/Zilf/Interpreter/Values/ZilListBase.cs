@@ -20,17 +20,16 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinPrimType(PrimType.LIST)]
     abstract class ZilListBase : ZilListoidBase
     {
-        ZilObject first;
-        ZilListoidBase rest;
+        ZilObject? first;
+        ZilListoidBase? rest;
 
-        public sealed override ZilObject First
+        public sealed override ZilObject? First
         {
             get => first;
 
@@ -46,7 +45,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        public sealed override ZilListoidBase Rest
+        public sealed override ZilListoidBase? Rest
         {
             get => rest;
 
@@ -62,24 +61,23 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        protected ZilListBase([NotNull] IEnumerable<ZilObject> sequence)
+        protected ZilListBase(IEnumerable<ZilObject> sequence)
         {
-            using (var tor = sequence.GetEnumerator())
+            using var tor = sequence.GetEnumerator();
+
+            if (tor.MoveNext())
             {
-                if (tor.MoveNext())
-                {
-                    first = tor.Current;
-                    rest = MakeRest(tor);
-                }
-                else
-                {
-                    first = null;
-                    rest = null;
-                }
+                first = tor.Current;
+                rest = MakeRest(tor);
+            }
+            else
+            {
+                first = null;
+                rest = null;
             }
         }
 
-        protected ZilListBase([CanBeNull] ZilObject first, [CanBeNull] ZilListoidBase rest)
+        protected ZilListBase(ZilObject? first, ZilListoidBase? rest)
         {
             Debug.Assert((first == null) == (rest == null));
 
@@ -87,28 +85,22 @@ namespace Zilf.Interpreter.Values
             this.rest = rest;
         }
 
-        [NotNull]
-        protected static ZilList MakeRest([NotNull] IEnumerator<ZilObject> tor)
+        protected static ZilList MakeRest(IEnumerator<ZilObject> tor)
         {
-            if (tor.MoveNext())
-            {
-                var cur = tor.Current;
-                var newRest = MakeRest(tor);
-                return new ZilList(cur, newRest);
-            }
+            if (!tor.MoveNext())
+                return new ZilList(null, null);
 
-            return new ZilList(null, null);
+            var cur = tor.Current;
+            var newRest = MakeRest(tor);
+            return new ZilList(cur, newRest);
         }
 
         public sealed override bool IsEmpty => First == null;
 
-        [NotNull]
         protected virtual string OpenBracket => $"#{StdTypeAtom} (";
 
-        [NotNull]
         protected virtual string CloseBracket => ")";
 
-        [NotNull]
         public override string ToString()
         {
             if (Recursion.TryLock(this))
@@ -141,41 +133,29 @@ namespace Zilf.Interpreter.Values
             return OpenBracket + "..." + CloseBracket;
         }
 
-        [NotNull]
-        public sealed override ZilObject GetPrimitive(Context ctx)
-        {
-            return GetType() == typeof(ZilList) ? this : new ZilList(First, Rest);
-        }
+        public sealed override ZilObject GetPrimitive(Context ctx) =>
+            GetType() == typeof(ZilList) ? this : new ZilList(First, Rest);
 
-        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
-        {
-            return originalType != null ? ctx.ChangeType(this, originalType) : this;
-        }
+        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment? environment, ZilAtom? originalType) =>
+            originalType != null ? ctx.ChangeType(this, originalType) : this;
 
         public sealed override IEnumerator<ZilObject> GetEnumerator()
         {
-            ZilListoidBase r = this;
+            ZilListoidBase? r = this;
 
-            while (r.First != null)
+            while (r.IsCons(out var f, out r))
             {
-                yield return r.First;
-                r = r.Rest;
-                Debug.Assert(r != null);
+                yield return f;
             }
         }
 
-        public override bool ExactlyEquals(ZilObject obj)
-        {
-            return ReferenceEquals(obj, this) ||
-                obj is ZilListBase other && other.StdTypeAtom == StdTypeAtom && IsEmpty && other.IsEmpty;
-        }
+        public override bool ExactlyEquals(ZilObject? obj) =>
+            ReferenceEquals(obj, this) ||
+            (obj is ZilListBase other && other.StdTypeAtom == StdTypeAtom && IsEmpty && other.IsEmpty);
 
-        public override int GetHashCode()
-        {
-            return IsEmpty ? StdTypeAtom.GetHashCode() : base.GetHashCode();
-        }
+        public override int GetHashCode() => IsEmpty ? StdTypeAtom.GetHashCode() : base.GetHashCode();
 
-        public sealed override bool StructurallyEquals(ZilObject obj)
+        public sealed override bool StructurallyEquals(ZilObject? obj)
         {
             if (ReferenceEquals(obj, this))
                 return true;
@@ -185,6 +165,7 @@ namespace Zilf.Interpreter.Values
 
             if (First == null)
                 return other.First == null;
+
             if (!First.StructurallyEquals(other.First))
                 return false;
 
@@ -194,9 +175,9 @@ namespace Zilf.Interpreter.Values
             return Rest.StructurallyEquals(other.Rest);
         }
 
-        public sealed override ZilListoidBase GetRest(int skip)
+        public sealed override ZilListoidBase? GetRest(int skip)
         {
-            ZilListoidBase result = this;
+            ZilListoidBase? result = this;
             while (skip-- > 0 && result != null)
                 result = result.Rest;
             return result;
@@ -207,11 +188,12 @@ namespace Zilf.Interpreter.Values
             get
             {
                 var rested = GetRest(index);
-                return rested?.GetFirst();
+                return rested?.GetFirst()!;
             }
+
             set
             {
-                if (GetRest(index) is ZilListoidBase rested && !rested.IsEmpty)
+                if (GetRest(index) is { } rested && !rested.IsEmpty)
                 {
                     rested.First = value;
                 }
@@ -226,19 +208,18 @@ namespace Zilf.Interpreter.Values
 
         public sealed override int? GetLength(int limit)
         {
-            using (var tor = GetEnumerator())
+            using var tor = GetEnumerator();
+
+            int count = 0;
+
+            while (tor.MoveNext())
             {
-                int count = 0;
-
-                while (tor.MoveNext())
-                {
-                    count++;
-                    if (count > limit)
-                        return null;
-                }
-
-                return count;
+                count++;
+                if (count > limit)
+                    return null;
             }
+
+            return count;
         }
     }
 }

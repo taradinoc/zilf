@@ -47,9 +47,8 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: true => notnull")]
         [ContractAnnotation("wantResult: false => null")]
-        [CanBeNull]
-        internal IOperand CompileForm([NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, bool wantResult,
-            IVariable resultStorage)
+        internal IOperand? CompileForm(IRoutineBuilder rb, ZilForm form, bool wantResult,
+            IVariable? resultStorage)
         {
             using (DiagnosticContext.Push(form.SourceLine))
             {
@@ -89,7 +88,7 @@ namespace Zilf.Compiler
                     if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
                     {
                         var label1 = rb.DefineLabel();
-                        resultStorage = resultStorage ?? rb.Stack;
+                        resultStorage ??= rb.Stack;
                         ZBuiltins.CompileValuePredCall(head.Text, this, rb, form, resultStorage, label1, true);
                         rb.MarkLabel(label1);
                         return resultStorage;
@@ -98,7 +97,7 @@ namespace Zilf.Compiler
                     {
                         var label1 = rb.DefineLabel();
                         var label2 = rb.DefineLabel();
-                        resultStorage = resultStorage ?? rb.Stack;
+                        resultStorage ??= rb.Stack;
                         ZBuiltins.CompilePredCall(head.Text, this, rb, form, label1, true);
                         rb.EmitStore(resultStorage, Game.Zero);
                         rb.Branch(label2);
@@ -202,20 +201,18 @@ namespace Zilf.Compiler
         }
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
-        [NotNull]
-        public IOperand CompileAsOperand([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr, [NotNull] ISourceLine src,
-            [CanBeNull] IVariable suggestion = null)
+        public IOperand CompileAsOperand(IRoutineBuilder rb, ZilObject expr, ISourceLine? src,
+            IVariable? suggestion = null)
         {
             expr = expr.Unwrap(Context);
 
-            var constant = CompileConstant(expr, AmbiguousConstantMode.Pessimistic);
-            if (constant != null)
+            if (CompileConstant(expr, AmbiguousConstantMode.Pessimistic) is { } constant)
                 return constant;
 
             switch (expr.StdTypeAtom)
             {
                 case StdAtom.FORM:
-                    return CompileForm(rb, (ZilForm)expr, true, suggestion ?? rb.Stack);
+                    return CompileForm(rb, (ZilForm)expr, true, suggestion ?? rb.Stack)!;
 
                 case StdAtom.ATOM:
                     var atom = (ZilAtom)expr;
@@ -269,15 +266,14 @@ namespace Zilf.Compiler
         /// it is non-null and the expression is valid. Otherwise, may be a constant, or the natural
         /// location of the expression, or a temporary variable from <paramref name="tempVarProvider"/>.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
-        [NotNull]
         [ContractAnnotation("resultStorage: null => tempVarProvider: notnull")]
         [ContractAnnotation("tempVarProvider: null => resultStorage: notnull")]
-        internal IOperand CompileAsOperandWithBranch([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr,
-            [CanBeNull] IVariable resultStorage,
-            [NotNull] ILabel label, bool polarity, [CanBeNull] [InstantHandle] Func<IVariable> tempVarProvider = null)
+        internal IOperand CompileAsOperandWithBranch(IRoutineBuilder rb, ZilObject expr,
+            IVariable? resultStorage,
+            ILabel label, bool polarity, [InstantHandle] Func<IVariable>? tempVarProvider = null)
         {
             expr = expr.Unwrap(Context);
-            IOperand result = resultStorage;
+            IOperand result = resultStorage!;
 
             switch (expr)
             {
@@ -438,7 +434,7 @@ namespace Zilf.Compiler
             }
         }
 
-        internal void CompileTell([NotNull] IRoutineBuilder rb, [NotNull] ISourceLine src, [NotNull] [ItemNotNull] ZilObject[] args)
+        internal void CompileTell(IRoutineBuilder rb, ISourceLine src, ZilObject[] args)
         {
             int index = 0;
             while (index < args.Length)
@@ -448,13 +444,13 @@ namespace Zilf.Compiler
                 foreach (var pattern in Context.ZEnvironment.TellPatterns)
                 {
                     var result = pattern.Match(args, index, Context, src);
-                    if (result.Matched)
-                    {
-                        CompileForm(rb, result.Output, false, null);
-                        index += pattern.Length;
-                        handled = true;
-                        break;
-                    }
+                    if (!result.Matched)
+                        continue;
+
+                    CompileForm(rb, result.Output!, false, null);
+                    index += pattern.Length;
+                    handled = true;
+                    break;
                 }
 
                 if (handled)

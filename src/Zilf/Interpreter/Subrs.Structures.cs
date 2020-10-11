@@ -19,21 +19,22 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.Serialization;
+using Zilf.Common;
+using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.Diagnostics;
-using Zilf.Common;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
+    [SuppressMessage("Performance", "CA1801", Justification = "Subrs parameters are needed for validation, even if the values aren't used.")]
+    [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Subrs parameters are needed for validation, even if the values aren't used.")]
     static partial class Subrs
     {
-        [NotNull]
         [Subr("EMPTY?")]
-        public static ZilObject EMPTY_P([NotNull] Context ctx, [NotNull] IStructure st)
+        public static ZilObject EMPTY_P(Context ctx, IStructure st)
         {
             return st.IsEmpty ? ctx.TRUE : ctx.FALSE;
         }
@@ -52,24 +53,22 @@ namespace Zilf.Interpreter
         }*/
 
         /// <exception cref="InterpreterError"><paramref name="st"/> has fewer than <paramref name="skip"/> elements.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject REST(Context ctx, [NotNull] IStructure st, int skip = 1)
+        public static ZilObject REST(Context ctx, IStructure st, int skip = 1)
         {
-            var result = (ZilObject)st.GetRest(skip);
+            var result = (ZilObject?)st.GetRest(skip);
             if (result == null)
                 throw new InterpreterError(InterpreterMessages._0_Not_Enough_Elements, "REST");
             return result.GetPrimitive(ctx);
         }
 
         /// <exception cref="InterpreterError">The type of <paramref name="st"/> does not support this operation, or <paramref name="st"/> has not been RESTed at least <paramref name="skip"/> elements.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject BACK(Context ctx, [NotNull] IStructure st, int skip = 1)
+        public static ZilObject BACK(Context ctx, IStructure st, int skip = 1)
         {
             try
             {
-                var result = (ZilObject)st.GetBack(skip);
+                var result = (ZilObject?)st.GetBack(skip);
                 if (result == null)
                     throw new InterpreterError(InterpreterMessages._0_Not_Enough_Elements);
                 return result;
@@ -81,9 +80,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">The type of <paramref name="st"/> does not support this operation.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject TOP(Context ctx, [NotNull] IStructure st)
+        public static ZilObject TOP(Context ctx, IStructure st)
         {
             try
             {
@@ -96,9 +94,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError"><paramref name="beginning"/> or <paramref name="end"/> are negative, or the type of <paramref name="st"/> does not support this operation.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject GROW(Context ctx, [NotNull] IStructure st, int end, int beginning)
+        public static ZilObject GROW(Context ctx, IStructure st, int end, int beginning)
         {
             if (end < 0 || beginning < 0)
             {
@@ -121,9 +118,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError"><paramref name="idx"/> is past the end of <paramref name="st"/>.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject NTH(Context ctx, [NotNull] IStructure st, int idx)
+        public static ZilObject NTH(Context ctx, IStructure st, int idx)
         {
             var result = st[idx - 1];
             if (result == null)
@@ -133,9 +129,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError"><paramref name="idx"/> is past the end of <paramref name="st"/>, or <paramref name="st"/> is read-only.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject PUT(Context ctx, [NotNull] IStructure st, int idx, ZilObject newValue)
+        public static ZilObject PUT(Context ctx, IStructure st, int idx, ZilObject newValue)
         {
             try
             {
@@ -153,39 +148,34 @@ namespace Zilf.Interpreter
             return (ZilObject)st;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject OFFSET(Context ctx, int offset, [NotNull] ZilObject structurePattern, [CanBeNull] ZilObject valuePattern = null)
+        public static ZilObject OFFSET(Context ctx, int offset, ZilObject structurePattern, ZilObject? valuePattern = null)
         {
             return new ZilOffset(offset, structurePattern, valuePattern ?? ctx.GetStdAtom(StdAtom.ANY));
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject INDEX(Context ctx, [NotNull] ZilOffset offset)
+        public static ZilObject INDEX(Context ctx, ZilOffset offset)
         {
             return new ZilFix(offset.Index);
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject LENGTH(Context ctx, [NotNull] IStructure st)
+        public static ZilObject LENGTH(Context ctx, IStructure st)
         {
             return new ZilFix(st.GetLength());
         }
 
-        [NotNull]
         [Subr("LENGTH?")]
-        public static ZilObject LENGTH_P(Context ctx, [NotNull] IStructure st, int limit)
+        public static ZilObject LENGTH_P(Context ctx, IStructure st, int limit)
         {
             var length = st.GetLength(limit);
             return length != null ? new ZilFix((int)length) : ctx.FALSE;
         }
 
         /// <exception cref="InterpreterError"><paramref name="list"/> is empty.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject PUTREST(Context ctx, [NotNull] ZilListoidBase list, [NotNull] ZilListoidBase newRest)
+        public static ZilObject PUTREST(Context ctx, ZilListoidBase list, ZilListoidBase newRest)
         {
             if (list.IsEmpty)
                 throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "PUTREST");
@@ -213,21 +203,22 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError"><paramref name="amount"/> is negative, or <paramref name="from"/> or <paramref name="dest"/> are too short, or the types of <paramref name="from"/> and <paramref name="dest"/> are incompatible.</exception>
-        [NotNull]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
+        [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         [Subr]
-        public static ZilObject SUBSTRUC(Context ctx, [NotNull] IStructure from, int rest = 0, int? amount = null,
-            [CanBeNull] IStructure dest = null)
+        public static ZilObject SUBSTRUC(Context ctx, IStructure from, int rest = 0, int? amount = null,
+            IStructure? dest = null)
         {
             if (amount != null)
             {
                 var max = from.GetLength(rest + (int)amount);
                 if (max != null && max.Value - rest < amount)
+                {
                     throw new InterpreterError(
                         InterpreterMessages._0_1_Element1s_Requested_But_Only_2_Available,
                         "SUBSTRUC",
                         amount,
                         max.Value - rest);
+                }
             }
             else
             {
@@ -238,7 +229,7 @@ namespace Zilf.Interpreter
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "SUBSTRUC");
 
             var fromObj = (ZilObject)from;
-            var destObj = (ZilObject)dest;
+            var destObj = (ZilObject?)dest;
             var primitive = (IStructure)fromObj.GetPrimitive(ctx);
 
             if (destObj != null)
@@ -268,7 +259,7 @@ namespace Zilf.Interpreter
                         // this is crazy inefficient, but works with ZilString and OffsetString
                         // TODO: method on ZilString to do this more efficiently?
                         for (i = 0; i < amount; i++)
-                            str[i] = primitive[i + rest];
+                            str[i] = primitive[i + rest]!;
                         break;
 
                     case ZilVector vector:
@@ -290,39 +281,30 @@ namespace Zilf.Interpreter
             }
 
             // no destination, return a new structure
-            switch (fromObj.PrimType)
+            return fromObj.PrimType switch
             {
-                case PrimType.LIST:
-                    return new ZilList(primitive.Skip(rest).Take((int)amount));
-
-                case PrimType.STRING:
-                    return ZilString.FromString(((ZilString)primitive).Text.Substring(rest, (int)amount));
-
-                case PrimType.TABLE:
-                    throw new InterpreterError(InterpreterMessages._0_Primtype_TABLE_Not_Supported, "SUBSTRUC");
-
-                case PrimType.VECTOR:
-                    return new ZilVector(((ZilVector)primitive).Skip(rest).Take((int)amount).ToArray());
-
-                default:
-                    throw UnhandledCaseException.FromEnum(fromObj.PrimType, "structured primtype");
-            }
+                PrimType.LIST => (ZilObject)new ZilList(primitive.Skip(rest).Take((int)amount)),
+                PrimType.STRING => ZilString.FromString(((ZilString)primitive).Text.Substring(rest, (int)amount)),
+                PrimType.TABLE => throw new InterpreterError(InterpreterMessages._0_Primtype_TABLE_Not_Supported,
+                    "SUBSTRUC"),
+                PrimType.VECTOR => new ZilVector(((ZilVector)primitive).Skip(rest).Take((int)amount).ToArray()),
+                _ => throw UnhandledCaseException.FromEnum(fromObj.PrimType, "structured primtype")
+            };
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject MEMBER(Context ctx, [NotNull] ZilObject needle, [NotNull] IStructure haystack)
+        public static ZilObject MEMBER(Context ctx, ZilObject needle, IStructure haystack)
         {
             if (needle.PrimType == PrimType.STRING && ((ZilObject)haystack).PrimType == PrimType.STRING)
             {
                 string n = ((ZilString)needle.GetPrimitive(ctx)).Text;
-                if (n != "")
+                if (n.Length > 0)
                 {
                     string h = ((ZilString)((ZilObject)haystack).GetPrimitive(ctx)).Text;
                     int pos = h.IndexOf(n, StringComparison.Ordinal);
                     if (pos >= 0)
                     {
-                        return (ZilObject)haystack.GetRest(pos) ?? ctx.FALSE;
+                        return (ZilObject?)haystack.GetRest(pos) ?? ctx.FALSE;
                     }
                 }
             }
@@ -330,23 +312,21 @@ namespace Zilf.Interpreter
             return PerformMember(ctx, needle, haystack, (a, b) => a.StructurallyEquals(b));
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject MEMQ(Context ctx, [NotNull] ZilObject needle, [NotNull] IStructure haystack)
+        public static ZilObject MEMQ(Context ctx, ZilObject needle, IStructure haystack)
         {
             return PerformMember(ctx, needle, haystack, (a, b) => a.ExactlyEquals(b));
         }
 
-        [NotNull]
-        static ZilObject PerformMember(Context ctx, [NotNull] ZilObject needle, [NotNull] IStructure haystack,
-            [NotNull] Func<ZilObject, ZilObject, bool> equality)
+        static ZilObject PerformMember(Context ctx, ZilObject needle, IStructure haystack,
+            Func<ZilObject, ZilObject, bool> equality)
         {
-            while (haystack != null && !haystack.IsEmpty)
+            while (haystack?.IsEmpty == false)
             {
-                if (equality(needle, haystack.GetFirst()))
+                if (equality(needle, haystack.GetFirst()!))
                     return (ZilObject)haystack;
 
-                haystack = haystack.GetRest(1);
+                haystack = haystack.GetRest(1)!;
             }
 
             return ctx.FALSE;
@@ -373,17 +353,29 @@ namespace Zilf.Interpreter
             }
 
             protected SortAbortedException(
-                [NotNull] SerializationInfo info,
+                SerializationInfo info,
                 StreamingContext context) : base(info, context)
+            {
+            }
+
+            public SortAbortedException(string message, Exception innerException) : base(message, innerException)
+            {
+            }
+
+            public SortAbortedException()
+            {
+            }
+
+            public SortAbortedException(string message) : base(message)
             {
             }
         }
 
         [Subr]
         public static ZilResult SORT(Context ctx,
-            [NotNull] [Decl("<OR FALSE APPLICABLE>")] ZilObject predicate,
-            [NotNull] ZilVector vector, int recordSize = 1, int keyOffset = 0,
-            [CanBeNull] AdditionalSortParam[] additionalSorts = null)
+            [Decl("<OR FALSE APPLICABLE>")] ZilObject predicate,
+            ZilVector vector, int recordSize = 1, int keyOffset = 0,
+            AdditionalSortParam[]? additionalSorts = null)
         {
             if (keyOffset < 0 || keyOffset >= recordSize)
                 throw new InterpreterError(InterpreterMessages._0_Expected_0__Key_Offset__Record_Size, "SORT");
@@ -412,14 +404,18 @@ namespace Zilf.Interpreter
                 }
             }
 
-            ZilObject KeySelector(int i) => vector[i * recordSize + keyOffset];
+            ZilObject KeySelector(int i)
+            {
+                return vector[i * recordSize + keyOffset]!;
+            }
+
             Comparison<ZilObject> comparison;
 
             if (predicate.IsTrue)
             {
                 // user-provided comparison
-                var applicable = predicate.AsApplicable(ctx);
-                Debug.Assert(applicable != null);
+                if (!predicate.IsApplicable(ctx, out var applicable))
+                    throw new UnhandledCaseException("non-false, non-applicable predicate");
 
                 var args = new ZilObject[2];
                 comparison = (a, b) =>
@@ -463,20 +459,15 @@ namespace Zilf.Interpreter
                     a = a.GetPrimitive(ctx);
                     b = b.GetPrimitive(ctx);
 
-                    switch (a.PrimType)
+                    return a.PrimType switch
                     {
-                        case PrimType.ATOM:
-                            return string.Compare(((ZilAtom)a).Text, ((ZilAtom)b).Text, StringComparison.Ordinal);
-
-                        case PrimType.FIX:
-                            return ((ZilFix)a).Value.CompareTo(((ZilFix)b).Value);
-
-                        case PrimType.STRING:
-                            return string.Compare(((ZilString)a).Text, ((ZilString)b).Text, StringComparison.Ordinal);
-
-                        default:
-                            throw new InterpreterError(InterpreterMessages._0_Key_Primtypes_Must_Be_ATOM_FIX_Or_STRING_To_Use_Default_Comparison, "SORT");
-                    }
+                        PrimType.ATOM => string.CompareOrdinal(((ZilAtom)a).Text, ((ZilAtom)b).Text),
+                        PrimType.FIX => ((ZilFix)a).Value.CompareTo(((ZilFix)b).Value),
+                        PrimType.STRING => string.CompareOrdinal(((ZilString)a).Text, ((ZilString)b).Text),
+                        _ => throw new InterpreterError(
+                            InterpreterMessages._0_Key_Primtypes_Must_Be_ATOM_FIX_Or_STRING_To_Use_Default_Comparison,
+                            "SORT"),
+                    };
                 };
             }
 
@@ -507,15 +498,22 @@ namespace Zilf.Interpreter
             }
         }
 
-        static void RearrangeVector([NotNull] ZilVector vector, int recordSize, [NotNull] int[] desiredIndexOrder)
+        static void RearrangeVector(ZilVector vector, int recordSize, int[] desiredIndexOrder)
         {
-            var output = new List<ZilObject>(vector.GetLength());
+            int length = vector.GetLength();
+
+            if (recordSize < 1)
+                throw new ArgumentOutOfRangeException(nameof(recordSize));
+
+            var output = new List<ZilObject>(length);
 
             foreach (var srcIndex in desiredIndexOrder)
             {
+                Debug.Assert(srcIndex >= 0 && (srcIndex + 1) * recordSize <= length);
+
                 for (int i = 0; i < recordSize; i++)
                 {
-                    output.Add(vector[srcIndex * recordSize + i]);
+                    output.Add(vector[srcIndex * recordSize + i]!);
                 }
             }
 

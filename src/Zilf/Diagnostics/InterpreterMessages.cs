@@ -22,6 +22,7 @@ namespace Zilf.Diagnostics
 {
     [MessageSet("MDL")]
     [SuppressMessage("ReSharper", "InconsistentNaming")]
+    [SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "Message constants")]
     public abstract class InterpreterMessages
     {
         InterpreterMessages()

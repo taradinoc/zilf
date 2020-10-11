@@ -1,0 +1,7 @@
+﻿[*.cs]
+
+# RCS1194: Implement exception constructors.
+dotnet_diagnostic.RCS1194.severity = suggestion
+
+# RCS1139: Add summary element to documentation comment.
+dotnet_diagnostic.RCS1139.severity = silent

@@ -57,22 +57,18 @@ namespace Zilf.Emit.Zap
 
         public string DescriptiveName { get; set; } = "";
 
-        public IObjectBuilder Parent { get; set; }
+        public IObjectBuilder? Parent { get; set; }
 
-        public IObjectBuilder Child { get; set; }
+        public IObjectBuilder? Child { get; set; }
 
-        public IObjectBuilder Sibling { get; set; }
+        public IObjectBuilder? Sibling { get; set; }
 
-        [NotNull]
         public string Flags1 => GetFlagsString(0);
 
-        [NotNull]
         public string Flags2 => GetFlagsString(16);
 
-        [NotNull]
         public string Flags3 => GetFlagsString(32);
 
-        [NotNull]
         string GetFlagsString(int start)
         {
             var sb = new StringBuilder();
@@ -120,7 +116,7 @@ namespace Zilf.Emit.Zap
                 flags.Add(fb);
         }
 
-        internal void WriteProperties([NotNull] TextWriter writer)
+        internal void WriteProperties(TextWriter writer)
         {
             writer.WriteLine(INDENT + ".STRL \"{0}\"", GameBuilder.SanitizeString(DescriptiveName));
 

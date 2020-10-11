@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
@@ -36,7 +37,7 @@ namespace Zilf.Interpreter.Values
         readonly AsocResult[] results;
         readonly int index;
 
-        public ZilAsoc([NotNull] AsocResult[] results, int index)
+        public ZilAsoc(AsocResult[] results, int index)
         {
             this.results = results;
             this.index = index;
@@ -44,7 +45,10 @@ namespace Zilf.Interpreter.Values
 
         /// <exception cref="InterpreterError">Always thrown.</exception>
         [ChtypeMethod]
-        public static ZilAsoc FromList([NotNull] Context ctx, [NotNull] ZilListBase list) =>
+        [DoesNotReturn]
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        [SuppressMessage("Performance", "CA1801:Unused parameter")]
+        public static ZilAsoc FromList(Context ctx, ZilListBase list) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ASOC");
 
         public ZilObject Item => results[index].Item;
@@ -59,8 +63,7 @@ namespace Zilf.Interpreter.Values
                 x => x.Value);
         }
 
-        [CanBeNull]
-        public ZilAsoc GetNext()
+        public ZilAsoc? GetNext()
         {
             return index + 1 < results.Length ? new ZilAsoc(results, index + 1) : null;
         }

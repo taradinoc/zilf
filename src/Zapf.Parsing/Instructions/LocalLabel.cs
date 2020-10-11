@@ -23,12 +23,11 @@ namespace Zapf.Parsing.Instructions
 {
     public sealed class LocalLabel : AsmLine
     {
-        public LocalLabel([NotNull] string name)
+        public LocalLabel(string name)
         {
             Name = name;
         }
 
-        [NotNull]
         public string Name { get; }
     }
 }

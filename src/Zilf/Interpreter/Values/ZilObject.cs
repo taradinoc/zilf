@@ -32,10 +32,9 @@ namespace Zilf.Interpreter.Values
         /// <summary>
         /// Gets or sets a value indicating the object's source code location.
         /// </summary>
-        public virtual ISourceLine SourceLine { get; set; }
+        public virtual ISourceLine? SourceLine { get; set; }
 
-        [NotNull]
-        public static IEnumerable<ZilObject> ExpandTemplateToken([NotNull] ZilObject selector, [CanBeNull, ItemNotNull] ZilObject[] templateParams)
+        public static IEnumerable<ZilObject> ExpandTemplateToken(ZilObject selector, ZilObject[]? templateParams)
         {
             if (templateParams == null)
                 throw new InterpreterError(InterpreterMessages.Templates_Cannot_Be_Used_Here);
@@ -73,7 +72,7 @@ namespace Zilf.Interpreter.Values
         /// <c>PRIMTYPE</c> <c>LIST</c>, they may also both be empty.
         /// </remarks>
         /// <seealso cref="StructurallyEquals"/>
-        public virtual bool ExactlyEquals(ZilObject other)
+        public virtual bool ExactlyEquals([NotNullWhen(true)] ZilObject? other)
         {
             return ReferenceEquals(this, other);
         }
@@ -90,7 +89,7 @@ namespace Zilf.Interpreter.Values
         /// <c>=?</c> to the corresponding element in the other.
         /// </remarks>
         /// <seealso cref="ExactlyEquals"/>
-        public virtual bool StructurallyEquals([CanBeNull] ZilObject other)
+        public virtual bool StructurallyEquals([NotNullWhen(true)] ZilObject? other)
         {
             return Equals(other);
         }
@@ -101,7 +100,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="obj">The other object.</param>
         /// <returns><see langword="true"/> if <paramref name="obj"/> is a <see cref="ZilObject"/> and is <c>==?</c> to this object;
         /// otherwise <see langword="false"/>.</returns>
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is ZilObject other && ExactlyEquals(other);
         }
@@ -113,7 +112,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="right">The second object to compare.</param>
         /// <returns><see langword="true"/> if the objects are identical; otherwise <see langword="false"/>.</returns>
         /// <remarks>This silences a ReSharper warning that shouldn't be suppressed completely.</remarks>
-        public static bool operator ==([CanBeNull] ZilObject left, [CanBeNull] ZilObject right)
+        public static bool operator ==(ZilObject? left, ZilObject? right)
         {
             return ReferenceEquals(left, right);
         }
@@ -125,7 +124,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="right">The second object to compare.</param>
         /// <returns><see langword="false"/> if the objects are identical; otherwise <see langword="true"/>.</returns>
         /// <remarks>This silences a ReSharper warning that shouldn't be suppressed completely.</remarks>
-        public static bool operator !=([CanBeNull] ZilObject left, [CanBeNull] ZilObject right)
+        public static bool operator !=(ZilObject? left, ZilObject? right)
         {
             return !ReferenceEquals(left, right);
         }
@@ -156,8 +155,7 @@ namespace Zilf.Interpreter.Values
         /// and use the built-in formatting.</param>
         /// <returns>A string representation of the object.</returns>
         /// <remarks>If a PRINTTYPE is used, <paramref name="friendly"/> has no effect.</remarks>
-        [NotNull]
-        public string ToStringContext([NotNull] Context ctx, bool friendly, bool ignorePrintType = false)
+        public string ToStringContext(Context ctx, bool friendly, bool ignorePrintType = false)
         {
             if (!ignorePrintType)
             {
@@ -179,8 +177,7 @@ namespace Zilf.Interpreter.Values
         /// <returns>A string representation of the object.</returns>
         /// <remarks>This method is not affected by PRINTTYPE, which is handled
         /// by <see cref="ToStringContext(Context, bool, bool)"/>.</remarks>
-        [NotNull]
-        protected virtual string ToStringContextImpl([NotNull] Context ctx, bool friendly)
+        protected virtual string ToStringContextImpl(Context ctx, bool friendly)
         {
             return ToString();
         }
@@ -190,9 +187,8 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <returns>The type atom.</returns>
-        [NotNull]
         [System.Diagnostics.Contracts.Pure]
-        public virtual ZilAtom GetTypeAtom([NotNull] Context ctx)
+        public virtual ZilAtom GetTypeAtom(Context ctx)
         {
             var stdAtom = StdTypeAtom;
             return ctx.GetStdAtom(stdAtom);
@@ -226,7 +222,7 @@ namespace Zilf.Interpreter.Values
         /// or <see langword="null"/> to use the current environment.</param>
         /// <returns>The result of evaluating this object, which may be the same object.</returns>
         [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
-        public ZilResult Eval([NotNull] Context ctx, [CanBeNull] LocalEnvironment environment = null)
+        public ZilResult Eval(Context ctx, LocalEnvironment? environment = null)
         {
             var del = ctx.GetEvalTypeDelegate(GetTypeAtom(ctx));
 
@@ -254,7 +250,7 @@ namespace Zilf.Interpreter.Values
         /// use the knowledge of the original type to return a different result; for example,
         /// <see cref="ZilList.EvalImpl(Context, LocalEnvironment, ZilAtom)"/> returns a list
         /// CHTYPEd to the original type.</remarks>
-        internal ZilResult EvalAsOtherType([NotNull] Context ctx, [NotNull] ZilAtom originalType)
+        internal ZilResult EvalAsOtherType(Context ctx, ZilAtom originalType)
         {
             return EvalImpl(ctx, null, originalType);
         }
@@ -277,8 +273,8 @@ namespace Zilf.Interpreter.Values
         /// type as a parameter. EvalImpl may use this to produce an object of the appropriate type;
         /// for example, see <see cref="ZilList.EvalImpl"/>.</para>
         /// </remarks>
-        protected virtual ZilResult EvalImpl([NotNull] Context ctx, [CanBeNull] LocalEnvironment environment,
-            [CanBeNull] ZilAtom originalType)
+        protected virtual ZilResult EvalImpl(Context ctx, LocalEnvironment? environment,
+            ZilAtom? originalType)
         {
             return this;
         }
@@ -289,7 +285,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <returns>The result of expanding this object, or the same object if this is
         /// not a macro invocation.</returns>
-        public virtual ZilResult Expand([NotNull] Context ctx)
+        public virtual ZilResult Expand(Context ctx)
         {
             return this;
         }
@@ -305,7 +301,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="atom">Set to the referenced atom, or null.</param>
         /// <returns>True if the object is an LVAL.</returns>
         [ContractAnnotation("=> false, atom: null; => true, atom: notnull")]
-        public virtual bool IsLVAL([CanBeNull] out ZilAtom atom)
+        public virtual bool IsLVAL([NotNullWhen(true)] out ZilAtom? atom)
         {
             atom = null;
             return false;
@@ -317,7 +313,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="atom">Set to the referenced atom, or null.</param>
         /// <returns>True if the object is a GVAL.</returns>
         [ContractAnnotation("=> false, atom: null; => true, atom: notnull")]
-        public virtual bool IsGVAL([CanBeNull] out ZilAtom atom)
+        public virtual bool IsGVAL([NotNullWhen(true)] out ZilAtom? atom)
         {
             atom = null;
             return false;
@@ -329,9 +325,9 @@ namespace Zilf.Interpreter.Values
         /// <param name="ctx">The current context.</param>
         /// <param name="prog">The expressions to evaluate.</param>
         /// <returns>The value of the last expression evaluated.</returns>
-        public static ZilResult EvalProgram([NotNull] Context ctx, [NotNull] [ItemNotNull] ZilObject[] prog)
+        public static ZilResult EvalProgram(Context ctx, ZilObject[] prog)
         {
-            ZilResult result = null;
+            ZilResult result = ctx.FALSE;
 
             foreach (var zo in prog)
             {
@@ -343,9 +339,8 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        [NotNull]
-        public static IEnumerable<ZilResult> ExpandOrEvalWithSplice([NotNull] Context ctx, [NotNull] ZilObject obj,
-            [CanBeNull] LocalEnvironment environment)
+        public static IEnumerable<ZilResult> ExpandOrEvalWithSplice(Context ctx, ZilObject obj,
+            LocalEnvironment? environment)
         {
             if (obj is IMayExpandBeforeEvaluation expandBefore && expandBefore.ShouldExpandBeforeEvaluation)
                 return expandBefore.ExpandBeforeEvaluation(ctx, environment);
@@ -369,15 +364,13 @@ namespace Zilf.Interpreter.Values
         /// or <see langword="null"/> to use the current environment.</param>
         /// <returns>A sequence of evaluation results.</returns>
         /// <remarks>The values obtained by expanding segment references are not evaluated in turn.</remarks>
-        [NotNull]
-        public static IEnumerable<ZilResult> EvalSequence([NotNull] Context ctx, [ItemNotNull] [NotNull] IEnumerable<ZilObject> sequence,
-            [CanBeNull] LocalEnvironment environment = null)
+        public static IEnumerable<ZilResult> EvalSequence(Context ctx, IEnumerable<ZilObject> sequence,
+            LocalEnvironment? environment = null)
         {
             return sequence.SelectMany(zo => ExpandOrEvalWithSplice(ctx, zo, environment));
         }
 
-        [NotNull]
-        protected static IEnumerable<ZilResult> ExpandWithSplice([NotNull] Context ctx, [NotNull] ZilObject obj)
+        protected static IEnumerable<ZilResult> ExpandWithSplice(Context ctx, ZilObject obj)
         {
             if (obj is IMayExpandBeforeEvaluation expandBefore && expandBefore.ShouldExpandBeforeEvaluation)
                 return expandBefore.ExpandBeforeEvaluation(ctx, ctx.LocalEnvironment);
@@ -391,9 +384,8 @@ namespace Zilf.Interpreter.Values
             return Enumerable.Repeat(result, 1);
         }
 
-        [NotNull]
-        protected static string SequenceToString([NotNull] IEnumerable<ZilObject> items,
-            [NotNull] string start, [NotNull] string end, [NotNull] Func<ZilObject, string> convert)
+        protected static string SequenceToString(IEnumerable<ZilObject?> items,
+            string start, string end, Func<ZilObject, string> convert)
         {
             var sb = new StringBuilder();
             sb.Append(start);

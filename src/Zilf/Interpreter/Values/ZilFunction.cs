@@ -29,33 +29,30 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.FUNCTION, PrimType.LIST)]
     class ZilFunction : ZilTiedListBase, IApplicable
     {
-        [NotNull]
         readonly ArgSpec argspec;
 
-        [NotNull]
         readonly ZilObject[] body;
 
         /// <exception cref="InterpreterError"><paramref name="argspec"/> is invalid.</exception>
-        public ZilFunction([CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom,
-            [NotNull] [ItemNotNull] IEnumerable<ZilObject> argspec, ZilDecl decl,
-            [ItemNotNull] [NotNull] IEnumerable<ZilObject> body)
+        public ZilFunction(ZilAtom? name, ZilAtom? activationAtom,
+            IEnumerable<ZilObject> argspec, ZilDecl decl,
+            IEnumerable<ZilObject> body)
             : this("<internal>", name, activationAtom, argspec, decl, body)
         {
         }
 
         // TODO: convert to static method; caller parameter doesn't belong here
         /// <exception cref="InterpreterError"><paramref name="argspec"/> is invalid.</exception>
-        public ZilFunction([NotNull] string caller, [CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom,
-            [NotNull] [ItemNotNull] IEnumerable<ZilObject> argspec, ZilDecl decl,
-            [ItemNotNull] [NotNull] IEnumerable<ZilObject> body)
+        public ZilFunction(string caller, ZilAtom? name, ZilAtom? activationAtom,
+            IEnumerable<ZilObject> argspec, ZilDecl? decl,
+            IEnumerable<ZilObject> body)
         {
             this.argspec = ArgSpec.Parse(caller, name, activationAtom, argspec, decl);
             this.body = body.ToArray();
         }
 
         [ChtypeMethod]
-        [NotNull]
-        public static ZilFunction FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
+        public static ZilFunction FromList(Context ctx, ZilListBase list)
         {
             var functionSubr = ctx.GetSubrDelegate("FUNCTION");
             Debug.Assert(functionSubr != null);
@@ -68,10 +65,8 @@ namespace Zilf.Interpreter.Values
                 .WithCatchAll<ZilFunction>(x => x.BodyAsList);
         }
 
-        [NotNull]
         public ZilList ArgSpecAsList => argspec.ToZilList();
 
-        [NotNull]
         public ZilList BodyAsList => new ZilList(body);
 
         public override StdAtom StdTypeAtom => StdAtom.FUNCTION;
@@ -80,35 +75,38 @@ namespace Zilf.Interpreter.Values
 
         public ZilResult ApplyNoEval(Context ctx, ZilObject[] args) => ApplyImpl(ctx, args, false);
 
-        ZilResult ApplyImpl([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args, bool eval)
+        ZilResult ApplyImpl(Context ctx, ZilObject[] args, bool eval)
         {
-            using (var application = argspec.BeginApply(ctx, args, eval))
+            using var application = argspec.BeginApply(ctx, args, eval);
+
+            if (application.EarlyResult != null)
+                return application.EarlyResult.Value;
+
+            var activation = application.Activation;
+            do
             {
-                if (application.EarlyResult != null)
-                    return application.EarlyResult.Value;
+                var result = EvalProgram(ctx, body);
 
-                var activation = application.Activation;
-                do
-                {
-                    var result = EvalProgram(ctx, body);
-                    if (result.IsReturn(activation, out var value))
-                    {
-                        argspec.ValidateResult(ctx, value);
-                        return value;
-                    }
-
-                    if (result.IsAgain(activation))
-                    {
-                        // repeat
-                        continue;
-                    }
-
+                if (activation == null)
                     return result;
-                } while (true);
-            }
+
+                if (result.IsReturn(activation, out var value))
+                {
+                    argspec.ValidateResult(ctx, value);
+                    return value;
+                }
+
+                if (result.IsAgain(activation))
+                {
+                    // repeat
+                    continue;
+                }
+
+                return result;
+            } while (true);
         }
 
-        public override bool StructurallyEquals(ZilObject obj)
+        public override bool StructurallyEquals(ZilObject? obj)
         {
             if (!(obj is ZilFunction other))
                 return false;

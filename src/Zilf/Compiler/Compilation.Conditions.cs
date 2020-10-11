@@ -16,6 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
@@ -29,8 +31,8 @@ namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        internal void CompileCondition([NotNull] IRoutineBuilder rb, [NotNull] ZilObject expr, [NotNull] ISourceLine src,
-            [NotNull] ILabel label, bool polarity)
+        internal void CompileCondition(IRoutineBuilder rb, ZilObject expr, ISourceLine? src,
+            ILabel label, bool polarity)
         {
             expr = expr.Unwrap(Context);
             var type = expr.StdTypeAtom;
@@ -148,8 +150,8 @@ namespace Zilf.Compiler
             }
         }
 
-        internal void CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilObject[] args, [NotNull] ISourceLine src,
-            bool and, [NotNull] ILabel label, bool polarity)
+        internal void CompileBoolean(IRoutineBuilder rb, ZilObject[] args, ISourceLine src,
+            bool and, ILabel label, bool polarity)
         {
             if (args.Length == 0)
             {
@@ -172,7 +174,7 @@ namespace Zilf.Compiler
                  * even though <SET X 0> is false. We emulate this issue by compiling the
                  * last element as a statement instead of a condition when it fits
                  * this pattern. */
-                var last = args[args.Length - 1];
+                var last = args[^1];
                 if (and && last.IsSetToZeroForm())
                 {
                     Context.HandleError(new CompilerError(last.SourceLine, CompilerMessages.Treating_SET_To_0_As_True_Here));
@@ -190,7 +192,7 @@ namespace Zilf.Compiler
                     CompileCondition(rb, args[i], src, label, !and);
 
                 /* QUIRK: Emulate the aforementioned SET issue. */
-                var last = args[args.Length - 1];
+                var last = args[^1];
                 if (and && last.IsSetToZeroForm())
                 {
                     Context.HandleError(new CompilerError(last.SourceLine, CompilerMessages.Treating_SET_To_0_As_True_Here));
@@ -201,11 +203,10 @@ namespace Zilf.Compiler
             }
         }
 
-        [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
         [ContractAnnotation("wantResult: false => canbenull")]
-        internal IOperand CompileBoolean([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args, [NotNull] ISourceLine src,
-            bool and, bool wantResult, [CanBeNull] IVariable resultStorage)
+        internal IOperand? CompileBoolean(IRoutineBuilder rb, ZilListoidBase args, ISourceLine src,
+            bool and, bool wantResult, IVariable? resultStorage)
         {
             if (!args.IsCons(out var first, out var rest))
                 return and ? Game.One : Game.Zero;
@@ -247,10 +248,10 @@ namespace Zilf.Compiler
             // hard path - need to preserve the values and return the last one evaluated
             var tempAtom = ZilAtom.Parse("?TMP", Context);
             lastLabel = rb.DefineLabel();
-            IVariable tempVar = null;
-            ILabel trueLabel = null;
+            IVariable? tempVar = null;
+            ILabel? trueLabel = null;
 
-            resultStorage = resultStorage ?? rb.Stack;
+            resultStorage ??= rb.Stack;
             var nonStackResultStorage = resultStorage == rb.Stack ? null : resultStorage;
 
             IVariable TempVarProvider()
@@ -265,7 +266,7 @@ namespace Zilf.Compiler
 
             ILabel TrueLabelProvider()
             {
-                return trueLabel ?? (trueLabel = rb.DefineLabel());
+                return trueLabel ??= rb.DefineLabel();
             }
 
             IOperand result;
@@ -331,10 +332,9 @@ namespace Zilf.Compiler
         }
 
         // TODO: refactor COND-like control structures to share an implementation, a la CompileBoundedLoop
-        [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileCOND([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
-            bool wantResult, [CanBeNull] IVariable resultStorage)
+        internal IOperand? CompileCOND(IRoutineBuilder rb, ZilListoidBase clauses, ISourceLine src,
+            bool wantResult, IVariable? resultStorage)
         {
             var nextLabel = rb.DefineLabel();
             var endLabel = rb.DefineLabel();
@@ -398,7 +398,10 @@ namespace Zilf.Compiler
                 // emit code for clause
                 var clauseResult = CompileClauseBody(rb, body, wantResult, resultStorage);
                 if (wantResult && clauseResult != resultStorage)
+                {
+                    Debug.Assert(clauseResult != null);
                     rb.EmitStore(resultStorage, clauseResult);
+                }
 
                 // jump to end
                 if (!clauses.IsEmpty || wantResult && !elsePart)
@@ -426,15 +429,14 @@ namespace Zilf.Compiler
             return wantResult ? resultStorage : null;
         }
 
-        [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        IOperand CompileClauseBody([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clause, bool wantResult,
-            [CanBeNull] IVariable resultStorage)
+        IOperand? CompileClauseBody(IRoutineBuilder rb, ZilListoidBase clause, bool wantResult,
+            IVariable? resultStorage)
         {
             if (clause.IsEmpty)
                 return Game.One;
 
-            IOperand result = null;
+            IOperand? result = null;
 
             do
             {
@@ -486,12 +488,11 @@ namespace Zilf.Compiler
             return result;
         }
 
-        [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileVERSION_P([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
-            bool wantResult, [CanBeNull] IVariable resultStorage)
+        internal IOperand? CompileVERSION_P(IRoutineBuilder rb, ZilListoidBase clauses, ISourceLine src,
+            bool wantResult, IVariable? resultStorage)
         {
-            resultStorage = resultStorage ?? rb.Stack;
+            resultStorage ??= rb.Stack;
             while (!clauses.IsEmpty)
             {
                 ZilObject clause;
@@ -564,12 +565,11 @@ namespace Zilf.Compiler
             return wantResult ? resultStorage : null;
         }
 
-        [CanBeNull]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileIFFLAG([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase clauses, [NotNull] ISourceLine src,
-            bool wantResult, [CanBeNull] IVariable resultStorage)
+        internal IOperand? CompileIFFLAG(IRoutineBuilder rb, ZilListoidBase clauses, ISourceLine src,
+            bool wantResult, IVariable? resultStorage)
         {
-            resultStorage = resultStorage ?? rb.Stack;
+            resultStorage ??= rb.Stack;
 
             while (!clauses.IsEmpty)
             {
@@ -582,14 +582,17 @@ namespace Zilf.Compiler
 
                 var (flag, body) = list;
 
-                ZilObject value;
                 bool match, isElse = false;
-                ZilAtom shadyElseAtom = null;
+                ZilAtom? shadyElseAtom = null;
 
                 switch (flag)
                 {
-                    case ZilAtom atom when (value = Context.GetCompilationFlagValue(atom)) != null:
-                    case ZilString str when (value = Context.GetCompilationFlagValue(str.Text)) != null:
+                    case ZilAtom atom when Context.GetCompilationFlagValue(atom) is ZilObject value:
+                        // name of a defined compilation flag
+                        match = value.IsTrue;
+                        break;
+
+                    case ZilString str when Context.GetCompilationFlagValue(str.Text) is ZilObject value:
                         // name of a defined compilation flag
                         match = value.IsTrue;
                         break;

@@ -26,67 +26,59 @@ namespace Zilf.Language
     [Serializable]
     class InterpreterError : ZilError<InterpreterMessages>
     {
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError([NotNull] string message)
-            : base(message)
-        {
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError([NotNull] string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError(ISourceLine src, [NotNull] string message)
-            : base(src, message)
-        {
-        }
-
-        [Obsolete("Use a constructor that takes a diagnostic code.")]
-        public InterpreterError([NotNull] IProvideSourceLine node, [NotNull] string message)
-            : base(node.SourceLine, message)
-        {
-        }
-
         public InterpreterError(int code)
             : this(code, null)
         {
         }
 
-        public InterpreterError(int code, params object[] messageArgs)
+        public InterpreterError(int code, params object[]? messageArgs)
             : this(DiagnosticContext.Current.SourceLine, code, messageArgs)
         {
         }
 
-        public InterpreterError(ISourceLine sourceLine, int code)
+        public InterpreterError(ISourceLine? sourceLine, int code)
             : this(sourceLine, code, null)
         {
         }
 
-        public InterpreterError(ISourceLine sourceLine, int code, params object[] messageArgs)
+        public InterpreterError(ISourceLine? sourceLine, int code, params object[]? messageArgs)
             : base(MakeDiagnostic(sourceLine, code, messageArgs))
         {
         }
 
-        public InterpreterError([NotNull] IProvideSourceLine sourceLine, int code)
-           : this(sourceLine, code, null)
+        public InterpreterError(IProvideSourceLine? sourceLine, int code)
+            : this(sourceLine, code, null)
         {
         }
 
-        public InterpreterError([NotNull] IProvideSourceLine node, int code, params object[] messageArgs)
-            : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
+        public InterpreterError(IProvideSourceLine? node, int code, params object[]? messageArgs)
+            : base(MakeDiagnostic(node?.SourceLine, code, messageArgs))
         {
         }
 
-        public InterpreterError([NotNull] Diagnostic diagnostic)
+        public InterpreterError(Diagnostic diagnostic)
             : base(diagnostic)
         {
         }
 
-        protected InterpreterError([NotNull] SerializationInfo si, StreamingContext sc)
+        protected InterpreterError(SerializationInfo si, StreamingContext sc)
             : base(si, sc)
+        {
+        }
+
+        protected InterpreterError(string message) : base(message)
+        {
+        }
+
+        protected InterpreterError(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected InterpreterError(ISourceLine src, string message) : base(src, message)
+        {
+        }
+
+        protected InterpreterError() : base()
         {
         }
     }

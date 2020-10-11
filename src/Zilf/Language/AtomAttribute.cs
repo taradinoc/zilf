@@ -24,12 +24,11 @@ namespace Zilf.Language
     [AttributeUsage(AttributeTargets.Field)]
     sealed class AtomAttribute : Attribute
     {
-        public AtomAttribute([NotNull] string name)
+        public AtomAttribute(string name)
         {
             Name = name;
         }
 
-        [NotNull]
         public string Name { get; }
     }
 }

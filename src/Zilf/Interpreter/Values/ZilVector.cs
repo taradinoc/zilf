@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Zilf.Language;
 using JetBrains.Annotations;
@@ -31,33 +32,25 @@ namespace Zilf.Interpreter.Values
 
         class VectorStorage
         {
-            [NotNull]
             ZilObject[] items;
 
             public VectorStorage()
-                : this(new ZilObject[0])
+                : this(Array.Empty<ZilObject>())
             {
             }
 
             public int BaseOffset { get; private set; }
 
-            public VectorStorage([NotNull] ZilObject[] items)
+            public VectorStorage(ZilObject[] items)
             {
                 this.items = items;
             }
 
-            [NotNull]
-            public IEnumerable<ZilObject> GetSequence(int offset)
-            {
-                return items.Skip(offset + BaseOffset);
-            }
+            public IEnumerable<ZilObject> GetSequence(int offset) => items.Skip(offset + BaseOffset);
 
-            public int GetLength(int offset)
-            {
-                return items.Length - offset - BaseOffset;
-            }
+            public int GetLength(int offset) => items.Length - offset - BaseOffset;
 
-            public ZilObject GetItem(int offset, int index)
+            public ZilObject? GetItem(int offset, int index)
             {
                 try
                 {
@@ -117,24 +110,24 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public ZilVector([NotNull] ZilVector other)
+        public ZilVector(ZilVector other)
             : this(other.storage, other.offset)
         {
         }
 
-        ZilVector([NotNull] VectorStorage storage, int offset)
+        ZilVector(VectorStorage storage, int offset)
         {
             this.storage = storage;
             this.offset = offset;
         }
 
-        public ZilVector([NotNull] params ZilObject[] items)
+        public ZilVector(params ZilObject[] items)
         {
             storage = new VectorStorage(items);
             offset = 0;
         }
 
-        public override bool StructurallyEquals(ZilObject obj)
+        public override bool StructurallyEquals(ZilObject? obj)
         {
             return obj is ZilVector other && this.SequenceStructurallyEqual(other);
         }
@@ -175,13 +168,12 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.VECTOR;
 
-        [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
             return this;
         }
 
-        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType)
+        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment? environment, ZilAtom? originalType)
         {
             var result = EvalSequence(ctx, this, environment).ToZilVectorResult(SourceLine);
             if (result.ShouldPass())
@@ -192,43 +184,25 @@ namespace Zilf.Interpreter.Values
 
         #region IEnumerable<ZilObject> Members
 
-        public IEnumerator<ZilObject> GetEnumerator()
-        {
-            return storage.GetSequence(offset).GetEnumerator();
-        }
+        public IEnumerator<ZilObject> GetEnumerator() => storage.GetSequence(offset).GetEnumerator();
 
         #endregion
 
         #region IEnumerable Members
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
         #endregion
 
         #region IStructure Members
 
-        public ZilObject GetFirst()
-        {
-            return storage.GetItem(offset, 0);
-        }
+        public ZilObject? GetFirst() => storage.GetItem(offset, 0);
 
-        public IStructure GetRest(int skip)
-        {
-            return skip > GetLength() ? null : new ZilVector(storage, offset + skip);
-        }
+        public IStructure? GetRest(int skip) => skip > GetLength() ? null : new ZilVector(storage, offset + skip);
 
-        public IStructure GetBack(int skip)
-        {
-            return offset + storage.BaseOffset >= skip ? new ZilVector(storage, offset - skip) : null;
-        }
+        public IStructure? GetBack(int skip) => offset + storage.BaseOffset >= skip ? new ZilVector(storage, offset - skip) : null;
 
-        public IStructure GetTop()
-        {
-            return offset == -storage.BaseOffset ? this : new ZilVector(storage, -storage.BaseOffset);
-        }
+        public IStructure GetTop() => offset == -storage.BaseOffset ? this : new ZilVector(storage, -storage.BaseOffset);
 
         public void Grow(int end, int beginning, ZilObject defaultValue)
         {
@@ -238,9 +212,10 @@ namespace Zilf.Interpreter.Values
         public bool IsEmpty => storage.GetLength(offset) <= 0;
 
         /// <exception cref="ArgumentOutOfRangeException" accessor="set"><paramref name="index"/> is out of range.</exception>
+        [MaybeNull]
         public ZilObject this[int index]
         {
-            get => storage.GetItem(offset, index);
+            get => storage.GetItem(offset, index)!;
             set => storage.PutItem(offset, index, value);
         }
 

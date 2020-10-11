@@ -22,15 +22,13 @@ namespace Zapf.Parsing.Directives
 {
     public abstract class NameAndTextDirective : Directive
     {
-        protected NameAndTextDirective([NotNull] string name, [NotNull] string text)
+        protected NameAndTextDirective(string name, string text)
         {
             Name = name;
             Text = text;
         }
 
-        [NotNull]
         public string Name { get; }
-        [NotNull]
         public string Text { get; }
     }
 }

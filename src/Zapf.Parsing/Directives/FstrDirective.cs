@@ -22,7 +22,7 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class FstrDirective : NameAndTextDirective
     {
-        public FstrDirective([NotNull] string name, [NotNull] string text)
+        public FstrDirective(string name, string text)
             : base(name, text) { }
     }
 }

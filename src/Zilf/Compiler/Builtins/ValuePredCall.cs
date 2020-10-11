@@ -28,22 +28,22 @@ namespace Zilf.Compiler.Builtins
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     struct ValuePredCall
     {
-        [NotNull, PublicAPI]
+        [PublicAPI]
         public Compilation cc { get; }
-        [NotNull, PublicAPI]
+        [PublicAPI]
         public IRoutineBuilder rb { get; }
-        [NotNull, PublicAPI]
+        [PublicAPI]
         public ZilForm form { get; }
 
-        [NotNull, PublicAPI]
+        [PublicAPI]
         public IVariable resultStorage { get; }
-        [NotNull, PublicAPI]
+        [PublicAPI]
         public ILabel label { get; }
         [PublicAPI]
         public bool polarity { get; }
 
-        public ValuePredCall([NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form,
-            [NotNull] IVariable resultStorage, [NotNull] ILabel label, bool polarity)
+        public ValuePredCall(Compilation cc, IRoutineBuilder rb, ZilForm form,
+             IVariable resultStorage, ILabel label, bool polarity)
             : this()
         {
             this.cc = cc;

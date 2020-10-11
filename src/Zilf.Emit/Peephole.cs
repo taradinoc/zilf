@@ -18,6 +18,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -60,12 +62,12 @@ namespace Zilf.Emit
 
     struct CombinableLine<TCode>
     {
-        public ILabel Label { get; }
+        public ILabel? Label { get; }
         public TCode Code { get; }
-        public ILabel Target { get; }
+        public ILabel? Target { get; }
         public PeepholeLineType Type { get; }
 
-        public CombinableLine(ILabel label, TCode code, ILabel target, PeepholeLineType type)
+        public CombinableLine(ILabel? label, TCode code, ILabel? target, PeepholeLineType type)
             : this()
         {
             Label = label;
@@ -79,10 +81,9 @@ namespace Zilf.Emit
     {
         public readonly int LinesConsumed;
 
-        [NotNull]
         public readonly IEnumerable<CombinableLine<TCode>> NewLines;
 
-        public CombinerResult(int linesConsumed, [NotNull] IEnumerable<CombinableLine<TCode>> newLines)
+        public CombinerResult(int linesConsumed, IEnumerable<CombinableLine<TCode>> newLines)
         {
             LinesConsumed = linesConsumed;
             NewLines = newLines;
@@ -137,8 +138,8 @@ namespace Zilf.Emit
         /// <param name="lines">The original instruction sequence.</param>
         /// <returns>A value indicating how many instructions were consumed
         /// and which instructions they should be replaced with.</returns>
-        CombinerResult<TCode> Apply([NotNull] IEnumerable<CombinableLine<TCode>> lines);
-        
+        CombinerResult<TCode> Apply(IEnumerable<CombinableLine<TCode>> lines);
+
         /// <summary>
         /// Generates code for an unconditional branch.
         /// </summary>
@@ -204,7 +205,6 @@ namespace Zilf.Emit
         /// Allocates a new label.
         /// </summary>
         /// <returns>The new label.</returns>
-        [NotNull]
         ILabel NewLabel();
     }
 
@@ -216,18 +216,15 @@ namespace Zilf.Emit
     {
         class Line
         {
-            [CanBeNull]
-            public ILabel Label;
+            public ILabel? Label;
             public TCode Code;
-            [CanBeNull]
-            public ILabel TargetLabel;
+            public ILabel? TargetLabel;
             public PeepholeLineType Type;
 
-            [CanBeNull]
-            public Line TargetLine;
+            public Line? TargetLine;
             public bool Flag;       // toggled to mark reachability
 
-            public Line([CanBeNull] ILabel label, TCode code, [CanBeNull] ILabel target, PeepholeLineType type)
+            public Line(ILabel? label, TCode code, ILabel? target, PeepholeLineType type)
             {
                 Label = label;
                 Code = code;
@@ -235,7 +232,7 @@ namespace Zilf.Emit
                 Type = type;
             }
 
-            public void CopyFrom([NotNull] Line other)
+            public void CopyFrom(Line other)
             {
                 Label = other.Label;
                 Code = other.Code;
@@ -280,19 +277,14 @@ namespace Zilf.Emit
             }
         }
 
-        [CanBeNull]
-        ILabel pendingLabel;
-        [NotNull]
+        ILabel? pendingLabel;
         readonly Dictionary<ILabel, ILabel> aliases = new Dictionary<ILabel, ILabel>();
-        [ItemNotNull]
-        [NotNull]
         readonly LinkedList<Line> lines = new LinkedList<Line>();
 
         /// <summary>
         /// Gets or sets the delegate that will be used to combine adjacent instructions.
         /// </summary>
-        [CanBeNull]
-        public IPeepholeCombiner<TCode> Combiner { get; set; }
+        public IPeepholeCombiner<TCode>? Combiner { get; set; }
 
         /// <summary>
         /// Adds an instruction to the buffer.
@@ -300,7 +292,7 @@ namespace Zilf.Emit
         /// <param name="code">The instruction.</param>
         /// <param name="target">The target label of this instruction, or null.</param>
         /// <param name="type">The type of instruction.</param>
-        public void AddLine(TCode code, [CanBeNull] ILabel target, PeepholeLineType type)
+        public void AddLine(TCode code, ILabel? target, PeepholeLineType type)
         {
             lines.AddLast(new Line(pendingLabel, code, target, type));
             pendingLabel = null;
@@ -313,7 +305,7 @@ namespace Zilf.Emit
         /// <exception cref="InvalidOperationException">
         /// One of the labels in the other buffer's <see cref="aliases"/> also exists in this buffer's <see cref="aliases"/>.
         /// </exception>
-        public void InsertBufferFirst([NotNull] PeepholeBuffer<TCode> other)
+        public void InsertBufferFirst(PeepholeBuffer<TCode> other)
         {
             // turn pending label into a label on our first line, or copy it if we have no lines
             if (other.pendingLabel != null)
@@ -360,7 +352,7 @@ namespace Zilf.Emit
         /// Marks a label at the current position.
         /// </summary>
         /// <param name="label">The label to mark.</param>
-        public void MarkLabel([NotNull] ILabel label)
+        public void MarkLabel(ILabel label)
         {
             if (pendingLabel == null)
                 pendingLabel = label;
@@ -396,7 +388,7 @@ namespace Zilf.Emit
         ///     </description></item>
         /// </list>
         /// </remarks>
-        public void Finish([NotNull] [InstantHandle] Action<ILabel, TCode, ILabel, PeepholeLineType> handler)
+        public void Finish([InstantHandle] Action<ILabel?, TCode, ILabel?, PeepholeLineType> handler)
         {
             Optimize();
 
@@ -405,7 +397,7 @@ namespace Zilf.Emit
         }
 
         [System.Diagnostics.Conditional("TRACE_PEEPHOLE")]
-        void Trace([CanBeNull] string message = null)
+        void Trace(string? message = null)
         {
             Console.WriteLine();
             Console.WriteLine();
@@ -549,7 +541,7 @@ namespace Zilf.Emit
                 }
 
                 // apply optimizations to each line
-                for (var node = lines.First; node != null; node = node.Next)
+                for (LinkedListNode<Line>? node = lines.First; node != null; node = node!.Next)
                 {
                     var line = node.Value;
                     bool delete = false;
@@ -655,7 +647,7 @@ namespace Zilf.Emit
                                  (node.Next.Value.Type == PeepholeLineType.BranchAlways && node.Next.Value.TargetLine == originalTarget)))
                             {
                                 ILabel jumpTargetLabel;
-                                Line jumpTargetLine;
+                                Line? jumpTargetLine;
                                 if (sameCondition)
                                 {
                                     if (lineAfterTarget.Label == null)
@@ -669,6 +661,7 @@ namespace Zilf.Emit
                                 }
                                 else
                                 {
+                                    Debug.Assert(originalTarget.TargetLabel != null);
                                     jumpTargetLabel = originalTarget.TargetLabel;
                                     jumpTargetLine = originalTarget.TargetLine;
                                 }
@@ -682,7 +675,7 @@ namespace Zilf.Emit
                                     TargetLine = jumpTargetLine,
                                     Flag = reachableFlag
                                 };
-                                usedLabels[newLine.TargetLabel] = true;
+                                usedLabels[jumpTargetLabel] = true;
 
                                 node = lines.AddAfter(node, newLine);
                             }
@@ -759,7 +752,7 @@ namespace Zilf.Emit
                         }
                         else if (line.Type == PeepholeLineType.BranchAlways &&
                             line.TargetLine.Type == PeepholeLineType.Terminator &&
-                            Combiner.CanDuplicate(line.TargetLine.Code))
+                            Combiner?.CanDuplicate(line.TargetLine.Code) == true)
                         {
                             // handle "branch to terminator" by replacing the branch with a copy of the terminator
                             var oldLabel = line.Label;
@@ -878,7 +871,7 @@ namespace Zilf.Emit
                                 {
                                     l.TargetLabel = nextLine.Label;
                                     l.TargetLine = nextLine;
-                                    usedLabels[l.TargetLabel] = true;
+                                    usedLabels[l.TargetLabel!] = true;
                                 }
                             }
 
@@ -955,7 +948,7 @@ namespace Zilf.Emit
                     // delete code that has been doomed
                     if (delete)
                     {
-                        var next = node.Next;
+                        var next = node!.Next;
 
                         lines.Remove(node);
                         changed = true;
@@ -963,7 +956,7 @@ namespace Zilf.Emit
                         /* if the line is labeled, update references to it. we assume the
                          * optimization rules will never delete the labeled last line of
                          * the function unless it's unreachable. */
-                        if (line.Label != null /*&& next != null*/)
+                        if (line.Label != null && next != null)
                         {
                             MarkReachable(next);
 
@@ -992,13 +985,15 @@ namespace Zilf.Emit
                             node = next.Previous;
                         }
                         else
+                        {
                             break;
+                        }
                     }
                 }
             } while (changed);
         }
 
-        static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines([NotNull] LinkedListNode<Line> node)
+        static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines(LinkedListNode<Line> node)
         {
             yield return new CombinableLine<TCode>(node.Value.Label, node.Value.Code, node.Value.TargetLabel, node.Value.Type);
 
@@ -1008,25 +1003,15 @@ namespace Zilf.Emit
             }
         }
 
-        static bool IsInvertibleBranch(PeepholeLineType type)
-        {
-            return type == PeepholeLineType.BranchNegative ||
-                   type == PeepholeLineType.BranchPositive;
-        }
+        static bool IsInvertibleBranch(PeepholeLineType type) =>
+            type == PeepholeLineType.BranchNegative || type == PeepholeLineType.BranchPositive;
 
-        static PeepholeLineType InvertBranch(PeepholeLineType type)
-        {
-            switch (type)
+        static PeepholeLineType InvertBranch(PeepholeLineType type) =>
+            type switch
             {
-                case PeepholeLineType.BranchPositive:
-                    return PeepholeLineType.BranchNegative;
-
-                case PeepholeLineType.BranchNegative:
-                    return PeepholeLineType.BranchPositive;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
+                PeepholeLineType.BranchPositive => PeepholeLineType.BranchNegative,
+                PeepholeLineType.BranchNegative => PeepholeLineType.BranchPositive,
+                _ => throw new ArgumentOutOfRangeException(),
+            };
     }
 }

@@ -24,13 +24,11 @@ namespace Zilf.Language.Signatures
 {
     sealed partial class SubrSignature : ISignature
     {
-        [NotNull]
-        [ItemNotNull]
         public IReadOnlyList<ISignaturePart> Parts { get; }
         public int MinArgs { get; }
         public int? MaxArgs { get; }
 
-        SubrSignature([NotNull] [ItemNotNull] IReadOnlyList<ISignaturePart> parts)
+        SubrSignature(IReadOnlyList<ISignaturePart> parts)
         {
             Parts = parts;
 

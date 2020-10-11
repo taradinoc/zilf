@@ -86,13 +86,13 @@ W?MULE::
             AssertWord(buffer, zebraAddr + zwordLength, horseAddr);
         }
 
-        static void AssertWord([NotNull] byte[] buffer, int address, ushort expected)
+        static void AssertWord([JetBrains.Annotations.NotNull] byte[] buffer, int address, ushort expected)
         {
             var actual = (ushort)((buffer[address] << 8) + buffer[address + 1]);
             Assert.AreEqual(expected, actual, "Data word differs at address {0}", address);
         }
 
-        static void AssertZword(byte[] buffer, [NotNull] StringEncoder encoder, int zwordLength, int address, string expected)
+        static void AssertZword(byte[] buffer, [JetBrains.Annotations.NotNull] StringEncoder encoder, int zwordLength, int address, string expected)
         {
             var expectedBytes = encoder.Encode(expected, zwordLength * 3 / 2, StringEncoderMode.NoAbbreviations);
             Debug.Assert(expectedBytes.Length == zwordLength);

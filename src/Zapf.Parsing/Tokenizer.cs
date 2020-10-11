@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using JetBrains.Annotations;
 using Zapf.Parsing.Diagnostics;
 
 namespace Zapf.Parsing
@@ -39,7 +38,7 @@ namespace Zapf.Parsing
             { '\'', TokenType.Apostrophe },
         };
 
-        StreamReader rdr;
+        readonly StreamReader rdr;
         readonly string filename;
         int line = 1;
         Token? heldToken;
@@ -54,13 +53,12 @@ namespace Zapf.Parsing
             }
 
             public int LineNum { get; }
-            public string SourceFile { get; }
+            public string? SourceFile { get; }
         }
 
-        [NotNull]
         ISourceLine CurrentSourceLine => new BasicSourceLine(line, filename);
 
-        public Tokenizer([NotNull] Stream stream, [NotNull] string filename)
+        public Tokenizer(Stream stream, string filename)
         {
             rdr = new StreamReader(stream);
             this.filename = filename;
@@ -68,7 +66,7 @@ namespace Zapf.Parsing
 
         char? PeekChar()
         {
-            return heldChar ?? (heldChar = NextChar());
+            return heldChar ??= NextChar();
         }
 
         char? NextChar()
@@ -149,7 +147,7 @@ namespace Zapf.Parsing
                     break;
 
                 case ';':
-                    // disard comment
+                    // discard comment
                     do
                     {
                         c = NextChar();
@@ -287,14 +285,7 @@ namespace Zapf.Parsing
 
         public void Dispose()
         {
-            try
-            {
-                rdr?.Dispose();
-            }
-            finally
-            {
-                rdr = null;
-            }
+            rdr.Dispose();
         }
     }
 }

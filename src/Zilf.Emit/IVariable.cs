@@ -22,7 +22,6 @@ namespace Zilf.Emit
 {
     public interface IVariable : IOperand
     {
-        [NotNull]
         IIndirectOperand Indirect { get; }
     }
 }

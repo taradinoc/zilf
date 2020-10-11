@@ -24,18 +24,16 @@ namespace Zilf.ZModel.Vocab
     [UsedImplicitly(ImplicitUseKindFlags.InstantiatedWithFixedConstructorSignature, ImplicitUseTargetFlags.Itself)]
     class Synonym
     {
-        [NotNull]
         public readonly IWord OriginalWord;
-        [NotNull]
         public readonly IWord SynonymWord;
 
-        public Synonym([NotNull] IWord original, [NotNull] IWord synonym)
+        public Synonym(IWord original, IWord synonym)
         {
             OriginalWord = original;
             SynonymWord = synonym;
         }
 
-        public virtual void Apply([NotNull] Context ctx)
+        public virtual void Apply(Context ctx)
         {
             ctx.ZEnvironment.VocabFormat.MakeSynonym(SynonymWord, OriginalWord);
         }

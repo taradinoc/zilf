@@ -29,7 +29,7 @@ namespace Zilf.Diagnostics
         public readonly string Text;
         public readonly bool Plural;
 
-        public CountableString([NotNull] string text, bool plural)
+        public CountableString(string text, bool plural)
         {
             Text = text;
             Plural = plural;
@@ -43,8 +43,8 @@ namespace Zilf.Diagnostics
 
     static class ArgCountHelpers
     {
-        public static IEnumerable<T> Collapse<T>([NotNull] IEnumerable<T> sequence,
-            [NotNull] Func<T, T, bool> match, [NotNull] Func<T, T, T> combine)
+        public static IEnumerable<T> Collapse<T>(IEnumerable<T> sequence,
+             Func<T, T, bool> match, Func<T, T, T> combine)
         {
             //Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
@@ -74,8 +74,7 @@ namespace Zilf.Diagnostics
             }
         }
 
-        [NotNull]
-        static string EnglishJoin([NotNull] IEnumerable<string> sequence, [NotNull] string conjunction)
+        static string EnglishJoin(IEnumerable<string> sequence, string conjunction)
         {
             var items = sequence.ToArray();
 
@@ -94,15 +93,14 @@ namespace Zilf.Diagnostics
             }
         }
 
-        [NotNull]
-        public static string FormatArgCount([NotNull] IEnumerable<ArgCountRange> ranges)
+        public static string FormatArgCount(IEnumerable<ArgCountRange> ranges)
         {
             FormatArgCount(ranges, out var cs);
             return string.Format(CultureInfo.CurrentCulture, "{0} argument{1}", cs.Text, cs.Plural ? "s" : "");
         }
 
         /// <exception cref="ArgumentException">No ranges provided</exception>
-        public static void FormatArgCount([NotNull] IEnumerable<ArgCountRange> ranges, out CountableString result)
+        public static void FormatArgCount(IEnumerable<ArgCountRange> ranges, out CountableString result)
         {
             var allCounts = new List<int>();
             bool uncapped = false;

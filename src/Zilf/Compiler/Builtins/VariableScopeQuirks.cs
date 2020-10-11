@@ -21,11 +21,11 @@ using System;
 namespace Zilf.Compiler.Builtins
 {
     [Flags]
-    public enum QuirksMode
+    public enum VariableScopeQuirks
     {
         None = 0,
         Local = 1,
         Global = 2,
-        Both = 3,
+        Both = Local | Global,
     }
 }

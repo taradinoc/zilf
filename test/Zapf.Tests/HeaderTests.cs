@@ -24,7 +24,7 @@ namespace Zapf.Tests
     [TestClass, TestCategory("Assembler")]
     public class HeaderTests
     {
-        static void AssertWordAtOffset([NotNull] byte[] buffer, int offset, ushort expected)
+        static void AssertWordAtOffset([JetBrains.Annotations.NotNull] byte[] buffer, int offset, ushort expected)
         {
             var actual = (ushort)((buffer[offset] << 8) + buffer[offset + 1]);
             Assert.AreEqual(expected, actual, "Wrong word value at byte offset {0}.", offset);

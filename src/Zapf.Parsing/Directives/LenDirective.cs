@@ -22,7 +22,7 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class LenDirective : TextDirective
     {
-        public LenDirective([NotNull] string text)
+        public LenDirective(string text)
             : base(text) { }
     }
 }

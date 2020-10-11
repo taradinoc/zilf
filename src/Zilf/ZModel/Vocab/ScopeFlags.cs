@@ -63,7 +63,7 @@ namespace Zilf.ZModel.Vocab
 
         static readonly ConditionalWeakTable<ZilVector, CacheEntry> sflagsCache = new ConditionalWeakTable<ZilVector, CacheEntry>();
 
-        public static byte Parse([CanBeNull] ZilList list, [NotNull] Context ctx)
+        public static byte Parse(ZilList? list, Context ctx)
         {
             byte result = 0;
 
@@ -109,7 +109,7 @@ namespace Zilf.ZModel.Vocab
             else
             {
                 // use custom flags
-                if (sflagsCache.TryGetValue(sflagsVector, out var entry) == false)
+                if (!sflagsCache.TryGetValue(sflagsVector, out var entry))
                 {
                     var length = sflagsVector.GetLength();
                     if (length % 2 != 0)
@@ -196,7 +196,7 @@ namespace Zilf.ZModel.Vocab
             return result;
         }
 
-        static byte GetSflagValue([NotNull] Context ctx, StdAtom stdAtom)
+        static byte GetSflagValue(Context ctx, StdAtom stdAtom)
         {
             var atom = ctx.GetStdAtom(stdAtom);
             var gval = ctx.GetGlobalVal(atom);
@@ -220,7 +220,7 @@ namespace Zilf.ZModel.Vocab
             return (byte)fix.Value;
         }
 
-        static void MakeAdditiveFlag([NotNull] Context ctx, [NotNull] CacheEntry entry, [NotNull] string name, StdAtom valueAtom)
+        static void MakeAdditiveFlag(Context ctx, CacheEntry entry, string name, StdAtom valueAtom)
         {
             entry.Dict.Add(name, GetSflagValue(ctx, valueAtom));
             entry.Additive.Add(name);

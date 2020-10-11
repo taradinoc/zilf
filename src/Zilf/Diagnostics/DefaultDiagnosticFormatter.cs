@@ -23,6 +23,7 @@ namespace Zilf.Diagnostics
     public class DefaultDiagnosticFormatter : IDiagnosticFormatter
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Not normalizing.")]
         public string Format(Diagnostic diagnostic)
         {
             var sb = new StringBuilder(80);

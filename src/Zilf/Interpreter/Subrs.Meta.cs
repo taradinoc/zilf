@@ -31,8 +31,7 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         /// <exception cref="InterpreterError">The file was not found or could not be loaded.</exception>
-        [NotNull]
-        static ZilObject PerformLoadFile([NotNull] Context ctx, [NotNull] string file, [NotNull] string name)
+        static ZilObject PerformLoadFile(Context ctx, string file, string name)
         {
             try
             {
@@ -58,11 +57,10 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">The file was not found or could not be loaded.</exception>
-        [NotNull]
         [Subr("INSERT-FILE")]
         [Subr("FLOAD")]
         [Subr("XFLOAD")]
-        public static ZilObject INSERT_FILE([NotNull] Context ctx, [NotNull] string file, [ItemNotNull] [NotNull] ZilObject[] args)
+        public static ZilObject INSERT_FILE(Context ctx, string file, ZilObject[] args)
         {
             // we ignore arguments after the first
 
@@ -70,9 +68,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">Unrecognized flag.</exception>
-        [NotNull]
         [Subr("FILE-FLAGS")]
-        public static ZilObject FILE_FLAGS([NotNull] Context ctx, [NotNull] ZilAtom[] flags)
+        public static ZilObject FILE_FLAGS(Context ctx, ZilAtom[] flags)
         {
             var newFlags = FileFlags.None;
 
@@ -106,9 +103,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">The section has already been referenced.</exception>
-        [NotNull]
         [Subr("DELAY-DEFINITION")]
-        public static ZilObject DELAY_DEFINITION([NotNull] Context ctx, [NotNull] ZilAtom name)
+        public static ZilObject DELAY_DEFINITION(Context ctx, ZilAtom name)
         {
             name = ctx.ZEnvironment.InternGlobalName(name);
 
@@ -121,7 +117,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError">The section has already been inserted, or a replacement has already been defined, or it is in a bad state.</exception>
         [FSubr("REPLACE-DEFINITION")]
-        public static ZilResult REPLACE_DEFINITION([NotNull] Context ctx, [NotNull] ZilAtom name, [NotNull] [Required] ZilObject[] body)
+        public static ZilResult REPLACE_DEFINITION(Context ctx, ZilAtom name, [Required] ZilObject[] body)
         {
             name = ctx.ZEnvironment.InternGlobalName(name);
 
@@ -153,7 +149,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError">The section is in a bad state.</exception>
         [FSubr("DEFAULT-DEFINITION")]
-        public static ZilResult DEFAULT_DEFINITION([NotNull] Context ctx, ZilAtom name, [Required] ZilObject[] body)
+        public static ZilResult DEFAULT_DEFINITION(Context ctx, ZilAtom name, [Required] ZilObject[] body)
         {
             name = ctx.ZEnvironment.InternGlobalName(name);
 
@@ -190,29 +186,26 @@ namespace Zilf.Interpreter
             throw new InterpreterError(InterpreterMessages._0_Bad_State_1, "DEFAULT-DEFINITION", state);
         }
 
-        [NotNull]
         [Subr("COMPILATION-FLAG")]
-        public static ZilObject COMPILATION_FLAG([NotNull] Context ctx,
-            AtomParams.StringOrAtom name, [CanBeNull] ZilObject value = null)
+        public static ZilObject COMPILATION_FLAG(Context ctx,
+            AtomParams.StringOrAtom name, ZilObject? value = null)
         {
             var atom = name.GetAtom(ctx);
             ctx.DefineCompilationFlag(atom, value ?? ctx.TRUE, true);
             return atom;
         }
 
-        [NotNull]
         [Subr("COMPILATION-FLAG-DEFAULT")]
-        public static ZilObject COMPILATION_FLAG_DEFAULT([NotNull] Context ctx,
-            AtomParams.StringOrAtom name, [NotNull] ZilObject value)
+        public static ZilObject COMPILATION_FLAG_DEFAULT(Context ctx,
+            AtomParams.StringOrAtom name, ZilObject value)
         {
             var atom = name.GetAtom(ctx);
             ctx.DefineCompilationFlag(atom, value);
             return atom;
         }
 
-        [NotNull]
         [Subr("COMPILATION-FLAG-VALUE")]
-        public static ZilObject COMPILATION_FLAG_VALUE([NotNull] Context ctx,
+        public static ZilObject COMPILATION_FLAG_VALUE(Context ctx,
             AtomParams.StringOrAtom name)
         {
             var atom = name.GetAtom(ctx);
@@ -220,12 +213,12 @@ namespace Zilf.Interpreter
         }
 
         [FSubr("IFFLAG")]
-        public static ZilResult IFFLAG([NotNull] Context ctx, [NotNull] [Required] CondClause[] args)
+        public static ZilResult IFFLAG(Context ctx, [Required] CondClause[] args)
         {
             foreach (var clause in args)
             {
                 bool match;
-                ZilObject value;
+                ZilObject? value;
 
                 switch (clause.Condition)
                 {
@@ -273,12 +266,11 @@ namespace Zilf.Interpreter
         /// <param name="form">The original form.</param>
         /// <returns>A new form, containing elements from the original and/or
         /// the values of compilation flags.</returns>
-        [NotNull]
-        internal static ZilForm SubstituteIfflagForm([NotNull] Context ctx, [NotNull] ZilForm form)
+        internal static ZilForm SubstituteIfflagForm(Context ctx, ZilForm form)
         {
             var body = form.Select(zo =>
             {
-                ZilObject value;
+                ZilObject? value;
 
                 switch (zo)
                 {
@@ -293,7 +285,6 @@ namespace Zilf.Interpreter
             return new ZilForm(body) { SourceLine = form.SourceLine };
         }
 
-        [NotNull]
         [Subr("TIME")]
         public static ZilObject TIME(Context ctx)
         {
@@ -302,7 +293,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr("QUIT")]
-        public static ZilObject QUIT([NotNull] Context ctx, ZilObject exitCode = null)
+        public static ZilObject QUIT(Context ctx, ZilObject? exitCode = null)
         {
             int code;
             switch (exitCode)
@@ -326,16 +317,14 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
-        [NotNull]
         [Subr]
         [Subr("STACK")]
         [Subr("SNAME")]
-        public static ZilObject ID([NotNull] Context ctx, ZilObject arg)
+        public static ZilObject ID(Context ctx, ZilObject arg)
         {
             return arg;
         }
 
-        [NotNull]
         [Subr("GC-MON")]
         [Subr("BLOAT")]
         [Subr("ZSTR-ON")]
@@ -351,16 +340,15 @@ namespace Zilf.Interpreter
         [Subr("NEVER-ZAP-TO-SOURCE-DIRECTORY?")]
         [Subr("ASK-FOR-PICTURE-FILE?")]
         [Subr("PICFILE")]
-        public static ZilObject SubrIgnored([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
+        public static ZilObject SubrIgnored(Context ctx, ZilObject[] args)
         {
             // nada
             return ctx.FALSE;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.GC.Collect")]
-        [NotNull]
         [Subr]
-        public static ZilObject GC([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
+        public static ZilObject GC(Context ctx, ZilObject[] args)
         {
             System.GC.Collect();
             return ctx.TRUE;
@@ -368,7 +356,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError">Always thrown.</exception>
         [Subr]
-        public static ZilObject ERROR([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args)
+        public static ZilObject ERROR(Context ctx, ZilObject[] args)
         {
             throw new InterpreterError(
                 InterpreterMessages.UserSpecifiedError_0_1,
@@ -376,9 +364,8 @@ namespace Zilf.Interpreter
                 string.Join(" ", args.Select(a => a.ToStringContext(ctx, false))));
         }
 
-        [NotNull]
         [Subr("WARN-AS-ERROR?")]
-        public static ZilObject WARN_AS_ERROR_P([NotNull] Context ctx, bool enabled = true)
+        public static ZilObject WARN_AS_ERROR_P(Context ctx, bool enabled = true)
         {
             ctx.WarningsAsErrors = enabled;
             return ctx.TRUE;
@@ -400,8 +387,7 @@ namespace Zilf.Interpreter
                     return Content is Wildcard w ? w.Atom.StdAtom : (StdAtom?)null;
                 }
 
-                [CanBeNull]
-                public string[] GetCodes()
+                public string[]? GetCodes()
                 {
                     return Content is AtomParams.StringOrAtom[] sas
                         ? sas.Select(sa => sa.ToString()).ToArray()
@@ -421,9 +407,8 @@ namespace Zilf.Interpreter
             }
         }
 
-        [NotNull]
         [Subr("SUPPRESS-WARNINGS?")]
-        public static ZilObject SUPPRESS_WARNINGS_P([NotNull] Context ctx,
+        public static ZilObject SUPPRESS_WARNINGS_P(Context ctx,
             WarningParams.CodesOrWildcard codesOrWildcard)
         {
             switch (codesOrWildcard.GetWildcard())
@@ -450,9 +435,8 @@ namespace Zilf.Interpreter
 
         #region IDE Help
 
-        [NotNull]
         [Subr("DESC-BUILTINS", ObList = "YOMIN")]
-        public static ZilObject DESCRIBE_BUILTINS([NotNull] Context ctx)
+        public static ZilObject DESCRIBE_BUILTINS(Context ctx)
         {
             var result = new JObject();
 

@@ -23,14 +23,14 @@ namespace ZilfAnalyzers.Test.Helpers
         /// Returns the codefix being tested (C#) - to be implemented in non-abstract class
         /// </summary>
         /// <returns>The CodeFixProvider to be used for CSharp code</returns>
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         protected abstract CodeFixProvider GetCSharpCodeFixProvider();
 
         /// <summary>
         /// Returns the codefix being tested (VB) - to be implemented in non-abstract class
         /// </summary>
         /// <returns>The CodeFixProvider to be used for VisualBasic code</returns>
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         protected abstract CodeFixProvider GetBasicCodeFixProvider();
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        static async Task VerifyFixAsync(string language, DiagnosticAnalyzer analyzer, [NotNull] CodeFixProvider codeFixProvider, string oldSource, string newSource, int? codeFixIndex, bool allowNewCompilerDiagnostics)
+        static async Task VerifyFixAsync(string language, DiagnosticAnalyzer analyzer, [JetBrains.Annotations.NotNull] CodeFixProvider codeFixProvider, string oldSource, string newSource, int? codeFixIndex, bool allowNewCompilerDiagnostics)
         {
             var document = CreateDocument(oldSource, language);
             var analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, new[] { document }).ConfigureAwait(false);

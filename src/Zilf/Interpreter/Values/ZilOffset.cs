@@ -35,7 +35,7 @@ namespace Zilf.Interpreter.Values
 
         /// <exception cref="InterpreterError"><paramref name="vector"/> has the wrong number or types of elements.</exception>
         [ChtypeMethod]
-        public ZilOffset([NotNull] ZilVector vector)
+        public ZilOffset(ZilVector vector)
         {
             if (vector.GetLength() != 3)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "vector coerced to OFFSET", 3);
@@ -44,18 +44,18 @@ namespace Zilf.Interpreter.Values
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "vector coerced to OFFSET", "a FIX");
 
             Index = indexFix.Value;
-            StructurePattern = vector[1];
-            ValuePattern = vector[2];
+            StructurePattern = vector[1]!;
+            ValuePattern = vector[2]!;
         }
 
-        public ZilOffset(int index, [NotNull] ZilObject structurePattern, [NotNull] ZilObject valuePattern)
+        public ZilOffset(int index, ZilObject structurePattern, ZilObject valuePattern)
         {
             Index = index;
             StructurePattern = structurePattern ?? throw new ArgumentNullException(nameof(structurePattern));
             ValuePattern = valuePattern ?? throw new ArgumentNullException(nameof(valuePattern));
         }
 
-        public override bool StructurallyEquals(ZilObject obj)
+        public override bool StructurallyEquals(ZilObject? obj)
         {
             return obj is ZilOffset other &&
                 other.Index == Index &&
@@ -74,7 +74,7 @@ namespace Zilf.Interpreter.Values
 
         public override string ToString()
         {
-            string MaybeQuote(ZilObject zo)
+            static string MaybeQuote(ZilObject zo)
             {
                 return zo is ZilAtom ? "'" + zo : zo.ToString();
             }
@@ -118,7 +118,6 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.VECTOR;
 
-        [NotNull]
         public override ZilObject GetPrimitive(Context ctx)
         {
             return new ZilVector(new ZilFix(Index), StructurePattern, ValuePattern);
@@ -126,82 +125,58 @@ namespace Zilf.Interpreter.Values
 
         #region IStructure Members
 
-        [NotNull]
         public ZilObject GetFirst()
         {
             return new ZilFix(Index);
         }
 
-        public IStructure GetRest(int skip)
+        public IStructure? GetRest(int skip)
         {
-            switch (skip)
+            return skip switch
             {
-                case 0:
-                    return this;
-
-                case 1:
-                    return new ZilVector(StructurePattern, ValuePattern);
-
-                case 2:
-                    return new ZilVector(ValuePattern);
-
-                default:
-                    return null;
-            }
+                0 => (IStructure)this,
+                1 => new ZilVector(StructurePattern, ValuePattern),
+                2 => new ZilVector(ValuePattern),
+                _ => null
+            };
         }
 
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        public IStructure GetBack(int skip)
-        {
-            throw new NotSupportedException();
-        }
+        [DoesNotReturn]
+        public IStructure? GetBack(int skip) => throw new NotSupportedException();
 
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        public IStructure GetTop()
-        {
-            throw new NotSupportedException();
-        }
+        [DoesNotReturn]
+        public IStructure GetTop() => throw new NotSupportedException();
 
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        public void Grow(int end, int beginning, ZilObject defaultValue)
-        {
-            throw new NotSupportedException();
-        }
+        [DoesNotReturn]
+        public void Grow(int end, int beginning, ZilObject defaultValue) => throw new NotSupportedException();
 
         public bool IsEmpty => false;
 
         /// <exception cref="InterpreterError" accessor="set">Always thrown.</exception>
+        [MaybeNull]
         public ZilObject this[int index]
         {
             get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0:
-                        return new ZilFix(Index);
-
-                    case 1:
-                        return StructurePattern;
-
-                    case 2:
-                        return ValuePattern;
-
-                    default:
-                        return null;
-                }
+                    0 => new ZilFix(Index),
+                    1 => StructurePattern,
+                    2 => ValuePattern,
+                    _ => null!
+                };
             }
+
+            [DoesNotReturn]
             set => throw new InterpreterError(InterpreterMessages.OFFSET_Is_Immutable);
         }
 
-        public int GetLength()
-        {
-            return 2;
-        }
+        public int GetLength() => 2;
 
-        public int? GetLength(int limit)
-        {
-            return 3 <= limit ? 3 : (int?)null;
-        }
+        public int? GetLength(int limit) => 3 <= limit ? 3 : (int?)null;
 
         #endregion
 
@@ -212,16 +187,13 @@ namespace Zilf.Interpreter.Values
             yield return ValuePattern;
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         public ZilResult Apply(Context ctx, ZilObject[] args)
         {
-            if (EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
-                return ApplyNoEval(ctx, args);
+            if (EvalSequence(ctx, args).TryToZilObjectArray(out var args2, out var zr))
+                return ApplyNoEval(ctx, args2);
 
             return zr;
         }

@@ -39,12 +39,11 @@ namespace Zilf.Emit.Zap
 
         protected const string INDENT = "\t";
 
-        public TableBuilder([NotNull] string name)
+        public TableBuilder(string name)
         {
             Name = name;
         }
 
-        [NotNull]
         public string Name { get; }
 
         public int Size => size;
@@ -82,7 +81,7 @@ namespace Zilf.Emit.Zap
             return Name;
         }
 
-        public void WriteTo([NotNull] TextWriter writer)
+        public void WriteTo(TextWriter writer)
         {
             bool wasWord = false;
             int lineCount = 0, ni = 0, oi = 0;

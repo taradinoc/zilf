@@ -1,8 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <Description>Provides Z-machine utility classes for ZILF and ZAPF.</Description>
     <TargetFrameworkProfile />
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\Zilf.licenseheader">

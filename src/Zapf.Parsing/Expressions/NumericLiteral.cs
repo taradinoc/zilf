@@ -22,7 +22,7 @@ namespace Zapf.Parsing.Expressions
 {
     public sealed class NumericLiteral : TextAsmExpr
     {
-        public NumericLiteral([NotNull] string text)
+        public NumericLiteral(string text)
             : base(text)
         {
             Value = int.Parse(text);

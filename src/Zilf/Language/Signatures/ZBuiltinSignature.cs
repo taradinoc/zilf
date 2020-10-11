@@ -46,8 +46,7 @@ namespace Zilf.Language.Signatures
             ReturnPart = returnPart;
         }
 
-        [NotNull]
-        public static ISignature FromBuiltinSpec([NotNull] BuiltinSpec spec)
+        public static ISignature FromBuiltinSpec(BuiltinSpec spec)
         {
             var pis = spec.Method.GetParameters();
 
@@ -102,15 +101,13 @@ namespace Zilf.Language.Signatures
             }
         }
 
-        [NotNull]
-        static SignaturePart ConvertWithHandler([NotNull] ParameterTypeHandler handler,
-            [NotNull] ParameterInfo pi)
+        static SignaturePart ConvertWithHandler(ParameterTypeHandler handler,
+             ParameterInfo pi)
         {
             return ApplyParamAttributes(handler.ToSignaturePart(pi), pi);
         }
 
-        [NotNull]
-        static SignaturePart ApplyParamAttributes([NotNull] SignaturePart part, [NotNull] ParameterInfo pi)
+        static SignaturePart ApplyParamAttributes(SignaturePart part, ParameterInfo pi)
         {
             // TODO: also handle VariableAttribute?
 

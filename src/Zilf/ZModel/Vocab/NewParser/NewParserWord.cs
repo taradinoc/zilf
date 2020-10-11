@@ -26,18 +26,16 @@ namespace Zilf.ZModel.Vocab.NewParser
 {
     class NewParserWord : IWord
     {
-        [NotNull]
         readonly Context ctx;
 
-        public NewParserWord([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] ZilHash vword)
+        public NewParserWord(Context ctx, ZilAtom atom, ZilHash vword)
         {
             this.ctx = ctx;
             Atom = atom;
             Inner = vword;
         }
 
-        [NotNull]
-        public static NewParserWord FromVword([NotNull] Context ctx, [NotNull] ZilHash vword)
+        public static NewParserWord FromVword(Context ctx, ZilHash vword)
         {
             var form = new ZilForm(new ZilObject[]
             {
@@ -58,7 +56,6 @@ namespace Zilf.ZModel.Vocab.NewParser
         public ZilAtom Atom { get; }
 
         // TODO: change the type of NewParserWord.Inner? ZilHash isn't really a requirement
-        [NotNull]
         public ZilHash Inner { get; }
 
         /* GetViaInner and SetViaInner disable DECL checking because user code may expect

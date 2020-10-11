@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Zilf.Language;
-using JetBrains.Annotations;
 
 namespace Zilf.Diagnostics
 {
@@ -35,37 +34,29 @@ namespace Zilf.Diagnostics
 
     public sealed class Diagnostic
     {
-        [NotNull]
         public ISourceLine Location { get; }
         public Severity Severity { get; }
-        [NotNull]
         public string CodePrefix { get; }
         public int CodeNumber { get; }
         public bool Noisy { get; }
 
-        [NotNull]
-        public static string FormatCode([NotNull] string prefix, int number) => $"{prefix}{number:0000}";
+        public static string FormatCode(string prefix, int number) => $"{prefix}{number:0000}";
 
-        [NotNull]
         public string Code => FormatCode(CodePrefix, CodeNumber);
 
-        [CanBeNull]
-        public string StackTrace { get; }
-        [NotNull]
+        public string? StackTrace { get; }
         public IReadOnlyList<Diagnostic> SubDiagnostics { get; }
 
-        [NotNull]
         string MessageFormat { get; }
-        [NotNull]
         object[] MessageArgs { get; }
 
-        static readonly object[] NoArguments = new object[0];
-        static readonly Diagnostic[] NoDiagnostics = new Diagnostic[0];
+        static readonly object[] NoArguments = Array.Empty<object>();
+        static readonly Diagnostic[] NoDiagnostics = Array.Empty<Diagnostic>();
 
-        public Diagnostic([NotNull] ISourceLine location, Severity severity,
-            [NotNull] string codePrefix, int codeNumber,
-            [NotNull] string messageFormat, [ItemNotNull] [CanBeNull] object[] messageArgs,
-            [CanBeNull] string stackTrace, [ItemNotNull] [CanBeNull] IReadOnlyList<Diagnostic> subDiagnostics,
+        public Diagnostic(ISourceLine location, Severity severity,
+            string codePrefix, int codeNumber,
+            string messageFormat, object[]? messageArgs,
+            string? stackTrace, IReadOnlyList<Diagnostic>? subDiagnostics,
             bool noisy)
         {
             Location = location;
@@ -79,8 +70,7 @@ namespace Zilf.Diagnostics
             Noisy = noisy;
         }
 
-        [NotNull]
-        public Diagnostic WithSubDiagnostics([ItemNotNull] [NotNull] params Diagnostic[] newSubDiagnostics)
+        public Diagnostic WithSubDiagnostics(params Diagnostic[] newSubDiagnostics)
         {
             return new Diagnostic(
                 Location,
@@ -94,7 +84,6 @@ namespace Zilf.Diagnostics
                 Noisy);
         }
 
-        [NotNull]
         public Diagnostic WithSeverity(Severity newSeverity)
         {
             return new Diagnostic(
@@ -109,11 +98,12 @@ namespace Zilf.Diagnostics
                 Noisy);
         }
 
-        [NotNull]
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public string GetFormattedMessage() =>
             string.Format(CustomFormatter.Instance, MessageFormat, MessageArgs);
 
+        [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase")]
+        [SuppressMessage("Globalization", "CA1305:Specify IFormatProvider")]
         public override string ToString()
         {
             // ReSharper disable once UseStringInterpolation
@@ -134,19 +124,13 @@ namespace Zilf.Diagnostics
             {
             }
 
-            // ReSharper disable once AnnotationRedundancyInHierarchy (cross-platform conflict)
-            [CanBeNull]
-            public object GetFormat(Type formatType)
-            {
-                return formatType == typeof(ICustomFormatter) ? this : null;
-            }
+            public object? GetFormat(Type? formatType) => formatType == typeof(ICustomFormatter) ? this : null;
 
-            [NotNull]
             static readonly char[] Delimiter = { '|' };
 
             /// <inheritdoc />
-            /// <exception cref="T:System.ArgumentException">The "s" format was used with a <see cref="T:System.String" /> instead of a <see cref="T:Zilf.Diagnostics.CountableString" />.</exception>
-            public string Format([CanBeNull] string format, [CanBeNull] object arg, [CanBeNull] IFormatProvider formatProvider)
+            /// <exception cref="System.ArgumentException">The "s" format was used with a <see cref="System.String" /> instead of a <see cref="Zilf.Diagnostics.CountableString" />.</exception>
+            public string Format(string? format, object? arg, IFormatProvider? formatProvider)
             {
                 if (format == null || format != "s" && !format.StartsWith("s|", StringComparison.Ordinal))
                     return HandleOther(format, arg);
@@ -179,8 +163,7 @@ namespace Zilf.Diagnostics
 
             }
 
-            [NotNull]
-            static string HandleOther([CanBeNull] string format, [CanBeNull] object arg)
+            static string HandleOther(string? format, object? arg)
             {
                 if (arg is IFormattable formattable)
                     return formattable.ToString(format, System.Globalization.CultureInfo.CurrentCulture);
@@ -191,23 +174,21 @@ namespace Zilf.Diagnostics
     }
     public interface IDiagnosticFactory
     {
-        [NotNull]
-        Diagnostic GetDiagnostic([NotNull] ISourceLine location, int code, object[] messageArgs,
-            string stackTrace, Diagnostic[] subDiagnostics);
+        Diagnostic GetDiagnostic(ISourceLine location, int code, object[]? messageArgs,
+            string? stackTrace, Diagnostic[]? subDiagnostics);
     }
 
     public static class DiagnosticFactoryExtensions
     {
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
-        [NotNull]
-        public static Diagnostic GetDiagnostic([NotNull] this IDiagnosticFactory fac, [NotNull] ISourceLine location, int code, object[] messageArgs)
+        public static Diagnostic GetDiagnostic(this IDiagnosticFactory fac, ISourceLine location, int code, object[] messageArgs)
         {
             return fac.GetDiagnostic(location, code, messageArgs, null, null);
         }
 
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
-        [NotNull]
-        public static Diagnostic GetDiagnostic([NotNull] this IDiagnosticFactory fac, [NotNull] ISourceLine location, int code, object[] messageArgs, string stackTrace)
+        public static Diagnostic GetDiagnostic(this IDiagnosticFactory fac, ISourceLine location, int code,
+            object[]? messageArgs, string? stackTrace)
         {
             return fac.GetDiagnostic(location, code, messageArgs, stackTrace, null);
         }
@@ -234,7 +215,7 @@ namespace Zilf.Diagnostics
             {
                 if (field.FieldType == typeof(int) && field.IsLiteral)
                 {
-                    var code = (int)field.GetValue(null);
+                    var code = (int)field.GetValue(null)!;
                     var msgAttrs = field.GetCustomAttributes(typeof(MessageAttribute), false);
 
                     messages.Add(code, (MessageAttribute)msgAttrs[0]);
@@ -242,9 +223,8 @@ namespace Zilf.Diagnostics
             }
         }
 
-        [NotNull]
-        public Diagnostic GetDiagnostic(ISourceLine location, int code, object[] messageArgs,
-            string stackTrace, Diagnostic[] subDiagnostics)
+        public Diagnostic GetDiagnostic(ISourceLine location, int code, object[]? messageArgs,
+            string? stackTrace, Diagnostic[]? subDiagnostics)
         {
             var attr = messages[code];
             return new Diagnostic(
@@ -277,7 +257,7 @@ namespace Zilf.Diagnostics
         public string Format { get; }
         public Severity Severity { get; }
 
-        public MessageAttribute(string format, Severity severity)
+        protected MessageAttribute(string format, Severity severity)
         {
             Format = format;
             Severity = severity;

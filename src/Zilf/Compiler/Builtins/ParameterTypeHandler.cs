@@ -30,17 +30,15 @@ namespace Zilf.Compiler.Builtins
 {
     abstract class ParameterTypeHandler
     {
-        public abstract BuiltinArg Process([NotNull] Compilation cc, [NotNull] [InstantHandle] Action<string> error,
-            [NotNull] ZilObject arg, [NotNull] ParameterInfo pi);
+        public abstract BuiltinArg Process(Compilation cc, [InstantHandle] Action<string> error,
+             ZilObject arg, ParameterInfo pi);
         public virtual bool IsVariable => false;
 
         /// <remarks>
         /// Does not need to handle optional or varargs.
         /// </remarks>
-        [NotNull]
-        public abstract SignaturePart ToSignaturePart([NotNull] ParameterInfo pi);
+        public abstract SignaturePart ToSignaturePart(ParameterInfo pi);
 
-        [NotNull]
         public static readonly IReadOnlyDictionary<Type, ParameterTypeHandler> Handlers =
             new Dictionary<Type, ParameterTypeHandler>
             {
@@ -54,16 +52,16 @@ namespace Zilf.Compiler.Builtins
                 { typeof(ZilObject), new ZilObjectHandler() },
             };
 
-        static VariableRef? GetVariable([NotNull] Compilation cc, [NotNull] ZilObject expr, QuirksMode quirks = QuirksMode.None)
+        static VariableRef? GetVariable(Compilation cc, ZilObject expr, VariableScopeQuirks quirks = VariableScopeQuirks.None)
         {
             if (!(expr is ZilAtom atom) &&
-                ((quirks & QuirksMode.Global) == 0 || !expr.IsGVAL(out atom)) &&
-                ((quirks & QuirksMode.Local) == 0 || !expr.IsLVAL(out atom)))
+                ((quirks & VariableScopeQuirks.Global) == 0 || !expr.IsGVAL(out atom!)) &&
+                ((quirks & VariableScopeQuirks.Local) == 0 || !expr.IsLVAL(out atom!)))
             {
                 return null;
             }
 
-            if (quirks == QuirksMode.Global)
+            if (quirks == VariableScopeQuirks.Global)
             {
                 // prefer global over local
                 if (cc.Globals.TryGetValue(atom, out var gb))
@@ -108,7 +106,7 @@ namespace Zilf.Compiler.Builtins
             public override SignaturePart ToSignaturePart(ParameterInfo pi)
             {
                 return SignatureBuilder.Constrained(
-                    SignatureBuilder.Identifier(pi.Name),
+                    SignatureBuilder.Identifier(pi.Name!),
                     Constraint.OfType(StdAtom.ACTIVATION));
             }
         }
@@ -126,7 +124,7 @@ namespace Zilf.Compiler.Builtins
             public override SignaturePart ToSignaturePart(ParameterInfo pi)
             {
                 return SignatureBuilder.Constrained(
-                    SignatureBuilder.Identifier(pi.Name),
+                    SignatureBuilder.Identifier(pi.Name!),
                     Constraint.OfType(StdAtom.FIX));
             }
         }
@@ -144,7 +142,7 @@ namespace Zilf.Compiler.Builtins
             public override SignaturePart ToSignaturePart(ParameterInfo pi)
             {
                 return SignatureBuilder.Constrained(
-                    SignatureBuilder.Identifier(pi.Name),
+                    SignatureBuilder.Identifier(pi.Name!),
                     Constraint.OfType(StdAtom.ATOM));
             }
         }
@@ -158,7 +156,7 @@ namespace Zilf.Compiler.Builtins
 
             public override SignaturePart ToSignaturePart(ParameterInfo pi)
             {
-                return SignatureBuilder.Identifier(pi.Name);
+                return SignatureBuilder.Identifier(pi.Name!);
             }
         }
 
@@ -170,7 +168,7 @@ namespace Zilf.Compiler.Builtins
                 var varAttr = pi.GetCustomAttributes<VariableAttribute>().SingleOrDefault();
                 if (varAttr != null)
                 {
-                    if (GetVariable(cc, arg, varAttr.QuirksMode) is VariableRef variable)
+                    if (GetVariable(cc, arg, varAttr.VariableScopeQuirks) is VariableRef variable)
                     {
                         if (!variable.IsHard)
                         {
@@ -179,7 +177,7 @@ namespace Zilf.Compiler.Builtins
                         }
                         else
                         {
-                            return new BuiltinArg(BuiltinArgType.Operand, variable.Hard.Indirect);
+                            return new BuiltinArg(BuiltinArgType.Operand, variable.Hard!.Indirect);
                         }
                     }
                     else if (arg is ZilAtom)
@@ -200,7 +198,7 @@ namespace Zilf.Compiler.Builtins
 
             public override SignaturePart ToSignaturePart(ParameterInfo pi)
             {
-                return SignatureBuilder.Identifier(pi.Name);
+                return SignatureBuilder.Identifier(pi.Name!);
             }
         }
 
@@ -221,7 +219,7 @@ namespace Zilf.Compiler.Builtins
             public override SignaturePart ToSignaturePart(ParameterInfo pi)
             {
                 return SignatureBuilder.Constrained(
-                    SignatureBuilder.Identifier(pi.Name),
+                    SignatureBuilder.Identifier(pi.Name!),
                     Constraint.OfType(StdAtom.STRING));
             }
         }
@@ -232,12 +230,12 @@ namespace Zilf.Compiler.Builtins
 
             public override BuiltinArg Process(Compilation cc, Action<string> error, ZilObject arg, ParameterInfo pi)
             {
-                var quirks = pi.GetCustomAttributes<VariableAttribute>().Single().QuirksMode;
+                var quirks = pi.GetCustomAttributes<VariableAttribute>().Single().VariableScopeQuirks;
 
                 // arg must be an atom, or <GVAL atom> or <LVAL atom> in quirks mode
                 var atom = arg as ZilAtom;
-                if (atom == null && !((quirks & QuirksMode.Global) != 0 && arg.IsGVAL(out atom) ||
-                                      (quirks & QuirksMode.Local) != 0 && arg.IsLVAL(out atom)))
+                if (atom == null && !((quirks & VariableScopeQuirks.Global) != 0 && arg.IsGVAL(out atom) ||
+                                      (quirks & VariableScopeQuirks.Local) != 0 && arg.IsLVAL(out atom)))
                 {
                     error("argument must be a variable");
                     return new BuiltinArg(BuiltinArgType.Operand, null);
@@ -265,22 +263,22 @@ namespace Zilf.Compiler.Builtins
             {
                 var constraint = Constraint.OfType(StdAtom.ATOM);
 
-                var quirks = pi.GetCustomAttributes<VariableAttribute>().Single().QuirksMode;
+                var quirks = pi.GetCustomAttributes<VariableAttribute>().Single().VariableScopeQuirks;
 
-                if ((quirks & QuirksMode.Global) != 0)
+                if ((quirks & VariableScopeQuirks.Global) != 0)
                 {
                     //XXX
                     constraint = constraint.Or(Constraint.OfType(StdAtom.GVAL));
                 }
 
-                if ((quirks & QuirksMode.Local) != 0)
+                if ((quirks & VariableScopeQuirks.Local) != 0)
                 {
                     //XXX
                     constraint = constraint.Or(Constraint.OfType(StdAtom.LVAL));
                 }
 
                 return SignatureBuilder.Constrained(
-                    SignatureBuilder.Identifier(pi.Name),
+                    SignatureBuilder.Identifier(pi.Name!),
                     constraint);
             }
         }

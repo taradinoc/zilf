@@ -1,20 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <RuntimeIdentifiers>win-x86;win-x64;linux-arm;linux-x64;osx-x64</RuntimeIdentifiers>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
-    <LangVersion>7.3</LangVersion>
     <OutputType>Exe</OutputType>
     <Description>The ZIL Implementation You Really, Really Like.</Description>
     <CodeAnalysisRuleSet>Zilf.ruleset</CodeAnalysisRuleSet>
     <Deterministic>false</Deterministic>
     <TrimUnusedDependencies>true</TrimUnusedDependencies>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2019.1.3">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>runtime</ExcludeAssets>
       <IncludeAssets>compile; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.9.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.DotNet.Analyzers.Compatibility" Version="0.2.12-alpha">
       <PrivateAssets>all</PrivateAssets>
@@ -23,7 +27,7 @@
     <PackageReference Include="Microsoft.Packaging.Tools.Trimming" Version="1.1.0-preview1-26619-01" />
     <PackageReference Include="MSBuildTasks" Version="1.5.0.235" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="Packaging.Targets" Version="0.1.78" />
+    <PackageReference Include="Packaging.Targets" Version="0.1.84" />
     <PackageReference Include="ReadLine" Version="2.0.1" />
   </ItemGroup>
   <ItemGroup>

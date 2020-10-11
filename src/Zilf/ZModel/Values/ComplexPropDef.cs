@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Diagnostics;
@@ -49,27 +50,24 @@ namespace Zilf.ZModel.Values
         struct InputElement
         {
             public readonly InputElementType Type;
-            public readonly ZilAtom Variable;
-            public readonly ZilObject Decl;
+            public readonly ZilAtom? Variable;
+            public readonly ZilObject? Decl;
 
-            public InputElement(InputElementType type, ZilAtom variable, ZilObject decl)
+            public InputElement(InputElementType type, ZilAtom? variable, ZilObject? decl)
             {
                 Type = type;
                 Variable = variable;
                 Decl = decl;
             }
 
-            public override string ToString()
-            {
-                return $"Type={Type} Variable={Variable} Decl={Decl}";
-            }
+            public override string ToString() => $"Type={Type} Variable={Variable} Decl={Decl}";
 
             public ZilObject ToZilObject()
             {
                 switch (Type)
                 {
                     case InputElementType.Atom:
-                        return Variable;
+                        return Variable!;
 
                     case InputElementType.Many:
                         return ZilString.FromString("MANY");
@@ -80,11 +78,11 @@ namespace Zilf.ZModel.Values
                     case InputElementType.Variable:
                         if (Decl != null)
                         {
-                            return new ZilAdecl(Variable, Decl);
+                            return new ZilAdecl(Variable!, Decl);
                         }
                         else
                         {
-                            return Variable;
+                            return Variable!;
                         }
 
                     default:
@@ -115,11 +113,11 @@ namespace Zilf.ZModel.Values
         struct OutputElement
         {
             public readonly OutputElementType Type;
-            public readonly ZilAtom Constant, Variable, PartOfSpeech;
-            public readonly ZilFix Fix;
+            public readonly ZilAtom? Constant, Variable, PartOfSpeech;
+            public readonly ZilFix? Fix;
 
-            public OutputElement(OutputElementType type, ZilAtom constant, [CanBeNull] ZilAtom variable = null,
-                [CanBeNull] ZilAtom partOfSpeech = null, [CanBeNull] ZilFix fix = null)
+            public OutputElement(OutputElementType type, ZilAtom? constant, ZilAtom? variable = null,
+                ZilAtom? partOfSpeech = null, ZilFix? fix = null)
             {
                 Type = type;
                 Constant = constant;
@@ -130,10 +128,18 @@ namespace Zilf.ZModel.Values
 
             public override string ToString()
             {
-                return $"Type={Type} Constant={Constant} Variable={Variable} PartOfSpeech={PartOfSpeech} Fix={Fix}";
+                var sb = new StringBuilder($"Type={Type}");
+                if (Constant != null)
+                    sb.AppendFormat(" Constant={0}", Constant);
+                if (Variable != null)
+                    sb.AppendFormat(" Variable={0}", Variable);
+                if (PartOfSpeech != null)
+                    sb.AppendFormat(" PartOfSpeech={0}", PartOfSpeech);
+                if (Fix != null)
+                    sb.AppendFormat(" Fix={0}", Fix);
+                return sb.ToString();
             }
 
-            [NotNull]
             public ZilObject ToZilObject()
             {
                 ZilObject result;
@@ -176,9 +182,9 @@ namespace Zilf.ZModel.Values
                     TwoElementForm:
                         result = new ZilForm(new[] {
                             GetStdAtom(head),
-                            (ZilObject)Fix ?? new ZilForm(new[] {
+                            (ZilObject?)Fix ?? new ZilForm(new[] {
                                 GetStdAtom(StdAtom.LVAL),
-                                Variable
+                                Variable!
                             })
                         });
                         break;
@@ -186,11 +192,11 @@ namespace Zilf.ZModel.Values
                     case OutputElementType.Voc:
                         result = new ZilForm(new[] {
                             GetStdAtom(StdAtom.VOC),
-                            (ZilObject)Fix ?? new ZilForm(new[] {
+                            (ZilObject?)Fix ?? new ZilForm(new[] {
                                 GetStdAtom(StdAtom.LVAL),
-                                Variable
+                                Variable!
                             }),
-                            PartOfSpeech
+                            PartOfSpeech!
                         });
                         break;
 
@@ -219,14 +225,13 @@ namespace Zilf.ZModel.Values
 
         readonly List<Pattern> patterns;
 
-        ComplexPropDef([NotNull] IEnumerable<Pattern> patterns)
+        ComplexPropDef(IEnumerable<Pattern> patterns)
         {
             this.patterns = new List<Pattern>(patterns);
         }
 
         /// <exception cref="InterpreterError">The PROPDEF pattern syntax is invalid.</exception>
-        [NotNull]
-        public static ComplexPropDef Parse([NotNull] IEnumerable<ZilObject> spec)
+        public static ComplexPropDef Parse(IEnumerable<ZilObject> spec)
         {
             var inputs = new List<InputElement>();
             var outputs = new List<OutputElement>();
@@ -293,8 +298,8 @@ namespace Zilf.ZModel.Values
                     else
                     {
                         // outputs
-                        ZilAtom constant = null;
-                        var output = element;
+                        ZilAtom? constant = null;
+                        ZilObject? output = element;
 
                         if (element is ZilList elemList)
                         {
@@ -394,10 +399,10 @@ namespace Zilf.ZModel.Values
             return new ComplexPropDef(patterns);
         }
 
-        static OutputElement ConvertOutputForm([NotNull] ZilForm form, [CanBeNull] ZilAtom constant)
+        static OutputElement ConvertOutputForm(ZilForm form, ZilAtom? constant)
         {
             // validate and parse
-            if (!form.StartsWith(out ZilAtom head))
+            if (!form.StartsWith(out ZilAtom? head))
             {
                 throw new InterpreterError(
                     form,
@@ -469,14 +474,14 @@ namespace Zilf.ZModel.Values
 
             Debug.Assert(form.Rest?.Rest != null);
 
-            ZilAtom outVariable;
-            ZilFix outFix;
-            if (form.StartsWith(out ZilAtom _, out ZilObject zo) && zo.IsLVAL(out var atom))
+            ZilAtom? outVariable;
+            ZilFix? outFix;
+            if (form.StartsWith(out ZilAtom _, out ZilObject? zo) && zo.IsLVAL(out var atom))
             {
                 outVariable = atom;
                 outFix = null;
             }
-            else if (form.StartsWith(out ZilAtom _, out ZilFix fix))
+            else if (form.StartsWith(out ZilAtom _, out ZilFix? fix))
             {
                 outVariable = null;
                 outFix = fix;
@@ -518,6 +523,7 @@ namespace Zilf.ZModel.Values
                     int constantValue;
                     if (output.Type == OutputElementType.Length)
                     {
+                        Debug.Assert(output.Fix != null);
                         constantValue = output.Fix.Value;
                     }
                     else
@@ -603,7 +609,6 @@ namespace Zilf.ZModel.Values
                 .WithCatchAll<ComplexPropDef>(x => x.PatternsList);
         }
 
-        [NotNull]
         public ZilList PatternsList
         {
             get
@@ -626,9 +631,8 @@ namespace Zilf.ZModel.Values
             }
         }
 
-        [NotNull]
         [ChtypeMethod]
-        public static ComplexPropDef FromList([NotNull] ZilListBase list) => Parse(list);
+        public static ComplexPropDef FromList(ZilListBase list) => Parse(list);
 
         public struct ElementPreBuilders
         {
@@ -638,7 +642,7 @@ namespace Zilf.ZModel.Values
 
         public struct ElementConverters
         {
-            public Func<ZilObject, IOperand> CompileConstant;
+            public Func<ZilObject, IOperand?> CompileConstant;
             public Func<ZilAtom, IOperand> GetGlobalNumber;
             public Func<ZilAtom, ISourceLine, IOperand> GetAdjectiveValue;       // (word, src) => A?constant or word builder
             public Func<ZilAtom, ZilAtom, ISourceLine, IOperand> GetVocabWord;   // (word, part of speech, src) => word builder
@@ -646,6 +650,7 @@ namespace Zilf.ZModel.Values
 
         public bool Matches(Context ctx, ZilList prop)
         {
+            Debug.Assert(prop.Rest != null);
             foreach (var p in patterns)
             {
                 var prop2 = prop.Rest;
@@ -657,9 +662,9 @@ namespace Zilf.ZModel.Values
         }
 
         /// <exception cref="InterpreterError"><paramref name="prop"/> doesn't match any of the supported patterns.</exception>
-        public void PreBuildProperty([NotNull] Context ctx, [NotNull] ZilList prop, ElementPreBuilders preBuilders)
+        public void PreBuildProperty(Context ctx, ZilList prop, ElementPreBuilders preBuilders)
         {
-            
+            Debug.Assert(prop.First != null && prop.Rest != null);
             var captures = new Dictionary<ZilAtom, Queue<ZilObject>>();
 
             foreach (var p in patterns)
@@ -668,19 +673,20 @@ namespace Zilf.ZModel.Values
                 var propBody = prop.Rest;
                 captures.Clear();
 
-                if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 1, captures) && propBody.IsEmpty)
-                {
-                    PartialPreBuild(ctx, captures, preBuilders, p.Outputs, 0, prop.SourceLine);
-                    return;
-                }
+                if (!MatchPartialPattern(ctx, ref propBody, p.Inputs, 1, captures) || !propBody.IsEmpty)
+                    continue;
+
+                PartialPreBuild(ctx, captures, preBuilders, p.Outputs, 0, prop.SourceLine ?? SourceLines.Unknown);
+                return;
             }
 
             throw new InterpreterError(InterpreterMessages.Property_0_Initializer_Doesnt_Match_Any_Supported_Patterns, prop.First);
         }
 
         /// <exception cref="InterpreterError"><paramref name="prop"/> doesn't match any of the supported patterns.</exception>
-        public void BuildProperty([NotNull] Context ctx, [NotNull] ZilList prop, [NotNull] ITableBuilder tb, ElementConverters converters)
+        public void BuildProperty(Context ctx, ZilList prop, ITableBuilder tb, ElementConverters converters)
         {
+            Debug.Assert(prop.First != null && prop.Rest != null);
             var propName = (ZilAtom)prop.First;
 
             var captures = new Dictionary<ZilAtom, Queue<ZilObject>>();
@@ -691,12 +697,12 @@ namespace Zilf.ZModel.Values
                 var propBody = prop.Rest;
                 captures.Clear();
 
-                if (MatchPartialPattern(ctx, ref propBody, p.Inputs, 1, captures) && propBody.IsEmpty)
-                {
-                    // build output
-                    WritePartialOutput(ctx, tb, converters, captures, p.Outputs, 0, propName, prop.SourceLine);
-                    return;
-                }
+                if (!MatchPartialPattern(ctx, ref propBody, p.Inputs, 1, captures) || !propBody.IsEmpty)
+                    continue;
+
+                // build output
+                WritePartialOutput(ctx, tb, converters, captures, p.Outputs, 0, propName, prop.SourceLine);
+                return;
             }
 
             throw new InterpreterError(InterpreterMessages.Property_0_Initializer_Doesnt_Match_Any_Supported_Patterns, prop.First);
@@ -704,8 +710,8 @@ namespace Zilf.ZModel.Values
 
         // may change prop even for an unsuccessful match
         // may not match the entire property (check prop.IsEmpty on return)
-        static bool MatchPartialPattern([NotNull] Context ctx, [NotNull] ref ZilListoidBase prop, [NotNull] InputElement[] inputs, int startIndex,
-            [CanBeNull] Dictionary<ZilAtom, Queue<ZilObject>> captures)
+        static bool MatchPartialPattern(Context ctx, ref ZilListoidBase prop, InputElement[] inputs, int startIndex,
+            Dictionary<ZilAtom, Queue<ZilObject>>? captures)
         {
             for (int i = startIndex; i < inputs.Length; i++)
             {
@@ -713,14 +719,12 @@ namespace Zilf.ZModel.Values
                 switch (input.Type)
                 {
                     case InputElementType.Atom:
-                        if (prop.First == input.Variable)
-                        {
-                            Debug.Assert(prop.Rest != null);
-                            prop = prop.Rest;
-                            break;
-                        }
+                        if (prop.First != input.Variable)
+                            return false;
 
-                        return false;
+                        Debug.Assert(prop.Rest != null);
+                        prop = prop.Rest;
+                        break;
 
                     case InputElementType.Variable:
                         if (prop.First == null || !CheckInputDecl(ctx, prop.First, input.Decl))
@@ -730,6 +734,7 @@ namespace Zilf.ZModel.Values
 
                         if (captures != null)
                         {
+                            Debug.Assert(input.Variable != null);
                             var atom = input.Variable;
                             if (!captures.TryGetValue(atom, out var queue))
                             {
@@ -759,42 +764,40 @@ namespace Zilf.ZModel.Values
         }
 
         [ContractAnnotation("decl: null => false")]
-        static bool CheckInputDecl([NotNull] Context ctx, [NotNull] ZilObject value, [CanBeNull] ZilObject decl)
+        static bool CheckInputDecl(Context ctx, ZilObject value, ZilObject? decl)
         {
             // value can be the name of a constant, in which case we need to check the constant value instead
             if (value is ZilAtom valueAtom && ctx.GetZVal(valueAtom) is ZilConstant constant)
                 value = constant.Value;
 
-            if (decl is ZilAtom declAtom)
+            if (!(decl is ZilAtom declAtom))
+                return false;
+
+            switch (declAtom.StdAtom)
             {
-                switch (declAtom.StdAtom)
-                {
-                    case StdAtom.NOUN:
-                    case StdAtom.ADJ:
-                    case StdAtom.ADJECTIVE:
-                    case StdAtom.ROOM:
-                    case StdAtom.OBJECT:
-                    case StdAtom.FCN:
-                    case StdAtom.ROUTINE:
-                    case StdAtom.GLOBAL:
-                        return value is ZilAtom;
+                case StdAtom.NOUN:
+                case StdAtom.ADJ:
+                case StdAtom.ADJECTIVE:
+                case StdAtom.ROOM:
+                case StdAtom.OBJECT:
+                case StdAtom.FCN:
+                case StdAtom.ROUTINE:
+                case StdAtom.GLOBAL:
+                    return value is ZilAtom;
 
-                    default:
-                        return value.GetTypeAtom(ctx) == declAtom;
-                }
+                default:
+                    return value.GetTypeAtom(ctx) == declAtom;
             }
-
-            return false;
         }
 
-        static bool PartialPreBuild([NotNull] Context ctx, [NotNull] Dictionary<ZilAtom, Queue<ZilObject>> captures,
-            ElementPreBuilders preBuilders, [NotNull] OutputElement[] outputs, int startIndex, ISourceLine src)
+        static bool PartialPreBuild(Context ctx, Dictionary<ZilAtom, Queue<ZilObject>> captures,
+            ElementPreBuilders preBuilders, OutputElement[] outputs, int startIndex, ISourceLine src)
         {
             for (int i = startIndex; i < outputs.Length; i++)
             {
                 var output = outputs[i];
 
-                ZilObject capturedValue;
+                ZilObject? capturedValue;
                 if (output.Variable != null)
                 {
                     if (captures.TryGetValue(output.Variable, out var queue))
@@ -828,18 +831,22 @@ namespace Zilf.ZModel.Values
                     switch (output.Type)
                     {
                         case OutputElementType.Adjective:
+                            Debug.Assert(atom != null);
                             preBuilders.CreateVocabWord(atom, ctx.GetStdAtom(StdAtom.ADJ), src);
                             break;
 
                         case OutputElementType.Noun:
+                            Debug.Assert(atom != null);
                             preBuilders.CreateVocabWord(atom, ctx.GetStdAtom(StdAtom.OBJECT), src);
                             break;
-                            
+
                         case OutputElementType.Voc:
+                            Debug.Assert(atom != null && output.PartOfSpeech != null);
                             preBuilders.CreateVocabWord(atom, output.PartOfSpeech, src);
                             break;
 
                         case OutputElementType.Global:
+                            Debug.Assert(atom != null);
                             preBuilders.ReserveGlobal(atom);
                             break;
                     }
@@ -849,15 +856,17 @@ namespace Zilf.ZModel.Values
             return true;
         }
 
-        static bool WritePartialOutput([NotNull] Context ctx, [NotNull] ITableBuilder tb, ElementConverters converters,
-            [NotNull] Dictionary<ZilAtom, Queue<ZilObject>> captures, [NotNull] OutputElement[] outputs, int startIndex,
-            ZilAtom propName, ISourceLine src)
+        static bool WritePartialOutput(Context ctx, ITableBuilder tb, ElementConverters converters,
+            Dictionary<ZilAtom, Queue<ZilObject>> captures, OutputElement[] outputs, int startIndex,
+            ZilAtom propName, ISourceLine? src)
         {
+            src ??= SourceLines.Unknown;
+
             for (int i = startIndex; i < outputs.Length; i++)
             {
                 var output = outputs[i];
 
-                ZilObject capturedValue;
+                ZilObject? capturedValue;
                 if (output.Variable != null)
                 {
                     if (captures.TryGetValue(output.Variable, out var queue))
@@ -877,8 +886,8 @@ namespace Zilf.ZModel.Values
                     capturedValue = null;
                 }
 
-                IOperand capturedConstantValue;
-                ZilAtom capturedAtom;
+                IOperand? capturedConstantValue;
+                ZilAtom? capturedAtom;
                 if (capturedValue != null)
                 {
                     switch (output.Type)
@@ -922,10 +931,12 @@ namespace Zilf.ZModel.Values
                     case OutputElementType.Byte:
                         if (capturedValue != null)
                         {
+                            Debug.Assert(capturedConstantValue != null);
                             tb.AddByte(capturedConstantValue);
                         }
                         else
                         {
+                            Debug.Assert(output.Fix != null);
                             tb.AddByte((byte)output.Fix.Value);
                         }
                         break;
@@ -933,10 +944,12 @@ namespace Zilf.ZModel.Values
                     case OutputElementType.Word:
                         if (capturedValue != null)
                         {
+                            Debug.Assert(capturedConstantValue != null);
                             tb.AddShort(capturedConstantValue);
                         }
                         else
                         {
+                            Debug.Assert(output.Fix != null);
                             tb.AddShort((short)output.Fix.Value);
                         }
                         break;
@@ -945,23 +958,28 @@ namespace Zilf.ZModel.Values
                     case OutputElementType.Object:
                         if (OutputElementSize(output, ctx) == 1)
                         {
+                            Debug.Assert(capturedConstantValue != null);
                             tb.AddByte(capturedConstantValue);
                         }
                         else
                         {
+                            Debug.Assert(capturedConstantValue != null);
                             tb.AddShort(capturedConstantValue);
                         }
                         break;
 
                     case OutputElementType.String:
+                        Debug.Assert(capturedConstantValue != null);
                         tb.AddShort(capturedConstantValue);
                         break;
 
                     case OutputElementType.Global:
+                        Debug.Assert(capturedAtom != null);
                         tb.AddByte(converters.GetGlobalNumber(capturedAtom));
                         break;
 
                     case OutputElementType.Adjective:
+                        Debug.Assert(capturedAtom != null);
                         if (OutputElementSize(output, ctx) == 1)
                         {
                             tb.AddByte(converters.GetAdjectiveValue(capturedAtom, src));
@@ -973,10 +991,12 @@ namespace Zilf.ZModel.Values
                         break;
 
                     case OutputElementType.Noun:
+                        Debug.Assert(capturedAtom != null);
                         tb.AddShort(converters.GetVocabWord(capturedAtom, ctx.GetStdAtom(StdAtom.OBJECT), src));
                         break;
 
                     case OutputElementType.Voc:
+                        Debug.Assert(capturedAtom != null && output.PartOfSpeech != null);
                         tb.AddShort(converters.GetVocabWord(capturedAtom, output.PartOfSpeech, src));
                         break;
 

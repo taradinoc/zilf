@@ -22,7 +22,7 @@ namespace Zapf.Parsing.Expressions
 {
     public sealed class SymbolExpr : TextAsmExpr
     {
-        public SymbolExpr([NotNull] string name)
+        public SymbolExpr(string name)
             : base(name) { }
 
         public override string ToString()

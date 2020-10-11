@@ -23,16 +23,14 @@ namespace Zilf.Language.Signatures
 {
     interface ISignaturePart
     {
-        [CanBeNull]
-        ICustomAttributeProvider Source { get; }
+        ICustomAttributeProvider? Source { get; }
 
-        [NotNull]
         IConstraint Constraint { get; }
 
-        string Name { get; }
+        string? Name { get; }
         int MinArgs { get; }
         int? MaxArgs { get; }
 
-        void Accept([NotNull] ISignatureVisitor visitor);
+        void Accept(ISignatureVisitor visitor);
     }
 }

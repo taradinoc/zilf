@@ -208,7 +208,7 @@ namespace Zilf.Diagnostics {
 #endif
         }
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new ZilObjectAnalyzer();

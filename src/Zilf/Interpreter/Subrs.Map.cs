@@ -27,28 +27,26 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         [Subr]
-        public static ZilResult MAPF([NotNull] Context ctx,
+        public static ZilResult MAPF(Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
-            IApplicable loopf, [ItemNotNull] [NotNull] IStructure[] structs)
+            IApplicable loopf, IStructure[] structs)
         {
             return PerformMap(ctx, finalf, loopf, structs, true);
         }
 
         [Subr]
-        public static ZilResult MAPR([NotNull] Context ctx,
+        public static ZilResult MAPR(Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
-            IApplicable loopf, [NotNull] [ItemNotNull] IStructure[] structs)
+            IApplicable loopf, IStructure[] structs)
         {
             return PerformMap(ctx, finalf, loopf, structs, false);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        static ZilResult PerformMap([NotNull] Context ctx, ZilObject finalf, IApplicable loopf, [NotNull] IStructure[] structs, bool first)
+        static ZilResult PerformMap(Context ctx, ZilObject finalf, IApplicable loopf, IStructure[] structs, bool first)
         {
             if (structs == null)
                 throw new ArgumentNullException(nameof(structs));
-
-            var finalf_app = finalf.AsApplicable(ctx);
 
             int numStructs = structs.Length;
             var loopArgs = new ZilObject[numStructs];
@@ -63,15 +61,15 @@ namespace Zilf.Interpreter
                 for (i = 0; i < numStructs; i++)
                 {
                     var st = structs[i];
-                    if (st == null || st.IsEmpty)
+                    if (st?.IsEmpty != false)
                         break;
 
                     if (first)
-                        loopArgs[i] = st.GetFirst();
+                        loopArgs[i] = st.GetFirst()!;
                     else
                         loopArgs[i] = (ZilObject)st;
 
-                    structs[i] = st.GetRest(1);
+                    structs[i] = st.GetRest(1)!;
                 }
 
                 if (i < numStructs)
@@ -113,28 +111,19 @@ namespace Zilf.Interpreter
             }
 
             // apply final function
-            if (finalf_app != null)
-                return finalf_app.ApplyNoEval(ctx, results.ToArray());
+            if (finalf.IsApplicable(ctx, out var finalfApplicable))
+                return finalfApplicable.ApplyNoEval(ctx, results.ToArray());
 
-            return results.Count > 0 ? results[results.Count - 1] : ctx.FALSE;
+            return results.Count > 0 ? results[^1] : ctx.FALSE;
         }
 
         [Subr]
-        public static ZilResult MAPRET(Context ctx, [NotNull] ZilObject[] args)
-        {
-            return ZilResult.MapRet(args);
-        }
+        public static ZilResult MAPRET(Context ctx, ZilObject[] args) => ZilResult.MapRet(args);
 
         [Subr]
-        public static ZilResult MAPSTOP(Context ctx, [NotNull] ZilObject[] args)
-        {
-            return ZilResult.MapStop(args);
-        }
+        public static ZilResult MAPSTOP(Context ctx, ZilObject[] args) => ZilResult.MapStop(args);
 
         [Subr]
-        public static ZilResult MAPLEAVE(Context ctx, [CanBeNull] ZilObject value = null)
-        {
-            return ZilResult.MapLeave(value ?? ctx.TRUE);
-        }
+        public static ZilResult MAPLEAVE(Context ctx, ZilObject? value = null) => ZilResult.MapLeave(value ?? ctx.TRUE);
     }
 }

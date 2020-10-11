@@ -30,9 +30,8 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         /// <exception cref="InterpreterError">Bad OUTCHAN.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject PRINT([NotNull] Context ctx, [NotNull] ZilObject value, ZilChannel channel = null)
+        public static ZilObject PRINT(Context ctx, ZilObject value, ZilChannel? channel = null)
         {
             if (channel == null)
             {
@@ -54,9 +53,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">Bad OUTCHAN.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject PRIN1([NotNull] Context ctx, [NotNull] ZilObject value, ZilChannel channel = null)
+        public static ZilObject PRIN1(Context ctx, ZilObject value, ZilChannel? channel = null)
         {
             if (channel == null)
             {
@@ -76,9 +74,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">Bad OUTCHAN.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject PRINC([NotNull] Context ctx, [NotNull] ZilObject value, ZilChannel channel = null)
+        public static ZilObject PRINC(Context ctx, ZilObject value, ZilChannel? channel = null)
         {
             if (channel == null)
             {
@@ -98,9 +95,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">Bad OUTCHAN.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject CRLF([NotNull] Context ctx, ZilChannel channel = null)
+        public static ZilObject CRLF(Context ctx, ZilChannel? channel = null)
         {
             if (channel == null)
             {
@@ -119,23 +115,25 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError"><paramref name="printer"/> is an atom which has no local or global value.</exception>
         [Subr("PRINT-MANY")]
-        public static ZilObject PRINT_MANY([NotNull] Context ctx, ZilChannel channel,
-            [Decl("<OR ATOM APPLICABLE>")] ZilObject printer, [NotNull] ZilObject[] items)
+        public static ZilObject PRINT_MANY(Context ctx, ZilChannel channel,
+            [Decl("<OR ATOM APPLICABLE>")] ZilObject printer, ZilObject[] items)
         {
             if (printer is ZilAtom atom)
             {
-                printer = ctx.GetGlobalVal(atom) ?? ctx.GetLocalVal(atom);
-                if (printer == null)
-                    throw new InterpreterError(
-                        InterpreterMessages._0_Atom_1_Has_No_2_Value,
-                        "PRINT-MANY",
-                        atom.ToStringContext(ctx, false),
-                        "local or global");
+                printer = ctx.GetGlobalVal(atom) ?? ctx.GetLocalVal(atom) ??
+                          throw new InterpreterError(
+                              InterpreterMessages._0_Atom_1_Has_No_2_Value,
+                              "PRINT-MANY",
+                              atom.ToStringContext(ctx, false),
+                              "local or global");
             }
 
-            var applicablePrinter = printer.AsApplicable(ctx);
-            if (applicablePrinter == null)
-                throw new InterpreterError(InterpreterMessages._0_Not_Applicable_1, "PRINT-MANY", printer.ToStringContext(ctx, false));
+            if (!printer.IsApplicable(ctx, out var applicablePrinter))
+            {
+                throw new InterpreterError(InterpreterMessages._0_Not_Applicable_1,
+                    "PRINT-MANY",
+                    printer.ToStringContext(ctx, false));
+            }
 
             var crlf = ctx.GetStdAtom(StdAtom.PRMANY_CRLF);
             var result = ctx.TRUE;
@@ -166,9 +164,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">Bad OUTCHAN.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject IMAGE([NotNull] Context ctx, [NotNull] ZilFix ch, ZilChannel channel = null)
+        public static ZilObject IMAGE(Context ctx, ZilFix ch, ZilChannel? channel = null)
         {
             if (channel == null)
             {
@@ -187,47 +184,42 @@ namespace Zilf.Interpreter
 
         static readonly Regex RetroPathRE = new Regex(@"^(?:(?<device>[^:]+):)?(?:<(?<directory>[^>]+)>)?(?<filename>[^:<>]+)$");
 
-        [NotNull]
         [Subr]
-        public static ZilObject OPEN([NotNull] Context ctx, [Decl("'\"READ\"")] string mode, [NotNull] string path)
+        public static ZilObject OPEN(Context ctx, [Decl("'\"READ\"")] string mode, string path)
         {
             var result = new ZilFileChannel(ConvertPath(path), FileAccess.Read);
             result.Reset(ctx);
             return result;
         }
 
-        [NotNull]
-        static string ConvertPath([NotNull] string retroPath)
+        static string ConvertPath(string retroPath)
         {
             var match = RetroPathRE.Match(retroPath);
             return match.Success ? match.Groups["filename"].Value : retroPath;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject CLOSE([NotNull] Context ctx, [NotNull] ZilChannel channel)
+        public static ZilObject CLOSE(Context ctx, ZilChannel channel)
         {
             channel.Close();
             return channel;
         }
 
-        [NotNull]
         [Subr("FILE-LENGTH")]
-        public static ZilObject FILE_LENGTH([NotNull] Context ctx, [NotNull] ZilChannel channel)
+        public static ZilObject FILE_LENGTH(Context ctx, ZilChannel channel)
         {
             var length = channel.GetFileLength();
             return length == null ? ctx.FALSE : new ZilFix((int)length.Value);
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject READSTRING([NotNull] Context ctx, [NotNull] ZilString dest, ZilChannel channel,
-            [CanBeNull] [Decl("<OR FIX STRING>")] ZilObject maxLengthOrStopChars = null)
+        public static ZilObject READSTRING(Context ctx, ZilString dest, ZilChannel channel,
+            [Decl("<OR FIX STRING>")] ZilObject? maxLengthOrStopChars = null)
         {
             // TODO: support 1- and 4-argument forms?
 
             int maxLength = dest.Text.Length;
-            ZilString stopChars = null;
+            ZilString? stopChars = null;
 
             if (maxLengthOrStopChars != null)
             {
@@ -262,9 +254,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">Not supported by this type of channel.</exception>
-        [NotNull]
         [Subr("M-HPOS")]
-        public static ZilObject M_HPOS([NotNull] Context ctx, [NotNull] ZilChannel channel)
+        public static ZilObject M_HPOS(Context ctx, ZilChannel channel)
         {
             if (!(channel is IChannelWithHPos hposChannel))
                 throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_This_Type_Of_Channel, "M-HPOS");
@@ -273,9 +264,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError"><paramref name="position"/> is negative.</exception>
-        [NotNull]
         [Subr("INDENT-TO")]
-        public static ZilObject INDENT_TO([NotNull] Context ctx, [NotNull] ZilFix position, ZilChannel channel = null)
+        public static ZilObject INDENT_TO(Context ctx, ZilFix position, ZilChannel? channel = null)
         {
             if (position.Value < 0)
                 throw new InterpreterError(

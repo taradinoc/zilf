@@ -30,13 +30,10 @@ namespace Zilf.Emit.Zap
     {
         const string INDENT = "\t";
 
-        [NotNull]
         internal static readonly NumericOperand ZERO = new NumericOperand(0);
 
-        [NotNull]
         internal static readonly NumericOperand ONE = new NumericOperand(1);
 
-        [NotNull]
         static readonly ConstantLiteralOperand VOCAB = new ConstantLiteralOperand("VOCAB");
 
         // all global names go in here
@@ -56,18 +53,18 @@ namespace Zilf.Emit.Zap
 
         readonly IZapStreamFactory streamFactory;
         internal readonly int zversion;
-        internal readonly DebugFileBuilder debug;
+        internal readonly DebugFileBuilder? debug;
         readonly GameOptions options;
 
-        IRoutineBuilder entryRoutine;
+        IRoutineBuilder? entryRoutine;
 
-        Stream stream;
+        Stream? stream;
         TextWriter writer;
 
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="zversion"/> is not a supported Z-machine version.</exception>
         /// <exception cref="ArgumentException"><paramref name="options"/> is the wrong type for this Z-machine version.</exception>
-        public GameBuilder(int zversion, [NotNull] IZapStreamFactory streamFactory, bool wantDebugInfo,
-            [CanBeNull] GameOptions options = null)
+        public GameBuilder(int zversion, IZapStreamFactory streamFactory, bool wantDebugInfo,
+             GameOptions? options = null)
         {
             if (!IsSupportedZversion(zversion))
                 throw new ArgumentOutOfRangeException(nameof(zversion), "Unsupported Z-machine version");
@@ -103,22 +100,11 @@ namespace Zilf.Emit.Zap
 
         public void Dispose()
         {
-            if (writer != null)
-            {
-                var w = writer;
-                writer = null;
-                w.Dispose();
-            }
-
-            if (stream != null)
-            {
-                var s = stream;
-                stream = null;
-                s.Dispose();
-            }
+            writer?.Dispose();
+            stream?.Dispose();
         }
 
-        static void GetOptionsTypeForZVersion(int zversion, [NotNull] out Type requiredOptionsType, [NotNull] out Type concreteOptionsType)
+        static void GetOptionsTypeForZVersion(int zversion, out Type requiredOptionsType, out Type concreteOptionsType)
         {
             switch (zversion)
             {
@@ -232,8 +218,7 @@ namespace Zilf.Emit.Zap
             writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetDataFileName(false));
         }
 
-        [NotNull]
-        static string ExpandChrSet([CanBeNull] string alphabet)
+        static string ExpandChrSet(string? alphabet)
         {
             var sb = new StringBuilder(100);
             if (alphabet == null)
@@ -254,7 +239,7 @@ namespace Zilf.Emit.Zap
             return sb.ToString();
         }
 
-        public IDebugFileBuilder DebugFile => debug;
+        public IDebugFileBuilder? DebugFile => debug;
 
         public IGameOptions Options => options;
 
@@ -286,7 +271,7 @@ namespace Zilf.Emit.Zap
         }
 
         /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
-        public ITableBuilder DefineTable(string name, bool pure)
+        public ITableBuilder DefineTable(string? name, bool pure)
         {
             if (name == null)
                 name = "T?" + Convert.ToString(pureTables.Count + impureTables.Count);
@@ -393,8 +378,7 @@ namespace Zilf.Emit.Zap
 
         public ICollection<char> SelfInsertingBreaks => siBreaks;
 
-        [NotNull]
-        public static string SanitizeString([NotNull] string text)
+        public static string SanitizeString(string text)
         {
             // escape '"' as '""'
             var sb = new StringBuilder(text);
@@ -406,8 +390,7 @@ namespace Zilf.Emit.Zap
             return sb.ToString();
         }
 
-        [NotNull]
-        public static string SanitizeSymbol([NotNull] string symbol)
+        public static string SanitizeSymbol(string symbol)
         {
             switch (symbol)
             {
@@ -478,7 +461,7 @@ namespace Zilf.Emit.Zap
         public INumericOperand One => ONE;
         public IConstantOperand VocabularyTable => VOCAB;
 
-        public bool IsGloballyDefined(string name, out string type) => symbols.TryGetValue(name, out type);
+        public bool IsGloballyDefined(string name, out string? type) => symbols.TryGetValue(name, out type);
 
         public void Finish()
         {
@@ -572,8 +555,8 @@ namespace Zilf.Emit.Zap
             }
 
             // done
-            writer = null;
-            stream = null;
+            writer.Close();
+            stream.Close();
         }
 
         void FinishSymbols()
@@ -695,7 +678,7 @@ namespace Zilf.Emit.Zap
                 else
                     writer.WriteLine(INDENT + "; Unused property #{0}", row.num);
 
-                writer.WriteLine(INDENT + ".WORD {0}", (object)row.def ?? "0");
+                writer.WriteLine(INDENT + ".WORD {0}", (object?)row.def ?? "0");
             }
 
             // object structures
@@ -709,9 +692,9 @@ namespace Zilf.Emit.Zap
                     ob.Flags1,
                     ob.Flags2,
                     (zversion < 4) ? "" : "," + ob.Flags3,
-                    (object)ob.Parent ?? "0",
-                    (object)ob.Sibling ?? "0",
-                    (object)ob.Child ?? "0",
+                    (object?)ob.Parent ?? "0",
+                    (object?)ob.Sibling ?? "0",
+                    (object?)ob.Child ?? "0",
                     "?PTBL?" + ob.SymbolicName);
             }
 
@@ -753,7 +736,7 @@ namespace Zilf.Emit.Zap
 
             // global variables
             foreach (var gb in globals)
-                writer.WriteLine(INDENT + ".GVAR {0}={1}", gb.Name, (object)gb.DefaultValue?.StripIndirect() ?? "0");
+                writer.WriteLine(INDENT + ".GVAR {0}={1}", gb.Name, (object?)gb.DefaultValue?.StripIndirect() ?? "0");
 
             writer.WriteLine(INDENT + ".ENDT");
         }

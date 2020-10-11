@@ -23,12 +23,11 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class AlignDirective : Directive
     {
-        public AlignDirective([NotNull] AsmExpr divisor)
+        public AlignDirective(AsmExpr divisor)
         {
             Divisor = divisor;
         }
 
-        [NotNull]
         public AsmExpr Divisor { get; }
     }
 }

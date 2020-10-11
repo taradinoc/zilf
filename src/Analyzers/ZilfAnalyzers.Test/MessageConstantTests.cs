@@ -155,7 +155,7 @@ namespace Zilf.Diagnostics {
             await VerifyCSharpFixAsync(test, fixtest);
         }
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new MessageConstantAnalyzer();

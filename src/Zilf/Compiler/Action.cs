@@ -25,11 +25,13 @@ namespace Zilf.Compiler
     {
         public readonly int Index;
         public readonly IOperand Constant;
-        public readonly IRoutineBuilder Routine, PreRoutine;
-        public readonly ZilAtom RoutineName, PreRoutineName;
+        public readonly IRoutineBuilder Routine;
+        public readonly IRoutineBuilder? PreRoutine;
+        public readonly ZilAtom RoutineName;
+        public readonly ZilAtom? PreRoutineName;
 
-        public Action(int index, IOperand constant, IRoutineBuilder routine, IRoutineBuilder preRoutine,
-            ZilAtom routineName, ZilAtom preRoutineName)
+        public Action(int index, IOperand constant, IRoutineBuilder routine, IRoutineBuilder? preRoutine,
+            ZilAtom routineName, ZilAtom? preRoutineName)
         {
             Index = index;
             Constant = constant;

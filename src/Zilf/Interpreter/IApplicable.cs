@@ -30,7 +30,7 @@ namespace Zilf.Interpreter
         /// <param name="ctx">The current context.</param>
         /// <param name="args">The unevaluated arguments.</param>
         /// <returns>The result of the application.</returns>
-        ZilResult Apply([NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args);
+        ZilResult Apply([ProvidesContext] Context ctx, ZilObject[] args);
 
         /// <summary>
         /// Applies the object to the given arguments, without evaluating or expanding them.
@@ -38,6 +38,6 @@ namespace Zilf.Interpreter
         /// <param name="ctx">The current context.</param>
         /// <param name="args">The arguments.</param>
         /// <returns>The result of the application.</returns>
-        ZilResult ApplyNoEval([NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args);
+        ZilResult ApplyNoEval([ProvidesContext] Context ctx, ZilObject[] args);
     }
 }

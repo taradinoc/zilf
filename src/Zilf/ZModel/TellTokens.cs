@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
 using Zilf.Diagnostics;
@@ -29,7 +30,7 @@ namespace Zilf.ZModel
     interface ITellPatternMatchResult
     {
         bool Matched { get; }
-        ZilForm Output { get; }
+        ZilForm? Output { get; }
     }
 
     class TellPattern
@@ -37,7 +38,7 @@ namespace Zilf.ZModel
         class MatchResult : ITellPatternMatchResult
         {
             public bool Matched { get; set; }
-            public ZilForm Output { get; set; }
+            public ZilForm? Output { get; set; }
 
             public IList<ZilObject> Captures { get; }
 
@@ -46,9 +47,10 @@ namespace Zilf.ZModel
                 Captures = new List<ZilObject>();
             }
         }
+
         abstract class Token
         {
-            public abstract bool Match([NotNull] Context ctx, [NotNull] ZilObject input, [NotNull] MatchResult result);
+            public abstract bool Match(Context ctx, ZilObject input, MatchResult result);
         }
 
         class AtomToken : Token
@@ -62,11 +64,7 @@ namespace Zilf.ZModel
 
             public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
-                foreach (var atom in Atoms)
-                    if (input == atom)
-                        return true;
-
-                return false;
+                return Atoms.Any(atom => input == atom);
             }
         }
 
@@ -82,11 +80,12 @@ namespace Zilf.ZModel
         class DeclToken : Token
         {
             // ReSharper disable once MemberCanBePrivate.Local
-            public ZilObject Pattern { get; set; }
+            [DisallowNull]
+            public ZilObject? Pattern { get; set; }
 
             public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
-                if (!Decl.Check(ctx, input, Pattern))
+                if (!Decl.Check(ctx, input, Pattern!))
                     return false;
 
                 result.Captures.Add(input);
@@ -96,16 +95,13 @@ namespace Zilf.ZModel
 
         class GvalToken : Token
         {
-            [CanBeNull]
             // ReSharper disable once MemberCanBePrivate.Local
-            public ZilAtom Atom { get; set; }
+            public ZilAtom? Atom { get; set; }
 
-            public override bool Match(Context ctx, ZilObject input, MatchResult result)
-            {
-                return input is ZilForm form
-                    && form.IsGVAL(out var inputAtom)
-                    && inputAtom == Atom;
-            }
+            public override bool Match(Context ctx, ZilObject input, MatchResult result) =>
+                input is ZilForm form
+                && form.IsGVAL(out var inputAtom)
+                && inputAtom == Atom;
         }
 
         readonly Token[] tokens;
@@ -118,7 +114,7 @@ namespace Zilf.ZModel
         }
 
         /// <exception cref="InterpreterError">The pattern syntax is invalid.</exception>
-        public static IEnumerable<TellPattern> Parse([NotNull] IEnumerable<ZilObject> spec)
+        public static IEnumerable<TellPattern> Parse(IEnumerable<ZilObject> spec)
         {
             var tokensSoFar = new List<Token>();
             int capturesSoFar = 0;
@@ -127,8 +123,7 @@ namespace Zilf.ZModel
             {
                 AtomToken atomToken;
 
-                var type = zo.StdTypeAtom;
-                switch (type)
+                switch (zo.StdTypeAtom)
                 {
                     case StdAtom.LIST:
                         // one or more atoms to introduce the token
@@ -138,7 +133,7 @@ namespace Zilf.ZModel
                         if (list.IsEmpty || !list.All(e => e is ZilAtom))
                         {
                             throw new InterpreterError(
-                                zo.SourceLine,
+                                list.SourceLine,
                                 InterpreterMessages._0_In_1_Must_Be_2,
                                 "lists",
                                 "TELL token specs",
@@ -243,8 +238,7 @@ namespace Zilf.ZModel
 
         public int Length => tokens.Length;
 
-        [NotNull]
-        public ITellPatternMatchResult Match([NotNull] IList<ZilObject> input, int startIndex, [NotNull] Context ctx, [NotNull] ISourceLine src)
+        public ITellPatternMatchResult Match(IList<ZilObject> input, int startIndex, Context ctx, ISourceLine src)
         {
             var result = new MatchResult { Matched = false };
 
@@ -282,7 +276,7 @@ namespace Zilf.ZModel
             return result;
         }
 
-        static bool IsSimpleOutputElement([NotNull] ZilObject obj)
+        static bool IsSimpleOutputElement(ZilObject obj)
         {
             return obj is ZilAtom || obj is ZilFix || obj is ZilString || obj is ZilFalse ||
                    obj.IsLVAL(out _) || obj.IsGVAL(out _) || (obj as ZilForm)?.IsEmpty == true;

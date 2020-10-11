@@ -34,8 +34,7 @@ namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        [NotNull]
-        static ZilRoutine MaybeRewriteRoutine([NotNull] Context ctx, [NotNull] ZilRoutine origRoutine)
+        static ZilRoutine MaybeRewriteRoutine(Context ctx, ZilRoutine origRoutine)
         {
             const string SExpectedResultType = "a list (with an arg spec and body) or FALSE";
 
@@ -71,7 +70,7 @@ namespace Zilf.Compiler
             OuterLocals.Clear();
         }
 
-        void BuildRoutine([NotNull] ZilRoutine routine, [NotNull] IRoutineBuilder rb, bool entryPoint, bool traceRoutines)
+        void BuildRoutine(ZilRoutine routine, IRoutineBuilder rb, bool entryPoint, bool traceRoutines)
         {
             // give the user a chance to rewrite the routine
             routine = MaybeRewriteRoutine(Context, routine);
@@ -204,7 +203,7 @@ namespace Zilf.Compiler
                 if (lb.DefaultValue != null)
                     return;
 
-                ILabel nextLabel = null;
+                ILabel? nextLabel = null;
 
                 // ReSharper disable once SwitchStatementMissingSomeCases
                 switch (arg.Type)
@@ -251,7 +250,7 @@ namespace Zilf.Compiler
         }
 
         // TODO: replace CompileStmt with CompileForm and (in loops) CompileClauseBody
-        void CompileStmt([NotNull] IRoutineBuilder rb, [NotNull] ZilObject stmt, bool wantResult)
+        void CompileStmt(IRoutineBuilder rb, ZilObject stmt, bool wantResult)
         {
             stmt = stmt.Unwrap(Context);
 
@@ -263,7 +262,7 @@ namespace Zilf.Compiler
                     var result = CompileForm(rb, form, wantResult, null);
 
                     if (wantResult)
-                        rb.Return(result);
+                        rb.Return(result!);
                     break;
 
                 case ZilList _:
@@ -293,7 +292,7 @@ namespace Zilf.Compiler
             }
         }
 
-        void MarkSequencePoint([NotNull] IRoutineBuilder rb, [NotNull] IProvideSourceLine node)
+        void MarkSequencePoint(IRoutineBuilder rb, IProvideSourceLine node)
         {
             if (!WantDebugInfo || !(node.SourceLine is FileSourceLine fileSourceLine))
                 return;
@@ -304,22 +303,22 @@ namespace Zilf.Compiler
         }
 
         /// <summary>
-        /// 
+        /// Creates a new binding for a local variable, saving the old one on a stack if needed.
         /// </summary>
         /// <param name="rb"></param>
         /// <param name="atom"></param>
         /// <param name="reason"></param>
         /// <param name="src"></param>
         /// <returns></returns>
+        /// <seealso cref="PopInnerLocal"/>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
-        [NotNull]
-        public ILocalBuilder PushInnerLocal([NotNull] IRoutineBuilder rb, [NotNull] ZilAtom atom,
+        public ILocalBuilder PushInnerLocal(IRoutineBuilder rb, ZilAtom atom,
             LocalBindingType reason, ISourceLine src)
         {
             if (Locals.TryGetValue(atom, out var prev))
             {
                 // save the old binding
-                if (OuterLocals.TryGetValue(atom, out var stk) == false)
+                if (!OuterLocals.TryGetValue(atom, out var stk))
                 {
                     stk = new Stack<LocalBindingRecord>();
                     OuterLocals.Add(atom, stk);
@@ -356,8 +355,7 @@ namespace Zilf.Compiler
             return result;
         }
 
-        [NotNull]
-        ZilAtom MakeUniqueVariableName([NotNull] ZilAtom atom)
+        ZilAtom MakeUniqueVariableName(ZilAtom atom)
         {
             if (!VariableNameInUse(atom))
                 return atom;
@@ -374,14 +372,14 @@ namespace Zilf.Compiler
             return newAtom;
         }
 
-        bool VariableNameInUse([NotNull] ZilAtom atom)
+        bool VariableNameInUse(ZilAtom atom)
         {
             return Locals.ContainsKey(atom) || TempLocalNames.Contains(atom) ||
                    Globals.ContainsKey(atom) || SoftGlobals.ContainsKey(atom) ||
                    Constants.ContainsKey(atom) || Objects.ContainsKey(atom) || Routines.ContainsKey(atom);
         }
 
-        public void PopInnerLocal([NotNull] ZilAtom atom)
+        public void PopInnerLocal(ZilAtom atom)
         {
             SpareLocals.Push(Locals[atom].LocalBuilder);
 
@@ -392,7 +390,9 @@ namespace Zilf.Compiler
                     OuterLocals.Remove(atom);
             }
             else
+            {
                 Locals.Remove(atom);
+            }
         }
 
         void FindAndMarkVariable(IVariable var, Action<LocalBindingRecord> markAction)
@@ -404,19 +404,19 @@ namespace Zilf.Compiler
             markAction(lbr);
         }
 
-        public void MarkVariableAsRead([NotNull] LocalBindingRecord lbr) =>
+        public static void MarkVariableAsRead(LocalBindingRecord lbr) =>
             lbr.IsEverRead = true;
 
         public void MarkVariableAsRead(IVariable var) =>
             FindAndMarkVariable(var, MarkVariableAsRead);
 
-        public void MarkVariableAsWritten([NotNull] LocalBindingRecord lbr) =>
+        public static void MarkVariableAsWritten(LocalBindingRecord lbr) =>
             lbr.IsEverWritten = true;
 
         public void MarkVariableAsWritten(IVariable var) =>
             FindAndMarkVariable(var, MarkVariableAsWritten);
 
-        public void MarkVariableAsReadAndWritten([NotNull] LocalBindingRecord lbr) =>
+        public static void MarkVariableAsReadAndWritten(LocalBindingRecord lbr) =>
             lbr.IsEverRead = lbr.IsEverWritten = true;
 
         public void MarkVariableAsReadAndWritten(IVariable var) =>

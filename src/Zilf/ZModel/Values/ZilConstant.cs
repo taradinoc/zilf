@@ -28,30 +28,27 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.CONSTANT, PrimType.LIST)]
     class ZilConstant : ZilTiedListBase
     {
-        public ZilConstant([NotNull] ZilAtom name, [NotNull] ZilObject value)
+        public ZilConstant(ZilAtom name, ZilObject value)
         {
             Name = name;
             Value = value;
         }
 
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
-        [NotNull]
         [ChtypeMethod]
-        public static ZilConstant FromList([NotNull] ZilListBase list)
+        public static ZilConstant FromList(ZilListBase list)
         {
             if (!list.HasLength(2))
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to CONSTANT", 2);
 
-            if (!list.Matches(out ZilAtom nameAtom, out ZilObject value))
+            if (!list.Matches(out ZilAtom? nameAtom, out ZilObject? value))
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to CONSTANT", "an atom");
 
             return new ZilConstant(nameAtom, value);
         }
 
-        [NotNull]
         public ZilAtom Name { get; }
 
-        [NotNull]
         public ZilObject Value { get; }
 
         protected override TiedLayout GetLayout()

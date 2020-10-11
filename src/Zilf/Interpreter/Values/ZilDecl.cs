@@ -28,14 +28,13 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.DECL, PrimType.LIST)]
     class ZilDecl : ZilListBase
     {
-        public ZilDecl([ItemNotNull] [NotNull] IEnumerable<ZilObject> sequence)
+        public ZilDecl(IEnumerable<ZilObject> sequence)
             : base(sequence)
         {
         }
 
-        [NotNull]
         [ChtypeMethod]
-        public static ZilDecl FromList([NotNull] ZilListBase list) => new ZilDecl(list);
+        public static ZilDecl FromList(ZilListBase list) => new ZilDecl(list);
 
         public override StdAtom StdTypeAtom => StdAtom.DECL;
 
@@ -46,7 +45,7 @@ namespace Zilf.Interpreter.Values
 
             while (!list.IsEmpty)
             {
-                if (!list.StartsWith(out ZilList atoms, out ZilObject decl))
+                if (!list.StartsWith(out ZilList? atoms, out ZilObject? decl))
                     break;
 
                 if (!atoms.All(a => a is ZilAtom))
@@ -58,8 +57,7 @@ namespace Zilf.Interpreter.Values
                     yield return new KeyValuePair<ZilAtom, ZilObject>(atom, decl);
                 }
 
-                list = list.GetRest(2);
-                Debug.Assert(list != null);
+                list = list.GetRest(2)!;
             }
 
             if (!list.IsEmpty)

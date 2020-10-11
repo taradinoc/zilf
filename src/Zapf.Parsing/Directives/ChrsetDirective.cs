@@ -24,15 +24,13 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class ChrsetDirective : Directive
     {
-        public ChrsetDirective([NotNull] AsmExpr alphabetNum, [NotNull] IEnumerable<AsmExpr> characters)
+        public ChrsetDirective(AsmExpr alphabetNum, IEnumerable<AsmExpr> characters)
         {
             CharsetNum = alphabetNum;
             Characters = new List<AsmExpr>(characters);
         }
 
-        [NotNull]
         public AsmExpr CharsetNum { get; }
-        [NotNull]
         public IList<AsmExpr> Characters { get; }
     }
 }

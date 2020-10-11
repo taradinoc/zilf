@@ -29,7 +29,6 @@ namespace Zilf.Interpreter.Values.Tied
     [SuppressMessage("ReSharper", "PatternAlwaysOfType")]
     abstract class ZilTiedListBase : ZilListoidBase
     {
-        [NotNull]
         protected abstract TiedLayout GetLayout();
 
         TiedLayout MyLayout
@@ -50,7 +49,6 @@ namespace Zilf.Interpreter.Values.Tied
             }
         }
 
-        [NotNull]
         public sealed override ZilObject GetPrimitive(Context ctx)
         {
             return new ZilList(this);
@@ -76,7 +74,6 @@ namespace Zilf.Interpreter.Values.Tied
 
         static readonly ObList detachedObList = new ObList();
 
-        [NotNull]
         protected static ZilAtom GetStdAtom(StdAtom stdAtom)
         {
             /* Tied values with atoms in their printed representation may need to return
@@ -88,7 +85,6 @@ namespace Zilf.Interpreter.Values.Tied
             return detachedObList[stdAtom.ToString()];
         }
 
-        [NotNull]
         protected static ZilObject FALSE
         {
             get
@@ -111,16 +107,16 @@ namespace Zilf.Interpreter.Values.Tied
                 if (index >= 0)
                 {
                     if (index < layout.MinLength)
-                        return (ZilObject)layout.PropertyInfos[index].GetValue(this);
+                        return (ZilObject?)layout.PropertyInfos[index].GetValue(this)!;
 
                     if (layout.CatchAllPropertyInfo is PropertyInfo pi)
                     {
-                        var catchAll = (IStructure)pi.GetValue(this);
-                        return catchAll[index - layout.MinLength];
+                        var catchAll = (IStructure)pi.GetValue(this)!;
+                        return catchAll[index - layout.MinLength]!;
                     }
                 }
 
-                return null;
+                return null!;
             }
 
             set
@@ -146,7 +142,7 @@ namespace Zilf.Interpreter.Values.Tied
                     {
                         if (pi.CanWrite)
                         {
-                            var catchAll = (IStructure)pi.GetValue(this);
+                            var catchAll = (IStructure)pi.GetValue(this)!;
                             catchAll[index - layout.MinLength] = value;
                             pi.SetValue(this, catchAll);
                         }
@@ -169,35 +165,34 @@ namespace Zilf.Interpreter.Values.Tied
         {
             var layout = MyLayout;
 
-            var query = layout.PropertyInfos.Select(pi => (ZilObject)pi.GetValue(this));
+            var query = layout.PropertyInfos.Select(pi => (ZilObject)pi.GetValue(this)!);
 
             if (layout.CatchAllPropertyInfo is PropertyInfo pi2)
-                query = query.Concat((IStructure)pi2.GetValue(this));
+                query = query.Concat((IStructure)pi2.GetValue(this)!);
 
             return query.GetEnumerator();
         }
 
-        public sealed override ZilObject First
+        public sealed override ZilObject? First
         {
             get
             {
                 var layout = MyLayout;
 
                 if (layout.MinLength > 0)
-                    return (ZilObject)layout.PropertyInfos[0].GetValue(this);
+                    return (ZilObject)layout.PropertyInfos[0].GetValue(this)!;
 
                 if (layout.CatchAllPropertyInfo is PropertyInfo pi)
-                    return ((IStructure)pi.GetValue(this)).GetFirst();
+                    return ((IStructure)pi.GetValue(this)!).GetFirst();
 
                 return null;
             }
 
-            set => this[0] = value;
+            set => this[0] = value!;
         }
 
         // ReSharper disable once AnnotationConflictInHierarchy
-        [NotNull]
-        public sealed override ZilListoidBase Rest
+        public sealed override ZilListoidBase? Rest
         {
             get => GetRest(1) ?? new ZilList(null, null);
             set => throw new NotSupportedException();
@@ -208,7 +203,7 @@ namespace Zilf.Interpreter.Values.Tied
             var result = MyLayout.PropertyInfos.Count;
 
             if (MyLayout.CatchAllPropertyInfo is PropertyInfo pi)
-                result += ((IStructure)pi.GetValue(this)).GetLength();
+                result += ((IStructure)pi.GetValue(this)!).GetLength();
 
             return result;
         }
@@ -222,7 +217,7 @@ namespace Zilf.Interpreter.Values.Tied
 
             if (MyLayout.CatchAllPropertyInfo is PropertyInfo pi)
             {
-                var more = ((IStructure)pi.GetValue(this)).GetLength(limit - result);
+                var more = ((IStructure)pi.GetValue(this)!).GetLength(limit - result);
 
                 if (more == null)
                     return null;
@@ -236,7 +231,7 @@ namespace Zilf.Interpreter.Values.Tied
             return result;
         }
 
-        public sealed override ZilListoidBase GetRest(int skip)
+        public sealed override ZilListoidBase? GetRest(int skip)
         {
             return this.HasLengthAtLeast(skip) ? new Wrapper(this, skip) : null;
         }
@@ -268,15 +263,14 @@ namespace Zilf.Interpreter.Values.Tied
                 return orig.Skip(offset).GetEnumerator();
             }
 
-            public override ZilObject First
+            public override ZilObject? First
             {
                 get => orig[offset];
-                set => orig[offset] = value;
+                set => orig[offset] = value!;
             }
 
             // ReSharper disable once AnnotationConflictInHierarchy
-            [NotNull]
-            public override ZilListoidBase Rest
+            public override ZilListoidBase? Rest
             {
                 get
                 {
@@ -290,13 +284,12 @@ namespace Zilf.Interpreter.Values.Tied
 
             public override int? GetLength(int limit) => orig.GetLength(limit + offset) - offset;
 
-            [NotNull]
             public override ZilObject GetPrimitive(Context ctx)
             {
                 return new ZilList(this);
             }
 
-            public override ZilListoidBase GetRest(int skip)
+            public override ZilListoidBase? GetRest(int skip)
             {
                 return GetLength(skip) < skip ? null : new Wrapper(orig, offset + skip);
             }

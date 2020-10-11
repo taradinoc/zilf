@@ -35,22 +35,20 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompilePROG([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args,
-            [NotNull] ISourceLine src,
-            bool wantResult, [CanBeNull] IVariable resultStorage, [NotNull] string name, bool repeat, bool catchy)
+        internal IOperand? CompilePROG(IRoutineBuilder rb, ZilListoidBase args,
+            ISourceLine src,
+            bool wantResult, IVariable? resultStorage, string name, bool repeat, bool catchy)
         {
             if (!args.IsCons(out var first, out var rest))
             {
                 throw new CompilerError(CompilerMessages._0_Argument_1_2, name, 1, "argument must be an activation atom or binding list");
             }
 
-            if (first is ZilAtom activationAtom)
+            var activationAtom = first as ZilAtom;
+
+            if (activationAtom != null)
             {
                 args = rest;
-            }
-            else
-            {
-                activationAtom = null;
             }
 
             if (!args.IsCons(out var bindings, out var body) || !(bindings is ZilList bindingList))
@@ -119,11 +117,11 @@ namespace Zilf.Compiler
                     case ZilList list when !list.HasLength(2):
                         throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, name, 2);
 
-                    case ZilList list when list.Matches(out ZilAtom atom, out ZilObject value):
+                    case ZilList list when list.Matches(out ZilAtom? atom, out ZilObject? value):
                         AddLocalWithDefault(atom, value);
                         break;
 
-                    case ZilList list when list.Matches(out ZilAdecl adecl, out ZilObject value) && adecl.First is ZilAtom atom:
+                    case ZilList list when list.Matches(out ZilAdecl? adecl, out ZilObject? value) && adecl.First is ZilAtom atom:
                         AddLocalWithDefault(atom, value);
                         break;
 
@@ -158,7 +156,7 @@ namespace Zilf.Compiler
             try
             {
                 // generate code for prog body
-                IOperand result;
+                IOperand? result;
 
                 if (wantResult)
                 {
@@ -194,7 +192,7 @@ namespace Zilf.Compiler
                     }
                     else if (clauseResult != resultStorage && (block.Flags & BlockFlags.Returned) != 0)
                     {
-                        rb.EmitStore(resultStorage, clauseResult);
+                        rb.EmitStore(resultStorage!, clauseResult!);
                         result = resultStorage;
                     }
                     else
@@ -226,7 +224,7 @@ namespace Zilf.Compiler
         }
 
         [SuppressMessage("ReSharper", "ImplicitlyCapturedClosure")]
-        static void TransformProgArgsIfImplementingDeferredReturn([NotNull] ref ZilList bindingList, [NotNull] ref ZilListoidBase body)
+        static void TransformProgArgsIfImplementingDeferredReturn(ref ZilList bindingList, ref ZilListoidBase body)
         {
             // ends with <LVAL atom>?
             if (!(body.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr) || !lastExpr.IsLVAL(out var atom))
@@ -249,7 +247,9 @@ namespace Zilf.Compiler
             // atom is not referenced anywhere else?
             if (!body.All(zo =>
                 ReferenceEquals(zo, setExpr) || ReferenceEquals(zo, lastExpr) || !RecursivelyContains(zo, atom)))
+            {
                 return;
+            }
 
             // we got a winner!
             bindingList = new ZilList(
@@ -258,19 +258,17 @@ namespace Zilf.Compiler
             body = new ZilList(
                 body
                     .Where(zo => !ReferenceEquals(zo, lastExpr))
-                    .Select(zo => ReferenceEquals(zo, setExpr) ? ((IStructure)zo)[2] : zo));
+                    .Select(zo => ReferenceEquals(zo, setExpr) ? ((IStructure)zo)[2]! : zo));
         }
 
-        [NotNull]
-        static IEnumerable<ZilAtom> GetUninitializedAtomsFromBindingList([NotNull] ZilListBase bindingList)
+        static IEnumerable<ZilAtom> GetUninitializedAtomsFromBindingList(ZilListBase bindingList)
         {
             return bindingList.EnumerateNonRecursive()
-                .Select(GetUninitializedAtomFromBindingListItem)
-                .Where(a => a != null);
+                .Select(GetUninitializedAtomFromBindingListItem!)
+                .Where(a => a != null)!;
         }
 
-        [CanBeNull]
-        static ZilAtom GetUninitializedAtomFromBindingListItem([NotNull] ZilObject zo)
+        static ZilAtom? GetUninitializedAtomFromBindingListItem(ZilObject zo)
         {
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (zo.StdTypeAtom)
@@ -286,7 +284,7 @@ namespace Zilf.Compiler
             }
         }
 
-        static bool RecursivelyContains([NotNull] ZilObject haystack, [NotNull] ZilObject needle)
+        static bool RecursivelyContains(ZilObject haystack, ZilObject needle)
         {
             if (haystack == needle)
                 return true;
@@ -300,7 +298,6 @@ namespace Zilf.Compiler
             /// <summary>
             /// The name of the loop statement, for use in diagnostics.
             /// </summary>
-            [NotNull]
             string Name { get; }
 
             /// <summary>
@@ -309,7 +306,6 @@ namespace Zilf.Compiler
             /// <param name="blc"></param>
             /// <returns></returns>
             /// <exception cref="CompilerError">The loop syntax was incorrect.</exception>
-            [NotNull]
             IBoundedLoop MakeLoop(BoundedLoopContext blc);
         }
 
@@ -319,7 +315,7 @@ namespace Zilf.Compiler
             public readonly ZilList spec;
             public readonly ISourceLine src;
 
-            public BoundedLoopContext([NotNull] Compilation cc, [NotNull] ZilList spec, [NotNull] ISourceLine src)
+            public BoundedLoopContext(Compilation cc, ZilList spec, ISourceLine src)
             {
                 this.cc = cc;
                 this.spec = spec;
@@ -338,7 +334,7 @@ namespace Zilf.Compiler
             /// <remarks>
             /// This code should initialize the counter.
             /// </remarks>
-            void BeforeBlock([NotNull] IRoutineBuilder rb, [NotNull] Block block, [NotNull] ILabel exhaustedLabel);
+            void BeforeBlock(IRoutineBuilder rb, Block block, ILabel exhaustedLabel);
 
             /// <summary>
             /// Emit code to be executed before the loop body on each iteration.
@@ -382,18 +378,18 @@ namespace Zilf.Compiler
             // ReSharper restore InconsistentNaming
 #pragma warning restore IDE1006 // Naming Styles
 
-            IRoutineBuilder rb;
-            ILabel againLabel, exhaustedLabel;
+            IRoutineBuilder rb = null!;
+            ILabel againLabel = null!, exhaustedLabel = null!;
 
             public abstract void Dispose();
-            protected abstract void EmitBeforeBlock([NotNull] IRoutineBuilder rb, [NotNull] ILabel exhaustedLabel);
-            protected abstract void EmitBeforeBody([NotNull] IRoutineBuilder rb, [NotNull] ILabel againLabel, [NotNull] ILabel exhaustedLabel);
-            protected abstract void EmitAfterBody([NotNull] IRoutineBuilder rb, [NotNull] ILabel againLabel);
+            protected abstract void EmitBeforeBlock(IRoutineBuilder rb, ILabel exhaustedLabel);
+            protected abstract void EmitBeforeBody(IRoutineBuilder rb, ILabel againLabel, ILabel exhaustedLabel);
+            protected abstract void EmitAfterBody(IRoutineBuilder rb, ILabel againLabel);
 
             public void BeforeBlock(IRoutineBuilder rb, Block block, ILabel exhaustedLabel)
             {
                 this.rb = rb;
-                this.againLabel = block.AgainLabel;
+                this.againLabel = block.AgainLabel!;
                 this.exhaustedLabel = exhaustedLabel;
 
                 EmitBeforeBlock(rb, exhaustedLabel);
@@ -410,13 +406,12 @@ namespace Zilf.Compiler
             }
         }
 
-        [CanBeNull]
         [ContractAnnotation("wantResult: true, resultStorage: notnull => notnull")]
         [ContractAnnotation("wantResult: false, resultStorage: null => canbenull")]
-        private IOperand CompileBoundedLoop(
-            [NotNull] IRoutineBuilder rb, [NotNull] IBoundedLoopBuilder builder,
-            [NotNull] ZilListoidBase args, [NotNull] ISourceLine src,
-            bool wantResult, [CanBeNull] IVariable resultStorage)
+        private IOperand? CompileBoundedLoop(
+            IRoutineBuilder rb, IBoundedLoopBuilder builder,
+            ZilListoidBase args, ISourceLine src,
+            bool wantResult, IVariable? resultStorage)
         {
             // extract loop spec ("binding list", although we don't care about the bindings here)
             // TODO: allow activation atoms in bounded loops?
@@ -427,79 +422,75 @@ namespace Zilf.Compiler
 
             // instantiate the loop and let it check binding syntax
             var blc = new BoundedLoopContext(this, spec, src);
+            using var loop = builder.MakeLoop(blc);
 
-            using (var loop = builder.MakeLoop(blc))
+            // look for the optional end statements
+            ZilListoidBase body;
+            if (rest.StartsWith(out ZilList? endStmts))
             {
-                // look for the optional end statements
-                ZilListoidBase body;
-                if (rest.StartsWith(out ZilList endStmts))
-                {
-                    (_, body) = rest;
-                }
-                else
-                {
-                    body = rest;
-                }
-
-                // create block
-                resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
-
-                var block = new Block
-                {
-                    AgainLabel = rb.DefineLabel(),
-                    ResultStorage = resultStorage,
-                    ReturnLabel = rb.DefineLabel(),
-                    Flags = wantResult ? BlockFlags.WantResult : 0
-                };
-
-                Blocks.Push(block);
-                try
-                {
-                    var exhaustedLabel = rb.DefineLabel();
-
-                    // let the loop initialize counters, etc.
-                    loop.BeforeBlock(rb, block, exhaustedLabel);
-
-                    // mark the top of the block ("again" label) and let the loop add prechecks, etc.
-                    rb.MarkLabel(block.AgainLabel);
-                    loop.BeforeBody();
-
-                    // compile the body
-                    CompileClauseBody(rb, body, false, null);
-
-                    // let the loop add postchecks, etc., and mark the end of the block ("exhausted" label)
-                    loop.AfterBody();
-
-                    rb.MarkLabel(exhaustedLabel);
-
-                    // compile the end statements if present, and provide a return value if requested
-                    if (endStmts != null)
-                        CompileClauseBody(rb, endStmts, false, null);
-
-                    if (wantResult)
-                        rb.EmitStore(resultStorage, Game.One);
-
-                    // if <RETURN> was used inside the loop, mark the return label
-                    if ((block.Flags & BlockFlags.Returned) != 0)
-                        rb.MarkLabel(block.ReturnLabel);
-                }
-                finally
-                {
-                    Blocks.Pop();
-                }
-
-                return wantResult ? resultStorage : null;
+                (_, body) = rest;
             }
+            else
+            {
+                body = rest;
+            }
+
+            // create block
+            resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
+
+            var block = new Block
+            {
+                AgainLabel = rb.DefineLabel(),
+                ResultStorage = resultStorage,
+                ReturnLabel = rb.DefineLabel(),
+                Flags = wantResult ? BlockFlags.WantResult : 0
+            };
+
+            Blocks.Push(block);
+            try
+            {
+                var exhaustedLabel = rb.DefineLabel();
+
+                // let the loop initialize counters, etc.
+                loop.BeforeBlock(rb, block, exhaustedLabel);
+
+                // mark the top of the block ("again" label) and let the loop add prechecks, etc.
+                rb.MarkLabel(block.AgainLabel);
+                loop.BeforeBody();
+
+                // compile the body
+                CompileClauseBody(rb, body, false, null);
+
+                // let the loop add postchecks, etc., and mark the end of the block ("exhausted" label)
+                loop.AfterBody();
+
+                rb.MarkLabel(exhaustedLabel);
+
+                // compile the end statements if present, and provide a return value if requested
+                if (endStmts != null)
+                    CompileClauseBody(rb, endStmts, false, null);
+
+                if (wantResult)
+                    rb.EmitStore(resultStorage!, Game.One);
+
+                // if <RETURN> was used inside the loop, mark the return label
+                if ((block.Flags & BlockFlags.Returned) != 0)
+                    rb.MarkLabel(block.ReturnLabel);
+            }
+            finally
+            {
+                Blocks.Pop();
+            }
+
+            return wantResult ? resultStorage : null;
         }
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileDO([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args, [NotNull] ISourceLine src, bool wantResult,
-            [CanBeNull] IVariable resultStorage)
-        {
-            return CompileBoundedLoop(rb, DoLoop.Builder, args, src, wantResult, resultStorage);
-        }
+        internal IOperand CompileDO(IRoutineBuilder rb, ZilListoidBase args, ISourceLine src, bool wantResult,
+            IVariable? resultStorage) =>
+            CompileBoundedLoop(rb, DoLoop.Builder, args, src, wantResult, resultStorage)!;
 
         private class DoLoop : IBoundedLoopBuilder
         {
@@ -522,7 +513,7 @@ namespace Zilf.Compiler
                         new CountableString("3 or 4", true));
                 }
 
-                if (!blc.spec.Matches(out ZilAtom atom, out ZilObject start, out ZilObject end, out ZilObject inc) &&
+                if (!blc.spec.Matches(out ZilAtom ?atom, out ZilObject? start, out ZilObject? end, out ZilObject? inc) &&
                     !blc.spec.Matches(out atom, out start, out end))
                 {
                     throw new CompilerError(
@@ -539,11 +530,12 @@ namespace Zilf.Compiler
             private class Loop : BoundedLoop
             {
                 readonly ZilAtom atom;
-                readonly ZilObject start, end, inc;
+                readonly ZilObject start, end;
+                readonly ZilObject? inc;
                 bool precheck;
-                ILocalBuilder counter;
+                ILocalBuilder counter = null!; // initialized in EmitBeforeBlock
 
-                public Loop(BoundedLoopContext blc, ZilAtom atom, ZilObject start, ZilObject end, ZilObject inc)
+                public Loop(BoundedLoopContext blc, ZilAtom atom, ZilObject start, ZilObject end, ZilObject? inc)
                     : base(blc)
                 {
                     this.atom = atom;
@@ -631,11 +623,9 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileMAP_CONTENTS([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args, [NotNull] ISourceLine src, bool wantResult,
-            [CanBeNull] IVariable resultStorage)
-        {
-            return CompileBoundedLoop(rb, MapContentsLoop.Builder, args, src, wantResult, resultStorage);
-        }
+        internal IOperand CompileMAP_CONTENTS(IRoutineBuilder rb, ZilListoidBase args, ISourceLine src, bool wantResult,
+            IVariable? resultStorage) =>
+            CompileBoundedLoop(rb, MapContentsLoop.Builder, args, src, wantResult, resultStorage)!;
 
         private class MapContentsLoop : IBoundedLoopBuilder
         {
@@ -649,14 +639,14 @@ namespace Zilf.Compiler
 
             public IBoundedLoop MakeLoop(BoundedLoopContext blc)
             {
-                if (blc.spec.Matches(out ZilAtom atom, out ZilAtom nextAtom, out ZilObject container))
+                if (blc.spec.Matches(out ZilAtom? atom, out ZilAtom? nextAtom, out ZilObject? container))
                     return new TwoVarLoop(blc, atom, nextAtom, container);
 
                 if (blc.spec.Matches(out atom, out container))
                     return new OneVarLoop(blc, atom, container);
 
                 // throw an appropriate error
-                var matched = blc.spec.Matches(out ZilObject atomObj, out ZilObject nextAtomObj, out container) ||
+                var matched = blc.spec.Matches(out ZilObject? atomObj, out ZilObject? nextAtomObj, out container) ||
                               blc.spec.Matches(out atomObj, out container);
 
                 if (!matched)
@@ -679,15 +669,13 @@ namespace Zilf.Compiler
 
             abstract class LoopBase : BoundedLoop
             {
-                [NotNull]
                 readonly ZilAtom atom;
 
-                [NotNull]
                 readonly ZilObject container;
 
-                protected ILocalBuilder counter;
+                protected ILocalBuilder? counter;
 
-                protected LoopBase(BoundedLoopContext blc, [NotNull] ZilAtom atom, [NotNull] ZilObject container)
+                protected LoopBase(BoundedLoopContext blc, ZilAtom atom, ZilObject container)
                     : base(blc)
                 {
                     this.atom = atom;
@@ -711,7 +699,7 @@ namespace Zilf.Compiler
 
             private class OneVarLoop : LoopBase
             {
-                public OneVarLoop(BoundedLoopContext blc, [NotNull] ZilAtom atom, [NotNull] ZilObject container)
+                public OneVarLoop(BoundedLoopContext blc, ZilAtom atom, ZilObject container)
                     : base(blc, atom, container)
                 {
                 }
@@ -724,18 +712,17 @@ namespace Zilf.Compiler
                 protected override void EmitAfterBody(IRoutineBuilder rb, ILabel againLabel)
                 {
                     // next object
-                    rb.EmitGetSibling(counter, counter, againLabel, true);
+                    rb.EmitGetSibling(counter!, counter!, againLabel, true);
                 }
             }
 
             private class TwoVarLoop : LoopBase
             {
-                [NotNull]
                 readonly ZilAtom nextAtom;
 
-                ILocalBuilder next;
+                ILocalBuilder? next;
 
-                public TwoVarLoop(BoundedLoopContext blc, [NotNull] ZilAtom atom, [NotNull] ZilAtom nextAtom, [NotNull] ZilObject container)
+                public TwoVarLoop(BoundedLoopContext blc, ZilAtom atom, ZilAtom nextAtom, ZilObject container)
                     : base(blc, atom, container)
                 {
                     this.nextAtom = nextAtom;
@@ -754,14 +741,14 @@ namespace Zilf.Compiler
                     // initialize next
                     next = cc.PushInnerLocal(rb, nextAtom, LocalBindingType.LoopState, src);
                     var tempLabel = rb.DefineLabel();
-                    rb.EmitGetSibling(counter, next, tempLabel, true);
+                    rb.EmitGetSibling(counter!, next, tempLabel, true);
                     rb.MarkLabel(tempLabel);
                 }
 
                 protected override void EmitAfterBody(IRoutineBuilder rb, ILabel againLabel)
                 {
-                    rb.EmitStore(counter, next);
-                    rb.BranchIfZero(counter, againLabel, false);
+                    rb.EmitStore(counter!, next!);
+                    rb.BranchIfZero(counter!, againLabel, false);
                 }
             }
         }
@@ -769,11 +756,9 @@ namespace Zilf.Compiler
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [ContractAnnotation("wantResult: false => null")]
         [ContractAnnotation("wantResult: true => notnull")]
-        internal IOperand CompileMAP_DIRECTIONS([NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase args, [NotNull] ISourceLine src, bool wantResult,
-            [CanBeNull] IVariable resultStorage)
-        {
-            return CompileBoundedLoop(rb, MapDirectionsLoop.Builder, args, src, wantResult, resultStorage);
-        }
+        internal IOperand CompileMAP_DIRECTIONS(IRoutineBuilder rb, ZilListoidBase args, ISourceLine src, bool wantResult,
+            IVariable? resultStorage) =>
+            CompileBoundedLoop(rb, MapDirectionsLoop.Builder, args, src, wantResult, resultStorage)!;
 
         private class MapDirectionsLoop : IBoundedLoopBuilder
         {
@@ -787,16 +772,14 @@ namespace Zilf.Compiler
 
             public IBoundedLoop MakeLoop(BoundedLoopContext blc)
             {
-                if (blc.spec.Matches(out ZilAtom dirAtom, out ZilAtom ptAtom, out ZilObject room) &&
+                if (blc.spec.Matches(out ZilAtom? dirAtom, out ZilAtom? ptAtom, out ZilObject? room) &&
                     (room.IsLVAL(out _) || room.IsGVAL(out _)))
                 {
                     return new Loop(blc, dirAtom, ptAtom, room);
                 }
 
                 // throw an appropriate error
-                var matched = blc.spec.Matches(out ZilObject dirObj, out ZilObject ptObj, out room);
-
-                if (!matched)
+                if (!blc.spec.Matches(out ZilObject? dirObj, out ZilObject? ptObj, out room))
                     throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, Name, 3);
 
                 if (!(dirObj is ZilAtom))
@@ -819,10 +802,10 @@ namespace Zilf.Compiler
             {
                 readonly ZilAtom dirAtom, ptAtom;
                 readonly ZilObject room;
-                ILocalBuilder counter;
+                ILocalBuilder? counter;
 
-                public Loop(BoundedLoopContext blc, [NotNull] ZilAtom dirAtom, [NotNull] ZilAtom ptAtom,
-                    [NotNull] ZilObject room)
+                public Loop(BoundedLoopContext blc, ZilAtom dirAtom, ZilAtom ptAtom,
+                    ZilObject room)
                     : base(blc)
                 {
                     this.dirAtom = dirAtom;
@@ -852,7 +835,7 @@ namespace Zilf.Compiler
                     // get next prop table
                     var propTable = cc.PushInnerLocal(rb, ptAtom, LocalBindingType.LoopState, src);
                     var roomOperand = cc.CompileAsOperand(rb, room, src);
-                    rb.EmitBinary(BinaryOp.GetPropAddress, roomOperand, counter, propTable);
+                    rb.EmitBinary(BinaryOp.GetPropAddress, roomOperand, counter!, propTable);
                     rb.BranchIfZero(propTable, againLabel, true);
                 }
 

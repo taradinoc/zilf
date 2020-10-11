@@ -30,11 +30,17 @@ namespace Zilf.Interpreter
         {
             public WeakReference<T> Ref;
             public int Count;
+
+            public Cell(T value)
+            {
+                Ref = new WeakReference<T>(value);
+                Count = 1;
+            }
         }
 
         readonly Dictionary<int, List<Cell>> buckets = new Dictionary<int, List<Cell>>();
 
-        public void Add([NotNull] T value)
+        public void Add(T value)
         {
             var hashCode = value.GetHashCode();
 
@@ -55,29 +61,29 @@ namespace Zilf.Interpreter
                 buckets.Add(hashCode, bucket);
             }
 
-            bucket.Add(new Cell { Ref = new WeakReference<T>(value), Count = 1 });
+            bucket.Add(new Cell(value));
         }
 
-        public void Remove([NotNull] T value)
+        public void Remove(T value)
         {
             var hashCode = value.GetHashCode();
 
-            if (buckets.TryGetValue(hashCode, out var bucket))
+            if (!buckets.TryGetValue(hashCode, out var bucket))
+                return;
+
+            for (int i = 0; i < bucket.Count; i++)
             {
-                for (int i = 0; i < bucket.Count; i++)
-                {
-                    var cell = bucket[i];
+                var cell = bucket[i];
 
-                    if (cell.Ref.TryGetTarget(out var existingValue) && existingValue.Equals(value))
-                    {
-                        cell.Count--;
+                if (!cell.Ref.TryGetTarget(out var existingValue) || !existingValue.Equals(value))
+                    continue;
 
-                        if (cell.Count <= 0)
-                            bucket.RemoveAt(i);
+                cell.Count--;
 
-                        return;
-                    }
-                }
+                if (cell.Count <= 0)
+                    bucket.RemoveAt(i);
+
+                return;
             }
         }
 

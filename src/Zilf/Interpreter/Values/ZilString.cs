@@ -19,6 +19,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -30,21 +32,16 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.STRING, PrimType.STRING)]
     abstract class ZilString : ZilObject, IStructure
     {
-        [NotNull]
         public abstract string Text { get; set; }
 
-        [NotNull]
         [ChtypeMethod]
-        public static ZilString FromString([NotNull] ZilString other) => new OriginalString(other.Text);
+        public static ZilString FromString(ZilString other) => new OriginalString(other.Text);
 
-        [NotNull]
-        public static ZilString FromString([NotNull] string text) => new OriginalString(text);
+        public static ZilString FromString(string text) => new OriginalString(text);
 
-        [NotNull]
         public sealed override string ToString() => Quote(Text);
 
-        [NotNull]
-        public static string Quote([NotNull] string text)
+        public static string Quote(string text)
         {
             var sb = new StringBuilder(text.Length + 2);
             sb.Append('"');
@@ -72,7 +69,7 @@ namespace Zilf.Interpreter.Values
         protected sealed override string ToStringContextImpl(Context ctx, bool friendly) =>
             friendly ? Text : ToString();
 
-        public override bool ExactlyEquals(ZilObject obj) => (obj as ZilString)?.Text.Equals(Text) ?? false;
+        public override bool ExactlyEquals(ZilObject? obj) => (obj as ZilString)?.Text.Equals(Text) ?? false;
 
         public override int GetHashCode() => Text.GetHashCode();
 
@@ -82,12 +79,11 @@ namespace Zilf.Interpreter.Values
 
         public abstract ZilObject this[int index] { get; set; }
 
-        [NotNull]
         public sealed override ZilObject GetPrimitive(Context ctx) => this;
 
-        public abstract ZilObject GetFirst();
-        public abstract IStructure GetRest(int skip);
-        public abstract IStructure GetBack(int skip);
+        public abstract ZilObject? GetFirst();
+        public abstract IStructure? GetRest(int skip);
+        public abstract IStructure? GetBack(int skip);
         public abstract IStructure GetTop();
         public abstract bool IsEmpty { get; }
         public abstract int GetLength();
@@ -104,24 +100,24 @@ namespace Zilf.Interpreter.Values
         [BuiltinAlternate(typeof(ZilString))]
         sealed class OriginalString : ZilString
         {
-            public OriginalString([NotNull] string text)
+            public OriginalString(string text)
             {
                 Text = text;
             }
 
             public override string Text { get; set; }
 
-            public override ZilObject GetFirst()
+            public override ZilObject? GetFirst()
             {
                 return Text.Length > 0 ? new ZilChar(Text[0]) : null;
             }
 
-            public override IStructure GetRest(int skip)
+            public override IStructure? GetRest(int skip)
             {
                 return skip <= Text.Length ? new OffsetString(this, skip) : null;
             }
 
-            public override IStructure GetBack(int skip)
+            public override IStructure? GetBack(int skip)
             {
                 return skip == 0 ? this : null;
             }
@@ -130,14 +126,14 @@ namespace Zilf.Interpreter.Values
 
             public override bool IsEmpty => Text.Length == 0;
 
-            [CanBeNull]
+            [MaybeNull]
             public override ZilObject this[int index]
             {
                 get
                 {
                     if (index >= 0 && index < Text.Length)
                         return new ZilChar(Text[index]);
-                    return null;
+                    return null!;
                 }
                 set
                 {
@@ -164,8 +160,7 @@ namespace Zilf.Interpreter.Values
 
             public override IEnumerator<ZilObject> GetEnumerator()
             {
-                foreach (var c in Text)
-                    yield return new ZilChar(c);
+                return Text.Select(c => new ZilChar(c)).Cast<ZilObject>().GetEnumerator();
             }
         }
 
@@ -187,7 +182,7 @@ namespace Zilf.Interpreter.Values
                 set => orig.Text = orig.Text.Substring(0, offset) + value;
             }
 
-            public override bool StructurallyEquals(ZilObject obj)
+            public override bool StructurallyEquals(ZilObject? obj)
             {
                 if (obj is OffsetString other && ReferenceEquals(other.orig, orig) && other.offset == offset)
                     return true;
@@ -195,26 +190,19 @@ namespace Zilf.Interpreter.Values
                 return base.StructurallyEquals(obj);
             }
 
-            public override ZilObject GetFirst()
-            {
-                return offset < orig.Text.Length ? new ZilChar(orig.Text[offset]) : null;
-            }
+            public override ZilObject? GetFirst() => offset < orig.Text.Length ? new ZilChar(orig.Text[offset]) : null;
 
-            public override IStructure GetRest(int skip)
-            {
-                return offset <= orig.Text.Length - skip ? new OffsetString(orig, offset + skip) : null;
-            }
+            public override IStructure? GetRest(int skip) =>
+                offset <= orig.Text.Length - skip ? new OffsetString(orig, offset + skip) : null;
 
-            public override IStructure GetBack(int skip)
-            {
-                return offset >= skip ? new OffsetString(orig, offset - skip) : null;
-            }
+            public override IStructure? GetBack(int skip) =>
+                offset >= skip ? new OffsetString(orig, offset - skip) : null;
 
             public override IStructure GetTop() => orig;
 
             public override bool IsEmpty => offset >= orig.Text.Length;
 
-            [CanBeNull]
+            [MaybeNull]
             public override ZilObject this[int index]
             {
                 get
@@ -222,7 +210,7 @@ namespace Zilf.Interpreter.Values
                     index += offset;
                     if (index >= 0 && index < orig.Text.Length)
                         return new ZilChar(orig.Text[index]);
-                    return null;
+                    return null!;
                 }
                 set
                 {
@@ -245,10 +233,7 @@ namespace Zilf.Interpreter.Values
                 }
             }
 
-            public override int GetLength()
-            {
-                return Math.Max(orig.Text.Length - offset, 0);
-            }
+            public override int GetLength() => Math.Max(orig.Text.Length - offset, 0);
 
             public override int? GetLength(int limit)
             {
@@ -258,8 +243,7 @@ namespace Zilf.Interpreter.Values
 
             public override IEnumerator<ZilObject> GetEnumerator()
             {
-                for (int i = offset; i < orig.Text.Length; i++)
-                    yield return new ZilChar(orig.Text[i]);
+                return orig.Text.Skip(offset).Select(c => new ZilChar(c)).Cast<ZilObject>().GetEnumerator();
             }
         }
     }

@@ -96,8 +96,7 @@ namespace Zilf.ZModel
         };
 #pragma warning restore RECS0070 // Redundant explicit argument name specification
 
-        [CanBeNull]
-        public static LowCoreField Get([NotNull] ZilAtom atom)
+        public static LowCoreField? Get(ZilAtom atom)
         {
             allFields.TryGetValue(atom.Text, out var result);
             return result;

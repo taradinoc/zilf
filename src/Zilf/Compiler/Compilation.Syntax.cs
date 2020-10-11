@@ -45,7 +45,7 @@ namespace Zilf.Compiler
                 Constants.Add(Context.RootObList[pair.Key], pair.Value);
         }
 
-        void BuildOldFormatSyntaxTables([NotNull] IDictionary<string, ITableBuilder> tables)
+        void BuildOldFormatSyntaxTables(IDictionary<string, ITableBuilder> tables)
         {
             // TODO: emit VTBL as the first impure table, followed by syntax lines, which is what ztools expects?
             var verbTable = Game.DefineTable("VTBL", true);
@@ -86,7 +86,7 @@ namespace Zilf.Compiler
 
                 foreach (var line in verb.Reverse())
                 {
-                    if (actions.TryGetValue(line.ActionName, out var act) == false)
+                    if (!actions.TryGetValue(line.ActionName, out var act))
                     {
                         // this can happen if an exception (e.g. undefined action routine) stops us from adding the action during the first pass.
                         continue;
@@ -111,7 +111,7 @@ namespace Zilf.Compiler
 
                                 if (line.NumObjects > 0)
                                 {
-                                    stbl.AddByte((IOperand)GetFlag(line.FindFlag1) ?? Game.Zero);
+                                    stbl.AddByte((IOperand?)GetFlag(line.FindFlag1) ?? Game.Zero);
                                     stbl.AddByte(line.Options1);
 
                                     if (line.NumObjects > 1)
@@ -126,7 +126,7 @@ namespace Zilf.Compiler
                                             stbl.AddByte(0);
                                         }
 
-                                        stbl.AddByte((IOperand)GetFlag(line.FindFlag2) ?? Game.Zero);
+                                        stbl.AddByte((IOperand?)GetFlag(line.FindFlag2) ?? Game.Zero);
                                         stbl.AddByte(line.Options2);
                                     }
                                 }
@@ -136,8 +136,8 @@ namespace Zilf.Compiler
                                 stbl.AddByte((byte)line.NumObjects);
                                 stbl.AddByte(GetPreposition(line.Preposition1) ?? Game.Zero);
                                 stbl.AddByte(GetPreposition(line.Preposition2) ?? Game.Zero);
-                                stbl.AddByte((IOperand)GetFlag(line.FindFlag1) ?? Game.Zero);
-                                stbl.AddByte((IOperand)GetFlag(line.FindFlag2) ?? Game.Zero);
+                                stbl.AddByte((IOperand?)GetFlag(line.FindFlag1) ?? Game.Zero);
+                                stbl.AddByte((IOperand?)GetFlag(line.FindFlag2) ?? Game.Zero);
                                 stbl.AddByte(line.Options1);
                                 stbl.AddByte(line.Options2);
                                 stbl.AddByte(act.Constant);
@@ -158,11 +158,11 @@ namespace Zilf.Compiler
             foreach (var act in actquery)
             {
                 actionTable.AddShort(act.Routine);
-                preactionTable.AddShort((IOperand)act.PreRoutine ?? Game.Zero);
+                preactionTable.AddShort((IOperand?)act.PreRoutine ?? Game.Zero);
             }
         }
 
-        void BuildNewFormatSyntaxTables([NotNull] IDictionary<string, ITableBuilder> tables)
+        void BuildNewFormatSyntaxTables(IDictionary<string, ITableBuilder> tables)
         {
             var actionTable = Game.DefineTable("ATBL", true);
             var preactionTable = Game.DefineTable("PATBL", true);
@@ -217,7 +217,7 @@ namespace Zilf.Compiler
                         utbl.AddShort(act?.Constant ?? Game.Zero);
 
                         utbl.AddShort(line.Preposition1 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition1]);
-                        utbl.AddByte((IOperand)GetFlag(line.FindFlag1) ?? Game.Zero);
+                        utbl.AddByte((IOperand?)GetFlag(line.FindFlag1) ?? Game.Zero);
                         utbl.AddByte(line.Options1);
                     }
 
@@ -240,11 +240,11 @@ namespace Zilf.Compiler
                         btbl.AddShort(act?.Constant ?? Game.Zero);
 
                         btbl.AddShort(line.Preposition1 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition1]);
-                        btbl.AddByte((IOperand)GetFlag(line.FindFlag1) ?? Game.Zero);
+                        btbl.AddByte((IOperand?)GetFlag(line.FindFlag1) ?? Game.Zero);
                         btbl.AddByte(line.Options1);
 
                         btbl.AddShort(line.Preposition2 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition2]);
-                        btbl.AddByte((IOperand)GetFlag(line.FindFlag2) ?? Game.Zero);
+                        btbl.AddByte((IOperand?)GetFlag(line.FindFlag2) ?? Game.Zero);
                         btbl.AddByte(line.Options2);
                     }
 
@@ -263,7 +263,7 @@ namespace Zilf.Compiler
             foreach (var act in actquery)
             {
                 actionTable.AddShort(act.Routine);
-                preactionTable.AddShort((IOperand)act.PreRoutine ?? Game.Zero);
+                preactionTable.AddShort((IOperand?)act.PreRoutine ?? Game.Zero);
             }
         }
 
@@ -279,21 +279,20 @@ namespace Zilf.Compiler
             Context.ZEnvironment.VocabFormat.BuildLateSyntaxTables(helpers);
         }
 
-        [CanBeNull]
-        Action ValidateAction([NotNull] Dictionary<ZilAtom, Action> actions, [NotNull] Syntax line)
+        Action? ValidateAction(Dictionary<ZilAtom, Action> actions, Syntax line)
         {
             try
             {
                 using (DiagnosticContext.Push(line.SourceLine))
                 {
-                    if (actions.TryGetValue(line.ActionName, out var act) == false)
+                    if (!actions.TryGetValue(line.ActionName, out var act))
                     {
-                        if (Routines.TryGetValue(line.Action, out var routine) == false)
+                        if (!Routines.TryGetValue(line.Action, out var routine))
                             throw new CompilerError(CompilerMessages.Undefined_0_1, "action routine", line.Action);
 
-                        IRoutineBuilder preRoutine = null;
+                        IRoutineBuilder? preRoutine = null;
                         if (line.Preaction != null &&
-                            Routines.TryGetValue(line.Preaction, out preRoutine) == false)
+                            !Routines.TryGetValue(line.Preaction, out preRoutine))
                             throw new CompilerError(CompilerMessages.Undefined_0_1, "preaction routine", line.Preaction);
 
                         var actionName = line.ActionName;
@@ -333,15 +332,17 @@ namespace Zilf.Compiler
             }
         }
 
-        void WarnIfActionRoutineDiffers([NotNull] Syntax line, [NotNull] string description,
-            [CanBeNull] ZilAtom thisRoutineName, [CanBeNull] ZilAtom lastRoutineName)
+        void WarnIfActionRoutineDiffers(Syntax line, string description,
+            ZilAtom? thisRoutineName, ZilAtom? lastRoutineName)
         {
             if (thisRoutineName != lastRoutineName)
+            {
                 Context.HandleError(new CompilerError(line.SourceLine,
                     CompilerMessages._0_Mismatch_For_1_Using_2_As_Before,
                     description,
                     line.ActionName,
                     lastRoutineName?.ToString() ?? "no " + description));
+            }
         }
 
         /// <summary>
@@ -350,14 +351,14 @@ namespace Zilf.Compiler
         /// </summary>
         /// <param name="word">The Word.</param>
         /// 
-        void DefineWord([NotNull] IWord word)
+        void DefineWord(IWord word)
         {
             string rawWord = word.Atom.Text;
 
             if (!Vocabulary.ContainsKey(word))
             {
                 var wAtom = ZilAtom.Parse("W?" + rawWord, Context);
-                if (Constants.TryGetValue(wAtom, out var constantValue) == false)
+                if (!Constants.TryGetValue(wAtom, out var constantValue))
                 {
                     var wb = Game.DefineVocabularyWord(rawWord);
                     Vocabulary.Add(word, wb);
@@ -386,9 +387,8 @@ namespace Zilf.Compiler
             }
         }
 
-        [CanBeNull]
         [ContractAnnotation("notnull => notnull")]
-        IOperand GetPreposition([CanBeNull] IWord word)
+        IOperand? GetPreposition(IWord? word)
         {
             if (word == null)
                 return null;

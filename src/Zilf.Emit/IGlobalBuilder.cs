@@ -22,7 +22,6 @@ namespace Zilf.Emit
 {
     public interface IGlobalBuilder : IVariable
     {
-        [CanBeNull]
-        IOperand DefaultValue { get; set; }
+        IOperand? DefaultValue { get; set; }
     }
 }

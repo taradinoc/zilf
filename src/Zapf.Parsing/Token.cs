@@ -28,7 +28,7 @@ namespace Zapf.Parsing
         public int Line;
         public string Filename;
 
-        string ISourceLine.SourceFile => Filename;
+        string? ISourceLine.SourceFile => Filename;
         int ISourceLine.LineNum => Line;
 
         public override string ToString()

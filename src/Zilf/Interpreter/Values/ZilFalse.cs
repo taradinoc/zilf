@@ -25,7 +25,7 @@ namespace Zilf.Interpreter.Values
     sealed class ZilFalse : ZilListBase
     {
         [ChtypeMethod]
-        public ZilFalse([NotNull] ZilListBase value)
+        public ZilFalse(ZilListBase value)
             : base(value) { }
 
         public override StdAtom StdTypeAtom => StdAtom.FALSE;

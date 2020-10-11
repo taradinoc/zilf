@@ -29,7 +29,7 @@ namespace Zilf.Tests.Integration
     {
         protected readonly StringBuilder outputBuffer = new StringBuilder();
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         public string CollectOutput()
         {
             string result = outputBuffer.ToString();
@@ -40,14 +40,14 @@ namespace Zilf.Tests.Integration
 
     sealed class ReplayIO : TestCaseIO, IZMachineIO, IDisposable
     {
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         readonly Stream inputStream;
         readonly bool wantStatusLine;
 
         [CanBeNull]
         MemoryStream saveStream;
 
-        public ReplayIO([NotNull] Stream prevInputStream, bool wantStatusLine = false)
+        public ReplayIO([JetBrains.Annotations.NotNull] Stream prevInputStream, bool wantStatusLine = false)
         {
             inputStream = prevInputStream;
             this.wantStatusLine = wantStatusLine;
@@ -81,7 +81,7 @@ namespace Zilf.Tests.Integration
             outputBuffer.Append(str);
         }
 
-        void IZMachineIO.PutTextRectangle([ItemNotNull] [NotNull] string[] lines)
+        void IZMachineIO.PutTextRectangle([ItemNotNull] [JetBrains.Annotations.NotNull] string[] lines)
         {
             foreach (string line in lines)
                 outputBuffer.AppendLine(line);
@@ -103,7 +103,7 @@ namespace Zilf.Tests.Integration
             // nada
         }
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         Stream IZMachineIO.OpenSaveFile(int size)
         {
             saveStream = new MemoryStream();
@@ -117,7 +117,7 @@ namespace Zilf.Tests.Integration
         }
 
         [CanBeNull]
-        Stream IZMachineIO.OpenAuxiliaryFile([NotNull] string name, int size, bool writing)
+        Stream IZMachineIO.OpenAuxiliaryFile([JetBrains.Annotations.NotNull] string name, int size, bool writing)
         {
             return null;
         }

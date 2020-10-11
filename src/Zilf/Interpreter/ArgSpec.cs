@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using Zilf.Interpreter.Values;
@@ -31,56 +32,41 @@ namespace Zilf.Interpreter
     class ArgSpec : IEnumerable<ArgItem>
     {
         // name of the function to which this spec belongs
-        [CanBeNull]
-        readonly ZilAtom name;
         // reference to the "QUOTE" atom used for any quoted args
-        [CanBeNull]
-        readonly ZilAtom quoteAtom;
+        readonly ZilAtom? quoteAtom;
 
         // "BIND"
-        [CanBeNull]
-        readonly ZilAtom environmentAtom;
 
         // regular args, "OPT", and "AUX"
-        [NotNull]
         readonly ZilAtom[] argAtoms;
-        [NotNull]
-        readonly ZilObject[] argDecls;
-        [NotNull]
+        readonly ZilObject?[] argDecls;
         readonly bool[] argQuoted;
-        [NotNull]
-        readonly ZilObject[] argDefaults;
+        readonly ZilObject?[] argDefaults;
         readonly int optArgsStart, auxArgsStart;
 
         // "ARGS" or "TUPLE"
-        [CanBeNull]
-        readonly ZilAtom varargsAtom;
-        [CanBeNull]
-        readonly ZilObject varargsDecl;
+        readonly ZilObject? varargsDecl;
         readonly bool varargsQuoted;
 
         // "NAME"/"ACT"
-        [CanBeNull]
-        readonly ZilAtom activationAtom;
 
         // "VALUE"
-        [CanBeNull]
-        readonly ZilObject valueDecl;
+        readonly ZilObject? valueDecl;
 
-        ArgSpec([CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom, int optArgsStart, int auxArgsStart,
-            [CanBeNull] ZilAtom varargsAtom, bool varargsQuoted, [CanBeNull] ZilObject varargsDecl,
-            [CanBeNull] ZilAtom environmentAtom, [CanBeNull] ZilObject valueDecl, [CanBeNull] ZilAtom quoteAtom,
-            [NotNull] ZilAtom[] argAtoms,
-            [NotNull] ZilObject[] argDecls, [NotNull] bool[] argQuoted, [NotNull] ZilObject[] argDefaults)
+        ArgSpec(ZilAtom? name, ZilAtom? activationAtom, int optArgsStart, int auxArgsStart,
+            ZilAtom? varargsAtom, bool varargsQuoted, ZilObject? varargsDecl,
+            ZilAtom? environmentAtom, ZilObject? valueDecl, ZilAtom? quoteAtom,
+            ZilAtom[] argAtoms,
+            ZilObject?[] argDecls, bool[] argQuoted, ZilObject?[] argDefaults)
         {
-            this.name = name;
-            this.activationAtom = activationAtom;
+            this.Name = name;
+            this.ActivationAtom = activationAtom;
             this.optArgsStart = optArgsStart;
             this.auxArgsStart = auxArgsStart;
-            this.varargsAtom = varargsAtom;
+            this.VarargsAtom = varargsAtom;
             this.varargsQuoted = varargsQuoted;
             this.varargsDecl = varargsDecl;
-            this.environmentAtom = environmentAtom;
+            this.EnvironmentAtom = environmentAtom;
             this.valueDecl = valueDecl;
             this.quoteAtom = quoteAtom;
             this.argAtoms = argAtoms;
@@ -90,22 +76,21 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">The argument specification is invalid.</exception>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        [NotNull]
-        public static ArgSpec Parse([NotNull] string caller, [CanBeNull] ZilAtom targetName, [CanBeNull] ZilAtom activationAtom,
-            [NotNull] IEnumerable<ZilObject> argspec, [CanBeNull] ZilDecl bodyDecl = null)
+        [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
+        public static ArgSpec Parse(string caller, ZilAtom? targetName, ZilAtom? activationAtom,
+            IEnumerable<ZilObject> argspec, ZilDecl? bodyDecl = null)
         {
             var optArgsStart = -1;
             var auxArgsStart = -1;
 
-            ZilAtom varargsAtom = null, environmentAtom = null, quoteAtom = null;
+            ZilAtom? varargsAtom = null, environmentAtom = null, quoteAtom = null;
             bool varargsQuoted = false;
-            ZilObject varargsDecl = null, valueDecl = null;
+            ZilObject? varargsDecl = null, valueDecl = null;
 
             var argAtoms = new List<ZilAtom>();
-            var argDecls = new List<ZilObject>();
+            var argDecls = new List<ZilObject?>();
             var argQuoted = new List<bool>();
-            var argDefaults = new List<ZilObject>();
+            var argDefaults = new List<ZilObject?>();
 
             const int OO_None = 0;
             const int OO_Varargs = 1;
@@ -115,7 +100,7 @@ namespace Zilf.Interpreter
 
             int cur = 0;
             int oneOffMode = OO_None;
-            ZilObject oneOffTag = null;
+            ZilObject? oneOffTag = null;
 
             foreach (var arg in argspec)
             {
@@ -191,7 +176,7 @@ namespace Zilf.Interpreter
                                 break;
 
                             default:
-                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag);
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag!);
                         }
 
                         oneOffMode = OO_None;
@@ -200,7 +185,7 @@ namespace Zilf.Interpreter
                     case OO_Activation:
                         activationAtom = arg as ZilAtom;
                         if (activationAtom == null)
-                            throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag);
+                            throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag!);
 
                         oneOffMode = OO_None;
                         continue;
@@ -208,7 +193,7 @@ namespace Zilf.Interpreter
                     case OO_Environment:
                         environmentAtom = arg as ZilAtom;
                         if (environmentAtom == null)
-                            throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag);
+                            throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag!);
 
                         oneOffMode = OO_None;
                         continue;
@@ -223,7 +208,8 @@ namespace Zilf.Interpreter
                 cur++;
 
                 bool quoted = false;
-                ZilObject argName, argValue, argDecl;
+                ZilObject argName;
+                ZilObject? argValue, argDecl;
 
                 // could be an atom or a list: (atom defaultValue)
                 if (arg is ZilList al && !(arg is ZilForm))
@@ -232,8 +218,8 @@ namespace Zilf.Interpreter
                         throw new InterpreterError(InterpreterMessages._0_Empty_List_In_Arg_Spec, caller);
 
                     // TODO: report error if length != 2, or if in required args section
-                    argName = al.First;
-                    argValue = al.Rest.First;
+                    argName = al.First!;
+                    argValue = al.Rest!.First!;
                 }
                 else
                 {
@@ -255,12 +241,11 @@ namespace Zilf.Interpreter
                 // could be quoted
                 if (argName is ZilForm af)
                 {
-                    if (af.First is ZilAtom head && head.StdAtom == StdAtom.QUOTE &&
-                        !af.Rest.IsEmpty)
+                    if (af is (ZilAtom { StdAtom: StdAtom.QUOTE } head, ({ } name, _)))
                     {
                         quoted = true;
                         quoteAtom = head;
-                        argName = af.Rest.First;
+                        argName = name;
                     }
                     else
                         throw new InterpreterError(InterpreterMessages._0_Unexpected_FORM_In_Arg_Spec_1, caller, argName.ToString());
@@ -292,7 +277,7 @@ namespace Zilf.Interpreter
                 {
                     var atom = pair.Key;
                     var decl = pair.Value;
-                    ZilObject prev;
+                    ZilObject? prev;
 
                     if (atom.StdAtom == StdAtom.VALUE)
                     {
@@ -310,7 +295,7 @@ namespace Zilf.Interpreter
 
                         foreach (var i in argIndex[atom])
                         {
-                            prev = prev ?? argDecls[i];
+                            prev ??= argDecls[i];
                             argDecls[i] = decl;
                         }
                     }
@@ -333,7 +318,7 @@ namespace Zilf.Interpreter
 
         public int MinArgCount => optArgsStart;
 
-        public int? MaxArgCount => varargsAtom != null ? null : (int?)auxArgsStart;
+        public int? MaxArgCount => VarargsAtom != null ? null : (int?)auxArgsStart;
 
         public IEnumerator<ArgItem> GetEnumerator()
         {
@@ -355,8 +340,7 @@ namespace Zilf.Interpreter
             return GetEnumerator();
         }
 
-        [NotNull]
-        public string ToString([NotNull] Func<ZilObject, string> convert)
+        public string ToString(Func<ZilObject, string> convert)
         {
             var sb = new StringBuilder();
             sb.Append('(');
@@ -381,7 +365,7 @@ namespace Zilf.Interpreter
             return ToString(zo => zo.ToString());
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is ArgSpec other))
                 return false;
@@ -390,20 +374,26 @@ namespace Zilf.Interpreter
             if (other.argAtoms.Length != numArgs ||
                 other.optArgsStart != optArgsStart ||
                 other.auxArgsStart != auxArgsStart ||
-                other.varargsAtom != varargsAtom ||
+                other.VarargsAtom != VarargsAtom ||
                 other.varargsQuoted != varargsQuoted)
+            {
                 return false;
+            }
 
             for (int i = 0; i < numArgs; i++)
             {
                 if (other.argAtoms[i] != argAtoms[i])
                     return false;
+
                 if (other.argQuoted[i] != argQuoted[i])
                     return false;
+
                 if (other.argDefaults[i] == null
                     ? argDefaults[i] != null
-                    : !other.argDefaults[i].StructurallyEquals(argDefaults[i]))
+                    : !other.argDefaults[i]!.StructurallyEquals(argDefaults[i]))
+                {
                     return false;
+                }
             }
 
             return true;
@@ -413,8 +403,8 @@ namespace Zilf.Interpreter
         {
             int result = (argAtoms.Length << 1) ^ (optArgsStart << 2) ^ (auxArgsStart << 3);
 
-            if (varargsAtom != null)
-                result ^= varargsAtom.GetHashCode();
+            if (VarargsAtom != null)
+                result ^= VarargsAtom.GetHashCode();
 
             result ^= varargsQuoted.GetHashCode();
 
@@ -423,12 +413,12 @@ namespace Zilf.Interpreter
                 result ^= argAtoms[i].GetHashCode();
 
                 if (argDecls[i] != null)
-                    result ^= argDecls[i].GetHashCode();
+                    result ^= argDecls[i]!.GetHashCode();
 
                 result ^= argQuoted[i].GetHashCode();
 
                 if (argDefaults[i] != null)
-                    result ^= argDefaults[i].GetHashCode();
+                    result ^= argDefaults[i]!.GetHashCode();
             }
 
             return result;
@@ -438,11 +428,11 @@ namespace Zilf.Interpreter
         {
             public Context Context { get; }
             public ZilResult? EarlyResult { get; }
-            public ZilActivation Activation { get; }
-            public LocalEnvironment Environment { get; }
+            public ZilActivation? Activation { get; }
+            public LocalEnvironment? Environment { get; }
             public bool WasTopLevel { get; }
 
-            public Application(Context ctx, ZilActivation act, LocalEnvironment env, bool wasTopLevel)
+            public Application(Context ctx, ZilActivation? act, LocalEnvironment? env, bool wasTopLevel)
             {
                 Context = ctx;
                 Activation = act;
@@ -462,7 +452,7 @@ namespace Zilf.Interpreter
                 GC.SuppressFinalize(this);
 
                 Activation?.Dispose();
-                ((IDisposable)Environment)?.Dispose();
+                ((IDisposable?)Environment)?.Dispose();
                 Context.AtTopLevel = WasTopLevel;
             }
 
@@ -477,11 +467,11 @@ namespace Zilf.Interpreter
             readonly Context ctx;
             readonly LocalEnvironment env;
             readonly Action throwWrongCount;
-            IEnumerator<ZilObject> enumerator;
-            IEnumerator<ZilResult> expansion;
+            IEnumerator<ZilObject>? enumerator;
+            IEnumerator<ZilResult>? expansion;
 
-            public ArgEvaluator([NotNull] Context ctx, [NotNull] LocalEnvironment env, [NotNull] IEnumerable<ZilObject> rawArgs,
-                [NotNull] Action throwWrongCount)
+            public ArgEvaluator(Context ctx, LocalEnvironment env, IEnumerable<ZilObject> rawArgs,
+                Action throwWrongCount)
             {
                 this.ctx = ctx;
                 this.env = env;
@@ -506,6 +496,7 @@ namespace Zilf.Interpreter
 
             /// <exception cref="InterpreterError">The wrong number of arguments were provided.</exception>
             [ContractAnnotation("=> halt")]
+            [DoesNotReturn]
             void DoThrowWrongCount()
             {
                 throwWrongCount();
@@ -513,7 +504,7 @@ namespace Zilf.Interpreter
 
             /// <exception cref="InterpreterError">Too few arguments were provided.</exception>
             [ContractAnnotation("=> src: notnull")]
-            public ZilResult GetOne(bool eval, out IProvideSourceLine src)
+            public ZilResult GetOne(bool eval, [System.Diagnostics.CodeAnalysis.NotNull] out IProvideSourceLine? src)
             {
                 var result = GetOneOptional(eval, out src);
 
@@ -525,7 +516,8 @@ namespace Zilf.Interpreter
             }
 
             /// <exception cref="InterpreterError">The wrong number or types of arguments were provided.</exception>
-            public ZilResult? GetOneOptional(bool eval, [CanBeNull] out IProvideSourceLine src)
+            [return: NotNullIfNotNull("src")]
+            public ZilResult? GetOneOptional(bool eval, out IProvideSourceLine? src)
             {
                 while (true)
                 {
@@ -615,10 +607,9 @@ namespace Zilf.Interpreter
         /// In the case of an exception, the new local environment will not be pushed.</para>
         /// <para>Make sure to call <see cref="IDisposable.Dispose"/> on the returned object!</para>
         /// </remarks>
-        [NotNull]
         [MustUseReturnValue]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        public Application BeginApply([NotNull] [ProvidesContext] Context ctx, [ItemNotNull] [NotNull] ZilObject[] args, bool eval)
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        public Application BeginApply([ProvidesContext] Context ctx, ZilObject[] args, bool eval)
         {
             var outerEnv = ctx.LocalEnvironment;
             var innerEnv = ctx.PushEnvironment();
@@ -626,21 +617,26 @@ namespace Zilf.Interpreter
             var wasTopLevel = ctx.AtTopLevel;
             ctx.AtTopLevel = false;
 
-            void ThrowWrongCount() => throw ArgumentCountError.WrongCount(
-                new FunctionCallSite(name?.ToString() ?? "user-defined function"), optArgsStart, auxArgsStart);
+            void ThrowWrongCount()
+            {
+                throw ArgumentCountError.WrongCount(
+                    new FunctionCallSite(Name?.ToString() ?? "user-defined function"),
+                    optArgsStart,
+                    auxArgsStart);
+            }
 
             try
             {
                 using (var evaluator = new ArgEvaluator(ctx, outerEnv, args, ThrowWrongCount))
                 {
-                    if (environmentAtom != null)
+                    if (EnvironmentAtom != null)
                     {
-                        innerEnv.Rebind(environmentAtom,
-                            new ZilEnvironment(outerEnv, environmentAtom),
+                        innerEnv.Rebind(EnvironmentAtom,
+                            new ZilEnvironment(outerEnv, EnvironmentAtom),
                             ctx.GetStdAtom(StdAtom.ENVIRONMENT));
                     }
 
-                    IProvideSourceLine src;
+                    IProvideSourceLine? src;
 
                     for (int i = 0; i < optArgsStart; i++)
                     {
@@ -659,7 +655,7 @@ namespace Zilf.Interpreter
                             if (zr.Value.ShouldPass())
                                 return new Application(ctx, zr.Value, wasTopLevel);
 
-                            ctx.MaybeCheckDecl(src, (ZilObject)zr.Value, argDecls[i], "argument {0}", argAtoms[i]);
+                            ctx.MaybeCheckDecl(src!, (ZilObject)zr.Value, argDecls[i], "argument {0}", argAtoms[i]);
                             innerEnv.Rebind(argAtoms[i], (ZilObject)zr.Value, argDecls[i]);
                         }
                         else
@@ -670,7 +666,7 @@ namespace Zilf.Interpreter
                                 if (init.Value.ShouldPass())
                                     return new Application(ctx, init.Value, wasTopLevel);
 
-                                ctx.MaybeCheckDecl(argDefaults[i], (ZilObject)init.Value, argDecls[i], "default for argument {0}", argAtoms[i]);
+                                ctx.MaybeCheckDecl(argDefaults[i]!, (ZilObject)init.Value, argDecls[i], "default for argument {0}", argAtoms[i]);
                             }
                             innerEnv.Rebind(argAtoms[i], init == null ? null : (ZilObject)init.Value, argDecls[i]);
                         }
@@ -684,30 +680,30 @@ namespace Zilf.Interpreter
                             if (zr.Value.ShouldPass())
                                 return new Application(ctx, zr.Value, wasTopLevel);
 
-                            ctx.MaybeCheckDecl(argDefaults[i], (ZilObject)zr.Value, argDecls[i], "default for argument {0}", argAtoms[i]);
+                            ctx.MaybeCheckDecl(argDefaults[i]!, (ZilObject)zr.Value, argDecls[i], "default for argument {0}", argAtoms[i]);
                         }
                         innerEnv.Rebind(argAtoms[i], zr == null ? null : (ZilObject)zr.Value, argDecls[i]);
                     }
 
-                    if (varargsAtom != null)
+                    if (VarargsAtom != null)
                     {
                         var result = evaluator.GetRest(eval && !varargsQuoted).ToZilListResult(null);
                         if (result.ShouldPass())
                             return new Application(ctx, result, wasTopLevel);
 
                         var value = (ZilObject)result;
-                        ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", varargsAtom);
-                        innerEnv.Rebind(varargsAtom, value, varargsDecl);
+                        ctx.MaybeCheckDecl(value, varargsDecl, "argument {0}", VarargsAtom);
+                        innerEnv.Rebind(VarargsAtom, value, varargsDecl);
                     }
 
                     evaluator.NoMoreArguments();
                 }
 
-                ZilActivation activation;
-                if (activationAtom != null)
+                ZilActivation? activation;
+                if (ActivationAtom != null)
                 {
-                    activation = new ZilActivation(activationAtom);
-                    innerEnv.Rebind(activationAtom, activation, ctx.GetStdAtom(StdAtom.ACTIVATION));
+                    activation = new ZilActivation(ActivationAtom);
+                    innerEnv.Rebind(ActivationAtom, activation, ctx.GetStdAtom(StdAtom.ACTIVATION));
                 }
                 else
                 {
@@ -742,42 +738,40 @@ namespace Zilf.Interpreter
 
         /// <exception cref="DeclCheckError"><paramref name="result"/> did not match the required pattern, and
         /// <paramref name="ctx"/>.<see cref="Context.CheckDecls"/> is <see langword="true"/>.</exception>
-        public void ValidateResult([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilObject result)
+        public void ValidateResult([ProvidesContext] Context ctx, ZilObject result)
         {
-            ctx.MaybeCheckDecl(result, valueDecl, "return value of {0}", (object)name ?? "user-defined function");
+            ctx.MaybeCheckDecl(result, valueDecl, "return value of {0}", (object?)Name ?? "user-defined function");
         }
 
-        [NotNull]
         public ZilList ToZilList()
         {
             return new ZilList(AsZilListBody());
         }
 
-        [ItemNotNull]
         public IEnumerable<ZilObject> AsZilListBody()
         {
             bool emittedVarargs = false;
 
-            if (environmentAtom != null)
+            if (EnvironmentAtom != null)
             {
                 yield return ZilString.FromString("BIND");
-                yield return environmentAtom;
+                yield return EnvironmentAtom;
             }
 
             for (int i = 0; i < argAtoms.Length; i++)
             {
                 if (i == auxArgsStart)
                 {
-                    if (varargsAtom != null)
+                    if (VarargsAtom != null)
                     {
                         yield return ZilString.FromString(varargsQuoted ? "ARGS" : "TUPLE");
                         if (varargsDecl == null)
                         {
-                            yield return varargsAtom;
+                            yield return VarargsAtom;
                         }
                         else
                         {
-                            yield return new ZilAdecl(varargsAtom, varargsDecl);
+                            yield return new ZilAdecl(VarargsAtom, varargsDecl);
                         }
                         emittedVarargs = true;
                     }
@@ -793,12 +787,12 @@ namespace Zilf.Interpreter
 
                 if (argQuoted[i])
                 {
-                    arg = new ZilForm(new[] { quoteAtom, arg });
+                    arg = new ZilForm(new[] { quoteAtom!, arg });
                 }
 
                 if (argDecls[i] != null)
                 {
-                    arg = new ZilAdecl(arg, argDecls[i]);
+                    arg = new ZilAdecl(arg, argDecls[i]!);
                 }
 
                 if (argDefaults[i] != null)
@@ -811,23 +805,23 @@ namespace Zilf.Interpreter
                 yield return arg;
             }
 
-            if (varargsAtom != null && !emittedVarargs)
+            if (VarargsAtom != null && !emittedVarargs)
             {
                 yield return ZilString.FromString(varargsQuoted ? "ARGS" : "TUPLE");
                 if (varargsDecl == null)
                 {
-                    yield return varargsAtom;
+                    yield return VarargsAtom;
                 }
                 else
                 {
-                    yield return new ZilAdecl(varargsAtom, varargsDecl);
+                    yield return new ZilAdecl(VarargsAtom, varargsDecl);
                 }
             }
 
-            if (activationAtom != null)
+            if (ActivationAtom != null)
             {
                 yield return ZilString.FromString("NAME");
-                yield return activationAtom;
+                yield return ActivationAtom;
             }
 
             if (valueDecl != null)
@@ -837,16 +831,12 @@ namespace Zilf.Interpreter
             }
         }
 
-        [CanBeNull]
-        public ZilAtom Name => name;
+        public ZilAtom? Name { get; }
 
-        [CanBeNull]
-        public ZilAtom ActivationAtom => activationAtom;
+        public ZilAtom? ActivationAtom { get; }
 
-        [CanBeNull]
-        public ZilAtom EnvironmentAtom => environmentAtom;
+        public ZilAtom? EnvironmentAtom { get; }
 
-        [CanBeNull]
-        public ZilAtom VarargsAtom => varargsAtom;
+        public ZilAtom? VarargsAtom { get; }
     }
 }

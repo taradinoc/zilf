@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Zilf.Interpreter.Values;
@@ -53,7 +54,7 @@ namespace Zilf.Interpreter
                     }
                 }
 
-                public ZilObject Decl
+                public ZilObject? Decl
                 {
                     get
                     {
@@ -64,7 +65,7 @@ namespace Zilf.Interpreter
                     }
                 }
 
-                public ZilObject Initializer
+                public ZilObject? Initializer
                 {
                     get
                     {
@@ -86,38 +87,38 @@ namespace Zilf.Interpreter
 #pragma warning restore CS0649
 
         [FSubr]
-        public static ZilResult PROG([NotNull] Context ctx,
-            [CanBeNull] [Optional] ZilAtom activationAtom,
+        public static ZilResult PROG(Context ctx,
+             [Optional] ZilAtom? activationAtom,
             BindingParams.BindingList bindings,
-            [CanBeNull] [Optional] ZilDecl bodyDecl,
-            [NotNull] [Required] ZilObject[] body)
+             [Optional] ZilDecl? bodyDecl,
+             [Required] ZilObject[] body)
         {
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "PROG", false, true);
         }
 
         [FSubr]
-        public static ZilResult REPEAT([NotNull] Context ctx,
-            [CanBeNull] [Optional] ZilAtom activationAtom,
+        public static ZilResult REPEAT(Context ctx,
+             [Optional] ZilAtom? activationAtom,
             BindingParams.BindingList bindings,
-            [CanBeNull] [Optional] ZilDecl bodyDecl,
-            [NotNull] [Required] ZilObject[] body)
+             [Optional] ZilDecl? bodyDecl,
+             [Required] ZilObject[] body)
         {
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "REPEAT", true, true);
         }
 
         [FSubr]
-        public static ZilResult BIND([NotNull] Context ctx,
-            [CanBeNull] [Optional] ZilAtom activationAtom,
+        public static ZilResult BIND(Context ctx,
+             [Optional] ZilAtom? activationAtom,
             BindingParams.BindingList bindings,
-            [CanBeNull] [Optional] ZilDecl bodyDecl,
-            [ItemNotNull] [NotNull] [Required] ZilObject[] body)
+             [Optional] ZilDecl? bodyDecl,
+              [Required] ZilObject[] body)
         {
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "BIND", false, false);
         }
 
-        static ZilResult PerformProg([NotNull] [ProvidesContext] Context ctx, [CanBeNull] ZilAtom activationAtom,
-            BindingParams.BindingList bindings, [CanBeNull] ZilDecl bodyDecl, [ItemNotNull] [NotNull] ZilObject[] body,
-            [NotNull] string name, bool repeat, bool catchy)
+        static ZilResult PerformProg([ProvidesContext] Context ctx, ZilAtom? activationAtom,
+            BindingParams.BindingList bindings, ZilDecl? bodyDecl, ZilObject[] body,
+             string name, bool repeat, bool catchy)
         {
             using (var activation = new ZilActivation(ctx.GetStdAtom(StdAtom.PROG)))
             {
@@ -135,7 +136,7 @@ namespace Zilf.Interpreter
                         var atom = b.Atom;
                         var initializer = b.Initializer;
 
-                        ZilObject value;
+                        ZilObject? value;
 
                         if (initializer != null)
                         {
@@ -151,13 +152,16 @@ namespace Zilf.Interpreter
 
                         var previousDecl = b.Decl;
                         var firstBodyDecl = bodyAtomDecls?[atom].FirstOrDefault();
-                        if (firstBodyDecl != null && (previousDecl != null || bodyAtomDecls[atom].Skip(1).Any()))
+                        if (firstBodyDecl != null && (previousDecl != null || bodyAtomDecls![atom].Skip(1).Any()))
                             throw new InterpreterError(InterpreterMessages._0_Conflicting_DECLs_For_Atom_1, name, atom);
 
                         var decl = previousDecl ?? firstBodyDecl;
 
                         if (value != null)
+                        {
+                            Debug.Assert(initializer != null);
                             ctx.MaybeCheckDecl(initializer, value, decl, "LVAL of {0}", atom);
+                        }
 
                         innerEnv.Rebind(atom, value, decl);
                     }
@@ -166,7 +170,7 @@ namespace Zilf.Interpreter
                         innerEnv.Rebind(ctx.EnclosingProgActivationAtom, activation);
 
                     // evaluate body
-                    ZilResult result = null;
+                    ZilResult result = default;
                     bool again;
                     do
                     {
@@ -193,7 +197,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError">No enclosing PROG/REPEAT.</exception>
         [Subr]
-        public static ZilResult RETURN(Context ctx, ZilObject value = null, ZilActivation activation = null)
+        public static ZilResult RETURN(Context ctx, ZilObject? value = null, ZilActivation? activation = null)
         {
             if (value == null)
                 value = ctx.TRUE;
@@ -210,7 +214,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError">No enclosing PROG/REPEAT.</exception>
         [Subr]
-        public static ZilResult AGAIN(Context ctx, ZilActivation activation = null)
+        public static ZilResult AGAIN(Context ctx, ZilActivation? activation = null)
         {
             if (activation == null)
             {

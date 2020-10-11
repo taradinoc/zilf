@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Zapf.Parsing.Expressions;
 
@@ -23,14 +24,12 @@ namespace Zilf.Emit.Zap
 {
     static class OperandExtensions
     {
-        [NotNull]
-        public static IOperand StripIndirect([NotNull] this IOperand operand)
+        public static IOperand StripIndirect(this IOperand operand)
         {
             return operand is IIndirectOperand indirect ? indirect.Variable : operand;
         }
 
-        [NotNull]
-        public static AsmExpr ToAsmExpr([NotNull] this IOperand operand)
+        public static AsmExpr ToAsmExpr(this IOperand operand)
         {
             switch (operand)
             {
@@ -48,13 +47,10 @@ namespace Zilf.Emit.Zap
             }
         }
 
-        public static bool IsStack([NotNull] this AsmExpr asmExpr)
-        {
-            return asmExpr is SymbolExpr sym && sym.Text == "STACK";
-        }
+        public static bool IsStack(this AsmExpr asmExpr) => asmExpr is SymbolExpr sym && sym.Text == "STACK";
 
         [ContractAnnotation("=> false, inner: null; => true, inner: notnull")]
-        public static bool IsQuote([NotNull] this AsmExpr asmExpr, out AsmExpr inner)
+        public static bool IsQuote(this AsmExpr asmExpr, [NotNullWhen(true)] out AsmExpr? inner)
         {
             if (asmExpr is QuoteExpr quote)
             {

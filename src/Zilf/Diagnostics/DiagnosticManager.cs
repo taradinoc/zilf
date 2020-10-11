@@ -28,18 +28,14 @@ namespace Zilf.Diagnostics
     {
         const int MaxErrorCount = 100;
 
-        [NotNull]
         readonly List<Diagnostic> diagnostics = new List<Diagnostic>();
 
-        [NotNull]
         readonly List<Diagnostic> suppressedDiagnostics = new List<Diagnostic>();
 
-        [NotNull]
         readonly HashSet<string> suppressions = new HashSet<string>();
 
         bool suppressAllTheThings = false;
 
-        [NotNull]
         public IReadOnlyCollection<Diagnostic> Diagnostics => diagnostics;
         public int ErrorCount => Diagnostics.Count(d => d.Severity == Severity.Error || d.Severity == Severity.Fatal);
         public int WarningCount => Diagnostics.Count(d => d.Severity == Severity.Warning);
@@ -48,26 +44,24 @@ namespace Zilf.Diagnostics
         public bool WarningsAsErrors { get; set; }
         public bool SuppressNoisyWarnings { get; set; }
 
-        [NotNull]
         public IDiagnosticFormatter Formatter { get; }
-        [NotNull]
         public TextWriter OutputWriter { get; }
 
-        public event EventHandler TooManyErrors;
+        public event EventHandler? TooManyErrors;
 
-        public DiagnosticManager([CanBeNull] IDiagnosticFormatter formatter = null, [CanBeNull] TextWriter outputWriter = null)
+        public DiagnosticManager(IDiagnosticFormatter? formatter = null, TextWriter? outputWriter = null)
         {
             Formatter = formatter ?? new DefaultDiagnosticFormatter();
             OutputWriter = outputWriter ?? Console.Error;
         }
 
-        public void Suppress([NotNull] string code)
+        public void Suppress(string code)
         {
             if (!suppressAllTheThings)
                 suppressions.Add(code);
         }
 
-        public void Suppress([NotNull, ItemNotNull] IEnumerable<string> codes)
+        public void Suppress(IEnumerable<string> codes)
         {
             if (!suppressAllTheThings)
                 suppressions.UnionWith(codes);
@@ -85,7 +79,7 @@ namespace Zilf.Diagnostics
             suppressions.Clear();
         }
 
-        public void Handle([NotNull] Diagnostic diag)
+        public void Handle(Diagnostic diag)
         {
             if (WarningsAsErrors && diag.Severity == Severity.Warning)
             {
@@ -109,7 +103,7 @@ namespace Zilf.Diagnostics
             }
         }
 
-        private bool IsSuppressed([NotNull] Diagnostic diag)
+        private bool IsSuppressed(Diagnostic diag)
         {
             if (diag.Severity >= Severity.Error)
                 return false;

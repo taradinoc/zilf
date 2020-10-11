@@ -22,7 +22,7 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class ZwordDirective : TextDirective
     {
-        public ZwordDirective([NotNull] string text)
+        public ZwordDirective(string text)
             : base(text) { }
     }
 }

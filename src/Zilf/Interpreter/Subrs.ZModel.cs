@@ -39,9 +39,8 @@ namespace Zilf.Interpreter
         #region Z-Code: Routines, Objects, Constants, Globals
 
         /// <exception cref="InterpreterError">Unrecognized flag.</exception>
-        [NotNull]
         [Subr("ROUTINE-FLAGS")]
-        public static ZilObject ROUTINE_FLAGS([NotNull] Context ctx, [ItemNotNull] [NotNull] ZilAtom[] flags)
+        public static ZilObject ROUTINE_FLAGS(Context ctx, ZilAtom[] flags)
         {
             var newFlags = RoutineFlags.None;
 
@@ -63,11 +62,10 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError"><paramref name="name"/> is already defined, or <paramref name="argList"/> defines too many required parameters for the Z-machine version.</exception>
-        [NotNull]
         [FSubr]
-        public static ZilObject ROUTINE([NotNull] Context ctx, [NotNull] ZilAtom name,
-            [CanBeNull] [Optional] ZilAtom activationAtom, [NotNull] ZilList argList,
-            [ItemNotNull] [NotNull] [Required] ZilObject[] body)
+        public static ZilObject ROUTINE(Context ctx, ZilAtom name,
+             [Optional] ZilAtom? activationAtom, ZilList argList,
+              [Required] ZilObject[] body)
         {
             var oldAtom = ctx.ZEnvironment.InternGlobalName(name);
             if (ctx.GetZVal(oldAtom) != null)
@@ -154,7 +152,7 @@ namespace Zilf.Interpreter
                     }
                 }
 
-                public ZilObject Decl
+                public ZilObject? Decl
                 {
                     get
                     {
@@ -180,7 +178,6 @@ namespace Zilf.Interpreter
                 [Either(typeof(ZilAtom), typeof(string))]
                 public object Content;
 
-                [NotNull]
                 public ZilAtom GetAtom(Context ctx)
                 {
                     if (Content is ZilAtom atom)
@@ -189,10 +186,7 @@ namespace Zilf.Interpreter
                     return ZilAtom.Parse((string)Content, ctx);
                 }
 
-                public override string ToString()
-                {
-                    return Content.ToString();
-                }
+                public override string ToString() => Content.ToString()!;
             }
         }
 #pragma warning restore CS0649
@@ -200,8 +194,8 @@ namespace Zilf.Interpreter
         /// <exception cref="InterpreterError"><paramref name="name"/> is already defined.</exception>
         [FSubr]
         [FSubr("MSETG")]
-        public static ZilResult CONSTANT([NotNull] Context ctx,
-            AtomParams.AdeclOrAtom name, [NotNull] ZilObject value)
+        public static ZilResult CONSTANT(Context ctx,
+            AtomParams.AdeclOrAtom name, ZilObject value)
         {
             var atom = name.Atom;
             var zr = value.Eval(ctx);
@@ -225,7 +219,9 @@ namespace Zilf.Interpreter
                 }
                 else
                 {
-                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "CONSTANT", oldAtom.ToStringContext(ctx, false));
+                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1,
+                        "CONSTANT",
+                        oldAtom.ToStringContext(ctx, false));
                 }
             }
 
@@ -237,12 +233,12 @@ namespace Zilf.Interpreter
         /// <exception cref="InterpreterError"><paramref name="name"/> is already defined.</exception>
         [FSubr]
         public static ZilResult GLOBAL(
-            [NotNull] Context ctx,
+            Context ctx,
             AtomParams.AdeclOrAtom name,
             ZilObject defaultValue,
 #pragma warning disable RECS0154 // Parameter is never used
-            [CanBeNull] ZilObject decl = null,
-            [CanBeNull] ZilAtom size = null)
+            ZilObject? decl = null,
+            ZilAtom? size = null)
 #pragma warning restore RECS0154 // Parameter is never used
         {
             // typical form:  <GLOBAL atom-or-adecl default-value>
@@ -261,20 +257,22 @@ namespace Zilf.Interpreter
             var oldVal = ctx.GetZVal(oldAtom);
             if (oldVal != null)
             {
-                if (ctx.AllowRedefine)
+                if (!ctx.AllowRedefine)
                 {
-                    if (oldVal is ZilGlobal glob && glob.Value is ZilTable tbl)
-                    {
-                        // prevent errors about duplicate symbol T?GLOBAL-NAME
-                        // TODO: undefine the table if it hasn't been referenced anywhere yet
-                        tbl.Name = null;
-                    }
-
-                    ctx.Redefine(oldAtom);
-                    ctx.ZEnvironment.InternGlobalName(atom);
+                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1,
+                        "GLOBAL",
+                        oldAtom.ToStringContext(ctx, false));
                 }
-                else
-                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "GLOBAL", oldAtom.ToStringContext(ctx, false));
+
+                if (oldVal is ZilGlobal glob && glob.Value is ZilTable tbl)
+                {
+                    // prevent errors about duplicate symbol T?GLOBAL-NAME
+                    // TODO: undefine the table if it hasn't been referenced anywhere yet
+                    tbl.Name = null;
+                }
+
+                ctx.Redefine(oldAtom);
+                ctx.ZEnvironment.InternGlobalName(atom);
             }
 
             if (defaultValue is ZilTable table)
@@ -305,11 +303,11 @@ namespace Zilf.Interpreter
 
         [FSubr("DEFINE-GLOBALS")]
         public static ZilResult DEFINE_GLOBALS(
-            [NotNull] Context ctx,
+            Context ctx,
 #pragma warning disable RECS0154 // Parameter is never used
             ZilAtom groupName,
 #pragma warning restore RECS0154 // Parameter is never used
-            [NotNull] DefineGlobalsParams.GlobalSpec[] args)
+            DefineGlobalsParams.GlobalSpec[] args)
         {
             foreach (var spec in args)
             {
@@ -317,7 +315,7 @@ namespace Zilf.Interpreter
 
                 // create global and macros
                 var globalAtom = ZilAtom.Parse("G?" + name.Text, ctx);
-                ZilObject initializer;
+                ZilObject? initializer;
                 if (spec.Initializer != null)
                 {
                     var zr = spec.Initializer.Eval(ctx);
@@ -355,37 +353,34 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject OBJECT([NotNull] Context ctx, [NotNull] ZilAtom name,
-            [NotNull] [Decl("<LIST [REST LIST]>")] ZilList[] props)
+        public static ZilObject OBJECT(Context ctx, ZilAtom name,
+             [Decl("<LIST [REST LIST]>")] ZilList[] props)
         {
             return PerformObject(ctx, name, props, false);
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject ROOM([NotNull] Context ctx, [NotNull] ZilAtom name,
-            [NotNull] [Decl("<LIST [REST LIST]>")] ZilList[] props)
+        public static ZilObject ROOM(Context ctx, ZilAtom name,
+            [Decl("<LIST [REST LIST]>")] ZilList[] props)
         {
             return PerformObject(ctx, name, props, true);
         }
 
-        [NotNull]
-        static ZilObject PerformObject([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] ZilList[] props, bool isRoom)
+        static ZilObject PerformObject(Context ctx, ZilAtom atom, ZilList[] props, bool isRoom)
         {
             string name = isRoom ? "ROOM" : "OBJECT";
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
             if (ctx.GetZVal(oldAtom) != null)
             {
-                if (ctx.AllowRedefine)
-                {
-                    ctx.Redefine(atom);
-                    ctx.ZEnvironment.InternGlobalName(atom);
-                }
-                else
-                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, name, oldAtom.ToStringContext(ctx, false));
+                if (!ctx.AllowRedefine)
+                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1,
+                        name,
+                        oldAtom.ToStringContext(ctx, false));
+
+                ctx.Redefine(atom);
+                ctx.ZEnvironment.InternGlobalName(atom);
             }
 
             var zmo = new ZilModelObject(atom, props, isRoom) { SourceLine = ctx.TopFrame.SourceLine };
@@ -395,7 +390,7 @@ namespace Zilf.Interpreter
         }
 
         [FSubr]
-        public static ZilResult PROPDEF([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] ZilObject defaultValue, ZilObject[] spec)
+        public static ZilResult PROPDEF(Context ctx, ZilAtom atom, ZilObject defaultValue, ZilObject[] spec)
         {
             if (ctx.ZEnvironment.PropertyDefaults.ContainsKey(atom))
                 ctx.HandleError(new InterpreterError(InterpreterMessages.Overriding_Default_Value_For_Property_0, atom));
@@ -407,27 +402,26 @@ namespace Zilf.Interpreter
             ctx.ZEnvironment.PropertyDefaults[atom] = (ZilObject)zr;
 
             // complex property patterns
-            if (spec.Length > 0)
-            {
-                var pattern = ComplexPropDef.Parse(spec);
-                ctx.SetPropDef(atom, pattern);
-            }
+            if (spec.Length <= 0)
+                return atom;
+
+            var pattern = ComplexPropDef.Parse(spec);
+            ctx.SetPropDef(atom, pattern);
 
             return atom;
         }
 
         [Subr]
-        public static ZilObject ZSTART([NotNull] Context ctx, ZilAtom atom)
+        public static ZilObject ZSTART(Context ctx, ZilAtom atom)
         {
             ctx.ZEnvironment.EntryRoutineName = atom;
             return atom;
         }
 
         /// <exception cref="InterpreterError">One of the <paramref name="synonyms"/> is already defined.</exception>
-        [NotNull]
         [Subr("BIT-SYNONYM")]
-        public static ZilObject BIT_SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom first,
-            [NotNull] [Required] ZilAtom[] synonyms)
+        public static ZilObject BIT_SYNONYM(Context ctx, ZilAtom first,
+            [Required] ZilAtom[] synonyms)
         {
             if (ctx.ZEnvironment.TryGetBitSynonym(first, out var original))
                 first = original;
@@ -448,12 +442,11 @@ namespace Zilf.Interpreter
         #region Z-Code: Tables
 
         /// <exception cref="InterpreterError">The syntax is invalid, or <paramref name="count"/> is less than 1.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject ITABLE([NotNull] Context ctx,
-            [CanBeNull] [Optional] ZilAtom specifier,
+        public static ZilObject ITABLE(Context ctx,
+            [Optional] ZilAtom? specifier,
             int count,
-            [CanBeNull] [Optional, Decl("<LIST [REST ATOM]>")] ZilList flagList,
+            [Optional, Decl("<LIST [REST ATOM]>")] ZilList? flagList,
             ZilObject[] initializer)
         {
             // Syntax:
@@ -535,32 +528,32 @@ namespace Zilf.Interpreter
                 }
             }
 
-            if (initializer.Length == 0)
-                initializer = null;
-
-            var tab = ZilTable.Create(count, initializer, flags, null);
+            var tab = ZilTable.Create(count, initializer.Length == 0 ? null : initializer, flags, null);
             tab.SourceLine = ctx.TopFrame.SourceLine;
             if ((flags & TableFlags.TempTable) == 0)
                 ctx.ZEnvironment.Tables.Add(tab);
             return tab;
         }
 
-        [NotNull]
-        static ZilTable PerformTable([NotNull] Context ctx, ZilListoidBase flagList, [ItemNotNull] [NotNull] ZilObject[] values,
+        static ZilTable PerformTable(Context ctx, ZilListoidBase? flagList, ZilObject[] values,
             bool pure, bool wantLength)
         {
             // syntax:
             //    <[P][L]TABLE [(flags...)] values...>
 
-            string name = pure ?
-                (wantLength ? "PLTABLE" : "PTABLE") :
-                (wantLength ? "LTABLE" : "TABLE");
+            var name = (pure, wantLength) switch
+            {
+                (true, true) => "PLTABLE",
+                (true, false) => "PTABLE",
+                (false, true) => "LTABLE",
+                _ => "TABLE",
+            };
 
             const int T_WORDS = 0;
             const int T_BYTES = 1;
             const int T_STRING = 2;
             int type = T_WORDS;
-            ZilObject[] pattern = null;
+            ZilObject[]? pattern = null;
             bool tempTable = false;
             bool parserTable = false;
 
@@ -660,7 +653,7 @@ namespace Zilf.Interpreter
             return tab;
         }
 
-        static void ValidateTablePattern([NotNull] string name, [NotNull] ZilObject[] pattern)
+        static void ValidateTablePattern(string name, ZilObject[] pattern)
         {
             if (pattern.Length == 0)
                 throw new InterpreterError(InterpreterMessages._0_PATTERN_Must_Not_Be_Empty, name);
@@ -706,42 +699,37 @@ namespace Zilf.Interpreter
             return value is ZilAtom atom && (atom.StdAtom == StdAtom.BYTE || atom.StdAtom == StdAtom.WORD);
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject TABLE([NotNull] Context ctx, [CanBeNull] [Optional] ZilList flagList,
-            [ItemNotNull] [NotNull] ZilObject[] values)
+        public static ZilObject TABLE(Context ctx, [Optional] ZilList? flagList,
+              ZilObject[] values)
         {
             return PerformTable(ctx, flagList, values, false, false);
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject LTABLE([NotNull] Context ctx, [CanBeNull] [Optional] ZilList flagList,
-            [ItemNotNull] [NotNull] ZilObject[] values)
+        public static ZilObject LTABLE(Context ctx, [Optional] ZilList? flagList,
+              ZilObject[] values)
         {
             return PerformTable(ctx, flagList, values, false, true);
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject PTABLE([NotNull] Context ctx, [CanBeNull] [Optional] ZilList flagList,
-            [NotNull] ZilObject[] values)
+        public static ZilObject PTABLE(Context ctx, [Optional] ZilList? flagList,
+             ZilObject[] values)
         {
             return PerformTable(ctx, flagList, values, true, false);
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject PLTABLE([NotNull] Context ctx, [CanBeNull] [Optional] ZilList flagList,
-            [NotNull] ZilObject[] values)
+        public static ZilObject PLTABLE(Context ctx, [Optional] ZilList? flagList,
+             ZilObject[] values)
         {
             return PerformTable(ctx, flagList, values, true, true);
         }
 
         /// <exception cref="InterpreterError"><paramref name="index"/> is out of range, or the element at <paramref name="index"/> is not a word.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject ZGET([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index)
+        public static ZilObject ZGET(Context ctx, [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index)
         {
             if (index < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "ZGET");
@@ -766,10 +754,9 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError"><paramref name="index"/> is out of range.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject ZPUT([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index,
-            [NotNull] ZilObject newValue)
+        public static ZilObject ZPUT(Context ctx, [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index,
+             ZilObject newValue)
         {
             if (index < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "ZPUT");
@@ -783,9 +770,8 @@ namespace Zilf.Interpreter
             return newValue;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject GETB([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index)
+        public static ZilObject GETB(Context ctx, [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index)
         {
             if (index < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "GETB");
@@ -809,10 +795,9 @@ namespace Zilf.Interpreter
             }
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject PUTB([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index,
-            [NotNull] ZilObject newValue)
+        public static ZilObject PUTB(Context ctx, [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int index,
+             ZilObject newValue)
         {
             if (index < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "PUTB");
@@ -826,9 +811,8 @@ namespace Zilf.Interpreter
             return newValue;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject ZREST([NotNull] Context ctx, [NotNull] [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int bytes)
+        public static ZilObject ZREST(Context ctx, [Decl("<PRIMTYPE TABLE>")] ZilObject tableish, int bytes)
         {
             if (bytes < 0)
                 throw new InterpreterError(InterpreterMessages._0_Negative_Element_Count, "ZREST");
@@ -845,11 +829,10 @@ namespace Zilf.Interpreter
 
         #region Z-Code: Version, Options, Capabilities
 
-        [NotNull]
         [Subr]
-        public static ZilObject VERSION([NotNull] Context ctx,
-            [NotNull] ZilObject versionExpr,
-            [CanBeNull] [Decl("'TIME")] ZilAtom time = null)
+        public static ZilObject VERSION(Context ctx,
+             ZilObject versionExpr,
+             [Decl("'TIME")] ZilAtom? time = null)
         {
             var newVersion = ParseZVersion("VERSION", versionExpr);
 
@@ -866,7 +849,7 @@ namespace Zilf.Interpreter
             return new ZilFix(newVersion);
         }
 
-        static int ParseZVersion([NotNull] string name, [NotNull] ZilObject expr)
+        static int ParseZVersion(string name, ZilObject expr)
         {
             int newVersion;
             switch (expr)
@@ -913,17 +896,16 @@ namespace Zilf.Interpreter
             return newVersion;
         }
 
-        [NotNull]
         [Subr("CHECK-VERSION?")]
-        public static ZilObject CHECK_VERSION_P([NotNull] Context ctx, [NotNull] ZilObject versionExpr)
+        public static ZilObject CHECK_VERSION_P(Context ctx, ZilObject versionExpr)
         {
             var version = ParseZVersion("CHECK-VERSION?", versionExpr);
             return ctx.ZEnvironment.ZVersion == version ? ctx.TRUE : ctx.FALSE;
         }
 
         [FSubr("VERSION?")]
-        public static ZilResult VERSION_P([NotNull] Context ctx,
-            [NotNull] CondClause[] clauses)
+        public static ZilResult VERSION_P(Context ctx,
+             CondClause[] clauses)
         {
             var tAtom = ctx.GetStdAtom(StdAtom.T);
             var elseAtom = ctx.GetStdAtom(StdAtom.ELSE);
@@ -949,9 +931,8 @@ namespace Zilf.Interpreter
             return ctx.FALSE;
         }
 
-        [NotNull]
         [Subr("ORDER-OBJECTS?")]
-        public static ZilObject ORDER_OBJECTS_P([NotNull] Context ctx, [NotNull] ZilAtom atom)
+        public static ZilObject ORDER_OBJECTS_P(Context ctx, ZilAtom atom)
         {
             switch (atom.StdAtom)
             {
@@ -975,9 +956,8 @@ namespace Zilf.Interpreter
                 "DEFINED, ROOMS-FIRST, ROOMS-AND-LGS-FIRST, or ROOMS-LAST");
         }
 
-        [NotNull]
         [Subr("ORDER-TREE?")]
-        public static ZilObject ORDER_TREE_P([NotNull] Context ctx, [NotNull] ZilAtom atom)
+        public static ZilObject ORDER_TREE_P(Context ctx, ZilAtom atom)
         {
             switch (atom.StdAtom)
             {
@@ -995,7 +975,7 @@ namespace Zilf.Interpreter
         [Subr("ORDER-FLAGS?")]
         public static ZilObject ORDER_FLAGS_P(Context ctx,
             [Decl("'LAST")] ZilAtom order,
-            [NotNull] [Required] ZilAtom[] objects)
+             [Required] ZilAtom[] objects)
         {
             foreach (var atom in objects)
             {
@@ -1006,9 +986,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">Unrecognized option.</exception>
-        [NotNull]
         [Subr("ZIP-OPTIONS")]
-        public static ZilObject ZIP_OPTIONS([NotNull] Context ctx, [NotNull] ZilAtom[] args)
+        public static ZilObject ZIP_OPTIONS(Context ctx, ZilAtom[] args)
         {
             foreach (var atom in args)
             {
@@ -1055,28 +1034,25 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
-        [NotNull]
         [Subr("LONG-WORDS?")]
-        public static ZilObject LONG_WORDS_P([NotNull] Context ctx, bool enabled = true)
+        public static ZilObject LONG_WORDS_P(Context ctx, bool enabled = true)
         {
             ctx.DefineCompilationFlag(ctx.GetStdAtom(StdAtom.LONG_WORDS),
                 enabled ? ctx.TRUE : ctx.FALSE, true);
             return ctx.TRUE;
         }
 
-        [NotNull]
         [Subr("FUNNY-GLOBALS?")]
-        public static ZilObject FUNNY_GLOBALS_P([NotNull] Context ctx, bool enabled = true)
+        public static ZilObject FUNNY_GLOBALS_P(Context ctx, bool enabled = true)
         {
             ctx.SetGlobalVal(ctx.GetStdAtom(StdAtom.DO_FUNNY_GLOBALS_P),
                 enabled ? ctx.TRUE : ctx.FALSE);
             return ctx.TRUE;
         }
 
-        [NotNull]
         [Subr]
         public static ZilObject CHRSET(Context ctx, int alphabetNum,
-            [NotNull] [Required, Decl("<LIST [REST <OR STRING CHARACTER FIX BYTE>]>")] ZilObject[] args)
+             [Required, Decl("<LIST [REST <OR STRING CHARACTER FIX BYTE>]>")] ZilObject[] args)
         {
             if (alphabetNum < 0 || alphabetNum > 2)
                 throw new InterpreterError(InterpreterMessages._0_Alphabet_Number_Must_Be_Between_0_And_2, "CHRSET");
@@ -1130,9 +1106,8 @@ namespace Zilf.Interpreter
             return ZilString.FromString(alphabetStr);
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject LANGUAGE([NotNull] Context ctx, [NotNull] ZilAtom name, char escapeChar = '%', bool changeChrset = true)
+        public static ZilObject LANGUAGE(Context ctx, ZilAtom name, char escapeChar = '%', bool changeChrset = true)
         {
             var language = ZModel.Language.Get(name.Text) ??
                 throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "LANGUAGE", "language", name.Text);
@@ -1155,9 +1130,8 @@ namespace Zilf.Interpreter
 
         #region Z-Code: Vocabulary and Syntax
 
-        [NotNull]
         [Subr]
-        public static ZilObject DIRECTIONS([NotNull] Context ctx, [NotNull] [Required] ZilAtom[] args)
+        public static ZilObject DIRECTIONS(Context ctx, [Required] ZilAtom[] args)
         {
             // if a PROPSPEC is set for DIRECTIONS, it'll be copied to the new direction properties
             var propspecAtom = ctx.GetStdAtom(StdAtom.PROPSPEC);
@@ -1176,9 +1150,8 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject BUZZ([NotNull] Context ctx, [NotNull] [Required] ZilAtom[] args)
+        public static ZilObject BUZZ(Context ctx, [Required] ZilAtom[] args)
         {
             foreach (var arg in args)
                 ctx.ZEnvironment.Buzzwords.Add(new KeyValuePair<ZilAtom, ISourceLine>(arg, ctx.TopFrame.SourceLine));
@@ -1186,9 +1159,8 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject VOC([NotNull] Context ctx, [NotNull] string text, [CanBeNull] [Decl("<OR FALSE ATOM>")] ZilObject type = null)
+        public static ZilObject VOC(Context ctx, string text, [Decl("<OR FALSE ATOM>")] ZilObject? type = null)
         {
             var atom = ZilAtom.Parse(text, ctx);
             ctx.ZEnvironment.GetVocab(atom);
@@ -1232,9 +1204,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="ArgumentCountError"><paramref name="args"/> is too short.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject SYNTAX([NotNull] Context ctx, [NotNull] ZilObject[] args)
+        public static ZilObject SYNTAX(Context ctx, ZilObject[] args)
         {
             if (args.Length < 3)
                 throw ArgumentCountError.WrongCount(new FunctionCallSite("SYNTAX"), 3, null);
@@ -1250,10 +1221,9 @@ namespace Zilf.Interpreter
             return syntax.Verb.Atom;
         }
 
-        [NotNull]
-        static ZilObject PerformSynonym([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms, [NotNull] Type synonymType)
+        static ZilObject PerformSynonym(Context ctx, ZilAtom original, ZilAtom[] synonyms, Type synonymType)
         {
-            if (ctx.ZEnvironment.Vocabulary.TryGetValue(original, out var oldWord) == false)
+            if (!ctx.ZEnvironment.Vocabulary.TryGetValue(original, out var oldWord))
             {
                 oldWord = ctx.ZEnvironment.VocabFormat.CreateWord(original);
                 ctx.ZEnvironment.Vocabulary.Add(original, oldWord);
@@ -1264,7 +1234,7 @@ namespace Zilf.Interpreter
 
             foreach (var synonym in synonyms)
             {
-                if (ctx.ZEnvironment.Vocabulary.TryGetValue(synonym, out var newWord) == false)
+                if (!ctx.ZEnvironment.Vocabulary.TryGetValue(synonym, out var newWord))
                 {
                     newWord = ctx.ZEnvironment.VocabFormat.CreateWord(synonym);
                     ctx.ZEnvironment.Vocabulary.Add(synonym, newWord);
@@ -1272,43 +1242,38 @@ namespace Zilf.Interpreter
 
                 ctorArgs[1] = newWord;
                 ctx.ZEnvironment.Synonyms.Add((Synonym)Activator.CreateInstance(
-                    synonymType, ctorArgs));
+                    synonymType, ctorArgs)!);
             }
 
             return original;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms)
+        public static ZilObject SYNONYM(Context ctx, ZilAtom original, ZilAtom[] synonyms)
         {
             return PerformSynonym(ctx, original, synonyms, typeof(Synonym));
         }
 
-        [NotNull]
         [Subr("VERB-SYNONYM")]
-        public static ZilObject VERB_SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms)
+        public static ZilObject VERB_SYNONYM(Context ctx, ZilAtom original, ZilAtom[] synonyms)
         {
             return PerformSynonym(ctx, original, synonyms, typeof(VerbSynonym));
         }
 
-        [NotNull]
         [Subr("PREP-SYNONYM")]
-        public static ZilObject PREP_SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms)
+        public static ZilObject PREP_SYNONYM(Context ctx, ZilAtom original, ZilAtom[] synonyms)
         {
             return PerformSynonym(ctx, original, synonyms, typeof(PrepSynonym));
         }
 
-        [NotNull]
         [Subr("ADJ-SYNONYM")]
-        public static ZilObject ADJ_SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms)
+        public static ZilObject ADJ_SYNONYM(Context ctx, ZilAtom original, ZilAtom[] synonyms)
         {
             return PerformSynonym(ctx, original, synonyms, typeof(AdjSynonym));
         }
 
-        [NotNull]
         [Subr("DIR-SYNONYM")]
-        public static ZilObject DIR_SYNONYM([NotNull] Context ctx, [NotNull] ZilAtom original, [NotNull] ZilAtom[] synonyms)
+        public static ZilObject DIR_SYNONYM(Context ctx, ZilAtom original, ZilAtom[] synonyms)
         {
             return PerformSynonym(ctx, original, synonyms, typeof(DirSynonym));
         }
@@ -1317,17 +1282,15 @@ namespace Zilf.Interpreter
 
         #region Z-Code: Tell
 
-        [NotNull]
         [FSubr("TELL-TOKENS")]
-        public static ZilObject TELL_TOKENS([NotNull] Context ctx, [NotNull] ZilObject[] args)
+        public static ZilObject TELL_TOKENS(Context ctx, ZilObject[] args)
         {
             ctx.ZEnvironment.TellPatterns.Clear();
             return ADD_TELL_TOKENS(ctx, args);
         }
 
-        [NotNull]
         [FSubr("ADD-TELL-TOKENS")]
-        public static ZilObject ADD_TELL_TOKENS([NotNull] Context ctx, [NotNull] ZilObject[] args)
+        public static ZilObject ADD_TELL_TOKENS(Context ctx, ZilObject[] args)
         {
             ctx.ZEnvironment.TellPatterns.AddRange(TellPattern.Parse(args));
             return ctx.TRUE;
@@ -1338,20 +1301,19 @@ namespace Zilf.Interpreter
         #region Z-Code: Version 6 Parser
 
         /// <exception cref="InterpreterError">NEW-PARSER? is not enabled.</exception>
-        [NotNull]
         [Subr("ADD-WORD")]
         [Subr("NEW-ADD-WORD")]
-        public static ZilObject NEW_ADD_WORD([NotNull] Context ctx,
+        public static ZilObject NEW_ADD_WORD(Context ctx,
             AtomParams.StringOrAtom name,
-            [CanBeNull] ZilAtom type = null,
-            [CanBeNull] ZilObject value = null,
-            ZilFix flags = null)
+            ZilAtom? type = null,
+            ZilObject? value = null,
+            ZilFix? flags = null)
         {
             if (!ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
                 throw new InterpreterError(InterpreterMessages._0_Requires_NEWPARSER_Option, "NEW-ADD-WORD");
 
             var nameAtom = name.GetAtom(ctx);
-            flags = flags ?? ZilFix.Zero;
+            flags ??= ZilFix.Zero;
             return ((NewParserVocabFormat)ctx.ZEnvironment.VocabFormat).NewAddWord(nameAtom, type, value, flags);
         }
 

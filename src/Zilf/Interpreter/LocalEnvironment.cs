@@ -30,10 +30,8 @@ namespace Zilf.Interpreter
     /// </summary>
     class LocalEnvironment : IDisposable
     {
-        [NotNull]
         readonly Context ctx;
 
-        [NotNull]
         readonly Dictionary<ZilAtom, Binding> bindings = new Dictionary<ZilAtom, Binding>();
 
         /// <summary>
@@ -43,7 +41,7 @@ namespace Zilf.Interpreter
         /// <param name="parent">The parent environment, or <see langword="null"/> to not inherit any bindings.</param>
         /// <remarks>Changes made to bindings in the parent environment will be visible in the new environment,
         /// unless overridden by bindings created in the new environment with <see cref="Rebind"/>.</remarks>
-        public LocalEnvironment([NotNull] Context ctx, [CanBeNull] LocalEnvironment parent = null)
+        public LocalEnvironment(Context ctx, LocalEnvironment? parent = null)
         {
             this.ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
             Parent = parent;
@@ -67,18 +65,15 @@ namespace Zilf.Interpreter
         /// <summary>
         /// Gets the parent environment, or <see langword="null"/> if the environment was created without inheritance.
         /// </summary>
-        [CanBeNull]
-        public LocalEnvironment Parent { get; }
+        public LocalEnvironment? Parent { get; }
 
-        [CanBeNull]
         [System.Diagnostics.Contracts.Pure]
-        Binding MaybeGetBinding([NotNull] ZilAtom atom)
+        Binding? MaybeGetBinding(ZilAtom atom)
         {
             return bindings.TryGetValue(atom, out var result) ? result : Parent?.MaybeGetBinding(atom);
         }
 
-        [NotNull]
-        Binding GetOrCreateBinding([NotNull] ZilAtom atom)
+        Binding GetOrCreateBinding(ZilAtom atom)
         {
             var result = MaybeGetBinding(atom);
 
@@ -98,7 +93,7 @@ namespace Zilf.Interpreter
         /// <returns><see langword="true"/> if the atom is bound in this environment or any parent environment,
         /// or <see langword="false"/> if the atom is unbound.</returns>
         [System.Diagnostics.Contracts.Pure]
-        public bool IsLocalBound([NotNull] ZilAtom atom)
+        public bool IsLocalBound(ZilAtom atom)
         {
             return MaybeGetBinding(atom) != null;
         }
@@ -109,8 +104,7 @@ namespace Zilf.Interpreter
         /// <param name="atom">The atom.</param>
         /// <returns>The value assigned to the atom in this environment, or the nearest parent environment
         /// in which it was bound, or <see langword="null"/> if the atom is unbound or unassigned.</returns>
-        [CanBeNull]
-        public ZilObject GetLocalVal([NotNull] ZilAtom atom)
+        public ZilObject? GetLocalVal(ZilAtom atom)
         {
             return MaybeGetBinding(atom)?.Value;
         }
@@ -124,7 +118,7 @@ namespace Zilf.Interpreter
         /// exist in a parent environment. If the atom is unbound, a new binding will be created
         /// in this environment.</remarks>
         /// <exception cref="Zilf.Language.DeclCheckError"><paramref name="value"/> does not match the existing DECL for <paramref name="atom"/>.</exception>
-        public void SetLocalVal([NotNull] ZilAtom atom, [CanBeNull] ZilObject value)
+        public void SetLocalVal(ZilAtom atom, ZilObject? value)
         {
             var binding = GetOrCreateBinding(atom);
 
@@ -148,7 +142,7 @@ namespace Zilf.Interpreter
         /// previously assigned value will be overwritten.</para>
         /// <para>This method does not check <paramref name="value"/> against any DECL.</para>
         /// </remarks>
-        public void Rebind([NotNull] ZilAtom atom, [CanBeNull] ZilObject value = null, [CanBeNull] ZilObject decl = null)
+        public void Rebind(ZilAtom atom, ZilObject? value = null, ZilObject? decl = null)
         {
             if (bindings.TryGetValue(atom, out var binding))
             {
@@ -164,7 +158,6 @@ namespace Zilf.Interpreter
                 binding.Decl = decl;
         }
 
-        [ItemNotNull]
         private IEnumerable<LocalEnvironment> GetLookupPath()
         {
             yield return this;
@@ -173,7 +166,6 @@ namespace Zilf.Interpreter
                 yield return p;
         }
 
-        [NotNull, ItemNotNull]
         public IEnumerable<ZilAtom> GetVisibleAtoms()
         {
             return GetLookupPath().SelectMany(env => env.bindings.Keys).Distinct();

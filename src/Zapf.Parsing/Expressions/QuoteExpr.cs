@@ -22,12 +22,11 @@ namespace Zapf.Parsing.Expressions
 {
     public sealed class QuoteExpr : AsmExpr
     {
-        public QuoteExpr([NotNull] AsmExpr inner)
+        public QuoteExpr(AsmExpr inner)
         {
             Inner = inner;
         }
 
-        [NotNull]
         public AsmExpr Inner { get; }
 
         public override string ToString()

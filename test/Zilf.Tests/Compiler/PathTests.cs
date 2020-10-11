@@ -35,21 +35,21 @@ namespace Zilf.Tests.Compiler
             readonly Dictionary<string, string> inputs = new Dictionary<string, string>();
             readonly Dictionary<string, MemoryStream> outputs = new Dictionary<string, MemoryStream>();
 
-            [NotNull]
+            [JetBrains.Annotations.NotNull]
             public ICollection OutputFilePaths => outputs.Keys;
 
-            public void SetInputFile([NotNull] string path, string content)
+            public void SetInputFile([JetBrains.Annotations.NotNull] string path, string content)
             {
                 inputs[path] = content;
             }
 
-            public string GetOutputContent([NotNull] string path)
+            public string GetOutputContent([JetBrains.Annotations.NotNull] string path)
             {
                 var stream = outputs[path];
                 return Encoding.UTF8.GetString(stream.ToArray());
             }
 
-            public void Compile([NotNull] string mainZilFile)
+            public void Compile([JetBrains.Annotations.NotNull] string mainZilFile)
             {
                 var compiler = new FrontEnd();
 

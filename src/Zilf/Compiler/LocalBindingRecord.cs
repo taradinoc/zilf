@@ -72,24 +72,22 @@ namespace Zilf.Compiler
     sealed class LocalBindingRecord
     {
         public LocalBindingType Type { get; }
-        [NotNull]
         public ILocalBuilder LocalBuilder { get; }
-        [NotNull]
         public string BoundName { get; }
-        [NotNull]
-        public ISourceLine Definition { get; }
+        public ISourceLine? Definition { get; }
 
         /// <summary>
         /// Gets or sets a flag indicating whether the local variable was used as an operand.
         /// </summary>
         public bool IsEverRead { get; set; }
+
         /// <summary>
         /// Gets or sets a flag indicating whether a value was assigned to the local variable.
         /// </summary>
         public bool IsEverWritten { get; set; }
 
-        public LocalBindingRecord(LocalBindingType type, [NotNull] ISourceLine definition, [NotNull] string boundName,
-            [NotNull] ILocalBuilder storage)
+        public LocalBindingRecord(LocalBindingType type, ISourceLine? definition, string boundName,
+            ILocalBuilder storage)
         {
             Type = type;
             Definition = definition;

@@ -37,12 +37,12 @@ using Zilf.ZModel.Values;
 namespace Zilf.Compiler.Builtins
 {
     [SuppressMessage("Style", "IDE0060", Justification = "ZBuiltins parameters are needed for validation, even if the values aren't used.")]
+    [SuppressMessage("Redundancy", "RCS1163:Unused parameter.", Justification = "ZBuiltins parameters are needed for validation, even if the values aren't used.")]
+    [SuppressMessage("Performance", "CA1801", Justification = "ZBuiltins parameters are needed for validation, even if the values aren't used.")]
     static class ZBuiltins
     {
         #region Infrastructure
 
-        [ItemNotNull]
-        [NotNull]
         static readonly ILookup<string, BuiltinSpec> builtins =
             (from mi in typeof(ZBuiltins).GetMethods(BindingFlags.Public | BindingFlags.Static)
              from a in mi.GetCustomAttributes<BuiltinAttribute>()
@@ -50,21 +50,17 @@ namespace Zilf.Compiler.Builtins
              select new { Name = name, Attr = a, Method = mi })
             .ToLookup(r => r.Name, r => new BuiltinSpec(r.Attr, r.Method));
 
-        [NotNull]
-        [ItemNotNull]
         public static IEnumerable<string> GetBuiltinNames()
         {
             return builtins.Select(g => g.Key);
         }
 
-        [NotNull]
-        [ItemNotNull]
-        public static IEnumerable<ISignature> GetBuiltinSignatures([NotNull] string name)
+        public static IEnumerable<ISignature> GetBuiltinSignatures(string name)
         {
             return builtins[name].Select(ZBuiltinSignature.FromBuiltinSpec);
         }
 
-        public static bool IsBuiltinValueCall([NotNull] string name, int zversion, int argCount)
+        public static bool IsBuiltinValueCall(string name, int zversion, int argCount)
         {
             return builtins[name].Any(s =>
             {
@@ -73,7 +69,7 @@ namespace Zilf.Compiler.Builtins
             });
         }
 
-        public static bool IsBuiltinVoidCall([NotNull] string name, int zversion, int argCount)
+        public static bool IsBuiltinVoidCall(string name, int zversion, int argCount)
         {
             return builtins[name].Any(s =>
             {
@@ -82,7 +78,7 @@ namespace Zilf.Compiler.Builtins
             });
         }
 
-        public static bool IsBuiltinPredCall([NotNull] string name, int zversion, int argCount)
+        public static bool IsBuiltinPredCall(string name, int zversion, int argCount)
         {
             return builtins[name].Any(s =>
             {
@@ -91,7 +87,7 @@ namespace Zilf.Compiler.Builtins
             });
         }
 
-        public static bool IsBuiltinValuePredCall([NotNull] string name, int zversion, int argCount)
+        public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount)
         {
             return builtins[name].Any(s =>
             {
@@ -100,7 +96,7 @@ namespace Zilf.Compiler.Builtins
             });
         }
 
-        public static bool IsBuiltinWithSideEffects([NotNull] string name, int zversion, int argCount)
+        public static bool IsBuiltinWithSideEffects(string name, int zversion, int argCount)
         {
             // true if there's a void, value, or predicate version with side effects
             return builtins[name].Any(s =>
@@ -111,7 +107,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [ContractAnnotation("=> true, error: notnull; => false, error: null")]
-        public static bool IsNearMatchBuiltin([NotNull] string name, int zversion, int argCount, [CanBeNull] out CompilerError error)
+        public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, [NotNullWhen(true)] out CompilerError? error)
         {
             // is there a match with this zversion but any arg count?
             var wrongArgCount =
@@ -158,14 +154,13 @@ namespace Zilf.Compiler.Builtins
             return false;
         }
 
-        delegate void InvalidArgumentDelegate(int index, [NotNull] string message);
+        delegate void InvalidArgumentDelegate(int index, string message);
 
         [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", MessageId = "System.String.Format(System.String,System.Object,System.Object,System.Object)")]
         [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        [NotNull]
         static IList<BuiltinArg> ValidateArguments(
-            [NotNull] Compilation cc, [NotNull] BuiltinSpec spec, [ItemNotNull] [NotNull] ParameterInfo[] builtinParamInfos,
-            [ItemNotNull] [NotNull] IReadOnlyList<ZilObject> args, [NotNull] [InstantHandle] InvalidArgumentDelegate error)
+            Compilation cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
+            IReadOnlyList<ZilObject> args, [InstantHandle] InvalidArgumentDelegate error)
         {
             // args may be short (for optional params)
 
@@ -209,15 +204,14 @@ namespace Zilf.Compiler.Builtins
             return result;
         }
 
-        [NotNull]
-        static List<object> MakeBuiltinMethodParams(
-            [NotNull] BuiltinSpec spec, [ItemNotNull] [NotNull] ParameterInfo[] builtinParamInfos,
-            [NotNull] object call, [NotNull] IList<BuiltinArg> args)
+        static List<object?> MakeBuiltinMethodParams(
+            BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
+            object call, IList<BuiltinArg> args)
         {
             /* args.Length (plus call and data) may differ from builtinParamInfos.Length,
              * due to optional arguments and params arrays. */
 
-            var result = new List<object>(builtinParamInfos.Length) { call };
+            var result = new List<object?>(builtinParamInfos.Length) { call };
 
             // data (optional)
             int i = 1;
@@ -236,15 +230,15 @@ namespace Zilf.Compiler.Builtins
                 {
                     // add all remaining operands as a param array
                     result.Add(j >= args.Count
-                        ? new IOperand[0]
-                        : args.Skip(j).Select(a => (IOperand)a.Value).ToArray());
+                        ? Array.Empty<IOperand>()
+                        : args.Skip(j).Select(a => (IOperand?)a.Value).ToArray());
                 }
                 else if (pi.ParameterType == typeof(ZilObject[]))
                 {
                     // add all remaining values as a param array
                     result.Add(j >= args.Count
-                        ? new ZilObject[0]
-                        : args.Skip(j).Select(a => (ZilObject)a.Value).ToArray());
+                        ? Array.Empty<ZilObject>()
+                        : args.Skip(j).Select(a => (ZilObject?)a.Value).ToArray());
                 }
                 else if (j >= args.Count)
                 {
@@ -259,9 +253,8 @@ namespace Zilf.Compiler.Builtins
             return result;
         }
 
-        [NotNull]
-        static object CompileBuiltinCall<TCall>([NotNull] string name, [NotNull] Compilation cc,
-            [NotNull] IRoutineBuilder rb, [NotNull] ZilListoidBase form, TCall call)
+        static IOperand? CompileBuiltinCall<TCall>(string name, Compilation cc,
+            IRoutineBuilder rb, ZilListoidBase form, TCall call)
             where TCall : struct
         {
             int zversion = cc.Context.ZEnvironment.ZVersion;
@@ -312,56 +305,58 @@ namespace Zilf.Compiler.Builtins
                     .Select((a, oidx) => new { a, oidx })
                     .Where(p => p.a.Type == BuiltinArgType.NeedsEval)
                     .ToArray();
-            var needEvalExprs = Array.ConvertAll(needEval, p => (ZilObject)p.a.Value);
+            var needEvalExprs = Array.ConvertAll(needEval, p => (ZilObject)p.a.Value!);
 
             // generate code for arguments
             Debug.Assert(form.SourceLine != null, "form.SourceLine != null");
-            using (var operands = cc.CompileOperands(rb, form.SourceLine, needEvalExprs))
-            {
-                // update validatedArgs with the evaluated operands
-                for (int i = 0; i < operands.Count; i++)
-                {
-                    Debug.Assert(needEval[i] != null);
-                    var oidx = needEval[i].oidx;
-                    validatedArgs[oidx] = new BuiltinArg(BuiltinArgType.Operand, operands[i]);
-                }
+            using var operands = cc.CompileOperands(rb, form.SourceLine, needEvalExprs);
 
-                // call the spec method to generate code for the builtin
-                var builtinParams = MakeBuiltinMethodParams(spec, builtinParamInfos, call, validatedArgs);
-                try
-                {
-                    var result = spec.Method.Invoke(null, builtinParams.ToArray());
-                    return result;
-                }
-                catch (TargetInvocationException ex) when (ex.InnerException is ZilErrorBase zex)
-                {
-                    ExceptionDispatchInfo.Capture(zex).Throw();
-                    // ReSharper disable once HeuristicUnreachableCode
-                    throw new UnreachableCodeException();
-                }
+            // update validatedArgs with the evaluated operands
+            for (int i = 0; i < operands.Count; i++)
+            {
+                Debug.Assert(needEval[i] != null);
+                var oidx = needEval[i].oidx;
+                validatedArgs[oidx] = new BuiltinArg(BuiltinArgType.Operand, operands[i]);
+            }
+
+            // call the spec method to generate code for the builtin
+            var builtinParams = MakeBuiltinMethodParams(spec, builtinParamInfos, call, validatedArgs);
+            try
+            {
+                return spec.Method.Invoke(null, builtinParams.ToArray()) as IOperand;
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is ZilErrorBase zex)
+            {
+                ExceptionDispatchInfo.Capture(zex).Throw();
+                // ReSharper disable once HeuristicUnreachableCode
+                throw new UnreachableCodeException();
             }
         }
 
-        [NotNull]
-        public static IOperand CompileValueCall([NotNull] string name, [NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form,
-            [CanBeNull] IVariable resultStorage)
+        public static IOperand CompileValueCall(string name, Compilation cc, IRoutineBuilder rb, ZilForm form,
+            IVariable? resultStorage)
         {
-            return (IOperand)CompileBuiltinCall(name, cc, rb, form,
+            var result = CompileBuiltinCall(name,
+                cc,
+                rb,
+                form,
                 new ValueCall(cc, rb, form, resultStorage ?? rb.Stack));
+            Debug.Assert(result != null);
+            return result;
         }
 
-        public static void CompileVoidCall([NotNull] string name, [NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form)
+        public static void CompileVoidCall(string name, Compilation cc, IRoutineBuilder rb, ZilForm form)
         {
             CompileBuiltinCall(name, cc, rb, form, new VoidCall(cc, rb, form));
         }
 
-        public static void CompilePredCall([NotNull] string name, [NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, [NotNull] ILabel label, bool polarity)
+        public static void CompilePredCall(string name, Compilation cc, IRoutineBuilder rb, ZilForm form, ILabel label, bool polarity)
         {
             CompileBuiltinCall(name, cc, rb, form, new PredCall(cc, rb, form, label, polarity));
         }
 
-        public static void CompileValuePredCall([NotNull] string name, [NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form,
-            [CanBeNull] IVariable resultStorage, [NotNull] ILabel label, bool polarity)
+        public static void CompileValuePredCall(string name, Compilation cc, IRoutineBuilder rb, ZilForm form,
+            IVariable? resultStorage, ILabel label, bool polarity)
         {
             CompileBuiltinCall(name, cc, rb, form,
                 new ValuePredCall(cc, rb, form, resultStorage ?? rb.Stack, label, polarity));
@@ -376,8 +371,8 @@ namespace Zilf.Compiler.Builtins
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [Builtin("EQUAL?", "=?", "==?")]
         public static void VarargsEqualityOp(
-            PredCall c, [NotNull] IOperand arg1, [NotNull] IOperand arg2,
-            [ItemNotNull] [NotNull] params IOperand[] restOfArgs)
+            PredCall c, IOperand arg1, IOperand arg2,
+              params IOperand[] restOfArgs)
         {
             if (arg1 is INumericOperand num1)
             {
@@ -451,7 +446,7 @@ namespace Zilf.Compiler.Builtins
             }
             else
             {
-                ZilAtom tempAtom = null;
+                ZilAtom? tempAtom = null;
                 if (arg1 == c.rb.Stack)
                 {
                     tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
@@ -520,8 +515,8 @@ namespace Zilf.Compiler.Builtins
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [Builtin("N=?", "N==?")]
         public static void NegatedVarargsEqualityOp(
-            PredCall c, [NotNull] IOperand arg1, [NotNull] IOperand arg2,
-            [NotNull] params IOperand[] restOfArgs)
+            PredCall c, IOperand arg1, IOperand arg2,
+             params IOperand[] restOfArgs)
         {
             var innerCall = new PredCall(c.cc, c.rb, c.form, c.label, !c.polarity);
             VarargsEqualityOp(innerCall, arg1, arg2, restOfArgs);
@@ -539,7 +534,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("WINSIZE", Data = TernaryOp.WindowSize, MinVersion = 6, HasSideEffect = true)]
         public static void TernaryVoidOp(
             VoidCall c, [Data] TernaryOp op,
-            [NotNull] IOperand left, [NotNull] IOperand center, [NotNull] IOperand right)
+             IOperand left, IOperand center, IOperand right)
         {
             c.rb.EmitTernary(op, left, center, right, null);
         }
@@ -548,7 +543,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("WINATTR", Data = TernaryOp.WindowStyle, MinVersion = 6, HasSideEffect = true)]
         public static void TernaryOptionalVoidOp(
             VoidCall c, [Data] TernaryOp op,
-            [NotNull] IOperand left, [NotNull] IOperand center, [CanBeNull] IOperand right = null)
+             IOperand left, IOperand center, IOperand? right = null)
         {
             c.rb.EmitTernary(op, left, center, right ?? c.cc.Game.Zero, null);
         }
@@ -557,7 +552,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("PUTB", Data = TernaryOp.PutByte, HasSideEffect = true)]
         public static void TernaryTableVoidOp(
             VoidCall c, [Data] TernaryOp op,
-            [Table][NotNull] IOperand left, [NotNull] IOperand center, [NotNull] IOperand right)
+            [Table] IOperand left, IOperand center, IOperand right)
         {
             c.rb.EmitTernary(op, left, center, right, null);
         }
@@ -565,7 +560,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("PUTP", Data = TernaryOp.PutProperty, HasSideEffect = true)]
         public static void TernaryObjectVoidOp(
             VoidCall c, [Data] TernaryOp op,
-            [Object][NotNull] IOperand left, [NotNull] IOperand center, [NotNull] IOperand right)
+            [Object] IOperand left, IOperand center, IOperand right)
         {
             c.rb.EmitTernary(op, left, center, right, null);
         }
@@ -573,7 +568,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("COPYT", Data = TernaryOp.CopyTable, HasSideEffect = true, MinVersion = 5)]
         public static void TernaryTableTableVoidOp(
             VoidCall c, [Data] TernaryOp op,
-            [Table][NotNull] IOperand left, [Table][NotNull] IOperand center, [NotNull] IOperand right)
+            [Table] IOperand left, [Table] IOperand center, IOperand right)
         {
             c.rb.EmitTernary(op, left, center, right, null);
         }
@@ -586,9 +581,8 @@ namespace Zilf.Compiler.Builtins
         [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5)]
         [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5)]
         [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6)]
-        [NotNull]
         public static IOperand BinaryValueOp(
-            ValueCall c, [Data] BinaryOp op, [NotNull] IOperand left, [NotNull] IOperand right)
+            ValueCall c, [Data] BinaryOp op, IOperand left, IOperand right)
         {
             if (left is INumericOperand nleft && right is INumericOperand nright)
             {
@@ -613,8 +607,7 @@ namespace Zilf.Compiler.Builtins
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("XORB")]
-        [NotNull]
-        public static IOperand BinaryXorOp(ValueCall c, [NotNull] ZilObject left, [NotNull] ZilObject right)
+        public static IOperand BinaryXorOp(ValueCall c, ZilObject left, ZilObject right)
         {
             ZilObject value;
             if (left is ZilFix lf && lf.Value == -1)
@@ -640,7 +633,6 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [NotNull]
         [Builtin("ADD", "+", Data = BinaryOp.Add)]
         [Builtin("SUB", "-", Data = BinaryOp.Sub)]
         [Builtin("MUL", "*", Data = BinaryOp.Mul)]
@@ -648,7 +640,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("BAND", "ANDB", Data = BinaryOp.And)]
         [Builtin("BOR", "ORB", Data = BinaryOp.Or)]
         public static IOperand ArithmeticOp(
-            ValueCall c, [Data] BinaryOp op, [ItemNotNull] [NotNull] params IOperand[] args)
+            ValueCall c, [Data] BinaryOp op, params IOperand[] args)
         {
             GetArithmeticInfo(op, out var initialValue, out var operation, out var compileUnary);
 
@@ -679,17 +671,19 @@ namespace Zilf.Compiler.Builtins
                     {
                         c.rb.EmitBinary(op, c.rb.Stack, args[i], c.rb.Stack);
                     }
-                    c.rb.EmitBinary(op, c.rb.Stack, args[args.Length - 1], c.resultStorage);
+                    c.rb.EmitBinary(op, c.rb.Stack, args[^1], c.resultStorage);
                     return c.resultStorage;
             }
         }
 
         static void GetArithmeticInfo(BinaryOp op, out short initialValue,
-            [NotNull] out Func<short, short, short> operation,
-            [NotNull] out Func<ValueCall, IOperand, IOperand, IOperand> compileUnary)
+            out Func<short, short, short> operation,
+            out Func<ValueCall, IOperand, IOperand, IOperand> compileUnary)
         {
             // a delegate implementing the actual arithmetic operation
+#pragma warning disable IDE0066 // Convert switch statement to expression
             switch (op)
+#pragma warning restore IDE0066 // Convert switch statement to expression
             {
                 case BinaryOp.Add:
                     operation = (a, b) => (short)(a + b);
@@ -715,22 +709,17 @@ namespace Zilf.Compiler.Builtins
 
             // the initial value, which is returned as-is if there are no args,
             // or possibly combined with the single arg if there's only one
-            switch (op)
+            initialValue = (short)(op switch
             {
-                case BinaryOp.Mul:
-                case BinaryOp.Div:
-                    initialValue = 1;
-                    break;
-                case BinaryOp.And:
-                    initialValue = -1;
-                    break;
-                default:
-                    initialValue = 0;
-                    break;
-            }
+                BinaryOp.Mul => 1,
+                BinaryOp.Div => 1,
+                BinaryOp.And => -1,
+                _ => 0
+            });
 
             // another delegate describing how to combine the initial value
             // with the single arg in that case
+            // ReSharper disable once ConvertSwitchStatementToSwitchExpression
             switch (op)
             {
                 case BinaryOp.Add:
@@ -762,9 +751,8 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        [CanBeNull]
-        static IOperand FoldConstantArithmetic([NotNull] Compilation cc, short init, [NotNull] Func<short, short, short> op,
-            [ItemNotNull] [NotNull] IOperand[] args)
+        static IOperand? FoldConstantArithmetic(Compilation cc, short init, Func<short, short, short> op,
+            IOperand[] args)
         {
             // make sure all args are constants
             foreach (var arg in args)
@@ -782,7 +770,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("BAND", "ANDB")]
-        public static void BinaryAndPredOp(PredCall c, [NotNull] IOperand left, [NotNull] IOperand right)
+        public static void BinaryAndPredOp(PredCall c, IOperand left, IOperand right)
         {
             var nleft = left as INumericOperand;
             var nright = right as INumericOperand;
@@ -810,14 +798,14 @@ namespace Zilf.Compiler.Builtins
                 }
                 else
                 {
-                    constant = nright;
+                    constant = nright!;
                     variable = left;
                 }
 
                 if (constant.Value == 0)
                 {
                     // always false
-                    if (c.polarity == false)
+                    if (!c.polarity)
                         c.rb.Branch(c.label);
 
                     return;
@@ -836,8 +824,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("REST", "ZREST")]
-        [NotNull]
-        public static IOperand RestOp(ValueCall c, [NotNull] IOperand left, [CanBeNull] IOperand right = null)
+        public static IOperand RestOp(ValueCall c, IOperand left, IOperand? right = null)
         {
             // if left and right are constants, we can add them at assembly time
             if (left is IConstantOperand lconst)
@@ -856,8 +843,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("BACK", "ZBACK")]
-        [NotNull]
-        public static IOperand BackOp(ValueCall c, [NotNull] IOperand left, [CanBeNull] IOperand right = null)
+        public static IOperand BackOp(ValueCall c, IOperand left, IOperand? right = null)
         {
             return ArithmeticOp(c, BinaryOp.Sub, left, right ?? c.cc.Game.One);
         }
@@ -868,14 +854,14 @@ namespace Zilf.Compiler.Builtins
         [Builtin("THROW", Data = BinaryOp.Throw, MinVersion = 5, HasSideEffect = true)]
         [Builtin("SCROLL", Data = BinaryOp.ScrollWindow, MinVersion = 6, HasSideEffect = true)]
         public static void BinaryVoidOp(
-            VoidCall c, [Data] BinaryOp op, [NotNull] IOperand left, [NotNull] IOperand right)
+            VoidCall c, [Data] BinaryOp op, IOperand left, IOperand right)
         {
             c.rb.EmitBinary(op, left, right, null);
         }
 
         [Builtin("CURSET", MinVersion = 6, HasSideEffect = true)]
-        public static void CursetVoidOp(VoidCall c, [NotNull] IOperand line, [CanBeNull] IOperand column = null,
-            [CanBeNull] IOperand window = null)
+        public static void CursetVoidOp(VoidCall c, IOperand line, IOperand? column = null,
+            IOperand? window = null)
         {
             if (window != null)
             {
@@ -892,25 +878,17 @@ namespace Zilf.Compiler.Builtins
         [Builtin("LESS?", "L?", Data = Condition.Less)]
         [Builtin("BTST", Data = Condition.TestBits)]
         public static void BinaryPredOp(
-            PredCall c, [Data] Condition cond, [NotNull] IOperand left, [NotNull] IOperand right)
+            PredCall c, [Data] Condition cond, IOperand left, IOperand right)
         {
             if (left is INumericOperand nleft && right is INumericOperand nright)
             {
-                bool branch;
-                switch (cond)
+                var branch = cond switch
                 {
-                    case Condition.Greater:
-                        branch = nleft.Value > nright.Value;
-                        break;
-                    case Condition.Less:
-                        branch = nleft.Value < nright.Value;
-                        break;
-                    case Condition.TestBits:
-                        branch = (nleft.Value & nright.Value) == nright.Value;
-                        break;
-                    default:
-                        throw UnhandledCaseException.FromEnum(cond);
-                }
+                    Condition.Greater => (nleft.Value > nright.Value),
+                    Condition.Less => (nleft.Value < nright.Value),
+                    Condition.TestBits => ((nleft.Value & nright.Value) == nright.Value),
+                    _ => throw UnhandledCaseException.FromEnum(cond)
+                };
 
                 if (branch == c.polarity)
                     c.rb.Branch(c.label);
@@ -923,7 +901,7 @@ namespace Zilf.Compiler.Builtins
 
         [Builtin("MENU", MinVersion = 6, HasSideEffect = true)]
         public static void BinaryMenuOp(
-            PredCall c, [NotNull] IOperand menuId, [Table][NotNull] IOperand table)
+            PredCall c, IOperand menuId, [Table] IOperand table)
         {
             c.rb.Branch(Condition.MakeMenu, menuId, table, c.label, c.polarity);
         }
@@ -931,7 +909,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("L=?", Data = Condition.Greater)]
         [Builtin("G=?", Data = Condition.Less)]
         public static void NegatedBinaryPredOp(
-            PredCall c, [Data] Condition cond, [NotNull] IOperand left, [NotNull] IOperand right)
+            PredCall c, [Data] Condition cond, IOperand left, IOperand right)
         {
             BinaryPredOp(new PredCall(c.cc, c.rb, c.form, c.label, !c.polarity), cond, left, right);
         }
@@ -939,14 +917,14 @@ namespace Zilf.Compiler.Builtins
         [Builtin("DLESS?", Data = Condition.DecCheck, HasSideEffect = true)]
         [Builtin("IGRTR?", Data = Condition.IncCheck, HasSideEffect = true)]
         public static void BinaryVariablePredOp(
-            PredCall c, [Data] Condition cond, [Variable(QuirksMode = QuirksMode.Both)][NotNull] IVariable left, [NotNull] IOperand right)
+            PredCall c, [Data] Condition cond, [Variable(VariableScopeQuirks = VariableScopeQuirks.Both)] IVariable left, IOperand right)
         {
             c.cc.MarkVariableAsReadAndWritten(left);
             c.rb.Branch(cond, left, right, c.label, c.polarity);
         }
 
         [Builtin("PICINF", MinVersion = 6, HasSideEffect = true)]
-        public static void PicinfPredOp(PredCall c, [NotNull] IOperand left, [Table][NotNull] IOperand right)
+        public static void PicinfPredOp(PredCall c, IOperand left, [Table] IOperand right)
         {
             c.rb.Branch(Condition.PictureData, left, right, c.label, c.polarity);
         }
@@ -954,7 +932,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("DLESS?", Data = Condition.Less, HasSideEffect = true)]
         [Builtin("IGRTR?", Data = Condition.Greater, HasSideEffect = true)]
         public static void BinaryVariablePredOp(
-            PredCall c, [Data] Condition cond, [Variable][NotNull] SoftGlobal left, [NotNull] IOperand right)
+            PredCall c, [Data] Condition cond, [Variable] SoftGlobal left, IOperand right)
         {
             Debug.Assert(c.cc.SoftGlobalsTable != null, "c.cc.SoftGlobalsTable != null");
 
@@ -988,9 +966,8 @@ namespace Zilf.Compiler.Builtins
 
         [Builtin("GETP", Data = BinaryOp.GetProperty)]
         [Builtin("NEXTP", Data = BinaryOp.GetNextProp)]
-        [NotNull]
         public static IOperand BinaryObjectValueOp(
-            ValueCall c, [Data] BinaryOp op, [Object][NotNull] IOperand left, [NotNull] IOperand right)
+            ValueCall c, [Data] BinaryOp op, [Object] IOperand left, IOperand right)
         {
             c.rb.EmitBinary(op, left, right, c.resultStorage);
             return c.resultStorage;
@@ -999,37 +976,36 @@ namespace Zilf.Compiler.Builtins
         [Builtin("FSET", Data = BinaryOp.SetFlag, HasSideEffect = true)]
         [Builtin("FCLEAR", Data = BinaryOp.ClearFlag, HasSideEffect = true)]
         public static void BinaryObjectVoidOp(
-            VoidCall c, [Data] BinaryOp op, [Object][NotNull] IOperand left, [NotNull] IOperand right)
+            VoidCall c, [Data] BinaryOp op, [Object] IOperand left, IOperand right)
         {
             c.rb.EmitBinary(op, left, right, null);
         }
 
         [Builtin("FSET?", Data = Condition.TestAttr)]
         public static void BinaryObjectPredOp(
-            PredCall c, [Data] Condition cond, [Object][NotNull] IOperand left, [NotNull] IOperand right)
+            PredCall c, [Data] Condition cond, [Object] IOperand left, IOperand right)
         {
             c.rb.Branch(cond, left, right, c.label, c.polarity);
         }
 
         [Builtin("IN?", Data = Condition.Inside)]
         public static void BinaryObjectObjectPredOp(
-            PredCall c, [Data] Condition cond, [Object][NotNull] IOperand left, [Object][NotNull] IOperand right)
+            PredCall c, [Data] Condition cond, [Object] IOperand left, [Object] IOperand right)
         {
             c.rb.Branch(cond, left, right, c.label, c.polarity);
         }
 
         [Builtin("MOVE", Data = BinaryOp.MoveObject, HasSideEffect = true)]
         public static void BinaryObjectObjectVoidOp(
-            VoidCall c, [Data] BinaryOp op, [Object][NotNull] IOperand left, [Object][NotNull] IOperand right)
+            VoidCall c, [Data] BinaryOp op, [Object] IOperand left, [Object] IOperand right)
         {
             c.rb.EmitBinary(op, left, right, null);
         }
 
         [Builtin("GETPT", Data = BinaryOp.GetPropAddress)]
         [return: Table]
-        [NotNull]
         public static IOperand BinaryObjectToTableValueOp(
-            ValueCall c, [Data] BinaryOp op, [Object][NotNull] IOperand left, [NotNull] IOperand right)
+            ValueCall c, [Data] BinaryOp op, [Object] IOperand left, IOperand right)
         {
             c.rb.EmitBinary(op, left, right, c.resultStorage);
             return c.resultStorage;
@@ -1037,9 +1013,8 @@ namespace Zilf.Compiler.Builtins
 
         [Builtin("GET", "NTH", "ZGET", Data = BinaryOp.GetWord)]
         [Builtin("GETB", Data = BinaryOp.GetByte)]
-        [NotNull]
         public static IOperand BinaryTableValueOp(
-            ValueCall c, [Data] BinaryOp op, [Table][NotNull] IOperand left, [NotNull] IOperand right)
+            ValueCall c, [Data] BinaryOp op, [Table] IOperand left, IOperand right)
         {
             c.rb.EmitBinary(op, left, right, c.resultStorage);
             return c.resultStorage;
@@ -1053,9 +1028,8 @@ namespace Zilf.Compiler.Builtins
         [Builtin("RANDOM", "ZRANDOM", Data = UnaryOp.Random, HasSideEffect = true)]
         [Builtin("FONT", Data = UnaryOp.SetFont, MinVersion = 5, HasSideEffect = true)]
         [Builtin("CHECKU", Data = UnaryOp.CheckUnicode, MinVersion = 5)]
-        [NotNull]
         public static IOperand UnaryValueOp(
-            ValueCall c, [Data] UnaryOp op, [NotNull] IOperand value)
+            ValueCall c, [Data] UnaryOp op, IOperand value)
         {
             if (op == UnaryOp.Not && value is INumericOperand num)
             {
@@ -1076,13 +1050,13 @@ namespace Zilf.Compiler.Builtins
         [Builtin("ERASE", Data = UnaryOp.EraseLine, MinVersion = 4, HasSideEffect = true)]
         [Builtin("MOUSE-LIMIT", Data = UnaryOp.MouseWindow, MinVersion = 6, HasSideEffect = true)]
         public static void UnaryVoidOp(
-            VoidCall c, [Data] UnaryOp op, [NotNull] IOperand value)
+            VoidCall c, [Data] UnaryOp op, IOperand value)
         {
             c.rb.EmitUnary(op, value, null);
         }
 
         [Builtin("ZERO?", "0?")]
-        public static void ZeroPredOp(PredCall c, [NotNull] IOperand value)
+        public static void ZeroPredOp(PredCall c, IOperand value)
         {
             if (value is INumericOperand num)
             {
@@ -1096,7 +1070,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("1?")]
-        public static void OnePredOp(PredCall c, [NotNull] IOperand value)
+        public static void OnePredOp(PredCall c, IOperand value)
         {
             if (value is INumericOperand num)
             {
@@ -1110,9 +1084,8 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("LOC", Data = UnaryOp.GetParent)]
-        [NotNull]
         public static IOperand UnaryObjectValueOp(
-            ValueCall c, [Data] UnaryOp op, [Object][NotNull] IOperand obj)
+            ValueCall c, [Data] UnaryOp op, [Object] IOperand obj)
         {
             c.rb.EmitUnary(op, obj, c.resultStorage);
             return c.resultStorage;
@@ -1121,7 +1094,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("FIRST?", Data = false)]
         [Builtin("NEXT?", Data = true)]
         public static void UnaryObjectValuePredOp(
-            ValuePredCall c, [Data] bool sibling, [Object][NotNull] IOperand obj)
+            ValuePredCall c, [Data] bool sibling, [Object] IOperand obj)
         {
             if (sibling)
                 c.rb.EmitGetSibling(obj, c.resultStorage, c.label, c.polarity);
@@ -1130,9 +1103,8 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("PTSIZE", Data = UnaryOp.GetPropSize)]
-        [NotNull]
         public static IOperand UnaryTableValueOp(
-            ValueCall c, [Data] UnaryOp op, [Table][NotNull] IOperand value)
+            ValueCall c, [Data] UnaryOp op, [Table] IOperand value)
         {
             c.rb.EmitUnary(op, value, c.resultStorage);
             return c.resultStorage;
@@ -1140,14 +1112,14 @@ namespace Zilf.Compiler.Builtins
 
         [Builtin("REMOVE", "ZREMOVE", Data = UnaryOp.RemoveObject, HasSideEffect = true)]
         public static void UnaryObjectVoidOp(
-            VoidCall c, [Data] UnaryOp op, [Object][NotNull] IOperand value)
+            VoidCall c, [Data] UnaryOp op, [Object] IOperand value)
         {
             c.rb.EmitUnary(op, value, null);
         }
 
         [Builtin("ASSIGNED?", Data = Condition.ArgProvided, MinVersion = 5)]
         public static void UnaryVariablePredOp(
-            PredCall c, [Data] Condition cond, [Variable][NotNull] IVariable var)
+            PredCall c, [Data] Condition cond, [Variable] IVariable var)
         {
             c.cc.MarkVariableAsRead(var);
             c.rb.Branch(cond, var, null, c.label, c.polarity);
@@ -1155,7 +1127,7 @@ namespace Zilf.Compiler.Builtins
 
         [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "var")]
         [Builtin("ASSIGNED?", MinVersion = 5)]
-        public static void SoftGlobalAssignedOp(PredCall c, [Variable][NotNull] SoftGlobal var)
+        public static void SoftGlobalAssignedOp(PredCall c, [Variable] SoftGlobal var)
         {
             // globals are never "assigned" in this sense
             if (!c.polarity)
@@ -1167,7 +1139,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("MOUSE-INFO", Data = UnaryOp.ReadMouse, MinVersion = 6, HasSideEffect = true)]
         [Builtin("PRINTF", Data = UnaryOp.PrintForm, MinVersion = 6, HasSideEffect = true)]
         public static void UnaryTableVoidOp(
-            VoidCall c, [Data] UnaryOp op, [Table][NotNull] IOperand value)
+            VoidCall c, [Data] UnaryOp op, [Table] IOperand value)
         {
             c.rb.EmitUnary(op, value, null);
         }
@@ -1183,15 +1155,15 @@ namespace Zilf.Compiler.Builtins
         [Builtin("PRINTN", Data = PrintOp.Number, HasSideEffect = true)]
         [Builtin("PRINTU", Data = PrintOp.Unicode, HasSideEffect = true)]
         public static void UnaryPrintVoidOp(
-            VoidCall c, [Data] PrintOp op, [NotNull] IOperand value)
+            VoidCall c, [Data] PrintOp op, IOperand value)
         {
             c.rb.EmitPrint(op, value);
         }
 
         [Builtin("PRINTT", HasSideEffect = true)]
         public static void PrintTableOp(
-            VoidCall c, [Table] [NotNull] IOperand table, [NotNull] IOperand width,
-            [CanBeNull] IOperand height = null, [CanBeNull] IOperand skip = null)
+            VoidCall c, [Table] IOperand table, IOperand width,
+             IOperand? height = null, IOperand? skip = null)
         {
             c.rb.EmitPrintTable(table, width, height, skip);
         }
@@ -1199,7 +1171,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("PRINTI", Data = false, HasSideEffect = true)]
         [Builtin("PRINTR", Data = true, HasSideEffect = true)]
         public static void UnaryPrintStringOp(
-            VoidCall c, [Data] bool crlfRtrue, [NotNull] string text)
+            VoidCall c, [Data] bool crlfRtrue, string text)
         {
             c.rb.EmitPrint(text, crlfRtrue);
         }
@@ -1216,9 +1188,8 @@ namespace Zilf.Compiler.Builtins
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET", HasSideEffect = true)]
-        [NotNull]
         public static IOperand SetValueOp(
-            ValueCall c, [Variable(QuirksMode = QuirksMode.Local)] [NotNull] IVariable dest, [NotNull] ZilObject value)
+            ValueCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Local)]  IVariable dest, ZilObject value)
         {
             // in value context, we need to be able to return the newly set value,
             // so dest is IVariable. this means <SET <fancy-expression> value> isn't
@@ -1243,9 +1214,8 @@ namespace Zilf.Compiler.Builtins
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET", HasSideEffect = true)]
-        [NotNull]
         public static IOperand SetValueOp(
-            ValueCall c, [Variable(QuirksMode = QuirksMode.Local)] [NotNull] SoftGlobal dest, [NotNull] ZilObject value)
+            ValueCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Local)]  SoftGlobal dest, ZilObject value)
         {
             var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, c.rb.Stack);
 
@@ -1269,18 +1239,16 @@ namespace Zilf.Compiler.Builtins
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SETG", HasSideEffect = true)]
-        [NotNull]
         public static IOperand SetgValueOp(
-            ValueCall c, [Variable(QuirksMode = QuirksMode.Global)][NotNull] IVariable dest, [NotNull] ZilObject value)
+            ValueCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Global)] IVariable dest, ZilObject value)
         {
             return SetValueOp(c, dest, value);
         }
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SETG", HasSideEffect = true)]
-        [NotNull]
         public static IOperand SetgValueOp(
-            ValueCall c, [Variable(QuirksMode = QuirksMode.Global)][NotNull] SoftGlobal dest, [NotNull] ZilObject value)
+            ValueCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Global)] SoftGlobal dest, ZilObject value)
         {
             return SetValueOp(c, dest, value);
         }
@@ -1288,7 +1256,7 @@ namespace Zilf.Compiler.Builtins
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [Builtin("SET")]
         public static void SetVoidOp(
-            VoidCall c, [Variable(QuirksMode = QuirksMode.Local)][NotNull] IOperand dest, [NotNull] ZilObject value)
+            VoidCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Local)] IOperand dest, ZilObject value)
         {
             // in void context, we don't need to return the newly set value, so we
             // can support <SET <fancy-expression> value>.
@@ -1303,27 +1271,26 @@ namespace Zilf.Compiler.Builtins
             }
             else
             {
-                using (var operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, value))
+                using var operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, value);
+
+                if (dest == c.rb.Stack && operands[0] == c.rb.Stack)
                 {
-                    if (dest == c.rb.Stack && operands[0] == c.rb.Stack)
+                    var tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
+                    c.cc.PushInnerLocal(c.rb, tempAtom, LocalBindingType.CompilerTemporary, c.form.SourceLine);
+                    try
                     {
-                        var tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
-                        c.cc.PushInnerLocal(c.rb, tempAtom, LocalBindingType.CompilerTemporary, c.form.SourceLine);
-                        try
-                        {
-                            var tempLocal = c.cc.Locals[tempAtom].LocalBuilder;
-                            c.rb.EmitStore(tempLocal, operands[0]);
-                            c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, tempLocal, null);
-                        }
-                        finally
-                        {
-                            c.cc.PopInnerLocal(tempAtom);
-                        }
+                        var tempLocal = c.cc.Locals[tempAtom].LocalBuilder;
+                        c.rb.EmitStore(tempLocal, operands[0]);
+                        c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, tempLocal, null);
                     }
-                    else
+                    finally
                     {
-                        c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, operands[0], null);
+                        c.cc.PopInnerLocal(tempAtom);
                     }
+                }
+                else
+                {
+                    c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, operands[0], null);
                 }
             }
         }
@@ -1331,7 +1298,7 @@ namespace Zilf.Compiler.Builtins
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET")]
         public static void SetVoidOp(
-            VoidCall c, [Variable(QuirksMode = QuirksMode.Local)][NotNull] SoftGlobal dest, [NotNull] ZilObject value)
+            VoidCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Local)] SoftGlobal dest, ZilObject value)
         {
             Debug.Assert(c.cc.SoftGlobalsTable != null);
             c.rb.EmitTernary(
@@ -1345,7 +1312,7 @@ namespace Zilf.Compiler.Builtins
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [Builtin("SETG")]
         public static void SetgVoidOp(
-            VoidCall c, [Variable(QuirksMode = QuirksMode.Global)][NotNull] IOperand dest, [NotNull] ZilObject value)
+            VoidCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Global)] IOperand dest, ZilObject value)
         {
             SetVoidOp(c, dest, value);
         }
@@ -1353,7 +1320,7 @@ namespace Zilf.Compiler.Builtins
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SETG")]
         public static void SetgVoidOp(
-            VoidCall c, [Variable(QuirksMode = QuirksMode.Global)][NotNull] SoftGlobal dest, [NotNull] ZilObject value)
+            VoidCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Global)] SoftGlobal dest, ZilObject value)
         {
             SetVoidOp(c, dest, value);
         }
@@ -1361,7 +1328,7 @@ namespace Zilf.Compiler.Builtins
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET", HasSideEffect = true)]
         public static void SetPredOp(
-            PredCall c, [Variable(QuirksMode = QuirksMode.Local)][NotNull] IVariable dest, [NotNull] ZilObject value)
+            PredCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Local)] IVariable dest, ZilObject value)
         {
             // see note in SetValueOp regarding dest being IVariable
             c.cc.MarkVariableAsWritten(dest);
@@ -1371,16 +1338,15 @@ namespace Zilf.Compiler.Builtins
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SETG", HasSideEffect = true)]
         public static void SetgPredOp(
-            PredCall c, [Variable(QuirksMode = QuirksMode.Global)][NotNull] IVariable dest, [NotNull] ZilObject value)
+            PredCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Global)] IVariable dest, ZilObject value)
         {
             SetPredOp(c, dest, value);
         }
 
         [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
         [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
-        [NotNull]
         public static IOperand IncValueOp(ValueCall c, [Data] BinaryOp op,
-            [Variable(QuirksMode = QuirksMode.Both)][NotNull] IVariable victim)
+            [Variable(VariableScopeQuirks = VariableScopeQuirks.Both)] IVariable victim)
         {
             c.cc.MarkVariableAsReadAndWritten(victim);
             c.rb.EmitBinary(op, victim, c.cc.Game.One, victim);
@@ -1389,9 +1355,8 @@ namespace Zilf.Compiler.Builtins
 
         [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
         [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
-        [NotNull]
         public static IOperand IncValueOp(ValueCall c, [Data] BinaryOp op,
-            [Variable(QuirksMode = QuirksMode.Both)][NotNull] SoftGlobal victim)
+            [Variable(VariableScopeQuirks = VariableScopeQuirks.Both)] SoftGlobal victim)
         {
             var offset = c.cc.Game.MakeOperand(victim.Offset);
 
@@ -1416,7 +1381,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
         [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
         public static void IncVoidOp(VoidCall c, [Data] BinaryOp op,
-            [Variable(QuirksMode = QuirksMode.Both)][NotNull] IVariable victim)
+            [Variable(VariableScopeQuirks = VariableScopeQuirks.Both)] IVariable victim)
         {
             c.cc.MarkVariableAsReadAndWritten(victim);
             c.rb.EmitBinary(op, victim, c.cc.Game.One, victim);
@@ -1425,7 +1390,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
         [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
         public static void IncVoidOp(VoidCall c, [Data] BinaryOp op,
-            [Variable(QuirksMode = QuirksMode.Both)][NotNull] SoftGlobal victim)
+            [Variable(VariableScopeQuirks = VariableScopeQuirks.Both)] SoftGlobal victim)
         {
             var offset = c.cc.Game.MakeOperand(victim.Offset);
 
@@ -1446,20 +1411,19 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("PUSH", HasSideEffect = true)]
-        public static void PushVoidOp(VoidCall c, [NotNull] IOperand value)
+        public static void PushVoidOp(VoidCall c, IOperand value)
         {
             c.rb.EmitStore(c.rb.Stack, value);
         }
 
         [Builtin("XPUSH", MinVersion = 6, HasSideEffect = true)]
-        public static void XpushPredOp(PredCall c, [NotNull] IOperand value, [NotNull] IOperand stack)
+        public static void XpushPredOp(PredCall c, IOperand value, IOperand stack)
         {
             c.rb.EmitPushUserStack(value, stack, c.label, c.polarity);
         }
 
-        [NotNull]
         [Builtin("POP", MinVersion = 6, HasSideEffect = true)]
-        public static IOperand PopValueOp(ValueCall c, [CanBeNull] IOperand stack = null)
+        public static IOperand PopValueOp(ValueCall c, IOperand? stack = null)
         {
             if (stack == null)
                 c.rb.EmitStore(c.resultStorage, c.rb.Stack);
@@ -1470,7 +1434,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("FSTACK", MinVersion = 6, HasSideEffect = true)]
-        public static void FstackVoidOp(VoidCall c, [NotNull] IOperand count, [CanBeNull] IOperand stack = null)
+        public static void FstackVoidOp(VoidCall c, IOperand count, IOperand? stack = null)
         {
             if (stack == null)
                 c.rb.EmitUnary(UnaryOp.FlushStack, count, null);
@@ -1492,16 +1456,14 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("VALUE", Priority = 2)]
-        [NotNull]
-        public static IOperand ValueOp_Operand(ValueCall c, [Variable][NotNull] IOperand value)
+        public static IOperand ValueOp_Operand(ValueCall c, [Variable] IOperand value)
         {
             c.rb.EmitUnary(UnaryOp.LoadIndirect, value, c.resultStorage);
             return c.resultStorage;
         }
 
-        [NotNull]
         [Builtin("GVAL")]
-        public static IOperand GvalOp(ValueCall c, [NotNull] ZilAtom atom)
+        public static IOperand GvalOp(ValueCall c, ZilAtom atom)
         {
             // constant, global, object, or routine
             if (c.cc.Constants.TryGetValue(atom, out var operand))
@@ -1535,7 +1497,7 @@ namespace Zilf.Compiler.Builtins
                     "global",
                     atom,
                     "local"));
-                c.cc.MarkVariableAsRead(lbr);
+                Compilation.MarkVariableAsRead(lbr);
                 return lbr.LocalBuilder;
             }
 
@@ -1548,14 +1510,13 @@ namespace Zilf.Compiler.Builtins
             return c.cc.Game.Zero;
         }
 
-        [NotNull]
         [Builtin("LVAL")]
-        public static IOperand LvalOp(ValueCall c, [NotNull] ZilAtom atom)
+        public static IOperand LvalOp(ValueCall c, ZilAtom atom)
         {
             // local
             if (c.cc.Locals.TryGetValue(atom, out var lbr))
             {
-                c.cc.MarkVariableAsRead(lbr);
+                Compilation.MarkVariableAsRead(lbr);
                 return lbr.LocalBuilder;
             }
 
@@ -1620,7 +1581,6 @@ namespace Zilf.Compiler.Builtins
         [Builtin("CATCH", Data = NullaryOp.Catch, MinVersion = 5)]
         [Builtin("ISAVE", Data = NullaryOp.SaveUndo, HasSideEffect = true, MinVersion = 5)]
         [Builtin("IRESTORE", Data = NullaryOp.RestoreUndo, HasSideEffect = true, MinVersion = 5)]
-        [NotNull]
         public static IOperand NullaryValueOp(ValueCall c, [Data] NullaryOp op)
         {
             c.rb.EmitNullary(op, c.resultStorage);
@@ -1672,34 +1632,32 @@ namespace Zilf.Compiler.Builtins
         #region Input Opcodes
 
         [Builtin("READ", "ZREAD", MaxVersion = 3, HasSideEffect = true)]
-        public static void ReadOp_V3(VoidCall c, [NotNull] IOperand text, IOperand parse)
+        public static void ReadOp_V3(VoidCall c, IOperand text, IOperand parse)
         {
             c.rb.EmitRead(text, parse, null, null, null);
         }
 
         [Builtin("READ", "ZREAD", MinVersion = 4, MaxVersion = 4, HasSideEffect = true)]
-        public static void ReadOp_V4(VoidCall c, [NotNull] IOperand text, [NotNull] IOperand parse,
-            [CanBeNull] IOperand time = null, [CanBeNull] [Routine] IOperand routine = null)
+        public static void ReadOp_V4(VoidCall c, IOperand text, IOperand parse,
+            IOperand? time = null, [Routine] IOperand? routine = null)
         {
             c.rb.EmitRead(text, parse, time, routine, null);
         }
 
         [Builtin("READ", "ZREAD", MinVersion = 5, HasSideEffect = true)]
-        [NotNull]
-        public static IOperand ReadOp_V5(ValueCall c, [NotNull] IOperand text,
-            [CanBeNull] IOperand parse = null, [CanBeNull] IOperand time = null,
-            [CanBeNull] [Routine] IOperand routine = null)
+        public static IOperand ReadOp_V5(ValueCall c, IOperand text,
+            IOperand? parse = null, IOperand? time = null,
+             [Routine] IOperand? routine = null)
         {
             c.rb.EmitRead(text, parse, time, routine, c.resultStorage);
             return c.resultStorage;
         }
 
-        [NotNull]
         [Builtin("INPUT", MinVersion = 4, HasSideEffect = true)]
-        public static IOperand InputOp(ValueCall c, [NotNull] IOperand dummy,
-            [CanBeNull] IOperand interval = null, [CanBeNull] [Routine] IOperand routine = null)
+        public static IOperand InputOp(ValueCall c, IOperand dummy,
+            IOperand? interval = null, [Routine] IOperand? routine = null)
         {
-            if (c.form.StartsWith(out ZilObject _, out ZilFix fix) && fix.Value != 1)
+            if (c.form.StartsWith(out ZilObject _, out ZilFix? fix) && fix.Value != 1)
             {
                 return c.HandleMessage(
                     CompilerMessages._0_Argument_1_2,
@@ -1721,16 +1679,16 @@ namespace Zilf.Compiler.Builtins
         #region Sound Opcodes
 
         [Builtin("SOUND", MaxVersion = 4, HasSideEffect = true)]
-        public static void SoundOp_V3(VoidCall c, [NotNull] IOperand number,
-            [CanBeNull] IOperand effect = null, [CanBeNull] IOperand volume = null)
+        public static void SoundOp_V3(VoidCall c, IOperand number,
+            IOperand? effect = null, IOperand? volume = null)
         {
             c.rb.EmitPlaySound(number, effect, volume, null);
         }
 
         [Builtin("SOUND", MinVersion = 5, HasSideEffect = true)]
-        public static void SoundOp_V5(VoidCall c, [NotNull] IOperand number,
-            [CanBeNull] IOperand effect = null, [CanBeNull] IOperand volume = null,
-            [CanBeNull] [Routine] IOperand routine = null)
+        public static void SoundOp_V5(VoidCall c, IOperand number,
+            IOperand? effect = null, IOperand? volume = null,
+             [Routine] IOperand? routine = null)
         {
             c.rb.EmitPlaySound(number, effect, volume, routine);
         }
@@ -1741,16 +1699,16 @@ namespace Zilf.Compiler.Builtins
 
         [Builtin("ZWSTR", MinVersion = 5, HasSideEffect = true)]
         public static void EncodeTextOp(VoidCall c,
-            [Table][NotNull] IOperand src, [NotNull] IOperand length,
-            [NotNull] IOperand srcOffset, [Table][NotNull] IOperand dest)
+            [Table] IOperand src, IOperand length,
+             IOperand srcOffset, [Table] IOperand dest)
         {
             c.rb.EmitEncodeText(src, length, srcOffset, dest);
         }
 
         [Builtin("LEX", MinVersion = 5, HasSideEffect = true)]
         public static void LexOp(VoidCall c,
-            [Table][NotNull] IOperand text, [Table][NotNull] IOperand parse,
-            [CanBeNull] [Table] IOperand dictionary = null, [CanBeNull] IOperand flag = null)
+            [Table] IOperand text, [Table] IOperand parse,
+             [Table] IOperand? dictionary = null, IOperand? flag = null)
         {
             c.rb.EmitTokenize(text, parse, dictionary, flag);
         }
@@ -1774,7 +1732,6 @@ namespace Zilf.Compiler.Builtins
         }
 
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [NotNull]
         [Builtin("RESTORE", "ZRESTORE", MinVersion = 4, HasSideEffect = true)]
         public static IOperand RestoreOp_V4(ValueCall c)
         {
@@ -1788,9 +1745,8 @@ namespace Zilf.Compiler.Builtins
 
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
         [Builtin("RESTORE", "ZRESTORE", MinVersion = 5, HasSideEffect = true)]
-        [NotNull]
-        public static IOperand RestoreOp_V5(ValueCall c, [Table][NotNull] IOperand table,
-            [NotNull] IOperand bytes, [Table][NotNull] IOperand name)
+        public static IOperand RestoreOp_V5(ValueCall c, [Table] IOperand table,
+            IOperand bytes, [Table] IOperand name)
         {
             if (c.rb.HasExtendedSave)
             {
@@ -1815,7 +1771,6 @@ namespace Zilf.Compiler.Builtins
         }
 
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [NotNull]
         [Builtin("SAVE", "ZSAVE", MinVersion = 4, HasSideEffect = true)]
         public static IOperand SaveOp_V4(ValueCall c)
         {
@@ -1829,9 +1784,8 @@ namespace Zilf.Compiler.Builtins
 
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
         [Builtin("SAVE", "ZSAVE", MinVersion = 5, HasSideEffect = true)]
-        [NotNull]
-        public static IOperand SaveOp_V5(ValueCall c, [Table][NotNull] IOperand table,
-            [NotNull] IOperand bytes, [Table][NotNull] IOperand name)
+        public static IOperand SaveOp_V5(ValueCall c, [Table] IOperand table,
+            IOperand bytes, [Table] IOperand name)
         {
             if (c.rb.HasExtendedSave)
             {
@@ -1847,7 +1801,7 @@ namespace Zilf.Compiler.Builtins
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("RETURN", HasSideEffect = true)]
-        public static void ReturnOp(VoidCall c, [CanBeNull] ZilObject expr = null, Block block = null)
+        public static void ReturnOp(VoidCall c, ZilObject? expr = null, Block? block = null)
         {
             var origBlock = block;
 
@@ -1859,22 +1813,13 @@ namespace Zilf.Compiler.Builtins
             IOperand value;
 
             var quirkMode = c.cc.Context.ReturnQuirkMode;
-            bool preferRoutine;
-            switch (quirkMode)
+
+            var preferRoutine = quirkMode switch
             {
-                case ReturnQuirkMode.ByVersion:
-                    preferRoutine = c.cc.Context.ZEnvironment.ZVersion >= 5;
-                    break;
-
-                case ReturnQuirkMode.PreferRoutine:
-                    preferRoutine = true;
-                    break;
-
-                //case ReturnQuirkMode.PreferBlock:
-                default:
-                    preferRoutine = false;
-                    break;
-            }
+                ReturnQuirkMode.ByVersion => (c.cc.Context.ZEnvironment.ZVersion >= 5),
+                ReturnQuirkMode.PreferRoutine => true,
+                _ => false
+            };
 
             if (block.ReturnLabel == null || (expr != null && preferRoutine))
             {
@@ -1930,7 +1875,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("AGAIN", HasSideEffect = true)]
-        public static void AgainOp(VoidCall c, Block block = null)
+        public static void AgainOp(VoidCall c, Block? block = null)
         {
             if (block == null)
             {
@@ -1948,9 +1893,8 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("APPLY", "CALL", "ZAPPLY", HasSideEffect = true)]
-        [NotNull]
         public static IOperand CallValueOp(ValueCall c,
-            [Routine][NotNull] IOperand routine, [NotNull] params IOperand[] args)
+            [Routine] IOperand routine, params IOperand[] args)
         {
             if (args.Length > c.cc.Game.MaxCallArguments)
             {
@@ -1965,7 +1909,7 @@ namespace Zilf.Compiler.Builtins
 
         [Builtin("APPLY", "CALL", MinVersion = 5, HasSideEffect = true)]
         public static void CallVoidOp(VoidCall c,
-            [Routine][NotNull] IOperand routine, [NotNull] params IOperand[] args)
+            [Routine] IOperand routine, params IOperand[] args)
         {
             if (args.Length > c.cc.Game.MaxCallArguments)
             {
@@ -1985,7 +1929,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4)]
         [return: Table]
         public static void IntblValuePredOp_V4(ValuePredCall c,
-            [NotNull] IOperand value, [Table][NotNull] IOperand table, [NotNull] IOperand length)
+            IOperand value, [Table] IOperand table, IOperand length)
         {
             c.rb.EmitScanTable(value, table, length, null, c.resultStorage, c.label, c.polarity);
         }
@@ -1993,12 +1937,12 @@ namespace Zilf.Compiler.Builtins
         [Builtin("INTBL?", MinVersion = 5)]
         [return: Table]
         public static void IntblValuePredOp_V5(ValuePredCall c,
-            [NotNull] IOperand value, [Table][NotNull] IOperand table, [NotNull] IOperand length, [CanBeNull] IOperand form = null)
+            IOperand value, [Table] IOperand table, IOperand length, IOperand? form = null)
         {
             c.rb.EmitScanTable(value, table, length, form, c.resultStorage, c.label, c.polarity);
         }
 
-        static bool TryGetLowCoreField([NotNull] string name, [NotNull] Context ctx, [NotNull] ISourceLine src, [NotNull] ZilObject fieldSpec, bool writing,
+        static bool TryGetLowCoreField(string name, Context ctx, ISourceLine src, ZilObject fieldSpec, bool writing,
             out int offset, out LowCoreFlags flags, out int minVersion)
         {
             offset = 0;
@@ -2038,7 +1982,7 @@ namespace Zilf.Compiler.Builtins
                     return false;
                 }
 
-                atom = list.First as ZilAtom;
+                atom = (list.First as ZilAtom)!;
                 if (atom == null)
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_First_List_Element_Must_Be_An_Atom, name));
@@ -2085,8 +2029,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("LOWCORE")]
-        [NotNull]
-        public static IOperand LowCoreReadOp(ValueCall c, [NotNull] ZilObject fieldSpec)
+        public static IOperand LowCoreReadOp(ValueCall c, ZilObject fieldSpec)
         {
             if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out var offset, out var flags, out _))
                 return c.cc.Game.Zero;
@@ -2108,7 +2051,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("LOWCORE", HasSideEffect = true)]
-        public static void LowCoreWriteOp(VoidCall c, [NotNull] ZilObject fieldSpec, [NotNull] IOperand newValue)
+        public static void LowCoreWriteOp(VoidCall c, ZilObject fieldSpec, IOperand newValue)
         {
             if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, true, out var offset, out var flags, out _))
                 return;
@@ -2129,7 +2072,7 @@ namespace Zilf.Compiler.Builtins
 
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [Builtin("LOWCORE-TABLE", HasSideEffect = true)]
-        public static void LowCoreTableOp(VoidCall c, [NotNull] ZilObject fieldSpec, int length, [NotNull] ZilAtom handler)
+        public static void LowCoreTableOp(VoidCall c, ZilObject fieldSpec, int length, ZilAtom handler)
         {
             if (!TryGetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out var offset, out var flags, out _))
                 return;
@@ -2159,11 +2102,10 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        [NotNull]
         [Builtin("ITABLE")]
         [Builtin("TABLE", "PTABLE", "LTABLE", "PLTABLE")]
         [return: Table]
-        public static IOperand TableOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] args)
+        public static IOperand TableOp(ValueCall c, params ZilObject[] args)
         {
             var table = (ZilTable)c.form.Eval(c.cc.Context);
             var tableBuilder = c.cc.Game.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0);
@@ -2175,22 +2117,21 @@ namespace Zilf.Compiler.Builtins
 
         #region Logical & Loop Builtins
 
-        [NotNull]
         [Builtin("PROG", Data = StdAtom.PROG)]
         [Builtin("REPEAT", Data = StdAtom.REPEAT)]
         [Builtin("BIND", Data = StdAtom.BIND)]
-        public static IOperand ProgValueOp(ValueCall c, [Data] StdAtom mode, [NotNull] [ItemNotNull] params ZilObject[] args)
+        public static IOperand ProgValueOp(ValueCall c, [Data] StdAtom mode, params ZilObject[] args)
         {
             bool repeat = mode == StdAtom.REPEAT;
             bool catchy = mode != StdAtom.BIND;
             var (_, progBody) = c.form;
-            return c.cc.CompilePROG(c.rb, progBody, c.form.SourceLine, true, c.resultStorage, mode.ToString(), repeat, catchy);
+            return c.cc.CompilePROG(c.rb, progBody, c.form.SourceLine, true, c.resultStorage, mode.ToString(), repeat, catchy)!;
         }
 
         [Builtin("PROG", Data = StdAtom.PROG)]
         [Builtin("REPEAT", Data = StdAtom.REPEAT)]
         [Builtin("BIND", Data = StdAtom.BIND)]
-        public static void ProgVoidOp(VoidCall c, [Data] StdAtom mode, [NotNull] [ItemNotNull] params ZilObject[] args)
+        public static void ProgVoidOp(VoidCall c, [Data] StdAtom mode, params ZilObject[] args)
         {
             bool repeat = mode == StdAtom.REPEAT;
             bool catchy = mode != StdAtom.BIND;
@@ -2198,11 +2139,10 @@ namespace Zilf.Compiler.Builtins
             c.cc.CompilePROG(c.rb, progBody, c.form.SourceLine, false, null, mode.ToString(), repeat, catchy);
         }
 
-        [NotNull]
         [Builtin("NOT", Data = false)]
         [Builtin("F?", Data = false)]
         [Builtin("T?", Data = true)]
-        public static IOperand TrueFalseValueOp(ValueCall c, [Data] bool polarity, [NotNull] ZilObject condition)
+        public static IOperand TrueFalseValueOp(ValueCall c, [Data] bool polarity, ZilObject condition)
         {
             var label1 = c.rb.DefineLabel();
             var label2 = c.rb.DefineLabel();
@@ -2218,23 +2158,22 @@ namespace Zilf.Compiler.Builtins
         [Builtin("NOT", Data = false)]
         [Builtin("F?", Data = false)]
         [Builtin("T?", Data = true)]
-        public static void TrueFalsePredOp(PredCall c, [Data] bool polarity, [NotNull] ZilObject condition)
+        public static void TrueFalsePredOp(PredCall c, [Data] bool polarity, ZilObject condition)
         {
             c.cc.CompileCondition(c.rb, condition, c.form.SourceLine, c.label, polarity == c.polarity);
         }
 
-        [NotNull]
         [Builtin("OR", Data = false)]
         [Builtin("AND", Data = true)]
-        public static IOperand AndOrValueOp(ValueCall c, [Data] bool and, [NotNull] [ItemNotNull] params ZilObject[] args)
+        public static IOperand AndOrValueOp(ValueCall c, [Data] bool and, params ZilObject[] args)
         {
             Debug.Assert(c.form.Rest != null);
-            return c.cc.CompileBoolean(c.rb, c.form.Rest, c.form.SourceLine, and, true, c.resultStorage);
+            return c.cc.CompileBoolean(c.rb, c.form.Rest, c.form.SourceLine, and, true, c.resultStorage)!;
         }
 
         [Builtin("OR", Data = false)]
         [Builtin("AND", Data = true)]
-        public static void AndOrVoidOp(VoidCall c, [Data] bool and, [NotNull] [ItemNotNull] params ZilObject[] args)
+        public static void AndOrVoidOp(VoidCall c, [Data] bool and, params ZilObject[] args)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileBoolean(c.rb, c.form.Rest, c.form.SourceLine, and, false, null);
@@ -2242,96 +2181,90 @@ namespace Zilf.Compiler.Builtins
 
         [Builtin("OR", Data = false)]
         [Builtin("AND", Data = true)]
-        public static void AndOrPredOp(PredCall c, [Data] bool and, [NotNull] [ItemNotNull] params ZilObject[] args)
+        public static void AndOrPredOp(PredCall c, [Data] bool and, params ZilObject[] args)
         {
             c.cc.CompileBoolean(c.rb, args, c.form.SourceLine, and, c.label, c.polarity);
         }
 
-        [NotNull]
         [Builtin("DO")]
-        public static IOperand DoLoopValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        public static IOperand DoLoopValueOp(ValueCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             return c.cc.CompileDO(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
         }
 
         [Builtin("DO")]
-        public static void DoLoopVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        public static void DoLoopVoidOp(VoidCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileDO(c.rb, c.form.Rest, c.form.SourceLine, false, null);
         }
 
-        [NotNull]
         [Builtin("MAP-CONTENTS")]
-        public static IOperand MapContentsValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        public static IOperand MapContentsValueOp(ValueCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             return c.cc.CompileMAP_CONTENTS(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
         }
 
         [Builtin("MAP-CONTENTS")]
-        public static void MapContentsVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        public static void MapContentsVoidOp(VoidCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileMAP_CONTENTS(c.rb, c.form.Rest, c.form.SourceLine, false, null);
         }
 
-        [NotNull]
         [Builtin("MAP-DIRECTIONS")]
-        public static IOperand MapDirectionsValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        public static IOperand MapDirectionsValueOp(ValueCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             return c.cc.CompileMAP_DIRECTIONS(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
         }
 
         [Builtin("MAP-DIRECTIONS")]
-        public static void MapDirectionsVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] body)
+        public static void MapDirectionsVoidOp(VoidCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileMAP_DIRECTIONS(c.rb, c.form.Rest, c.form.SourceLine, false, null);
         }
 
-        [NotNull]
         [Builtin("COND")]
-        public static IOperand CondValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        public static IOperand CondValueOp(ValueCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
-            return c.cc.CompileCOND(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
+            return c.cc.CompileCOND(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage)!;
         }
 
         [Builtin("COND")]
-        public static void CondVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        public static void CondVoidOp(VoidCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileCOND(c.rb, c.form.Rest, c.form.SourceLine, false, null);
         }
 
-        [NotNull]
         [Builtin("VERSION?")]
-        public static IOperand IfVersionValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        public static IOperand IfVersionValueOp(ValueCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
-            return c.cc.CompileVERSION_P(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
+            return c.cc.CompileVERSION_P(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage)!;
         }
 
         [Builtin("VERSION?")]
-        public static void IfVersionVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        public static void IfVersionVoidOp(VoidCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileVERSION_P(c.rb, c.form.Rest, c.form.SourceLine, false, null);
         }
 
-        [NotNull]
         [Builtin("IFFLAG")]
-        public static IOperand IfFlagValueOp(ValueCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        public static IOperand IfFlagValueOp(ValueCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
-            return c.cc.CompileIFFLAG(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
+            return c.cc.CompileIFFLAG(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage)!;
         }
 
         [Builtin("IFFLAG")]
-        public static void IfFlagVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] clauses)
+        public static void IfFlagVoidOp(VoidCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileIFFLAG(c.rb, c.form.Rest, c.form.SourceLine, false, null);
@@ -2340,15 +2273,14 @@ namespace Zilf.Compiler.Builtins
         #endregion
 
         [Builtin("CHTYPE")]
-        [NotNull]
-        public static IOperand ChtypeValueOp(ValueCall c, [NotNull] IOperand value, [NotNull] ZilAtom type)
+        public static IOperand ChtypeValueOp(ValueCall c, IOperand value, ZilAtom type)
         {
             // TODO: check type?
             return value;
         }
 
         [Builtin("TELL")]
-        public static void TellVoidOp(VoidCall c, [NotNull] [ItemNotNull] params ZilObject[] args)
+        public static void TellVoidOp(VoidCall c, params ZilObject[] args)
         {
             c.cc.CompileTell(c.rb, c.form.SourceLine, args);
         }

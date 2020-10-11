@@ -23,11 +23,9 @@ namespace Zilf.Language.Signatures
 {
     abstract class StructurePart : SignaturePart
     {
-        [ItemNotNull]
-        [NotNull]
         public IReadOnlyList<SignaturePart> Parts { get; }
 
-        protected StructurePart([ItemNotNull] [NotNull] IReadOnlyList<SignaturePart> parts)
+        protected StructurePart(IReadOnlyList<SignaturePart> parts)
         {
             Parts = parts;
         }

@@ -38,7 +38,7 @@ namespace Zilf.ZModel.Vocab.OldParser
         readonly Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
         readonly Dictionary<PartOfSpeech, ISourceLine> definitions = new Dictionary<PartOfSpeech, ISourceLine>(2);
 
-        public OldParserWord([NotNull] ZilAtom atom)
+        public OldParserWord(ZilAtom atom)
         {
             Atom = atom ?? throw new ArgumentNullException(nameof(atom));
         }
@@ -101,12 +101,12 @@ namespace Zilf.ZModel.Vocab.OldParser
             return sb.ToString();
         }
 
-        static bool IsNewVoc([NotNull] Context ctx)
+        static bool IsNewVoc(Context ctx)
         {
             return ctx.GetGlobalOption(StdAtom.NEW_VOC_P);
         }
 
-        static bool IsCompactVocab([NotNull] Context ctx)
+        static bool IsCompactVocab(Context ctx)
         {
             return ctx.GetGlobalOption(StdAtom.COMPACT_VOCABULARY_P);
         }
@@ -116,7 +116,7 @@ namespace Zilf.ZModel.Vocab.OldParser
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <returns>true if the new part of speech should set the First flag.</returns>
-        bool ShouldSetFirst([NotNull] Context ctx)
+        bool ShouldSetFirst(Context ctx)
         {
             // if no parts of speech are set yet, this is easy
             if (PartOfSpeech == PartOfSpeech.None)
@@ -153,7 +153,7 @@ namespace Zilf.ZModel.Vocab.OldParser
         /// two, and <see cref="Vocab.PartOfSpeech.Preposition"/> and
         /// <see cref="Vocab.PartOfSpeech.Buzzword"/> also don't count toward it.
         /// </remarks>
-        void CheckTooMany([NotNull] Context ctx)
+        void CheckTooMany(Context ctx)
         {
             var b = (byte)(PartOfSpeech & ~PartOfSpeech.FirstMask);
             byte count = 0;
@@ -244,21 +244,20 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        [NotNull]
         string ListDefinitionLocations()
         {
             var sb = new StringBuilder();
 
-            foreach (var pair in definitions)
+            foreach (var (word, sourceLine) in definitions)
             {
                 if (sb.Length != 0)
                 {
                     sb.Append(", ");
                 }
 
-                sb.Append(pair.Key);
+                sb.Append(word);
                 sb.Append(" (");
-                sb.Append(pair.Value.SourceInfo);
+                sb.Append(sourceLine.SourceInfo);
                 sb.Append(")");
             }
 
@@ -277,7 +276,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        public void SetVerb([NotNull] Context ctx, ISourceLine location, byte value)
+        public void SetVerb(Context ctx, ISourceLine location, byte value)
         {
             if ((PartOfSpeech & PartOfSpeech.Verb) == 0)
             {
@@ -290,7 +289,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        public void SetAdjective([NotNull] Context ctx, ISourceLine location, byte value)
+        public void SetAdjective(Context ctx, ISourceLine location, byte value)
         {
             if ((PartOfSpeech & PartOfSpeech.Adjective) == 0)
             {
@@ -303,7 +302,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        public void SetDirection([NotNull] Context ctx, ISourceLine location, byte value)
+        public void SetDirection(Context ctx, ISourceLine location, byte value)
         {
             if ((PartOfSpeech & PartOfSpeech.Direction) == 0)
             {
@@ -316,7 +315,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        public void SetBuzzword([NotNull] Context ctx, ISourceLine location, byte value)
+        public void SetBuzzword(Context ctx, ISourceLine location, byte value)
         {
             if ((PartOfSpeech & PartOfSpeech.Buzzword) == 0)
             {
@@ -330,7 +329,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        public void SetPreposition([NotNull] Context ctx, ISourceLine location, byte value)
+        public void SetPreposition(Context ctx, ISourceLine location, byte value)
         {
             if ((PartOfSpeech & PartOfSpeech.Preposition) == 0)
             {
@@ -344,7 +343,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             }
         }
 
-        void UnsetPartOfSpeech([NotNull] Context ctx, PartOfSpeech part)
+        void UnsetPartOfSpeech(Context ctx, PartOfSpeech part)
         {
             var query = from pair in speechValues
                         where pair.Key != part
@@ -406,7 +405,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             return definitions[part];
         }
 
-        public void WriteToBuilder([NotNull] Context ctx, [NotNull] IWordBuilder wb, [NotNull] DirIndexToPropertyOperandDelegate dirIndexToPropertyOperand)
+        public void WriteToBuilder(Context ctx, IWordBuilder wb, DirIndexToPropertyOperandDelegate dirIndexToPropertyOperand)
         {
             // discard excess parts of speech if needed
             CheckTooMany(ctx);
@@ -500,7 +499,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             SynonymTypes |= synonymTypes;
         }
 
-        public void Merge([NotNull] Context ctx, [NotNull] OldParserWord other)
+        public void Merge(Context ctx, OldParserWord other)
         {
             if ((other.PartOfSpeech & PartOfSpeech.Adjective) != 0)
                 SetAdjective(ctx, other.GetDefinition(PartOfSpeech.Adjective), other.GetValue(PartOfSpeech.Adjective));

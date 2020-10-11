@@ -23,15 +23,15 @@ namespace Zilf.Emit.Zap
 {
     public interface IZapStreamFactory
     {
-        [NotNull] Stream CreateMainStream();
-        [NotNull] Stream CreateFrequentWordsStream();
-        [NotNull] Stream CreateDataStream();
-        [NotNull] Stream CreateStringStream();
+        Stream CreateMainStream();
+        Stream CreateFrequentWordsStream();
+        Stream CreateDataStream();
+        Stream CreateStringStream();
 
-        [NotNull] string GetMainFileName(bool withExt);
-        [NotNull] string GetDataFileName(bool withExt);
-        [NotNull] string GetFrequentWordsFileName(bool withExt);
-        [NotNull] string GetStringFileName(bool withExt);
+        string GetMainFileName(bool withExt);
+        string GetDataFileName(bool withExt);
+        string GetFrequentWordsFileName(bool withExt);
+        string GetStringFileName(bool withExt);
 
         bool FrequentWordsFileExists { get; }
     }

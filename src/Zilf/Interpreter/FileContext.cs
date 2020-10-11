@@ -29,9 +29,9 @@ namespace Zilf.Interpreter
         public string Path { get; }
 
         public FileFlags Flags { get; set; }
-        public ZilList DefStructDefaults { get; set; }
+        public ZilList? DefStructDefaults { get; set; }
 
-        public FileContext([NotNull] Context ctx, [NotNull] string path)
+        public FileContext(Context ctx, string path)
         {
             Context = ctx;
             Parent = ctx.CurrentFile;

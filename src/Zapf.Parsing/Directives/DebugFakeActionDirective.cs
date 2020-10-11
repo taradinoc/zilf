@@ -17,15 +17,16 @@
  */
 
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
+#nullable enable
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     public sealed class DebugFakeActionDirective : NumberAndNameDebugDirective
     {
-        public DebugFakeActionDirective([NotNull] AsmExpr number, [NotNull] string name)
+        public DebugFakeActionDirective(AsmExpr number, string name)
             : base(number, name) { }
     }
+#nullable restore
 }

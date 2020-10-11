@@ -28,7 +28,7 @@ namespace Zilf.Interpreter.Values
         bool spliceable;
 
         [ChtypeMethod]
-        public ZilSplice([NotNull] ZilListoidBase other)
+        public ZilSplice(ZilListoidBase other)
             : base(other.First, other.Rest)
         {
         }

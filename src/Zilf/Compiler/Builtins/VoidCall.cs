@@ -28,14 +28,11 @@ namespace Zilf.Compiler.Builtins
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     struct VoidCall
     {
-        [NotNull]
         public Compilation cc { get; }
-        [NotNull]
         public IRoutineBuilder rb { get; }
-        [NotNull]
         public ZilForm form { get; }
 
-        public VoidCall([NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form)
+        public VoidCall(Compilation cc, IRoutineBuilder rb, ZilForm form)
             : this()
         {
             this.cc = cc;

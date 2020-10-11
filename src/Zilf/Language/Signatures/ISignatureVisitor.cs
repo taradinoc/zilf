@@ -22,16 +22,16 @@ namespace Zilf.Language.Signatures
 {
     interface ISignatureVisitor
     {
-        void Visit([NotNull] AdeclPart part);
-        void Visit([NotNull] AlternativesPart part);
-        void Visit([NotNull] AnyPart part);
-        void Visit([NotNull] ConstrainedPart part);
-        void Visit([NotNull] FormPart part);
-        void Visit([NotNull] ListPart part);
-        void Visit([NotNull] LiteralPart part);
-        void Visit([NotNull] OptionalPart part);
-        void Visit([NotNull] QuotedPart part);
-        void Visit([NotNull] SequencePart part);
-        void Visit([NotNull] VarArgsPart part);
+        void Visit(AdeclPart part);
+        void Visit(AlternativesPart part);
+        void Visit(AnyPart part);
+        void Visit(ConstrainedPart part);
+        void Visit(FormPart part);
+        void Visit(ListPart part);
+        void Visit(LiteralPart part);
+        void Visit(OptionalPart part);
+        void Visit(QuotedPart part);
+        void Visit(SequencePart part);
+        void Visit(VarArgsPart part);
     }
 }

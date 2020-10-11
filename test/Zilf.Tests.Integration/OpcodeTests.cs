@@ -122,7 +122,7 @@ namespace Zilf.Tests.Integration
                 }));
         }
     }
-    
+
     [TestClass, TestCategory("Compiler")]
     [SuppressMessage("ReSharper", "ExceptionNotDocumented")]
     public class OpcodeTests : IntegrationTestClass
@@ -1246,7 +1246,7 @@ namespace Zilf.Tests.Integration
         {
             // only exists in V6+
             Assert.Inconclusive();
-            
+
             // V6 to V6
             // 0 to 4 operands
 /*
@@ -1445,7 +1445,7 @@ namespace Zilf.Tests.Integration
         {
             // only exists in V6+
             Assert.Inconclusive();
-            
+
             // V6 to V6
             // 0 to 4 operands
 /*
@@ -1475,7 +1475,7 @@ namespace Zilf.Tests.Integration
         {
             // only exists in V6+
             Assert.Inconclusive();
-            
+
             // V6 to V6
             // 0 to 4 operands
 /*
@@ -1609,7 +1609,7 @@ namespace Zilf.Tests.Integration
         {
             // only exists in V6+
             Assert.Inconclusive();
-            
+
             // V6 to V6
             // 0 to 4 operands
 /*
@@ -2106,7 +2106,7 @@ namespace Zilf.Tests.Integration
         {
             // only exists in V6+
             Assert.Inconclusive();
-            
+
             // V6 to V6
             // 0 to 4 operands
 /*
@@ -2164,7 +2164,7 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public void TestSET_Quirks()
         {
-            /* SET and SETG have different QuirksMode behavior:
+            /* SET and SETG have different VariableScopeQuirks behavior:
              * 
              * SETG treats a ,GVAL as its first argument as a variable name,
              * but treats an .LVAL as an expression: <SETG ,FOO 1> sets the global FOO,
@@ -2400,7 +2400,7 @@ namespace Zilf.Tests.Integration
         {
             // only exists in V6+
             Assert.Inconclusive();
-            
+
             // V6 to V6
             // 0 to 4 operands
 /*
@@ -2430,7 +2430,7 @@ namespace Zilf.Tests.Integration
         {
             // only exists in V6+
             Assert.Inconclusive();
-            
+
             // V6 to V6
             // 0 to 4 operands
 /*
@@ -2460,7 +2460,7 @@ namespace Zilf.Tests.Integration
         {
             // only exists in V6+
             Assert.Inconclusive();
-            
+
             // V6 to V6
             // 0 to 4 operands
 /*
@@ -2490,7 +2490,7 @@ namespace Zilf.Tests.Integration
         {
             // only exists in V6+
             Assert.Inconclusive();
-            
+
             // V6 to V6
             // 0 to 4 operands
 /*
@@ -2520,7 +2520,7 @@ namespace Zilf.Tests.Integration
         {
             // only exists in V6+
             Assert.Inconclusive();
-            
+
             // V6 to V6
             // 0 to 4 operands
 /*

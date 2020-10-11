@@ -25,16 +25,14 @@ namespace Zilf.Language.Signatures
 {
     sealed class AlternativesPart : SignaturePart
     {
-        AlternativesPart([ItemNotNull] [NotNull] IReadOnlyList<SignaturePart> alternatives)
+        AlternativesPart(IReadOnlyList<SignaturePart> alternatives)
         {
             Alternatives = alternatives;
         }
 
-        [ItemNotNull]
-        [NotNull]
         public IReadOnlyList<SignaturePart> Alternatives { get; }
 
-        public static SignaturePart From([NotNull] [ItemNotNull] IEnumerable<SignaturePart> parts)
+        public static SignaturePart From(IEnumerable<SignaturePart> parts)
         {
             var alts = parts.SelectMany(ExpandAlternatives).ToArray();
 
@@ -51,7 +49,6 @@ namespace Zilf.Language.Signatures
             }
         }
 
-        [NotNull]
         static IEnumerable<SignaturePart> ExpandAlternatives(SignaturePart p)
         {
             return p is AlternativesPart ap ? ap.Alternatives : Enumerable.Repeat(p, 1);

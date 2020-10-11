@@ -26,7 +26,7 @@ namespace Zapf.Parsing.Diagnostics
     [Serializable]
     public class SeriousError : AssemblerError
     {
-        public SeriousError(ISourceLine node, string message)
+        public SeriousError(ISourceLine? node, string message)
             : base(node, message)
         {
         }

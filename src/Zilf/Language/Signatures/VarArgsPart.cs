@@ -23,19 +23,17 @@ namespace Zilf.Language.Signatures
 {
     sealed class VarArgsPart : SignaturePart
     {
-        [NotNull]
         public SignaturePart Inner { get; }
 
         public bool Required { get; }
 
-        VarArgsPart([NotNull] SignaturePart inner, bool isRequired)
+        VarArgsPart(SignaturePart inner, bool isRequired)
         {
             Inner = inner;
             Required = isRequired;
         }
 
-        [NotNull]
-        public static SignaturePart From([NotNull] SignaturePart inner, bool isRequired)
+        public static SignaturePart From(SignaturePart inner, bool isRequired)
         {
             switch (inner)
             {
@@ -47,7 +45,7 @@ namespace Zilf.Language.Signatures
                     inner = op.Inner;
                     break;
             }
-            
+
             return new VarArgsPart(inner, isRequired);
         }
 

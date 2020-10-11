@@ -26,43 +26,38 @@ namespace Zapf
 {
     class OpeningFileEventArgs : EventArgs
     {
-        public OpeningFileEventArgs([NotNull] string filename, bool writing)
+        public OpeningFileEventArgs(string filename, bool writing)
         {
             FileName = filename;
             Writing = writing;
         }
 
-        [NotNull]
         public string FileName { get; }
 
         public bool Writing { get; }
 
-        [CanBeNull]
-        public Stream Stream { get; set; }
+        public Stream? Stream { get; set; }
     }
 
     class CheckingFilePresenceEventArgs : EventArgs
     {
-        public CheckingFilePresenceEventArgs([NotNull] string filename) => FileName = filename;
+        public CheckingFilePresenceEventArgs(string filename) => FileName = filename;
 
-        [NotNull]
         public string FileName { get; }
 
-        [CanBeNull]
         public bool? Exists { get; set; }
     }
 
     class InitializingContextEventArgs : EventArgs
     {
-        public InitializingContextEventArgs([NotNull] Context ctx) => Context = ctx;
+        public InitializingContextEventArgs(Context ctx) => Context = ctx;
 
-        [NotNull]
         public Context Context { get; set; }
     }
 
     struct AssemblyResult
     {
-        public AssemblyResult(bool success, Context context)
+        public AssemblyResult(bool success, Context? context)
         {
             Success = success;
             Context = context;
@@ -71,17 +66,16 @@ namespace Zapf
         public static readonly AssemblyResult Failed = new AssemblyResult(false, null);
 
         public bool Success { get; }
-        public Context Context { get; }
+        public Context? Context { get; }
     }
 
     sealed class ZapfAssembler
     {
-        public event EventHandler<OpeningFileEventArgs> OpeningFile;
-        public event EventHandler<CheckingFilePresenceEventArgs> CheckingFilePresence;
-        public event EventHandler<InitializingContextEventArgs> InitializingContext;
+        public event EventHandler<OpeningFileEventArgs>? OpeningFile;
+        public event EventHandler<CheckingFilePresenceEventArgs>? CheckingFilePresence;
+        public event EventHandler<InitializingContextEventArgs>? InitializingContext;
 
-        [NotNull]
-        Stream OpenFile([NotNull] string path, bool writing)
+        Stream OpenFile(string path, bool writing)
         {
             var handler = OpeningFile;
             if (handler != null)
@@ -116,8 +110,7 @@ namespace Zapf
             return File.Exists(path);
         }
 
-        [NotNull]
-        Context InitializeContext([NotNull] string inputFileName, [CanBeNull] string outputFileName)
+        Context InitializeContext(string inputFileName, string? outputFileName)
         {
             var ctx = new Context
             {
@@ -143,7 +136,7 @@ namespace Zapf
 
         public AssemblyResult Assemble(string inputFileName, string outputFileName)
         {
-            var ctx = InitializeContext(inputFileName, outputFileName);
+            using var ctx = InitializeContext(inputFileName, outputFileName);
 
             //XXX redirect log messages
 

@@ -34,7 +34,7 @@ namespace Zilf.Compiler.Builtins
         {
         }
 
-        public BuiltinAttribute(string name, params string[] aliases)
+        public BuiltinAttribute(string name, params string[]? aliases)
         {
             this.name = name;
             this.aliases = aliases;
@@ -46,7 +46,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         readonly string name;
-        readonly string[] aliases;
+        readonly string[]? aliases;
 
         public IEnumerable<string> Names
         {
@@ -62,7 +62,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        public object Data { get; set; }
+        public object? Data { get; set; }
         public int MinVersion { get; set; }
         public int MaxVersion { get; set; }
         public bool HasSideEffect { get; set; }

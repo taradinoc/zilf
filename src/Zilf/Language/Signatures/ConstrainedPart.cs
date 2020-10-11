@@ -23,17 +23,15 @@ namespace Zilf.Language.Signatures
 {
     class ConstrainedPart : SignaturePart
     {
-        [NotNull]
         public SignaturePart Inner { get; }
 
-        ConstrainedPart([NotNull] SignaturePart inner, [NotNull] Constraint constraint)
+        ConstrainedPart(SignaturePart inner, Constraint constraint)
         {
             Inner = inner;
             Constraint = constraint;
         }
 
-        [NotNull]
-        public static SignaturePart From([NotNull] SignaturePart inner, [NotNull] Constraint constraint)
+        public static SignaturePart From(SignaturePart inner, Constraint constraint)
         {
             var newConstraint = inner.Constraint.And(constraint);
             return new ConstrainedPart(inner is ConstrainedPart icp ? icp.Inner : inner, newConstraint);

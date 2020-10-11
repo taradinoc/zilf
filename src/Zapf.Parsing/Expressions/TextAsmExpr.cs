@@ -22,12 +22,11 @@ namespace Zapf.Parsing.Expressions
 {
     public abstract class TextAsmExpr : AsmExpr
     {
-        protected TextAsmExpr([NotNull] string text)
+        protected TextAsmExpr(string text)
         {
             Text = text;
         }
 
-        [NotNull]
         public string Text { get; }
     }
 }

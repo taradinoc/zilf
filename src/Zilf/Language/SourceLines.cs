@@ -22,13 +22,9 @@ namespace Zilf.Language
 {
     static class SourceLines
     {
-        [NotNull]
         public static readonly ISourceLine Unknown = new StringSourceLine("<internally created FORM>");
-        [NotNull]
         public static readonly ISourceLine Chtyped = new StringSourceLine("<result of CHTYPE>");
-        [NotNull]
         public static readonly ISourceLine MakeGval = new StringSourceLine("<result of MAKE-GVAL>");
-        [NotNull]
         public static readonly ISourceLine TopLevel = new StringSourceLine("<top level>");
     }
 }

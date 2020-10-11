@@ -23,18 +23,15 @@ namespace Zapf.Parsing.Directives
 {
     public abstract class LineDebugDirective : DebugDirective
     {
-        protected LineDebugDirective([NotNull] AsmExpr file, [NotNull] AsmExpr line, [NotNull] AsmExpr column)
+        protected LineDebugDirective(AsmExpr file, AsmExpr line, AsmExpr column)
         {
             TheFile = file;
             TheLine = line;
             TheColumn = column;
         }
 
-        [NotNull]
         public AsmExpr TheFile { get; }
-        [NotNull]
         public AsmExpr TheLine { get; }
-        [NotNull]
         public AsmExpr TheColumn { get; }
     }
 }

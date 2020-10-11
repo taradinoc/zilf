@@ -23,7 +23,7 @@ namespace Zilf.Language.Signatures
 {
     sealed class AnyPart : SignaturePart
     {
-        public AnyPart([NotNull] string name)
+        public AnyPart(string name)
         {
             Name = name;
         }

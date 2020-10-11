@@ -22,12 +22,11 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class BareSymbolLine : AsmLine
     {
-        public BareSymbolLine([NotNull] string text)
+        public BareSymbolLine(string text)
         {
             Text = text;
         }
 
-        [NotNull]
         public string Text { get; }
 
         public int OperandCount { get; set; }

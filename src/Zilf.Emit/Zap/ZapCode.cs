@@ -23,11 +23,8 @@ namespace Zilf.Emit.Zap
     struct ZapCode
     {
         public Instruction Instruction;
-        public string DebugText;
+        public string? DebugText;
 
-        public override string ToString()
-        {
-            return Instruction.ToString();
-        }
+        public override string ToString() => Instruction.ToString();
     }
 }

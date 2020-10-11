@@ -26,32 +26,29 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-        [NotNull]
         [FSubr]
         [MdlZilRedirect(typeof(Subrs), nameof(ROUTINE))]
-        public static ZilObject DEFINE([NotNull] Context ctx, [NotNull] ZilAtom name,
-            [CanBeNull] [Optional] ZilAtom activationAtom, [ItemNotNull] [NotNull] ZilList argList,
-            [CanBeNull] [Optional] ZilDecl decl, [ItemNotNull] [NotNull] [Required] ZilObject[] body)
-        {
-            return PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE");
-        }
+        public static ZilObject DEFINE(Context ctx, ZilAtom name,
+            [Optional] ZilAtom? activationAtom, ZilList argList,
+            [Optional] ZilDecl? decl, [Required] ZilObject[] body) =>
+            PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE");
 
-        [NotNull]
         [FSubr]
-        public static ZilObject DEFINE20([NotNull] Context ctx, [NotNull] ZilAtom name,
-            [CanBeNull] [Optional] ZilAtom activationAtom, [NotNull] [ItemNotNull] ZilList argList,
-            [CanBeNull] [Optional] ZilDecl decl, [ItemCanBeNull] [NotNull] [Required] ZilObject[] body)
+        public static ZilObject DEFINE20(Context ctx, ZilAtom name,
+            [Optional] ZilAtom? activationAtom, ZilList argList,
+            [Optional] ZilDecl? decl, [Required] ZilObject[] body)
         {
             return PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE20");
         }
 
-        [NotNull]
-        static ZilObject PerformDefine([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilAtom name,
-            [CanBeNull] ZilAtom activationAtom,
-            [NotNull] ZilList argList, ZilDecl decl, [NotNull] ZilObject[] body, [NotNull] string subrName)
+        static ZilObject PerformDefine([ProvidesContext] Context ctx, ZilAtom name,
+            ZilAtom? activationAtom,
+            ZilList argList, ZilDecl? decl, ZilObject[] body, string subrName)
         {
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(name) != null)
-                throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, subrName, name.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Already_Defined_1,
+                    subrName,
+                    name.ToStringContext(ctx, false));
 
             var func = new ZilFunction(
                 subrName,
@@ -65,11 +62,10 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">A global named <paramref name="name"/> is already defined.</exception>
-        [NotNull]
         [FSubr]
-        public static ZilObject DEFMAC([NotNull] Context ctx, [NotNull] ZilAtom name,
-            [CanBeNull] [Optional] ZilAtom activationAtom, [ItemNotNull] [NotNull] ZilList argList,
-            [CanBeNull] [Optional] ZilDecl decl, [NotNull] [Required] ZilObject[] body)
+        public static ZilObject DEFMAC(Context ctx, ZilAtom name,
+             [Optional] ZilAtom? activationAtom, ZilList argList,
+             [Optional] ZilDecl? decl, [Required] ZilObject[] body)
         {
             if (!ctx.AllowRedefine && ctx.GetGlobalVal(name) != null)
                 throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "DEFMAC", name.ToStringContext(ctx, false));
@@ -93,22 +89,22 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilResult EVAL([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] LocalEnvironment env)
+        public static ZilResult EVAL(Context ctx, ZilObject value, LocalEnvironment env)
         {
             return value.Eval(ctx, env);
         }
 
 #pragma warning disable RECS0154 // Parameter is never used
         [Subr("EVAL-IN-SEGMENT")]
-        public static ZilResult EVAL_IN_SEGMENT([NotNull] Context ctx, ZilObject dummy1,
-            [NotNull] ZilObject value, [CanBeNull] ZilObject dummy2 = null)
+        public static ZilResult EVAL_IN_SEGMENT(Context ctx, ZilObject dummy1,
+             ZilObject value, ZilObject? dummy2 = null)
 #pragma warning restore RECS0154 // Parameter is never used
         {
             return value.Eval(ctx);
         }
 
         [Subr]
-        public static ZilResult EXPAND([NotNull] Context ctx, [NotNull] ZilObject value)
+        public static ZilResult EXPAND(Context ctx, ZilObject value)
         {
             var result = value.Expand(ctx);
             if (result.ShouldPass())
@@ -121,7 +117,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilResult APPLY([NotNull] Context ctx, [NotNull] IApplicable ap, [NotNull] ZilObject[] args)
+        public static ZilResult APPLY(Context ctx, IApplicable ap, ZilObject[] args)
         {
             return ap.ApplyNoEval(ctx, args);
         }

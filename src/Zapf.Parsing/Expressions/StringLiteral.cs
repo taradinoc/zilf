@@ -23,7 +23,7 @@ namespace Zapf.Parsing.Expressions
 {
     public sealed class StringLiteral : TextAsmExpr
     {
-        public StringLiteral([NotNull] string text)
+        public StringLiteral(string text)
             : base(text) { }
 
         public override string ToString()

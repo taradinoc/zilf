@@ -22,10 +22,9 @@ namespace Zilf.Emit.Zap
 {
     class NumericConstantOperand : ConstantOperandBase, INumericOperand
     {
-        [NotNull]
         readonly string literal;
 
-        public NumericConstantOperand([NotNull] string literal, int value)
+        public NumericConstantOperand(string literal, int value)
         {
             this.literal = literal;
             Value = value;

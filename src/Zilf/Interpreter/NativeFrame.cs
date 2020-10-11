@@ -23,9 +23,9 @@ namespace Zilf.Interpreter
 {
     sealed class NativeFrame : Frame
     {
-        public override string Description { get; }
+        public override string? Description { get; }
 
-        public NativeFrame([NotNull] Context ctx, [NotNull] ISourceLine sourceLine, [CanBeNull] string description = null)
+        public NativeFrame(Context ctx, ISourceLine sourceLine, string? description = null)
             : base(ctx, sourceLine)
         {
             Description = description;

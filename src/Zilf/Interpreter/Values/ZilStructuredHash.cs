@@ -18,6 +18,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Zilf.Interpreter.Values
 {
@@ -32,14 +33,15 @@ namespace Zilf.Interpreter.Values
         public IEnumerator<ZilObject> GetEnumerator() => primValue.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public ZilObject GetFirst() => primValue.GetFirst();
-        public IStructure GetRest(int skip) => primValue.GetRest(skip);
-        public IStructure GetBack(int skip) => primValue.GetBack(skip);
+        public ZilObject? GetFirst() => primValue.GetFirst();
+        public IStructure? GetRest(int skip) => primValue.GetRest(skip);
+        public IStructure? GetBack(int skip) => primValue.GetBack(skip);
         public IStructure GetTop() => primValue.GetTop();
 
+        [MaybeNull]
         public ZilObject this[int index]
         {
-            get => primValue[index];
+            get => primValue[index]!;
             set => primValue[index] = value;
         }
 

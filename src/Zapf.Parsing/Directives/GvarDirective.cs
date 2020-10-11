@@ -23,13 +23,12 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class GvarDirective : NamedDirective
     {
-        public GvarDirective([NotNull] string name, [CanBeNull] AsmExpr initialValue)
+        public GvarDirective(string name, AsmExpr? initialValue)
             : base(name)
         {
             InitialValue = initialValue;
         }
 
-        [CanBeNull]
-        public AsmExpr InitialValue { get; }
+        public AsmExpr? InitialValue { get; }
     }
 }

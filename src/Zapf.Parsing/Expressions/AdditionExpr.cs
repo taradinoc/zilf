@@ -22,15 +22,13 @@ namespace Zapf.Parsing.Expressions
 {
     public sealed class AdditionExpr : AsmExpr
     {
-        public AdditionExpr([NotNull] AsmExpr left, [NotNull] AsmExpr right)
+        public AdditionExpr(AsmExpr left, AsmExpr right)
         {
             Left = left;
             Right = right;
         }
 
-        [NotNull]
         public AsmExpr Left { get; }
-        [NotNull]
         public AsmExpr Right { get; }
 
         public override string ToString()

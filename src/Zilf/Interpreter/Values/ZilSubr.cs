@@ -26,25 +26,21 @@ namespace Zilf.Interpreter.Values
     [BuiltinType(StdAtom.SUBR, PrimType.STRING)]
     class ZilSubr : ZilObject, IApplicable
     {
-        [NotNull]
         protected readonly string name;
 
-        [NotNull]
         protected readonly SubrDelegate handler;
 
-        public ZilSubr([NotNull] string name, [NotNull] SubrDelegate handler)
+        public ZilSubr(string name, SubrDelegate handler)
         {
             this.name = name;
             this.handler = handler;
         }
 
         [ChtypeMethod]
-        [NotNull]
-        public static ZilSubr FromString([NotNull] Context ctx, [NotNull] ZilString str) =>
+        public static ZilSubr FromString(Context ctx, ZilString str) =>
             FromString(ctx, str.ToStringContext(ctx, true));
 
-        [NotNull]
-        public static ZilSubr FromString([NotNull] Context ctx, [NotNull] string name)
+        public static ZilSubr FromString(Context ctx, string name)
         {
             var del = ctx.GetSubrDelegate(name);
             if (del != null)
@@ -54,14 +50,12 @@ namespace Zilf.Interpreter.Values
             throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "SUBR name", name);
         }
 
-        [NotNull]
         public override string ToString() => $"#SUBR \"{name}\"";
 
         public override StdAtom StdTypeAtom => StdAtom.SUBR;
 
         public override PrimType PrimType => PrimType.STRING;
 
-        [NotNull]
         public override ZilObject GetPrimitive(Context ctx) => ZilString.FromString(name);
 
         public virtual ZilResult Apply(Context ctx, ZilObject[] args)
@@ -80,7 +74,7 @@ namespace Zilf.Interpreter.Values
 
         public ZilResult ApplyNoEval(Context ctx, ZilObject[] args) => handler(name, ctx, args);
 
-        public override bool ExactlyEquals(ZilObject obj)
+        public override bool ExactlyEquals(ZilObject? obj)
         {
             return
                 obj is ZilSubr other &&

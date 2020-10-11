@@ -33,16 +33,14 @@ namespace Zilf.Interpreter
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     static partial class Subrs
     {
-        [NotNull]
         [Subr]
-        public static ZilObject TYPE([NotNull] Context ctx, [NotNull] ZilObject value)
+        public static ZilObject TYPE(Context ctx, ZilObject value)
         {
             return value.GetTypeAtom(ctx);
         }
 
-        [NotNull]
         [Subr("TYPE?")]
-        public static ZilObject TYPE_P([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] [Required] ZilAtom[] types)
+        public static ZilObject TYPE_P(Context ctx, ZilObject value, [Required] ZilAtom[] types)
         {
             var type = value.GetTypeAtom(ctx);
 
@@ -81,17 +79,15 @@ namespace Zilf.Interpreter
             }
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject PRIMTYPE([NotNull] Context ctx, [NotNull] ZilObject value)
+        public static ZilObject PRIMTYPE(Context ctx, ZilObject value)
         {
             return ctx.GetStdAtom(PrimTypeToType(value.PrimType));
         }
 
         /// <exception cref="InterpreterError"><paramref name="type"/> is not a registered type.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject TYPEPRIM([NotNull] Context ctx, [NotNull] ZilAtom type)
+        public static ZilObject TYPEPRIM(Context ctx, ZilAtom type)
         {
             if (!ctx.IsRegisteredType(type))
                 throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "TYPEPRIM", "type", type.ToStringContext(ctx, false));
@@ -99,18 +95,16 @@ namespace Zilf.Interpreter
             return ctx.GetStdAtom(PrimTypeToType(ctx.GetTypePrim(type)));
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject CHTYPE([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilAtom atom)
+        public static ZilObject CHTYPE(Context ctx, ZilObject value, ZilAtom atom)
         {
             return ctx.ChangeType(value, atom);
         }
 
         /// <exception cref="InterpreterError"><paramref name="name"/> is already a registered type, or <paramref name="primtypeAtom"/> is not.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject NEWTYPE([NotNull] Context ctx, [NotNull] ZilAtom name, [NotNull] ZilAtom primtypeAtom,
-            [CanBeNull] ZilObject decl = null)
+        public static ZilObject NEWTYPE(Context ctx, ZilAtom name, ZilAtom primtypeAtom,
+             ZilObject? decl = null)
         {
             if (ctx.IsRegisteredType(name))
                 throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "NEWTYPE", name.ToStringContext(ctx, false));
@@ -126,24 +120,21 @@ namespace Zilf.Interpreter
             return name;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject ALLTYPES([NotNull] Context ctx)
+        public static ZilObject ALLTYPES(Context ctx)
         {
             return new ZilVector(ctx.RegisteredTypes.ToArray<ZilObject>());
         }
 
-        [NotNull]
         [Subr("VALID-TYPE?")]
-        public static ZilObject VALID_TYPE_P([NotNull] Context ctx, [NotNull] ZilAtom atom)
+        public static ZilObject VALID_TYPE_P(Context ctx, ZilAtom atom)
         {
             return ctx.IsRegisteredType(atom) ? atom : ctx.FALSE;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject PRINTTYPE([NotNull] Context ctx, [NotNull] ZilAtom atom,
-            [CanBeNull] [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
+        public static ZilObject PRINTTYPE(Context ctx, ZilAtom atom,
+             [Decl("<OR ATOM APPLICABLE>")] ZilObject? handler = null)
         {
             return PerformTypeHandler(ctx, atom, handler,
                 "PRINTTYPE",
@@ -151,10 +142,9 @@ namespace Zilf.Interpreter
                 (c, a, h) => c.SetPrintType(a, h));
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject EVALTYPE([NotNull] Context ctx, [NotNull] ZilAtom atom,
-            [CanBeNull] [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
+        public static ZilObject EVALTYPE(Context ctx, ZilAtom atom,
+             [Decl("<OR ATOM APPLICABLE>")] ZilObject? handler = null)
         {
             return PerformTypeHandler(ctx, atom, handler,
                 "EVALTYPE",
@@ -162,10 +152,9 @@ namespace Zilf.Interpreter
                 (c, a, h) => c.SetEvalType(a, h));
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject APPLYTYPE([NotNull] Context ctx, [NotNull] ZilAtom atom,
-            [CanBeNull] [Decl("<OR ATOM APPLICABLE>")] ZilObject handler = null)
+        public static ZilObject APPLYTYPE(Context ctx, ZilAtom atom,
+             [Decl("<OR ATOM APPLICABLE>")] ZilObject? handler = null)
         {
             return PerformTypeHandler(ctx, atom, handler,
                 "APPLYTYPE",
@@ -173,10 +162,9 @@ namespace Zilf.Interpreter
                 (c, a, h) => c.SetApplyType(a, h));
         }
 
-        [NotNull]
-        static ZilObject PerformTypeHandler([NotNull] Context ctx, [NotNull] ZilAtom atom, [CanBeNull] ZilObject handler,
+        static ZilObject PerformTypeHandler(Context ctx, ZilAtom atom, ZilObject? handler,
             string name,
-            Func<Context, ZilAtom, ZilObject> getter,
+            Func<Context, ZilAtom, ZilObject?> getter,
             Func<Context, ZilAtom, ZilObject, Context.SetTypeHandlerResult> setter)
         {
             if (!ctx.IsRegisteredType(atom))
@@ -209,60 +197,53 @@ namespace Zilf.Interpreter
             }
         }
 
-        [NotNull]
         [Subr("MAKE-GVAL")]
-        public static ZilObject MAKE_GVAL([NotNull] Context ctx, ZilObject arg)
+        public static ZilObject MAKE_GVAL(Context ctx, ZilObject arg)
         {
             return new ZilForm(new[] { ctx.GetStdAtom(StdAtom.GVAL), arg }) { SourceLine = SourceLines.MakeGval };
         }
 
-        [NotNull]
         [Subr("APPLICABLE?")]
-        public static ZilObject APPLICABLE_P([NotNull] Context ctx, ZilObject arg)
+        public static ZilObject APPLICABLE_P(Context ctx, ZilObject arg)
         {
             return arg.IsApplicable(ctx) ? ctx.TRUE : ctx.FALSE;
         }
 
-        [NotNull]
         [Subr("STRUCTURED?")]
-        public static ZilObject STRUCTURED_P([NotNull] Context ctx, ZilObject arg)
+        public static ZilObject STRUCTURED_P(Context ctx, ZilObject arg)
         {
             return (arg is IStructure) ? ctx.TRUE : ctx.FALSE;
         }
 
-        [NotNull]
         [Subr("LEGAL?")]
-        public static ZilObject LEGAL_P([NotNull] Context ctx, ZilObject arg)
+        public static ZilObject LEGAL_P(Context ctx, ZilObject arg)
         {
             // non-evanescent values are always legal
             return (arg as IEvanescent)?.IsLegal == false ? ctx.FALSE : ctx.TRUE;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject FORM([NotNull] Context ctx, [NotNull] ZilObject[] args)
+        public static ZilObject FORM(Context ctx, ZilObject[] args)
         {
             return new ZilForm(args) { SourceLine = ctx.TopFrame.SourceLine };
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject LIST([NotNull] Context ctx, [NotNull] ZilObject[] args)
+        public static ZilObject LIST(Context ctx, ZilObject[] args)
         {
             return new ZilList(args);
         }
 
-        [NotNull]
         [Subr]
         [Subr("TUPLE")]
-        public static ZilObject VECTOR([NotNull] Context ctx, [NotNull] ZilObject[] args)
+        public static ZilObject VECTOR(Context ctx, ZilObject[] args)
         {
             return new ZilVector(args);
         }
 
         /// <exception cref="InterpreterError"><paramref name="count"/> is negative.</exception>
         [Subr]
-        public static ZilResult ILIST(Context ctx, int count, [CanBeNull] ZilObject init = null)
+        public static ZilResult ILIST(Context ctx, int count, ZilObject? init = null)
         {
             if (count < 0)
                 throw new InterpreterError(
@@ -289,7 +270,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError"><paramref name="count"/> is negative.</exception>
         [Subr]
-        public static ZilResult IVECTOR(Context ctx, int count, [CanBeNull] ZilObject init = null)
+        public static ZilResult IVECTOR(Context ctx, int count, ZilObject? init = null)
         {
             if (count < 0)
                 throw new InterpreterError(
@@ -315,34 +296,30 @@ namespace Zilf.Interpreter
             return new ZilVector(contents.ToArray());
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject BYTE([NotNull] Context ctx, [NotNull] ZilObject arg)
+        public static ZilObject BYTE(Context ctx, ZilObject arg)
         {
             return ctx.ChangeType(arg, ctx.GetStdAtom(StdAtom.BYTE));
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject CONS(Context ctx, ZilObject first, [NotNull] ZilListBase rest)
+        public static ZilObject CONS(Context ctx, ZilObject first, ZilListBase rest)
         {
             return new ZilList(
                 first,
                 rest is ZilList restList ? restList : new ZilList(rest));
         }
 
-        [NotNull]
         [FSubr]
-        public static ZilObject FUNCTION(Context ctx, [CanBeNull] [Optional] ZilAtom activationAtom,
-            [NotNull] ZilList argList, [CanBeNull] [Optional] ZilDecl decl, [NotNull] [Required] ZilObject[] body)
+        public static ZilObject FUNCTION(Context ctx, [Optional] ZilAtom? activationAtom,
+             ZilList argList, [Optional] ZilDecl? decl, [Required] ZilObject[] body)
         {
             return new ZilFunction("FUNCTION", null, activationAtom, argList, decl, body);
         }
 
-        [NotNull]
         [Subr]
         public static ZilObject STRING(Context ctx,
-            [NotNull] [Decl("<LIST [REST <OR STRING CHARACTER>]>")] ZilObject[] args)
+             [Decl("<LIST [REST <OR STRING CHARACTER>]>")] ZilObject[] args)
         {
             var sb = new StringBuilder();
 
@@ -356,7 +333,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError"><paramref name="count"/> is negative.</exception>
         [Subr]
-        public static ZilResult ISTRING(Context ctx, int count, [CanBeNull] ZilObject init = null)
+        public static ZilResult ISTRING(Context ctx, int count, ZilObject? init = null)
         {
             if (count < 0)
                 throw new InterpreterError(
@@ -384,7 +361,6 @@ namespace Zilf.Interpreter
             return ZilString.FromString(new string(contents.ToArray()));
         }
 
-        [NotNull]
         [Subr]
         public static ZilObject ASCII(Context ctx, [Decl("<OR CHARACTER FIX>")] ZilObject arg)
         {

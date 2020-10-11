@@ -26,11 +26,11 @@ namespace Zilf.Tests.Interpreter
 {
     internal static class TestHelpers
     {
-        [NotNull]
-        internal static ZilObject Evaluate([NotNull] string expression) => Evaluate(null, expression);
+        [JetBrains.Annotations.NotNull]
+        internal static ZilObject Evaluate([JetBrains.Annotations.NotNull] string expression) => Evaluate(null, expression);
 
-        [NotNull]
-        internal static ZilObject Evaluate([CanBeNull] Context ctx, [NotNull] string expression)
+        [JetBrains.Annotations.NotNull]
+        internal static ZilObject Evaluate([CanBeNull] Context ctx, [JetBrains.Annotations.NotNull] string expression)
         {
             if (ctx == null)
                 ctx = new Context();
@@ -38,12 +38,12 @@ namespace Zilf.Tests.Interpreter
             return Program.Evaluate(ctx, expression, true) ?? throw new ArgumentException("Bad expression", nameof(expression));
         }
 
-        internal static void EvalAndAssert([NotNull] string expression, [NotNull] ZilObject expected)
+        internal static void EvalAndAssert([JetBrains.Annotations.NotNull] string expression, [JetBrains.Annotations.NotNull] ZilObject expected)
         {
             EvalAndAssert(null, expression, expected);
         }
 
-        internal static void EvalAndAssert(Context ctx, [NotNull] string expression, [NotNull] ZilObject expected)
+        internal static void EvalAndAssert(Context ctx, [JetBrains.Annotations.NotNull] string expression, [JetBrains.Annotations.NotNull] ZilObject expected)
         {
             var actual = Evaluate(ctx, expression);
             if (!actual.StructurallyEquals(expected))
@@ -51,13 +51,13 @@ namespace Zilf.Tests.Interpreter
                     $"TestHelpers.EvalAndAssert failed. Expected:<{expected}>. Actual:<{actual}>. Expression was: {expression}");
         }
 
-        internal static void EvalAndCatch<TException>([NotNull] string expression, [CanBeNull] Predicate<TException> predicate = null)
+        internal static void EvalAndCatch<TException>([JetBrains.Annotations.NotNull] string expression, [CanBeNull] Predicate<TException> predicate = null)
             where TException : Exception
         {
             EvalAndCatch(null, expression, predicate);
         }
 
-        internal static void EvalAndCatch<TException>(Context ctx, [NotNull] string expression, [CanBeNull] Predicate<TException> predicate = null)
+        internal static void EvalAndCatch<TException>(Context ctx, [JetBrains.Annotations.NotNull] string expression, [CanBeNull] Predicate<TException> predicate = null)
             where TException : Exception
         {
             const string SWrongException = "TestHelpers.EvalAndCatch failed. Expected exception:<{0}>. Actual exception:<{1}> ({4}). Expression was: {2}.\nOriginal stack trace:\n{3}";
@@ -121,7 +121,7 @@ namespace Zilf.Tests.Interpreter
 
         [AssertionMethod]
         [StringFormatMethod("format")]
-        internal static void AssertStructurallyEqual([CanBeNull] ZilObject expected, [CanBeNull] ZilObject actual, [NotNull] string format, [NotNull] params object[] args)
+        internal static void AssertStructurallyEqual([CanBeNull] ZilObject expected, [CanBeNull] ZilObject actual, [JetBrains.Annotations.NotNull] string format, [JetBrains.Annotations.NotNull] params object[] args)
         {
             bool ok;
             if (expected == null || actual == null)
@@ -161,7 +161,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [AssertionMethod]
-        public static void AssertStructurallyEqual([NotNull] ZilObject[] expected, [NotNull] ZilObject[] actual, [CanBeNull] string message = null)
+        public static void AssertStructurallyEqual([JetBrains.Annotations.NotNull] ZilObject[] expected, [JetBrains.Annotations.NotNull] ZilObject[] actual, [CanBeNull] string message = null)
         {
             message = message ?? $"{nameof(TestHelpers)}.{nameof(AssertStructurallyEqual)} failed";
 

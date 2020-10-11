@@ -22,7 +22,7 @@ namespace Zilf.Emit.Zap
 {
     class IndirectOperand : ConstantOperandBase, IIndirectOperand
     {
-        public IndirectOperand([NotNull] IVariable variable)
+        public IndirectOperand(IVariable variable)
         {
             Variable = variable;
         }

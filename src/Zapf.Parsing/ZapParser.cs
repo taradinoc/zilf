@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using JetBrains.Annotations;
 using Zapf.Parsing.Diagnostics;
@@ -31,10 +32,10 @@ namespace Zapf.Parsing
     {
         readonly IErrorSink sink;
         readonly IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict;
-        Tokenizer toks;
+        Tokenizer? toks;
         int errorCount;
 
-        public ZapParser(IErrorSink sink, [NotNull] IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict)
+        public ZapParser(IErrorSink sink, IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict)
         {
             this.sink = sink;
             this.opcodeDict = opcodeDict;
@@ -102,7 +103,7 @@ namespace Zapf.Parsing
         }
 
         /// <exception cref="SeriousError">Syntax error.</exception>
-        public ParseResult Parse([NotNull] Stream stream, [NotNull] string filename)
+        public ParseResult Parse(Stream stream, string filename)
         {
             toks = new Tokenizer(stream, filename);
             var output = new List<AsmLine>();
@@ -165,37 +166,37 @@ namespace Zapf.Parsing
             };
         }
 
-        void ReportError(ISourceLine node, [NotNull] string message)
+        void ReportError(ISourceLine node, string message)
         {
             errorCount++;
             Errors.Serious(sink, node, message);
         }
 
-        void ReportError(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
+        void ReportError(ISourceLine node, string format, params object[] args)
         {
             errorCount++;
             Errors.Serious(sink, node, format, args);
         }
 
-        void ReportErrorAndSkipLine(ISourceLine node, [NotNull] string message)
+        void ReportErrorAndSkipLine(ISourceLine node, string message)
         {
             ReportError(node, message);
             SkipLine();
         }
 
-        void ReportErrorAndSkipLine(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
+        void ReportErrorAndSkipLine(ISourceLine node, string format, params object[] args)
         {
             ReportError(node, format, args);
             SkipLine();
         }
 
-        void ReportErrorAndSkipExpr(ISourceLine node, [NotNull] string message)
+        void ReportErrorAndSkipExpr(ISourceLine node, string message)
         {
             ReportError(node, message);
             SkipExpr();
         }
 
-        void ReportErrorAndSkipExpr(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
+        void ReportErrorAndSkipExpr(ISourceLine node, string format, params object[] args)
         {
             ReportError(node, format, args);
             SkipExpr();
@@ -203,6 +204,7 @@ namespace Zapf.Parsing
 
         void SkipLine()
         {
+            Debug.Assert(toks != null);
             while (true)
             {
                 switch (toks.PeekToken().Type)
@@ -223,6 +225,8 @@ namespace Zapf.Parsing
 
         void SkipExpr()
         {
+            Debug.Assert(toks != null);
+
             while (true)
             {
                 switch (toks.PeekToken().Type)
@@ -245,106 +249,106 @@ namespace Zapf.Parsing
             }
         }
 
-        [CanBeNull]
-        AsmLine TryParseInstruction(Token head)
+        AsmLine? TryParseInstruction(Token head)
         {
-            if (head.Type == TokenType.Symbol && opcodeDict.ContainsKey(head.Text))
+            Debug.Assert(toks != null);
+
+            if (head.Type != TokenType.Symbol || !opcodeDict.ContainsKey(head.Text))
+                return null;
+
+            var result = new Instruction(head.Text);
+
+            // parse operands
+            while (true)
             {
-                var result = new Instruction(head.Text);
+                Token t;
+                var type = toks.PeekToken().Type;
 
-                // parse operands
-                while (true)
+                switch (type)
                 {
-                    Token t;
-                    var type = toks.PeekToken().Type;
+                    case TokenType.EndOfLine:
+                        toks.NextToken();
+                        return result;
 
-                    switch (type)
-                    {
-                        case TokenType.EndOfLine:
-                            toks.NextToken();
-                            return result;
+                    case TokenType.EndOfFile:
+                        return result;
 
-                        case TokenType.EndOfFile:
-                            return result;
+                    case TokenType.Slash:
+                    case TokenType.Backslash:
+                        // branch target
+                        var polarity = toks.NextToken().Type == TokenType.Slash;
+                        t = toks.NextToken();
+                        if (t.Type != TokenType.Symbol)
+                        {
+                            ReportErrorAndSkipLine(
+                                t,
+                                "expected label or 'TRUE' or 'FALSE' after '{0}'",
+                                polarity ? '/' : '\\');
+                        }
+                        else if (result.BranchPolarity != null)
+                        {
+                            ReportErrorAndSkipLine(t, "multiple branch targets");
+                        }
+                        else
+                        {
+                            result.BranchPolarity = polarity;
+                            result.BranchTarget = t.Text;
+                        }
+                        break;
 
-                        case TokenType.Slash:
-                        case TokenType.Backslash:
-                            // branch target
-                            var polarity = toks.NextToken().Type == TokenType.Slash;
-                            t = toks.NextToken();
-                            if (t.Type != TokenType.Symbol)
+                    case TokenType.RAngle:
+                        // store target
+                        toks.NextToken();
+                        t = toks.NextToken();
+                        if (t.Type != TokenType.Symbol)
+                        {
+                            ReportErrorAndSkipLine(t, "expected variable or 'STACK' after '>'");
+                        }
+                        else if (result.StoreTarget != null)
+                        {
+                            ReportErrorAndSkipLine(t, "multiple store targets");
+                        }
+                        else
+                        {
+                            result.StoreTarget = t.Text;
+                        }
+                        break;
+
+                    default:
+                        if (CanStartExpr(type))
+                        {
+                            // regular operand
+                            result.Operands.Add(ParseExpr());
+                            switch (toks.PeekToken().Type)
                             {
-                                ReportErrorAndSkipLine(
-                                    t,
-                                    "expected label or 'TRUE' or 'FALSE' after '{0}'",
-                                    polarity ? '/' : '\\');
-                            }
-                            else if (result.BranchPolarity != null)
-                            {
-                                ReportErrorAndSkipLine(t, "multiple branch targets");
-                            }
-                            else
-                            {
-                                result.BranchPolarity = polarity;
-                                result.BranchTarget = t.Text;
+                                case TokenType.Comma:
+                                    toks.NextToken();
+                                    break;
+
+                                case TokenType.Slash:
+                                case TokenType.Backslash:
+                                case TokenType.RAngle:
+                                case TokenType.EndOfLine:
+                                case TokenType.EndOfFile:
+                                    break;
+
+                                default:
+                                    ReportErrorAndSkipLine(toks.PeekToken(), "expected ',' or target or EOL after operand");
+                                    break;
                             }
                             break;
+                        }
 
-                        case TokenType.RAngle:
-                            // store target
-                            toks.NextToken();
-                            t = toks.NextToken();
-                            if (t.Type != TokenType.Symbol)
-                            {
-                                ReportErrorAndSkipLine(t, "expected variable or 'STACK' after '>'");
-                            }
-                            else if (result.StoreTarget != null)
-                            {
-                                ReportErrorAndSkipLine(t, "multiple store targets");
-                            }
-                            else
-                            {
-                                result.StoreTarget = t.Text;
-                            }
-                            break;
-
-                        default:
-                            if (CanStartExpr(type))
-                            {
-                                // regular operand
-                                result.Operands.Add(ParseExpr());
-                                switch (toks.PeekToken().Type)
-                                {
-                                    case TokenType.Comma:
-                                        toks.NextToken();
-                                        break;
-
-                                    case TokenType.Slash:
-                                    case TokenType.Backslash:
-                                    case TokenType.RAngle:
-                                    case TokenType.EndOfLine:
-                                    case TokenType.EndOfFile:
-                                        break;
-
-                                    default:
-                                        ReportErrorAndSkipLine(toks.PeekToken(), "expected ',' or target or EOL after operand");
-                                        break;
-                                }
-                                break;
-                            }
-
-                            ReportErrorAndSkipLine(toks.PeekToken(), "unexpected token: {0}", toks.PeekToken());
-                            break;
-                    }
+                        ReportErrorAndSkipLine(toks.PeekToken(), "unexpected token: {0}", toks.PeekToken());
+                        break;
                 }
             }
-
-            return null;
         }
 
-        [CanBeNull]
-        AsmLine TryParseLabel(Token head)
+        AsmLine? TryParseLabel(Token head)
         {
+            Debug.Assert(toks != null);
+
             if (head.Type == TokenType.Symbol)
             {
                 switch (toks.PeekToken().Type)
@@ -362,13 +366,13 @@ namespace Zapf.Parsing
             return null;
         }
 
-        [NotNull]
         AsmExpr ParseExprOne()
         {
+            Debug.Assert(toks != null);
+
             return ParseExprOne(toks.NextToken());
         }
 
-        [NotNull]
         AsmExpr ParseExprOne(Token head)
         {
             switch (head.Type)
@@ -406,15 +410,17 @@ namespace Zapf.Parsing
             }
         }
 
-        [NotNull]
         AsmExpr ParseExpr()
         {
+            Debug.Assert(toks != null);
+
             return ParseExpr(toks.NextToken());
         }
 
-        [NotNull]
         AsmExpr ParseExpr(Token head)
         {
+            Debug.Assert(toks != null);
+
             var result = ParseExprOne(head);
 
             while (toks.PeekToken().Type == TokenType.Plus)
@@ -428,9 +434,10 @@ namespace Zapf.Parsing
             return result;
         }
 
-        [CanBeNull]
-        AsmExpr TryParseExpr()
+        AsmExpr? TryParseExpr()
         {
+            Debug.Assert(toks != null);
+
             return CanStartExpr(toks.PeekToken().Type) ? ParseExpr() : null;
         }
 
@@ -442,8 +449,10 @@ namespace Zapf.Parsing
             }
         }
 
-        AsmLine TryParseDirective(Token head)
+        AsmLine? TryParseDirective(Token head)
         {
+            Debug.Assert(toks != null);
+
             if (head.Type == TokenType.Symbol)
             {
                 if (toks.PeekToken().Type == TokenType.Equals)
@@ -489,9 +498,10 @@ namespace Zapf.Parsing
             return null;
         }
 
-        [NotNull]
         AsmLine ParseUnrecognizedInstruction(Token head)
         {
+            Debug.Assert(toks != null);
+
             var result = new BareSymbolLine(head.Text);
 
             bool betweenOperands = true;
@@ -535,12 +545,14 @@ namespace Zapf.Parsing
 
         #region Directive Handlers
 
-        [NotNull] delegate AsmLine DirectiveParseHandler(Token head);
+        delegate AsmLine DirectiveParseHandler(Token head);
 
         readonly IReadOnlyDictionary<string, DirectiveParseHandler> directiveDict;
 
         void MatchEndOfDirective()
         {
+            Debug.Assert(toks != null);
+
             switch (toks.PeekToken().Type)
             {
                 case TokenType.EndOfLine:
@@ -558,6 +570,8 @@ namespace Zapf.Parsing
 
         bool TryMatchComma()
         {
+            Debug.Assert(toks != null);
+
             if (toks.PeekToken().Type == TokenType.Comma)
             {
                 toks.NextToken();
@@ -569,6 +583,8 @@ namespace Zapf.Parsing
 
         void MatchComma()
         {
+            Debug.Assert(toks != null);
+
             if (!TryMatchComma())
             {
                 ReportErrorAndSkipExpr(toks.PeekToken(), "expected ','");
@@ -577,6 +593,8 @@ namespace Zapf.Parsing
 
         bool TryMatchColon()
         {
+            Debug.Assert(toks != null);
+
             if (toks.PeekToken().Type == TokenType.Colon)
             {
                 toks.NextToken();
@@ -588,6 +606,8 @@ namespace Zapf.Parsing
 
         void MatchColon()
         {
+            Debug.Assert(toks != null);
+
             if (!TryMatchColon())
             {
                 ReportErrorAndSkipExpr(toks.PeekToken(), "expected ':'");
@@ -596,6 +616,8 @@ namespace Zapf.Parsing
 
         bool TryMatchEquals()
         {
+            Debug.Assert(toks != null);
+
             if (toks.PeekToken().Type == TokenType.Equals)
             {
                 toks.NextToken();
@@ -607,6 +629,8 @@ namespace Zapf.Parsing
 
         string MatchSymbol()
         {
+            Debug.Assert(toks != null);
+
             if (toks.PeekToken().Type == TokenType.Symbol)
                 return toks.NextToken().Text;
 
@@ -616,6 +640,8 @@ namespace Zapf.Parsing
 
         string MatchString()
         {
+            Debug.Assert(toks != null);
+
             if (toks.PeekToken().Type == TokenType.String)
                 return toks.NextToken().Text;
 
@@ -623,14 +649,12 @@ namespace Zapf.Parsing
             return "???";
         }
 
-        [NotNull]
         AsmLine IgnoreDirective(Token head)
         {
             SkipLine();
             return new NullDirective();
         }
 
-        [NotNull]
         AsmLine ParseAlignDirective(Token head)
         {
             var divisor = ParseExpr();
@@ -638,7 +662,6 @@ namespace Zapf.Parsing
             return new AlignDirective(divisor);
         }
 
-        [NotNull]
         AsmLine ParseByteDirective(Token head)
         {
             var result = new ByteDirective();
@@ -650,7 +673,6 @@ namespace Zapf.Parsing
             return result;
         }
 
-        [NotNull]
         AsmLine ParseChrsetDirective(Token head)
         {
             var alphabetNum = ParseExpr();
@@ -663,28 +685,24 @@ namespace Zapf.Parsing
             return new ChrsetDirective(alphabetNum, characters);
         }
 
-        [NotNull]
         AsmLine ParseEndDirective(Token head)
         {
             MatchEndOfDirective();
             return new EndDirective();
         }
 
-        [NotNull]
         AsmLine ParseEndiDirective(Token head)
         {
             MatchEndOfDirective();
             return new EndiDirective();
         }
 
-        [NotNull]
         AsmLine ParseEndtDirective(Token head)
         {
             MatchEndOfDirective();
             return new EndtDirective();
         }
 
-        [NotNull]
         AsmLine ParseFstrDirective(Token head)
         {
             var name = MatchSymbol();
@@ -694,7 +712,6 @@ namespace Zapf.Parsing
             return new FstrDirective(name, text);
         }
 
-        [NotNull]
         AsmLine ParseFunctDirective(Token head)
         {
             var result = new FunctDirective(MatchSymbol());
@@ -716,7 +733,6 @@ namespace Zapf.Parsing
             return result;
         }
 
-        [NotNull]
         AsmLine ParseGstrDirective(Token head)
         {
             var name = MatchSymbol();
@@ -726,11 +742,10 @@ namespace Zapf.Parsing
             return new GstrDirective(name, text);
         }
 
-        [NotNull]
         AsmLine ParseGvarDirective(Token head)
         {
             var name = MatchSymbol();
-            AsmExpr initialValue;
+            AsmExpr? initialValue;
             if (TryMatchEquals())
             {
                 initialValue = ParseExpr();
@@ -746,7 +761,6 @@ namespace Zapf.Parsing
             return new GvarDirective(name, initialValue);
         }
 
-        [NotNull]
         AsmLine ParseInsertDirective(Token head)
         {
             var filename = MatchString();
@@ -754,7 +768,6 @@ namespace Zapf.Parsing
             return new InsertDirective(filename);
         }
 
-        [NotNull]
         AsmLine ParseLangDirective(Token head)
         {
             var langId = ParseExpr();
@@ -764,7 +777,6 @@ namespace Zapf.Parsing
             return new LangDirective(langId, escapeChar);
         }
 
-        [NotNull]
         AsmLine ParseLenDirective(Token head)
         {
             var text = MatchString();
@@ -772,7 +784,6 @@ namespace Zapf.Parsing
             return new LenDirective(text);
         }
 
-        [NotNull]
         AsmLine ParseNewDirective(Token head)
         {
             var version = TryParseExpr();
@@ -780,7 +791,6 @@ namespace Zapf.Parsing
             return new NewDirective(version);
         }
 
-        [NotNull]
         AsmLine ParseObjectDirective(Token head)
         {
             var name = MatchSymbol();
@@ -798,7 +808,8 @@ namespace Zapf.Parsing
             MatchComma();
             var propTableOrChild = ParseExpr();    // proptable or child
 
-            AsmExpr flags3, parent, sibling, child, propTable;
+            AsmExpr? flags3;
+            AsmExpr parent, sibling, child, propTable;
             if (TryMatchComma())
             {
                 // flags3 provided
@@ -821,7 +832,6 @@ namespace Zapf.Parsing
             return new ObjectDirective(name, flags1, flags2, flags3, parent, sibling, child, propTable);
         }
 
-        [NotNull]
         AsmLine ParsePropDirective(Token head)
         {
             var size = ParseExpr();
@@ -831,14 +841,12 @@ namespace Zapf.Parsing
             return new PropDirective(size, prop);
         }
 
-        [NotNull]
         AsmLine ParseSoundDirective(Token head)
         {
             MatchEndOfDirective();
             return new SoundDirective();
         }
 
-        [NotNull]
         AsmLine ParseStrDirective(Token head)
         {
             var text = MatchString();
@@ -846,7 +854,6 @@ namespace Zapf.Parsing
             return new StrDirective(text);
         }
 
-        [NotNull]
         AsmLine ParseStrlDirective(Token head)
         {
             var text = MatchString();
@@ -854,7 +861,6 @@ namespace Zapf.Parsing
             return new StrlDirective(text);
         }
 
-        [NotNull]
         AsmLine ParseTableDirective(Token head)
         {
             var size = TryParseExpr();
@@ -862,14 +868,12 @@ namespace Zapf.Parsing
             return new TableDirective(size);
         }
 
-        [NotNull]
         AsmLine ParseTimeDirective(Token head)
         {
             MatchEndOfDirective();
             return new TimeDirective();
         }
 
-        [NotNull]
         AsmLine ParseVocbegDirective(Token head)
         {
             var recordSize = ParseExpr();
@@ -879,14 +883,12 @@ namespace Zapf.Parsing
             return new VocbegDirective(recordSize, keySize);
         }
 
-        [NotNull]
         AsmLine ParseVocendDirective(Token head)
         {
             MatchEndOfDirective();
             return new VocendDirective();
         }
 
-        [NotNull]
         AsmLine ParseWordDirective(Token head)
         {
             var result = new WordDirective();
@@ -898,7 +900,6 @@ namespace Zapf.Parsing
             return result;
         }
 
-        [NotNull]
         AsmLine ParseZwordDirective(Token head)
         {
             var text = MatchString();
@@ -906,7 +907,6 @@ namespace Zapf.Parsing
             return new ZwordDirective(text);
         }
 
-        [NotNull]
         AsmLine ParseDebugActionDirective(Token head)
         {
             var number = ParseExpr();
@@ -916,7 +916,6 @@ namespace Zapf.Parsing
             return new DebugActionDirective(number, name);
         }
 
-        [NotNull]
         AsmLine ParseDebugArrayDirective(Token head)
         {
             var number = ParseExpr();
@@ -926,7 +925,6 @@ namespace Zapf.Parsing
             return new DebugArrayDirective(number, name);
         }
 
-        [NotNull]
         AsmLine ParseDebugAttrDirective(Token head)
         {
             var number = ParseExpr();
@@ -936,7 +934,6 @@ namespace Zapf.Parsing
             return new DebugAttrDirective(number, name);
         }
 
-        [NotNull]
         AsmLine ParseDebugFileDirective(Token head)
         {
             var number = ParseExpr();
@@ -948,7 +945,6 @@ namespace Zapf.Parsing
             return new DebugFileDirective(number, includeName, actualName);
         }
 
-        [NotNull]
         AsmLine ParseDebugGlobalDirective(Token head)
         {
             var number = ParseExpr();
@@ -958,7 +954,6 @@ namespace Zapf.Parsing
             return new DebugGlobalDirective(number, name);
         }
 
-        [NotNull]
         AsmLine ParseDebugLineDirective(Token head)
         {
             var file = ParseExpr();
@@ -970,7 +965,6 @@ namespace Zapf.Parsing
             return new DebugLineDirective(file, line, column);
         }
 
-        [NotNull]
         AsmLine ParseDebugMapDirective(Token head)
         {
             var key = MatchString();
@@ -979,7 +973,6 @@ namespace Zapf.Parsing
             return new DebugMapDirective(key, value);
         }
 
-        [NotNull]
         AsmLine ParseDebugObjectDirective(Token head)
         {
             var number = ParseExpr();
@@ -1004,7 +997,6 @@ namespace Zapf.Parsing
                 endFile, endLine, endColumn);
         }
 
-        [NotNull]
         AsmLine ParseDebugPropDirective(Token head)
         {
             var number = ParseExpr();
@@ -1014,7 +1006,6 @@ namespace Zapf.Parsing
             return new DebugPropDirective(number, name);
         }
 
-        [NotNull]
         AsmLine ParseDebugRoutineDirective(Token head)
         {
             var file = ParseExpr();
@@ -1033,7 +1024,6 @@ namespace Zapf.Parsing
             return new DebugRoutineDirective(file, line, column, name, locals);
         }
 
-        [NotNull]
         AsmLine ParseDebugRoutineEndDirective(Token head)
         {
             var file = ParseExpr();

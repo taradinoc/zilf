@@ -23,15 +23,13 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class LangDirective : Directive
     {
-        public LangDirective([NotNull] AsmExpr langId, [NotNull] AsmExpr escapeChar)
+        public LangDirective(AsmExpr langId, AsmExpr escapeChar)
         {
             LanguageId = langId;
             EscapeChar = escapeChar;
         }
 
-        [NotNull]
         public AsmExpr LanguageId { get; }
-        [NotNull]
         public AsmExpr EscapeChar { get; }
     }
 }

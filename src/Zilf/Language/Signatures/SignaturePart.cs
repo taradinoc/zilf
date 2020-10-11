@@ -25,21 +25,16 @@ namespace Zilf.Language.Signatures
 {
     abstract class SignaturePart : ISignaturePart
     {
-        public ICustomAttributeProvider Source => null;
-        public string Name { get; set; }
+        public ICustomAttributeProvider? Source => null;
+        public string? Name { get; set; }
 
-        [NotNull]
         public abstract Constraint Constraint { get; }
         public abstract int MinArgs { get; }
         public abstract int? MaxArgs { get; }
         public abstract void Accept(ISignatureVisitor visitor);
 
-        [NotNull]
-        [ItemNotNull]
         protected abstract IEnumerable<SignaturePart> GetChildren();
 
-        [NotNull]
-        [ItemNotNull]
         public IEnumerable<SignaturePart> GetDescendants()
         {
             return GetChildren().Concat(GetChildren().SelectMany(c => c.GetDescendants()));

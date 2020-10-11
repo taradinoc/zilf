@@ -28,8 +28,8 @@ namespace Zilf.Tests.Interpreter
     [TestClass, TestCategory("Interpreter")]
     public class OutputTests
     {
-        [NotNull]
-        static ZilStringChannel MakeTestChannel([NotNull] Context ctx)
+        [JetBrains.Annotations.NotNull]
+        static ZilStringChannel MakeTestChannel([JetBrains.Annotations.NotNull] Context ctx)
         {
             var channel = new ZilStringChannel(FileAccess.Write);
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);

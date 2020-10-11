@@ -30,12 +30,10 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.ROUTINE, PrimType.LIST)]
     sealed class ZilRoutine : ZilTiedListBase
     {
-        [ItemNotNull]
-        [NotNull]
         ZilObject[] body;
 
-        public ZilRoutine([CanBeNull] ZilAtom name, [CanBeNull] ZilAtom activationAtom,
-            [NotNull] IEnumerable<ZilObject> argspec, [ItemNotNull] [NotNull] IEnumerable<ZilObject> body, RoutineFlags flags)
+        public ZilRoutine(ZilAtom? name, ZilAtom? activationAtom,
+             IEnumerable<ZilObject> argspec, IEnumerable<ZilObject> body, RoutineFlags flags)
         {
             Name = name;
             ArgSpec = ArgSpec.Parse("ROUTINE", name, activationAtom, argspec);
@@ -44,9 +42,8 @@ namespace Zilf.ZModel.Values
         }
 
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
-        [NotNull]
         [ChtypeMethod]
-        public static ZilRoutine FromList([NotNull] ZilListBase list)
+        public static ZilRoutine FromList(ZilListBase list)
         {
             if (list.Rest?.IsEmpty != true)
                 throw new InterpreterError(
@@ -69,29 +66,23 @@ namespace Zilf.ZModel.Values
                 x => x.BodyAsList);
         }
 
-        [NotNull]
         public ArgSpec ArgSpec { get; private set; }
 
-        [NotNull]
         public IEnumerable<ZilObject> Body => body;
         public int BodyLength => body.Length;
 
-        [CanBeNull]
-        public ZilAtom Name { get; }
+        public ZilAtom? Name { get; }
 
-        [CanBeNull]
-        public ZilAtom ActivationAtom => ArgSpec.ActivationAtom;
+        public ZilAtom? ActivationAtom => ArgSpec.ActivationAtom;
         public RoutineFlags Flags { get; }
 
-        [NotNull]
         ZilList ArgSpecAsList => ArgSpec.ToZilList();
 
-        [NotNull]
         ZilList BodyAsList => new ZilList(body);
 
         public override StdAtom StdTypeAtom => StdAtom.ROUTINE;
 
-        public override bool StructurallyEquals(ZilObject obj)
+        public override bool StructurallyEquals(ZilObject? obj)
         {
             if (!(obj is ZilRoutine other))
                 return false;
@@ -109,7 +100,7 @@ namespace Zilf.ZModel.Values
             return true;
         }
 
-        internal void ExpandInPlace([NotNull] Context ctx)
+        internal void ExpandInPlace(Context ctx)
         {
             IEnumerable<ZilObject> RecursiveExpandWithSplice(ZilObject zo)
             {

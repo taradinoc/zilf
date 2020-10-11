@@ -22,16 +22,14 @@ namespace Zilf.Emit.Zap
 {
     class SumOperand : IConstantOperand
     {
-        public SumOperand([NotNull] IConstantOperand left, [NotNull] IConstantOperand right)
+        public SumOperand(IConstantOperand left, IConstantOperand right)
         {
             Left = left;
             Right = right;
         }
 
-        [NotNull]
         public IConstantOperand Left { get; }
 
-        [NotNull]
         public IConstantOperand Right { get; }
 
         public override string ToString()

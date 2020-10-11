@@ -59,10 +59,12 @@ namespace Zilf.ZModel.Vocab.OldParser
             if (!onlyNumberedInV3 || ctx.ZEnvironment.ZVersion == 3)
             {
                 if (next == 0)
+                {
                     throw new InterpreterError(
                         InterpreterMessages.Too_Many_0_Only_1_Allowed_In_This_Vocab_Format,
                         description,
                         255);
+                }
 
                 value = next--;
             }
@@ -135,10 +137,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             ((OldParserWord)word).WriteToBuilder(ctx, wb, helpers.DirIndexToPropertyOperand);
         }
 
-        static bool CheckPart(IWord word, PartOfSpeech part)
-        {
-            return (((OldParserWord)word).PartOfSpeech & part) != 0;
-        }
+        static bool CheckPart(IWord word, PartOfSpeech part) => (((OldParserWord)word).PartOfSpeech & part) != 0;
 
         public bool IsPreposition(IWord word) => CheckPart(word, PartOfSpeech.Preposition);
         public bool IsAdjective(IWord word) => CheckPart(word, PartOfSpeech.Adjective);
@@ -153,10 +152,7 @@ namespace Zilf.ZModel.Vocab.OldParser
         public void MakeSynonym(IWord synonym, IWord original, PartOfSpeech partOfSpeech) =>
             MakeSynonym(synonym, original);
 
-        static byte GetPart(IWord word, PartOfSpeech part)
-        {
-            return ((OldParserWord)word).GetValue(part);
-        }
+        static byte GetPart(IWord word, PartOfSpeech part) => ((OldParserWord)word).GetValue(part);
 
         public byte GetPrepositionValue(IWord word) => GetPart(word, PartOfSpeech.Preposition);
         public byte GetAdjectiveValue(IWord word) => GetPart(word, PartOfSpeech.Adjective);
@@ -177,10 +173,10 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void BuildLateSyntaxTables(BuildLateSyntaxTablesHelpers helpers)
         {
-            var prepositionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PRTBL));
-            var actionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.ATBL));
-            var preactionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PATBL));
-            var verbsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.VTBL));
+            var prepositionsTable = (ITableBuilder?)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PRTBL));
+            var actionsTable = (ITableBuilder?)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.ATBL));
+            var preactionsTable = (ITableBuilder?)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PATBL));
+            var verbsTable = (ITableBuilder?)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.VTBL));
 
             Debug.Assert(prepositionsTable != null);
             Debug.Assert(actionsTable != null);

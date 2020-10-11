@@ -30,16 +30,14 @@ namespace Zilf.Interpreter
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
         public abstract class SubrAttributeBase : Attribute
         {
-            protected SubrAttributeBase([CanBeNull] string name)
+            protected SubrAttributeBase(string? name)
             {
                 Name = name;
             }
 
-            [CanBeNull]
-            public string Name { get; }
+            public string? Name { get; }
 
-            [CanBeNull]
-            public string ObList { get; set; }
+            public string? ObList { get; set; }
         }
 
         public sealed class SubrAttribute : SubrAttributeBase
@@ -49,7 +47,7 @@ namespace Zilf.Interpreter
             {
             }
 
-            public SubrAttribute([NotNull] string name)
+            public SubrAttribute(string name)
                 : base(name)
             {
             }
@@ -62,7 +60,7 @@ namespace Zilf.Interpreter
             {
             }
 
-            public FSubrAttribute([NotNull] string name)
+            public FSubrAttribute(string name)
                 : base(name)
             {
             }
@@ -71,16 +69,14 @@ namespace Zilf.Interpreter
         [AttributeUsage(AttributeTargets.Method)]
         public sealed class MdlZilRedirectAttribute : Attribute
         {
-            public MdlZilRedirectAttribute([NotNull] Type type, [NotNull] string target)
+            public MdlZilRedirectAttribute(Type type, string target)
             {
                 Type = type;
                 Target = target;
             }
 
-            [NotNull]
             public Type Type { get; }
 
-            [NotNull]
             public string Target { get; }
 
             public bool TopLevelOnly { get; set; }

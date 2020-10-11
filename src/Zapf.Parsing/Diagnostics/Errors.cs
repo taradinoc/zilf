@@ -16,62 +16,62 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 
 namespace Zapf.Parsing.Diagnostics
 {
     public static class Errors
     {
-        public static void Warn([NotNull] IErrorSink sink, [CanBeNull] ISourceLine node, [NotNull] string message)
+        public static void Warn(IErrorSink sink, ISourceLine? node, string message)
         {
             sink.HandleWarning(new Warning(node, message));
         }
 
         [StringFormatMethod("format")]
-        public static void Warn([NotNull] IErrorSink sink, [CanBeNull] ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
+        public static void Warn(IErrorSink sink, ISourceLine? node, string format, params object[] args)
         {
             Warn(sink, node, string.Format(format, args));
         }
 
-        public static void Serious([NotNull] IErrorSink sink, [NotNull] string message)
+        public static void Serious(IErrorSink sink, string message)
         {
             Serious(sink, null, message);
         }
 
         [StringFormatMethod("format")]
-        public static void Serious([NotNull] IErrorSink sink, [NotNull] string format, [NotNull] params object[] args)
+        public static void Serious(IErrorSink sink, string format, params object[] args)
         {
             Serious(sink, string.Format(format, args));
         }
 
-        public static void Serious([NotNull] IErrorSink sink, ISourceLine node, [NotNull] string message)
+        public static void Serious(IErrorSink sink, ISourceLine? node, string message)
         {
             sink.HandleSeriousError(new SeriousError(node, message));
         }
 
         [StringFormatMethod("format")]
-        public static void Serious([NotNull] IErrorSink sink, ISourceLine node, [NotNull] string format,
-            [NotNull] params object[] args)
+        public static void Serious(IErrorSink sink, ISourceLine? node, string format,
+             params object[] args)
         {
             Serious(sink, node, string.Format(format, args));
         }
 
-        [NotNull]
-        public static SeriousError MakeSerious(ISourceLine node, [NotNull] string message)
+        public static SeriousError MakeSerious(ISourceLine? node, string message)
         {
             return new SeriousError(node, message);
         }
 
-        [NotNull]
         [StringFormatMethod("format")]
-        public static SeriousError MakeSerious(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
+        public static SeriousError MakeSerious(ISourceLine? node, string format, params object[] args)
         {
             return MakeSerious(node, string.Format(format, args));
         }
 
         /// <exception cref="SeriousError">Always thrown.</exception>
         [ContractAnnotation("=> halt")]
-        public static void ThrowSerious([NotNull] string message)
+        [DoesNotReturn]
+        public static void ThrowSerious(string message)
         {
             ThrowSerious(null, message);
         }
@@ -79,14 +79,16 @@ namespace Zapf.Parsing.Diagnostics
         /// <exception cref="SeriousError">Always thrown.</exception>
         [ContractAnnotation("=> halt")]
         [StringFormatMethod("format")]
-        public static void ThrowSerious([NotNull] string format, [NotNull] params object[] args)
+        [DoesNotReturn]
+        public static void ThrowSerious(string format, params object[] args)
         {
             ThrowSerious(null, format, args);
         }
 
         /// <exception cref="SeriousError">Always thrown.</exception>
         [ContractAnnotation("=> halt")]
-        public static void ThrowSerious(ISourceLine node, [NotNull] string message)
+        [DoesNotReturn]
+        public static void ThrowSerious(ISourceLine? node, string message)
         {
             throw MakeSerious(node, message);
         }
@@ -94,14 +96,16 @@ namespace Zapf.Parsing.Diagnostics
         /// <exception cref="SeriousError">Always thrown.</exception>
         [ContractAnnotation("=> halt")]
         [StringFormatMethod("format")]
-        public static void ThrowSerious(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
+        [DoesNotReturn]
+        public static void ThrowSerious(ISourceLine? node, string format, params object[] args)
         {
             throw MakeSerious(node, format, args);
         }
 
         /// <exception cref="FatalError">Always thrown.</exception>
         [ContractAnnotation("=> halt")]
-        public static void ThrowFatal([NotNull] string message)
+        [DoesNotReturn]
+        public static void ThrowFatal(string message)
         {
             ThrowFatal(null, message);
         }
@@ -109,14 +113,16 @@ namespace Zapf.Parsing.Diagnostics
         /// <exception cref="FatalError">Always thrown.</exception>
         [ContractAnnotation("=> halt")]
         [StringFormatMethod("format")]
-        public static void ThrowFatal([NotNull] string format, [NotNull] params object[] args)
+        [DoesNotReturn]
+        public static void ThrowFatal(string format, params object[] args)
         {
             ThrowFatal(null, format, args);
         }
 
         /// <exception cref="FatalError">Always thrown.</exception>
         [ContractAnnotation("=> halt")]
-        public static void ThrowFatal(ISourceLine node, [NotNull] string message)
+        [DoesNotReturn]
+        public static void ThrowFatal(ISourceLine? node, string message)
         {
             throw new FatalError(node, message);
         }
@@ -124,7 +130,8 @@ namespace Zapf.Parsing.Diagnostics
         /// <exception cref="FatalError">Always thrown.</exception>
         [ContractAnnotation("=> halt")]
         [StringFormatMethod("format")]
-        public static void ThrowFatal(ISourceLine node, [NotNull] string format, [NotNull] params object[] args)
+        [DoesNotReturn]
+        public static void ThrowFatal(ISourceLine? node, string format, params object[] args)
         {
             ThrowFatal(node, string.Format(format, args));
         }

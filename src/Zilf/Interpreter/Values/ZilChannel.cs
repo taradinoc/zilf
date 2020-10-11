@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using Zilf.Language;
@@ -35,7 +36,10 @@ namespace Zilf.Interpreter.Values
     {
         /// <exception cref="InterpreterError">Always thrown.</exception>
         [ChtypeMethod]
-        public static ZilChannel FromVector([NotNull] Context ctx, [NotNull] ZilVector vector) =>
+        [DoesNotReturn]
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        [SuppressMessage("Performance", "CA1801:Unused parameter")]
+        public static ZilChannel FromVector(Context ctx, ZilVector vector) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "CHANNEL");
 
         public override StdAtom StdTypeAtom => StdAtom.CHANNEL;
@@ -56,7 +60,7 @@ namespace Zilf.Interpreter.Values
     {
         readonly FileAccess fileAccess;
         readonly string path;
-        Stream stream;
+        Stream? stream;
 
         public ZilFileChannel(string path, FileAccess fileAccess)
         {
@@ -64,17 +68,12 @@ namespace Zilf.Interpreter.Values
             this.fileAccess = fileAccess;
         }
 
-        public override string ToString()
-        {
-            return $"#CHANNEL [{(fileAccess == FileAccess.Read ? "READ" : "NONE")} {ZilString.Quote(path)}]";
-        }
+        public override string ToString() =>
+            $"#CHANNEL [{(fileAccess == FileAccess.Read ? "READ" : "NONE")} {ZilString.Quote(path)}]";
 
-        [NotNull]
-        public override ZilObject GetPrimitive([NotNull] Context ctx)
-        {
-            return new ZilVector(ctx.GetStdAtom(fileAccess == FileAccess.Read ? StdAtom.READ : StdAtom.NONE),
+        public override ZilObject GetPrimitive(Context ctx) =>
+            new ZilVector(ctx.GetStdAtom(fileAccess == FileAccess.Read ? StdAtom.READ : StdAtom.NONE),
                 ZilString.FromString(path));
-        }
 
         public override void Reset(Context ctx)
         {
@@ -84,29 +83,24 @@ namespace Zilf.Interpreter.Values
 
         public override void Close()
         {
-            if (stream != null)
+            if (stream == null)
+                return;
+
+            try
             {
-                try
-                {
-                    stream.Close();
-                }
-                finally
-                {
-                    stream = null;
-                }
+                stream.Close();
+            }
+            finally
+            {
+                stream = null;
             }
         }
 
         public override long? GetFileLength()
         {
-            if (stream == null)
-            {
-                return null;
-            }
-
             try
             {
-                return stream.Length;
+                return stream?.Length;
             }
             catch (NotSupportedException)
             {
@@ -124,20 +118,11 @@ namespace Zilf.Interpreter.Values
             return result == -1 ? (char?)null : (char)result;
         }
 
-        public override bool WriteChar(char c)
-        {
-            return false;
-        }
+        public override bool WriteChar(char c) => false;
 
-        public override int WriteNewline()
-        {
-            return 0;
-        }
+        public override int WriteNewline() => 0;
 
-        public override int WriteString(string s)
-        {
-            return 0;
-        }
+        public override int WriteString(string s) => 0;
     }
 
     [BuiltinAlternate(typeof(ZilChannel))]
@@ -152,20 +137,13 @@ namespace Zilf.Interpreter.Values
                 throw new ArgumentException("Only Write mode is supported", nameof(fileAccess));
         }
 
-        [NotNull]
         public string String => sb.ToString();
 
-        public override string ToString()
-        {
-            return $"#CHANNEL [PRINT STRING {ZilString.Quote(sb.ToString())}]";
-        }
+        public override string ToString() => $"#CHANNEL [PRINT STRING {ZilString.Quote(sb.ToString())}]";
 
-        [NotNull]
-        public override ZilObject GetPrimitive([NotNull] Context ctx)
-        {
-            return new ZilVector(ctx.GetStdAtom(StdAtom.PRINT), ctx.GetStdAtom(StdAtom.STRING),
+        public override ZilObject GetPrimitive(Context ctx) =>
+            new ZilVector(ctx.GetStdAtom(StdAtom.PRINT), ctx.GetStdAtom(StdAtom.STRING),
                 ZilString.FromString(sb.ToString()));
-        }
 
         public override void Reset(Context ctx)
         {
@@ -177,15 +155,9 @@ namespace Zilf.Interpreter.Values
             // nada
         }
 
-        public override long? GetFileLength()
-        {
-            return null;
-        }
+        public override long? GetFileLength() => null;
 
-        public override char? ReadChar()
-        {
-            return null;
-        }
+        public override char? ReadChar() => null;
 
         public override bool WriteChar(char c)
         {
@@ -199,7 +171,7 @@ namespace Zilf.Interpreter.Values
             return 1;
         }
 
-        public override int WriteString([NotNull] string s)
+        public override int WriteString(string s)
         {
             sb.Append(s);
             return s.Length;
@@ -216,16 +188,9 @@ namespace Zilf.Interpreter.Values
                 throw new ArgumentException("Only Write mode is supported", nameof(fileAccess));
         }
 
-        public override string ToString()
-        {
-            return "#CHANNEL [PRINT CONSOLE]";
-        }
+        public override string ToString() => "#CHANNEL [PRINT CONSOLE]";
 
-        [NotNull]
-        public override ZilObject GetPrimitive([NotNull] Context ctx)
-        {
-            return new ZilVector(ctx.GetStdAtom(StdAtom.PRINT), ctx.GetStdAtom(StdAtom.CONSOLE));
-        }
+        public override ZilObject GetPrimitive(Context ctx) => new ZilVector(ctx.GetStdAtom(StdAtom.PRINT), ctx.GetStdAtom(StdAtom.CONSOLE));
 
         public override void Reset(Context ctx)
         {
@@ -237,15 +202,9 @@ namespace Zilf.Interpreter.Values
             // nada
         }
 
-        public override long? GetFileLength()
-        {
-            return null;
-        }
+        public override long? GetFileLength() => null;
 
-        public override char? ReadChar()
-        {
-            return null;
-        }
+        public override char? ReadChar() => null;
 
         public override bool WriteChar(char c)
         {
@@ -259,7 +218,7 @@ namespace Zilf.Interpreter.Values
             return Environment.NewLine.Length;
         }
 
-        public override int WriteString([NotNull] string s)
+        public override int WriteString(string s)
         {
             Console.Write(s);
             return s.Length;

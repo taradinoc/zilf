@@ -36,13 +36,11 @@ namespace Zilf.Interpreter.Values
             this.value = value;
         }
 
-        [NotNull]
         [ChtypeMethod]
-        public static ZilChar FromFix([NotNull] ZilFix fix) => new ZilChar(fix.Value);
+        public static ZilChar FromFix(ZilFix fix) => new ZilChar(fix.Value);
 
         public char Char => (char)value;
 
-        [NotNull]
         public override string ToString()
         {
             return "!\\" + Char;
@@ -57,13 +55,9 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.FIX;
 
-        [NotNull]
         public override ZilObject GetPrimitive(Context ctx) => new ZilFix(value);
 
-        public override bool ExactlyEquals(ZilObject obj)
-        {
-            return obj is ZilChar other && other.value == value;
-        }
+        public override bool ExactlyEquals(ZilObject? obj) => obj is ZilChar other && other.value == value;
 
         public override int GetHashCode() => value;
     }

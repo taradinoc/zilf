@@ -27,18 +27,14 @@ namespace Zilf.Compiler.Builtins
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     struct PredCall
     {
-        [NotNull]
         public Compilation cc { get; }
-        [NotNull]
         public IRoutineBuilder rb { get; }
-        [NotNull]
         public ZilForm form { get; }
 
-        [NotNull]
         public ILabel label { get; }
         public bool polarity { get; }
 
-        public PredCall([NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, [NotNull] ILabel label, bool polarity)
+        public PredCall(Compilation cc, IRoutineBuilder rb, ZilForm form, ILabel label, bool polarity)
             : this()
         {
             this.cc = cc;

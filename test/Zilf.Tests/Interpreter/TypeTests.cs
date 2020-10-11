@@ -1187,7 +1187,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [ItemNotNull]
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         static IEnumerable<Type> GetConcreteZilObjectTypes()
         {
             return from t in typeof(ZilObject).Assembly.GetTypes()

@@ -25,7 +25,7 @@ namespace Zapf.Parsing.Instructions
     [MeansImplicitUse]
     public class ZOpAttribute : Attribute
     {
-        public ZOpAttribute([NotNull] string classicName, [NotNull] string informName, int minVer, int maxVer, ZOpFlags flags)
+        public ZOpAttribute(string classicName, string informName, int minVer, int maxVer, ZOpFlags flags)
         {
             ClassicName = classicName;
             InformName = informName;
@@ -34,10 +34,8 @@ namespace Zapf.Parsing.Instructions
             Flags = flags;
         }
 
-        [NotNull]
         public string ClassicName { get; }
 
-        [NotNull]
         public string InformName { get; }
 
         public int MinVer { get; }
@@ -46,7 +44,6 @@ namespace Zapf.Parsing.Instructions
 
         public ZOpFlags Flags { get; }
 
-        [CanBeNull]
-        public string WhenExtra { get; set; }
+        public string? WhenExtra { get; set; }
     }
 }

@@ -67,7 +67,7 @@ namespace Zilf.Tests.Integration
         }
 
         [LinqTunnel]
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         [UsedImplicitly]
         static IEnumerable<string[]> GetProjects()
         {
@@ -82,7 +82,7 @@ namespace Zilf.Tests.Integration
         [DataTestMethod]
         [DynamicData("GetProjects", DynamicDataSourceType.Method)]
         [Timeout(PerTestTimeoutMilliseconds)]
-        public void TestProjects([NotNull] string baseName, [NotNull] string dir, [NotNull] string mainZilFile)
+        public void TestProjects([JetBrains.Annotations.NotNull] string baseName, [JetBrains.Annotations.NotNull] string dir, [JetBrains.Annotations.NotNull] string mainZilFile)
         {
             Console.WriteLine("Testing {0}", dir);
 
@@ -145,22 +145,22 @@ namespace Zilf.Tests.Integration
             }
         }
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         static readonly Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         static readonly Regex ZilfVersionRegex = new Regex(@"ZILF [0-9.a-z]+ lib \S+");
 
-        [NotNull]
-        static string MassageText([NotNull] string text)
+        [JetBrains.Annotations.NotNull]
+        static string MassageText([JetBrains.Annotations.NotNull] string text)
         {
             text = SerialNumberRegex.Replace(text, "######");
             text = ZilfVersionRegex.Replace(text, "ZILF #.# lib ##");
             return text;
         }
 
-        [NotNull]
-        static string[] SplitLines([NotNull] string text)
+        [JetBrains.Annotations.NotNull]
+        static string[] SplitLines([JetBrains.Annotations.NotNull] string text)
         {
             var lines = text.Split('\n');
             for (int i = 0; i < lines.Length; i++)

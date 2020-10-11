@@ -23,15 +23,13 @@ namespace Zapf.Parsing.Directives
 {
     public struct FunctLocal
     {
-        public FunctLocal([NotNull] string name, [CanBeNull] AsmExpr defaultValue)
+        public FunctLocal(string name, AsmExpr? defaultValue)
         {
             Name = name;
             DefaultValue = defaultValue;
         }
 
-        [NotNull]
         public readonly string Name;
-        [CanBeNull]
-        public readonly AsmExpr DefaultValue;
+        public readonly AsmExpr? DefaultValue;
     }
 }

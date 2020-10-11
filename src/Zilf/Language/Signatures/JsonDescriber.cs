@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Newtonsoft.Json.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -29,17 +28,21 @@ namespace Zilf.Language.Signatures
 {
     static class VisitingExtensions
     {
-        public static T AcceptForValue<T>([NotNull] this ISignaturePart part, [NotNull] SignatureVisitorWithValue<T> visitor)
+        public static T AcceptForValue<T>(this ISignaturePart part, SignatureVisitorWithValue<T> visitor)
+            where T : class
         {
-            return visitor.Run(part);
+            var result = visitor.Run(part);
+            System.Diagnostics.Debug.Assert(result != null);
+            return result;
         }
     }
 
     abstract class SignatureVisitorWithValue<T> : ISignatureVisitor
+        where T : class
     {
-        T result;
+        T? result;
 
-        internal T Run([NotNull] ISignaturePart part)
+        internal T? Run(ISignaturePart part)
         {
             part.Accept(this);
             PostProcess(part, ref result);
@@ -47,22 +50,22 @@ namespace Zilf.Language.Signatures
         }
 
         [SuppressMessage("ReSharper", "UnusedParameter.Global")]
-        protected virtual void PostProcess([NotNull] ISignaturePart part, ref T pendingResult)
+        protected virtual void PostProcess(ISignaturePart part, ref T? pendingResult)
         {
             // by default, nada
         }
 
-        protected abstract T Visit([NotNull] AdeclPart part);
-        protected abstract T Visit([NotNull] AlternativesPart part);
-        protected abstract T Visit([NotNull] AnyPart part);
-        protected abstract T Visit([NotNull] ConstrainedPart part);
-        protected abstract T Visit([NotNull] FormPart part);
-        protected abstract T Visit([NotNull] ListPart part);
-        protected abstract T Visit([NotNull] LiteralPart part);
-        protected abstract T Visit([NotNull] OptionalPart part);
-        protected abstract T Visit([NotNull] QuotedPart part);
-        protected abstract T Visit([NotNull] SequencePart part);
-        protected abstract T Visit([NotNull] VarArgsPart part);
+        protected abstract T Visit(AdeclPart part);
+        protected abstract T Visit(AlternativesPart part);
+        protected abstract T Visit(AnyPart part);
+        protected abstract T Visit(ConstrainedPart part);
+        protected abstract T Visit(FormPart part);
+        protected abstract T Visit(ListPart part);
+        protected abstract T Visit(LiteralPart part);
+        protected abstract T Visit(OptionalPart part);
+        protected abstract T Visit(QuotedPart part);
+        protected abstract T Visit(SequencePart part);
+        protected abstract T Visit(VarArgsPart part);
 
         #region ISignatureVisitor implementation
 
@@ -89,8 +92,7 @@ namespace Zilf.Language.Signatures
         {
         }
 
-        [NotNull]
-        public static JObject Describe([NotNull] ISignature signature)
+        public static JObject Describe(ISignature signature)
         {
             var parts = signature.Parts.Select(p => p.AcceptForValue(Instance));
             var result = new JObject
@@ -130,15 +132,14 @@ namespace Zilf.Language.Signatures
             return result;
         }
 
-        protected override void PostProcess(ISignaturePart part, ref JObject pendingResult)
+        protected override void PostProcess(ISignaturePart part, ref JObject? pendingResult)
         {
-            if (part.Name != null)
+            if (pendingResult != null && part.Name != null)
             {
                 pendingResult["name"] = part.Name;
             }
         }
 
-        [NotNull]
         protected override JObject Visit(VarArgsPart part)
         {
             var result = new JObject { ["$rest"] = part.Inner.AcceptForValue(this) };
@@ -149,7 +150,6 @@ namespace Zilf.Language.Signatures
             return result;
         }
 
-        [NotNull]
         protected override JObject Visit(AdeclPart part)
         {
             return new JObject
@@ -159,7 +159,6 @@ namespace Zilf.Language.Signatures
             };
         }
 
-        [NotNull]
         protected override JObject Visit(AlternativesPart part)
         {
             return new JObject
@@ -168,13 +167,11 @@ namespace Zilf.Language.Signatures
             };
         }
 
-        [NotNull]
         protected override JObject Visit(AnyPart part)
         {
             return new JObject();
         }
 
-        [NotNull]
         protected override JObject Visit(ConstrainedPart part)
         {
             var result = part.Inner.AcceptForValue(this);
@@ -182,7 +179,6 @@ namespace Zilf.Language.Signatures
             return result;
         }
 
-        [NotNull]
         protected override JObject Visit(FormPart part)
         {
             return new JObject
@@ -192,7 +188,6 @@ namespace Zilf.Language.Signatures
             };
         }
 
-        [NotNull]
         protected override JObject Visit(ListPart part)
         {
             return new JObject
@@ -202,19 +197,16 @@ namespace Zilf.Language.Signatures
             };
         }
 
-        [NotNull]
         protected override JObject Visit(LiteralPart part)
         {
             return new JObject { ["$literal"] = part.Text };
         }
 
-        [NotNull]
         protected override JObject Visit(OptionalPart part)
         {
             return new JObject { ["$opt"] = part.Inner.AcceptForValue(this) };
         }
 
-        [NotNull]
         protected override JObject Visit(QuotedPart part)
         {
             var result = part.Inner.AcceptForValue(this);
@@ -222,7 +214,6 @@ namespace Zilf.Language.Signatures
             return result;
         }
 
-        [NotNull]
         protected override JObject Visit(SequencePart part)
         {
             return new JObject
@@ -233,14 +224,14 @@ namespace Zilf.Language.Signatures
 
         class ConstraintDescriber : IConstraintVisitor
         {
-            public static JObject Describe([NotNull] Constraint constraint)
+            public static JObject? Describe(Constraint constraint)
             {
                 var describer = new ConstraintDescriber();
                 constraint.Accept(describer);
                 return describer.result;
             }
 
-            JObject result;
+            JObject? result;
 
             public void VisitAnyObjectConstraint()
             {

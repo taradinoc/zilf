@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
@@ -26,12 +27,13 @@ namespace Zilf.Interpreter.Values
     [BuiltinPrimType(PrimType.LIST)]
     abstract class ZilListoidBase : ZilObject, IStructure
     {
-        [CanBeNull]
-        public abstract ZilObject First { get; set; }
-        [CanBeNull]
-        public abstract ZilListoidBase Rest { get; set; }
+        [NotNullIfNotNull(nameof(Rest)), DisallowNull]
+        public abstract ZilObject? First { get; set; }
 
-        public void Deconstruct([NotNull] out ZilObject first, [NotNull] out ZilListoidBase rest)
+        [NotNullIfNotNull(nameof(First)), DisallowNull]
+        public abstract ZilListoidBase? Rest { get; set; }
+
+        public void Deconstruct(out ZilObject first, out ZilListoidBase rest)
         {
             if (IsEmpty)
                 throw new InvalidOperationException("Cannot deconstruct an empty list");
@@ -46,7 +48,7 @@ namespace Zilf.Interpreter.Values
 
         [ContractAnnotation("=> true, first: notnull, rest: notnull")]
         [ContractAnnotation("=> false, first: null, rest: null")]
-        public bool IsCons([CanBeNull] out ZilObject first, [CanBeNull] out ZilListoidBase rest)
+        public bool IsCons([NotNullWhen(true)] out ZilObject? first, [NotNullWhen(true)] out ZilListoidBase? rest)
         {
             (first, rest) = (this.First, this.Rest);
             Debug.Assert(first == null && rest == null || first != null && rest != null);
@@ -61,16 +63,15 @@ namespace Zilf.Interpreter.Values
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public ZilObject GetFirst() => First;
-        IStructure IStructure.GetRest(int skip) => GetRest(skip);
-        [CanBeNull]
-        public abstract ZilListoidBase GetRest(int skip);
-        public IStructure GetBack(int skip) => throw new NotSupportedException();
+        public ZilObject? GetFirst() => First;
+        IStructure? IStructure.GetRest(int skip) => GetRest(skip);
+        public abstract ZilListoidBase? GetRest(int skip);
+        public IStructure? GetBack(int skip) => throw new NotSupportedException();
         public IStructure GetTop() => throw new NotSupportedException();
         public void Grow(int end, int beginning, ZilObject defaultValue) =>
             throw new NotSupportedException();
 
-        [CanBeNull]
+        [MaybeNull]
         public abstract ZilObject this[int index] { get; set; }
         public abstract int GetLength();
         public abstract int? GetLength(int limit);
@@ -79,14 +80,13 @@ namespace Zilf.Interpreter.Values
         /// Enumerates the items of the list, yielding a final <see langword="null"/> instead of repeating if the list is recursive.
         /// </summary>
         /// <returns></returns>
-        [ItemCanBeNull]
         [System.Diagnostics.Contracts.Pure]
-        public IEnumerable<ZilObject> EnumerateNonRecursive()
+        public IEnumerable<ZilObject?> EnumerateNonRecursive()
         {
             var seen = new HashSet<ZilListoidBase>(ReferenceEqualityComparer<ZilListoidBase>.Instance);
             var list = this;
 
-            while (!list.IsEmpty)
+            while (list.IsCons(out var first, out var rest))
             {
                 if (seen.Contains(list))
                 {
@@ -95,13 +95,11 @@ namespace Zilf.Interpreter.Values
                 }
 
                 seen.Add(list);
-                yield return list.First;
-                list = list.Rest;
-                Debug.Assert(list != null);
+                yield return first;
+                list = rest;
             }
         }
 
-        [NotNull]
         public ZilList AsZilList()
         {
             if (this is ZilList list)

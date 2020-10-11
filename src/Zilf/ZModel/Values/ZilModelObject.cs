@@ -29,7 +29,7 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.OBJECT, PrimType.LIST)]
     class ZilModelObject : ZilTiedListBase
     {
-        public ZilModelObject([NotNull] ZilAtom name, [NotNull] ZilList[] props, bool isRoom)
+        public ZilModelObject(ZilAtom name, ZilList[] props, bool isRoom)
         {
             Name = name;
             Properties = props;
@@ -37,13 +37,12 @@ namespace Zilf.ZModel.Values
         }
 
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
-        [NotNull]
         [ChtypeMethod]
-        public static ZilModelObject FromList([NotNull] ZilListBase list)
+        public static ZilModelObject FromList(ZilListBase list)
         {
             if (!list.IsCons(out var first, out var rest))
                 throw new InterpreterError(
-                    InterpreterMessages._0_Must_Have_1_Element1s, 
+                    InterpreterMessages._0_Must_Have_1_Element1s,
                     "list coerced to OBJECT",
                     new CountableString("at least 1", false));
 
@@ -63,18 +62,14 @@ namespace Zilf.ZModel.Values
             return new ZilModelObject(atom, props.Cast<ZilList>().ToArray(), objectOrRoom.StdAtom == StdAtom.ROOM);
         }
 
-        [NotNull]
         public ZilAtom Name { get; }
 
-        [NotNull]
         public ZilList[] Properties { get; }
 
         public bool IsRoom { get; }
 
-        [NotNull]
         public ZilAtom ObjectOrRoom => GetStdAtom(IsRoom ? StdAtom.ROOM : StdAtom.OBJECT);
 
-        [NotNull]
         public ZilList PropertiesList => new ZilList(Properties);
 
         protected override TiedLayout GetLayout()

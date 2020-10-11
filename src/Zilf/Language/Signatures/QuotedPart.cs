@@ -24,16 +24,14 @@ namespace Zilf.Language.Signatures
 {
     sealed class QuotedPart : SignaturePart
     {
-        [NotNull]
         public SignaturePart Inner { get; }
 
-        QuotedPart([NotNull] SignaturePart inner)
+        QuotedPart(SignaturePart inner)
         {
             Inner = inner;
         }
 
-        [NotNull]
-        public static SignaturePart From([NotNull] SignaturePart inner)
+        public static SignaturePart From(SignaturePart inner)
         {
             if (inner is AlternativesPart ap)
             {

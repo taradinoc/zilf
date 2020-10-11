@@ -36,8 +36,7 @@ namespace Zilf.Interpreter.Values
 
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
         [ChtypeMethod]
-        [NotNull]
-        public static ZilEvalMacro FromList([NotNull] Context ctx, [NotNull] ZilListBase list)
+        public static ZilEvalMacro FromList(Context ctx, ZilListBase list)
         {
             if (list.First == null || list.Rest == null || list.Rest.First != null)
             {
@@ -101,11 +100,9 @@ namespace Zilf.Interpreter.Values
         }
 
         /// <exception cref="InterpreterError">The contained value is not an applicable type.</exception>
-        public ZilResult Expand([NotNull] Context ctx, [NotNull] ZilObject[] args)
+        public ZilResult Expand(Context ctx, ZilObject[] args)
         {
-            var applicable = WrappedValue.AsApplicable(ctx);
-
-            if (applicable == null)
+            if (!WrappedValue.IsApplicable(ctx, out var applicable))
                 throw new InterpreterError(InterpreterMessages.Not_An_Applicable_Type_0, WrappedValue.GetTypeAtom(ctx));
 
             var result = ctx.ExecuteInMacroEnvironment(
@@ -115,11 +112,9 @@ namespace Zilf.Interpreter.Values
         }
 
         /// <exception cref="InterpreterError">The contained value is not an applicable type.</exception>
-        public ZilResult ExpandNoEval([NotNull] Context ctx, [NotNull] ZilObject[] args)
+        public ZilResult ExpandNoEval(Context ctx, ZilObject[] args)
         {
-            var applicable = WrappedValue.AsApplicable(ctx);
-
-            if (applicable == null)
+            if (!WrappedValue.IsApplicable(ctx, out var applicable))
                 throw new InterpreterError(InterpreterMessages.Not_An_Applicable_Type_0, WrappedValue.GetTypeAtom(ctx));
 
             var result = ctx.ExecuteInMacroEnvironment(
@@ -128,9 +123,7 @@ namespace Zilf.Interpreter.Values
             return result.ShouldPass() ? result : MakeSpliceExpandable((ZilObject)result);
         }
 
-        public override bool StructurallyEquals(ZilObject obj)
-        {
-            return obj is ZilEvalMacro other && other.WrappedValue.StructurallyEquals(WrappedValue);
-        }
+        public override bool StructurallyEquals(ZilObject? obj) =>
+            obj is ZilEvalMacro other && other.WrappedValue.StructurallyEquals(WrappedValue);
     }
 }

@@ -16,6 +16,9 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Security;
 using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
@@ -23,9 +26,9 @@ namespace Zilf.Interpreter
 {
     static class ApplicableExtensions
     {
-        [CanBeNull]
         [ContractAnnotation("zo: null => null")]
-        public static IApplicable AsApplicable([CanBeNull] this ZilObject zo, [NotNull] Context ctx)
+        [Obsolete("Use IsApplicable(this ZilObject, Context, out IApplicable?) instead.")]
+        public static IApplicable? AsApplicable(this ZilObject? zo, Context ctx)
         {
             if (zo == null)
                 return null;
@@ -39,12 +42,39 @@ namespace Zilf.Interpreter
         }
 
         [ContractAnnotation("zo: null => false")]
-        public static bool IsApplicable([CanBeNull] this ZilObject zo, [NotNull] Context ctx)
+        public static bool IsApplicable([NotNullWhen(true)] this ZilObject? zo, Context ctx)
         {
             if (zo == null)
                 return false;
 
             return zo is IApplicable || ctx.GetApplyTypeDelegate(zo.GetTypeAtom(ctx)) != null;
+        }
+
+        public static bool IsApplicable([NotNullWhen(true)] this ZilObject? zo, Context ctx,
+            [NotNullWhen(true)] out IApplicable? asApplicable)
+        {
+            if (zo == null)
+            {
+                asApplicable = null;
+                return false;
+            }
+
+            var del = ctx.GetApplyTypeDelegate(zo.GetTypeAtom(ctx));
+
+            if (del != null)
+            {
+                asApplicable = new ApplicableWrapper(zo, del);
+                return true;
+            }
+
+            if (zo is IApplicable applicable)
+            {
+                asApplicable = applicable;
+                return true;
+            }
+
+            asApplicable = null;
+            return false;
         }
 
         sealed class ApplicableWrapper : IApplicable
@@ -58,17 +88,12 @@ namespace Zilf.Interpreter
                 this.del = del;
             }
 
-            public ZilResult Apply(Context ctx, ZilObject[] args)
-            {
-                return ZilObject.EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr)
+            public ZilResult Apply(Context ctx, ZilObject[] args) =>
+                ZilObject.EvalSequence(ctx, args).TryToZilObjectArray(out args!, out var zr)
                     ? del(zo, args)
                     : zr;
-            }
 
-            public ZilResult ApplyNoEval(Context ctx, ZilObject[] args)
-            {
-                return del(zo, args);
-            }
+            public ZilResult ApplyNoEval(Context ctx, ZilObject[] args) => del(zo, args);
         }
     }
 }

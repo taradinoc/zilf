@@ -23,9 +23,9 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class DebugObjectDirective : DebugDirective
     {
-        public DebugObjectDirective([NotNull] AsmExpr number, [NotNull] string name,
-            [NotNull] AsmExpr startFile, [NotNull] AsmExpr startLine, [NotNull] AsmExpr startColumn,
-            [NotNull] AsmExpr endFile, [NotNull] AsmExpr endLine, [NotNull] AsmExpr endColumn)
+        public DebugObjectDirective(AsmExpr number, string name,
+             AsmExpr startFile, AsmExpr startLine, AsmExpr startColumn,
+             AsmExpr endFile, AsmExpr endLine, AsmExpr endColumn)
         {
             Number = number;
             Name = name;
@@ -37,21 +37,13 @@ namespace Zapf.Parsing.Directives
             EndColumn = endColumn;
         }
 
-        [NotNull]
         public AsmExpr Number { get; }
-        [NotNull]
         public string Name { get; }
-        [NotNull]
         public AsmExpr StartFile { get; }
-        [NotNull]
         public AsmExpr StartLine { get; }
-        [NotNull]
         public AsmExpr StartColumn { get; }
-        [NotNull]
         public AsmExpr EndFile { get; }
-        [NotNull]
         public AsmExpr EndLine { get; }
-        [NotNull]
         public AsmExpr EndColumn { get; }
     }
 }

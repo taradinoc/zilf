@@ -33,24 +33,17 @@ namespace Zapf
         public readonly ushort Line;
         public readonly byte Col;
 
-        public static bool operator ==(LineRef a, LineRef b)
-        {
-            return a.File == b.File &&
-                a.Line == b.Line &&
-                a.Col == b.Col;
-        }
+        public static bool operator ==(LineRef a, LineRef b) =>
+            a.File == b.File &&
+            a.Line == b.Line &&
+            a.Col == b.Col;
 
-        public static bool operator !=(LineRef a, LineRef b)
-        {
-            return a.File != b.File ||
-                a.Line != b.Line ||
-                a.Col != b.Col;
-        }
+        public static bool operator !=(LineRef a, LineRef b) =>
+            a.File != b.File ||
+            a.Line != b.Line ||
+            a.Col != b.Col;
 
-        public override bool Equals(object obj)
-        {
-            return obj is LineRef lineRef && lineRef == this;
-        }
+        public override bool Equals(object? obj) => obj is LineRef lineRef && lineRef == this;
 
         public override int GetHashCode()
         {

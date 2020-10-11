@@ -22,7 +22,6 @@ namespace Zilf.Diagnostics
 {
     public interface IDiagnosticFormatter
     {
-        [NotNull]
-        string Format([NotNull] Diagnostic diagnostic);
+        string Format(Diagnostic diagnostic);
     }
 }

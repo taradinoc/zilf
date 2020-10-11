@@ -91,7 +91,7 @@ namespace Zilf.Common.StringEncoding
         class CharMap
         {
             readonly int[] small = new int[256];
-            Dictionary<char, int> big;
+            Dictionary<char, int>? big;
 
             public CharMap(int defaultValue)
             {

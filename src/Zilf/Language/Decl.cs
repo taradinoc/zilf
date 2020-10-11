@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -31,8 +32,7 @@ namespace Zilf.Language
 {
     interface IProvideStructureForDeclCheck
     {
-        [NotNull]
-        IStructure GetStructureForDeclCheck([NotNull] Context ctx);
+        IStructure GetStructureForDeclCheck(Context ctx);
     }
 
     /// <summary>
@@ -43,34 +43,81 @@ namespace Zilf.Language
     {
         const int DiagnosticCode = InterpreterMessages.Expected_0_To_Match_DECL_1_But_Got_2;
 
-        public DeclCheckError([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern,
-            [NotNull] string usage)
+        public DeclCheckError(Context ctx, ZilObject value, ZilObject pattern,
+            string usage)
             : base(DiagnosticCode, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false))
         {
         }
 
-        public DeclCheckError([NotNull] IProvideSourceLine src, [NotNull] Context ctx, [NotNull] ZilObject value,
-            [NotNull] ZilObject pattern, string usage)
+        public DeclCheckError(IProvideSourceLine src, Context ctx, ZilObject value,
+            ZilObject pattern, string usage)
             : base(src, DiagnosticCode, usage, pattern.ToStringContext(ctx, false), value.ToStringContext(ctx, false))
         {
         }
 
         [StringFormatMethod("usageFormat")]
-        public DeclCheckError([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern,
-            [NotNull] string usageFormat, [NotNull] object arg0)
+        public DeclCheckError(Context ctx, ZilObject value, ZilObject pattern,
+            string usageFormat, object arg0)
             : this(ctx, value, pattern, string.Format(usageFormat, arg0))
         {
         }
 
         [StringFormatMethod("usageFormat")]
-        public DeclCheckError([NotNull] IProvideSourceLine src, [NotNull] Context ctx, [NotNull] ZilObject value,
-            [NotNull] ZilObject pattern, [NotNull] string usageFormat, [NotNull] object arg0)
+        public DeclCheckError(IProvideSourceLine src, Context ctx, ZilObject value,
+            ZilObject pattern, string usageFormat, object arg0)
             : this(src, ctx, value, pattern, string.Format(usageFormat, arg0))
         {
         }
 
-        protected DeclCheckError([NotNull] SerializationInfo si, StreamingContext sc)
+        protected DeclCheckError(SerializationInfo si, StreamingContext sc)
             : base(si, sc)
+        {
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        public DeclCheckError()
+        {
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        public DeclCheckError(string message) : base(message)
+        {
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
+        public DeclCheckError(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        public DeclCheckError(int code) : base(code)
+        {
+        }
+
+        public DeclCheckError(int code, params object[] messageArgs) : base(code, messageArgs)
+        {
+        }
+
+        public DeclCheckError(ISourceLine sourceLine, int code) : base(sourceLine, code)
+        {
+        }
+
+        public DeclCheckError(ISourceLine sourceLine, int code, params object[] messageArgs) : base(sourceLine, code, messageArgs)
+        {
+        }
+
+        public DeclCheckError(IProvideSourceLine sourceLine, int code) : base(sourceLine, code)
+        {
+        }
+
+        public DeclCheckError(IProvideSourceLine node, int code, params object[] messageArgs) : base(node, code, messageArgs)
+        {
+        }
+
+        public DeclCheckError(Diagnostic diagnostic) : base(diagnostic)
+        {
+        }
+
+        protected DeclCheckError(ISourceLine src, string message) : base(src, message)
         {
         }
     }
@@ -79,7 +126,7 @@ namespace Zilf.Language
     {
         /// <exception cref="InterpreterError">The syntax is incorrect.</exception>
         [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        public static bool Check([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern,
+        public static bool Check(Context ctx, ZilObject value, ZilObject pattern,
             bool ignoreErrors = false)
         {
             switch (pattern)
@@ -95,7 +142,7 @@ namespace Zilf.Language
                             return value.IsApplicable(ctx);
 
                         case StdAtom.STRUCTURED:
-                            return (value is IStructure);
+                            return value is IStructure;
 
                         case StdAtom.TUPLE:
                             // special case
@@ -156,7 +203,7 @@ namespace Zilf.Language
             }
         }
 
-        static bool CheckFormOrSegment([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilForm form,
+        static bool CheckFormOrSegment(Context ctx, ZilObject value, ZilForm form,
             bool segment, bool ignoreErrors)
         {
             var (first, rest) = form;
@@ -201,34 +248,38 @@ namespace Zilf.Language
         }
 
         [ContractAnnotation("=> true, decl: notnull; => false, decl: null")]
-        static bool IsNonCircularAlias([NotNull] Context ctx, [NotNull] ZilAtom atom, out ZilObject decl)
+        static bool IsNonCircularAlias(Context ctx, ZilAtom atom, [NotNullWhen(true)] out ZilObject? decl)
         {
             var seen = new HashSet<ZilAtom>();
             var declAtom = ctx.GetStdAtom(StdAtom.DECL);
-            ZilObject value;
 
-            do
+            ZilAtom? atm = atom;
+
+            while (true)
             {
-                seen.Add(atom);
+                seen.Add(atm);
 
-                value = ctx.GetProp(atom, declAtom);
-                atom = value as ZilAtom;
-            } while (atom != null && !seen.Contains(atom));
+                var value = ctx.GetProp(atm, declAtom);
+                atm = value as ZilAtom;
 
-            if (atom != null)
-            {
+                if (atm == null)
+                {
+                    // noncircular, or not an alias
+                    decl = value;
+                    return value != null;
+                }
+
+                if (!seen.Contains(atm))
+                    continue;
+
                 // circular
                 decl = null;
                 return false;
             }
-
-            // noncircular, or not an alias
-            decl = value;
-            return value != null;
         }
 
-        static bool CheckElements([NotNull] Context ctx, [NotNull] IStructure structure,
-            [NotNull] ZilListoidBase elements, bool segment, bool ignoreErrors)
+        static bool CheckElements(Context ctx, IStructure structure,
+            ZilListoidBase elements, bool segment, bool ignoreErrors)
         {
             foreach (var subpattern in elements)
             {
@@ -248,17 +299,17 @@ namespace Zilf.Language
                                 i = 1;
                                 while (!structure.IsEmpty)
                                 {
-                                    first = structure.GetFirst();
+                                    first = structure.GetFirst()!;
                                     Debug.Assert(first != null);
 
-                                    if (!Check(ctx, first, vector[i]))
+                                    if (!Check(ctx, first, vector[i]!))
                                         return false;
 
                                     i++;
                                     if (i >= len)
                                         i = 1;
 
-                                    structure = structure.GetRest(1);
+                                    structure = structure.GetRest(1)!;
                                     Debug.Assert(structure != null);
                                 }
 
@@ -279,13 +330,13 @@ namespace Zilf.Language
                                     if (structure.IsEmpty)
                                         break;
 
-                                    first = structure.GetFirst();
+                                    first = structure.GetFirst()!;
                                     Debug.Assert(first != null);
 
-                                    if (!Check(ctx, first, vector[i]))
+                                    if (!Check(ctx, first, vector[i]!))
                                         break;
 
-                                    structure = structure.GetRest(1);
+                                    structure = structure.GetRest(1)!;
                                     Debug.Assert(structure != null);
                                 }
 
@@ -304,13 +355,13 @@ namespace Zilf.Language
                                 if (structure.IsEmpty)
                                     return false;
 
-                                first = structure.GetFirst();
+                                first = structure.GetFirst()!;
                                 Debug.Assert(first != null);
 
-                                if (!Check(ctx, first, vector[j]))
+                                if (!Check(ctx, first, vector[j]!))
                                     return false;
 
-                                structure = structure.GetRest(1);
+                                structure = structure.GetRest(1)!;
                                 Debug.Assert(structure != null);
                             }
                         }
@@ -331,13 +382,13 @@ namespace Zilf.Language
                 if (structure.IsEmpty)
                     return false;
 
-                first = structure.GetFirst();
+                first = structure.GetFirst()!;
                 Debug.Assert(first != null);
 
                 if (!Check(ctx, first, subpattern))
                     return false;
 
-                structure = structure.GetRest(1);
+                structure = structure.GetRest(1)!;
                 Debug.Assert(structure != null);
             }
 

@@ -18,7 +18,6 @@
 
 using System;
 using System.Diagnostics;
-using JetBrains.Annotations;
 using Zilf.Interpreter;
 using Zilf.Language;
 
@@ -26,31 +25,28 @@ namespace Zilf.Diagnostics
 {
     sealed class DiagnosticContext
     {
-        [NotNull]
         public static DiagnosticContext Current
         {
-            get => threadLocalCurrent ?? (threadLocalCurrent = new DiagnosticContext());
+            get => threadLocalCurrent ??= new DiagnosticContext();
             private set => threadLocalCurrent = value;
         }
 
         [ThreadStatic]
-        static DiagnosticContext threadLocalCurrent;
+        static DiagnosticContext? threadLocalCurrent;
 
         class Disposer : IDisposable
         {
-            [CanBeNull]
-            DiagnosticContext oldContext;
-            [CanBeNull]
-            DiagnosticContext newContext;
+            DiagnosticContext? oldContext;
+            DiagnosticContext? newContext;
 
-            public Disposer([NotNull] DiagnosticContext oldContext, [NotNull] DiagnosticContext newContext)
+            public Disposer(DiagnosticContext oldContext, DiagnosticContext newContext)
             {
                 this.oldContext = oldContext;
                 this.newContext = newContext;
             }
 
             /// <inheritdoc />
-            /// <exception cref="T:System.InvalidOperationException">This contract is no longer on top of the stack</exception>
+            /// <exception cref="System.InvalidOperationException">This contract is no longer on top of the stack</exception>
             public void Dispose()
             {
                 if (newContext == null)
@@ -70,8 +66,7 @@ namespace Zilf.Diagnostics
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        [NotNull]
-        public static IDisposable Push([CanBeNull] ISourceLine sourceLine = null, [CanBeNull] Frame frame = null)
+        public static IDisposable Push(ISourceLine? sourceLine = null, Frame? frame = null)
         {
             var oldContext = Current;
 
@@ -89,15 +84,13 @@ namespace Zilf.Diagnostics
         {
         }
 
-        DiagnosticContext([NotNull] ISourceLine sourceLine, [CanBeNull] Frame frame)
+        DiagnosticContext(ISourceLine sourceLine, Frame? frame)
         {
             SourceLine = sourceLine;
             Frame = frame;
         }
 
-        [NotNull]
         public ISourceLine SourceLine { get; }
-        [CanBeNull]
-        public Frame Frame { get; }
+        public Frame? Frame { get; }
     }
 }

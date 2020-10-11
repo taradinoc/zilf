@@ -29,8 +29,7 @@ namespace Zilf.Language.Signatures
     {
         #region Basics
 
-        [NotNull]
-        public static SignaturePart MaybeConvertDecl([NotNull] ParamDescAttribute attr)
+        public static SignaturePart MaybeConvertDecl(ParamDescAttribute attr)
         {
             if (string.IsNullOrWhiteSpace(attr.Description) || attr.Description.Contains(" "))
                 throw new ArgumentException($"Unexpected param description: {attr.Description}");
@@ -38,22 +37,13 @@ namespace Zilf.Language.Signatures
             return Identifier(attr.Description);
         }
 
-        [NotNull]
-        public static SignaturePart Quote([NotNull] SignaturePart second)
-        {
-            return QuotedPart.From(second);
-        }
+        public static SignaturePart Quote(SignaturePart second) => QuotedPart.From(second);
 
         static readonly Regex orDeclRegex = new Regex(@"^<OR (?:('[^ <>]+)\s*)+>$");
 
-        [CanBeNull]
-        public static SignaturePart MaybeConvertDecl([NotNull] DeclAttribute decl)
-        {
-            return MaybeConvertDecl(decl.Pattern);
-        }
+        public static SignaturePart? MaybeConvertDecl(DeclAttribute decl) => MaybeConvertDecl(decl.Pattern);
 
-        [CanBeNull]
-        public static SignaturePart MaybeConvertDecl([NotNull] string pattern)
+        public static SignaturePart? MaybeConvertDecl(string pattern)
         {
             // TODO: this should parse the <OR...> instead of doing a hacky regex match
 
@@ -74,70 +64,56 @@ namespace Zilf.Language.Signatures
             var alts = captures.Select(c => MaybeConvertDecl(c.Value)).ToArray();
             if (alts.Length > 0 && alts.All(a => a != null))
             {
-                return Alternatives(alts);
+                return Alternatives(alts!);
             }
 
             return null;
         }
 
-        [NotNull]
-        public static SignaturePart VarArgs([NotNull] SignaturePart inner, bool isRequired)
-        {
-            return VarArgsPart.From(inner, isRequired);
-        }
+        public static SignaturePart VarArgs(SignaturePart inner, bool isRequired) =>
+            VarArgsPart.From(inner, isRequired);
 
-        [NotNull]
-        public static SignaturePart Optional([NotNull] SignaturePart inner)
-        {
-            return OptionalPart.From(inner);
-        }
+        public static SignaturePart Optional(SignaturePart inner) => OptionalPart.From(inner);
 
-        [NotNull]
-        public static SignaturePart List([ItemNotNull] [NotNull] IEnumerable<SignaturePart> parts, [CanBeNull] string name = null)
+        public static SignaturePart List(IEnumerable<SignaturePart> parts, string? name = null)
         {
             var result = ListPart.From(parts);
             result.Name = name;
             return result;
         }
 
-        [NotNull]
-        public static SignaturePart Form([ItemNotNull] [NotNull] IEnumerable<SignaturePart> parts, [CanBeNull] string name = null)
+        public static SignaturePart Form(IEnumerable<SignaturePart> parts, string? name = null)
         {
             var result = FormPart.From(parts);
             result.Name = name;
             return result;
         }
 
-        [NotNull]
-        public static SignaturePart Identifier([NotNull] string name)
+        public static SignaturePart Identifier(string name)
         {
             return new AnyPart(name);
         }
 
-        [NotNull]
-        public static SignaturePart Adecl([NotNull] SignaturePart left, [NotNull] SignaturePart right, [CanBeNull] string name = null)
+        public static SignaturePart Adecl(SignaturePart left, SignaturePart right, string? name = null)
         {
             return new AdeclPart(left, right) { Name = name };
         }
 
-        [NotNull]
-        public static SignaturePart Alternatives([ItemNotNull] [NotNull] IEnumerable<SignaturePart> parts, [CanBeNull] string name = null)
+        public static SignaturePart Alternatives(IEnumerable<SignaturePart> parts, string? name = null)
         {
             var result = AlternativesPart.From(parts);
             result.Name = name;
             return result;
         }
 
-        [NotNull]
-        public static SignaturePart Sequence([ItemNotNull] [NotNull] IEnumerable<SignaturePart> parts, [CanBeNull] string name = null)
+        public static SignaturePart Sequence(IEnumerable<SignaturePart> parts, string? name = null)
         {
             var result = SequencePart.From(parts);
             result.Name = name;
             return result;
         }
 
-        [NotNull]
-        public static SignaturePart Constrained([NotNull] SignaturePart inner, [NotNull] Constraint constraint)
+        public static SignaturePart Constrained(SignaturePart inner, Constraint constraint)
         {
             return ConstrainedPart.From(inner, constraint);
         }

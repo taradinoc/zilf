@@ -53,7 +53,7 @@ namespace ZilfAnalyzers.Test.Helpers
             Assert.AreEqual(expectedValue, actualValue);
         }
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         static string ToSafeString(this char c)
         {
             switch (c)

@@ -18,10 +18,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Common.StringEncoding;
 using Zapf.Parsing.Diagnostics;
 using Zapf.Parsing.Instructions;
@@ -35,8 +35,9 @@ namespace Zapf
     class Context : IErrorSink, IDisposable
     {
         public bool Quiet, InformMode, ListAddresses, AbbreviateMode, XmlDebugMode;
-        public string InFile, OutFile, DebugFile;
-        public string Creator = "ZAPF", Serial;
+        public string? InFile, OutFile, DebugFile;
+        public string? Creator = "ZAPF";
+        public string? Serial;
         public byte ZVersion, ZFlags;
         public ushort ZFlags2;
         public short? Release;
@@ -45,28 +46,20 @@ namespace Zapf
 
         public int ErrorCount, WarningCount;
 
-        [CanBeNull]
-        public Dictionary<string, KeyValuePair<ushort, ZOpAttribute>> OpcodeDict;
+        public Dictionary<string, KeyValuePair<ushort, ZOpAttribute>>? OpcodeDict;
 
-        [NotNull]
         public StringEncoder StringEncoder;
 
-        [NotNull]
         public readonly AbbrevFinder AbbrevFinder;
 
-        [NotNull]
         public readonly Dictionary<string, Symbol> LocalSymbols;
 
-        [NotNull]
         public readonly Dictionary<string, Symbol> GlobalSymbols;
 
-        [NotNull]
         public readonly List<Fixup> Fixups;
 
-        [CanBeNull]
-        public IDebugFileWriter DebugWriter;
+        public IDebugFileWriter? DebugWriter;
 
-        [NotNull]
         public readonly Dictionary<string, Symbol> DebugFileMap;
 
         /// <summary>
@@ -83,24 +76,22 @@ namespace Zapf
         public int? TableStart, TableSize;
         public bool InVocab;
 
-        public OpenFileDelegate InterceptOpenFile;
-        public FileExistsDelegate InterceptFileExists;
+        public OpenFileDelegate? InterceptOpenFile;
+        public FileExistsDelegate? InterceptFileExists;
 
 #pragma warning disable CS0649
-        public GetDebugWriterDelegate InterceptGetDebugWriter;
+        public GetDebugWriterDelegate? InterceptGetDebugWriter;
 #pragma warning restore CS0649
 
         char? LanguageEscapeChar { get; set; }
 
-        [NotNull]
         IDictionary<char, char> LanguageSpecialChars { get; }
 
-        Stream stream;
-        Stream prevStream;
+        Stream? stream;
+        Stream? prevStream;
         int position;
         int globalVarCount, objectCount;
 
-        [NotNull]
         readonly Stack<string> fileStack;
 
         int vocabStart, vocabRecSize, vocabKeySize;
@@ -121,7 +112,7 @@ namespace Zapf
         /// <summary>
         /// The symbol of the function that owns the reassembly scope.
         /// </summary>
-        Symbol reassemblySymbol;
+        Symbol? reassemblySymbol;
 
         /// <summary>
         /// The local labels that have been encountered in the current reassembly scope
@@ -131,7 +122,6 @@ namespace Zapf
         /// When one of these labels is defined, we rewind to the beginning of the
         /// reassembly scope and start again using the new value.
         /// </remarks>
-        [NotNull]
         readonly Dictionary<string, bool> reassemblyLabels; // TODO: convert to HashSet
 
         /// <summary>
@@ -142,7 +132,6 @@ namespace Zapf
         /// <remarks>
         /// These are checked at the end of the reassembly scope.
         /// </remarks>
-        [NotNull]
         readonly Dictionary<Symbol, Action> deferredGlobalLabelChecks;
 
         public Context()
@@ -191,7 +180,7 @@ namespace Zapf
         }
 
         /// <exception cref="SeriousError"><paramref name="sym"/> is undefined.</exception>
-        public void WriteByte([NotNull] Symbol sym)
+        public void WriteByte(Symbol sym)
         {
             switch (sym.Type)
             {
@@ -221,7 +210,7 @@ namespace Zapf
         }
 
         /// <exception cref="SeriousError"><paramref name="sym"/> is undefined.</exception>
-        public void WriteWord([NotNull] Symbol sym)
+        public void WriteWord(Symbol sym)
         {
             switch (sym.Type)
             {
@@ -250,7 +239,7 @@ namespace Zapf
             return (byte)stream.ReadByte();
         }
 
-        public void WriteZString([NotNull] string str, bool withLength, StringEncoderMode mode = StringEncoderMode.Normal)
+        public void WriteZString(string str, bool withLength, StringEncoderMode mode = StringEncoderMode.Normal)
         {
             MaybeProcessEscapeChars(ref str);
 
@@ -265,7 +254,7 @@ namespace Zapf
             stream?.Write(zstr, 0, zstr.Length);
         }
 
-        void MaybeProcessEscapeChars([NotNull] ref string str)
+        void MaybeProcessEscapeChars(ref string str)
         {
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse      // false alarm!
             if (!(LanguageEscapeChar is char escape) || str.IndexOf((char)LanguageEscapeChar) < 0)
@@ -309,7 +298,7 @@ namespace Zapf
         public void WriteZWord(string str)
         {
             MaybeProcessEscapeChars(ref str);
-            
+
             var zstr = StringEncoder.Encode(str, ZWordChars, StringEncoderMode.NoAbbreviations);
             position += zstr.Length;
 
@@ -338,7 +327,7 @@ namespace Zapf
             if (InVocab)
             {
                 // restore stream
-                var buffer = ((MemoryStream)stream).GetBuffer();
+                var buffer = ((MemoryStream?)stream)!.GetBuffer();
                 var bufLen = (int)stream.Length;
 
                 stream = prevStream;
@@ -390,7 +379,11 @@ namespace Zapf
                     {
                         if (VocabCompare(buffer, i - 1, i) == 0)
                         {
-                            Errors.Warn(this, src, "vocab collision between {0} and {1}", VocabLabel(i - 1), VocabLabel(i));
+                            Errors.Warn(this,
+                                src,
+                                "vocab collision between {0} and {1}",
+                                VocabLabel(i - 1) ?? "<null>",
+                                VocabLabel(i) ?? "<null>");
                         }
                     }
                 }
@@ -426,7 +419,7 @@ namespace Zapf
             vocabKeySize = 0;
         }
 
-        int MapVocabAddress(int oldAddress, [NotNull] int[] newIndexes)
+        int MapVocabAddress(int oldAddress, int[] newIndexes)
         {
             var oldOffsetFromVocab = oldAddress - vocabStart;
             var oldIndex = oldOffsetFromVocab / vocabRecSize;
@@ -468,8 +461,7 @@ namespace Zapf
             return 0;
         }
 
-        [CanBeNull]
-        string VocabLabel(int index)
+        string? VocabLabel(int index)
         {
             foreach (var sym in GlobalSymbols.Values)
             {
@@ -499,6 +491,8 @@ namespace Zapf
 
         public void OpenOutput()
         {
+            Debug.Assert(OutFile != null);
+
             if (Path.GetExtension(OutFile) == ".z#")
                 OutFile = Path.ChangeExtension(OutFile, ".z" + ZVersion);
 
@@ -514,6 +508,8 @@ namespace Zapf
 
         public void OpenDebugFile()
         {
+            Debug.Assert(DebugFile != null);
+
             var debugStream = OpenFile(DebugFile, true);
 
             if (InterceptGetDebugWriter != null)
@@ -635,19 +631,19 @@ namespace Zapf
             reassemblySymbol = symbol;
         }
 
-        public bool CausesReassembly([NotNull] string label)
+        public bool CausesReassembly(string label)
         {
             return reassemblyLabels.ContainsKey(label);
         }
 
         public bool InReassemblyScope => reassemblyPosition != -1;
 
-        public void MarkUnknownBranch([NotNull] string label)
+        public void MarkUnknownBranch(string label)
         {
             reassemblyLabels[label] = true;
         }
 
-        public void DeferGlobalLabelStabilityCheck([NotNull] Symbol sym, [NotNull] Action checkMismatch)
+        public void DeferGlobalLabelStabilityCheck(Symbol sym, Action checkMismatch)
         {
             if (!deferredGlobalLabelChecks.ContainsKey(sym))
             {
@@ -655,7 +651,7 @@ namespace Zapf
             }
         }
 
-        public int Reassemble([NotNull] string curLabel)
+        public int Reassemble(string curLabel)
         {
             if (LocalSymbols.TryGetValue(curLabel, out var sym))
                 sym.Value = position;
@@ -668,16 +664,21 @@ namespace Zapf
             foreach (var i in LocalSymbols.Values)
             {
                 if (i.Type == SymbolType.Label)
+                {
                     i.Phantom = true;
+                }
                 else
+                {
+                    Debug.Assert(i.Name != null);
                     goners.Enqueue(i.Name);
+                }
             }
 
             while (goners.Count > 0)
                 LocalSymbols.Remove(goners.Dequeue());
 
             // make function symbol into a phantom
-            reassemblySymbol.Phantom = true;
+            reassemblySymbol!.Phantom = true;
 
             // clean up reassembly state and rewind to the beginning of the scope
             reassemblyLabels.Clear();
@@ -712,7 +713,7 @@ namespace Zapf
         }
 
         /// <exception cref="SeriousError">The global variable moved unexpectedly between passes.</exception>
-        public void AddGlobalVar([NotNull] string name)
+        public void AddGlobalVar(string name)
         {
             int num = 16 + globalVarCount++;
 
@@ -721,7 +722,7 @@ namespace Zapf
                 sym = new Symbol(name, SymbolType.Variable, num);
                 GlobalSymbols.Add(name, sym);
             }
-            else if (sym.Phantom && sym.Type == SymbolType.Variable)
+            else if (sym!.Phantom && sym.Type == SymbolType.Variable)
             {
                 if (sym.Value != num)
                 {
@@ -744,7 +745,7 @@ namespace Zapf
 
         /// <exception cref="FatalError">The object moved unexpectedly between passes.</exception>
         /// <exception cref="SeriousError">The object was redefined.</exception>
-        public void AddObject([NotNull] string name)
+        public void AddObject(string name)
         {
             int num = 1 + objectCount++;
 
@@ -753,7 +754,7 @@ namespace Zapf
                 sym = new Symbol(name, SymbolType.Object, num);
                 GlobalSymbols.Add(name, sym);
             }
-            else if (sym.Phantom && sym.Type == SymbolType.Object)
+            else if (sym!.Phantom && sym.Type == SymbolType.Object)
             {
                 if (sym.Value != num)
                 {
@@ -837,7 +838,7 @@ namespace Zapf
             StringsOffset = 0;
         }
 
-        public void HandleWarning([NotNull] Warning warning)
+        public void HandleWarning(Warning warning)
         {
             WarningCount++;
 
@@ -847,7 +848,7 @@ namespace Zapf
             Console.Error.WriteLine("warning: {0}", warning.Message);
         }
 
-        public void HandleSeriousError([NotNull] SeriousError ser)
+        public void HandleSeriousError(SeriousError ser)
         {
             ErrorCount++;
 
@@ -857,7 +858,7 @@ namespace Zapf
             Console.Error.WriteLine("error: {0}", ser.Message);
         }
 
-        public void HandleFatalError([NotNull] FatalError fer)
+        public void HandleFatalError(FatalError fer)
         {
             ErrorCount++;
 
@@ -886,7 +887,7 @@ namespace Zapf
         }
 
         [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
-        public string FindInsertedFile(string name)
+        public string? FindInsertedFile(string name)
         {
             if (FileExists(name))
                 return name;
@@ -938,12 +939,9 @@ namespace Zapf
             }
         }
 
-        public int GetHeaderValue([NotNull] string name, bool required)
-        {
-            return GetHeaderValue(name, null, required);
-        }
+        public int GetHeaderValue(string name, bool required) => GetHeaderValue(name, null, required);
 
-        public int GetHeaderValue([NotNull] string name1, string name2, bool required)
+        public int GetHeaderValue(string name1, string? name2, bool required)
         {
             if (GlobalSymbols.TryGetValue(name1, out var sym) ||
                 (name2 != null && GlobalSymbols.TryGetValue(name2, out sym)))
@@ -959,12 +957,10 @@ namespace Zapf
                         return 0;
                 }
             }
-            else
-            {
-                if (required)
-                    Errors.Serious(this, "required global symbol '{0}' is missing", name1);
-                return 0;
-            }
+
+            if (required)
+                Errors.Serious(this, "required global symbol '{0}' is missing", name1);
+            return 0;
         }
     }
 
@@ -1005,8 +1001,7 @@ namespace Zapf
         /// <summary>
         /// The symbol's name in the source code.
         /// </summary>
-        [CanBeNull]
-        public readonly string Name;
+        public readonly string? Name;
         /// <summary>
         /// The symbol's type.
         /// </summary>
@@ -1031,7 +1026,7 @@ namespace Zapf
             Value = value;
         }
 
-        public Symbol([CanBeNull] string name, SymbolType type, int value)
+        public Symbol(string? name, SymbolType type, int value)
         {
             Name = name;
             Type = type;

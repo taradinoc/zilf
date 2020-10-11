@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
@@ -26,19 +27,21 @@ namespace Zilf.Interpreter
     [ParamDesc("structure")]
     interface IStructure : IEnumerable<ZilObject>
     {
+        // TODO: replace null-returning IStructure methods with "TryGet" equivalents?
+
         /// <summary>
         /// Gets the first element of the structure.
         /// </summary>
         /// <returns>The first element, or null if the structure is empty.</returns>
-        [CanBeNull]
-        ZilObject GetFirst();
+        ZilObject? GetFirst();
+
         /// <summary>
         /// Gets the remainder of the structure, after skipping the first few elements.
         /// </summary>
         /// <param name="skip">The number of elements to skip.</param>
         /// <returns>A structure containing the unskipped elements, or null if no elements are left.</returns>
-        [CanBeNull]
-        IStructure GetRest(int skip);
+        IStructure? GetRest(int skip);
+
         /// <summary>
         /// Reverses <see cref="GetRest(int)"/>, returning a larger structure with some of the
         /// previously skipped elements included.
@@ -48,8 +51,8 @@ namespace Zilf.Interpreter
         /// have been skipped.</returns>
         /// <exception cref="System.NotSupportedException">The operation is not supported by this
         /// structure type.</exception>
-        [CanBeNull]
-        IStructure GetBack(int skip);
+        IStructure? GetBack(int skip);
+
         /// <summary>
         /// Completely reverses <see cref="GetRest(int)"/>, returning all elements of the underlying
         /// structure.
@@ -57,7 +60,6 @@ namespace Zilf.Interpreter
         /// <returns>A structure.</returns>
         /// <exception cref="System.NotSupportedException">The operation is not supported by this
         /// structure type.</exception>
-        [NotNull]
         IStructure GetTop();
 
         /// <summary>
@@ -66,7 +68,7 @@ namespace Zilf.Interpreter
         /// <param name="end">The number of elements to add at the end.</param>
         /// <param name="beginning">The number of elements to add at the beginning.</param>
         /// <param name="defaultValue">The initial value of the new elements.</param>
-        void Grow(int end, int beginning, [NotNull] ZilObject defaultValue);
+        void Grow(int end, int beginning, ZilObject defaultValue);
 
         /// <summary>
         /// Gets a value indicating whether the structure is empty.
@@ -87,13 +89,11 @@ namespace Zilf.Interpreter
         /// <exception cref="NotSupportedException" accessor="set">
         /// The structure is read-only.
         /// </exception>
+        [MaybeNull]
         ZilObject this[int index]
         {
-            [CanBeNull]
             [System.Diagnostics.Contracts.Pure]
             get;
-
-            [NotNull]
             set;
         }
 
@@ -104,6 +104,7 @@ namespace Zilf.Interpreter
         /// <remarks>This method may loop indefinitely if the structure contains
         /// a reference to itself.</remarks>
         int GetLength();
+
         /// <summary>
         /// Measures the length of the structure, up to a specified maximum.
         /// </summary>

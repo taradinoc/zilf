@@ -22,16 +22,15 @@ namespace Zilf.Emit.Zap
 {
     class GlobalBuilder : IGlobalBuilder
     {
-        public GlobalBuilder([NotNull] string name)
+        public GlobalBuilder(string name)
         {
             Name = name;
         }
 
         public IIndirectOperand Indirect => new IndirectOperand(this);
 
-        public IOperand DefaultValue { get; set; }
+        public IOperand? DefaultValue { get; set; }
 
-        [NotNull]
         public string Name { get; }
 
         public override string ToString()

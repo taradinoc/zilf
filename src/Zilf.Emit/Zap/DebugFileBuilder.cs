@@ -26,7 +26,7 @@ namespace Zilf.Emit.Zap
         readonly Dictionary<string, int> files = new Dictionary<string, int>();
         readonly List<string> storedLines = new List<string>();
 
-        public int GetFileNumber([CanBeNull] string filename)
+        public int GetFileNumber(string? filename)
         {
             if (filename == null)
                 return 0;

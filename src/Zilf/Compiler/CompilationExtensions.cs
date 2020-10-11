@@ -46,7 +46,7 @@ namespace Zilf.Compiler
             }
         }
 
-        public static void WalkRoutineForms([NotNull] this ZilRoutine routine, [NotNull] Action<ZilForm> action)
+        public static void WalkRoutineForms(this ZilRoutine routine, Action<ZilForm> action)
         {
             var children =
                 routine.ArgSpec.Select(ai => ai.DefaultValue)
@@ -75,7 +75,7 @@ namespace Zilf.Compiler
                 first.StdAtom != StdAtom.GVAL && first.StdAtom != StdAtom.LVAL;
         }
 
-        public static bool IsVariableRef([NotNull] this ZilObject expr)
+        public static bool IsVariableRef(this ZilObject expr)
         {
             if (expr is ZilForm form &&
                 form.First is ZilAtom atom &&
@@ -94,7 +94,7 @@ namespace Zilf.Compiler
             return false;
         }
 
-        public static bool IsLocalVariableRef([NotNull] this ZilObject expr)
+        public static bool IsLocalVariableRef(this ZilObject expr)
         {
             return expr is ZilForm form &&
                 form.First is ZilAtom atom &&
@@ -102,7 +102,7 @@ namespace Zilf.Compiler
                 (atom.StdAtom == StdAtom.LVAL || atom.StdAtom == StdAtom.SET);
         }
 
-        public static bool IsGlobalVariableRef([NotNull] this ZilObject expr)
+        public static bool IsGlobalVariableRef(this ZilObject expr)
         {
             return expr is ZilForm form &&
                 form.First is ZilAtom atom &&
@@ -110,7 +110,7 @@ namespace Zilf.Compiler
                 (atom.StdAtom == StdAtom.GVAL || atom.StdAtom == StdAtom.SETG);
         }
 
-        public static bool ModifiesLocal([NotNull] this ZilObject expr, [NotNull] ZilAtom localAtom)
+        public static bool ModifiesLocal(this ZilObject expr, ZilAtom localAtom)
         {
             if (!(expr is ZilListBase list))
                 return false;
@@ -126,7 +126,7 @@ namespace Zilf.Compiler
             return list.Any(zo => ModifiesLocal(zo, localAtom));
         }
 
-        public static bool IsPredicate([NotNull] this ZilObject zo, int zversion)
+        public static bool IsPredicate(this ZilObject zo, int zversion)
         {
             if (!(zo is ZilForm form) || !(form.First is ZilAtom head))
                 return false;
@@ -152,8 +152,7 @@ namespace Zilf.Compiler
         /// <param name="zo">The expression.</param>
         /// <param name="ctx">The context.</param>
         /// <returns>The unwrapped expression. If macro expansion resulted in a SPLICE, this will be a call to BIND.</returns>
-        [NotNull]
-        public static ZilObject Unwrap([NotNull] this ZilObject zo, [NotNull] Context ctx)
+        public static ZilObject Unwrap(this ZilObject zo, Context ctx)
         {
             var src = zo.SourceLine;
 
@@ -192,8 +191,7 @@ namespace Zilf.Compiler
             }
         }
 
-        [ItemNotNull]
-        static IEnumerable<T> ReconstructSequence<T>([NotNull] T first, [NotNull] IEnumerator<T> enumerator)
+        static IEnumerable<T> ReconstructSequence<T>(T first, IEnumerator<T> enumerator)
         {
             yield return first;
 
@@ -205,11 +203,9 @@ namespace Zilf.Compiler
             } while (enumerator.MoveNext());
         }
 
-        [NotNull]
-        public delegate T SequenceCombiner<T>([ItemNotNull] [NotNull] IEnumerable<T> sequence);
+        public delegate T SequenceCombiner<T>(IEnumerable<T> sequence);
 
-        [NotNull]
-        public static T FirstOrCombine<T>([ItemNotNull] [NotNull] this IEnumerable<T> sequence, [NotNull] SequenceCombiner<T> combiner)
+        public static T FirstOrCombine<T>(this IEnumerable<T> sequence, SequenceCombiner<T> combiner)
         {
             using (var tor = sequence.GetEnumerator())
             {

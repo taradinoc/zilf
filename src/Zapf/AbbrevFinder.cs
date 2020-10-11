@@ -57,7 +57,7 @@ namespace Zapf
         /// Adds some text to the accumulator.
         /// </summary>
         /// <param name="text">The text to add.</param>
-        public void AddText([NotNull] string text)
+        public void AddText(string text)
         {
             allText.Append(text);
             allText.Append('\0');
@@ -92,7 +92,7 @@ namespace Zapf
 
         static readonly char[] wordDelimiters = { ' ', '.', ',', ':', ';', '!', '?', '(', ')', '/' };
 
-        static IEnumerable<string> FindWords([NotNull] string text)
+        static IEnumerable<string> FindWords(string text)
         {
             int wordStart = -1;
             bool inWord = false;
@@ -144,7 +144,7 @@ namespace Zapf
             return zchars - 2;
         }
 
-        int CountAppearances([NotNull] Horspool pattern)
+        int CountAppearances(Horspool pattern)
         {
 #if DEBUG_ABBREV
             var stopw = new Stopwatch();

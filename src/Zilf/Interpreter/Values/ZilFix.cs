@@ -37,7 +37,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public ZilFix([NotNull] ZilFix other)
+        public ZilFix(ZilFix other)
             : this(other.value)
         {
         }
@@ -50,13 +50,9 @@ namespace Zilf.Interpreter.Values
 
         public override PrimType PrimType => PrimType.FIX;
 
-        [NotNull]
         public override ZilObject GetPrimitive(Context ctx) => this;
 
-        public override bool ExactlyEquals(ZilObject obj)
-        {
-            return obj is ZilFix other && other.value == value;
-        }
+        public override bool ExactlyEquals(ZilObject? obj) => obj is ZilFix other && other.value == value;
 
         public override int GetHashCode() => value.GetHashCode();
 
@@ -65,8 +61,8 @@ namespace Zilf.Interpreter.Values
         [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         public ZilResult Apply(Context ctx, ZilObject[] args)
         {
-            if (EvalSequence(ctx, args).TryToZilObjectArray(out args, out var zr))
-                return ApplyNoEval(ctx, args);
+            if (EvalSequence(ctx, args).TryToZilObjectArray(out var evaluatedArgs, out var zr))
+                return ApplyNoEval(ctx, evaluatedArgs);
 
             return zr;
         }

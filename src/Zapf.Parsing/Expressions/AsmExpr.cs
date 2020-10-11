@@ -22,7 +22,7 @@ namespace Zapf.Parsing.Expressions
 {
     public abstract class AsmExpr : ISourceLine
     {
-        public string SourceFile => null;
+        public string? SourceFile => null;
         public int LineNum => 0;
 
         public abstract override string ToString();

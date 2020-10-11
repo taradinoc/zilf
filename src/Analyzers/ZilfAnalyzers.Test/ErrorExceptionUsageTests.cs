@@ -183,7 +183,7 @@ class Program {
             throw new System.NotImplementedException();
         }
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new ErrorExceptionUsageAnalyzer();

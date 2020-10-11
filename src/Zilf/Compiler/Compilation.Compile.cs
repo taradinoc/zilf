@@ -33,7 +33,7 @@ namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        public static void Compile([NotNull] Context ctx, [NotNull] IGameBuilder gb)
+        public static void Compile(Context ctx, IGameBuilder gb)
         {
             var compilation = new Compilation(ctx, gb, gb.DebugFile != null && ctx.WantDebugInfo);
             compilation.Compile();
@@ -103,7 +103,7 @@ namespace Zilf.Compiler
             Game.Finish();
         }
 
-        void HandleZValChangedWhileCompilingRoutine([NotNull] object sender, [NotNull] ZValEventArgs e)
+        void HandleZValChangedWhileCompilingRoutine(object? sender, ZValEventArgs e)
         {
             switch (e.NewValue)
             {
@@ -128,7 +128,8 @@ namespace Zilf.Compiler
         }
 
         [ContractAnnotation("longWords: notnull => longWordTable: notnull")]
-        void BuildLongWordTable([CanBeNull] ITableBuilder longWordTable, [CanBeNull][ItemNotNull] Queue<IWord> longWords)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Z-machine requirement.")]
+        void BuildLongWordTable(ITableBuilder? longWordTable, Queue<IWord>? longWords)
         {
             if (longWords == null)
                 return;
@@ -145,7 +146,7 @@ namespace Zilf.Compiler
             }
         }
 
-        void BuildVocabWords([CanBeNull] ITableBuilder longWordTable, [CanBeNull] out Queue<IWord> longWords)
+        void BuildVocabWords(ITableBuilder? longWordTable, out Queue<IWord>? longWords)
         {
             // build vocabulary
             longWords = longWordTable == null ? null : new Queue<IWord>();
@@ -226,7 +227,7 @@ namespace Zilf.Compiler
         void GenerateRoutineCode()
         {
             // compile routines
-            IRoutineBuilder mainRoutine = null;
+            IRoutineBuilder? mainRoutine = null;
 
             foreach (var routine in Context.ZEnvironment.Routines)
             {
@@ -306,7 +307,7 @@ namespace Zilf.Compiler
             }
         }
 
-        void PrepareReservedGlobalBuilders([ItemNotNull] [NotNull] string[] reservedGlobals)
+        void PrepareReservedGlobalBuilders(string[] reservedGlobals)
         {
             // implicitly defined globals
             // NOTE: the parameter to DoFunnyGlobals() above must match the number of globals implicitly defined here
@@ -318,7 +319,7 @@ namespace Zilf.Compiler
             }
         }
 
-        void PrepareHardGlobalBuilders([ItemNotNull] [NotNull] Queue<System.Action> globalInitializers)
+        void PrepareHardGlobalBuilders(Queue<System.Action> globalInitializers)
         {
             // builders and values for globals (which may refer to constants)
             foreach (var global in Context.ZEnvironment.Globals)
@@ -333,7 +334,7 @@ namespace Zilf.Compiler
             }
         }
 
-        static void PrepareGlobalDefaults([ItemNotNull] [NotNull] Queue<System.Action> globalInitializers)
+        static void PrepareGlobalDefaults(Queue<System.Action> globalInitializers)
         {
             while (globalInitializers.Count > 0)
                 globalInitializers.Dequeue()?.Invoke();
@@ -344,7 +345,7 @@ namespace Zilf.Compiler
             Constants.Add(Context.GetStdAtom(StdAtom.VOCAB), Game.VocabularyTable);
         }
 
-        void PrepareLongWordTableBuilder([CanBeNull] out ITableBuilder longWordTable)
+        void PrepareLongWordTableBuilder(out ITableBuilder? longWordTable)
         {
             if (Context.GetCompilationFlagOption(StdAtom.LONG_WORDS))
             {
@@ -357,13 +358,13 @@ namespace Zilf.Compiler
             }
         }
 
-        void PrepareConstantBuilders([CanBeNull] ZilModelObject lastObject)
+        void PrepareConstantBuilders(ZilModelObject? lastObject)
         {
             // builders and values for constants (which may refer to vocabulary,
             // routines, tables, objects, properties, or flags)
             foreach (var constant in Context.ZEnvironment.Constants)
             {
-                IOperand value;
+                IOperand? value;
                 if (constant.Name.StdAtom == StdAtom.LAST_OBJECT && lastObject != null)
                 {
                     value = Objects[lastObject.Name];
@@ -388,8 +389,8 @@ namespace Zilf.Compiler
             }
         }
 
-        void PrepareAndCheckGlobalStorage([NotNull] [ItemNotNull] Queue<System.Action> globalInitializers,
-            [ItemNotNull] [NotNull] out string[] reservedGlobals)
+        void PrepareAndCheckGlobalStorage(Queue<System.Action> globalInitializers,
+             out string[] reservedGlobals)
         {
             // FUNNY-GLOBALS?
             reservedGlobals = Context.ZEnvironment.VocabFormat.GetReservedGlobalNames();
@@ -405,11 +406,13 @@ namespace Zilf.Compiler
                     g.StorageType = GlobalStorageType.Hard;
 
                 if (Context.ZEnvironment.Globals.Count > 240 - reservedGlobals.Length)
+                {
                     Context.HandleError(new CompilerError(
                         CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
                         "globals",
                         Context.ZEnvironment.Globals.Count,
                         240 - reservedGlobals.Length));
+                }
             }
         }
 
@@ -417,19 +420,21 @@ namespace Zilf.Compiler
         {
             // enforce limit on number of flags
             if (UniqueFlags > Game.MaxFlags)
+            {
                 Context.HandleError(new CompilerError(
                     CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
                     "flags",
                     UniqueFlags,
                     Game.MaxFlags));
+            }
         }
 
         void PrepareFlagAliases()
         {
             // may as well do bit synonyms here too
-            foreach (var pair in Context.ZEnvironment.BitSynonyms)
+            foreach (var (alias, original) in Context.ZEnvironment.BitSynonyms)
             {
-                DefineFlagAlias(pair.Key, pair.Value);
+                DefineFlagAlias(alias, original);
             }
         }
 
@@ -454,43 +459,44 @@ namespace Zilf.Compiler
             }
         }
 
-        void PerformVocabMerges([NotNull] Dictionary<IWord, IWord> vocabMerges)
+        void PerformVocabMerges(Dictionary<IWord, IWord> vocabMerges)
         {
             string[] wordConstantPrefixes = { "W?", "A?", "ACT?", "PR?" };
 
-            foreach (var pair in vocabMerges)
+            foreach (var (dupWord, mainWord) in vocabMerges)
             {
-                IWord dupWord = pair.Key, mainWord = pair.Value;
                 Vocabulary[dupWord] = Vocabulary[mainWord];
 
                 foreach (var prefix in wordConstantPrefixes)
                 {
                     var mainAtom = ZilAtom.Parse(prefix + mainWord.Atom.Text, Context);
 
-                    if (Constants.TryGetValue(mainAtom, out var value))
-                    {
-                        var dupAtom = ZilAtom.Parse(prefix + dupWord.Atom.Text, Context);
-                        Constants[dupAtom] = value;
-                    }
+                    if (!Constants.TryGetValue(mainAtom, out var value))
+                        continue;
+
+                    var dupAtom = ZilAtom.Parse(prefix + dupWord.Atom.Text, Context);
+                    Constants[dupAtom] = value;
                 }
             }
         }
 
-        void PreparePunctuationAliasesAndPlanMerges([NotNull] Dictionary<string, string> punctWords,
-            [NotNull] Dictionary<IWord, IWord> vocabMerges)
+        void PreparePunctuationAliasesAndPlanMerges(Dictionary<string, string> punctWords,
+            Dictionary<IWord, IWord> vocabMerges)
         {
-            foreach (var pair in punctWords)
+            foreach (var (name, symbol) in punctWords)
             {
-                var nameAtom = ZilAtom.Parse(pair.Key, Context);
-                var symbolAtom = ZilAtom.Parse(pair.Value, Context);
+                var nameAtom = ZilAtom.Parse(name, Context);
+                var symbolAtom = ZilAtom.Parse(symbol, Context);
 
-                if (Context.ZEnvironment.Vocabulary.TryGetValue(symbolAtom, out var symbolWord) &&
-                    !Context.ZEnvironment.Vocabulary.ContainsKey(nameAtom))
+                if (!Context.ZEnvironment.Vocabulary.TryGetValue(symbolAtom, out var symbolWord) ||
+                    Context.ZEnvironment.Vocabulary.ContainsKey(nameAtom))
                 {
-                    var nameWord = Context.ZEnvironment.VocabFormat.CreateWord(nameAtom);
-                    Context.ZEnvironment.VocabFormat.MakeSynonym(nameWord, symbolWord);
-                    vocabMerges.Add(nameWord, symbolWord);
+                    continue;
                 }
+
+                var nameWord = Context.ZEnvironment.VocabFormat.CreateWord(nameAtom);
+                Context.ZEnvironment.VocabFormat.MakeSynonym(nameWord, symbolWord);
+                vocabMerges.Add(nameWord, symbolWord);
             }
         }
 
@@ -502,7 +508,7 @@ namespace Zilf.Compiler
             }
         }
 
-        void PlanVocabMerges([NotNull] out Dictionary<IWord, IWord> vocabMerges)
+        void PlanVocabMerges(out Dictionary<IWord, IWord> vocabMerges)
         {
             var merges = new Dictionary<IWord, IWord>();
             Context.ZEnvironment.MergeVocabulary((mainWord, duplicateWord) =>
@@ -521,7 +527,7 @@ namespace Zilf.Compiler
             }
         }
 
-        void PreparePunctuationWords([NotNull] out Dictionary<string, string> punctWords)
+        void PreparePunctuationWords(out Dictionary<string, string> punctWords)
         {
             // vocabulary for punctuation
             punctWords = new Dictionary<string, string>
@@ -542,19 +548,23 @@ namespace Zilf.Compiler
         void PrepareSelfInsertingBreaks()
         {
             // self-inserting breaks
-            if (Context.GetGlobalVal(Context.GetStdAtom(StdAtom.SIBREAKS)) is ZilString siBreaks)
-            {
-                Game.SelfInsertingBreaks.Clear();
-                foreach (var c in siBreaks.Text)
-                    Game.SelfInsertingBreaks.Add(c);
-            }
+            if (!(Context.GetGlobalVal(Context.GetStdAtom(StdAtom.SIBREAKS)) is ZilString siBreaks))
+                return;
+
+            Game.SelfInsertingBreaks.Clear();
+            foreach (var c in siBreaks.Text)
+                Game.SelfInsertingBreaks.Add(c);
         }
 
         void PrepareTableBuilders()
         {
             // builders for tables
-            ITableBuilder firstPureTable = null;
-            int ParserTablesFirst(ZilTable t) => (t.Flags & TableFlags.ParserTable) != 0 ? 1 : 2;
+            ITableBuilder? firstPureTable = null;
+
+            static int ParserTablesFirst(ZilTable t)
+            {
+                return (t.Flags & TableFlags.ParserTable) != 0 ? 1 : 2;
+            }
 
             foreach (var table in Context.ZEnvironment.Tables.OrderBy(ParserTablesFirst))
             {
@@ -572,13 +582,15 @@ namespace Zilf.Compiler
             }
         }
 
-        void PrepareObjectBuilders([CanBeNull] out ZilModelObject lastObject)
+        void PrepareObjectBuilders(out ZilModelObject? lastObject)
         {
             // builders for objects
             lastObject = null;
 
-            string GetGlobalSymbolType(ZilAtom atom) =>
-                Game.IsGloballyDefined(atom.Text, out var type) ? type : null;
+            string? GetGlobalSymbolType(ZilAtom atom)
+            {
+                return Game.IsGloballyDefined(atom.Text, out var type) ? type : null;
+            }
 
             foreach (var obj in Context.ZEnvironment.ObjectsInDefinitionOrder(GetGlobalSymbolType))
             {
@@ -609,11 +621,13 @@ namespace Zilf.Compiler
                     .ToList();
 
             if (highestFlags.Count >= Game.MaxFlags)
+            {
                 Context.HandleError(new CompilerError(
                     CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
                     "flags requiring high numbers",
                     highestFlags.Count,
                     Game.MaxFlags));
+            }
 
             foreach (var flag in highestFlags)
             {

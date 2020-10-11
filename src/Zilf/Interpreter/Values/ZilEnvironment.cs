@@ -17,9 +17,9 @@
  */
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -30,7 +30,11 @@ namespace Zilf.Interpreter.Values
         readonly WeakReference<LocalEnvironment> env;
 
         [ChtypeMethod]
-        public static ZilEnvironment FromAtom([NotNull] Context ctx, [NotNull] ZilAtom atom) =>
+        [DoesNotReturn]
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        [SuppressMessage("Performance", "CA1801:Unused parameter")]
+
+        public static ZilEnvironment FromAtom(Context ctx, ZilAtom atom) =>
             throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Not_Supported, "ENVIRONMENT");
 
         public ZilEnvironment(LocalEnvironment env, ZilAtom name)
@@ -39,7 +43,7 @@ namespace Zilf.Interpreter.Values
             this.name = name;
         }
 
-        public override bool ExactlyEquals(ZilObject obj)
+        public override bool ExactlyEquals(ZilObject? obj)
         {
             if (obj is ZilEnvironment other &&
                 env.TryGetTarget(out var thisTarget) &&
@@ -68,7 +72,6 @@ namespace Zilf.Interpreter.Values
 
         public override ZilObject GetPrimitive(Context ctx) => name;
 
-        [NotNull]
         public LocalEnvironment LocalEnvironment =>
             env.TryGetTarget(out var result)
             ? result

@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# RCS1139: Add summary element to documentation comment.
+dotnet_diagnostic.RCS1139.severity = silent

@@ -22,13 +22,12 @@ namespace Zilf.Language
 {
     sealed class FileSourceLine : ISourceLine
     {
-        public FileSourceLine([NotNull] string filename, int line)
+        public FileSourceLine(string filename, int line)
         {
             FileName = filename;
             Line = line;
         }
 
-        [NotNull]
         public string SourceInfo => $"{FileName}:{Line}";
 
         public string FileName { get; }

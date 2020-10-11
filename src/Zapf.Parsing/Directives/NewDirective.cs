@@ -23,12 +23,11 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class NewDirective : Directive
     {
-        public NewDirective([CanBeNull] AsmExpr version)
+        public NewDirective(AsmExpr? version)
         {
             Version = version;
         }
 
-        [CanBeNull]
-        public AsmExpr Version { get; }
+        public AsmExpr? Version { get; }
     }
 }

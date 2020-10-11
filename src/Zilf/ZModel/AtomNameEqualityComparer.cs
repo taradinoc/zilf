@@ -45,7 +45,7 @@ namespace Zilf.ZModel
             return x.Text == y.Text;
         }
 
-        public int GetHashCode([CanBeNull] ZilAtom obj)
+        public int GetHashCode(ZilAtom? obj)
         {
             if (obj == null)
                 return 0;

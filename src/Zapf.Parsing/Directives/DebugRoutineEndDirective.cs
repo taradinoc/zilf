@@ -23,7 +23,7 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class DebugRoutineEndDirective : LineDebugDirective
     {
-        public DebugRoutineEndDirective([NotNull] AsmExpr file, [NotNull] AsmExpr line, [NotNull] AsmExpr column)
+        public DebugRoutineEndDirective(AsmExpr file, AsmExpr line, AsmExpr column)
             : base(file, line, column) { }
     }
 }

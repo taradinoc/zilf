@@ -22,10 +22,9 @@ namespace Zilf.Emit.Zap
 {
     class PropertyBuilder : ConstantOperandBase, IPropertyBuilder
     {
-        [NotNull]
         readonly string name;
 
-        public PropertyBuilder([NotNull] string name, int number)
+        public PropertyBuilder(string name, int number)
         {
             this.name = name;
             Number = number;
@@ -33,7 +32,7 @@ namespace Zilf.Emit.Zap
 
         public int Number { get; }
 
-        public IOperand DefaultValue { get; set; }
+        public IOperand? DefaultValue { get; set; }
 
         public override string ToString()
         {

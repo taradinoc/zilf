@@ -25,8 +25,7 @@ namespace Zapf.Parsing.Diagnostics
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     public interface ISourceLine
     {
-        [CanBeNull]
-        string SourceFile { get; }
+        string? SourceFile { get; }
         int LineNum { get; }
     }
 }

@@ -27,7 +27,7 @@ namespace Zapf.Tests
 {
     struct AssemblyTestInput
     {
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         public string Code;
 
         [CanBeNull, ItemNotNull]
@@ -41,20 +41,20 @@ namespace Zapf.Tests
     {
         public bool Success;
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         public MemoryStream StoryFile;
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         public IDictionary<string, Symbol> Symbols;
     }
 
     static class TestHelper
     {
-        public static bool Assemble([NotNull] string code) =>
+        public static bool Assemble([JetBrains.Annotations.NotNull] string code) =>
             Assemble(new AssemblyTestInput { Code = code }).Success;
 
         [ContractAnnotation("=> false, storyFile: null; => true, storyFile: notnull")]
-        public static bool Assemble([NotNull] string code, [CanBeNull] out MemoryStream storyFile)
+        public static bool Assemble([JetBrains.Annotations.NotNull] string code, [CanBeNull] out MemoryStream storyFile)
         {
             var result = Assemble(new AssemblyTestInput { Code = code });
             storyFile = result.StoryFile;
@@ -62,7 +62,7 @@ namespace Zapf.Tests
         }
 
         [ContractAnnotation("=> false, storyFile: null; => true, storyFile: notnull")]
-        public static bool Assemble([NotNull] string code, [NotNull, ItemNotNull] string[] args,
+        public static bool Assemble([JetBrains.Annotations.NotNull] string code, [JetBrains.Annotations.NotNull, ItemNotNull] string[] args,
             [CanBeNull] out MemoryStream storyFile)
         {
             var result = Assemble(new AssemblyTestInput { Code = code, Args = args });
@@ -71,7 +71,7 @@ namespace Zapf.Tests
         }
 
         [ContractAnnotation("=> false, symbols: null; => true, symbols: notnull")]
-        public static bool Assemble([NotNull] string code, [NotNull] IDebugFileWriter debugWriter,
+        public static bool Assemble([JetBrains.Annotations.NotNull] string code, [JetBrains.Annotations.NotNull] IDebugFileWriter debugWriter,
             [CanBeNull] out IDictionary<string, Symbol> symbols)
         {
             var result = Assemble(new AssemblyTestInput { Code = code, DebugWriter = debugWriter });

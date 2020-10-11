@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -31,8 +32,8 @@ namespace Zilf.Interpreter
     struct ZilResult
     {
         private readonly Outcome outcome;
-        private readonly ZilObject value;
-        private readonly ZilActivation activation;
+        private readonly ZilObject? value;
+        private readonly ZilActivation? activation;
 
         public enum Outcome : byte
         {
@@ -44,7 +45,7 @@ namespace Zilf.Interpreter
             MapStop = 5,
         }
 
-        private ZilResult(Outcome outcome, ZilObject value, ZilActivation activation)
+        private ZilResult(Outcome outcome, ZilObject? value, ZilActivation? activation)
         {
             this.outcome = outcome;
             this.value = value;
@@ -72,35 +73,17 @@ namespace Zilf.Interpreter
             return sb.ToString();
         }
 
-        public static implicit operator ZilResult(ZilObject value)
-        {
-            return new ZilResult(Outcome.Value, value, null);
-        }
+        public static implicit operator ZilResult(ZilObject value) => new ZilResult(Outcome.Value, value, null);
 
-        public static ZilResult MapRet([NotNull] ZilObject[] values)
-        {
-            return new ZilResult(Outcome.MapRet, new ZilVector(values), null);
-        }
+        public static ZilResult MapRet(ZilObject[] values) => new ZilResult(Outcome.MapRet, new ZilVector(values), null);
 
-        public static ZilResult MapStop([NotNull] ZilObject[] values)
-        {
-            return new ZilResult(Outcome.MapStop, new ZilVector(values), null);
-        }
+        public static ZilResult MapStop(ZilObject[] values) => new ZilResult(Outcome.MapStop, new ZilVector(values), null);
 
-        public static ZilResult MapLeave(ZilObject value)
-        {
-            return new ZilResult(Outcome.MapLeave, value, null);
-        }
+        public static ZilResult MapLeave(ZilObject value) => new ZilResult(Outcome.MapLeave, value, null);
 
-        public static ZilResult Return(ZilActivation activation, ZilObject value)
-        {
-            return new ZilResult(Outcome.Return, value, activation);
-        }
+        public static ZilResult Return(ZilActivation activation, ZilObject value) => new ZilResult(Outcome.Return, value, activation);
 
-        public static ZilResult Again(ZilActivation activation)
-        {
-            return new ZilResult(Outcome.Again, null, activation);
-        }
+        public static ZilResult Again(ZilActivation activation) => new ZilResult(Outcome.Again, null, activation);
 
         /// <summary>
         /// Extracts the value, if this result is a simple value, or throws an exception.
@@ -110,7 +93,7 @@ namespace Zilf.Interpreter
         public static explicit operator ZilObject(ZilResult result)
         {
             if (result.outcome == Outcome.Value)
-                return result.value;
+                return result.value!;
 
             throw new InterpreterError(InterpreterMessages.Misplaced_0, result.outcome.ToString().ToUpperInvariant());
         }
@@ -121,7 +104,7 @@ namespace Zilf.Interpreter
             return ShouldPass(null, ref dummy);
         }
 
-        public bool ShouldPass([CanBeNull] ZilActivation currentActivation, ref ZilResult resultToPass)
+        public bool ShouldPass(ZilActivation? currentActivation, ref ZilResult resultToPass)
         {
             switch (outcome)
             {
@@ -129,6 +112,7 @@ namespace Zilf.Interpreter
                     return false;
 
                 case Outcome.Return when currentActivation != null && activation == currentActivation:
+                    Debug.Assert(value != null);
                     resultToPass = value;
                     return true;
 
@@ -141,37 +125,35 @@ namespace Zilf.Interpreter
         [SuppressMessage("ReSharper", "ParameterHidesMember")]
         public bool IsMapControl(out Outcome outcome, out ZilObject value)
         {
+            Debug.Assert(this.value != null);
+
             outcome = this.outcome;
             value = this.value;
 
-            switch (this.outcome)
+            return this.outcome switch
             {
-                case Outcome.MapLeave:
-                case Outcome.MapRet:
-                case Outcome.MapStop:
-                    return true;
-
-                default:
-                    return false;
-            }
+                Outcome.MapLeave => true,
+                Outcome.MapRet => true,
+                Outcome.MapStop => true,
+                _ => false
+            };
         }
 
         [SuppressMessage("ReSharper", "ParameterHidesMember")]
         public bool IsReturn(ZilActivation currentActivation, out ZilObject value)
         {
+            Debug.Assert(this.value != null);
             value = this.value;
             return outcome == Outcome.Return && activation == currentActivation;
         }
 
         public bool IsAgain(ZilActivation currentActivation) =>
             outcome == Outcome.Again && activation == currentActivation;
-
-        public bool IsNull => outcome == Outcome.Value && value == null;
     }
 
     static class ZilResultSequenceExtensions
     {
-        public static IEnumerable<ZilResult> Trim([NotNull] this IEnumerable<ZilResult> inputs)
+        public static IEnumerable<ZilResult> Trim(this IEnumerable<ZilResult> inputs)
         {
             foreach (var i in inputs)
             {
@@ -182,32 +164,31 @@ namespace Zilf.Interpreter
             }
         }
 
-        [NotNull]
-        public static IEnumerable<ZilResult> AsResultSequence([NotNull] this IEnumerable<ZilObject> inputs)
+        public static IEnumerable<ZilResult> AsResultSequence(this IEnumerable<ZilObject> inputs)
         {
             return inputs.Select<ZilObject, ZilResult>(i => i);
         }
 
-        public static ZilResult ToZilVectorResult([NotNull] this IEnumerable<ZilResult> inputs, ISourceLine sourceLine)
+        public static ZilResult ToZilVectorResult(this IEnumerable<ZilResult> inputs, ISourceLine? sourceLine)
         {
             var array = inputs.Trim().ToArray();
-            if (array.Length > 0 && array[array.Length - 1].ShouldPass())
-                return array[array.Length - 1];
+            if (array.Length > 0 && array[^1].ShouldPass())
+                return array[^1];
 
             return new ZilVector(Array.ConvertAll(array, i => (ZilObject)i)) { SourceLine = sourceLine };
         }
 
-        public static ZilResult ToZilListResult([NotNull] this IEnumerable<ZilResult> inputs, ISourceLine sourceLine)
+        public static ZilResult ToZilListResult(this IEnumerable<ZilResult> inputs, ISourceLine? sourceLine)
         {
             var array = inputs.Trim().ToArray();
-            if (array.Length > 0 && array[array.Length - 1].ShouldPass())
-                return array[array.Length - 1];
+            if (array.Length > 0 && array[^1].ShouldPass())
+                return array[^1];
 
             return new ZilList(array.Select(i => (ZilObject)i)) { SourceLine = sourceLine };
         }
 
         [ContractAnnotation("=> false, array: null; => true, array: notnull")]
-        public static bool TryToZilObjectArray([NotNull] this IEnumerable<ZilResult> inputs, [CanBeNull] out ZilObject[] array, out ZilResult result)
+        public static bool TryToZilObjectArray(this IEnumerable<ZilResult> inputs, [NotNullWhen(true)] out ZilObject[]? array, out ZilResult result)
         {
             List<ZilObject> list;
             if (inputs is ICollection<ZilResult> coll)
@@ -236,7 +217,7 @@ namespace Zilf.Interpreter
             return true;
         }
 
-        public static bool SequenceStructurallyEqual([NotNull] this IEnumerable<ZilObject> first, [NotNull] IEnumerable<ZilObject> second)
+        public static bool SequenceStructurallyEqual(this IEnumerable<ZilObject> first, IEnumerable<ZilObject> second)
         {
 #pragma warning disable ZILF0005 // Comparing ZilObjects with Equals
             return first.SequenceEqual(second, StructuralEqualityComparer.Instance);

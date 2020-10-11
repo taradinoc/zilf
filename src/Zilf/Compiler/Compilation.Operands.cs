@@ -29,8 +29,7 @@ namespace Zilf.Compiler
     partial class Compilation
     {
         /// <exception cref="CompilerError">Local variables are not allowed here, or an error occurred while compiling a subexpression.</exception>
-        [NotNull]
-        public IOperands CompileOperands([NotNull] IRoutineBuilder rb, [NotNull] ISourceLine src, [NotNull] params ZilObject[] exprs)
+        public IOperands CompileOperands(IRoutineBuilder rb, ISourceLine src, params ZilObject[] exprs)
         {
             int length = exprs.Length;
             var values = new IOperand[length];
@@ -119,7 +118,7 @@ namespace Zilf.Compiler
         }
 
         [System.Diagnostics.Contracts.Pure]
-        static bool LocalIsLaterModified([ItemNotNull] [NotNull] ZilObject[] exprs, int localIdx)
+        static bool LocalIsLaterModified(ZilObject[] exprs, int localIdx)
         {
             if (!(exprs[localIdx] is ZilForm form))
                 throw new ArgumentException("not a FORM");
@@ -142,7 +141,7 @@ namespace Zilf.Compiler
             return false;
         }
 
-        bool GlobalCouldBeLaterModified([ItemNotNull] [NotNull] ZilObject[] exprs, int localIdx)
+        bool GlobalCouldBeLaterModified(ZilObject[] exprs, int localIdx)
         {
             if (!(exprs[localIdx] is ZilForm form))
                 throw new ArgumentException("not a FORM");
@@ -165,7 +164,7 @@ namespace Zilf.Compiler
             return false;
         }
 
-        bool CouldModifyGlobal([NotNull] ZilObject expr, [NotNull] ZilAtom globalAtom)
+        bool CouldModifyGlobal(ZilObject expr, ZilAtom globalAtom)
         {
             if (!(expr is ZilListBase list))
                 return false;
@@ -201,7 +200,7 @@ namespace Zilf.Compiler
             readonly bool[] temps;
             readonly ZilAtom tempAtom;
 
-            public Operands([NotNull] Compilation compilation, [NotNull] IOperand[] values, [NotNull] bool[] temps, [NotNull] ZilAtom tempAtom)
+            public Operands(Compilation compilation, IOperand[] values, bool[] temps, ZilAtom tempAtom)
             {
                 this.compilation = compilation;
                 this.values = values;
@@ -224,7 +223,6 @@ namespace Zilf.Compiler
 
             public IOperand this[int index] => values[index];
 
-            [NotNull]
             public IOperand[] AsArray() => values;
         }
     }

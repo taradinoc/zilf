@@ -30,82 +30,76 @@ namespace Zilf.Interpreter
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     static partial class Subrs
     {
-        [NotNull]
         [Subr]
         [Subr("PNAME")]
-        public static ZilObject SPNAME(Context ctx, [NotNull] ZilAtom atom)
+        public static ZilObject SPNAME(Context ctx, ZilAtom atom)
         {
             return ZilString.FromString(atom.Text);
         }
 
         [Subr]
-        public static ZilObject PARSE([NotNull] Context ctx, [NotNull] string text, [Decl("'10")] int radix = 10,
-            [CanBeNull] [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null)
+        public static ZilObject PARSE(Context ctx, string text, [Decl("'10")] int radix = 10,
+            [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null!)
         {
             return PerformParse(ctx, text, radix, lookupObList, "PARSE", true);
         }
 
         [Subr]
-        public static ZilObject LPARSE([NotNull] Context ctx, [NotNull] string text, [Decl("'10")] int radix = 10,
-            [CanBeNull] [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null)
+        public static ZilObject LPARSE(Context ctx, string text, [Decl("'10")] int radix = 10,
+            [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null!)
         {
             return PerformParse(ctx, text, radix, lookupObList, "LPARSE", false);
         }
 
-        static ZilObject PerformParse([NotNull] [ProvidesContext] Context ctx, [NotNull] string text, int radix, ZilObject lookupObList,
-            [NotNull] string name, bool singleResult)
+        static ZilObject PerformParse([ProvidesContext] Context ctx, string text, int radix, ZilObject lookupObList,
+            string name, bool singleResult)
         {
             if (radix != 10)
                 throw new ArgumentOutOfRangeException(nameof(radix));
 
-            using (var innerEnv = ctx.PushEnvironment())
+            using var innerEnv = ctx.PushEnvironment();
+
+            if (lookupObList != null)
             {
-                if (lookupObList != null)
-                {
-                    if (lookupObList is ObList)
-                        lookupObList = new ZilList(lookupObList, new ZilList(null, null));
+                if (lookupObList is ObList)
+                    lookupObList = new ZilList(lookupObList, new ZilList(null, null));
 
-                    innerEnv.Rebind(ctx.GetStdAtom(StdAtom.OBLIST), lookupObList);
-                }
+                innerEnv.Rebind(ctx.GetStdAtom(StdAtom.OBLIST), lookupObList);
+            }
 
-                var ztree = Program.Parse(ctx, text);        // TODO: move into FrontEnd class
-                if (singleResult)
-                {
-                    try
-                    {
-                        return ztree.First();
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        throw new InterpreterError(InterpreterMessages._0_No_Expressions_Found, name, ex);
-                    }
-                }
+            var ztree = Program.Parse(ctx, text); // TODO: move into FrontEnd class
+            if (!singleResult)
                 return new ZilList(ztree);
+
+            try
+            {
+                return ztree.First();
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new InterpreterError(InterpreterMessages._0_No_Expressions_Found, name, ex);
             }
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject UNPARSE([NotNull] Context ctx, [NotNull] ZilObject arg)
+        public static ZilObject UNPARSE(Context ctx, ZilObject arg)
         {
             // in MDL, this takes an optional second argument (radix), but we don't bother
 
             return ZilString.FromString(arg.ToStringContext(ctx, false));
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject LOOKUP([NotNull] Context ctx, [NotNull] string str, [NotNull] ObList oblist)
+        public static ZilObject LOOKUP(Context ctx, string str, ObList oblist)
         {
             return oblist.Contains(str) ? oblist[str] : ctx.FALSE;
         }
 
         /// <exception cref="InterpreterError"><paramref name="oblist"/> already contains an atom named <paramref name="stringOrAtom"/>, or <paramref name="stringOrAtom"/> is an atom that is already on a different OBLIST.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject INSERT([NotNull] Context ctx,
-            [NotNull, Either(typeof(string), typeof(ZilAtom))] object stringOrAtom,
-            [NotNull] ObList oblist)
+        public static ZilObject INSERT(Context ctx,
+            [Either(typeof(string), typeof(ZilAtom))] object stringOrAtom,
+             ObList oblist)
         {
             switch (stringOrAtom)
             {
@@ -143,10 +137,9 @@ namespace Zilf.Interpreter
         }
 #pragma warning restore CS0649
 
-        [NotNull]
         [Subr]
         public static ZilObject REMOVE(Context ctx,
-            [NotNull] [Either(typeof(ZilAtom), typeof(RemoveParams.PnameAndObList), DefaultParamDesc = "atom")] object atomOrNameAndObList)
+             [Either(typeof(ZilAtom), typeof(RemoveParams.PnameAndObList), DefaultParamDesc = "atom")] object atomOrNameAndObList)
         {
             if (atomOrNameAndObList is ZilAtom atom)
             {
@@ -174,7 +167,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError"><paramref name="oblist"/> already contains an atom named <paramref name="str"/>.</exception>
         [Subr]
-        public static ZilObject LINK([NotNull] Context ctx, ZilObject value, [NotNull] string str, [NotNull] ObList oblist)
+        public static ZilObject LINK(Context ctx, ZilObject value, string str, ObList oblist)
         {
             if (oblist.Contains(str))
                 throw new InterpreterError(InterpreterMessages._0_OBLIST_Already_Contains_An_Atom_Named_1, "LINK", str);
@@ -186,46 +179,40 @@ namespace Zilf.Interpreter
             return value;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject ATOM(Context ctx, [NotNull] string pname)
+        public static ZilObject ATOM(Context ctx, string pname)
         {
             return new ZilAtom(pname, null, StdAtom.NONE);
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject ROOT([NotNull] Context ctx)
+        public static ZilObject ROOT(Context ctx)
         {
             return ctx.RootObList;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject MOBLIST([NotNull] Context ctx, [NotNull] ZilAtom name)
+        public static ZilObject MOBLIST(Context ctx, ZilAtom name)
         {
             return ctx.GetProp(name, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(name);
         }
 
-        [NotNull]
         [Subr("OBLIST?")]
-        public static ZilObject OBLIST_P(Context ctx, [NotNull] ZilAtom atom)
+        public static ZilObject OBLIST_P(Context ctx, ZilAtom atom)
         {
             return atom.ObList ?? ctx.FALSE;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject BLOCK([NotNull] Context ctx, [NotNull] ZilList list)
+        public static ZilObject BLOCK(Context ctx, ZilList list)
         {
             ctx.PushObPath(list);
             return list;
         }
 
         /// <exception cref="InterpreterError">ENDBLOCK is not allowed here.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject ENDBLOCK([NotNull] Context ctx)
+        public static ZilObject ENDBLOCK(Context ctx)
         {
             try
             {
@@ -239,30 +226,29 @@ namespace Zilf.Interpreter
 
         [Subr]
         [MdlZilRedirect(typeof(Subrs), nameof(GLOBAL), TopLevelOnly = true)]
-        public static ZilObject SETG([NotNull] Context ctx, [NotNull] ZilAtom atom, ZilObject value)
+        public static ZilObject SETG(Context ctx, ZilAtom atom, ZilObject value)
         {
             ctx.SetGlobalVal(atom, value);
             return value;
         }
 
         [Subr]
-        public static ZilObject SETG20([NotNull] Context ctx, [NotNull] ZilAtom atom, ZilObject value)
+        public static ZilObject SETG20(Context ctx, ZilAtom atom, ZilObject value)
         {
             ctx.SetGlobalVal(atom, value);
             return value;
         }
 
         [Subr]
-        public static ZilObject SET(Context ctx, [NotNull] ZilAtom atom, ZilObject value, [NotNull] LocalEnvironment env)
+        public static ZilObject SET(Context ctx, ZilAtom atom, ZilObject value, LocalEnvironment env)
         {
             env.SetLocalVal(atom, value);
             return value;
         }
 
         /// <exception cref="InterpreterError"><paramref name="atom"/> has no global value.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject GVAL([NotNull] Context ctx, [NotNull] ZilAtom atom)
+        public static ZilObject GVAL(Context ctx, ZilAtom atom)
         {
             var result = ctx.GetGlobalVal(atom);
             if (result == null)
@@ -275,27 +261,22 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        [NotNull]
         [Subr("GASSIGNED?")]
-        public static ZilObject GASSIGNED_P([NotNull] Context ctx, [NotNull] ZilAtom atom)
+        public static ZilObject GASSIGNED_P(Context ctx, ZilAtom atom)
         {
             return ctx.GetGlobalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject GUNASSIGN([NotNull] Context ctx, [NotNull] ZilAtom atom)
+        public static ZilObject GUNASSIGN(Context ctx, ZilAtom atom)
         {
             ctx.SetGlobalVal(atom, null);
             return atom;
         }
 
-        [NotNull]
         [Subr("GBOUND?")]
-        public static ZilObject GBOUND_P([NotNull] Context ctx, [NotNull] ZilAtom atom)
-        {
-            return ctx.GetGlobalBinding(atom, false) != null ? ctx.TRUE : ctx.FALSE;
-        }
+        public static ZilObject GBOUND_P(Context ctx, ZilAtom atom) =>
+            ctx.TryGetGlobalBinding(atom, out _) ? ctx.TRUE : ctx.FALSE;
 
 #pragma warning disable CS0649
         public static class DeclParams
@@ -315,15 +296,14 @@ namespace Zilf.Interpreter
         }
 #pragma warning restore CS0649
 
-        [NotNull]
         [FSubr]
-        public static ZilObject GDECL([NotNull] Context ctx, [NotNull] DeclParams.AtomsDeclSequence[] pairs)
+        public static ZilObject GDECL(Context ctx, DeclParams.AtomsDeclSequence[] pairs)
         {
             foreach (var pair in pairs)
             {
                 foreach (var atom in pair.Atoms.Atoms)
                 {
-                    var binding = ctx.GetGlobalBinding(atom, true);
+                    var binding = ctx.EnsureGlobalBinding(atom);
                     binding.Decl = pair.Decl;
                 }
             }
@@ -331,16 +311,12 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
-        [NotNull]
         [Subr("DECL?")]
-        public static ZilObject DECL_P([NotNull] Context ctx, [NotNull] ZilObject value, [NotNull] ZilObject pattern)
-        {
-            return Decl.Check(ctx, value, pattern) ? ctx.TRUE : ctx.FALSE;
-        }
+        public static ZilObject DECL_P(Context ctx, ZilObject value, ZilObject pattern) =>
+            Decl.Check(ctx, value, pattern) ? ctx.TRUE : ctx.FALSE;
 
-        [NotNull]
         [Subr("DECL-CHECK")]
-        public static ZilObject DECL_CHECK([NotNull] Context ctx, bool enable)
+        public static ZilObject DECL_CHECK(Context ctx, bool enable)
         {
             var wasEnabled = ctx.CheckDecls;
             ctx.CheckDecls = enable;
@@ -348,7 +324,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr("GET-DECL")]
-        public static ZilResult GET_DECL(Context ctx, [NotNull] ZilObject item)
+        public static ZilResult GET_DECL(Context ctx, ZilObject item)
         {
             if (item is ZilOffset offset)
                 return offset.StructurePattern;
@@ -356,9 +332,8 @@ namespace Zilf.Interpreter
             return GETPROP(ctx, item, ctx.GetStdAtom(StdAtom.DECL));
         }
 
-        [NotNull]
         [Subr("PUT-DECL")]
-        public static ZilObject PUT_DECL(Context ctx, [NotNull] ZilObject item, ZilObject pattern)
+        public static ZilObject PUT_DECL(Context ctx, ZilObject item, ZilObject pattern)
         {
             if (item is ZilOffset offset)
                 return new ZilOffset(offset.Index, pattern, offset.ValuePattern);
@@ -367,25 +342,25 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError"><paramref name="atom"/> has no local value in <paramref name="env"/>.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject LVAL(Context ctx, [NotNull] ZilAtom atom, [NotNull] LocalEnvironment env)
+        public static ZilObject LVAL(Context ctx, ZilAtom atom, LocalEnvironment env)
         {
             var result = env.GetLocalVal(atom);
             if (result == null)
+            {
                 throw new InterpreterError(
                     InterpreterMessages._0_Atom_1_Has_No_2_Value,
                     "LVAL",
                     atom.ToStringContext(ctx, false),
                     "local");
+            }
 
             return result;
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="env"/> is <see langword="null"/></exception>
-        [NotNull]
         [Subr]
-        public static ZilObject UNASSIGN(Context ctx, [NotNull] ZilAtom atom, [NotNull] LocalEnvironment env)
+        public static ZilObject UNASSIGN(Context ctx, ZilAtom atom, LocalEnvironment env)
         {
             if (atom == null)
                 throw new ArgumentNullException(nameof(atom));
@@ -396,47 +371,39 @@ namespace Zilf.Interpreter
             return atom;
         }
 
-        [NotNull]
         [Subr("ASSIGNED?")]
-        public static ZilObject ASSIGNED_P([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] LocalEnvironment env)
-        {
-            return env.GetLocalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
-        }
+        public static ZilObject ASSIGNED_P(Context ctx, ZilAtom atom, LocalEnvironment env) =>
+            env.GetLocalVal(atom) != null ? ctx.TRUE : ctx.FALSE;
 
-        [NotNull]
         [Subr("BOUND?")]
-        public static ZilObject BOUND_P([NotNull] Context ctx, [NotNull] ZilAtom atom, [NotNull] LocalEnvironment env)
-        {
-            return env.IsLocalBound(atom) ? ctx.TRUE : ctx.FALSE;
-        }
+        public static ZilObject BOUND_P(Context ctx, ZilAtom atom, LocalEnvironment env) =>
+            env.IsLocalBound(atom) ? ctx.TRUE : ctx.FALSE;
 
         /// <exception cref="InterpreterError"><paramref name="atom"/> has no local or global value in <paramref name="env"/>.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject VALUE(Context ctx, [NotNull] ZilAtom atom, [NotNull] LocalEnvironment env)
+        public static ZilObject VALUE(Context ctx, ZilAtom atom, LocalEnvironment env)
         {
             var result = env.GetLocalVal(atom) ?? ctx.GetGlobalVal(atom);
             if (result == null)
+            {
                 throw new InterpreterError(
                     InterpreterMessages._0_Atom_1_Has_No_2_Value,
                     "VALUE",
                     atom.ToStringContext(ctx, false),
                     "local or global");
+            }
 
             return result;
         }
 
         [Subr]
-        public static ZilResult GETPROP([NotNull] Context ctx, [NotNull] ZilObject item, [NotNull] ZilObject indicator,
-            [CanBeNull] ZilObject defaultValue = null)
-        {
-            return ctx.GetProp(item, indicator) ?? defaultValue?.Eval(ctx) ?? ctx.FALSE;
-        }
+        public static ZilResult GETPROP(Context ctx, ZilObject item, ZilObject indicator,
+            ZilObject? defaultValue = null) =>
+            ctx.GetProp(item, indicator) ?? defaultValue?.Eval(ctx) ?? ctx.FALSE;
 
-        [NotNull]
         [Subr]
-        public static ZilObject PUTPROP([NotNull] Context ctx, [NotNull] ZilObject item, [NotNull] ZilObject indicator,
-            [CanBeNull] ZilObject value = null)
+        public static ZilObject PUTPROP(Context ctx, ZilObject item, ZilObject indicator,
+            ZilObject? value = null)
         {
             if (value == null)
             {
@@ -451,38 +418,24 @@ namespace Zilf.Interpreter
             return item;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject ASSOCIATIONS([NotNull] Context ctx)
+        public static ZilObject ASSOCIATIONS(Context ctx)
         {
             var results = ctx.GetAllAssociations();
 
             return results.Length > 0 ? new ZilAsoc(results, 0) : ctx.FALSE;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject NEXT(Context ctx, [NotNull] ZilAsoc asoc)
-        {
-            return asoc.GetNext() ?? ctx.FALSE;
-        }
+        public static ZilObject NEXT(Context ctx, ZilAsoc asoc) => asoc.GetNext() ?? ctx.FALSE;
 
         [Subr]
-        public static ZilObject ITEM(Context ctx, [NotNull] ZilAsoc asoc)
-        {
-            return asoc.Item;
-        }
+        public static ZilObject ITEM(Context ctx, ZilAsoc asoc) => asoc.Item;
 
         [Subr]
-        public static ZilObject INDICATOR(Context ctx, [NotNull] ZilAsoc asoc)
-        {
-            return asoc.Indicator;
-        }
+        public static ZilObject INDICATOR(Context ctx, ZilAsoc asoc) => asoc.Indicator;
 
         [Subr]
-        public static ZilObject AVALUE(Context ctx, [NotNull] ZilAsoc asoc)
-        {
-            return asoc.Value;
-        }
+        public static ZilObject AVALUE(Context ctx, ZilAsoc asoc) => asoc.Value;
     }
 }

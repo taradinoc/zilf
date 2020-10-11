@@ -17,19 +17,16 @@
  */
 
 using Zilf.Interpreter.Values;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
     sealed class CallFrame : Frame
     {
-        [NotNull]
         public ZilForm CallingForm { get; }
 
-        [CanBeNull]
-        public override string Description => CallingForm.First?.ToString();
+        public override string? Description => CallingForm.First?.ToString();
 
-        public CallFrame([NotNull] Context ctx, [NotNull] ZilForm callingForm)
+        public CallFrame(Context ctx, ZilForm callingForm)
             : base(ctx, callingForm.SourceLine)
         {
             CallingForm = callingForm;

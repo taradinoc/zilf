@@ -38,7 +38,7 @@ namespace Zilf.ZModel.Vocab.NewParser
         byte nextAdjective = 255;
 
         /// <exception cref="InterpreterError">At least one value was duplicated between ADJ, BUZZ, DIR, NOUN, PREP, and VERB.</exception>
-        public NewParserVocabFormat([NotNull] Context ctx)
+        public NewParserVocabFormat(Context ctx)
         {
             this.ctx = ctx;
 
@@ -58,7 +58,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     "different values for ADJ, BUZZ, DIR, NOUN, PREP, and VERB");
         }
 
-        static bool AnyDuplicates<T>([NotNull] params T[] args)
+        static bool AnyDuplicates<T>(params T[] args)
         {
             var seen = new HashSet<T>();
 
@@ -176,13 +176,13 @@ namespace Zilf.ZModel.Vocab.NewParser
         }
 
         /// <exception cref="InvalidOperationException">Too many adjectives.</exception>
-        public void MakeAdjective(IWord word, ISourceLine location)
+        public void MakeAdjective(IWord word, ISourceLine? location)
         {
             var nw = (NewParserWord)word;
 
             if (!nw.HasClass(adjClass))
             {
-                ZilFix value;
+                ZilFix? value;
                 if (ctx.ZEnvironment.ZVersion < 4)
                 {
                     if (nextAdjective == 0)
@@ -206,7 +206,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        public void MakeBuzzword(IWord word, ISourceLine location)
+        public void MakeBuzzword(IWord word, ISourceLine? location)
         {
             var nw = (NewParserWord)word;
 
@@ -221,7 +221,7 @@ namespace Zilf.ZModel.Vocab.NewParser
         }
 
         /// <exception cref="ArgumentException"><paramref name="word"/> is not a direction.</exception>
-        public void MakeDirection(IWord word, ISourceLine location)
+        public void MakeDirection(IWord word, ISourceLine? location)
         {
             var nw = (NewParserWord)word;
 
@@ -239,7 +239,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        public void MakeObject(IWord word, ISourceLine location)
+        public void MakeObject(IWord word, ISourceLine? location)
         {
             var nw = (NewParserWord)word;
 
@@ -253,7 +253,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        public void MakePreposition(IWord word, ISourceLine location)
+        public void MakePreposition(IWord word, ISourceLine? location)
         {
             var nw = (NewParserWord)word;
 
@@ -267,7 +267,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        public void MakeSyntaxPreposition(IWord word, ISourceLine location)
+        public void MakeSyntaxPreposition(IWord word, ISourceLine? location)
         {
             var nw = (NewParserWord)word;
 
@@ -281,7 +281,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        public void MakeVerb(IWord word, ISourceLine location)
+        public void MakeVerb(IWord word, ISourceLine? location)
         {
             var nw = (NewParserWord)word;
 
@@ -453,7 +453,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             if (nw.HasClass(verbClass))
             {
                 var verbStuff = nw.VerbStuff;
-                ZilObject verbStuffId;
+                ZilObject? verbStuffId;
 
                 if ((IsVerbPointer(verbStuff) && (verbStuffId = verbStuff.GetPrimitive(ctx)) != null) ||
                     TryGetVerbStuffId(verbStuff, out verbStuffId))
@@ -510,7 +510,7 @@ namespace Zilf.ZModel.Vocab.NewParser
         }
 
         [ContractAnnotation("=> false, verbStuffId: null; => true, verbStuffId: notnull")]
-        bool TryGetVerbStuffId([CanBeNull] ZilObject verbStuff, [CanBeNull] out ZilObject verbStuffId)
+        bool TryGetVerbStuffId(ZilObject? verbStuff, [NotNullWhen(true)] out ZilObject? verbStuffId)
         {
             if (verbStuff == null)
             {
@@ -522,13 +522,13 @@ namespace Zilf.ZModel.Vocab.NewParser
             return verbStuffId != null;
         }
 
-        static bool IsVerbPointer([CanBeNull] ZilObject verbStuff)
+        static bool IsVerbPointer(ZilObject? verbStuff)
         {
             return verbStuff != null && verbStuff.StdTypeAtom == StdAtom.VERB_POINTER;
         }
 
-        void ConditionalAddShort([NotNull] IWordBuilder wb, string word, CompileConstantDelegate compileConstant,
-            [CanBeNull] ZilObject value)
+        void ConditionalAddShort(IWordBuilder wb, string word, CompileConstantDelegate compileConstant,
+             ZilObject? value)
         {
             if (value == null)
             {
@@ -553,8 +553,8 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        void ConditionalAddByte([NotNull] IWordBuilder wb, string word, CompileConstantDelegate compileConstant,
-            [CanBeNull] ZilObject value)
+        void ConditionalAddByte(IWordBuilder wb, string word, CompileConstantDelegate compileConstant,
+             ZilObject? value)
         {
             if (value == null)
             {
@@ -579,8 +579,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        [NotNull]
-        internal ZilObject NewAddWord([NotNull] ZilAtom name, ZilAtom type, [CanBeNull] ZilObject value, [NotNull] ZilFix flags)
+        internal ZilObject NewAddWord(ZilAtom name, ZilAtom? type, ZilObject? value, ZilFix flags)
         {
             bool typeProvided;
 
@@ -599,7 +598,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
             // create the word or merge into the existing one
             NewParserWord word;
-            if (ctx.ZEnvironment.Vocabulary.TryGetValue(name, out var iword) == false)
+            if (!ctx.ZEnvironment.Vocabulary.TryGetValue(name, out var iword))
             {
                 // create it by calling user-provided <MAKE-VWORD name class flags>
                 var form = new ZilForm(new ZilObject[]
@@ -696,8 +695,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             return word.Atom;
         }
 
-        [NotNull]
-        static ZilFix TranslateType([NotNull] Context ctx, [NotNull] ZilAtom type)
+        static ZilFix TranslateType(Context ctx, ZilAtom type)
         {
             // ReSharper disable once SwitchStatementMissingSomeCases
             switch (type.StdAtom)
@@ -719,7 +717,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     break;
             }
 
-            ZilFix classification;
+            ZilFix? classification;
 
             switch (type.StdAtom)
             {
@@ -753,14 +751,16 @@ namespace Zilf.ZModel.Vocab.NewParser
         {
             if (ctx.GetCompilationFlagOption(StdAtom.WORD_FLAGS_IN_TABLE))
                 return new[] { "WORD-FLAG-TABLE" };
-            return new string[0];
+            return Array.Empty<string>();
         }
 
         /// <exception cref="CompilerError">Malformed WORD-FLAGS-LIST.</exception>
         public void BuildLateSyntaxTables(BuildLateSyntaxTablesHelpers helpers)
         {
-            var actionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.ATBL));
-            var preactionsTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PATBL));
+            var actionsTable = (ITableBuilder)(helpers.CompileConstant(ctx.GetStdAtom(StdAtom.ATBL)) ??
+                                               throw new InvalidOperationException("Missing ATBL"));
+            var preactionsTable = (ITableBuilder)(helpers.CompileConstant(ctx.GetStdAtom(StdAtom.PATBL)) ??
+                                                  throw new InvalidOperationException("Missing PATBL"));
 
             helpers.GetGlobal(ctx.GetStdAtom(StdAtom.ACTIONS)).DefaultValue = actionsTable;
             helpers.GetGlobal(ctx.GetStdAtom(StdAtom.PREACTIONS)).DefaultValue = preactionsTable;
@@ -768,15 +768,16 @@ namespace Zilf.ZModel.Vocab.NewParser
             // word flag table
             if (ctx.GetCompilationFlagOption(StdAtom.WORD_FLAGS_IN_TABLE))
             {
-                var wordFlagsListObj = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST)) ?? new ZilList(null, null);
+                var wordFlagsListObj =
+                    ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.WORD_FLAGS_LIST)) ?? new ZilList(null, null);
 
                 if (!(wordFlagsListObj is ZilListoidBase wordFlagsList && wordFlagsList is ZilList))
                 {
                     throw new CompilerError(CompilerMessages.GVAL_Of_0_Must_Be_1, "WORD-FLAGS-LIST", "a list");
                 }
 
-                var wordFlagTable = (ITableBuilder)helpers.CompileConstant(ctx.GetStdAtom(StdAtom.WORD_FLAG_TABLE));
-                Debug.Assert(wordFlagTable != null);
+                var wordFlagTable = (ITableBuilder)(helpers.CompileConstant(ctx.GetStdAtom(StdAtom.WORD_FLAG_TABLE)) ??
+                                                    throw new InvalidOperationException("Missing WORD-FLAG-TABLE"));
 
                 // WORD-FLAGS-LIST may contain duplicates: (W?FOO 96 W?BAR 1 W?FOO 32)
                 // only the first appearance of each word will be kept
@@ -785,7 +786,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
                 while (!wordFlagsList.IsEmpty)
                 {
-                    if (!wordFlagsList.StartsWith(out ZilObject vword, out ZilObject flags))
+                    if (!wordFlagsList.StartsWith(out ZilObject? vword, out ZilObject? flags))
                         throw new CompilerError(CompilerMessages.WORDFLAGSLIST_Must_Have_An_Even_Number_Of_Elements);
 
                     if (seen.Add(vword))
@@ -796,10 +797,10 @@ namespace Zilf.ZModel.Vocab.NewParser
                         var zword = helpers.Vocabulary[word];
 
                         filtered.Add(zword);
-                        filtered.Add(helpers.CompileConstant(flags));
+                        filtered.Add(helpers.CompileConstant(flags)!);
                     }
 
-                    wordFlagsList = wordFlagsList.GetRest(2);
+                    wordFlagsList = wordFlagsList.GetRest(2)!;
                     Debug.Assert(wordFlagsList != null);
                 }
 

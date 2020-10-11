@@ -23,18 +23,15 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class DebugFileDirective : DebugDirective
     {
-        public DebugFileDirective([NotNull] AsmExpr number, [NotNull] string includeName, [NotNull] string actualName)
+        public DebugFileDirective(AsmExpr number, string includeName, string actualName)
         {
             Number = number;
             IncludeName = includeName;
             ActualName = actualName;
         }
 
-        [NotNull]
         public AsmExpr Number { get; }
-        [NotNull]
         public string IncludeName { get; }
-        [NotNull]
         public string ActualName { get; }
     }
 }

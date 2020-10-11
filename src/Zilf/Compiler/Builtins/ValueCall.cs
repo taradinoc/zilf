@@ -28,17 +28,13 @@ namespace Zilf.Compiler.Builtins
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     struct ValueCall
     {
-        [NotNull]
         public Compilation cc { get; }
-        [NotNull]
         public IRoutineBuilder rb { get; }
-        [NotNull]
         public ZilForm form { get; }
 
-        [NotNull]
         public IVariable resultStorage { get; }
 
-        public ValueCall([NotNull] Compilation cc, [NotNull] IRoutineBuilder rb, [NotNull] ZilForm form, [NotNull] IVariable resultStorage)
+        public ValueCall(Compilation cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage)
             : this()
         {
             this.cc = cc;
@@ -47,7 +43,6 @@ namespace Zilf.Compiler.Builtins
             this.resultStorage = resultStorage;
         }
 
-        [NotNull]
         public IOperand HandleMessage(int code, params object[] args)
         {
             cc.Context.HandleError(new CompilerError(form, code, args));

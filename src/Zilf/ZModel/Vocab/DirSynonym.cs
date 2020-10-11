@@ -23,7 +23,7 @@ namespace Zilf.ZModel.Vocab
 {
     class DirSynonym : Synonym
     {
-        public DirSynonym([NotNull] IWord original, [NotNull] IWord synonym)
+        public DirSynonym(IWord original, IWord synonym)
             : base(original, synonym)
         {
         }

@@ -31,13 +31,12 @@ namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        [CanBeNull]
-        IOperand GetGlobalDefaultValue([NotNull] ZilGlobal global)
+        IOperand? GetGlobalDefaultValue(ZilGlobal global)
         {
             if (global.Value == null)
                 return null;
 
-            IOperand result = null;
+            IOperand? result = null;
 
             try
             {
@@ -258,80 +257,92 @@ namespace Zilf.Compiler
             Pessimistic,
         }
 
-        [CanBeNull]
-        public IOperand CompileConstant([NotNull] ZilObject expr)
+        public IOperand? CompileConstant(ZilObject expr)
         {
             return CompileConstant(expr, AmbiguousConstantMode.Pessimistic);
         }
 
         // this method has a high complexity score because it has a big switch statement
         [SuppressMessage("ReSharper", "CyclomaticComplexity")]
-        [CanBeNull]
-        public IOperand CompileConstant([NotNull] ZilObject expr, AmbiguousConstantMode mode)
+        public IOperand? CompileConstant(ZilObject expr, AmbiguousConstantMode mode)
         {
-            switch (expr.Unwrap(Context))
+            while (true)
             {
-                case ZilFix fix:
-                    return Game.MakeOperand(fix.Value);
+                switch (expr.Unwrap(Context))
+                {
+                    case ZilFix fix:
+                        return Game.MakeOperand(fix.Value);
 
-                case ZilHash hash when hash.StdTypeAtom == StdAtom.BYTE && hash.GetPrimitive(Context) is ZilFix fix:
-                    return Game.MakeOperand(fix.Value);
+                    case ZilHash hash when hash.StdTypeAtom == StdAtom.BYTE && hash.GetPrimitive(Context) is ZilFix fix:
+                        return Game.MakeOperand(fix.Value);
 
-                case ZilWord word:
-                    return CompileConstant(word.Value);
+                    case ZilWord word:
+                        return CompileConstant(word.Value);
 
-                case ZilString str:
-                    return Game.MakeOperand(TranslateString(str, Context));
+                    case ZilString str:
+                        return Game.MakeOperand(TranslateString(str, Context));
 
-                case ZilChar ch:
-                    return Game.MakeOperand((byte)ch.Char);
+                    case ZilChar ch:
+                        return Game.MakeOperand((byte)ch.Char);
 
-                case ZilAtom atom:
-                    if (atom.StdAtom == StdAtom.T)
-                        return Game.One;
-                    if (Routines.TryGetValue(atom, out var routine))
-                        return routine;
-                    if (Objects.TryGetValue(atom, out var obj))
-                        return obj;
-                    if (Constants.TryGetValue(atom, out var operand))
-                        return operand;
+                    case ZilAtom atom:
+                        if (atom.StdAtom == StdAtom.T)
+                            return Game.One;
+                        if (Routines.TryGetValue(atom, out var routine))
+                            return routine;
+                        if (Objects.TryGetValue(atom, out var obj))
+                            return obj;
+                        if (Constants.TryGetValue(atom, out var operand))
+                            return operand;
 
-                    if (mode == AmbiguousConstantMode.Optimistic && Globals.TryGetValue(atom, out var global))
-                    {
-                        Context.HandleError(new CompilerError((ISourceLine)null,
-                            CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index, atom));
-                        return global;
-                    }
-                    return null;
+                        if (mode == AmbiguousConstantMode.Optimistic && Globals.TryGetValue(atom, out var global))
+                        {
+                            Context.HandleError(new CompilerError((ISourceLine?)null,
+                                CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index,
+                                atom));
+                            return global;
+                        }
 
-                case ZilFalse _:
-                    return Game.Zero;
+                        return null;
 
-                case ZilTable table:
-                    if (Tables.TryGetValue(table, out var tb))
+                    case ZilFalse _:
+                        return Game.Zero;
+
+                    case ZilTable table:
+                        if (Tables.TryGetValue(table, out var tb))
+                            return tb;
+
+                        tb = Game.DefineTable(table.Name, true);
+                        Tables.Add(table, tb);
                         return tb;
 
-                    tb = Game.DefineTable(table.Name, true);
-                    Tables.Add(table, tb);
-                    return tb;
+                    case ZilConstant constant:
+                        return CompileConstant(constant.Value);
 
-                case ZilConstant constant:
-                    return CompileConstant(constant.Value);
+                    case ZilForm form:
+                        if (form.IsGVAL(out var globalAtom))
+                        {
+                            expr = globalAtom;
+                            mode = AmbiguousConstantMode.Pessimistic;
+                            continue;
+                        }
 
-                case ZilForm form:
-                    return form.IsGVAL(out var globalAtom) ? CompileConstant(globalAtom, AmbiguousConstantMode.Pessimistic) : null;
+                        return null;
 
-                case ZilHash hash when hash.StdTypeAtom == StdAtom.VOC && hash.GetPrimitive(Context) is ZilAtom primAtom:
-                    var wordAtom = ZilAtom.Parse("W?" + primAtom.Text, Context);
-                    if (Constants.TryGetValue(wordAtom, out operand))
-                        return operand;
-                    return null;
+                    case ZilHash hash when hash.StdTypeAtom == StdAtom.VOC && hash.GetPrimitive(Context) is ZilAtom primAtom:
+                        var wordAtom = ZilAtom.Parse("W?" + primAtom.Text, Context);
+                        if (Constants.TryGetValue(wordAtom, out operand))
+                            return operand;
 
-                default:
-                    var primitive = expr.GetPrimitive(Context);
-                    if (primitive != expr && primitive.GetTypeAtom(Context) != expr.GetTypeAtom(Context))
-                        return CompileConstant(primitive);
-                    return null;
+                        return null;
+
+                    default:
+                        var primitive = expr.GetPrimitive(Context);
+                        if (primitive != expr && primitive.GetTypeAtom(Context) != expr.GetTypeAtom(Context))
+                            return CompileConstant(primitive);
+
+                        return null;
+                }
             }
         }
     }

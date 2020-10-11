@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -31,10 +32,12 @@ namespace Zilf.Language.Signatures
 {
     partial class SubrSignature
     {
-        static readonly object[] EmptyObjectArray = new object[0];
+        static readonly object[] EmptyObjectArray = Array.Empty<object>();
 
-        [NotNull]
-        public static ISignature FromMethodInfo([NotNull] MethodInfo methodInfo, bool isFSubr)
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        [SuppressMessage("Performance", "CA1801:Unused parameter")]
+        [SuppressMessage("Redundancy", "RCS1163:Unused parameter.")]
+        public static ISignature FromMethodInfo(MethodInfo methodInfo, bool isFSubr)
         {
             if (methodInfo == null)
                 throw new ArgumentNullException(nameof(methodInfo));
@@ -53,27 +56,27 @@ namespace Zilf.Language.Signatures
             return new SubrSignature(paramSigParts.ToArray());
         }
 
-        [NotNull]
-        static SignaturePart ConvertSubrParam([NotNull] ParameterInfo pi)
+        static SignaturePart ConvertSubrParam(ParameterInfo pi)
         {
             var (isOptional, defaultValue) = CheckOptional(pi);
             return ConvertForSubr(
                 pi.ParameterType,
-                Hyphenate(pi.Name),
+                Hyphenate(pi.Name!),
                 pi.GetCustomAttributes(false),
                 isOptional,
                 defaultValue);
         }
 
-        [NotNull]
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        [SuppressMessage("Redundancy", "RCS1163:Unused parameter.")]
+        [SuppressMessage("Performance", "CA1801:Unused parameter")]
         static SignaturePart ConvertForSubr(
-            [NotNull] Type paramType,
-            [NotNull] string name,
+            Type paramType,
+            string name,
             // ReSharper disable once SuggestBaseTypeForParameter
-            [NotNull] [ItemNotNull] object[] attrs,
+            object[] attrs,
             bool isOptional,
-            // ReSharper disable once UnusedParameter.Local
-            object defaultValue)
+            object? defaultValue)
         {
             // [Either], [Required], and [Decl] go on the parameter
             var isRequired = attrs.OfType<RequiredAttribute>().Any();
@@ -105,7 +108,7 @@ namespace Zilf.Language.Signatures
                     nameof(ZilSequenceParamAttribute) + ": pick at most one");
             }
 
-            SignaturePart elemPart = null;
+            SignaturePart? elemPart = null;
 
             if (eitherAttr != null)
             {
@@ -148,46 +151,34 @@ namespace Zilf.Language.Signatures
             return elemPart;
         }
 
-        [NotNull]
-        static SignaturePart ConvertEither([NotNull] [ItemNotNull] [InstantHandle] IEnumerable<Type> altTypes, [NotNull] string name)
+        static SignaturePart ConvertEither([InstantHandle] IEnumerable<Type> altTypes, string name)
         {
             var alts = from t in altTypes
                        select ConvertForSubr(t, name, EmptyObjectArray, false, null);
             return SignatureBuilder.Alternatives(alts, name);
         }
 
-        [NotNull]
-        static SignaturePart ConvertStruct([NotNull] Type structType, [NotNull] ZilStructuredParamAttribute attr, [NotNull] string name)
+        static SignaturePart ConvertStruct(Type structType, ZilStructuredParamAttribute attr, string name)
         {
             // TODO: cache the result
             var parts = ConvertFields(structType).ToList();
 
-            switch (attr.TypeAtom)
+            return attr.TypeAtom switch
             {
-                case StdAtom.ADECL:
-                    return SignatureBuilder.Adecl(parts[0], parts[1], name);
-
-                case StdAtom.FORM:
-                    return SignatureBuilder.Form(parts, name);
-
-                case StdAtom.LIST:
-                    return SignatureBuilder.List(parts, name);
-
-                default:
-                    throw new UnhandledCaseException(attr.TypeAtom.ToString());
-            }
+                StdAtom.ADECL => SignatureBuilder.Adecl(parts[0], parts[1], name),
+                StdAtom.FORM => SignatureBuilder.Form(parts, name),
+                StdAtom.LIST => SignatureBuilder.List(parts, name),
+                _ => throw new UnhandledCaseException(attr.TypeAtom.ToString())
+            };
         }
 
-        [NotNull]
-        static SignaturePart ConvertSequence([NotNull] Type seqType, [NotNull] string name)
+        static SignaturePart ConvertSequence(Type seqType, string name)
         {
             // TODO: cache the result?
             return SignatureBuilder.Sequence(ConvertFields(seqType), name);
         }
 
-        [NotNull]
-        [ItemNotNull]
-        static IEnumerable<SignaturePart> ConvertFields([NotNull] Type structOrSeqType)
+        static IEnumerable<SignaturePart> ConvertFields(Type structOrSeqType)
         {
             return structOrSeqType.GetFields()
                 .OrderBy(f => Marshal.OffsetOf(structOrSeqType, f.Name).ToInt64())
@@ -213,8 +204,7 @@ namespace Zilf.Language.Signatures
             { typeof(bool), Constraint.Boolean }
         };
 
-        [NotNull]
-        static SignaturePart ConstrainByType([NotNull] SignaturePart part, [NotNull] Type elementType)
+        static SignaturePart ConstrainByType(SignaturePart part, Type elementType)
         {
             System.Diagnostics.Debug.Assert(!elementType.IsArray);
 
@@ -237,14 +227,14 @@ namespace Zilf.Language.Signatures
             // find an appropriate type or primtype constraint for the element type
             if (!StandardTypeConstraints.TryGetValue(elementType, out var constraint))
             {
-                BuiltinPrimTypeAttribute primTypeAttr;
+                BuiltinPrimTypeAttribute? primTypeAttr;
                 if ((primTypeAttr = elementType.GetCustomAttribute<BuiltinPrimTypeAttribute>(false)) != null)
                 {
                     constraint = Constraint.OfPrimType(primTypeAttr.PrimType);
                 }
                 else
                 {
-                    BuiltinTypeAttribute typeAttr;
+                    BuiltinTypeAttribute? typeAttr;
                     if ((typeAttr = elementType.GetCustomAttribute<BuiltinTypeAttribute>(false)) != null)
                     {
                         constraint = Constraint.OfType(typeAttr.Name);
@@ -260,7 +250,7 @@ namespace Zilf.Language.Signatures
             return isOptional ? SignatureBuilder.Optional(part) : part;
         }
 
-        static (bool isOptional, object defaultValue) CheckOptional([NotNull] ParameterInfo pi)
+        static (bool isOptional, object? defaultValue) CheckOptional(ParameterInfo pi)
         {
             var zilOptAttr = pi.GetCustomAttribute<ZilOptionalAttribute>(false);
 
@@ -268,27 +258,33 @@ namespace Zilf.Language.Signatures
                 return (pi.IsOptional, pi.HasDefaultValue ? pi.DefaultValue : null);
 
             if (pi.IsOptional)
+            {
                 throw new InvalidOperationException(
                     $"Expected {nameof(ZilOptionalAttribute)} or {nameof(pi.IsOptional)}, not both");
+            }
 
             return (true, zilOptAttr.Default);
         }
 
-        static (bool isOptional, object defaultValue) CheckOptional([NotNull] MemberInfo fi)
+        static (bool isOptional, object? defaultValue) CheckOptional(MemberInfo fi)
         {
             var zilOptAttr = fi.GetCustomAttribute<ZilOptionalAttribute>(false);
             return (zilOptAttr != null, zilOptAttr?.Default);
         }
 
-        static (bool isArray, Type elementOrNonArrayType) CheckArray([NotNull] Type maybeArrayType)
+        static (bool isArray, Type elementOrNonArrayType) CheckArray(Type maybeArrayType)
         {
-            return maybeArrayType.IsArray
-                ? (true, maybeArrayType.GetElementType())
-                : (false, maybeArrayType);
+            if (maybeArrayType.IsArray)
+            {
+                var elementType = maybeArrayType.GetElementType();
+                System.Diagnostics.Debug.Assert(elementType != null);
+                return (true, elementType);
+            }
+
+            return (false, maybeArrayType);
         }
 
-        [NotNull]
-        static string Hyphenate([NotNull] string s)
+        static string Hyphenate(string s)
         {
             var sb = new StringBuilder(s.Length);
             sb.Append(char.ToLowerInvariant(s[0]));

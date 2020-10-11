@@ -22,6 +22,6 @@ namespace Zilf.Emit
 {
     public interface IConstantOperand : IOperand
     {
-        [NotNull] IConstantOperand Add([NotNull] IConstantOperand other);
+        IConstantOperand Add(IConstantOperand other);
     }
 }

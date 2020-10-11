@@ -23,7 +23,7 @@ namespace Zilf.Interpreter
 {
     static class Recursion
     {
-        static readonly ConditionalWeakTable<object, object> table = new ConditionalWeakTable<object, object>();
+        static readonly ConditionalWeakTable<object, object?> table = new ConditionalWeakTable<object, object?>();
 
         public static bool TryLock(object obj)
         {
@@ -36,7 +36,7 @@ namespace Zilf.Interpreter
             return true;
         }
 
-        public static void Unlock([NotNull] object obj)
+        public static void Unlock(object obj)
         {
             table.Remove(obj);
         }

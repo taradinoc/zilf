@@ -32,60 +32,57 @@ namespace Zilf.Language
         {
         }
 
-        public CompilerError(int code, [ItemNotNull] params object[] messageArgs)
+        public CompilerError(int code, params object[]? messageArgs)
             : this(DiagnosticContext.Current.SourceLine, code, messageArgs)
         {
         }
 
-        public CompilerError([CanBeNull] ISourceLine sourceLine, int code)
+        public CompilerError(ISourceLine? sourceLine, int code)
             : this(sourceLine, code, null)
         {
         }
 
-        public CompilerError([CanBeNull] ISourceLine sourceLine, int code, [ItemNotNull] params object[] messageArgs)
+        public CompilerError(ISourceLine? sourceLine, int code, params object[]? messageArgs)
             : base(MakeDiagnostic(sourceLine, code, messageArgs))
         {
         }
 
-        public CompilerError([NotNull] IProvideSourceLine sourceLine, int code)
+        public CompilerError(IProvideSourceLine sourceLine, int code)
            : this(sourceLine, code, null)
         {
         }
 
-        public CompilerError([NotNull] IProvideSourceLine node, int code, params object[] messageArgs)
+        public CompilerError(IProvideSourceLine node, int code, params object[]? messageArgs)
             : base(MakeDiagnostic(node.SourceLine, code, messageArgs))
         {
         }
 
         [UsedImplicitly]
-        public CompilerError([NotNull] Diagnostic diagnostic)
+        public CompilerError(Diagnostic diagnostic)
             : base(diagnostic)
         {
         }
 
-        protected CompilerError([NotNull] SerializationInfo si, StreamingContext sc)
+        protected CompilerError(SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
         }
 
-        [NotNull]
-        public static CompilerError WrongArgCount([NotNull] string name, [NotNull] IEnumerable<ArgCountRange> ranges,
+        public static CompilerError WrongArgCount(string name, IEnumerable<ArgCountRange> ranges,
             int? acceptableVersion = null)
         {
             ArgCountHelpers.FormatArgCount(ranges, out var cs);
             return WrongArgCount(name, cs, acceptableVersion);
         }
 
-        [NotNull]
-        public static CompilerError WrongArgCount([NotNull] string name, ArgCountRange range,
+        public static CompilerError WrongArgCount(string name, ArgCountRange range,
             int? acceptableVersion = null)
         {
             ArgCountHelpers.FormatArgCount(range, out var cs);
             return WrongArgCount(name, cs, acceptableVersion);
         }
 
-        [NotNull]
-        static CompilerError WrongArgCount([NotNull] string name, CountableString cs, int? acceptableVersion)
+        static CompilerError WrongArgCount(string name, CountableString cs, int? acceptableVersion)
         {
             var error = new CompilerError(CompilerMessages._0_Requires_1_Argument1s, name, cs);
 
@@ -98,6 +95,22 @@ namespace Zilf.Language
             }
 
             return error;
+        }
+
+        public CompilerError()
+        {
+        }
+
+        protected CompilerError(string message) : base(message)
+        {
+        }
+
+        protected CompilerError(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected CompilerError(ISourceLine src, string message) : base(src, message)
+        {
         }
     }
 }

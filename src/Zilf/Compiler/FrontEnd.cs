@@ -38,7 +38,7 @@ namespace Zilf.Compiler
 
         public string FileName { get; }
         public bool Writing { get; }
-        public Stream Stream { get; set; }
+        public Stream? Stream { get; set; }
     }
 
     public class CheckingFilePresenceEventArgs : EventArgs
@@ -79,13 +79,12 @@ namespace Zilf.Compiler
             IncludePaths = new List<string>();
         }
         
-        public event EventHandler<OpeningFileEventArgs> OpeningFile;
-        public event EventHandler<CheckingFilePresenceEventArgs> CheckingFilePresence;
-        internal event EventHandler<ContextEventArgs> InitializeContext;
+        public event EventHandler<OpeningFileEventArgs>? OpeningFile;
+        public event EventHandler<CheckingFilePresenceEventArgs>? CheckingFilePresence;
+        internal event EventHandler<ContextEventArgs>? InitializeContext;
 
         public IList<string> IncludePaths { get; }
 
-        [NotNull]
         Stream OpenFile(string path, bool writing)
         {
             var handler = OpeningFile;
@@ -105,7 +104,7 @@ namespace Zilf.Compiler
                 writing ? FileAccess.Write : FileAccess.Read);
         }
 
-        bool CheckFileExists([NotNull] string path)
+        bool CheckFileExists(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -126,19 +125,14 @@ namespace Zilf.Compiler
 
         class ZapStreamFactory : IZapStreamFactory
         {
-            [NotNull]
             readonly FrontEnd owner;
 
-            [NotNull]
             readonly string mainFile;
 
-            [NotNull]
             readonly string fwordsFile;
 
-            [NotNull]
             readonly string dataFile;
 
-            [NotNull]
             readonly string stringFile;
 
             const string FrequentWordsSuffix1 = "_freq";
@@ -147,7 +141,7 @@ namespace Zilf.Compiler
             const string StringSuffix = "_str";
 
             /// <exception cref="ArgumentException">mainFile is not a file name.</exception>
-            public ZapStreamFactory([NotNull] FrontEnd owner, [NotNull] string mainFile)
+            public ZapStreamFactory(FrontEnd owner, string mainFile)
             {
                 this.owner = owner;
                 this.mainFile = mainFile;
@@ -173,7 +167,7 @@ namespace Zilf.Compiler
                     Try(FrequentWordsSuffix2, @".xzap", out _) ??
                     defaultPath;
 
-                string Try(string suffix, string myExt, out string path)
+                string? Try(string suffix, string myExt, out string path)
                 {
                     path = Path.Combine(dir, baseName + suffix + myExt);
                     return owner.CheckFileExists(path) ? path : null;
@@ -219,7 +213,6 @@ namespace Zilf.Compiler
             #endregion
         }
 
-        [NotNull]
         Context NewContext(RunMode runMode, bool wantDebugInfo)
         {
             var result = new Context { RunMode = runMode, WantDebugInfo = wantDebugInfo };
@@ -229,27 +222,27 @@ namespace Zilf.Compiler
             return result;
         }
 
-        internal FrontEndResult Interpret([NotNull] Context ctx, [NotNull] string inputFileName)
+        internal FrontEndResult Interpret(Context ctx, string inputFileName)
         {
             var f = InterpretOrCompile(ctx, inputFileName, null, false, false);
             return f;
         }
 
-        public FrontEndResult Compile([NotNull] string inputFileName, [NotNull] string outputFileName, bool wantDebugInfo = false)
+        public FrontEndResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo = false)
         {
             var ctx = NewContext(RunMode.Compiler, wantDebugInfo);
             return Compile(ctx, inputFileName, outputFileName, ctx.WantDebugInfo);
         }
 
-        internal FrontEndResult Compile([NotNull] Context ctx, [NotNull] string inputFileName,
-            [NotNull] string outputFileName, bool wantDebugInfo = false) =>
+        internal FrontEndResult Compile(Context ctx, string inputFileName,
+             string outputFileName, bool wantDebugInfo = false) =>
             InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
 
         // FIXME: not supported by R#, sadly...
         //[ContractAnnotation("wantCompile: true => outputFileName: notnull")]
         //[ContractAnnotation("wantCompile: false => outputFileName: null")]
-        FrontEndResult InterpretOrCompile([NotNull] [ProvidesContext] Context ctx, [NotNull] string inputFileName,
-            [CanBeNull] string outputFileName, bool wantCompile, bool wantDebugInfo)
+        FrontEndResult InterpretOrCompile([ProvidesContext] Context ctx, string inputFileName,
+             string? outputFileName, bool wantCompile, bool wantDebugInfo)
         {
             var result = new FrontEndResult();
 
@@ -276,6 +269,8 @@ namespace Zilf.Compiler
                     // compile, if there were no evaluation errors
                     if (wantCompile && ctx.ErrorCount == 0)
                     {
+                        Debug.Assert(outputFileName != null);
+
                         ctx.RunHook("PRE-COMPILE");
                         ctx.SetDefaultConstants();
 
@@ -285,10 +280,8 @@ namespace Zilf.Compiler
                             var streamFactory = new ZapStreamFactory(this, outputFileName);
                             var options = MakeGameOptions(ctx);
 
-                            using (var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options))
-                            {
-                                Compilation.Compile(ctx, gameBuilder);
-                            }
+                            using var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
+                            Compilation.Compile(ctx, gameBuilder);
                         }
                         catch (ZilErrorBase ex)     // catch fatals too
                         {
@@ -306,8 +299,7 @@ namespace Zilf.Compiler
             }
         }
 
-        [NotNull]
-        static GameOptions MakeGameOptions([NotNull] Context ctx)
+        static GameOptions MakeGameOptions(Context ctx)
         {
             var zenv = ctx.ZEnvironment;
 
@@ -339,7 +331,7 @@ namespace Zilf.Compiler
 
                 V5Plus:
                     var defaultLang = ZModel.Language.Default;
-                    
+
                     var doCharset =
                         zenv.Charset0 != defaultLang.Charset0 ||
                         zenv.Charset1 != defaultLang.Charset1 ||

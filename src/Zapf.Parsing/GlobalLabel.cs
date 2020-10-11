@@ -23,12 +23,11 @@ namespace Zapf.Parsing
 {
     public sealed class GlobalLabel : AsmLine
     {
-        public GlobalLabel([NotNull] string name)
+        public GlobalLabel(string name)
         {
             Name = name;
         }
 
-        [NotNull]
         public string Name { get; }
     }
 }

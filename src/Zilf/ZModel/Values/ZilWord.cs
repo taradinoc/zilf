@@ -28,7 +28,7 @@ namespace Zilf.ZModel.Values
     [BuiltinType(StdAtom.WORD, PrimType.LIST)]
     sealed class ZilWord : ZilTiedListBase
     {
-        public ZilWord([NotNull] ZilObject value)
+        public ZilWord(ZilObject value)
         {
             Value = value;
         }
@@ -43,8 +43,7 @@ namespace Zilf.ZModel.Values
         }
 
         [ChtypeMethod]
-        [NotNull]
-        public static ZilWord FromList([NotNull] ZilListBase list)
+        public static ZilWord FromList(ZilListBase list)
         {
             if (list.First == null || list.Rest?.IsEmpty != true)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "list coerced to WORD", 1);

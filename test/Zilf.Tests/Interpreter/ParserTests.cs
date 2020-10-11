@@ -78,7 +78,7 @@ namespace Zilf.Tests.Interpreter
                 return null;
             }
 
-            public void AddStdAtom([NotNull] string name, StdAtom stdAtom)
+            public void AddStdAtom([JetBrains.Annotations.NotNull] string name, StdAtom stdAtom)
             {
                 atoms.Add(name, new ZilAtom(name, null, stdAtom));
             }
@@ -404,7 +404,7 @@ namespace Zilf.Tests.Interpreter
         [DataRow("!%%FOO", ParserOutputType.EmptySplice)]
         [DataRow("!#2 1010", ParserOutputType.Object)]
         [DataRow("!'FOO", ParserOutputType.Object)]
-        public void TestParsingUglyStructures([NotNull] string input, [NotNull] object boxedExpectedType)
+        public void TestParsingUglyStructures([JetBrains.Annotations.NotNull] string input, [JetBrains.Annotations.NotNull] object boxedExpectedType)
         {
             site.OnEvaluate = _ => new ZilFix(3);
 

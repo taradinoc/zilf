@@ -17,6 +17,7 @@
  */
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
@@ -25,11 +26,11 @@ namespace Zilf.Interpreter
     static class StructureExtensions
     {
         [System.Diagnostics.Contracts.Pure]
-        public static bool HasLength([NotNull] this IStructure structure, int length) =>
+        public static bool HasLength(this IStructure structure, int length) =>
             structure.GetLength(length) == length;
 
         [System.Diagnostics.Contracts.Pure]
-        public static bool HasLength([NotNull] this IStructure structure, int min, int max)
+        public static bool HasLength(this IStructure structure, int min, int max)
         {
             Debug.Assert(min >= 0 && min < max);
             var len = structure.GetLength(max);
@@ -37,11 +38,11 @@ namespace Zilf.Interpreter
         }
 
         [System.Diagnostics.Contracts.Pure]
-        public static bool HasLengthAtMost([NotNull] this IStructure structure, int max) =>
+        public static bool HasLengthAtMost(this IStructure structure, int max) =>
             structure.GetLength(max) != null;
 
         [System.Diagnostics.Contracts.Pure]
-        public static bool HasLengthAtLeast([NotNull] this IStructure structure, int min)
+        public static bool HasLengthAtLeast(this IStructure structure, int min)
         {
             var len = structure.GetLength(min);
             return len == null || len >= min;
@@ -60,7 +61,7 @@ namespace Zilf.Interpreter
         /// or <see langword="false"/> otherwise.</returns>
         [ContractAnnotation("=> true, obj1: notnull")]
         [ContractAnnotation("=> false, obj1: null")]
-        public static bool Matches<T1>([NotNull] this IStructure structure, [CanBeNull] out T1 obj1)
+        public static bool Matches<T1>(this IStructure structure, out T1? obj1)
             where T1 : ZilObject
         {
             if (structure.HasLength(1) && structure.GetFirst() is T1 elem1)
@@ -86,7 +87,8 @@ namespace Zilf.Interpreter
         /// or <see langword="false"/> otherwise.</returns>
         [ContractAnnotation("=> true, obj1: notnull, obj2: notnull")]
         [ContractAnnotation("=> false, obj1: null, obj2: null")]
-        public static bool Matches<T1, T2>([NotNull] this IStructure structure, [CanBeNull] out T1 obj1, [CanBeNull] out T2 obj2)
+        public static bool Matches<T1, T2>(this IStructure structure, [NotNullWhen(true)] out T1? obj1,
+            [NotNullWhen(true)] out T2? obj2)
             where T1 : ZilObject
             where T2 : ZilObject
         {
@@ -117,13 +119,15 @@ namespace Zilf.Interpreter
         /// or <see langword="false"/> otherwise.</returns>
         [ContractAnnotation("=> true, obj1: notnull, obj2: notnull, obj3: notnull")]
         [ContractAnnotation("=> false, obj1: null, obj2: null, obj3: null")]
-        public static bool Matches<T1, T2, T3>([NotNull] this IStructure structure, [CanBeNull] out T1 obj1, [CanBeNull] out T2 obj2,
-            [CanBeNull] out T3 obj3)
+        public static bool Matches<T1, T2, T3>(this IStructure structure, [NotNullWhen(true)] out T1? obj1,
+            [NotNullWhen(true)] out T2? obj2,
+            [NotNullWhen(true)] out T3? obj3)
             where T1 : ZilObject
             where T2 : ZilObject
             where T3 : ZilObject
         {
-            if (structure.HasLength(3) && structure[0] is T1 elem1 && structure[1] is T2 elem2 && structure[2] is T3 elem3)
+            if (structure.HasLength(3) && structure[0] is T1 elem1 && structure[1] is T2 elem2 &&
+                structure[2] is T3 elem3)
             {
                 obj1 = elem1;
                 obj2 = elem2;
@@ -154,14 +158,15 @@ namespace Zilf.Interpreter
         /// or <see langword="false"/> otherwise.</returns>
         [ContractAnnotation("=> true, obj1: notnull, obj2: notnull, obj3: notnull, obj4: notnull")]
         [ContractAnnotation("=> false, obj1: null, obj2: null, obj3: null, obj4: null")]
-        public static bool Matches<T1, T2, T3, T4>([NotNull] this IStructure structure, [CanBeNull] out T1 obj1, [CanBeNull] out T2 obj2,
-            [CanBeNull] out T3 obj3, [CanBeNull] out T4 obj4)
+        public static bool Matches<T1, T2, T3, T4>(this IStructure structure, [NotNullWhen(true)] out T1? obj1,
+            [NotNullWhen(true)] out T2? obj2, [NotNullWhen(true)] out T3? obj3, [NotNullWhen(true)] out T4? obj4)
             where T1 : ZilObject
             where T2 : ZilObject
             where T3 : ZilObject
             where T4 : ZilObject
         {
-            if (structure.HasLength(4) && structure[0] is T1 elem1 && structure[1] is T2 elem2 && structure[2] is T3 elem3 &&
+            if (structure.HasLength(4) && structure[0] is T1 elem1 && structure[1] is T2 elem2 &&
+                structure[2] is T3 elem3 &&
                 structure[3] is T4 elem4)
             {
                 obj1 = elem1;
@@ -193,7 +198,7 @@ namespace Zilf.Interpreter
         /// or <see langword="false"/> otherwise.</returns>
         [ContractAnnotation("=> true, obj1: notnull")]
         [ContractAnnotation("=> false, obj1: null")]
-        public static bool StartsWith<T1>([NotNull] this IStructure structure, [CanBeNull] out T1 obj1)
+        public static bool StartsWith<T1>(this IStructure structure, [NotNullWhen(true)] out T1? obj1)
             where T1 : ZilObject
         {
             if (structure.HasLengthAtLeast(1) && structure.GetFirst() is T1 elem1)
@@ -219,7 +224,8 @@ namespace Zilf.Interpreter
         /// or <see langword="false"/> otherwise.</returns>
         [ContractAnnotation("=> true, obj1: notnull, obj2: notnull")]
         [ContractAnnotation("=> false, obj1: null, obj2: null")]
-        public static bool StartsWith<T1, T2>([NotNull] this IStructure structure, [CanBeNull] out T1 obj1, [CanBeNull] out T2 obj2)
+        public static bool StartsWith<T1, T2>(this IStructure structure, [NotNullWhen(true)] out T1? obj1,
+            [NotNullWhen(true)] out T2? obj2)
             where T1 : ZilObject
             where T2 : ZilObject
         {
@@ -232,82 +238,6 @@ namespace Zilf.Interpreter
 
             obj1 = default;
             obj2 = default;
-            return false;
-        }
-
-        /// <summary>
-        /// Tests whether a structure has the specified minimum number and types of elements,
-        /// and extracts the typed elements if so.
-        /// </summary>
-        /// <typeparam name="T1">The expected type of the first element.</typeparam>
-        /// <typeparam name="T2">The expected type of the second element.</typeparam>
-        /// <typeparam name="T3">The expected type of the third element.</typeparam>
-        /// <param name="structure">The structure to test.</param>
-        /// <param name="obj1">The first element, or <see langword="null"/> if the match failed.</param>
-        /// <param name="obj2">The second element, or <see langword="null"/> if the match failed.</param>
-        /// <param name="obj3">The third element, or <see langword="null"/> if the match failed.</param>
-        /// <returns><see langword="true"/> if the structure had the specified minimum number and types of elements,
-        /// or <see langword="false"/> otherwise.</returns>
-        [ContractAnnotation("=> true, obj1: notnull, obj2: notnull, obj3: notnull")]
-        [ContractAnnotation("=> false, obj1: null, obj2: null, obj3: null")]
-        public static bool StartsWith<T1, T2, T3>([NotNull] this IStructure structure, [CanBeNull] out T1 obj1, [CanBeNull] out T2 obj2,
-            [CanBeNull] out T3 obj3)
-            where T1 : ZilObject
-            where T2 : ZilObject
-            where T3 : ZilObject
-        {
-            if (structure.HasLengthAtLeast(3) && structure[0] is T1 elem1 && structure[1] is T2 elem2 && structure[2] is T3 elem3)
-            {
-                obj1 = elem1;
-                obj2 = elem2;
-                obj3 = elem3;
-                return true;
-            }
-
-            obj1 = default;
-            obj2 = default;
-            obj3 = default;
-            return false;
-        }
-
-        /// <summary>
-        /// Tests whether a structure has the specified minimum number and types of elements,
-        /// and extracts the typed elements if so.
-        /// </summary>
-        /// <typeparam name="T1">The expected type of the first element.</typeparam>
-        /// <typeparam name="T2">The expected type of the second element.</typeparam>
-        /// <typeparam name="T3">The expected type of the third element.</typeparam>
-        /// <typeparam name="T4">The expected type of the fourth element.</typeparam>
-        /// <param name="structure">The structure to test.</param>
-        /// <param name="obj1">The first element, or <see langword="null"/> if the match failed.</param>
-        /// <param name="obj2">The second element, or <see langword="null"/> if the match failed.</param>
-        /// <param name="obj3">The third element, or <see langword="null"/> if the match failed.</param>
-        /// <param name="obj4">The fourth element, or <see langword="null"/> if the match failed.</param>
-        /// <returns><see langword="true"/> if the structure had the specified minimum number and types of elements,
-        /// or <see langword="false"/> otherwise.</returns>
-        [ContractAnnotation("=> true, obj1: notnull, obj2: notnull, obj3: notnull, obj4: notnull")]
-        [ContractAnnotation("=> false, obj1: null, obj2: null, obj3: null, obj4: null")]
-        public static bool StartsWith<T1, T2, T3, T4>([NotNull] this IStructure structure, [CanBeNull] out T1 obj1, [CanBeNull] out T2 obj2,
-            [CanBeNull] out T3 obj3, [CanBeNull] out T4 obj4)
-            where T1 : ZilObject
-            where T2 : ZilObject
-            where T3 : ZilObject
-            where T4 : ZilObject
-        {
-            if (structure.HasLengthAtLeast(4) && structure[0] is T1 elem1 && structure[1] is T2 elem2 && structure[2] is T3 elem3 &&
-                structure[3] is T4 elem4)
-            {
-                obj1 = elem1;
-                obj2 = elem2;
-                obj3 = elem3;
-                obj4 = elem4;
-                return true;
-            }
-
-            obj1 = default;
-            obj2 = default;
-            obj3 = default;
-            obj4 = default;
             return false;
         }
 

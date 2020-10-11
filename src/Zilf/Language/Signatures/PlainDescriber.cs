@@ -19,24 +19,22 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Language.Signatures
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Not normalizing.")]
     class PlainDescriber : ISignatureVisitor, IConstraintVisitor
     {
-        [NotNull]
         readonly StringBuilder sb;
 
-        PlainDescriber([NotNull] StringBuilder sb)
+        PlainDescriber(StringBuilder sb)
         {
             this.sb = sb;
         }
 
-        [NotNull]
-        public static string Describe([NotNull] ISignature signature)
+        public static string Describe(ISignature signature)
         {
             var sb = new StringBuilder();
             var visitor = new PlainDescriber(sb);
@@ -44,8 +42,7 @@ namespace Zilf.Language.Signatures
             return sb.ToString();
         }
 
-        [NotNull]
-        static string Describe([NotNull] ISignaturePart part)
+        static string Describe(ISignaturePart part)
         {
             var sb = new StringBuilder();
             var visitor = new PlainDescriber(sb);
@@ -53,8 +50,7 @@ namespace Zilf.Language.Signatures
             return sb.ToString();
         }
 
-        [NotNull]
-        static string Describe([NotNull] Constraint constraint)
+        static string Describe(Constraint constraint)
         {
             var sb = new StringBuilder();
             var visitor = new PlainDescriber(sb);
@@ -62,7 +58,7 @@ namespace Zilf.Language.Signatures
             return sb.ToString();
         }
 
-        void VisitWithDelimiter([ItemNotNull] [NotNull] IEnumerable<ISignaturePart> parts, [NotNull] string delimiter)
+        void VisitWithDelimiter(IEnumerable<ISignaturePart> parts, string delimiter)
         {
             bool first = true;
 

@@ -24,16 +24,14 @@ using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Common;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
         // TODO: use ArgDecoder
-        [NotNull]
         [FSubr("SET-DEFSTRUCT-FILE-DEFAULTS")]
-        public static ZilObject SET_DEFSTRUCT_FILE_DEFAULTS([NotNull] Context ctx, [NotNull] ZilObject[] args)
+        public static ZilObject SET_DEFSTRUCT_FILE_DEFAULTS(Context ctx, ZilObject[] args)
         {
             var defaults = new ZilList(args);
             ctx.CurrentFile.DefStructDefaults = defaults;
@@ -42,11 +40,12 @@ namespace Zilf.Interpreter
 
         struct DefStructDefaults
         {
-            public ZilAtom NthFunc, PutFunc, PrintFunc;
+            public ZilAtom NthFunc, PutFunc;
+            public ZilAtom? PrintFunc;
             public int StartOffset;
             public bool SuppressType, SuppressDefaultCtor, SuppressDecl;
-            public ZilList CustomCtorSpec;
-            public ZilList InitArgs;
+            public ZilList? CustomCtorSpec;
+            public ZilList? InitArgs;
         }
 
         struct DefStructField
@@ -55,7 +54,7 @@ namespace Zilf.Interpreter
             public ZilAtom NthFunc, PutFunc;
             public int Offset;
             public ZilObject Decl;
-            public ZilObject Default;
+            public ZilObject? Default;
             public bool NoDefault;
         }
 
@@ -173,12 +172,11 @@ namespace Zilf.Interpreter
 #pragma warning restore 649
 
         /// <exception cref="InterpreterError">A type named <paramref name="name"/> is already defined.</exception>
-        [NotNull]
         [FSubr]
-        public static ZilObject DEFSTRUCT([NotNull] Context ctx, [NotNull] ZilAtom name,
-            [NotNull] [Either(typeof(ZilAtom), typeof(DefStructParams.DefaultsList), DefaultParamDesc = "base-type")]
+        public static ZilObject DEFSTRUCT(Context ctx, ZilAtom name,
+            [Either(typeof(ZilAtom), typeof(DefStructParams.DefaultsList), DefaultParamDesc = "base-type")]
             object baseTypeOrDefaults,
-            [NotNull] [Required]
+            [Required]
             DefStructParams.FieldSpecList[] fieldSpecs)
         {
             // new type name
@@ -301,8 +299,7 @@ namespace Zilf.Interpreter
             return name;
         }
 
-        [NotNull]
-        static ZilObject MakeDefstructDecl([NotNull] Context ctx, [NotNull] ZilAtom baseType, [NotNull] List<DefStructField> fields)
+        static ZilObject MakeDefstructDecl(Context ctx, ZilAtom baseType, List<DefStructField> fields)
         {
             if (ctx == null)
                 throw new ArgumentNullException(nameof(ctx));
@@ -321,8 +318,8 @@ namespace Zilf.Interpreter
             return new ZilSegment(new ZilForm(parts));
         }
 
-        static ZilObject MakeDefstructCustomCtorMacro([NotNull] Context ctx, ZilAtom ctorName, [NotNull] ZilAtom typeName, [NotNull] ZilAtom baseType,
-            [NotNull] List<DefStructField> fields, [NotNull] ZilList initArgs, int startOffset, [NotNull] ArgSpec argspec)
+        static ZilObject MakeDefstructCustomCtorMacro(Context ctx, ZilAtom ctorName, ZilAtom typeName, ZilAtom baseType,
+            List<DefStructField> fields, ZilList initArgs, int startOffset, ArgSpec argspec)
         {
             // {0} = constructor name
             // {1} = type name
@@ -364,22 +361,22 @@ namespace Zilf.Interpreter
                 {
                     case ArgItem.ArgType.Required:
                         resultInitializers.Add(Program.Parse(
-                            ctx,
-                            SRequiredArgInitializer,
-                            new ZilFix(field.Offset - startOffset + 1),
-                            arg.Atom,
-                            field.Default ?? DefaultForDecl(ctx, field.Decl))
+                                ctx,
+                                SRequiredArgInitializer,
+                                new ZilFix(field.Offset - startOffset + 1),
+                                arg.Atom,
+                                field.Default ?? DefaultForDecl(ctx, field.Decl))
                             .Single());
                         break;
 
                     case ArgItem.ArgType.Optional:
                     case ArgItem.ArgType.Auxiliary:
                         resultInitializers.Add(Program.Parse(
-                            ctx,
-                            SOptAuxArgInitializer,
-                            new ZilFix(field.Offset - startOffset + 1),
-                            arg.Atom,
-                            field.Default ?? DefaultForDecl(ctx, field.Decl))
+                                ctx,
+                                SOptAuxArgInitializer,
+                                new ZilFix(field.Offset - startOffset + 1),
+                                arg.Atom,
+                                field.Default ?? DefaultForDecl(ctx, field.Decl))
                             .Single());
                         break;
 
@@ -397,28 +394,27 @@ namespace Zilf.Interpreter
                 // {1} = default value
                 const string SOmittedFieldInitializer = "<PUT .RESULT-INIT {0} {1}>";
                 resultInitializers.Add(Program.Parse(
-                    ctx,
-                    SOmittedFieldInitializer,
-                    new ZilFix(field.Offset - startOffset + 1),
-                    field.Default)
+                        ctx,
+                        SOmittedFieldInitializer,
+                        new ZilFix(field.Offset - startOffset + 1),
+                        field.Default)
                     .Single());
             }
 
             return Program.Parse(
-                ctx,
-                SMacroTemplate,
-                ctorName,
-                typeName,
-                argspec.ToZilList(),
-                new ZilFix(fields.Count),
-                baseType,
-                initArgs,
-                new ZilList(resultInitializers))
+                    ctx,
+                    SMacroTemplate,
+                    ctorName,
+                    typeName,
+                    argspec.ToZilList(),
+                    new ZilFix(fields.Count),
+                    baseType,
+                    initArgs,
+                    new ZilList(resultInitializers))
                 .Single();
         }
 
-        [NotNull]
-        static ZilObject DefaultForDecl([NotNull] Context ctx, [NotNull] ZilObject decl)
+        static ZilObject DefaultForDecl(Context ctx, ZilObject decl)
         {
             foreach (var zo in LikelyDefaults(ctx))
             {
@@ -430,7 +426,7 @@ namespace Zilf.Interpreter
             return ctx.FALSE;
         }
 
-        static IEnumerable<ZilObject> LikelyDefaults([NotNull] Context ctx)
+        static IEnumerable<ZilObject> LikelyDefaults(Context ctx)
         {
             yield return ctx.FALSE;
             yield return ZilFix.Zero;
@@ -440,8 +436,8 @@ namespace Zilf.Interpreter
             yield return ctx.GetStdAtom(StdAtom.SORRY);
         }
 
-        static ZilObject MakeDefstructCtorMacro([NotNull] Context ctx, [NotNull] ZilAtom name, [NotNull] ZilAtom baseType, [NotNull] List<DefStructField> fields,
-            [NotNull] ZilList initArgs, int startOffset)
+        static ZilObject MakeDefstructCtorMacro(Context ctx, ZilAtom name, ZilAtom baseType, List<DefStructField> fields,
+            ZilList initArgs, int startOffset)
         {
             // the MAKE-[STRUCT] macro can be called with a parameter telling it to stuff values into an existing object:
             //   <MAKE-FOO 'FOO .MYFOO 'FOO-X 123>
@@ -548,57 +544,57 @@ namespace Zilf.Interpreter
                 var orderFix = new ZilFix(definitionOrder);
 
                 existingObjectDefaults.Add(Program.Parse(
-                    ctx,
-                    field.NoDefault ? SExistingObjectDefaultTemplate_NoDefault : SExistingObjectDefaultTemplate,
-                    field.Name, field.PutFunc, actualOffset, orderFix, defaultValue)
+                        ctx,
+                        field.NoDefault ? SExistingObjectDefaultTemplate_NoDefault : SExistingObjectDefaultTemplate,
+                        field.Name, field.PutFunc, actualOffset, orderFix, defaultValue)
                     .Single());
                 newObjectDefaults.Add(Program.Parse(
-                    ctx,
-                    SNewObjectDefaultTemplate,
-                    field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
+                        ctx,
+                        SNewObjectDefaultTemplate,
+                        field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
                     .Single());
                 boaConstructorDefaultClauses.Add(Program.Parse(
-                    ctx,
-                    SBoaConstructorDefaultClauseTemplate,
-                    field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
+                        ctx,
+                        SBoaConstructorDefaultClauseTemplate,
+                        field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
                     .Single());
 
                 existingObjectClauses.Add(Program.Parse(
-                    ctx,
-                    SExistingObjectCondClauseTemplate,
-                    field.Name, field.PutFunc, actualOffset, orderFix, defaultValue)
+                        ctx,
+                        SExistingObjectCondClauseTemplate,
+                        field.Name, field.PutFunc, actualOffset, orderFix, defaultValue)
                     .Single());
                 newObjectClauses.Add(Program.Parse(
-                    ctx,
-                    SNewObjectCondClauseTemplate,
-                    field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
+                        ctx,
+                        SNewObjectCondClauseTemplate,
+                        field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
                     .Single());
                 boaConstructorClauses.Add(Program.Parse(
-                    ctx,
-                    SBoaConstructorCondClauseTemplate,
-                    field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
+                        ctx,
+                        SBoaConstructorCondClauseTemplate,
+                        field.Name, field.PutFunc, adjustedOffset, orderFix, defaultValue)
                     .Single());
 
                 definitionOrder++;
             }
 
             return Program.Parse(
-                ctx,
-                SMacroTemplate,
-                name,
-                new ZilFix(fields.Count),
-                new ZilList(existingObjectClauses),
-                new ZilList(newObjectClauses),
-                baseType,
-                initArgs,
-                new ZilList(boaConstructorClauses),
-                new ZilList(boaConstructorDefaultClauses),
-                new ZilList(newObjectDefaults),
-                new ZilList(existingObjectDefaults))
+                    ctx,
+                    SMacroTemplate,
+                    name,
+                    new ZilFix(fields.Count),
+                    new ZilList(existingObjectClauses),
+                    new ZilList(newObjectClauses),
+                    baseType,
+                    initArgs,
+                    new ZilList(boaConstructorClauses),
+                    new ZilList(boaConstructorDefaultClauses),
+                    new ZilList(newObjectDefaults),
+                    new ZilList(existingObjectDefaults))
                 .Single();
         }
 
-        static ZilObject MakeDefstructAccessMacro([NotNull] Context ctx, [NotNull] ZilAtom structName, DefStructDefaults defaults,
+        static ZilObject MakeDefstructAccessMacro(Context ctx, ZilAtom structName, DefStructDefaults defaults,
             DefStructField field)
         {
             // {0} = field name
@@ -638,14 +634,14 @@ namespace Zilf.Interpreter
                 template = SFullCheckTemplate;
 
             return Program.Parse(
-                ctx,
-                template,
-                field.Name,
-                structName,
-                field.PutFunc,
-                field.NthFunc,
-                new ZilFix(field.Offset),
-                field.Decl)
+                    ctx,
+                    template,
+                    field.Name,
+                    structName,
+                    field.PutFunc,
+                    field.NthFunc,
+                    new ZilFix(field.Offset),
+                    field.Decl)
                 .Single();
         }
 
@@ -727,15 +723,13 @@ namespace Zilf.Interpreter
         }
 
         // TODO: delete once SET-DEFSTRUCT-FILE-DEFAULTS is using ArgDecoder
-        static void ParseDefStructDefaults([NotNull] Context ctx, [NotNull] ZilList fileDefaults, ref DefStructDefaults defaults)
+        static void ParseDefStructDefaults(Context ctx, ZilList fileDefaults, ref DefStructDefaults defaults)
         {
             var quoteAtom = ctx.GetStdAtom(StdAtom.QUOTE);
 
             foreach (var part in fileDefaults)
             {
-                if (part is ZilForm partForm &&
-                    partForm.First == quoteAtom &&
-                    partForm.Rest.First is ZilAtom tag)
+                if (part is ZilForm { First: var qt, Rest: { First: ZilAtom tag } } && qt == quoteAtom)
                 {
                     switch (tag.StdAtom)
                     {
@@ -764,55 +758,63 @@ namespace Zilf.Interpreter
                     if (!(part is ZilListoidBase partList && partList is ZilList))
                         throw new InterpreterError(InterpreterMessages._0_Parts_Of_Defaults_Section_Must_Be_Quoted_Atoms_Or_Lists, "DEFSTRUCT");
 
-                    if (!(partList.First is ZilForm first) ||
-                        first.First != quoteAtom ||
-                        !(first.Rest.First is ZilAtom tag2))
+                    //if (!(partList.First is ZilForm first) ||
+                    //    first.First != quoteAtom ||
+                    //    !(first.Rest.First is ZilAtom tag2))
+                    //{
+                    //    throw new InterpreterError(InterpreterMessages._0_Lists_In_Defaults_Section_Must_Start_With_A_Quoted_Atom, "DEFSTRUCT");
+                    //}
+
+                    if (!(partList is {
+                              First: ZilForm { First: var qt2, Rest: { First: ZilAtom tag2 } } partFirst,
+                              Rest: {} partRest
+                            } && qt2 == quoteAtom))
                     {
-                        throw new InterpreterError(InterpreterMessages._0_Lists_In_Defaults_Section_Must_Start_With_A_Quoted_Atom, "DEFSTRUCT");
+                        throw new InterpreterError(
+                            InterpreterMessages._0_Lists_In_Defaults_Section_Must_Start_With_A_Quoted_Atom,
+                            "DEFSTRUCT");
                     }
 
                     switch (tag2.StdAtom)
                     {
                         case StdAtom.NTH:
-                            partList = partList.Rest;
-                            defaults.NthFunc = partList.First as ZilAtom;
-                            if (defaults.NthFunc == null)
-                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", first);
+                            defaults.NthFunc = partRest.First as ZilAtom ??
+                                               throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2,
+                                                   "DEFSTRUCT",
+                                                   "an atom",
+                                                   partFirst);
                             break;
 
                         case StdAtom.PUT:
-                            partList = partList.Rest;
-                            defaults.PutFunc = partList.First as ZilAtom;
-                            if (defaults.PutFunc == null)
-                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", first);
+                            defaults.PutFunc = partRest.First as ZilAtom ??
+                                               throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2,
+                                                   "DEFSTRUCT",
+                                                   "an atom",
+                                                   partFirst);
                             break;
 
                         case StdAtom.START_OFFSET:
-                            partList = partList.Rest;
-                            if (!(partList.First is ZilFix fix))
-                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "a FIX", first);
+                            if (!(partRest.First is ZilFix fix))
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "a FIX", partFirst);
                             defaults.StartOffset = fix.Value;
                             break;
 
                         case StdAtom.PRINTTYPE:
-                            partList = partList.Rest;
-                            defaults.PrintFunc = partList.First as ZilAtom;
+                            defaults.PrintFunc = partRest.First as ZilAtom;
                             if (defaults.PrintFunc == null)
-                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", first);
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", partFirst);
                             break;
 
                         case StdAtom.CONSTRUCTOR:
-                            partList = partList.Rest;
-                            defaults.CustomCtorSpec = partList.AsZilList();
+                            defaults.CustomCtorSpec = partRest.AsZilList();
                             break;
 
                         case StdAtom.INIT_ARGS:
-                            partList = partList.Rest;
-                            defaults.InitArgs = partList.AsZilList();
+                            defaults.InitArgs = partRest.AsZilList();
                             break;
 
                         default:
-                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "DEFSTRUCT", "tag in defaults section", first);
+                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "DEFSTRUCT", "tag in defaults section", partFirst);
                     }
                 }
             }

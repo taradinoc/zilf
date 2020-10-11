@@ -52,18 +52,17 @@ namespace Zilf.Compiler
 
         struct TableElementOperand
         {
-            [NotNull]
             public readonly IOperand Operand;
             public readonly bool? IsWord;
 
-            public TableElementOperand([NotNull] IOperand operand, bool? isWord)
+            public TableElementOperand(IOperand operand, bool? isWord)
             {
                 Operand = operand;
                 IsWord = isWord;
             }
         }
 
-        void BuildTable([NotNull] ZilTable zt, [NotNull] ITableBuilder tb)
+        void BuildTable(ZilTable zt, ITableBuilder tb)
         {
             if ((zt.Flags & TableFlags.Lexv) != 0)
             {
@@ -104,18 +103,18 @@ namespace Zilf.Compiler
 
                 for (int i = 0; i < values.Length; i++)
                 {
-                    if (values[i] == null)
-                    {
-                        var rawElements = new ZilObject[zt.ElementCount];
-                        zt.CopyTo(rawElements, (zo, isWord) => zo, null, Context);
-                        Context.HandleError(new CompilerError(
-                            zt.SourceLine,
-                            CompilerMessages.Nonconstant_Initializer_For_0_1_2,
-                            "table element",
-                            i,
-                            rawElements[i]));
-                        values[i] = defaultFiller;
-                    }
+                    if (values[i] != null)
+                        continue;
+
+                    var rawElements = new ZilObject?[zt.ElementCount];
+                    zt.CopyTo(rawElements, (zo, isWord) => zo, null, Context);
+                    Context.HandleError(new CompilerError(
+                        zt.SourceLine,
+                        CompilerMessages.Nonconstant_Initializer_For_0_1_2,
+                        "table element",
+                        i,
+                        rawElements[i]?.ToString() ?? "<null>"));
+                    values[i] = defaultFiller;
                 }
 
                 bool defaultWord = (zt.Flags & TableFlags.Byte) == 0;
@@ -124,13 +123,13 @@ namespace Zilf.Compiler
                 {
                     Debug.Assert(values[i] != null);
 
-                    if (values[i].Value.IsWord ?? defaultWord)
+                    if (values[i]!.Value.IsWord ?? defaultWord)
                     {
-                        tb.AddShort(values[i].Value.Operand);
+                        tb.AddShort(values[i]!.Value.Operand);
                     }
                     else
                     {
-                        tb.AddByte(values[i].Value.Operand);
+                        tb.AddByte(values[i]!.Value.Operand);
                     }
                 }
             }

@@ -21,9 +21,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Zilf.Emit;
 using Zilf.ZModel;
-using JetBrains.Annotations;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -31,18 +31,18 @@ namespace Zilf.Compiler.Builtins
     {
         public readonly int MinArgs;
         public readonly int? MaxArgs;
-        [NotNull]
         public readonly Type CallType;
 
-        [NotNull]
         public readonly BuiltinAttribute Attr;
-        [NotNull]
         public readonly MethodInfo Method;
 
         /// <exception cref="ArgumentException">The attribute values or method signature are invalid.</exception>
         // ReSharper disable once NotNullMemberIsNotInitialized
-        public BuiltinSpec([NotNull] BuiltinAttribute attr, [NotNull] MethodInfo method)
+        public BuiltinSpec(BuiltinAttribute attr, MethodInfo method)
         {
+            // suppress CS8618 - the compiler can't tell we always set CallType
+            CallType = typeof(void);
+
             try
             {
                 Attr = attr;
@@ -51,7 +51,7 @@ namespace Zilf.Compiler.Builtins
                 // count args and find call type
                 int min = 0;
                 int? max = 0;
-                Type dataParamType = null;
+                Type? dataParamType = null;
 
                 var parameters = method.GetParameters();
                 if (parameters.Length == 0)
@@ -159,14 +159,16 @@ namespace Zilf.Compiler.Builtins
             catch (ArgumentException ex)
             {
                 throw new ArgumentException(string.Format(
-                    CultureInfo.CurrentCulture,
-                    "Bad attribute {0} on method {1}",
-                    attr.Names.First(), method.Name),
+                        CultureInfo.CurrentCulture,
+                        "Bad attribute {0} on method {1}",
+                        attr.Names.First(), method.Name),
                     ex);
             }
+
+            Debug.Assert(CallType != typeof(void));
         }
 
-        public bool AppliesTo(int zversion, int argCount, [CanBeNull] Type callType = null)
+        public bool AppliesTo(int zversion, int argCount, Type? callType = null)
         {
             if (!ZEnvironment.VersionMatches(zversion, Attr.MinVersion, Attr.MaxVersion))
                 return false;

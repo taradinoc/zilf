@@ -16,22 +16,21 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
+#nullable enable
     public abstract class NumberAndNameDebugDirective : DebugDirective
     {
-        protected NumberAndNameDebugDirective([NotNull] AsmExpr number, [NotNull] string name)
+        protected NumberAndNameDebugDirective(AsmExpr number, string name)
         {
             Number = number;
             Name = name;
         }
 
-        [NotNull]
         public AsmExpr Number { get; }
-        [NotNull]
         public string Name { get; }
     }
+#nullable restore
 }

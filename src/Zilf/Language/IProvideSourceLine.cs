@@ -20,7 +20,7 @@ namespace Zilf.Language
 {
     interface IProvideSourceLine
     {
-        ISourceLine SourceLine { get; }
+        ISourceLine? SourceLine { get; }
     }
 
     interface ISettableSourceLine

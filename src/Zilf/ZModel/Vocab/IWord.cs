@@ -23,7 +23,6 @@ namespace Zilf.ZModel.Vocab
 {
     interface IWord
     {
-        [NotNull]
         ZilAtom Atom { get; }
     }
 }

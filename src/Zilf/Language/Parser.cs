@@ -29,13 +29,11 @@ namespace Zilf.Language
 {
     sealed class CharBuffer
     {
-        [NotNull]
         readonly IEnumerator<char> source;
-        [NotNull]
         readonly Stack<char> heldChars = new Stack<char>(2);
         char? curChar;
 
-        public CharBuffer([NotNull] IEnumerable<char> source)
+        public CharBuffer(IEnumerable<char> source)
         {
             this.source = source.GetEnumerator();
         }
@@ -70,8 +68,16 @@ namespace Zilf.Language
         protected ParserException(string message, Exception innerException)
             : base(message, innerException) { }
 
-        protected ParserException([NotNull] SerializationInfo info, StreamingContext context)
+        protected ParserException(SerializationInfo info, StreamingContext context)
             : base(info, context)
+        {
+        }
+
+        public ParserException() : base()
+        {
+        }
+
+        public ParserException(string message) : base(message)
         {
         }
     }
@@ -79,11 +85,26 @@ namespace Zilf.Language
     [Serializable]
     sealed class ExpectedButFound : ParserException
     {
-        public ExpectedButFound(string expected, string actual, [CanBeNull] Exception innerException = null)
+        public ExpectedButFound(string expected, string actual, Exception innerException)
             : base($"expected {expected} but found {actual}", innerException) { }
 
-        ExpectedButFound([NotNull] SerializationInfo info, StreamingContext context)
+        public ExpectedButFound(string expected, string actual)
+            : base($"expected {expected} but found {actual}") { }
+
+        ExpectedButFound(SerializationInfo info, StreamingContext context)
             : base(info, context)
+        {
+        }
+
+        private ExpectedButFound(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        public ExpectedButFound()
+        {
+        }
+
+        public ExpectedButFound(string message) : base(message)
         {
         }
     }
@@ -93,36 +114,41 @@ namespace Zilf.Language
     {
         const string DefaultRadix = "decimal";
 
-        public ParsedNumberOverflowed(string number, string radix = DefaultRadix, [CanBeNull] Exception innerException = null)
+        public ParsedNumberOverflowed(string number, string radix, Exception innerException)
             : base($"{radix} number '{number}' cannot be represented in 32 bits", innerException) { }
 
-        public ParsedNumberOverflowed(string number, [CanBeNull] Exception innerException)
+        public ParsedNumberOverflowed(string number, string radix = DefaultRadix)
+            : base($"{radix} number '{number}' cannot be represented in 32 bits") { }
+
+        public ParsedNumberOverflowed(string number, Exception innerException)
             : this(number, DefaultRadix, innerException) { }
 
-        ParsedNumberOverflowed([NotNull] SerializationInfo info, StreamingContext context)
+        ParsedNumberOverflowed(SerializationInfo info, StreamingContext context)
             : base(info, context)
+        {
+        }
+
+        public ParsedNumberOverflowed() : base()
+        {
+        }
+
+        public ParsedNumberOverflowed(string message) : base(message)
         {
         }
     }
 
     interface IParserSite
     {
-        [NotNull]
-        ZilAtom ParseAtom([NotNull] string text);
+        ZilAtom ParseAtom(string text);
 
-        [NotNull]
-        ZilAtom GetTypeAtom([NotNull] ZilObject zo);
+        ZilAtom GetTypeAtom(ZilObject zo);
 
-        [NotNull]
-        ZilObject ChangeType([NotNull] ZilObject zo, [NotNull] ZilAtom type);
+        ZilObject ChangeType(ZilObject zo, ZilAtom type);
 
-        [NotNull]
-        ZilObject Evaluate([NotNull] ZilObject zo);
+        ZilObject Evaluate(ZilObject zo);
 
-        [CanBeNull]
-        ZilObject GetGlobalVal([NotNull] ZilAtom atom);
+        ZilObject? GetGlobalVal(ZilAtom atom);
 
-        [NotNull]
         string CurrentFilePath { get; }
     }
 
@@ -231,22 +257,22 @@ namespace Zilf.Language
     sealed class Parser
     {
         readonly IParserSite site;
-        readonly ISourceLine srcOverride;
-        readonly ZilObject[] templateParams;
+        readonly ISourceLine? srcOverride;
+        readonly ZilObject[]? templateParams;
         readonly Queue<ZilObject> heldObjects = new Queue<ZilObject>();
         int line = 1;
 
-        public Parser([NotNull] IParserSite site)
-            : this(site, (ISourceLine)null, null)
+        public Parser(IParserSite site)
+            : this(site, (ISourceLine?)null, null)
         {
         }
 
-        public Parser([NotNull] IParserSite site, params ZilObject[] templateParams)
+        public Parser(IParserSite site, params ZilObject[] templateParams)
             : this(site, null, templateParams)
         {
         }
 
-        public Parser([NotNull] IParserSite site, ISourceLine srcOverride, params ZilObject[] templateParams)
+        public Parser(IParserSite site, ISourceLine? srcOverride, params ZilObject[]? templateParams)
         {
             this.site = site;
             this.srcOverride = srcOverride;
@@ -255,14 +281,12 @@ namespace Zilf.Language
 
         public int Line => line;
 
-        [NotNull]
-        public IEnumerable<ParserOutput> Parse([NotNull] IEnumerable<char> chars)
+        public IEnumerable<ParserOutput> Parse(IEnumerable<char> chars)
         {
             return Parse(new CharBuffer(chars));
         }
 
-        [NotNull]
-        IEnumerable<ParserOutput> Parse([NotNull] CharBuffer chars)
+        IEnumerable<ParserOutput> Parse(CharBuffer chars)
         {
             while (true)
             {
@@ -290,7 +314,7 @@ namespace Zilf.Language
             }
         }
 
-        ParserOutput ParseOne(CharBuffer chars, [NotNull] out ISourceLine sourceLine)
+        ParserOutput ParseOne(CharBuffer chars, out ISourceLine sourceLine)
         {
             if (heldObjects.Count > 0)
             {
@@ -349,7 +373,7 @@ namespace Zilf.Language
             }
         }
 
-        ParserOutput ParseOneNonAdecl(CharBuffer chars, [NotNull] out ISourceLine sourceLine)
+        ParserOutput ParseOneNonAdecl(CharBuffer chars, out ISourceLine sourceLine)
         {
             try
             {
@@ -595,7 +619,7 @@ namespace Zilf.Language
             }
         }
 
-        bool SkipWhitespace([NotNull] CharBuffer chars)
+        bool SkipWhitespace(CharBuffer chars)
         {
             while (true)
             {
@@ -654,8 +678,7 @@ namespace Zilf.Language
             }
         }
 
-        [CanBeNull]
-        ZilObject ParseCurrentAtomOrNumber([NotNull] CharBuffer chars)
+        ZilObject ParseCurrentAtomOrNumber(CharBuffer chars)
         {
             var sb = new StringBuilder();
 
@@ -770,11 +793,10 @@ namespace Zilf.Language
 
             // must be an atom
             var atom = site.ParseAtom(sb.ToString());
-            return atom is ZilLink ? site.GetGlobalVal(atom) : atom;
+            return atom is ZilLink && site.GetGlobalVal(atom) is ZilObject zo ? zo : atom;
         }
 
-        [NotNull]
-        ZilString ParseCurrentString([NotNull] CharBuffer chars)
+        ZilString ParseCurrentString(CharBuffer chars)
         {
             var sb = new StringBuilder();
 
@@ -816,7 +838,6 @@ namespace Zilf.Language
             throw new ExpectedButFound("'\"'", "<EOF>");
         }
 
-        [NotNull]
         static string KetWanted(char ket1, char? ket2)
         {
             return ket2 == null
@@ -824,8 +845,7 @@ namespace Zilf.Language
                 : $"'{ket1.Rebang()}' or '{((char)ket2).Rebang()}'";
         }
 
-        [NotNull]
-        T ParseCurrentStructure<T>([NotNull] CharBuffer chars, char ket1, char? ket2, [NotNull] Func<IList<ZilObject>, T> build)
+        T ParseCurrentStructure<T>(CharBuffer chars, char ket1, char? ket2, Func<IList<ZilObject>, T> build)
         {
             var items = new List<ZilObject>();
 
@@ -960,7 +980,6 @@ namespace Zilf.Language
             }
         }
 
-        [NotNull]
         public static string Rebang(this char ch)
         {
             if (ch >= 128 && ch < 256)

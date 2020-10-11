@@ -31,8 +31,8 @@ namespace Zilf.Tests.Interpreter
     [TestClass, TestCategory("Interpreter"), TestCategory("Vocab")]
     public class SyntaxTests
     {
-        [NotNull]
-        static Syntax ParseSyntax([NotNull] Context ctx, [NotNull] string definition)
+        [JetBrains.Annotations.NotNull]
+        static Syntax ParseSyntax([JetBrains.Annotations.NotNull] Context ctx, [JetBrains.Annotations.NotNull] string definition)
         {
             var defn = (ZilList)Program.Evaluate(ctx, definition, true);
             Debug.Assert(defn != null);

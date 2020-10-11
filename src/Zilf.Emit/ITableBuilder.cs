@@ -16,15 +16,13 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
-
 namespace Zilf.Emit
 {
     public interface ITableBuilder : IConstantOperand
     {
         void AddByte(byte value);
-        void AddByte([NotNull] IOperand value);
+        void AddByte(IOperand value);
         void AddShort(short value);
-        void AddShort([NotNull] IOperand value);
+        void AddShort(IOperand value);
     }
 }

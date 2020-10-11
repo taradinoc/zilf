@@ -10,17 +10,15 @@ namespace Zilf
 {
     class Completer : IAutoCompleteHandler, IDisposable
     {
-        [NotNull]
         readonly Context ctx;
 
         bool attached;
 
-        public Completer([NotNull] Context ctx)
+        public Completer(Context ctx)
         {
             this.ctx = ctx;
         }
 
-        [NotNull]
         public Completer Attach()
         {
             ReadLine.AutoCompletionHandler = this;
@@ -39,8 +37,7 @@ namespace Zilf
 
         public char[] Separators { get; set; } = { '<', '>', '[', ']', '(', ')', '{', '}', ':', ',', '.', '#', };
 
-        [NotNull, ItemNotNull]
-        public string[] GetSuggestions([NotNull] string text, int pos)
+        public string[] GetSuggestions(string text, int pos)
         {
             // find a completable expression
             var (start, end) = FindExpression(text, pos);
@@ -76,10 +73,9 @@ namespace Zilf
 
             string prefix;
             if (start >= 0 && end <= text.Length && start <= end)
-                prefix = text.Substring(start, end - start);
+                prefix = text[start..end];
             else
                 prefix = "";
-
 
             return completions
                 .Where(c => c.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
@@ -88,7 +84,7 @@ namespace Zilf
 
         private readonly char[] delimiters = { '"', '<', '>', '(', ')', '[', ']', ';', ',', '.' };
 
-        private (int start, int end) FindExpression([NotNull] string text, int pos)
+        private (int start, int end) FindExpression(string text, int pos)
         {
             var start = text.LastIndexOfAny(delimiters, Math.Min(pos, text.Length - 1));
 
@@ -103,7 +99,6 @@ namespace Zilf
             return (start, end);
         }
 
-        [NotNull, ItemNotNull]
         private IEnumerable<string> GetLvalNames()
         {
             return from a in ctx.LocalEnvironment.GetVisibleAtoms()
@@ -111,23 +106,21 @@ namespace Zilf
                    select a.Text;
         }
 
-        [NotNull, ItemNotNull]
         private IEnumerable<string> GetGvalNames()
         {
             return GetGlobalNames((name, zo) => (IsFunction(zo) ? 2 : 0) +
-                                                (name.Contains("!-") ? 1 : 0));
+                                                (name.Contains("!-", StringComparison.Ordinal) ? 1 : 0));
         }
 
-        [NotNull, ItemNotNull]
         private IEnumerable<string> GetFunctionNames()
         {
             return GetGlobalNames((name, zo) =>
                 IsFunction(zo)
-                    ? (name.Contains("!-") ? 1 : 0)
+                    ? (name.Contains("!-", StringComparison.Ordinal) ? 1 : 0)
                     : (int?)null);
         }
 
-        static bool IsFunction([NotNull] ZilObject zo)
+        static bool IsFunction(ZilObject zo)
         {
             switch (zo.StdTypeAtom)
             {
@@ -143,16 +136,14 @@ namespace Zilf
             }
         }
 
-        [NotNull, ItemNotNull, LinqTunnel]
-        IEnumerable<string> GetGlobalNames([NotNull] Func<string, ZilObject, int?> grouper)
-        {
-            return from b in ctx.GetGlobalBindings()
-                   where b.Value.Value != null
-                   let name = b.Key.ToStringContext(ctx, false, true)
-                   let groupNum = grouper(name, b.Value.Value)
-                   where groupNum != null
-                   orderby groupNum, name
-                   select name;
-        }
+        [LinqTunnel]
+        IEnumerable<string> GetGlobalNames(Func<string, ZilObject, int?> grouper) =>
+            from b in ctx.GetGlobalBindings()
+            where b.Value.Value != null
+            let name = b.Key.ToStringContext(ctx, false, true)
+            let groupNum = grouper(name, b.Value.Value!)
+            where groupNum != null
+            orderby groupNum, name
+            select name;
     }
 }

@@ -45,8 +45,7 @@ namespace Zilf.Compiler
             CollapseWithSentenceSpace,
         }
 
-        [NotNull]
-        public static string TranslateString([NotNull] ZilString zstr, [NotNull] Context ctx)
+        public static string TranslateString(ZilString zstr, Context ctx)
         {
             var crlfChar = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.CRLF_CHARACTER)) as ZilChar;
             return TranslateString(
@@ -57,7 +56,7 @@ namespace Zilf.Compiler
         }
 
         [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
-        static StringSpacesMode GetSpacesMode([NotNull] Context ctx)
+        static StringSpacesMode GetSpacesMode(Context ctx)
         {
             if (ctx.GetGlobalOption(StdAtom.PRESERVE_SPACES_P))
                 return StringSpacesMode.Preserve;
@@ -70,8 +69,7 @@ namespace Zilf.Compiler
 
         const char SentenceSpaceChar = '\u000b';
 
-        [NotNull]
-        static string TranslateString([NotNull] ZilString zstr, [NotNull] Context ctx, char crlfChar, StringSpacesMode spacesMode)
+        static string TranslateString(ZilString zstr, Context ctx, char crlfChar, StringSpacesMode spacesMode)
         {
             // strip CR/LF and ensure 1 space afterward, translate crlfChar to LF,
             // and collapse two spaces after '.' or crlfChar into one
@@ -81,25 +79,18 @@ namespace Zilf.Compiler
 
             var zversion = ctx.ZEnvironment.ZVersion;
 
-            string DescribeChar(byte zscii)
+            static string? DescribeChar(byte zscii)
             {
-                switch (zscii)
+                return zscii switch
                 {
-                    case 8:
-                        return "backspace";
-                    case 9:
-                        return "tab";
-                    case 11:
-                        return "sentence space";
-                    case 27:
-                        return "escape";
-                    case var _ when zscii < 32:
-                        return "^" + (char)(zscii + 64);
-                    case var _ when zscii < 127:
-                        return "'" + (char)zscii + "'";
-                    default:
-                        return null;
-                }
+                    8 => "backspace",
+                    9 => "tab",
+                    11 => "sentence space",
+                    27 => "escape",
+                    _ when zscii < 32 => ("^" + (char)(zscii + 64)),
+                    _ when zscii < 127 => ("'" + (char)zscii + "'"),
+                    _ => null
+                };
             }
 
             for (int i = 0; i < sb.Length; i++)
@@ -112,7 +103,7 @@ namespace Zilf.Compiler
                     var warning = new CompilerError(zstr,
                         CompilerMessages.ZSCII_0_1_Cannot_Be_Safely_Printed_In_Zmachine_Version_2,
                         b,
-                        DescribeChar(b),
+                        DescribeChar(b) ?? "<???>",
                         zversion);
 
                     ctx.HandleError(warning);

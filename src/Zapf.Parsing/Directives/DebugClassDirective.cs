@@ -17,7 +17,6 @@
  */
 
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
@@ -25,9 +24,9 @@ namespace Zapf.Parsing.Directives
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     public sealed class DebugClassDirective : DebugDirective
     {
-        public DebugClassDirective([NotNull] string name,
-            [NotNull] AsmExpr startFile, [NotNull] AsmExpr startLine, [NotNull] AsmExpr startColumn,
-            [NotNull] AsmExpr endFile, [NotNull] AsmExpr endLine, [NotNull] AsmExpr endColumn)
+        public DebugClassDirective(string name,
+             AsmExpr startFile, AsmExpr startLine, AsmExpr startColumn,
+             AsmExpr endFile, AsmExpr endLine, AsmExpr endColumn)
         {
             Name = name;
             StartFile = startFile;
@@ -38,19 +37,12 @@ namespace Zapf.Parsing.Directives
             EndColumn = endColumn;
         }
 
-        [NotNull]
         public string Name { get; }
-        [NotNull]
         public AsmExpr StartFile { get; }
-        [NotNull]
         public AsmExpr StartLine { get; }
-        [NotNull]
         public AsmExpr StartColumn { get; }
-        [NotNull]
         public AsmExpr EndFile { get; }
-        [NotNull]
         public AsmExpr EndLine { get; }
-        [NotNull]
         public AsmExpr EndColumn { get; }
     }
 }

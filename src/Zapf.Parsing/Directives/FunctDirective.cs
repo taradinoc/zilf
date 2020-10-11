@@ -23,13 +23,12 @@ namespace Zapf.Parsing.Directives
 {
     public sealed class FunctDirective : NamedDirective
     {
-        public FunctDirective([NotNull] string name)
+        public FunctDirective(string name)
             : base(name)
         {
             Locals = new List<FunctLocal>();
         }
 
-        [NotNull]
         public IList<FunctLocal> Locals { get; }
     }
 }

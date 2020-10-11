@@ -56,7 +56,7 @@ namespace Zilf.Tests.Integration
 
     sealed class ZlrHelper : IDisposable
     {
-        public static void RunAndAssert([NotNull] string code, string input, [NotNull] string expectedOutput,
+        public static void RunAndAssert([JetBrains.Annotations.NotNull] string code, string input, [JetBrains.Annotations.NotNull] string expectedOutput,
             IEnumerable<(Predicate<ZlrHelperRunResult>, string message)> warningChecks = null,
             bool wantCompileOutput = false)
         {
@@ -92,7 +92,7 @@ namespace Zilf.Tests.Integration
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");
         }
 
-        public static ZlrHelperRunResult Run([NotNull] string code, string input, bool compileOnly = false, bool wantDebugInfo = false)
+        public static ZlrHelperRunResult Run([JetBrains.Annotations.NotNull] string code, string input, bool compileOnly = false, bool wantDebugInfo = false)
         {
             var helper = new ZlrHelper(code, input);
             var result = new ZlrHelperRunResult();
@@ -130,12 +130,12 @@ namespace Zilf.Tests.Integration
         const string SMainZapFileName = "Output.zap";
         const string SStoryFileNameTemplate = "Output.z#";
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         readonly string code;
         [CanBeNull]
         readonly string input;
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         readonly Dictionary<string, MemoryStream> zilfOutputFiles = new Dictionary<string, MemoryStream>();
 
         [CanBeNull]
@@ -147,7 +147,7 @@ namespace Zilf.Tests.Integration
         [CanBeNull]
         public IReadOnlyCollection<Diagnostic> Diagnostics { get; private set; }    // includes suppressed
 
-        public ZlrHelper([NotNull] string code, [CanBeNull] string input)
+        public ZlrHelper([JetBrains.Annotations.NotNull] string code, [CanBeNull] string input)
         {
             this.code = code;
             this.input = input;
@@ -166,7 +166,7 @@ namespace Zilf.Tests.Integration
             PrintZapCode("Output_data.zap");
         }
 
-        void PrintZapCode([NotNull] string filename)
+        void PrintZapCode([JetBrains.Annotations.NotNull] string filename)
         {
             var zapStream = zilfOutputFiles[filename];
             var zapCode = Encoding.UTF8.GetString(zapStream.ToArray());
@@ -238,7 +238,7 @@ namespace Zilf.Tests.Integration
             return false;
         }
 
-        public bool Compile([NotNull] out string compileOutput)
+        public bool Compile([JetBrains.Annotations.NotNull] out string compileOutput)
         {
             var channel = new ZilStringChannel(FileAccess.Write);
 
@@ -254,7 +254,7 @@ namespace Zilf.Tests.Integration
             return compiled;
         }
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         public string GetZapCode()
         {
             var sb = new StringBuilder();
@@ -302,7 +302,7 @@ namespace Zilf.Tests.Integration
             return result.Success;
         }
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         string Execute()
         {
             Debug.Assert(zapfOutputFile != null);
@@ -333,13 +333,13 @@ namespace Zilf.Tests.Integration
     {
         const string SStoryFileNameTemplate = "Output.z#";
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         readonly string codeFile;
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         readonly string zapFileName;
 
-        [NotNull]
+        [JetBrains.Annotations.NotNull]
         [ItemNotNull]
         readonly string[] includeDirs;
 
@@ -350,7 +350,7 @@ namespace Zilf.Tests.Integration
 
         MemoryStream zapfOutputFile;
 
-        public FileBasedZlrHelper([NotNull] string codeFile, [ItemNotNull] [NotNull] string[] includeDirs, string inputFile)
+        public FileBasedZlrHelper([JetBrains.Annotations.NotNull] string codeFile, [ItemNotNull] [JetBrains.Annotations.NotNull] string[] includeDirs, string inputFile)
         {
             this.codeFile = codeFile;
             this.includeDirs = includeDirs;

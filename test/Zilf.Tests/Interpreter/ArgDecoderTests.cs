@@ -44,8 +44,8 @@ namespace Zilf.Tests.Interpreter
             ctx = new Context();
         }
 
-        [NotNull]
-        static MethodInfo GetMethod([NotNull] string name)
+        [JetBrains.Annotations.NotNull]
+        static MethodInfo GetMethod([JetBrains.Annotations.NotNull] string name)
         {
             return typeof(ArgDecoderTests).GetMethod(
                        name,
@@ -695,7 +695,7 @@ namespace Zilf.Tests.Interpreter
         [Subrs.MdlZilRedirect(typeof(ArgDecoderTests), nameof(Dummy_MdlZilRedirect_To))]
         [UsedImplicitly]
         [ContractAnnotation("=> null")]
-        static ZilObject Dummy_MdlZilRedirect_From([NotNull] Context ctx)
+        static ZilObject Dummy_MdlZilRedirect_From([JetBrains.Annotations.NotNull] Context ctx)
         {
             return ctx.FALSE;
         }

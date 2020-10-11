@@ -28,7 +28,6 @@ namespace ZilfAnalyzers
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
             ImmutableArray.Create(
                 Rule_ComparingZilObjectsWithEquals,
@@ -36,6 +35,8 @@ namespace ZilfAnalyzers
 
         public override void Initialize([NotNull] AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
+            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
             context.RegisterSyntaxNodeAction(AnalyzeMemberAccessishNode, SyntaxKind.SimpleMemberAccessExpression, SyntaxKind.ConditionalAccessExpression);
             context.RegisterSyntaxNodeAction(AnalyzeInvocationNode, SyntaxKind.InvocationExpression);
             context.RegisterSymbolAction(AnalyzeClassSymbol, SymbolKind.NamedType);
@@ -63,7 +64,7 @@ namespace ZilfAnalyzers
                 {
                     var diagnostic = Diagnostic.Create(
                         Rule_PartiallyOverriddenZilObjectComparison,
-                        overridingMethod.Locations.First(),
+                        overridingMethod.Locations[0],
                         type.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat),
                         baseEqualsMethod.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat),
                         baseExactlyEqualsMethod?.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat));

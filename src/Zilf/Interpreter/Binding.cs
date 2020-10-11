@@ -22,10 +22,10 @@ namespace Zilf.Interpreter
 {
     class Binding
     {
-        public ZilObject Value;
-        public ZilObject Decl;
+        public ZilObject? Value;
+        public ZilObject? Decl;
 
-        public Binding(ZilObject value)
+        public Binding(ZilObject? value)
         {
             Value = value;
         }

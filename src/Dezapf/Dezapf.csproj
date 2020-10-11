@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <Product>ZILF</Product>
     <Version>0.8</Version>
@@ -13,7 +13,7 @@
     <None Include="..\Zilf.licenseheader" Link="Zilf.licenseheader" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2018.3.0">
+    <PackageReference Include="JetBrains.Annotations" Version="2019.1.3">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>runtime</ExcludeAssets>
       <IncludeAssets>compile; build; native; contentfiles; analyzers</IncludeAssets>

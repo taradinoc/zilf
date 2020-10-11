@@ -26,16 +26,16 @@ namespace Zilf.Compiler
         /// <summary>
         /// The activation atom identifying the block, or null if it is unnamed.
         /// </summary>
-        public ZilAtom Name;
+        public ZilAtom? Name;
         /// <summary>
         /// The label to which &lt;AGAIN&gt; should branch.
         /// </summary>
-        public ILabel AgainLabel;
+        public ILabel? AgainLabel;
         /// <summary>
         /// The label to which &lt;RETURN&gt; should branch, or null if
         /// it should return from the routine.
         /// </summary>
-        public ILabel ReturnLabel;
+        public ILabel? ReturnLabel;
         /// <summary>
         /// The context flags for &lt;RETURN&gt;.
         /// </summary>
@@ -45,6 +45,6 @@ namespace Zilf.Compiler
         /// <see cref="ReturnLabel"/>, if <see cref="BlockFlags.WantResult"/>
         /// is set in <see cref="Flags"/>.
         /// </summary>
-        public IVariable ResultStorage;
+        public IVariable? ResultStorage;
     }
 }

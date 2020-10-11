@@ -29,8 +29,7 @@ namespace Zilf.Interpreter.Values.Tied
     {
         internal static readonly Dictionary<Type, TiedLayout> Layouts = new Dictionary<Type, TiedLayout>();
 
-        [NotNull]
-        public static TiedLayout Create<T>(params Expression<Func<T, ZilObject>>[] elements)
+        public static TiedLayout Create<T>(params Expression<Func<T, ZilObject?>>[] elements)
             where T : ZilObject, IStructure
         {
             var properties = from e in elements
@@ -41,18 +40,17 @@ namespace Zilf.Interpreter.Values.Tied
             return new TiedLayout(properties.ToArray());
         }
 
-        TiedLayout(IReadOnlyList<PropertyInfo> properties, [CanBeNull] PropertyInfo catchAll = null)
+        TiedLayout(IReadOnlyList<PropertyInfo> properties, PropertyInfo? catchAll = null)
         {
             PropertyInfos = properties;
             CatchAllPropertyInfo = catchAll;
         }
 
         public IReadOnlyList<PropertyInfo> PropertyInfos { get; }
-        public PropertyInfo CatchAllPropertyInfo { get; }
+        public PropertyInfo? CatchAllPropertyInfo { get; }
         public int MinLength => PropertyInfos.Count;
 
-        [NotNull]
-        public TiedLayout WithCatchAll<T>([NotNull] Expression<Func<T, IStructure>> catchAll)
+        public TiedLayout WithCatchAll<T>(Expression<Func<T, IStructure>> catchAll)
             where T : ZilObject, IStructure
         {
             if (CatchAllPropertyInfo != null)

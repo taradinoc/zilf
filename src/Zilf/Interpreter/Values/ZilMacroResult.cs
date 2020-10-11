@@ -17,16 +17,23 @@
  */
 
 using System;
-using JetBrains.Annotations;
 using Zilf.Compiler;
 using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
-    class WrappedMacroResultException : Exception
+    public sealed class WrappedMacroResultException : Exception
     {
         public WrappedMacroResultException()
-            : base("Macro result was not unwrapped before usage")
+            : this("Macro result was not unwrapped before usage")
+        {
+        }
+
+        public WrappedMacroResultException(string message) : base(message)
+        {
+        }
+
+        public WrappedMacroResultException(string message, Exception innerException) : base(message, innerException)
         {
         }
     }
@@ -56,22 +63,22 @@ namespace Zilf.Interpreter.Values
     [BuiltinMeta]
     sealed class ZilMacroResult : ZilObject
     {
-        public ZilMacroResult([NotNull] ZilObject inner)
+        public ZilMacroResult(ZilObject inner)
         {
             this.Inner = inner;
         }
 
         public ZilObject Inner { get; }
 
-        public override ISourceLine SourceLine
+        public override ISourceLine? SourceLine
         {
             get => Inner.SourceLine;
             set => Inner.SourceLine = value;
         }
 
-        public override bool ExactlyEquals(ZilObject other) => throw new WrappedMacroResultException();
+        public override bool ExactlyEquals(ZilObject? other) => throw new WrappedMacroResultException();
         public override int GetHashCode() => throw new WrappedMacroResultException();
-        public override bool StructurallyEquals(ZilObject other) => throw new WrappedMacroResultException();
+        public override bool StructurallyEquals(ZilObject? other) => throw new WrappedMacroResultException();
 
         public override string ToString() => throw new WrappedMacroResultException();
         protected override string ToStringContextImpl(Context ctx, bool friendly) =>
@@ -82,13 +89,13 @@ namespace Zilf.Interpreter.Values
         public override PrimType PrimType => throw new WrappedMacroResultException();
         public override ZilObject GetPrimitive(Context ctx) => throw new WrappedMacroResultException();
 
-        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment environment, ZilAtom originalType) =>
+        protected override ZilResult EvalImpl(Context ctx, LocalEnvironment? environment, ZilAtom? originalType) =>
             throw new WrappedMacroResultException();
 
         public override ZilResult Expand(Context ctx) => this;
 
         public override bool IsTrue => throw new WrappedMacroResultException();
-        public override bool IsLVAL(out ZilAtom atom) => throw new WrappedMacroResultException();
-        public override bool IsGVAL(out ZilAtom atom) => throw new WrappedMacroResultException();
+        public override bool IsLVAL(out ZilAtom? atom) => throw new WrappedMacroResultException();
+        public override bool IsGVAL(out ZilAtom? atom) => throw new WrappedMacroResultException();
     }
 }

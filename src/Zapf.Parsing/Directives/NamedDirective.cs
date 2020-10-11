@@ -22,12 +22,11 @@ namespace Zapf.Parsing.Directives
 {
     public abstract class NamedDirective : Directive
     {
-        protected NamedDirective([NotNull] string name)
+        protected NamedDirective(string name)
         {
             Name = name;
         }
 
-        [NotNull]
         public string Name { get; }
     }
 }

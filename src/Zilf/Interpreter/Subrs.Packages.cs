@@ -27,11 +27,10 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-        [NotNull]
         [Subr]
         [Subr("ZPACKAGE")]
         [Subr("ZZPACKAGE")]
-        public static ZilObject PACKAGE([NotNull] Context ctx, [NotNull] string pname)
+        public static ZilObject PACKAGE(Context ctx, string pname)
         {
             // external oblist
             var externalAtom = ctx.PackageObList[pname];
@@ -53,11 +52,10 @@ namespace Zilf.Interpreter
             return externalAtom;
         }
 
-        [NotNull]
         [Subr]
         [Subr("ZSECTION")]
         [Subr("ZZSECTION")]
-        public static ZilObject DEFINITIONS([NotNull] Context ctx, [NotNull] string pname)
+        public static ZilObject DEFINITIONS(Context ctx, string pname)
         {
             // external oblist
             var externalAtom = ctx.PackageObList[pname];
@@ -74,19 +72,17 @@ namespace Zilf.Interpreter
             return externalAtom;
         }
 
-        [NotNull]
         [Subr]
         [Subr("END-DEFINITIONS")]
         [Subr("ENDSECTION")]
-        public static ZilObject ENDPACKAGE([NotNull] Context ctx)
+        public static ZilObject ENDPACKAGE(Context ctx)
         {
             return ENDBLOCK(ctx);
         }
 
         /// <exception cref="InterpreterError">OBLIST path is malformed.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject ENTRY([NotNull] Context ctx, [NotNull] ZilAtom[] args)
+        public static ZilObject ENTRY(Context ctx, ZilAtom[] args)
         {
             if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList currentObPath) ||
                 currentObPath.GetLength(1) != null ||
@@ -117,7 +113,7 @@ namespace Zilf.Interpreter
                 throw new InterpreterError(
                     InterpreterMessages._0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2,
                     "ENTRY",
-                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST))?.ToStringContext(ctx, false),
+                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST))?.ToStringContext(ctx, false) ?? "<null>",
                     string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false))));
             }
 
@@ -128,9 +124,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError">OBLIST path is malformed.</exception>
-        [NotNull]
         [Subr]
-        public static ZilObject RENTRY([NotNull] Context ctx, [NotNull] ZilAtom[] args)
+        public static ZilObject RENTRY(Context ctx, ZilAtom[] args)
         {
             if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList currentObPath) ||
                 currentObPath.GetLength(1) != null ||
@@ -162,7 +157,7 @@ namespace Zilf.Interpreter
             {
                 throw new InterpreterError(InterpreterMessages._0_All_Atoms_Must_Be_On_Internal_Oblist_1_Failed_For_2,
                     "RENTRY",
-                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST))?.ToStringContext(ctx, false),
+                    ctx.GetProp(internalObList, ctx.GetStdAtom(StdAtom.OBLIST))?.ToStringContext(ctx, false) ?? "<null>",
                     string.Join(", ", onWrongOblist.Select(a => a.ToStringContext(ctx, false))));
             }
 
@@ -172,36 +167,31 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject USE([NotNull] Context ctx, [NotNull] string[] args)
+        public static ZilObject USE(Context ctx, string[] args)
         {
             return PerformUse(ctx, args, "USE", StdAtom.PACKAGE);
         }
 
-        [NotNull]
         [Subr]
-        public static ZilObject INCLUDE([NotNull] Context ctx, [NotNull] string[] args)
+        public static ZilObject INCLUDE(Context ctx, string[] args)
         {
             return PerformUse(ctx, args, "INCLUDE", StdAtom.DEFINITIONS);
         }
 
-        [NotNull]
         [Subr("USE-WHEN")]
-        public static ZilObject USE_WHEN(Context ctx, [NotNull] ZilObject condition, string[] args)
+        public static ZilObject USE_WHEN(Context ctx, ZilObject condition, string[] args)
         {
             return condition.IsTrue ? PerformUse(ctx, args, "USE-WHEN", StdAtom.PACKAGE) : condition;
         }
 
-        [NotNull]
         [Subr("INCLUDE-WHEN")]
-        public static ZilObject INCLUDE_WHEN(Context ctx, [NotNull] ZilObject condition, string[] args)
+        public static ZilObject INCLUDE_WHEN(Context ctx, ZilObject condition, string[] args)
         {
             return condition.IsTrue ? PerformUse(ctx, args, "INCLUDE-WHEN", StdAtom.DEFINITIONS) : condition;
         }
 
-        [NotNull]
-        static ZilObject PerformUse([NotNull] Context ctx, [NotNull] string[] args, string name, StdAtom requiredPackageType)
+        static ZilObject PerformUse(Context ctx, string[] args, string name, StdAtom requiredPackageType)
         {
             if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList obpath))
             {
@@ -225,7 +215,7 @@ namespace Zilf.Interpreter
                     PerformLoadFile(ctx, packageName, name);  // throws on failure
                 }
 
-                ObList externalObList = null;
+                ObList? externalObList = null;
                 if (ctx.PackageObList.Contains(packageName))
                 {
                     var packageNameAtom = ctx.PackageObList[packageName];
@@ -249,9 +239,10 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
-        [NotNull]
         [Subr("COMPILING?")]
-        public static ZilObject COMPILING_P([NotNull] Context ctx, ZilObject[] args)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancy", "RCS1163:Unused parameter.", Justification = "Arguments are discarded.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Arguments are discarded.")]
+        public static ZilObject COMPILING_P(Context ctx, ZilObject[] args)
         {
             // always true
             return ctx.TRUE;

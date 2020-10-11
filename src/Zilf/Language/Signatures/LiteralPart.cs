@@ -24,16 +24,14 @@ namespace Zilf.Language.Signatures
 {
     sealed class LiteralPart : SignaturePart
     {
-        [NotNull]
         public string Text { get; }
 
-        LiteralPart([NotNull] string text)
+        LiteralPart(string text)
         {
             Text = text;
         }
 
-        [NotNull]
-        public static SignaturePart From([NotNull] string text)
+        public static SignaturePart From(string text)
         {
             return new LiteralPart(text);
         }

@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using JetBrains.Annotations;
@@ -32,29 +33,22 @@ namespace Zilf.ZModel
     class Syntax : IProvideSourceLine
     {
         public readonly int NumObjects;
-        [NotNull]
         public readonly IWord Verb;
-        [CanBeNull]
-        public readonly IWord Preposition1;
-        [CanBeNull]
-        public readonly IWord Preposition2;
+        public readonly IWord? Preposition1;
+        public readonly IWord? Preposition2;
         public readonly byte Options1, Options2;
-        [CanBeNull]
-        public readonly ZilAtom FindFlag1, FindFlag2;
-        [NotNull]
+        public readonly ZilAtom? FindFlag1, FindFlag2;
         public readonly ZilAtom Action;
-        [CanBeNull]
-        public readonly ZilAtom Preaction;
-        [NotNull]
+        public readonly ZilAtom? Preaction;
         public readonly ZilAtom ActionName;
         public readonly IList<ZilAtom> Synonyms;
 
-        static readonly ZilAtom[] EmptySynonyms = new ZilAtom[0];
+        static readonly ZilAtom[] EmptySynonyms = Array.Empty<ZilAtom>();
 
-        public Syntax(ISourceLine src, [NotNull] IWord verb, int numObjects, [CanBeNull] IWord prep1, [CanBeNull] IWord prep2,
-            byte options1, byte options2, [CanBeNull] ZilAtom findFlag1, [CanBeNull] ZilAtom findFlag2,
-            [NotNull] ZilAtom action, [CanBeNull] ZilAtom preaction, [NotNull] ZilAtom actionName,
-            [ItemNotNull] [CanBeNull] IEnumerable<ZilAtom> synonyms = null)
+        public Syntax(ISourceLine? src, IWord verb, int numObjects, IWord? prep1, IWord? prep2,
+            byte options1, byte options2, ZilAtom? findFlag1, ZilAtom? findFlag2,
+             ZilAtom action, ZilAtom? preaction, ZilAtom actionName,
+              IEnumerable<ZilAtom>? synonyms = null)
         {
             SourceLine = src;
 
@@ -77,13 +71,12 @@ namespace Zilf.ZModel
         }
 
         /// <exception cref="InterpreterError">The syntax definition is invalid.</exception>
-        [NotNull]
-        public static Syntax Parse(ISourceLine src, [NotNull] IEnumerable<ZilObject> definition, [NotNull] Context ctx)
+        public static Syntax Parse(ISourceLine src, IEnumerable<ZilObject> definition, Context ctx)
         {
             int numObjects = 0;
-            ZilAtom verb = null, prep1 = null, prep2 = null;
-            ZilAtom action = null, preaction = null, actionName = null;
-            ZilList bits1 = null, find1 = null, bits2 = null, find2 = null, syns = null;
+            ZilAtom? verb = null, prep1 = null, prep2 = null;
+            ZilAtom? action = null, preaction = null, actionName = null;
+            ZilList? bits1 = null, find1 = null, bits2 = null, find2 = null, syns = null;
             bool rightSide = false;
             int rhsCount = 0;
 
@@ -221,14 +214,15 @@ namespace Zilf.ZModel
             {
                 // right side:
                 //   action [preaction [action-name]]
-                if (obj is ZilAtom atom)
+                var atom = obj as ZilAtom;
+                if (atom != null)
                 {
                     if (atom.StdAtom == StdAtom.Eq)
                         throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "'='");
                 }
                 else if (obj is ZilFalse)
                 {
-                    atom = null;
+                    Debug.Assert(atom == null);
                 }
                 else
                 {
@@ -278,7 +272,7 @@ namespace Zilf.ZModel
                 var flags2 = ScopeFlags.Parse(bits2, ctx);
                 var findFlag1 = ParseFindFlag(find1);
                 var findFlag2 = ParseFindFlag(find2);
-                IEnumerable<ZilAtom> synAtoms = null;
+                IEnumerable<ZilAtom>? synAtoms = null;
 
                 if (syns != null)
                 {
@@ -324,9 +318,8 @@ namespace Zilf.ZModel
             }
         }
 
-        [CanBeNull]
         [ContractAnnotation("null => null; notnull => notnull")]
-        static ZilAtom ParseFindFlag([CanBeNull] ZilList list)
+        static ZilAtom? ParseFindFlag(ZilList? list)
         {
             if (list == null)
                 return null;
@@ -349,31 +342,32 @@ namespace Zilf.ZModel
             sb.Append(Verb.Atom);
 
             // object clauses
-            var items = new[] {
-                new { Prep = Preposition1, Find = FindFlag1, Opts = Options1 },
-                new { Prep = Preposition2, Find = FindFlag2, Opts = Options2 }
+            var items = new[]
+            {
+                (prep: Preposition1, find: FindFlag1, opts: Options1),
+                (prep: Preposition2, find: FindFlag2, opts: Options2)
             };
 
-            foreach (var item in items.Take(NumObjects))
+            foreach (var (prep, find, opts) in items.Take(NumObjects))
             {
-                if (item.Prep != null)
+                if (prep != null)
                 {
                     sb.Append(' ');
-                    sb.Append(item.Prep.Atom);
+                    sb.Append(prep.Atom);
                 }
 
                 sb.Append(" OBJECT");
 
-                if (item.Find != null)
+                if (find != null)
                 {
                     sb.Append(" (FIND ");
-                    sb.Append(item.Find);
+                    sb.Append(find);
                     sb.Append(')');
                 }
 
                 // TODO: unparse scope flags
                 sb.Append(" (");
-                sb.Append(item.Opts);
+                sb.Append(opts);
                 sb.Append(')');
             }
 
@@ -389,6 +383,6 @@ namespace Zilf.ZModel
             return sb.ToString();
         }
 
-        public ISourceLine SourceLine { get; }
+        public ISourceLine? SourceLine { get; }
     }
 }

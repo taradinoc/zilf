@@ -30,7 +30,6 @@ namespace Zilf.Interpreter
     [BuiltinType(StdAtom.OBLIST, PrimType.LIST)]
     class ObList : ZilTiedListBase
     {
-        [NotNull]
         readonly Dictionary<string, ZilAtom> dict = new Dictionary<string, ZilAtom>();
         readonly bool ignoreCase;
 
@@ -45,9 +44,8 @@ namespace Zilf.Interpreter
         }
 
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
-        [NotNull]
         [ChtypeMethod]
-        public static ObList FromList([NotNull] [ProvidesContext] Context ctx, [NotNull] ZilListoidBase list)
+        public static ObList FromList([ProvidesContext] Context ctx, ZilListoidBase list)
         {
             var result = new ObList(ctx.IgnoreCase);
 
@@ -56,26 +54,26 @@ namespace Zilf.Interpreter
                 switch (first)
                 {
                     case ZilListoidBase bucket:
-                    {
-                        foreach (var elem in bucket)
                         {
-                            switch (elem)
+                            foreach (var elem in bucket)
                             {
-                                case ZilAtom atom:
-                                    result[atom.Text] = atom;
-                                    break;
+                                switch (elem)
+                                {
+                                    case ZilAtom atom:
+                                        result[atom.Text] = atom;
+                                        break;
 
-                                default:
-                                    throw new InterpreterError(
-                                        InterpreterMessages._0_In_1_Must_Be_2,
-                                        "elements",
-                                        "OBLIST bucket",
-                                        "atoms");
+                                    default:
+                                        throw new InterpreterError(
+                                            InterpreterMessages._0_In_1_Must_Be_2,
+                                            "elements",
+                                            "OBLIST bucket",
+                                            "atoms");
+                                }
                             }
-                        }
 
-                        break;
-                    }
+                            break;
+                        }
 
                     default:
                         throw new InterpreterError(
@@ -93,7 +91,6 @@ namespace Zilf.Interpreter
             return TiedLayout.Create<ObList>().WithCatchAll<ObList>(x => x.BucketList);
         }
 
-        [NotNull]
         public ZilList BucketList
         {
             get
@@ -110,14 +107,13 @@ namespace Zilf.Interpreter
 
         public override StdAtom StdTypeAtom => StdAtom.OBLIST;
 
-        public bool Contains([NotNull] string pname)
+        public bool Contains(string pname)
         {
             string key = ignoreCase ? pname.ToUpperInvariant() : pname;
             return dict.ContainsKey(key);
         }
 
-        [NotNull]
-        public ZilAtom this[[NotNull] string pname]
+        public ZilAtom this[string pname]
         {
             get
             {
@@ -137,7 +133,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        internal void Add([NotNull] ZilAtom newAtom)
+        internal void Add(ZilAtom newAtom)
         {
             var key = newAtom.Text;
             if (ignoreCase)
@@ -146,7 +142,7 @@ namespace Zilf.Interpreter
             dict[key] = newAtom;
         }
 
-        internal void Remove([NotNull] ZilAtom atom)
+        internal void Remove(ZilAtom atom)
         {
             var key = atom.Text;
             if (ignoreCase)

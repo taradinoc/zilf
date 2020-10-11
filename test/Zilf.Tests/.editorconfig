@@ -1,0 +1,7 @@
+﻿[*.cs]
+
+# RNUL: Field is missing nullability annotation.
+dotnet_diagnostic.RNUL.severity = silent
+
+# RCS1139: Add summary element to documentation comment.
+dotnet_diagnostic.RCS1139.severity = silent

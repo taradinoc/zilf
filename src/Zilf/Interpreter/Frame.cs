@@ -19,28 +19,25 @@
 using System;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
     abstract class Frame : IDisposable
     {
-        [NotNull]
         public Context Context { get; }
         public Frame Parent { get; }
-        [NotNull]
         public ISourceLine SourceLine { get; }
 
-        public abstract string Description { get; }
+        public abstract string? Description { get; }
 
-        protected Frame([NotNull] Context ctx, [NotNull] ZilForm callingForm)
+        protected Frame(Context ctx, ZilForm callingForm)
         {
             Context = ctx;
             Parent = ctx.TopFrame;
             SourceLine = callingForm.SourceLine;
         }
 
-        protected Frame([NotNull] Context ctx, [NotNull] ISourceLine sourceLine)
+        protected Frame(Context ctx, ISourceLine sourceLine)
         {
             Context = ctx;
             Parent = ctx.TopFrame;

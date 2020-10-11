@@ -23,14 +23,27 @@ namespace Zilf.Common
     /// <summary>
     /// Thrown at locations that should be unreachable, e.g. because previous function calls always throw an exception.
     /// </summary>
+
     [Serializable]
     public sealed class UnreachableCodeException : Exception
     {
         /// <summary>
         /// Shouldn't get here.
         /// </summary>
-        public UnreachableCodeException(Exception innerException = null)
+        public UnreachableCodeException(Exception? innerException = null)
             : base("Shouldn't get here", innerException)
+        {
+        }
+
+        public UnreachableCodeException() : base()
+        {
+        }
+
+        public UnreachableCodeException(string message) : base(message)
+        {
+        }
+
+        public UnreachableCodeException(string message, Exception innerException) : base(message, innerException)
         {
         }
     }
