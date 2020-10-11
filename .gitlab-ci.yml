@@ -10,10 +10,10 @@
 # The 'latest' tag targets the latest available version of .NET Core SDK image.
 # If preferred, you can explicitly specify version of .NET Core (e.g. using '2.2-sdk' tag).
 #
-# See other available tags for .NET Core: https://hub.docker.com/r/microsoft/dotnet
+# See other available tags for .NET Core: https://hub.docker.com/r/microsoft/dotnet6
 # Learn more about Docker tags: https://docs.docker.com/glossary/?term=tag
 # and the Docker itself: https://opensource.com/resources/what-docker
-image: microsoft/dotnet:2.2-sdk
+image: mcr.microsoft.com/dotnet/core/sdk:3.1
 
 # ### Define variables
 #
@@ -36,9 +36,9 @@ stages:
 # ### Define global cache rule
 #
 # Before building the project, all dependencies (e.g. third-party NuGet packages)
-# must be restored. Jobs on GitLab.com's Shared Runners are executed on autoscaled machines.
+# must be restored. Jobs on GitLab.com's Shared Runners are executed on autoscaled machines.6
 #
-# Each machine is used only once (for security reasons) and after that is removed.
+# Each machine is used only once (for security reasons) and after that is removed.66
 # This means that, before every job, a dependency restore must be performed
 # because restored dependencies are removed along with machines. Fortunately,
 # GitLab provides cache mechanism with the aim of keeping restored dependencies
