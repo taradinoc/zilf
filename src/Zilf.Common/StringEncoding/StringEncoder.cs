@@ -201,7 +201,7 @@ namespace Zilf.Common.StringEncoding
             }
 
             if (result.Length >= 2)
-                result[result.Length - 2] |= 0x80;
+                result[^2] |= 0x80;
             return result;
         }
 

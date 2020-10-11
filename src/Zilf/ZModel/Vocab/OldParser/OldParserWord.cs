@@ -50,7 +50,7 @@ namespace Zilf.ZModel.Vocab.OldParser
             var sb = new StringBuilder();
             sb.Append('"');
             sb.Append(Atom);
-            sb.Append("\"");
+            sb.Append('"');
 
             switch (PartOfSpeech & PartOfSpeech.FirstMask)
             {
@@ -258,7 +258,7 @@ namespace Zilf.ZModel.Vocab.OldParser
                 sb.Append(word);
                 sb.Append(" (");
                 sb.Append(sourceLine.SourceInfo);
-                sb.Append(")");
+                sb.Append(')');
             }
 
             return sb.ToString();

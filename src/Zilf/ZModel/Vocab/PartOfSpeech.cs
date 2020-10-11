@@ -21,6 +21,7 @@ using System;
 namespace Zilf.ZModel.Vocab
 {
     [Flags]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1069:Enums values should not be duplicated", Justification = "FirstMask is a bit mask of all the allowed ___First values")]
     enum PartOfSpeech : byte
     {
         None = 0,

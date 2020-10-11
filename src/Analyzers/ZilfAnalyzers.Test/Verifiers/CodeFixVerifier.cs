@@ -95,7 +95,7 @@ namespace ZilfAnalyzers.Test.Helpers
             var fixableIds = codeFixProvider.FixableDiagnosticIds;
             analyzerDiagnostics = analyzerDiagnostics.Where(d => fixableIds.Contains(d.Id)).ToArray();
 
-            var compilerDiagnostics = GetCompilerDiagnostics(document);
+            var compilerDiagnostics = await GetCompilerDiagnosticsAsync(document).ConfigureAwait(false);
             var attempts = analyzerDiagnostics.Length;
 
             for (int i = 0; i < attempts; ++i)
@@ -111,22 +111,22 @@ namespace ZilfAnalyzers.Test.Helpers
 
                 if (codeFixIndex != null)
                 {
-                    document = ApplyFix(document, actions[(int)codeFixIndex]);
+                    document = await ApplyFixAsync(document, actions[(int)codeFixIndex]).ConfigureAwait(false);
                     break;
                 }
 
-                document = ApplyFix(document, actions[0]);
+                document = await ApplyFixAsync(document, actions[0]).ConfigureAwait(false);
                 analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, new[] { document }).ConfigureAwait(false);
                 analyzerDiagnostics = analyzerDiagnostics.Where(d => fixableIds.Contains(d.Id)).ToArray();
 
-                var newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, GetCompilerDiagnostics(document));
+                var newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, await GetCompilerDiagnosticsAsync(document).ConfigureAwait(false));
 
                 //check if applying the code fix introduced any new compiler diagnostics
                 if (!allowNewCompilerDiagnostics && newCompilerDiagnostics.Any())
                 {
                     // Format and get the compiler diagnostics again so that the locations make sense in the output
                     document = document.WithSyntaxRoot(Formatter.Format(await document.GetSyntaxRootAsync().ConfigureAwait(false), Formatter.Annotation, document.Project.Solution.Workspace));
-                    newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, GetCompilerDiagnostics(document));
+                    newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, await GetCompilerDiagnosticsAsync(document).ConfigureAwait(false));
 
                     Assert.Fail(
                         "Fix introduced new compiler diagnostics:\r\n{0}\r\n\r\nNew document:\r\n{1}\r\n",
@@ -142,7 +142,7 @@ namespace ZilfAnalyzers.Test.Helpers
             }
 
             //after applying all of the code fixes, compare the resulting string to the inputted one
-            var actual = GetStringFromDocument(document);
+            var actual = await GetStringFromDocumentAsync(document).ConfigureAwait(false);
             //Assert.AreEqual(newSource, actual);
             actual.ShouldEqualWithDiff(newSource);
         }

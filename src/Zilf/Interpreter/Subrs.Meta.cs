@@ -432,7 +432,7 @@ namespace Zilf.Interpreter
             {
                 var desc = JsonDescriber.Describe(signature);
 
-                var array = (JArray)result[name];
+                var array = (JArray?)result[name];
                 if (array == null)
                 {
                     result[name] = new JArray(desc);

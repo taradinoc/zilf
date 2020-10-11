@@ -871,15 +871,11 @@ namespace Zilf.Interpreter
                         break;
 
                     case DefStructParams.FixDefaultClause fc:
-                        switch (fc.ClauseType)
+                        defaults.StartOffset = fc.ClauseType switch
                         {
-                            case StdAtom.START_OFFSET:
-                                defaults.StartOffset = fc.Fix;
-                                break;
-
-                            default:
-                                throw UnhandledCaseException.FromEnum(fc.ClauseType, "FIX clause type");
-                        }
+                            StdAtom.START_OFFSET => fc.Fix,
+                            _ => throw UnhandledCaseException.FromEnum(fc.ClauseType, "FIX clause type"),
+                        };
                         break;
 
                     case DefStructParams.VarargsDefaultClause vc:

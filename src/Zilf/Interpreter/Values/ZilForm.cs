@@ -244,7 +244,7 @@ namespace Zilf.Interpreter.Values
         [ContractAnnotation("=> true, atom: notnull; => false, atom: null")]
         public override bool IsGVAL([NotNullWhen(true)] out ZilAtom? atom) => IsTwoElementFormWithStdAtom(StdAtom.GVAL, out atom);
 
-        bool IsTwoElementFormWithStdAtom(StdAtom stdAtom, out ZilAtom? atom)
+        bool IsTwoElementFormWithStdAtom(StdAtom stdAtom, [NotNullWhen(true)] out ZilAtom? atom)
         {
             if (First is ZilAtom head &&
                 head.StdAtom == stdAtom)

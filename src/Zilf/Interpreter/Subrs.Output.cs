@@ -254,6 +254,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError">Not supported by this type of channel.</exception>
         [Subr("M-HPOS")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "M_ is not a member prefix here")]
         public static ZilObject M_HPOS(Context ctx, ZilChannel channel)
         {
             if (!(channel is IChannelWithHPos hposChannel))

@@ -641,8 +641,8 @@ namespace Zilf.Compiler
                     return new OneVarLoop(blc, atom, container);
 
                 // throw an appropriate error
-                var matched = blc.spec.Matches(out ZilObject? atomObj, out ZilObject? nextAtomObj, out container) ||
-                              blc.spec.Matches(out atomObj, out container);
+                var matched = blc.spec.Matches(out ZilObject? atomObj, out ZilObject? nextAtomObj, out ZilObject? _) ||
+                              blc.spec.Matches(out atomObj, out ZilObject? _);
 
                 if (!matched)
                 {

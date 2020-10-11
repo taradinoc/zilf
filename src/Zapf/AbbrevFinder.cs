@@ -125,7 +125,7 @@ namespace Zapf
                 }
 
                 // found a word
-                var word = text.Substring(wordStart, wordEnd - wordStart);
+                var word = text[wordStart..wordEnd];
                 bool prev = (wordStart > 0), next = (wordEnd < text.Length);
 
                 yield return word;

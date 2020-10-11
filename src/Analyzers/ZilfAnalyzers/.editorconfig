@@ -1,7 +1,4 @@
 ﻿[*.cs]
 
-# RNUL: Parameter is missing nullability annotation.
-dotnet_diagnostic.RNUL.severity = silent
-
-# RINUL: Parameter is missing item nullability annotation.
-dotnet_diagnostic.RINUL.severity = silent
+# Default severity for analyzer diagnostics with category 'MicrosoftCodeAnalysisReleaseTracking'
+dotnet_analyzer_diagnostic.category-MicrosoftCodeAnalysisReleaseTracking.severity = silent

@@ -187,35 +187,7 @@ namespace Zilf.Interpreter
         {
         }
 
-        private ArgumentCountError(int code) : base(code)
-        {
-        }
-
-        private ArgumentCountError(int code, params object[] messageArgs) : base(code, messageArgs)
-        {
-        }
-
-        private ArgumentCountError(ISourceLine sourceLine, int code) : base(sourceLine, code)
-        {
-        }
-
-        private ArgumentCountError(ISourceLine sourceLine, int code, params object[] messageArgs) : base(sourceLine, code, messageArgs)
-        {
-        }
-
-        private ArgumentCountError(IProvideSourceLine sourceLine, int code) : base(sourceLine, code)
-        {
-        }
-
-        private ArgumentCountError(IProvideSourceLine node, int code, params object[] messageArgs) : base(node, code, messageArgs)
-        {
-        }
-
-        private ArgumentCountError(string message) : base(message)
-        {
-        }
-
-        private ArgumentCountError(ISourceLine src, string message) : base(src, message)
+        public ArgumentCountError(string message) : base(message)
         {
         }
     }
@@ -240,43 +212,11 @@ namespace Zilf.Interpreter
         {
         }
 
-        private ArgumentTypeError(Diagnostic diagnostic) : base(diagnostic)
-        {
-        }
-
         private ArgumentTypeError() : base()
         {
         }
 
-        private ArgumentTypeError(int code) : base(code)
-        {
-        }
-
-        private ArgumentTypeError(int code, params object[] messageArgs) : base(code, messageArgs)
-        {
-        }
-
-        private ArgumentTypeError(ISourceLine sourceLine, int code) : base(sourceLine, code)
-        {
-        }
-
-        private ArgumentTypeError(ISourceLine sourceLine, int code, params object[] messageArgs) : base(sourceLine, code, messageArgs)
-        {
-        }
-
-        private ArgumentTypeError(IProvideSourceLine sourceLine, int code) : base(sourceLine, code)
-        {
-        }
-
-        private ArgumentTypeError(IProvideSourceLine node, int code, params object[] messageArgs) : base(node, code, messageArgs)
-        {
-        }
-
-        private ArgumentTypeError(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        private ArgumentTypeError(ISourceLine src, string message) : base(src, message)
+        public ArgumentTypeError(string message, Exception innerException) : base(message, innerException)
         {
         }
     }

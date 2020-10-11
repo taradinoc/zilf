@@ -10,6 +10,7 @@ using CodeFixVerifier = ZilfAnalyzers.Test.Helpers.CodeFixVerifier;
 namespace ZilfAnalyzers.Test
 {
     [TestClass, TestCategory("Analyzers")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "Test cases")]
     public class MessageConstantTests : CodeFixVerifier
     {
         //No diagnostics expected to show up

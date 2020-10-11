@@ -482,27 +482,21 @@ namespace Zilf.Tests.Interpreter
         [SuppressMessage("ReSharper", "ConvertToLocalFunction")]
         public void TestREMOVE()
         {
-            // ReSharper disable once InconsistentNaming
-            Predicate<ArgumentCountError> says1or2 = ex => ex.Message.Contains("1 or 2");
-            Predicate<ArgumentCountError> says1Additional = ex => ex.Message.Contains("1 additional");
-            Predicate<ArgumentCountError> saysTooMany = ex => ex.Message.Contains("too many");
-            Predicate<ArgumentTypeError> mentions2 = ex => ex.Message.Contains("arg 2");
-
             // must have 1-2 args
-            TestHelpers.EvalAndCatch("<REMOVE>", says1or2);
-            TestHelpers.EvalAndCatch("<REMOVE FOO BAR BAZ>", says1or2);
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE>", ex => ex.Message.Contains("1 or 2"));
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO BAR BAZ>", ex => ex.Message.Contains("1 or 2"));
 
             // 1st arg must be atom or string
             TestHelpers.EvalAndCatch<ArgumentTypeError>("<REMOVE 1>");
 
             // 2nd arg must be oblist
-            TestHelpers.EvalAndCatch("<REMOVE \"FOO\" 1>", mentions2);
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<REMOVE \"FOO\" 1>", ex => ex.Message.Contains("arg 2"));
 
             // 2nd arg is required if 1st is a string
-            TestHelpers.EvalAndCatch("<REMOVE \"FOO\">", says1Additional);
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE \"FOO\">", ex => ex.Message.Contains("1 additional"));
 
             // 2nd arg not allowed if 1st is an atom
-            TestHelpers.EvalAndCatch("<REMOVE FOO <1 .OBLIST>>", saysTooMany);
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO <1 .OBLIST>>", ex => ex.Message.Contains("too many"));
 
             // remove an atom from its oblist
             var ctx = new Context();

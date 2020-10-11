@@ -693,13 +693,13 @@ namespace Zilf.Compiler.Builtins
 
             // the initial value, which is returned as-is if there are no args,
             // or possibly combined with the single arg if there's only one
-            initialValue = (short)(op switch
+            initialValue = op switch
             {
                 BinaryOp.Mul => 1,
                 BinaryOp.Div => 1,
                 BinaryOp.And => -1,
                 _ => 0
-            });
+            };
 
             // another delegate describing how to combine the initial value
             // with the single arg in that case

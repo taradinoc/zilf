@@ -47,14 +47,14 @@ namespace Zilf.Emit.Tests
         [ExpectedException(typeof(ArgumentOutOfRangeException), "zversion 0 should be rejected")]
         public void Ctor_Should_Reject_Low_Zversion()
         {
-            var dummy = new GameBuilder(0, mockStreamFactory.Object, false);
+            _ = new GameBuilder(0, mockStreamFactory.Object, false);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException), "zversion 9 should be rejected")]
         public void Ctor_Should_Reject_High_Zversion()
         {
-            var dummy = new GameBuilder(9, mockStreamFactory.Object, false);
+            _ = new GameBuilder(9, mockStreamFactory.Object, false);
         }
 
         [TestMethod]
@@ -62,7 +62,7 @@ namespace Zilf.Emit.Tests
         public void Ctor_Should_Reject_Null_StreamFactory()
         {
             // ReSharper disable once AssignNullToNotNullAttribute
-            var dummy = new GameBuilder(5, null, false);
+            _ = new GameBuilder(5, null, false);
         }
     }
 }

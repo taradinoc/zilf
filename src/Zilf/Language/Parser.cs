@@ -96,15 +96,15 @@ namespace Zilf.Language
         {
         }
 
-        private ExpectedButFound(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
         public ExpectedButFound()
         {
         }
 
         public ExpectedButFound(string message) : base(message)
+        {
+        }
+
+        public ExpectedButFound(string message, Exception innerException) : base(message, innerException)
         {
         }
     }

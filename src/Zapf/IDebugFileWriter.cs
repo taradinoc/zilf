@@ -47,10 +47,7 @@ namespace Zapf
 
         public override int GetHashCode()
         {
-            int result = File;
-            result = result * 31 + Line;
-            result = result * 31 + Col;
-            return result;
+            return System.HashCode.Combine(File, Line, Col);
         }
     }
 

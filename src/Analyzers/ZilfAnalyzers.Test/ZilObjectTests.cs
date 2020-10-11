@@ -9,6 +9,7 @@ using DiagnosticVerifier = ZilfAnalyzers.Test.Helpers.DiagnosticVerifier;
 namespace ZilfAnalyzers.Test
 {
     [TestClass, TestCategory("Analyzers")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "VSTHRD200:Use \"Async\" suffix for async methods", Justification = "Test cases")]
     public class ZilObjectTests : DiagnosticVerifier
     {
         //No diagnostics expected to show up

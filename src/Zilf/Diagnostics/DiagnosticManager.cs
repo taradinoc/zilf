@@ -33,7 +33,7 @@ namespace Zilf.Diagnostics
 
         readonly HashSet<string> suppressions = new HashSet<string>();
 
-        bool suppressAllTheThings = false;
+        bool suppressAllTheThings;
 
         public IReadOnlyCollection<Diagnostic> Diagnostics => diagnostics;
         public int ErrorCount => Diagnostics.Count(d => d.Severity == Severity.Error || d.Severity == Severity.Fatal);

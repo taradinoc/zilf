@@ -299,7 +299,7 @@ namespace Zilf.ZModel.Values
 
                 if (pattern != null && pattern.Length > 0)
                 {
-                    if (index >= pattern.Length - 1 && pattern[pattern.Length - 1] is ZilVector rest)
+                    if (index >= pattern.Length - 1 && pattern[^1] is ZilVector rest)
                     {
                         index -= pattern.Length - 1;
                         return !(rest[index % (rest.GetLength() - 1) + 1] is ZilAtom atom && atom.StdAtom == StdAtom.BYTE);
@@ -642,7 +642,6 @@ namespace Zilf.ZModel.Values
             readonly OriginalTable orig;
             readonly int byteOffset;
 
-
             /// <summary>
             /// This may unexpectedly change when items in orig before byteOffset change from bytes to words! 
             /// </summary>
@@ -650,9 +649,7 @@ namespace Zilf.ZModel.Values
             /// This object's offset into the <see cref="ZilTable.OriginalTable"/> is no longer valid.
             /// </exception>
             // ReSharper disable once PossibleInvalidOperationException
-#pragma warning disable CS8629 // Nullable value type may be null.
-            int ElementOffset => (int)orig.ByteOffsetToIndex(byteOffset);
-#pragma warning restore CS8629 // Nullable value type may be null.
+            int ElementOffset => orig.ByteOffsetToIndex(byteOffset) ?? throw new InvalidOperationException();
 
             public OffsetTable(OriginalTable orig, int byteOffset)
             {

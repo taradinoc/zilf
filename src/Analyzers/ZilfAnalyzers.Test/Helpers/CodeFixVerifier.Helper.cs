@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using JetBrains.Annotations;
+using System.Threading.Tasks;
 
 // ReSharper disable once CheckNamespace
 namespace ZilfAnalyzers.Test.Helpers
@@ -24,9 +25,9 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="document">The Document to apply the fix on</param>
         /// <param name="codeAction">A CodeAction that will be applied to the Document.</param>
         /// <returns>A Document with the changes from the CodeAction</returns>
-        static Document ApplyFix([JetBrains.Annotations.NotNull] Document document, [JetBrains.Annotations.NotNull] CodeAction codeAction)
+        static async Task<Document> ApplyFixAsync([JetBrains.Annotations.NotNull] Document document, [JetBrains.Annotations.NotNull] CodeAction codeAction)
         {
-            var operations = codeAction.GetOperationsAsync(CancellationToken.None).Result;
+            var operations = await codeAction.GetOperationsAsync(CancellationToken.None).ConfigureAwait(false);
             var solution = operations.OfType<ApplyChangesOperation>().Single().ChangedSolution;
             return solution.GetDocument(document.Id);
         }
@@ -66,9 +67,9 @@ namespace ZilfAnalyzers.Test.Helpers
         /// </summary>
         /// <param name="document">The Document to run the compiler diagnostic analyzers on</param>
         /// <returns>The compiler diagnostics that were found in the code</returns>
-        static ImmutableArray<Diagnostic> GetCompilerDiagnostics([JetBrains.Annotations.NotNull] Document document)
+        static async Task<ImmutableArray<Diagnostic>> GetCompilerDiagnosticsAsync([JetBrains.Annotations.NotNull] Document document)
         {
-            return document.GetSemanticModelAsync().Result.GetDiagnostics();
+            return (await document.GetSemanticModelAsync().ConfigureAwait(false)).GetDiagnostics();
         }
 
         /// <summary>
@@ -77,10 +78,10 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="document">The Document to be converted to a string</param>
         /// <returns>A string containing the syntax of the Document after formatting</returns>
         [JetBrains.Annotations.NotNull]
-        static string GetStringFromDocument(Document document)
+        static async Task<string> GetStringFromDocumentAsync(Document document)
         {
-            var simplifiedDoc = Simplifier.ReduceAsync(document, Simplifier.Annotation).Result;
-            var root = simplifiedDoc.GetSyntaxRootAsync().Result;
+            var simplifiedDoc = await Simplifier.ReduceAsync(document, Simplifier.Annotation).ConfigureAwait(false);
+            var root = await simplifiedDoc.GetSyntaxRootAsync().ConfigureAwait(false);
             root = Formatter.Format(root, Formatter.Annotation, simplifiedDoc.Project.Solution.Workspace);
             return root.GetText().ToString();
         }

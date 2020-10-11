@@ -43,7 +43,7 @@ namespace ZilfAnalyzers.Test.Helpers
         [JetBrains.Annotations.NotNull]
         public DiagnosticResultLocation[] Locations
         {
-            get => locations ?? (locations = new DiagnosticResultLocation[] { });
+            get => locations ??= new DiagnosticResultLocation[] { };
 
             set => locations = value;
         }

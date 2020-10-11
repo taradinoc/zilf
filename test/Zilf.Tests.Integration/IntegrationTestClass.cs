@@ -60,7 +60,7 @@ namespace Zilf.Tests.Integration
                     result.Add($"<=? <NEXT? ,{chain[i]}> ,{chain[i + 1]}>");
                 }
 
-                result.Add($"<NOT <NEXT? ,{chain[chain.Length - 1]}>>");
+                result.Add($"<NOT <NEXT? ,{chain[^1]}>>");
             }
 
             foreach (var o in numbering)

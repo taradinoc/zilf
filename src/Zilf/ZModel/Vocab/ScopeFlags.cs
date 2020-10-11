@@ -78,32 +78,17 @@ namespace Zilf.ZModel.Vocab
                     if (!(obj is ZilAtom atom))
                         throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "object options", "SYNTAX", "atoms");
 
-                    switch (atom.StdAtom)
+                    result |= atom.StdAtom switch
                     {
-                        case StdAtom.TAKE:
-                            result |= Original.Take;
-                            break;
-                        case StdAtom.HAVE:
-                            result |= Original.Have;
-                            break;
-                        case StdAtom.MANY:
-                            result |= Original.Many;
-                            break;
-                        case StdAtom.HELD:
-                            result |= Original.Held;
-                            break;
-                        case StdAtom.CARRIED:
-                            result |= Original.Carried;
-                            break;
-                        case StdAtom.ON_GROUND:
-                            result |= Original.OnGround;
-                            break;
-                        case StdAtom.IN_ROOM:
-                            result |= Original.InRoom;
-                            break;
-                        default:
-                            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "object option", atom.ToString());
-                    }
+                        StdAtom.TAKE => Original.Take,
+                        StdAtom.HAVE => Original.Have,
+                        StdAtom.MANY => Original.Many,
+                        StdAtom.HELD => Original.Held,
+                        StdAtom.CARRIED => Original.Carried,
+                        StdAtom.ON_GROUND => Original.OnGround,
+                        StdAtom.IN_ROOM => Original.InRoom,
+                        _ => throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "object option", atom.ToString()),
+                    };
                 }
             }
             else

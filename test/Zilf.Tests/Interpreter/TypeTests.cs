@@ -1233,7 +1233,7 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void All_ZilObject_Classes_With_Structured_PrimTypes_Implement_IStructure()
         {
-            bool IsStructuredPrimType(PrimType pt)
+            static bool IsStructuredPrimType(PrimType pt)
             {
                 switch (pt)
                 {

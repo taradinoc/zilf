@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
@@ -31,7 +32,7 @@ namespace Zilf.ZModel
             this.ignoreCase = ignoreCase;
         }
 
-        public bool Equals(ZilAtom x, ZilAtom y)
+        public bool Equals([AllowNull] ZilAtom x, [AllowNull] ZilAtom y)
         {
             if (x == y)
                 return true;

@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Zilf.Interpreter.Values;
 
@@ -32,7 +33,7 @@ namespace Zilf.Interpreter
         {
         }
 
-        public bool Equals(T x, T y)
+        public bool Equals([AllowNull] T x, [AllowNull] T y)
         {
             return ReferenceEquals(x, y);
         }
@@ -51,7 +52,7 @@ namespace Zilf.Interpreter
         {
         }
 
-        public bool Equals(ZilObject x, ZilObject y)
+        public bool Equals([AllowNull] ZilObject x, [AllowNull] ZilObject y)
         {
             return x?.StructurallyEquals(y) ?? y == null;
         }

@@ -46,15 +46,11 @@ namespace Zilf.Interpreter
 
             foreach (var atom in flags)
             {
-                switch (atom.StdAtom)
+                newFlags |= atom.StdAtom switch
                 {
-                    case StdAtom.CLEAN_STACK_P:
-                        newFlags |= RoutineFlags.CleanStack;
-                        break;
-
-                    default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "ROUTINE-FLAGS", "flag", atom);
-                }
+                    StdAtom.CLEAN_STACK_P => RoutineFlags.CleanStack,
+                    _ => throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "ROUTINE-FLAGS", "flag", atom),
+                };
             }
 
             ctx.NextRoutineFlags = newFlags;

@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Compiler;
 using Zilf.Language;
 
@@ -95,7 +96,7 @@ namespace Zilf.Interpreter.Values
         public override ZilResult Expand(Context ctx) => this;
 
         public override bool IsTrue => throw new WrappedMacroResultException();
-        public override bool IsLVAL(out ZilAtom? atom) => throw new WrappedMacroResultException();
-        public override bool IsGVAL(out ZilAtom? atom) => throw new WrappedMacroResultException();
+        public override bool IsLVAL([NotNullWhen(true)] out ZilAtom? atom) => throw new WrappedMacroResultException();
+        public override bool IsGVAL([NotNullWhen(true)] out ZilAtom? atom) => throw new WrappedMacroResultException();
     }
 }

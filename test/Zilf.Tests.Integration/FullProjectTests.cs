@@ -39,7 +39,7 @@ namespace Zilf.Tests.Integration
 
         /// <exception cref="IOException">Can't locate projects and library directories</exception>
         [ClassInitialize]
-        public static void ClassInitialize(TestContext context)
+        public static void ClassInitialize(TestContext _)
         {
             projectsDir = libraryDir = null;
 
@@ -166,7 +166,7 @@ namespace Zilf.Tests.Integration
             for (int i = 0; i < lines.Length; i++)
             {
                 if (lines[i].EndsWith("\r"))
-                    lines[i] = lines[i].Substring(0, lines[i].Length - 1);
+                    lines[i] = lines[i][0..^1];
             }
 
             return lines;
