@@ -1,0 +1,13 @@
+﻿[*.cs]
+
+# RNUL: Method is missing nullability annotation.
+dotnet_diagnostic.RNUL.severity = silent
+
+# CS0618: Type or member is obsolete
+dotnet_diagnostic.CS0618.severity = warning
+
+# RINUL: Field is missing item nullability annotation.
+dotnet_diagnostic.RINUL.severity = silent
+
+# RCS1139: Add summary element to documentation comment.
+dotnet_diagnostic.RCS1139.severity = silent
