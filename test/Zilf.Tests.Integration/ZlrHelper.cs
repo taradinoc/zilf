@@ -60,7 +60,7 @@ namespace Zilf.Tests.Integration
             IEnumerable<(Predicate<ZlrHelperRunResult>, string message)> warningChecks = null,
             bool wantCompileOutput = false)
         {
-            var helper = new ZlrHelper(code, input);
+            using var helper = new ZlrHelper(code, input);
             bool compiled;
             string compileOutput;
             if (wantCompileOutput)

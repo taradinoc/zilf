@@ -42,6 +42,7 @@ namespace Zilf.Tests.Integration
     {
         [JetBrains.Annotations.NotNull]
         readonly Stream inputStream;
+
         readonly bool wantStatusLine;
 
         [CanBeNull]
@@ -55,8 +56,7 @@ namespace Zilf.Tests.Integration
 
         #region Z-machine I/O implementation
 
-        string IZMachineIO.ReadLine(string initial, int time, TimedInputCallback callback,
-            byte[] terminatingKeys, out byte terminator)
+        ReadLineResult IZMachineIO.ReadLine(string initial, int time, TimedInputCallback callback, byte[] terminatingKeys, bool allowDebuggerBreak)
         {
             throw new AssertFailedException("Unexpected line input request");
         }
