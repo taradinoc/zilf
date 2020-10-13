@@ -2594,7 +2594,7 @@ namespace Zilf.Tests.Integration
         {
             // V5 to V6
             // 4 operands
-            AssertRoutine("", "<ZWSTR ,SRCBUF 5 1 ,DSTBUF> <PRINTB ,DSTBUF>")
+            AssertRoutine("", "<ZWSTR ,SRCBUF 5 0 ,DSTBUF> <PRINTB ,DSTBUF>")
                 .InV5()
                 .WithGlobal("<GLOBAL SRCBUF <TABLE (STRING) \"hello\">>")
                 .WithGlobal("<GLOBAL DSTBUF <TABLE 0 0 0>>")
