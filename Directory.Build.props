@@ -61,7 +61,7 @@
 
   <PropertyGroup>
     <AfterTargetFiles>$(BuildSysDir)\After.targets</AfterTargetFiles>
-    <AfterTargets>Stage</AfterTargets>
+    <!-- <AfterTargets>Stage</AfterTargets> -->
   </PropertyGroup>
 
   <PropertyGroup>

@@ -58,15 +58,16 @@
   </Target>-->
 
   <Target Name="_StagePublishFiles"
-          DependsOnTargets="ComputeFilesToPublish"
+          DependsOnTargets="PublishItemsOutputGroup"
           Condition=" '$(Staging)' == 'true' ">
     <ItemGroup>
-      <StageItem Include="@(ResolvedFileToPublish)" />
+      <StageItem Include="@(PublishItemsOutputGroupOutputs)" />
     </ItemGroup>
   </Target>
 
   <PropertyGroup>
     <_StageDependsOn>
+      Publish;
       _StagePublishFiles;
       _LateStage;
       _MainStage

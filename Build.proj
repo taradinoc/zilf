@@ -135,7 +135,7 @@ dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release
   <Target Name="_PlatformStage" DependsOnTargets="RestoreReferences;_MakeStageDir">
     <MSBuild
       Projects="@(StageProjects)"
-      Targets="Build"
+      Targets="Stage"
       Properties="$(BuildProperties);Configuration=$(Configuration);Staging=true" />
   </Target>
 
