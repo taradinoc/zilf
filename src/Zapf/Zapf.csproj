@@ -6,8 +6,10 @@
     <OutputType>Exe</OutputType>
     <Description>An assembler for Z-machine story files.</Description>
     <Deterministic>false</Deterministic>
-    <TrimUnusedDependencies>true</TrimUnusedDependencies>
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup Condition="!($(PortableTarget))">
+    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2020.1.0">
@@ -19,7 +21,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Packaging.Tools.Trimming" Version="1.1.0-preview1-26619-01" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Zilf.licenseheader">
