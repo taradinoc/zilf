@@ -17,13 +17,13 @@
  */
 
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Zilf.Language;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.SPLICE, PrimType.LIST)]
-    class ZilSplice : ZilListBase, IMayExpandAfterEvaluation
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Late bound")]
+    sealed class ZilSplice : ZilListBase, IMayExpandAfterEvaluation
     {
         bool spliceable;
 

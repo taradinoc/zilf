@@ -16,11 +16,11 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 using Zilf.Interpreter;
 
 namespace Zilf.ZModel.Vocab
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Late bound")]
     class VerbSynonym : Synonym
     {
         public VerbSynonym(IWord original, IWord synonym)

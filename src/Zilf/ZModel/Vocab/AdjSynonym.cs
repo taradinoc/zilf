@@ -21,6 +21,7 @@ using Zilf.Interpreter;
 
 namespace Zilf.ZModel.Vocab
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Late bound")]
     class AdjSynonym : Synonym
     {
         public AdjSynonym(IWord original, IWord synonym)
