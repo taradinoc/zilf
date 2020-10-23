@@ -39,6 +39,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{65A2B38C-4
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{1E9A9589-73D4-466C-9A3D-D44D058B2359}"
 	ProjectSection(SolutionItems) = preProject
+		.gitlab-ci.yml = .gitlab-ci.yml
 		Build.proj = Build.proj
 		CurrentVersion.props = CurrentVersion.props
 		Directory.Build.props = Directory.Build.props
