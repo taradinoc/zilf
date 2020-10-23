@@ -524,6 +524,17 @@ namespace Zilf.Interpreter
                 }
             }
 
+            if ((flags & TableFlags.Lexv) != 0)
+            {
+                var elementCount = count * Math.Max(initializer.Length, 1);
+                if ((elementCount % 3) != 0)
+                {
+                    ctx.HandleError(new InterpreterError(
+                        InterpreterMessages._0_LEXV_Table_Initializer_Is_Not_A_Multiple_Of_3_Elements,
+                        "ITABLE"));
+                }
+            }
+
             var tab = ZilTable.Create(count, initializer.Length == 0 ? null : initializer, flags, null);
             tab.SourceLine = ctx.TopFrame.SourceLine;
             if ((flags & TableFlags.TempTable) == 0)

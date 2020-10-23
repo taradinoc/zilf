@@ -61,6 +61,25 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public void ITABLE_LEXV_Should_Warn_If_Not_A_Multiple_Of_3_Elements()
+        {
+            AssertGlobals(
+                "<CONSTANT LEXBUF <ITABLE 1 (LEXV) 0 0>>")
+                .WithWarnings("MDL0428")
+                .Compiles();
+
+            AssertGlobals(
+                "<CONSTANT LEXBUF <ITABLE 1 (LEXV)>>")
+                .WithWarnings("MDL0428")
+                .Compiles();
+
+            AssertGlobals(
+                "<CONSTANT LEXBUF <ITABLE 3 (LEXV)>>")
+                .WithoutWarnings()
+                .Compiles();
+        }
+
+        [TestMethod]
         public void TABLE_PATTERN_Should_Affect_Element_Sizes()
         {
             AssertGlobals(

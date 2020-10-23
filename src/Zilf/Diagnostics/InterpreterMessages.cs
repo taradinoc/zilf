@@ -265,6 +265,8 @@ namespace Zilf.Diagnostics
         public const int Too_Many_0_Only_1_Allowed_In_This_Vocab_Format = 426;
         [Error("{0}: routines may not define \"BIND\", \"TUPLE\", or \"ARGS\" arguments")]
         public const int _0_Routines_May_Not_Define_BIND_TUPLE_Or_ARGS_Arguments = 427;
+        [Warning("{0}: LEXV table initializer is not a multiple of 3 elements")]
+        public const int _0_LEXV_Table_Initializer_Is_Not_A_Multiple_Of_3_Elements = 428;
 
         // Modularity (package system, definitions sections) - 0500
 
