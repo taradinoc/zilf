@@ -1132,7 +1132,7 @@ namespace Zilf.Tests.Integration
             AssertRoutine("", "<LEX ,TEXTBUF ,LEXBUF> <PRINTB <GET ,LEXBUF 1>>")
                 .InV5()
                 .WithGlobal("<GLOBAL TEXTBUF <TABLE (BYTE) 3 3 !\\c !\\a !\\t>>")
-                .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0>>")
+                .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0 0>>")
                 .WithGlobal("<OBJECT CAT (SYNONYM CAT)>")
                 .Outputs("cat");
 
@@ -1868,7 +1868,7 @@ namespace Zilf.Tests.Integration
             AssertRoutine("", "<READ ,TEXTBUF ,LEXBUF> <PRINTC <GETB ,TEXTBUF 2>> <PRINTB <GET ,LEXBUF 1>>")
                 .InV3()
                 .WithGlobal("<GLOBAL TEXTBUF <ITABLE 50 (BYTE LENGTH) 0>>")
-                .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0>>")
+                .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0 0>>")
                 .WithGlobal("<OBJECT CAT (SYNONYM CAT)>")
                 .WithGlobal("<GLOBAL HERE CAT>")
                 .WithInput("cat")
@@ -1883,7 +1883,7 @@ namespace Zilf.Tests.Integration
             AssertRoutine("", "<PRINTN <READ ,TEXTBUF ,LEXBUF>> <PRINTC <GETB ,TEXTBUF 2>> <PRINTB <GET ,LEXBUF 1>>")
                 .InV5()
                 .WithGlobal("<GLOBAL TEXTBUF <ITABLE 50 (BYTE LENGTH) 0>>")
-                .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0>>")
+                .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0 0>>")
                 .WithGlobal("<OBJECT CAT (SYNONYM CAT)>")
                 .WithInput("cat")
                 .Outputs("13ccat");

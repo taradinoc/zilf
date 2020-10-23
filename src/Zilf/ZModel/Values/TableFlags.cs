@@ -30,6 +30,7 @@ namespace Zilf.ZModel.Values
         /// <summary>
         /// The table elements are 4-byte records rather than words, and
         /// the table is prefixed with an element count (byte) and a zero byte.
+        /// The table initializer should be a multiple of 3 elements.
         /// </summary>
         Lexv = 2,
         /// <summary>
