@@ -30,6 +30,7 @@ using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using ZLR.VM;
 using Zilf.Language;
+using System.Text.RegularExpressions;
 
 namespace Zilf.Tests.Integration
 {
@@ -153,10 +154,23 @@ namespace Zilf.Tests.Integration
             this.input = input;
         }
 
+        private static readonly Regex _invalidXMLChars = new Regex(
+            @"(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFEFF\uFFFE\uFFFF]",
+            RegexOptions.Compiled);
+
+        /// <summary>
+        /// https://stackoverflow.com/questions/397250/unicode-regex-invalid-xml-characters/961504#961504
+        /// </summary>
+        static string TransformInvalidXMLChars(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return "";
+            return _invalidXMLChars.Replace(text, m => $"\uFFFD\\u{(int)m.Value[0]:X4}");
+        }
+
         void PrintZilCode()
         {
             Console.Error.WriteLine("=== {0} ===", SZilFileName);
-            Console.Error.WriteLine(code);
+            Console.Error.WriteLine(TransformInvalidXMLChars(code));
             Console.Error.WriteLine();
         }
 
@@ -171,7 +185,7 @@ namespace Zilf.Tests.Integration
             var zapStream = zilfOutputFiles[filename];
             var zapCode = Encoding.UTF8.GetString(zapStream.ToArray());
             Console.Error.WriteLine("=== {0} ===", filename);
-            Console.Error.WriteLine(zapCode);
+            Console.Error.WriteLine(TransformInvalidXMLChars(zapCode));
             Console.Error.WriteLine();
         }
 
