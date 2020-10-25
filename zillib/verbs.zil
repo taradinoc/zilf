@@ -902,28 +902,17 @@ Returns:
                   <MOVE .OBJ ,WINNER>
                   <COND (.SILENT)
                         (<SHORT-REPORT?> <TELL "Taken." CR>)
-                        (ELSE
-                         <TELL "You reach ">
-                         <COND (<HELD? ,WINNER .HOLDER>
-                                <TELL "out of ">)
-                               (ELSE <TELL "in ">)>
-                         <TELL T .HOLDER " and ">
-                         <COND (<FSET? .OBJ ,WEARBIT>
-                                <TELL "wear ">
-                                <FSET .OBJ ,WORNBIT>)
-                               (ELSE <TELL "take ">)>
-                         <TELL T .OBJ "." CR>)>
-                  <RTRUE>)>)>
+                    (ELSE
+                     <TELL "You reach ">
+                     <COND (<HELD? ,WINNER .HOLDER>
+                            <TELL "out of ">)
+                           (ELSE <TELL "in ">)>
+                     <TELL T .HOLDER " and ">
+                     <TELL "take ">
+                     <TELL T .OBJ "." CR>)>
+                 <RTRUE>)>)>
     <COND (<NOT <TAKE-CAPACITY-CHECK .OBJ .SILENT>>
            <RFALSE>)
-          (<FSET? .OBJ ,WEARBIT>
-           <FSET .OBJ ,WORNBIT>
-           <MOVE .OBJ ,WINNER>
-           <FSET .OBJ ,TOUCHBIT>
-           <COND (.SILENT)
-                 (<SHORT-REPORT?> <TELL "Taken (and worn)." CR>)
-                 (ELSE <TELL "You wear " T .OBJ "." CR>)>
-           <RTRUE>)
           (ELSE
            <FSET .OBJ ,TOUCHBIT>
            <MOVE .OBJ ,WINNER>
@@ -1147,15 +1136,17 @@ Returns:
 
 <ROUTINE V-WEAR ()
     <COND (<FSET? ,PRSO ,WEARBIT>
-           <PERFORM ,V?TAKE ,PRSO>)
-          (ELSE <NOT-POSSIBLE "wear">)>
-    <RTRUE>>
+        <COND (<NOT <FSET? ,PRSO ,WORNBIT>>
+            <FSET ,PRSO ,WORNBIT>
+            <TELL "You wear " T ,PRSO "." CR>)
+        (ELSE <TELL "You are already wearing that." CR>)>)
+    (ELSE <NOT-POSSIBLE "wear">)>>
 
 <ROUTINE V-UNWEAR ()
-    <COND (<AND <FSET? ,PRSO ,WORNBIT>
-                <IN? ,PRSO ,WINNER>>
-           <PERFORM ,V?DROP ,PRSO>)
-          (ELSE <TELL "You aren't wearing that." CR>)>>
+    <COND (<AND <IN? ,PRSO ,WINNER> <FSET? ,PRSO ,WORNBIT>>
+        <FCLEAR ,PRSO ,WORNBIT>
+        <TELL "You take off " T ,PRSO "." CR>)
+    (ELSE <TELL "You aren't wearing that." CR>)>>
 
 <ROUTINE V-EAT ()
     <COND (<PRSO? ,WINNER> <TSD> <RTRUE>)
