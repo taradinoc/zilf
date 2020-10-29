@@ -264,15 +264,16 @@ namespace Zilf.Interpreter.Values
 
         public override bool ExactlyEquals(ZilObject? other)
         {
-            if (ReferenceEquals(this, other))
-                return true;
-
             if (other == null)
                 return false;
 
-            return ((IsLVAL(out var myAtom) && other.IsLVAL(out var theirAtom)) ||
-                    (IsGVAL(out myAtom) && other.IsGVAL(out theirAtom))) &&
-                   myAtom == theirAtom;
+            if ((IsLVAL(out var myAtom) && other.IsLVAL(out var theirAtom)) ||
+                    (IsGVAL(out myAtom) && other.IsGVAL(out theirAtom)))
+            {
+                return myAtom == theirAtom;
+            }
+
+            return base.ExactlyEquals(other);
         }
 
         public override int GetHashCode()

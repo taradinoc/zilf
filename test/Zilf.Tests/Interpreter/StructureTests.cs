@@ -33,6 +33,15 @@ namespace Zilf.Tests.Interpreter
     public class StructureTests
     {
         [TestMethod]
+        public void TestComparisonOfEmptyFORM()
+        {
+            var ctx = new Context();
+            TestHelpers.EvalAndAssert(ctx, "<==? <FORM> '<>>", ctx.TRUE);
+            TestHelpers.EvalAndAssert(ctx, "<==? '() '<>>", ctx.FALSE);
+            TestHelpers.EvalAndAssert(ctx, "<==? '<> '()>", ctx.FALSE);
+        }
+
+        [TestMethod]
         public void TestMEMQ()
         {
             TestHelpers.EvalAndAssert("<MEMQ 5 '(3 4 5 6 7)>",
