@@ -158,35 +158,37 @@ namespace Zilf.Compiler
 
             ILocalBuilder MakeLocalBuilder(ArgItem arg, string uniqueArgName)
             {
-                ILocalBuilder lb;
-
-                switch (arg.Type)
+                try
                 {
-                    case ArgItem.ArgType.Required:
-                        try
-                        {
-                            lb = rb.DefineRequiredParameter(uniqueArgName);
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            throw new CompilerError(
-                                CompilerMessages.Expression_Needs_Temporary_Variables_Not_Allowed_Here);
-                        }
-                        break;
-
-                    case ArgItem.ArgType.Optional:
-                        lb = rb.DefineOptionalParameter(uniqueArgName);
-                        break;
-
-                    case ArgItem.ArgType.Auxiliary:
-                        lb = rb.DefineLocal(uniqueArgName);
-                        break;
-
-                    default:
-                        throw UnhandledCaseException.FromEnum(arg.Type);
+                    return arg.Type switch
+                    {
+                        ArgItem.ArgType.Required => rb.DefineRequiredParameter(uniqueArgName),
+                        ArgItem.ArgType.Optional => rb.DefineOptionalParameter(uniqueArgName),
+                        ArgItem.ArgType.Auxiliary => rb.DefineLocal(uniqueArgName),
+                        _ => throw UnhandledCaseException.FromEnum(arg.Type),
+                    };
                 }
+                catch (InvalidOperationException)
+                {
+                    var ex = new CompilerError(
+                        CompilerMessages._0_Are_Not_Allowed_In_The_Entry_Point_Routine,
+                        arg.Type switch
+                        {
+                            ArgItem.ArgType.Required => "required arguments",
+                            ArgItem.ArgType.Optional => "optional arguments",
+                            ArgItem.ArgType.Auxiliary => "local variables",
+                            _ => throw UnhandledCaseException.FromEnum(arg.Type),
+                        });
 
-                return lb;
+                    if (arg.Type != ArgItem.ArgType.Required)
+                    {
+                        ex = ex.Combine(new CompilerError(
+                            CompilerMessages.This_Would_Be_Legal_In_Other_Zmachine_Versions_Eg_V0,
+                            6));
+                    }
+
+                    throw ex;
+                }
             }
 
             void SetOrEmitDefaultValue(ILocalBuilder lb, ArgItem arg)
@@ -343,7 +345,12 @@ namespace Zilf.Compiler
                 }
                 catch (InvalidOperationException)
                 {
-                    throw new CompilerError(CompilerMessages.Expression_Needs_Temporary_Variables_Not_Allowed_Here);
+                    throw new CompilerError(
+                        CompilerMessages._0_Are_Not_Allowed_In_The_Entry_Point_Routine,
+                        "expressions requiring temporary variables")
+                        .Combine(new CompilerError(
+                            CompilerMessages.This_Would_Be_Legal_In_Other_Zmachine_Versions_Eg_V0,
+                            6));
                 }
 
                 TempLocalNames.Add(tempName);

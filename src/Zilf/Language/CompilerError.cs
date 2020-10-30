@@ -89,7 +89,7 @@ namespace Zilf.Language
             if (acceptableVersion != null)
             {
                 var info = new CompilerError(
-                    CompilerMessages.This_Arg_Count_Would_Be_Legal_In_Other_Zmachine_Versions_Eg_V0,
+                    CompilerMessages.This_Would_Be_Legal_In_Other_Zmachine_Versions_Eg_V0,
                     acceptableVersion);
                 error = error.Combine(info);
             }

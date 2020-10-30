@@ -208,6 +208,19 @@ namespace Zilf.Tests.Integration
             this.body = body;
         }
 
+        public void Compiles()
+        {
+            var testCode = $"{GlobalCode()}\r\n" +
+                           $"<ROUTINE GO ({argSpec})\r\n" +
+                           $"\t{body}\r\n" +
+                           "\t<QUIT>>";
+
+            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+            Assert.AreEqual(ZlrTestStatus.Finished, result.Status);
+
+            CheckWarnings(result);
+        }
+
         public void DoesNotCompile()
         {
             var testCode = $"{GlobalCode()}\r\n" +

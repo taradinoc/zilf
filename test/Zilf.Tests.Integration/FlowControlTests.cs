@@ -557,6 +557,29 @@ namespace Zilf.Tests.Integration
         {
             AssertEntryPoint("X Y Z", @"<TELL ""hi"" CR>")
                 .DoesNotCompile();
+
+            AssertEntryPoint("\"OPT\" X Y Z", @"<TELL ""hi"" CR>")
+                .DoesNotCompile();
+
+            AssertEntryPoint("\"AUX\" X Y Z", @"<TELL ""hi"" CR>")
+                .DoesNotCompile();
+        }
+
+        [TestMethod]
+        public void GO_Routine_With_Locals_In_V6_Should_Compile()
+        {
+            AssertEntryPoint("\"AUX\" A", "<SET A 5>")
+                .InV6()
+                .Compiles();
+
+            AssertEntryPoint("\"OPT\" A", "<SET A 5>")
+                .InV6()
+                .Compiles();
+
+            // entry point still can't have required variables
+            AssertEntryPoint("A", "<SET A 5>")
+                .InV6()
+                .DoesNotCompile();
         }
 
         [TestMethod]

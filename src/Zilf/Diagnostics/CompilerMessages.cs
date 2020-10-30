@@ -147,14 +147,14 @@ namespace Zilf.Diagnostics
 
         // Platform Limits - 0400
 
-        [Error("expression needs temporary variables, not allowed here")]
-        public const int Expression_Needs_Temporary_Variables_Not_Allowed_Here = 400;
+        [Error("{0} are not allowed in the entry point routine")]
+        public const int _0_Are_Not_Allowed_In_The_Entry_Point_Routine = 400;
         [Error("header extensions not supported for this target")]
         public const int Header_Extensions_Not_Supported_For_This_Target = 401;
         [Error("too many call arguments: only {0} allowed in V{1}")]
         public const int Too_Many_Call_Arguments_Only_0_Allowed_In_V1 = 402;
-        [Info("this arg count would be legal in other Z-machine versions, e.g. V{0}")]
-        public const int This_Arg_Count_Would_Be_Legal_In_Other_Zmachine_Versions_Eg_V0 = 403;
+        [Info("this would be legal in other Z-machine versions, e.g. V{0}")]
+        public const int This_Would_Be_Legal_In_Other_Zmachine_Versions_Eg_V0 = 403;
         [Error("too many {0}: {1} defined, only {2} allowed")]
         public const int Too_Many_0_1_Defined_Only_2_Allowed = 404;
         [Error("{0} is not supported in this Z-machine version")]

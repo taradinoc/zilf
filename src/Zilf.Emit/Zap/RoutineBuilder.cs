@@ -83,7 +83,7 @@ namespace Zilf.Emit.Zap
             paramName = GameBuilder.SanitizeSymbol(paramName);
 
             if (entryPoint)
-                throw new InvalidOperationException("Entry point may not have parameters");
+                throw new InvalidOperationException("Entry point may not have required parameters");
             if (LocalExists(paramName))
                 throw new ArgumentException("Local variable already exists: " + paramName, nameof(paramName));
 
@@ -92,14 +92,14 @@ namespace Zilf.Emit.Zap
             return local;
         }
 
-        /// <exception cref="InvalidOperationException">This is an entry point routine.</exception>
+        /// <exception cref="InvalidOperationException">This is an entry point routine and the target is not V6.</exception>
         /// <exception cref="ArgumentException">A local variable named <paramref name="paramName"/> is already defined.</exception>
         public ILocalBuilder DefineOptionalParameter(string paramName)
         {
             paramName = GameBuilder.SanitizeSymbol(paramName);
 
-            if (entryPoint)
-                throw new InvalidOperationException("Entry point may not have parameters");
+            if (entryPoint && game.zversion != 6)
+                throw new InvalidOperationException("Entry point may not have optional parameters");
             if (LocalExists(paramName))
                 throw new ArgumentException("Local variable already exists: " + paramName, nameof(paramName));
 
@@ -108,13 +108,13 @@ namespace Zilf.Emit.Zap
             return local;
         }
 
-        /// <exception cref="InvalidOperationException">This is an entry point routine.</exception>
+        /// <exception cref="InvalidOperationException">This is an entry point routine and the target is not V6.</exception>
         /// <exception cref="ArgumentException">A local variable named <paramref name="localName"/> is already defined.</exception>
         public ILocalBuilder DefineLocal(string localName)
         {
             localName = GameBuilder.SanitizeSymbol(localName);
 
-            if (entryPoint)
+            if (entryPoint && game.zversion != 6)
                 throw new InvalidOperationException("Entry point may not have local variables");
             if (LocalExists(localName))
                 throw new ArgumentException("Local variable already exists: " + localName, nameof(localName));
