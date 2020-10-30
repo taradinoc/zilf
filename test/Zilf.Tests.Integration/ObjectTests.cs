@@ -564,5 +564,14 @@ namespace Zilf.Tests.Integration
                 .WithoutWarnings()
                 .DoesNotCompile();
         }
+
+        [TestMethod]
+        public void DESC_Pseudo_Property_Should_Be_Stripped_Of_Newlines()
+        {
+            AssertRoutine("",
+                "<PRINTD ,FOO>")
+                .WithGlobal("<OBJECT FOO (DESC \"first\nsecond\r\nthird\")>")
+                .Outputs("first second third");
+        }
     }
 }

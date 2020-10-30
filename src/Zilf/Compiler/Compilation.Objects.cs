@@ -574,7 +574,7 @@ namespace Zilf.Compiler
                                 Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "strings"));
                                 continue;
                             }
-                            ob.DescriptiveName = value.ToStringContext(Context, true);
+                            ob.DescriptiveName = TranslateString((ZilString)value, Context);
                             // skip the length validation
                             continue;
 
