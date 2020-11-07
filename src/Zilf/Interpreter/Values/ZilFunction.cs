@@ -21,7 +21,6 @@ using System.Diagnostics;
 using System.Linq;
 using Zilf.Interpreter.Values.Tied;
 using Zilf.Language;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -35,7 +34,7 @@ namespace Zilf.Interpreter.Values
 
         /// <exception cref="InterpreterError"><paramref name="argspec"/> is invalid.</exception>
         public ZilFunction(ZilAtom? name, ZilAtom? activationAtom,
-            IEnumerable<ZilObject> argspec, ZilDecl decl,
+            IEnumerable<ZilObject> argspec, ZilDecl? decl,
             IEnumerable<ZilObject> body)
             : this("<internal>", name, activationAtom, argspec, decl, body)
         {
@@ -108,7 +107,7 @@ namespace Zilf.Interpreter.Values
 
         public override bool StructurallyEquals(ZilObject? obj)
         {
-            if (!(obj is ZilFunction other))
+            if (obj is not ZilFunction other)
                 return false;
 
             if (!other.argspec.Equals(argspec))

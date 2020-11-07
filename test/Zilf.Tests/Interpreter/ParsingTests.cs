@@ -54,7 +54,7 @@ namespace Zilf.Tests.Interpreter
                 Assert.IsNotNull(combined);
                 Assert.IsInstanceOfType(combined, typeof(ZilAdecl));
 
-                var adecl = (ZilAdecl)combined;
+                var adecl = (ZilAdecl)combined!;
 
                 TestHelpers.AssertStructurallyEqual(firstValue, adecl.First);
                 TestHelpers.AssertStructurallyEqual(secondValue, adecl.Second);

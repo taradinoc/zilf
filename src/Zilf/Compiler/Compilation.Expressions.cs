@@ -20,7 +20,6 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -45,8 +44,6 @@ namespace Zilf.Compiler
         /// for the result, or another operand if the suggested location was not used,
         /// or null if a result was not produced.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
-        [ContractAnnotation("wantResult: true => notnull")]
-        [ContractAnnotation("wantResult: false => null")]
         internal IOperand? CompileForm(IRoutineBuilder rb, ZilForm form, bool wantResult,
             IVariable? resultStorage)
         {
@@ -67,7 +64,7 @@ namespace Zilf.Compiler
                     }
                 }
 
-                if (!(form.First is ZilAtom head))
+                if (form.First is not ZilAtom head)
                 {
                     Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
                     return wantResult ? Game.Zero : null;
@@ -266,11 +263,9 @@ namespace Zilf.Compiler
         /// it is non-null and the expression is valid. Otherwise, may be a constant, or the natural
         /// location of the expression, or a temporary variable from <paramref name="tempVarProvider"/>.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
-        [ContractAnnotation("resultStorage: null => tempVarProvider: notnull")]
-        [ContractAnnotation("tempVarProvider: null => resultStorage: notnull")]
         internal IOperand CompileAsOperandWithBranch(IRoutineBuilder rb, ZilObject expr,
             IVariable? resultStorage,
-            ILabel label, bool polarity, [InstantHandle] Func<IVariable>? tempVarProvider = null)
+            ILabel label, bool polarity, Func<IVariable>? tempVarProvider = null)
         {
             expr = expr.Unwrap(Context);
             IOperand result = resultStorage!;
@@ -309,7 +304,7 @@ namespace Zilf.Compiler
                     return result;
 
                 case ZilForm form:
-                    if (!(form.First is ZilAtom head))
+                    if (form.First is not ZilAtom head)
                     {
                         Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
                         return Game.Zero;
@@ -504,11 +499,11 @@ namespace Zilf.Compiler
         public bool HasSideEffects(ZilObject expr)
         {
             // only forms can have side effects
-            if (!(expr is ZilForm form))
+            if (expr is not ZilForm form)
                 return false;
 
             // malformed forms are errors anyway
-            if (!(form.First is ZilAtom head))
+            if (form.First is not ZilAtom head)
                 return false;
 
             Debug.Assert(form.Rest != null);

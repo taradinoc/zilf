@@ -22,7 +22,6 @@ using System.Runtime.InteropServices;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -116,7 +115,7 @@ namespace Zilf.Interpreter
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "BIND", false, false);
         }
 
-        static ZilResult PerformProg([ProvidesContext] Context ctx, ZilAtom? activationAtom,
+        static ZilResult PerformProg(Context ctx, ZilAtom? activationAtom,
             BindingParams.BindingList bindings, ZilDecl? bodyDecl, ZilObject[] body,
              string name, bool repeat, bool catchy)
         {

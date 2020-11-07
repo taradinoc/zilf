@@ -2,7 +2,6 @@
 using Zilf.Interpreter;
 using System.Collections.Generic;
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 
@@ -122,21 +121,13 @@ namespace Zilf
 
         static bool IsFunction(ZilObject zo)
         {
-            switch (zo.StdTypeAtom)
+            return zo.StdTypeAtom switch
             {
-                case StdAtom.FUNCTION:
-                case StdAtom.SUBR:
-                case StdAtom.FSUBR:
-                case StdAtom.ROUTINE:
-                case StdAtom.MACRO:
-                    return true;
-
-                default:
-                    return false;
-            }
+                StdAtom.FUNCTION or StdAtom.SUBR or StdAtom.FSUBR or StdAtom.ROUTINE or StdAtom.MACRO => true,
+                _ => false,
+            };
         }
 
-        [LinqTunnel]
         IEnumerable<string> GetGlobalNames(Func<string, ZilObject, int?> grouper) =>
             from b in ctx.GetGlobalBindings()
             where b.Value.Value != null

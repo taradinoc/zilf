@@ -56,22 +56,13 @@ namespace Dezapf
         {
             get
             {
-                switch (zversion)
+                return zversion switch
                 {
-                    case 1:
-                    case 2:
-                    case 3:
-                        return 2;
-                    case 4:
-                    case 5:
-                    case 6:
-                    case 7:
-                        return 4;
-                    case 8:
-                        return 8;
-                    default:
-                        throw new NotImplementedException();
-                }
+                    1 or 2 or 3 => 2,
+                    4 or 5 or 6 or 7 => 4,
+                    8 => 8,
+                    _ => throw new NotImplementedException(),
+                };
             }
         }
 
@@ -79,18 +70,12 @@ namespace Dezapf
         {
             get
             {
-                switch (zversion)
+                return zversion switch
                 {
-                    case 1:
-                    case 2:
-                    case 3:
-                        return 2;
-                    case 4:
-                    case 5:
-                        return 4;
-                    default:
-                        return 8;
-                }
+                    1 or 2 or 3 => 2,
+                    4 or 5 => 4,
+                    _ => 8,
+                };
             }
         }
 

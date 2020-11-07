@@ -17,7 +17,6 @@
  */
 
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 
 namespace Zapf.Parsing.Diagnostics
 {

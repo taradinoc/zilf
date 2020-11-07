@@ -19,7 +19,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
-using JetBrains.Annotations;
 
 namespace Zilf.Compiler.Builtins
 {

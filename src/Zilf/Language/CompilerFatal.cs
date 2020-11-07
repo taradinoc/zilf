@@ -18,7 +18,6 @@
 
 using System;
 using System.Runtime.Serialization;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 
 namespace Zilf.Language
@@ -56,7 +55,6 @@ namespace Zilf.Language
         {
         }
 
-        [UsedImplicitly]
         public CompilerFatal(Diagnostic diagnostic)
             : base(diagnostic)
         {

@@ -18,7 +18,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
@@ -59,9 +58,7 @@ namespace Zilf.Interpreter
         /// <param name="obj1">The first element, or <see langword="null"/> if the match failed.</param>
         /// <returns><see langword="true"/> if the structure had the specified number and types of elements,
         /// or <see langword="false"/> otherwise.</returns>
-        [ContractAnnotation("=> true, obj1: notnull")]
-        [ContractAnnotation("=> false, obj1: null")]
-        public static bool Matches<T1>(this IStructure structure, out T1? obj1)
+        public static bool Matches<T1>(this IStructure structure, [NotNullWhen(true)] out T1? obj1)
             where T1 : ZilObject
         {
             if (structure.HasLength(1) && structure.GetFirst() is T1 elem1)
@@ -85,8 +82,6 @@ namespace Zilf.Interpreter
         /// <param name="obj2">The second element, or <see langword="null"/> if the match failed.</param>
         /// <returns><see langword="true"/> if the structure had the specified number and types of elements,
         /// or <see langword="false"/> otherwise.</returns>
-        [ContractAnnotation("=> true, obj1: notnull, obj2: notnull")]
-        [ContractAnnotation("=> false, obj1: null, obj2: null")]
         public static bool Matches<T1, T2>(this IStructure structure, [NotNullWhen(true)] out T1? obj1,
             [NotNullWhen(true)] out T2? obj2)
             where T1 : ZilObject
@@ -117,8 +112,6 @@ namespace Zilf.Interpreter
         /// <param name="obj3">The third element, or <see langword="null"/> if the match failed.</param>
         /// <returns><see langword="true"/> if the structure had the specified number and types of elements,
         /// or <see langword="false"/> otherwise.</returns>
-        [ContractAnnotation("=> true, obj1: notnull, obj2: notnull, obj3: notnull")]
-        [ContractAnnotation("=> false, obj1: null, obj2: null, obj3: null")]
         public static bool Matches<T1, T2, T3>(this IStructure structure, [NotNullWhen(true)] out T1? obj1,
             [NotNullWhen(true)] out T2? obj2,
             [NotNullWhen(true)] out T3? obj3)
@@ -156,8 +149,6 @@ namespace Zilf.Interpreter
         /// <param name="obj4">The fourth element, or <see langword="null"/> if the match failed.</param>
         /// <returns><see langword="true"/> if the structure had the specified number and types of elements,
         /// or <see langword="false"/> otherwise.</returns>
-        [ContractAnnotation("=> true, obj1: notnull, obj2: notnull, obj3: notnull, obj4: notnull")]
-        [ContractAnnotation("=> false, obj1: null, obj2: null, obj3: null, obj4: null")]
         public static bool Matches<T1, T2, T3, T4>(this IStructure structure, [NotNullWhen(true)] out T1? obj1,
             [NotNullWhen(true)] out T2? obj2, [NotNullWhen(true)] out T3? obj3, [NotNullWhen(true)] out T4? obj4)
             where T1 : ZilObject
@@ -196,8 +187,6 @@ namespace Zilf.Interpreter
         /// <param name="obj1">The first element, or <see langword="null"/> if the match failed.</param>
         /// <returns><see langword="true"/> if the structure had the specified minimum number and types of elements,
         /// or <see langword="false"/> otherwise.</returns>
-        [ContractAnnotation("=> true, obj1: notnull")]
-        [ContractAnnotation("=> false, obj1: null")]
         public static bool StartsWith<T1>(this IStructure structure, [NotNullWhen(true)] out T1? obj1)
             where T1 : ZilObject
         {
@@ -222,8 +211,6 @@ namespace Zilf.Interpreter
         /// <param name="obj2">The second element, or <see langword="null"/> if the match failed.</param>
         /// <returns><see langword="true"/> if the structure had the specified minimum number and types of elements,
         /// or <see langword="false"/> otherwise.</returns>
-        [ContractAnnotation("=> true, obj1: notnull, obj2: notnull")]
-        [ContractAnnotation("=> false, obj1: null, obj2: null")]
         public static bool StartsWith<T1, T2>(this IStructure structure, [NotNullWhen(true)] out T1? obj1,
             [NotNullWhen(true)] out T2? obj2)
             where T1 : ZilObject

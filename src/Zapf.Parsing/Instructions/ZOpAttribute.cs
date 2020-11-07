@@ -17,12 +17,10 @@
  */
 
 using System;
-using JetBrains.Annotations;
 
 namespace Zapf.Parsing.Instructions
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
-    [MeansImplicitUse]
     public class ZOpAttribute : Attribute
     {
         public ZOpAttribute(string classicName, string informName, int minVer, int maxVer, ZOpFlags flags)

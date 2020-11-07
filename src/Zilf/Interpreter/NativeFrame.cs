@@ -17,7 +17,6 @@
  */
 
 using Zilf.Language;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {

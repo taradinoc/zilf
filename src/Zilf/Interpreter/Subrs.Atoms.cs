@@ -19,7 +19,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -51,7 +50,7 @@ namespace Zilf.Interpreter
             return PerformParse(ctx, text, radix, lookupObList, "LPARSE", false);
         }
 
-        static ZilObject PerformParse([ProvidesContext] Context ctx, string text, int radix, ZilObject lookupObList,
+        static ZilObject PerformParse(Context ctx, string text, int radix, ZilObject lookupObList,
             string name, bool singleResult)
         {
             if (radix != 10)

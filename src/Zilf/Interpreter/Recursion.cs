@@ -17,7 +17,6 @@
  */
 
 using System.Runtime.CompilerServices;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {

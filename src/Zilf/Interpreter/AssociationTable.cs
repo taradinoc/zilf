@@ -20,7 +20,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Zilf.Interpreter.Values;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {

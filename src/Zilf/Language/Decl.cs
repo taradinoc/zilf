@@ -26,7 +26,7 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Diagnostics;
 using System.Runtime.Serialization;
-using JetBrains.Annotations;
+using System.Globalization;
 
 namespace Zilf.Language
 {
@@ -55,17 +55,15 @@ namespace Zilf.Language
         {
         }
 
-        [StringFormatMethod("usageFormat")]
         public DeclCheckError(Context ctx, ZilObject value, ZilObject pattern,
             string usageFormat, object arg0)
-            : this(ctx, value, pattern, string.Format(usageFormat, arg0))
+            : this(ctx, value, pattern, string.Format(CultureInfo.CurrentCulture, usageFormat, arg0))
         {
         }
 
-        [StringFormatMethod("usageFormat")]
         public DeclCheckError(IProvideSourceLine src, Context ctx, ZilObject value,
             ZilObject pattern, string usageFormat, object arg0)
-            : this(src, ctx, value, pattern, string.Format(usageFormat, arg0))
+            : this(src, ctx, value, pattern, string.Format(CultureInfo.CurrentCulture, usageFormat, arg0))
         {
         }
 
@@ -241,7 +239,6 @@ namespace Zilf.Language
             return CheckElements(ctx, valueAsStructure, rest, segment, ignoreErrors);
         }
 
-        [ContractAnnotation("=> true, decl: notnull; => false, decl: null")]
         static bool IsNonCircularAlias(Context ctx, ZilAtom atom, [NotNullWhen(true)] out ZilObject? decl)
         {
             var seen = new HashSet<ZilAtom>();

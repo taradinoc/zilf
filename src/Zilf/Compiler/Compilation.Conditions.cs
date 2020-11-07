@@ -17,7 +17,6 @@
  */
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
@@ -25,7 +24,6 @@ using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
@@ -83,7 +81,7 @@ namespace Zilf.Compiler
             // it's a FORM
             var form = (ZilForm)expr;
 
-            if (!(form.First is ZilAtom head))
+            if (form.First is not ZilAtom head)
             {
                 Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
                 return;
@@ -203,8 +201,6 @@ namespace Zilf.Compiler
             }
         }
 
-        [ContractAnnotation("wantResult: true => notnull")]
-        [ContractAnnotation("wantResult: false => canbenull")]
         internal IOperand? CompileBoolean(IRoutineBuilder rb, ZilListoidBase args, ISourceLine src,
             bool and, bool wantResult, IVariable? resultStorage)
         {
@@ -332,7 +328,6 @@ namespace Zilf.Compiler
         }
 
         // TODO: refactor COND-like control structures to share an implementation, a la CompileBoundedLoop
-        [ContractAnnotation("wantResult: true => notnull")]
         internal IOperand? CompileCOND(IRoutineBuilder rb, ZilListoidBase clauses, ISourceLine src,
             bool wantResult, IVariable? resultStorage)
         {
@@ -429,7 +424,6 @@ namespace Zilf.Compiler
             return wantResult ? resultStorage : null;
         }
 
-        [ContractAnnotation("wantResult: true => notnull")]
         IOperand? CompileClauseBody(IRoutineBuilder rb, ZilListoidBase clause, bool wantResult,
             IVariable? resultStorage)
         {
@@ -488,7 +482,6 @@ namespace Zilf.Compiler
             return result;
         }
 
-        [ContractAnnotation("wantResult: true => notnull")]
         internal IOperand? CompileVERSION_P(IRoutineBuilder rb, ZilListoidBase clauses, ISourceLine src,
             bool wantResult, IVariable? resultStorage)
         {
@@ -499,7 +492,7 @@ namespace Zilf.Compiler
 
                 (clause, clauses) = clauses;
 
-                if (!(clause is ZilListoidBase list) || list.IsEmpty)
+                if (clause is not ZilListoidBase list || list.IsEmpty)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "VERSION?");
 
                 var (condition, body) = list;
@@ -510,27 +503,15 @@ namespace Zilf.Compiler
                 {
                     case ZilAtom atom:
                         // ReSharper disable once SwitchStatementMissingSomeCases
-                        switch (atom.StdAtom)
+                        condVersion = atom.StdAtom switch
                         {
-                            case StdAtom.ZIP:
-                                condVersion = 3;
-                                break;
-                            case StdAtom.EZIP:
-                                condVersion = 4;
-                                break;
-                            case StdAtom.XZIP:
-                                condVersion = 5;
-                                break;
-                            case StdAtom.YZIP:
-                                condVersion = 6;
-                                break;
-                            case StdAtom.ELSE:
-                            case StdAtom.T:
-                                condVersion = 0;
-                                break;
-                            default:
-                                throw new CompilerError(CompilerMessages.Unrecognized_Atom_In_VERSION_Must_Be_ZIP_EZIP_XZIP_YZIP_ELSET);
-                        }
+                            StdAtom.ZIP => 3,
+                            StdAtom.EZIP => 4,
+                            StdAtom.XZIP => 5,
+                            StdAtom.YZIP => 6,
+                            StdAtom.ELSE or StdAtom.T => 0,
+                            _ => throw new CompilerError(CompilerMessages.Unrecognized_Atom_In_VERSION_Must_Be_ZIP_EZIP_XZIP_YZIP_ELSET),
+                        };
                         break;
 
                     case ZilFix fix:
@@ -565,7 +546,6 @@ namespace Zilf.Compiler
             return wantResult ? resultStorage : null;
         }
 
-        [ContractAnnotation("wantResult: true => notnull")]
         internal IOperand? CompileIFFLAG(IRoutineBuilder rb, ZilListoidBase clauses, ISourceLine src,
             bool wantResult, IVariable? resultStorage)
         {
@@ -577,7 +557,7 @@ namespace Zilf.Compiler
 
                 (clause, clauses) = clauses;
 
-                if (!(clause is ZilListoidBase list) || list.IsEmpty)
+                if (clause is not ZilListoidBase list || list.IsEmpty)
                     throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "IFFLAG");
 
                 var (flag, body) = list;

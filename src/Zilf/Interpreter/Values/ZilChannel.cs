@@ -22,7 +22,6 @@ using System.IO;
 using System.Text;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {

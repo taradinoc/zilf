@@ -22,9 +22,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
-using JetBrains.Annotations;
 using Zapf.Parsing;
 using Zilf.Common.StringEncoding;
 using Zapf.Parsing.Diagnostics;
@@ -855,19 +853,11 @@ General switches:
                     throw new NotImplementedException($"Unimplemented symbol addition: {left.Type} + {right.Type}");
 
                     // we can add numbers and non-packed addresses
-                    static bool Addable(SymbolType type)
+                    static bool Addable(SymbolType type) => type switch
                     {
-                        switch (type)
-                        {
-                            case SymbolType.Constant:
-                            case SymbolType.Label:
-                            case SymbolType.Object:
-                                return true;
-
-                            default:
-                                return false;
-                        }
-                    }
+                        SymbolType.Constant or SymbolType.Label or SymbolType.Object => true,
+                        _ => false,
+                    };
 
                 default:
                     throw new NotImplementedException();
@@ -1412,7 +1402,7 @@ General switches:
             }
         }
 
-        static void BeginFunction([ProvidesContext] Context ctx, FunctDirective node, int nodeIndex)
+        static void BeginFunction(Context ctx, FunctDirective node, int nodeIndex)
         {
             var localNames = new List<string>();
             var localValues = new List<ushort>();
@@ -1495,10 +1485,10 @@ General switches:
             if (ctx.UsePackingOffsets && offset == 0)
             {
                 // offset has to be a multiple of 8, and at least 8 bytes before the current position so its packed address is nonzero
-                while (ctx.Position % ctx.PackingOffsetDivisor != 0 || ctx.Position < ctx.PackingOffsetDivisor)
+                while (ctx.Position % Context.PackingOffsetDivisor != 0 || ctx.Position < Context.PackingOffsetDivisor)
                     ctx.WriteByte(0);
 
-                offset = ctx.Position - ctx.PackingOffsetDivisor;
+                offset = ctx.Position - Context.PackingOffsetDivisor;
             }
 
             while ((ctx.Position - offset) % ctx.PackingDivisor != 0)

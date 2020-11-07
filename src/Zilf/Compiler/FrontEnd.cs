@@ -23,7 +23,6 @@ using System.IO;
 using Zilf.Emit.Zap;
 using Zilf.Interpreter;
 using Zilf.Language;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 
 namespace Zilf.Compiler
@@ -241,7 +240,7 @@ namespace Zilf.Compiler
         // FIXME: not supported by R#, sadly...
         //[ContractAnnotation("wantCompile: true => outputFileName: notnull")]
         //[ContractAnnotation("wantCompile: false => outputFileName: null")]
-        FrontEndResult InterpretOrCompile([ProvidesContext] Context ctx, string inputFileName,
+        FrontEndResult InterpretOrCompile(Context ctx, string inputFileName,
              string? outputFileName, bool wantCompile, bool wantDebugInfo)
         {
             var result = new FrontEndResult();

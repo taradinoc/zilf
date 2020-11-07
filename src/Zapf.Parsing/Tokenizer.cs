@@ -251,37 +251,17 @@ namespace Zapf.Parsing
             }
         }
 
-        static bool CanStartSymbol(char c)
+        static bool CanStartSymbol(char c) => c switch
         {
-            switch (c)
-            {
-                case '-':
-                case '?':
-                case '$':
-                case '#':
-                case '&':
-                case '.':
-                case '%':
-                case '!':
-                    return true;
+            '-' or '?' or '$' or '#' or '&' or '.' or '%' or '!' => true,
+            _ => char.IsLetterOrDigit(c),
+        };
 
-                default:
-                    return char.IsLetterOrDigit(c);
-            }
-        }
-
-        static bool CanContinueSymbol(char c)
+        static bool CanContinueSymbol(char c) => c switch
         {
-            switch (c)
-            {
-                case '\'':
-                case '/':
-                    return true;
-
-                default:
-                    return CanStartSymbol(c);
-            }
-        }
+            '\'' or '/' => true,
+            _ => CanStartSymbol(c),
+        };
 
         public void Dispose()
         {

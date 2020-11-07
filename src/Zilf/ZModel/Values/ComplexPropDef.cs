@@ -19,9 +19,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -130,13 +131,13 @@ namespace Zilf.ZModel.Values
             {
                 var sb = new StringBuilder($"Type={Type}");
                 if (Constant != null)
-                    sb.AppendFormat(" Constant={0}", Constant);
+                    sb.AppendFormat(CultureInfo.CurrentCulture, " Constant={0}", Constant);
                 if (Variable != null)
-                    sb.AppendFormat(" Variable={0}", Variable);
+                    sb.AppendFormat(CultureInfo.CurrentCulture, " Variable={0}", Variable);
                 if (PartOfSpeech != null)
-                    sb.AppendFormat(" PartOfSpeech={0}", PartOfSpeech);
+                    sb.AppendFormat(CultureInfo.CurrentCulture, " PartOfSpeech={0}", PartOfSpeech);
                 if (Fix != null)
-                    sb.AppendFormat(" Fix={0}", Fix);
+                    sb.AppendFormat(CultureInfo.CurrentCulture, " Fix={0}", Fix);
                 return sb.ToString();
             }
 
@@ -239,7 +240,7 @@ namespace Zilf.ZModel.Values
 
             foreach (var patternObj in spec)
             {
-                if (!(patternObj is ZilList list))
+                if (patternObj is not ZilList list)
                     throw new InterpreterError(InterpreterMessages._0_Must_Be_1, "PROPDEF patterns", "lists");
 
                 bool gotEq = false;
@@ -763,31 +764,21 @@ namespace Zilf.ZModel.Values
             return true;
         }
 
-        [ContractAnnotation("decl: null => false")]
-        static bool CheckInputDecl(Context ctx, ZilObject value, ZilObject? decl)
+        static bool CheckInputDecl(Context ctx, ZilObject value, [NotNullWhen(true)] ZilObject? decl)
         {
             // value can be the name of a constant, in which case we need to check the constant value instead
             if (value is ZilAtom valueAtom && ctx.GetZVal(valueAtom) is ZilConstant constant)
                 value = constant.Value;
 
-            if (!(decl is ZilAtom declAtom))
+            if (decl is not ZilAtom declAtom)
                 return false;
 
-            switch (declAtom.StdAtom)
+            return declAtom.StdAtom switch
             {
-                case StdAtom.NOUN:
-                case StdAtom.ADJ:
-                case StdAtom.ADJECTIVE:
-                case StdAtom.ROOM:
-                case StdAtom.OBJECT:
-                case StdAtom.FCN:
-                case StdAtom.ROUTINE:
-                case StdAtom.GLOBAL:
-                    return value is ZilAtom;
-
-                default:
-                    return value.GetTypeAtom(ctx) == declAtom;
-            }
+                StdAtom.NOUN or StdAtom.ADJ or StdAtom.ADJECTIVE or StdAtom.ROOM or StdAtom.OBJECT
+                    or StdAtom.FCN or StdAtom.ROUTINE or StdAtom.GLOBAL => value is ZilAtom,
+                _ => value.GetTypeAtom(ctx) == declAtom,
+            };
         }
 
         static bool PartialPreBuild(Context ctx, Dictionary<ZilAtom, Queue<ZilObject>> captures,

@@ -441,7 +441,7 @@ namespace Zilf.ZModel.Values
             public ZilObject? GetWordAtByte(int byteOffset)
             {
                 // ReSharper disable once PatternAlwaysOfType
-                if (!(ByteOffsetToIndex(byteOffset) is int index) || !IsWord(index))
+                if (ByteOffsetToIndex(byteOffset) is not int index || !IsWord(index))
                     throw new UnalignedTableReadException();
 
                 return index == -1 ? new ZilFix(ElementCountWithoutLength) : initializer?[index % initializer.Length];
@@ -517,7 +517,7 @@ namespace Zilf.ZModel.Values
             public override ZilObject? GetByte(Context ctx, int offset)
             {
                 // ReSharper disable once PatternAlwaysOfType
-                if (!(ByteOffsetToIndex(offset) is int index) || IsWord(index))
+                if (ByteOffsetToIndex(offset) is not int index || IsWord(index))
                     throw new UnalignedTableReadException();
 
                 return index == -1 ? new ZilFix((byte)ElementCountWithoutLength) : initializer?[index % initializer.Length];
@@ -672,7 +672,7 @@ namespace Zilf.ZModel.Values
             protected override string ToString(Func<ZilObject, string> convert)
             {
                 // strip initial '%' from original table representation
-                var origStr = orig.ToString(convert).Substring(1);
+                var origStr = orig.ToString(convert)[1..];
 
                 return $"%<ZREST {origStr} {byteOffset}>";
             }

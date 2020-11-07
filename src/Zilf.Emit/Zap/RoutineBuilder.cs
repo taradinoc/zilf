@@ -22,7 +22,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zapf.Parsing.Expressions;
 using Zapf.Parsing.Instructions;
 using Zilf.Common;
@@ -34,7 +33,7 @@ namespace Zilf.Emit.Zap
         internal static readonly Label RTRUE = new Label("TRUE");
         internal static readonly Label RFALSE = new Label("FALSE");
         internal static readonly VariableOperand STACK = new VariableOperand("STACK");
-        const string INDENT = "\t";
+        const char INDENT = '\t';
 
         readonly GameBuilder game;
         readonly string name;
@@ -768,25 +767,13 @@ namespace Zilf.Emit.Zap
             }
             else if (game.zversion == 4)
             {
-                // V4: use CALL/CALL1/CALL2/XCALL opcodes, pop result if not needed
-                string opcode;
-                switch (args.Length)
+                string opcode = args.Length switch
                 {
-                    case 0:
-                        opcode = "CALL1";
-                        break;
-                    case 1:
-                        opcode = "CALL2";
-                        break;
-                    case 2:
-                    case 3:
-                        opcode = "CALL";
-                        break;
-                    default:
-                        opcode = "XCALL";
-                        break;
-                }
-
+                    0 => "CALL1",
+                    1 => "CALL2",
+                    2 or 3 => "CALL",
+                    _ => "XCALL",
+                };
                 var inst = new Instruction(opcode, routine.ToAsmExpr()) { StoreTarget = result?.ToString() };
                 foreach (var arg in args)
                     inst.Operands.Add(arg.ToAsmExpr());
@@ -803,41 +790,23 @@ namespace Zilf.Emit.Zap
                 string opcode;
                 if (result == null)
                 {
-                    switch (args.Length)
+                    opcode = args.Length switch
                     {
-                        case 0:
-                            opcode = "ICALL1";
-                            break;
-                        case 1:
-                            opcode = "ICALL2";
-                            break;
-                        case 2:
-                        case 3:
-                            opcode = "ICALL";
-                            break;
-                        default:
-                            opcode = "IXCALL";
-                            break;
-                    }
+                        0 => "ICALL1",
+                        1 => "ICALL2",
+                        2 or 3 => "ICALL",
+                        _ => "IXCALL",
+                    };
                 }
                 else
                 {
-                    switch (args.Length)
+                    opcode = args.Length switch
                     {
-                        case 0:
-                            opcode = "CALL1";
-                            break;
-                        case 1:
-                            opcode = "CALL2";
-                            break;
-                        case 2:
-                        case 3:
-                            opcode = "CALL";
-                            break;
-                        default:
-                            opcode = "XCALL";
-                            break;
-                    }
+                        0 => "CALL1",
+                        1 => "CALL2",
+                        2 or 3 => "CALL",
+                        _ => "XCALL",
+                    };
                 }
 
                 var inst = new Instruction(opcode, routine.ToAsmExpr()) { StoreTarget = result?.ToString() };
@@ -1071,7 +1040,7 @@ namespace Zilf.Emit.Zap
                 matches = new List<CombinableLine<ZapCode>>();
             }
 
-            bool Match([InstantHandle] params Predicate<CombinableLine<ZapCode>>[] criteria)
+            bool Match(params Predicate<CombinableLine<ZapCode>>[] criteria)
             {
                 Debug.Assert(matches != null && enumerator != null);
                 while (matches.Count < criteria.Length)
@@ -1160,7 +1129,6 @@ namespace Zilf.Emit.Zap
                 return new CombinerResult<ZapCode>(numberOfLines, Enumerable.Empty<CombinableLine<ZapCode>>());
             }
 
-            [ContractAnnotation("=> true, otherSide: notnull; => false, otherSide: null")]
             static bool IsEqualZero(Instruction inst,
                 [NotNullWhen(true)] out AsmExpr? otherSide)
             {
@@ -1182,17 +1150,14 @@ namespace Zilf.Emit.Zap
                 return false;
             }
 
-            [ContractAnnotation("=> true, dest: notnull, constant: notnull; => false, dest: null, constant: null")]
             static bool IsBANDConstantWithStack(Instruction inst,
                 [NotNullWhen(true)] out NumericLiteral? constant, [NotNullWhen(true)] out string? dest) =>
                 IsCommutativeConstantWithStack("BAND", inst, out constant, out dest);
 
-            [ContractAnnotation("=> true, dest: notnull, constant: notnull; => false, dest: null, constant: null")]
             static bool IsBORConstantWithStack(Instruction inst,
                 [NotNullWhen(true)] out NumericLiteral? constant, [NotNullWhen(true)] out string? dest) =>
                 IsCommutativeConstantWithStack("BOR", inst, out constant, out dest);
 
-            [ContractAnnotation("=> true, dest: notnull, constant: notnull; => false, dest: null, constant: null")]
             static bool IsCommutativeConstantWithStack(
                 string instructionName, Instruction inst,
                 [NotNullWhen(true)] out NumericLiteral? constant, [NotNullWhen(true)] out string? dest)
@@ -1220,22 +1185,16 @@ namespace Zilf.Emit.Zap
                 return false;
             }
 
-            [ContractAnnotation(
-                "=> true, variable: notnull, constant: notnull; => false, variable: null, constant: null")]
             static bool IsBANDConstantToStack(Instruction inst,
                 [NotNullWhen(true)] out AsmExpr? variable,
                 [NotNullWhen(true)] out NumericLiteral? constant) =>
                 IsCommutativeConstantToStack("BAND", inst, out variable, out constant);
 
-            [ContractAnnotation(
-                "=> true, variable: notnull, constant: notnull; => false, variable: null, constant: null")]
             static bool IsBORConstantToStack(Instruction inst,
                 [NotNullWhen(true)] out AsmExpr? variable,
                 [NotNullWhen(true)] out NumericLiteral? constant) =>
                 IsCommutativeConstantToStack("BOR", inst, out variable, out constant);
 
-            [ContractAnnotation(
-                "=> true, variable: notnull, constant: notnull; => false, variable: null, constant: null")]
             static bool IsCommutativeConstantToStack(
                 string instructionName, Instruction inst,
                 [NotNullWhen(true)] out AsmExpr? variable, [NotNullWhen(true)] out NumericLiteral? constant)
@@ -1260,7 +1219,6 @@ namespace Zilf.Emit.Zap
                 return false;
             }
 
-            [ContractAnnotation("=> true, dest: notnull; => false, dest: null")]
             static bool IsPopToVariable(Instruction inst,
                 [NotNullWhen(true)] out string? dest)
             {

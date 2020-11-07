@@ -16,8 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
-
 namespace Zapf.Parsing.Directives
 {
     public sealed class FstrDirective : NameAndTextDirective

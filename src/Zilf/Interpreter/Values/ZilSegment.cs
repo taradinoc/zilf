@@ -23,7 +23,6 @@ using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using System.Linq;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -43,7 +42,7 @@ namespace Zilf.Interpreter.Values
         [ChtypeMethod]
         public static ZilSegment FromList(ZilListBase list)
         {
-            if (!(list is ZilForm form))
+            if (list is not ZilForm form)
             {
                 form = new ZilForm(list) { SourceLine = SourceLines.Chtyped };
             }

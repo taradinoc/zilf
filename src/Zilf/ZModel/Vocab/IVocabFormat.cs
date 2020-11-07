@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -51,7 +50,6 @@ namespace Zilf.ZModel.Vocab
         public IOperand? CompileConstant(ZilObject zo) => CompileConstantDelegate(zo);
     }
 
-    [PublicAPI]
     interface IVocabFormat
     {
         IWord CreateWord(ZilAtom text);

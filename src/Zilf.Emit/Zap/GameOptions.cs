@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 
 /* Copyright 2010-2017 Jesse McGrew
  * 
@@ -38,7 +37,6 @@ using JetBrains.Annotations;
 
 namespace Zilf.Emit.Zap
 {
-    [UsedImplicitly(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
     public class GameOptions : IGameOptions
     {
         GameOptions()

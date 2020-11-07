@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Language;
 
@@ -307,7 +306,6 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="atom">Set to the referenced atom, or null.</param>
         /// <returns>True if the object is an LVAL.</returns>
-        [ContractAnnotation("=> false, atom: null; => true, atom: notnull")]
         public virtual bool IsLVAL([NotNullWhen(true)] out ZilAtom? atom)
         {
             atom = null;
@@ -319,7 +317,6 @@ namespace Zilf.Interpreter.Values
         /// </summary>
         /// <param name="atom">Set to the referenced atom, or null.</param>
         /// <returns>True if the object is a GVAL.</returns>
-        [ContractAnnotation("=> false, atom: null; => true, atom: notnull")]
         public virtual bool IsGVAL([NotNullWhen(true)] out ZilAtom? atom)
         {
             atom = null;

@@ -20,7 +20,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -41,7 +40,6 @@ namespace Zilf.Interpreter.Values
 
         /// <exception cref="InterpreterError">Always thrown.</exception>
         [ChtypeMethod]
-        [ContractAnnotation("=> halt")]
         [DoesNotReturn]
         [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
         [SuppressMessage("Performance", "CA1801:Unused parameter")]

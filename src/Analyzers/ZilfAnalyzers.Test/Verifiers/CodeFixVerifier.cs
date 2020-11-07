@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 
 // ReSharper disable once CheckNamespace
 namespace ZilfAnalyzers.Test.Helpers
@@ -23,14 +22,12 @@ namespace ZilfAnalyzers.Test.Helpers
         /// Returns the codefix being tested (C#) - to be implemented in non-abstract class
         /// </summary>
         /// <returns>The CodeFixProvider to be used for CSharp code</returns>
-        [JetBrains.Annotations.NotNull]
         protected abstract CodeFixProvider GetCSharpCodeFixProvider();
 
         /// <summary>
         /// Returns the codefix being tested (VB) - to be implemented in non-abstract class
         /// </summary>
         /// <returns>The CodeFixProvider to be used for VisualBasic code</returns>
-        [JetBrains.Annotations.NotNull]
         protected abstract CodeFixProvider GetBasicCodeFixProvider();
 
         /// <summary>
@@ -86,7 +83,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        static async Task VerifyFixAsync(string language, DiagnosticAnalyzer analyzer, [JetBrains.Annotations.NotNull] CodeFixProvider codeFixProvider, string oldSource, string newSource, int? codeFixIndex, bool allowNewCompilerDiagnostics)
+        static async Task VerifyFixAsync(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string oldSource, string newSource, int? codeFixIndex, bool allowNewCompilerDiagnostics)
         {
             var document = CreateDocument(oldSource, language);
             var analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, new[] { document }).ConfigureAwait(false);
@@ -131,7 +128,7 @@ namespace ZilfAnalyzers.Test.Helpers
                     Assert.Fail(
                         "Fix introduced new compiler diagnostics:\r\n{0}\r\n\r\nNew document:\r\n{1}\r\n",
                         string.Join("\r\n", newCompilerDiagnostics.Select(d => d.ToString())),
-                        (await document.GetSyntaxRootAsync().ConfigureAwait(false)).ToFullString());
+                        (await document.GetSyntaxRootAsync().ConfigureAwait(false))?.ToFullString());
                 }
 
                 //check if there are analyzer diagnostics left after the code fix

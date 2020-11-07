@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,82 +29,68 @@ namespace Zilf.Tests.Integration
     public abstract class AbstractAssertionHelper<TThis>
         where TThis : AbstractAssertionHelper<TThis>
     {
-        [JetBrains.Annotations.NotNull]
         protected string versionDirective = "<VERSION ZIP>";
-        [JetBrains.Annotations.NotNull]
         protected readonly StringBuilder miscGlobals = new StringBuilder();
-        [JetBrains.Annotations.NotNull]
         protected readonly StringBuilder input = new StringBuilder();
-        [JetBrains.Annotations.NotNull]
         protected readonly List<(Predicate<ZlrHelperRunResult>, string message)> warningChecks =
             new List<(Predicate<ZlrHelperRunResult>, string message)>();
         protected bool wantCompileOutput;
         protected bool wantDebugInfo;
 
-        [JetBrains.Annotations.NotNull]
         public TThis InV3()
         {
             versionDirective = "<VERSION ZIP>";
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis InV4()
         {
             versionDirective = "<VERSION EZIP>";
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis InV5()
         {
             versionDirective = "<VERSION XZIP>";
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis InV6()
         {
             versionDirective = "<VERSION YZIP>";
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis InV7()
         {
             versionDirective = "<VERSION 7>";
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis InV8()
         {
             versionDirective = "<VERSION 8>";
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
-        public TThis WithVersionDirective([JetBrains.Annotations.NotNull] string versionStr)
+        public TThis WithVersionDirective(string versionStr)
         {
             versionDirective = versionStr;
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
-        public TThis WithGlobal([JetBrains.Annotations.NotNull] string code)
+        public TThis WithGlobal(string code)
         {
             miscGlobals.AppendLine(code);
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
-        public TThis WithInput([JetBrains.Annotations.NotNull] string line)
+        public TThis WithInput(string line)
         {
             input.AppendLine(line);
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis WithWarnings()
         {
             warningChecks.Add((res => res.Diagnostics.Any(d => d.Severity == Severity.Warning),
@@ -113,13 +98,12 @@ namespace Zilf.Tests.Integration
             return (TThis)this;
         }
 
-        private static bool DiagnosticCodeMatches([JetBrains.Annotations.NotNull] Diagnostic diag, [JetBrains.Annotations.NotNull] string code)
+        private static bool DiagnosticCodeMatches(Diagnostic diag, string code)
         {
             return diag.Code == code || diag.SubDiagnostics.Any(d => DiagnosticCodeMatches(d, code));
         }
 
-        [JetBrains.Annotations.NotNull]
-        public TThis WithWarnings([JetBrains.Annotations.NotNull] params string[] expectedWarningCodes)
+        public TThis WithWarnings(params string[] expectedWarningCodes)
         {
             foreach (var code in expectedWarningCodes)
             {
@@ -129,7 +113,6 @@ namespace Zilf.Tests.Integration
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis WithoutWarnings()
         {
             warningChecks.Add((res => res.Diagnostics.All(d => d.Severity != Severity.Warning),
@@ -137,7 +120,6 @@ namespace Zilf.Tests.Integration
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis WithoutUnsuppressedWarnings()
         {
             warningChecks.Add(
@@ -146,7 +128,6 @@ namespace Zilf.Tests.Integration
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis WithoutWarnings(params string[] unexpectedWarningCodes)
         {
             foreach (var code in unexpectedWarningCodes)
@@ -157,28 +138,24 @@ namespace Zilf.Tests.Integration
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis IgnoringWarnings()
         {
             warningChecks.Clear();
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis CapturingCompileOutput()
         {
             wantCompileOutput = true;
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         public TThis WithDebugInfo()
         {
             wantDebugInfo = true;
             return (TThis)this;
         }
 
-        [JetBrains.Annotations.NotNull]
         protected virtual string GlobalCode()
         {
             var sb = new StringBuilder();
@@ -199,10 +176,9 @@ namespace Zilf.Tests.Integration
 
     public sealed class EntryPointAssertionHelper : AbstractAssertionHelper<EntryPointAssertionHelper>
     {
-        [JetBrains.Annotations.NotNull]
         readonly string argSpec, body;
 
-        public EntryPointAssertionHelper([JetBrains.Annotations.NotNull] string argSpec, [JetBrains.Annotations.NotNull] string body)
+        public EntryPointAssertionHelper(string argSpec, string body)
         {
             this.argSpec = argSpec;
             this.body = body;
@@ -265,9 +241,9 @@ namespace Zilf.Tests.Integration
     public abstract class AbstractAssertionHelperWithEntryPoint<TThis> : AbstractAssertionHelper<TThis>
         where TThis : AbstractAssertionHelperWithEntryPoint<TThis>
     {
-        [JetBrains.Annotations.NotNull] protected abstract string Expression();
+        protected abstract string Expression();
 
-        public void GivesNumber([JetBrains.Annotations.NotNull] string expectedValue)
+        public void GivesNumber(string expectedValue)
         {
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () <PRINTN {Expression()}>>";
@@ -275,7 +251,7 @@ namespace Zilf.Tests.Integration
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, warningChecks);
         }
 
-        public void Outputs([JetBrains.Annotations.NotNull] string expectedValue)
+        public void Outputs(string expectedValue)
         {
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () {Expression()}>";
@@ -283,7 +259,7 @@ namespace Zilf.Tests.Integration
             ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, warningChecks, wantCompileOutput);
         }
 
-        public void Implies([ItemNotNull] [JetBrains.Annotations.NotNull] params string[] conditions)
+        public void Implies(params string[] conditions)
         {
             var sb = new StringBuilder();
             foreach (var c in conditions)
@@ -302,8 +278,8 @@ namespace Zilf.Tests.Integration
             ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", warningChecks);
         }
 
-        public void DoesNotCompile([CanBeNull] Predicate<ZlrHelperRunResult> resultFilter = null,
-            [CanBeNull] string message = null)
+        public void DoesNotCompile(Predicate<ZlrHelperRunResult>? resultFilter = null,
+            string? message = null)
         {
             var testCode =
                 $"{GlobalCode()}\r\n" +
@@ -323,7 +299,7 @@ namespace Zilf.Tests.Integration
             }
         }
 
-        public void DoesNotCompile(string diagnosticCode, [CanBeNull] Predicate<Diagnostic> diagFilter = null)
+        public void DoesNotCompile(string diagnosticCode, Predicate<Diagnostic>? diagFilter = null)
         {
             DoesNotCompile(res =>
                 {
@@ -349,13 +325,11 @@ namespace Zilf.Tests.Integration
             CheckWarnings(result);
         }
 
-        [JetBrains.Annotations.NotNull]
-        public CodeMatchingResult GeneratesCodeMatching([JetBrains.Annotations.NotNull] string pattern)
+        public CodeMatchingResult GeneratesCodeMatching(string pattern)
         {
             return GeneratesCodeMatching(CheckOutputMatches(pattern));
         }
 
-        [JetBrains.Annotations.NotNull]
         static Action<string> CheckOutputMatches(string pattern)
         {
             return output =>
@@ -364,13 +338,11 @@ namespace Zilf.Tests.Integration
                     "Output did not match. Expected pattern: " + pattern);
         }
 
-        [JetBrains.Annotations.NotNull]
-        public CodeMatchingResult GeneratesCodeNotMatching([JetBrains.Annotations.NotNull] string pattern)
+        public CodeMatchingResult GeneratesCodeNotMatching(string pattern)
         {
             return GeneratesCodeMatching(CheckOutputDoesNotMatch(pattern));
         }
 
-        [JetBrains.Annotations.NotNull]
         static Action<string> CheckOutputDoesNotMatch(string pattern)
         {
             return output =>
@@ -379,8 +351,7 @@ namespace Zilf.Tests.Integration
                     "Output should not have matched. Anti-pattern: " + pattern);
         }
 
-        [JetBrains.Annotations.NotNull]
-        CodeMatchingResult GeneratesCodeMatching([JetBrains.Annotations.NotNull] Action<string> checkGeneratedCode)
+        CodeMatchingResult GeneratesCodeMatching(Action<string> checkGeneratedCode)
         {
             var testCode = $"{GlobalCode()}\r\n" +
                            "<ROUTINE GO ()\r\n" +
@@ -412,15 +383,13 @@ namespace Zilf.Tests.Integration
                 this.Output = output;
             }
 
-            [JetBrains.Annotations.NotNull]
-            public CodeMatchingResult AndMatching([JetBrains.Annotations.NotNull] string pattern)
+            public CodeMatchingResult AndMatching(string pattern)
             {
                 CheckOutputMatches(pattern)(Output);
                 return this;
             }
 
-            [JetBrains.Annotations.NotNull]
-            public CodeMatchingResult AndNotMatching([JetBrains.Annotations.NotNull] string pattern)
+            public CodeMatchingResult AndNotMatching(string pattern)
             {
                 CheckOutputDoesNotMatch(pattern)(Output);
                 return this;
@@ -430,10 +399,9 @@ namespace Zilf.Tests.Integration
 
     public sealed class ExprAssertionHelper : AbstractAssertionHelperWithEntryPoint<ExprAssertionHelper>
     {
-        [JetBrains.Annotations.NotNull]
         readonly string expression;
 
-        public ExprAssertionHelper([JetBrains.Annotations.NotNull] string expression)
+        public ExprAssertionHelper(string expression)
         {
             this.expression = expression;
         }
@@ -451,14 +419,13 @@ namespace Zilf.Tests.Integration
 
         const string RoutineName = "TEST?ROUTINE";
 
-        public RoutineAssertionHelper([JetBrains.Annotations.NotNull] string argSpec, [JetBrains.Annotations.NotNull] string body)
+        public RoutineAssertionHelper(string argSpec, string body)
         {
             this.argSpec = argSpec;
             this.body = body;
         }
 
-        [JetBrains.Annotations.NotNull]
-        public RoutineAssertionHelper WhenCalledWith([JetBrains.Annotations.NotNull] string testArguments)
+        public RoutineAssertionHelper WhenCalledWith(string testArguments)
         {
             arguments = testArguments;
             return this;
@@ -477,7 +444,7 @@ namespace Zilf.Tests.Integration
 
     public sealed class GlobalsAssertionHelper : AbstractAssertionHelperWithEntryPoint<GlobalsAssertionHelper>
     {
-        public GlobalsAssertionHelper([ItemNotNull] [JetBrains.Annotations.NotNull] params string[] globals)
+        public GlobalsAssertionHelper(params string[] globals)
         {
             foreach (var g in globals)
                 miscGlobals.AppendLine(g);
@@ -491,15 +458,14 @@ namespace Zilf.Tests.Integration
 
     public sealed class RawAssertionHelper
     {
-        [JetBrains.Annotations.NotNull]
         readonly string code;
 
-        public RawAssertionHelper([JetBrains.Annotations.NotNull] string code)
+        public RawAssertionHelper(string code)
         {
             this.code = code;
         }
 
-        public void Outputs([JetBrains.Annotations.NotNull] string expectedValue)
+        public void Outputs(string expectedValue)
         {
             ZlrHelper.RunAndAssert(code, null, expectedValue);
         }

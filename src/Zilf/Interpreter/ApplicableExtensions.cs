@@ -18,15 +18,12 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Security;
-using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
     static class ApplicableExtensions
     {
-        [ContractAnnotation("zo: null => null")]
         [Obsolete("Use IsApplicable(this ZilObject, Context, out IApplicable?) instead.")]
         public static IApplicable? AsApplicable(this ZilObject? zo, Context ctx)
         {
@@ -41,7 +38,6 @@ namespace Zilf.Interpreter
             return zo as IApplicable;
         }
 
-        [ContractAnnotation("zo: null => false")]
         public static bool IsApplicable([NotNullWhen(true)] this ZilObject? zo, Context ctx)
         {
             if (zo == null)

@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using JetBrains.Annotations;
 using Zilf.Compiler.Builtins;
 using Zilf.Interpreter;
 

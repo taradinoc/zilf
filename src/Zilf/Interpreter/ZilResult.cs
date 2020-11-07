@@ -22,7 +22,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -187,7 +186,6 @@ namespace Zilf.Interpreter
             return new ZilList(array.Select(i => (ZilObject)i)) { SourceLine = sourceLine };
         }
 
-        [ContractAnnotation("=> false, array: null; => true, array: notnull")]
         public static bool TryToZilObjectArray(this IEnumerable<ZilResult> inputs, [NotNullWhen(true)] out ZilObject[]? array, out ZilResult result)
         {
             List<ZilObject> list;

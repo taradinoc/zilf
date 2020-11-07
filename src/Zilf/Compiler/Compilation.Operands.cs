@@ -22,7 +22,6 @@ using System.Linq;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
@@ -120,10 +119,10 @@ namespace Zilf.Compiler
         [System.Diagnostics.Contracts.Pure]
         static bool LocalIsLaterModified(ZilObject[] exprs, int localIdx)
         {
-            if (!(exprs[localIdx] is ZilForm form))
+            if (exprs[localIdx] is not ZilForm form)
                 throw new ArgumentException("not a FORM");
 
-            if (!(form.First is ZilAtom atom) ||
+            if (form.First is not ZilAtom atom ||
                 atom.StdAtom != StdAtom.LVAL && atom.StdAtom != StdAtom.SET)
             {
                 throw new ArgumentException("not an LVAL/SET FORM");
@@ -131,7 +130,7 @@ namespace Zilf.Compiler
 
             Debug.Assert(form.Rest != null);
 
-            if (!(form.Rest.First is ZilAtom localAtom))
+            if (form.Rest.First is not ZilAtom localAtom)
                 throw new ArgumentException("LVAL/SET not followed by an atom");
 
             for (int i = localIdx + 1; i < exprs.Length; i++)
@@ -143,10 +142,10 @@ namespace Zilf.Compiler
 
         bool GlobalCouldBeLaterModified(ZilObject[] exprs, int localIdx)
         {
-            if (!(exprs[localIdx] is ZilForm form))
+            if (exprs[localIdx] is not ZilForm form)
                 throw new ArgumentException("not a FORM");
 
-            if (!(form.First is ZilAtom atom) ||
+            if (form.First is not ZilAtom atom ||
                 (atom.StdAtom != StdAtom.GVAL && atom.StdAtom != StdAtom.SETG))
             {
                 throw new ArgumentException("not a GVAL/SETG FORM");
@@ -154,7 +153,7 @@ namespace Zilf.Compiler
 
             Debug.Assert(form.Rest != null);
 
-            if (!(form.Rest.First is ZilAtom globalAtom))
+            if (form.Rest.First is not ZilAtom globalAtom)
                 throw new ArgumentException("GVAL/SETG not followed by an atom");
 
             for (int i = localIdx + 1; i < exprs.Length; i++)
@@ -166,7 +165,7 @@ namespace Zilf.Compiler
 
         bool CouldModifyGlobal(ZilObject expr, ZilAtom globalAtom)
         {
-            if (!(expr is ZilListBase list))
+            if (expr is not ZilListBase list)
                 return false;
 
             if (list is ZilForm && list.First is ZilAtom atom)

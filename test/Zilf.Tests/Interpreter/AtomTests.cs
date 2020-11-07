@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
@@ -533,12 +532,12 @@ namespace Zilf.Tests.Interpreter
 
             var offset = 0;
 
-            var oblistPath = (ZilList)ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST));
+            var oblistPath = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) as ZilList;
             Assert.IsNotNull(oblistPath);
 
-            foreach (var zo in oblistPath)
+            foreach (var zo in oblistPath!)
             {
-                if (!(zo is ObList oblist))
+                if (zo is not ObList oblist)
                     continue;
 
                 var atomList = (ZilList)oblist.GetPrimitive(ctx);

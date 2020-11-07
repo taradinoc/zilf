@@ -22,7 +22,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
+using Zilf.Common;
 
 namespace Zilf.Emit
 {
@@ -328,7 +328,7 @@ namespace Zilf.Emit
             // copy lines
             if (other.lines.Count > 0)
             {
-                var prev = lines.AddFirst(other.lines.First.Value);
+                var prev = lines.AddFirst(other.lines.First!.Value);
                 var src = other.lines.First.Next;
 
                 while (src != null)
@@ -388,7 +388,7 @@ namespace Zilf.Emit
         ///     </description></item>
         /// </list>
         /// </remarks>
-        public void Finish([InstantHandle] Action<ILabel?, TCode, ILabel?, PeepholeLineType> handler)
+        public void Finish(Action<ILabel?, TCode, ILabel?, PeepholeLineType> handler)
         {
             Optimize();
 
@@ -416,9 +416,7 @@ namespace Zilf.Emit
 
                 Console.Write('\t');
 
-#pragma warning disable RECS0017 // Possible compare of value type with 'null'
                 Console.Write(line.Code == null ? "(null)" : line.Code.ToString());
-#pragma warning restore RECS0017 // Possible compare of value type with 'null'
 
                 Console.Write(' ');
 
@@ -503,7 +501,7 @@ namespace Zilf.Emit
                 // mark code as reachable and detect label usage
                 reachableFlag = !reachableFlag;
                 usedLabels.Clear();
-                MarkReachable(lines.First);
+                MarkReachable(lines.First!);
 
                 void MarkReachable(LinkedListNode<Line> reachableNode)
                 {
@@ -535,6 +533,7 @@ namespace Zilf.Emit
                         if (line.TargetLine != null)
                         {
                             var targetNode = lines.Find(line.TargetLine);
+                            Debug.Assert(targetNode != null);
                             queue.Enqueue(targetNode);
                         }
                     }
@@ -620,6 +619,8 @@ namespace Zilf.Emit
 
                             var originalTarget = line.TargetLine;
                             var targetNode = lines.Find(originalTarget);
+
+                            Debug.Assert(targetNode?.Next != null);
 
                             var lineAfterTarget = targetNode.Next.Value;
 
@@ -787,6 +788,7 @@ namespace Zilf.Emit
                             else
                             {
                                 // branch to instruction after condition
+                                Debug.Assert(node.Next.Next != null);
                                 var lineAfterCondition = node.Next.Next.Value;
                                 if (lineAfterCondition.Label == null)
                                 {
@@ -820,7 +822,9 @@ namespace Zilf.Emit
                             else
                             {
                                 // branch to instruction after condition
-                                var lineAfterCondition = lines.Find(node.Next.Value.TargetLine).Next.Value;
+                                var targetLine = lines.Find(node.Next.Value.TargetLine);
+                                Debug.Assert(targetLine?.Next != null);
+                                var lineAfterCondition = targetLine.Next.Value;
                                 if (lineAfterCondition.Label == null)
                                 {
                                     lineAfterCondition.Label = Combiner.NewLabel();
@@ -993,7 +997,7 @@ namespace Zilf.Emit
             } while (changed);
         }
 
-        static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines(LinkedListNode<Line> node)
+        static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines([DisallowNull] LinkedListNode<Line>? node)
         {
             yield return new CombinableLine<TCode>(node.Value.Label, node.Value.Code, node.Value.TargetLabel, node.Value.Type);
 
@@ -1011,7 +1015,7 @@ namespace Zilf.Emit
             {
                 PeepholeLineType.BranchPositive => PeepholeLineType.BranchNegative,
                 PeepholeLineType.BranchNegative => PeepholeLineType.BranchPositive,
-                _ => throw new ArgumentOutOfRangeException(),
+                _ => throw UnhandledCaseException.FromEnum(type)
             };
     }
 }

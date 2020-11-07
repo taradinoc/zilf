@@ -19,9 +19,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -321,7 +321,7 @@ namespace Zilf.ZModel
             }
         }
 
-        [ContractAnnotation("null => null; notnull => notnull")]
+        [return: NotNullIfNotNull("list")]
         static ZilAtom? ParseFindFlag(ZilList? list)
         {
             if (list == null)

@@ -19,7 +19,7 @@
 using Zilf.Language;
 using Zilf.Diagnostics;
 using System.Collections.Generic;
-using JetBrains.Annotations;
+using System;
 
 namespace Zilf.Interpreter.Values
 {
@@ -79,7 +79,7 @@ namespace Zilf.Interpreter.Values
             return
                 obj is ZilSubr other &&
                 other.GetType() == GetType() &&
-                other.name.Equals(name) &&
+                other.name.Equals(name, StringComparison.Ordinal) &&
                 other.handler.Equals(handler);
         }
 

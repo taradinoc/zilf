@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -87,14 +86,14 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting {
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
-                    Message = "'object.Equals(object)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
+                    Message = "'object.Equals(object?)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 20, 17) }
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
-                    Message = "'object.Equals(object)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
+                    Message = "'object.Equals(object?)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 23, 17) }
                 },
@@ -129,21 +128,21 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting {
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
-                    Message = "'object.Equals(object, object)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
+                    Message = "'object.Equals(object?, object?)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 30, 13) }
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
-                    Message = "'object.Equals(object, object)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
+                    Message = "'object.Equals(object?, object?)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 31, 13) }
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0006",
-                    Message = "'FooList' overrides object.Equals(object) but does not override ZilObject.ExactlyEquals(ZilObject)",
+                    Message = "'FooList' overrides object.Equals(object?) but does not override ZilObject.ExactlyEquals(ZilObject)",
                     Severity = DiagnosticSeverity.Warning,
                     Locations = new[] { new DiagnosticResultLocation("Test0.cs", 36, 30) }
                 },
@@ -209,7 +208,6 @@ namespace Zilf.Diagnostics {
 #endif
         }
 
-        [JetBrains.Annotations.NotNull]
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new ZilObjectAnalyzer();

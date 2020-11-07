@@ -18,7 +18,6 @@
 
 using System.Diagnostics;
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -84,7 +83,7 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject ENTRY(Context ctx, ZilAtom[] args)
         {
-            if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList currentObPath) ||
+            if (ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is not ZilList currentObPath ||
                 currentObPath.GetLength(1) != null ||
                 currentObPath.Take(2).Any(zo => zo.StdTypeAtom != StdAtom.OBLIST))
             {
@@ -127,7 +126,7 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject RENTRY(Context ctx, ZilAtom[] args)
         {
-            if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList currentObPath) ||
+            if (ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is not ZilList currentObPath ||
                 currentObPath.GetLength(1) != null ||
                 currentObPath.Take(2).Any(zo => zo.StdTypeAtom != StdAtom.OBLIST))
             {
@@ -193,7 +192,7 @@ namespace Zilf.Interpreter
 
         static ZilObject PerformUse(Context ctx, string[] args, string name, StdAtom requiredPackageType)
         {
-            if (!(ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is ZilList obpath))
+            if (ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST)) is not ZilList obpath)
             {
                 throw new InterpreterError(
                     InterpreterMessages._0_Value_Of_1_Must_Be_2,
@@ -225,7 +224,7 @@ namespace Zilf.Interpreter
                 if (externalObList == null)
                     throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "package", packageName);
 
-                if (!(ctx.GetProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE)) is ZilAtom pkgTypeAtom) ||
+                if (ctx.GetProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE)) is not ZilAtom pkgTypeAtom ||
                     pkgTypeAtom.StdAtom != requiredPackageType)
                 {
                     throw new InterpreterError(InterpreterMessages._0_Wrong_Package_Type_Expected_1, name, ctx.GetStdAtom(requiredPackageType).ToString());
@@ -240,7 +239,6 @@ namespace Zilf.Interpreter
         }
 
         [Subr("COMPILING?")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancy", "RCS1163:Unused parameter.", Justification = "Arguments are discarded.")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Arguments are discarded.")]
         public static ZilObject COMPILING_P(Context ctx, ZilObject[] args)
         {

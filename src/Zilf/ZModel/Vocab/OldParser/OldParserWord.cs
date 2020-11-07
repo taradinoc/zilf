@@ -18,9 +18,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -385,25 +385,15 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public byte GetValue(PartOfSpeech part)
         {
-            switch (part)
+            return part switch
             {
-                case PartOfSpeech.Verb:
-                case PartOfSpeech.Adjective:
-                case PartOfSpeech.Direction:
-                case PartOfSpeech.Buzzword:
-                case PartOfSpeech.Preposition:
-                case PartOfSpeech.Object:
-                    return speechValues[part];
-
-                default:
-                    throw new ArgumentOutOfRangeException("Unexpected part of speech: " + part);
-            }
+                PartOfSpeech.Verb or PartOfSpeech.Adjective or PartOfSpeech.Direction
+                    or PartOfSpeech.Buzzword or PartOfSpeech.Preposition or PartOfSpeech.Object => speechValues[part],
+                _ => throw new ArgumentOutOfRangeException("Unexpected part of speech: " + part),
+            };
         }
 
-        public ISourceLine GetDefinition(PartOfSpeech part)
-        {
-            return definitions[part];
-        }
+        public ISourceLine GetDefinition(PartOfSpeech part) => definitions[part];
 
         public void WriteToBuilder(Context ctx, IWordBuilder wb, DirIndexToPropertyOperandDelegate dirIndexToPropertyOperand)
         {

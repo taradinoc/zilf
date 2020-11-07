@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 
 namespace Zilf.Language
@@ -57,7 +56,6 @@ namespace Zilf.Language
         {
         }
 
-        [UsedImplicitly]
         public CompilerError(Diagnostic diagnostic)
             : base(diagnostic)
         {

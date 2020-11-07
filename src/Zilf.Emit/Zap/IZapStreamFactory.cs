@@ -17,7 +17,6 @@
  */
 
 using System.IO;
-using JetBrains.Annotations;
 
 namespace Zilf.Emit.Zap
 {

@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -54,6 +55,9 @@ namespace ZilfAnalyzers
             var zilObjectType = context.Compilation
                 .GetTypeByMetadataName("Zilf.Interpreter.Values.ZilObject");
 
+            if (zilObjectType == null)
+                return;
+
             if (!GetTypeAndBases(type).Contains(zilObjectType))
                 return;
 
@@ -74,10 +78,10 @@ namespace ZilfAnalyzers
             }
         }
 
-        [ContractAnnotation("=> true, overridingMethod: notnull, overriddenMethod: notnull")]
-        [ContractAnnotation("=> false, overridingMethod: null, overriddenMethod: canbenull")]
-        static bool TypeOverridesBaseMethod([NotNull] ITypeSymbol derivedType, [NotNull] string methodName,
-            [NotNull] ITypeSymbol baseType, out IMethodSymbol overridingMethod, out IMethodSymbol overriddenMethod)
+        static bool TypeOverridesBaseMethod(ITypeSymbol derivedType, string methodName,
+            [NotNull] ITypeSymbol baseType,
+            [NotNullWhen(true)] out IMethodSymbol? overridingMethod,
+            [NotNullWhen(true)] out IMethodSymbol? overriddenMethod)
         {
             var derivedMethods = derivedType.GetMembers(methodName).OfType<IMethodSymbol>().Where(m => !m.IsStatic);
 
@@ -127,8 +131,10 @@ namespace ZilfAnalyzers
 
             bool CheckCallToMethod(IMethodSymbol method)
             {
-                var zilObjectType = context.Compilation
-                    .GetTypeByMetadataName("Zilf.Interpreter.Values.ZilObject");
+                var zilObjectType = context.Compilation?.GetTypeByMetadataName("Zilf.Interpreter.Values.ZilObject");
+
+                if (zilObjectType == null)
+                    return false;
 
                 var argTypes = from a in invocation.ArgumentList.Arguments.Take(2)
                                select context.SemanticModel.GetTypeInfo(a.Expression).Type;
@@ -136,6 +142,7 @@ namespace ZilfAnalyzers
                 if (method.MethodKind == MethodKind.ReducedExtension)
                 {
                     // convert foo.SequenceEqual(bar) to Enumerable.SequenceEqual(foo, bar)
+                    Debug.Assert(method.ReducedFrom != null);
                     method = method.ReducedFrom;
                     argTypes = new[] { objType }.Concat(argTypes);
                 }
@@ -150,8 +157,11 @@ namespace ZilfAnalyzers
                 {
                     // applies if any argument implements IEnumerable<ZilObject>
                     var enumerableType =
-                        context.Compilation.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T);
-                    var zilObjectEnumerableType = enumerableType.Construct(zilObjectType);
+                        context.Compilation?.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T);
+                    var zilObjectEnumerableType = enumerableType?.Construct(zilObjectType);
+
+                    if (zilObjectEnumerableType == null)
+                        return false;
 
                     if (!argTypes.Any(argType =>
                         context.Compilation.ClassifyConversion(argType, zilObjectEnumerableType).IsImplicit))
@@ -233,8 +243,10 @@ namespace ZilfAnalyzers
 
         static void AnalyzeMemberAccessishNode(SyntaxNodeAnalysisContext context)
         {
-            var zilObjectType = context.Compilation
-                .GetTypeByMetadataName("Zilf.Interpreter.Values.ZilObject");
+            var zilObjectType = context.Compilation?.GetTypeByMetadataName("Zilf.Interpreter.Values.ZilObject");
+
+            if (zilObjectType == null)
+                return;
 
             if (!DetectMemberAccess(context.Node, out var objType, out var memberNode, context.SemanticModel))
                 return;
@@ -260,8 +272,7 @@ namespace ZilfAnalyzers
             }
         }
 
-        [ContractAnnotation("=> false, memberNode: null; => true, memberNode: notnull")]
-        static bool DetectMemberAccess([NotNull] SyntaxNode node, [CanBeNull] out ITypeSymbol objectType, [CanBeNull] out ExpressionSyntax memberNode, SemanticModel model)
+        static bool DetectMemberAccess([NotNull] SyntaxNode node, out ITypeSymbol? objectType, [NotNullWhen(true)] out ExpressionSyntax? memberNode, SemanticModel model)
         {
             switch (node)
             {
@@ -296,8 +307,7 @@ namespace ZilfAnalyzers
             return false;
         }
 
-        [ItemNotNull]
-        static IEnumerable<ITypeSymbol> GetTypeAndBases([NotNull] ITypeSymbol type)
+        static IEnumerable<ITypeSymbol> GetTypeAndBases([DisallowNull] ITypeSymbol? type)
         {
             while (type != null)
             {
@@ -307,8 +317,7 @@ namespace ZilfAnalyzers
             }
         }
 
-        [ItemNotNull]
-        static IEnumerable<IMethodSymbol> GetMethodAndOverridden([NotNull] IMethodSymbol method)
+        static IEnumerable<IMethodSymbol> GetMethodAndOverridden([DisallowNull] IMethodSymbol? method)
         {
             while (method != null)
             {

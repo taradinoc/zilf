@@ -32,7 +32,6 @@ using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -43,7 +42,6 @@ namespace Zilf.Interpreter
     delegate ZilResult EvalTypeDelegate(ZilObject zo);
     delegate ZilResult ApplyTypeDelegate(ZilObject zo, ZilObject[] args);
 
-    [PublicAPI]
     class ZValEventArgs : EventArgs
     {
         public ZilAtom Name { get; }
@@ -641,7 +639,6 @@ namespace Zilf.Interpreter
         /// <param name="usageFormat">A format string describing how <paramref name="value"/> will be used.</param>
         /// <param name="arg0">A parameter for <paramref name="usageFormat"/>.</param>
         /// <exception cref="DeclCheckError"><see cref="CheckDecls"/> is <see langword="true"/>, <paramref name="pattern"/> is non-null, and <paramref name="value"/> failed the check.</exception>
-        [StringFormatMethod("usageFormat")]
         public void MaybeCheckDecl(IProvideSourceLine src, ZilObject value, ZilObject? pattern,
             string usageFormat, object arg0)
         {
@@ -657,7 +654,6 @@ namespace Zilf.Interpreter
         /// <param name="usageFormat">A format string describing how <paramref name="value"/> will be used.</param>
         /// <param name="arg0">A parameter for <paramref name="usageFormat"/>.</param>
         /// <exception cref="DeclCheckError"><see cref="CheckDecls"/> is <see langword="true"/>, <paramref name="pattern"/> is non-null, and <paramref name="value"/> failed the check.</exception>
-        [StringFormatMethod("usageFormat")]
         public void MaybeCheckDecl(ZilObject value, ZilObject? pattern, string usageFormat,
             object arg0)
         {
@@ -951,22 +947,11 @@ namespace Zilf.Interpreter
 
         public void RegisterType(ZilAtom atom, PrimType primType)
         {
-            ChtypeDelegate chtypeDelegate;
-
-            // use ZilStructuredHash for structured primtypes
-            switch (primType)
+            ChtypeDelegate chtypeDelegate = primType switch
             {
-                case PrimType.LIST:
-                case PrimType.STRING:
-                case PrimType.VECTOR:
-                    chtypeDelegate = (_, zo) => new ZilStructuredHash(atom, primType, (IStructure)zo);
-                    break;
-
-                default:
-                    chtypeDelegate = (_, zo) => new ZilHash(atom, primType, zo);
-                    break;
-            }
-
+                PrimType.LIST or PrimType.STRING or PrimType.VECTOR => (_, zo) => new ZilStructuredHash(atom, primType, (IStructure)zo),
+                _ => (_, zo) => new ZilHash(atom, primType, zo),
+            };
             var entry = new CustomTypeMapEntry
             {
                 PrimType = primType,

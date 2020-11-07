@@ -16,8 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
-
 namespace Zapf.Parsing.Expressions
 {
     public sealed class AdditionExpr : AsmExpr
@@ -36,7 +34,7 @@ namespace Zapf.Parsing.Expressions
             return $"{Left}+{Right}";
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is AdditionExpr other &&
                    other.Left.Equals(Left) &&

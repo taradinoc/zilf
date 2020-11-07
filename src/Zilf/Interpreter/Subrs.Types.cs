@@ -22,7 +22,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
@@ -346,7 +345,7 @@ namespace Zilf.Interpreter
                     if (initResult.ShouldPass())
                         return initResult;
 
-                    if (!((ZilObject)initResult is ZilChar ch))
+                    if ((ZilObject)initResult is not ZilChar ch)
                         throw new InterpreterError(InterpreterMessages._0_Iterated_Values_Must_Be_CHARACTERs, "ISTRING");
                     contents.Add(ch.Char);
                 }

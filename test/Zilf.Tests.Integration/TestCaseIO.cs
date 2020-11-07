@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 using System;
 using System.IO;
 using System.Text;
@@ -29,7 +28,6 @@ namespace Zilf.Tests.Integration
     {
         protected readonly StringBuilder outputBuffer = new StringBuilder();
 
-        [JetBrains.Annotations.NotNull]
         public string CollectOutput()
         {
             string result = outputBuffer.ToString();
@@ -40,15 +38,13 @@ namespace Zilf.Tests.Integration
 
     sealed class ReplayIO : TestCaseIO, IZMachineIO, IDisposable
     {
-        [JetBrains.Annotations.NotNull]
         readonly Stream inputStream;
 
         readonly bool wantStatusLine;
 
-        [CanBeNull]
-        MemoryStream saveStream;
+        MemoryStream? saveStream;
 
-        public ReplayIO([JetBrains.Annotations.NotNull] Stream prevInputStream, bool wantStatusLine = false)
+        public ReplayIO(Stream prevInputStream, bool wantStatusLine = false)
         {
             inputStream = prevInputStream;
             this.wantStatusLine = wantStatusLine;
@@ -81,7 +77,7 @@ namespace Zilf.Tests.Integration
             outputBuffer.Append(str);
         }
 
-        void IZMachineIO.PutTextRectangle([ItemNotNull] [JetBrains.Annotations.NotNull] string[] lines)
+        void IZMachineIO.PutTextRectangle(string[] lines)
         {
             foreach (string line in lines)
                 outputBuffer.AppendLine(line);
@@ -103,27 +99,23 @@ namespace Zilf.Tests.Integration
             // nada
         }
 
-        [JetBrains.Annotations.NotNull]
         Stream IZMachineIO.OpenSaveFile(int size)
         {
             saveStream = new MemoryStream();
             return saveStream;
         }
 
-        [CanBeNull]
-        Stream IZMachineIO.OpenRestoreFile()
+        Stream? IZMachineIO.OpenRestoreFile()
         {
             return saveStream != null ? new MemoryStream(saveStream.ToArray()) : null;
         }
 
-        [CanBeNull]
-        Stream IZMachineIO.OpenAuxiliaryFile([JetBrains.Annotations.NotNull] string name, int size, bool writing)
+        Stream? IZMachineIO.OpenAuxiliaryFile(string name, int size, bool writing)
         {
             return null;
         }
 
-        [CanBeNull]
-        Stream IZMachineIO.OpenCommandFile(bool writing)
+        Stream? IZMachineIO.OpenCommandFile(bool writing)
         {
             return writing ? null : inputStream;
         }

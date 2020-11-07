@@ -19,7 +19,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -171,7 +170,7 @@ namespace Zilf.ZModel
                     case StdAtom.ADECL:
                         // *:DECL to capture any value that matches the decl
                         var adecl = (ZilAdecl)zo;
-                        if (!(adecl.First is ZilAtom adeclAtom) || adeclAtom.StdAtom != StdAtom.Times)
+                        if (adecl.First is not ZilAtom adeclAtom || adeclAtom.StdAtom != StdAtom.Times)
                             throw new InterpreterError(
                                 InterpreterMessages._0_Must_Be_1,
                                 "left side of ADECL in TELL token spec",

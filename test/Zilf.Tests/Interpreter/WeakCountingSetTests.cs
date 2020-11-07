@@ -57,7 +57,7 @@ namespace Zilf.Tests.Interpreter
 
             DoFullBlockingGC();
 
-            CollectionAssert.AreEqual(new object[] { }, set.ToArray());
+            CollectionAssert.AreEqual(Array.Empty<object>(), set.ToArray());
         }
 
         static void DoFullBlockingGC()

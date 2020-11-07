@@ -18,8 +18,8 @@
 
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Common;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -39,17 +39,14 @@ namespace Zilf.Tests.Interpreter
         {
             var atom = new ZilAtom("FOO", new ObList(), StdAtom.None);
 
-            // ReSharper disable once ObjectCreationAsStatement
-            new OldParserWord(atom);
+            _ = new OldParserWord(atom);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Ctor_Should_Reject_Null_Atom()
         {
-            // ReSharper disable once AssignNullToNotNullAttribute
-            // ReSharper disable once ObjectCreationAsStatement
-            new OldParserWord(null);
+            _ = new OldParserWord(null!);
         }
 
         /// <summary>
@@ -65,7 +62,7 @@ namespace Zilf.Tests.Interpreter
         /// <item>verbValue (the value to use when setting PartOfSpeech.Verb), and</item>
         /// <item>prepValue (the value to use when setting PartOfSpeech.Preposition).</item>
         /// </list></param>
-        static void Test_Keep_VP_Values(int zversion, bool newVoc, [JetBrains.Annotations.NotNull] Action<Context, OldParserWord, byte, byte> setPartsOfSpeech)
+        static void Test_Keep_VP_Values(int zversion, bool newVoc, Action<Context, OldParserWord, byte, byte> setPartsOfSpeech)
         {
             CreateWordInContext(zversion, newVoc, out var ctx, out var word);
 
@@ -86,7 +83,7 @@ namespace Zilf.Tests.Interpreter
         /// <param name="newVoc">true to test with NEW-VOC? enabled, otherwise false.</param>
         /// <param name="ctx">Returns the new Context.</param>
         /// <param name="word">Returns a new OldParserWord ("FOO") added to the context's ObList.</param>
-        static void CreateWordInContext(int zversion, bool newVoc, [JetBrains.Annotations.NotNull] out Context ctx, [JetBrains.Annotations.NotNull] out OldParserWord word)
+        static void CreateWordInContext(int zversion, bool newVoc, out Context ctx, out OldParserWord word)
         {
             // set up context
             ctx = new Context();
@@ -391,7 +388,7 @@ namespace Zilf.Tests.Interpreter
             public IConstantOperand Add(IConstantOperand other)
             {
                 Assert.Fail("IWordBuilder.Add shouldn't be called");
-                return default;
+                throw new UnreachableCodeException();
             }
         }
 

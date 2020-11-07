@@ -18,61 +18,52 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 
 namespace Zapf.Tests
 {
     struct AssemblyTestInput
     {
-        [JetBrains.Annotations.NotNull]
         public string Code;
 
-        [CanBeNull, ItemNotNull]
-        public string[] Args;
+        public string[]? Args;
 
-        [CanBeNull]
-        public IDebugFileWriter DebugWriter;
+        public IDebugFileWriter? DebugWriter;
     }
 
     struct AssemblyTestOutput
     {
         public bool Success;
 
-        [JetBrains.Annotations.NotNull]
-        public MemoryStream StoryFile;
+        public MemoryStream? StoryFile;
 
-        [JetBrains.Annotations.NotNull]
-        public IDictionary<string, Symbol> Symbols;
+        public IDictionary<string, Symbol>? Symbols;
     }
 
     static class TestHelper
     {
-        public static bool Assemble([JetBrains.Annotations.NotNull] string code) =>
+        public static bool Assemble(string code) =>
             Assemble(new AssemblyTestInput { Code = code }).Success;
 
-        [ContractAnnotation("=> false, storyFile: null; => true, storyFile: notnull")]
-        public static bool Assemble([JetBrains.Annotations.NotNull] string code, [CanBeNull] out MemoryStream storyFile)
+        public static bool Assemble(string code, [NotNullWhen(true)] out MemoryStream? storyFile)
         {
             var result = Assemble(new AssemblyTestInput { Code = code });
             storyFile = result.StoryFile;
             return result.Success;
         }
 
-        [ContractAnnotation("=> false, storyFile: null; => true, storyFile: notnull")]
-        public static bool Assemble([JetBrains.Annotations.NotNull] string code, [JetBrains.Annotations.NotNull, ItemNotNull] string[] args,
-            [CanBeNull] out MemoryStream storyFile)
+        public static bool Assemble(string code, string[] args, [NotNullWhen(true)] out MemoryStream? storyFile)
         {
             var result = Assemble(new AssemblyTestInput { Code = code, Args = args });
             storyFile = result.StoryFile;
             return result.Success;
         }
 
-        [ContractAnnotation("=> false, symbols: null; => true, symbols: notnull")]
-        public static bool Assemble([JetBrains.Annotations.NotNull] string code, [JetBrains.Annotations.NotNull] IDebugFileWriter debugWriter,
-            [CanBeNull] out IDictionary<string, Symbol> symbols)
+        public static bool Assemble(string code, IDebugFileWriter debugWriter,
+            [NotNullWhen(true)] out IDictionary<string, Symbol>? symbols)
         {
             var result = Assemble(new AssemblyTestInput { Code = code, DebugWriter = debugWriter });
             symbols = result.Symbols;
@@ -133,7 +124,7 @@ namespace Zapf.Tests
                             newArgs.Add(outFile);
                     }
 
-                    e.Context = Program.ParseArgs(newArgs) ?? throw new ArgumentException("Invalid args", nameof(args));
+                    e.Context = Program.ParseArgs(newArgs) ?? throw new ArgumentException("Invalid args", nameof(input));
 
                     e.Context.InFile = inFile;
                     e.Context.OutFile = outFile;
@@ -163,7 +154,7 @@ namespace Zapf.Tests
                                  where ext.Length == 3 && ext.StartsWith(".z")
                                  select pair.Value).Single(),
 
-                    Symbols = result.Context.GlobalSymbols
+                    Symbols = result.Context?.GlobalSymbols
                 };
             }
 

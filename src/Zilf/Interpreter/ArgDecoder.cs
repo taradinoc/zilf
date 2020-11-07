@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,7 +23,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Common;
@@ -238,9 +236,6 @@ namespace Zilf.Interpreter
     }
 
     [AttributeUsage(AttributeTargets.Struct)]
-    [MeansImplicitUse(
-        ImplicitUseKindFlags.Assign | ImplicitUseKindFlags.Access | ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature,
-        ImplicitUseTargetFlags.WithMembers)]
     sealed class ZilStructuredParamAttribute : Attribute
     {
         public ZilStructuredParamAttribute(StdAtom typeAtom)
@@ -270,9 +265,6 @@ namespace Zilf.Interpreter
     }
 
     [AttributeUsage(AttributeTargets.Struct)]
-    [MeansImplicitUse(
-        ImplicitUseKindFlags.Assign | ImplicitUseKindFlags.Access | ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature,
-        ImplicitUseTargetFlags.WithMembers)]
     sealed class ZilSequenceParamAttribute : Attribute
     {
     }
@@ -339,7 +331,7 @@ namespace Zilf.Interpreter
         int LowerBound { get; }
         int? UpperBound { get; }
 
-        ArgDecoder([ProvidesContext] Context ctx, ParameterInfo[] parameters)
+        ArgDecoder(Context ctx, ParameterInfo[] parameters)
         {
             StepInfos = new DecodingStepInfo[parameters.Length - 1];
             LowerBound = 0;
@@ -365,7 +357,7 @@ namespace Zilf.Interpreter
         }
 
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "IsOptional")]
-        static DecodingStepInfo PrepareOne([ProvidesContext] Context ctx, ParameterInfo pi)
+        static DecodingStepInfo PrepareOne(Context ctx, ParameterInfo pi)
         {
             var zilOptAttr = pi.GetCustomAttribute<ZilOptionalAttribute>();
 
@@ -395,7 +387,7 @@ namespace Zilf.Interpreter
                 defaultValue);
         }
 
-        static DecodingStepInfo PrepareOne([ProvidesContext] Context ctx, FieldInfo fi)
+        static DecodingStepInfo PrepareOne(Context ctx, FieldInfo fi)
         {
             var zilOptAttr = fi.GetCustomAttribute<ZilOptionalAttribute>();
 
@@ -498,13 +490,13 @@ namespace Zilf.Interpreter
 
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "LocalEnvironment")]
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "BuiltinTypeAttribute")]
-        static DecodingStepInfo PrepareOne([ProvidesContext] Context ctx, Type paramType,
+        static DecodingStepInfo PrepareOne(Context ctx, Type paramType,
             string name, object[] customAttributes,
             bool isOptional, object? defaultValueWhenOptional)
         {
             DecodingStepInfo result;
             object? defaultValue = null;
-            EitherAttribute eitherAttr;
+            EitherAttribute? eitherAttr;
 
             var isRequired = customAttributes.OfType<RequiredAttribute>().Any();
             if (isRequired && isOptional)
@@ -923,13 +915,13 @@ namespace Zilf.Interpreter
                         c.Missing();
                     }
 
-                    if (!(a[i] is TZil zo))
+                    if (a[i] is TZil zo)
                     {
-                        c.Error();
+                        c.Ready(convert(zo));
                     }
                     else
                     {
-                        c.Ready(convert(zo));
+                        c.Error();
                     }
                     return i + 1;
                 },
@@ -970,13 +962,13 @@ namespace Zilf.Interpreter
                         c.Missing();
                     }
 
-                    if (!(a[i] is TZil zo))
+                    if (a[i] is TZil zo)
                     {
-                        c.Error();
+                        c.Ready(convert(zo));
                     }
                     else
                     {
-                        c.Ready(convert(zo));
+                        c.Error();
                     }
                     return i + 1;
                 },
@@ -1007,13 +999,13 @@ namespace Zilf.Interpreter
 
                     for (int j = 0; j < array.Length; j++)
                     {
-                        if (!(a[i + j] is TZil zo))
+                        if (a[i + j] is TZil zo)
                         {
-                            c.Error();
+                            array[j] = convert(zo);
                         }
                         else
                         {
-                            array[j] = convert(zo);
+                            c.Error();
                         }
                     }
                     c.Ready(array);
@@ -1285,7 +1277,7 @@ namespace Zilf.Interpreter
         /// or first parameter type is not <see cref="Context"/>
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="methodInfo"/> is <see langword="null"/></exception>
-        public static ArgDecoder FromMethodInfo(MethodInfo methodInfo, [ProvidesContext] Context ctx)
+        public static ArgDecoder FromMethodInfo(MethodInfo methodInfo, Context ctx)
         {
             if (methodInfo == null)
                 throw new ArgumentNullException(nameof(methodInfo));
@@ -1304,10 +1296,10 @@ namespace Zilf.Interpreter
             return new ArgDecoder(ctx, parameters);
         }
 
-        public static SubrDelegate WrapMethod(MethodInfo methodInfo, [ProvidesContext] Context ctx) =>
+        public static SubrDelegate WrapMethod(MethodInfo methodInfo, Context ctx) =>
             WrapMethod(methodInfo, ctx, null);
 
-        static SubrDelegate WrapMethod(MethodInfo methodInfo, [ProvidesContext] Context ctx,
+        static SubrDelegate WrapMethod(MethodInfo methodInfo, Context ctx,
             Dictionary<MethodInfo, SubrDelegate>? alreadyDone)
         {
             var parameters = methodInfo.GetParameters();
@@ -1384,7 +1376,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="ArgumentCountError">The wrong number of arguments were provided.</exception>
         /// <exception cref="ArgumentTypeError">A provided argument was of the wrong type.</exception>
-        public object?[] Decode(string name, [ProvidesContext] Context ctx, ZilObject[] args)
+        public object?[] Decode(string name, Context ctx, ZilObject[] args)
         {
             var site = new FunctionCallSite(name);
 

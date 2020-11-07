@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.ZModel.Vocab;
 
@@ -60,8 +59,7 @@ namespace Zilf.Tests.Integration
                     "<==? <GETB ,TCHARS 0> 144>");
         }
 
-        [JetBrains.Annotations.NotNull]
-        static string[] PrepImplications(bool compact, [ItemNotNull] [JetBrains.Annotations.NotNull] params string[] wordAndIdConstantPairs)
+        static string[] PrepImplications(bool compact, params string[] wordAndIdConstantPairs)
         {
             const string SCompactTest =
                 "<==? <GETB <INTBL? {0} <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *203*> 2> {1}>";

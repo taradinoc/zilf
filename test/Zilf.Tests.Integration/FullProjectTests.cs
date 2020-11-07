@@ -17,10 +17,10 @@
  */
 
 using DiffLib;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -35,13 +35,16 @@ namespace Zilf.Tests.Integration
         const string LibraryDirName = "zillib";
         const int PerTestTimeoutMilliseconds = 60000;
 
-        static string projectsDir, libraryDir;
+        static string projectsDir = null!;
+        static string libraryDir = null!;
 
         /// <exception cref="IOException">Can't locate projects and library directories</exception>
         [ClassInitialize]
+        [MemberNotNull(nameof(projectsDir), nameof(libraryDir))]
         public static void ClassInitialize(TestContext _)
         {
-            projectsDir = libraryDir = null;
+            projectsDir = null!;
+            libraryDir = null!;
 
             var projectsDirName = Path.Combine(TestDirName, ProjectsSubDirName);
 
@@ -59,16 +62,13 @@ namespace Zilf.Tests.Integration
                 if (projectsDir != null && libraryDir != null)
                     break;
 
-                dir = Directory.GetParent(dir).FullName;
-            } while (dir != Path.GetPathRoot(dir));
+                dir = Directory.GetParent(dir)?.FullName;
+            } while (dir != null && dir != Path.GetPathRoot(dir));
 
-            if (projectsDir == null)
+            if (projectsDir == null || libraryDir == null)
                 throw new IOException("Can't locate projects and library directories");
         }
 
-        [LinqTunnel]
-        [JetBrains.Annotations.NotNull]
-        [UsedImplicitly]
         static IEnumerable<string[]> GetProjects()
         {
             return from dir in Directory.EnumerateDirectories(projectsDir, "*", SearchOption.AllDirectories)
@@ -82,7 +82,7 @@ namespace Zilf.Tests.Integration
         [DataTestMethod]
         [DynamicData("GetProjects", DynamicDataSourceType.Method)]
         [Timeout(PerTestTimeoutMilliseconds)]
-        public void TestProjects([JetBrains.Annotations.NotNull] string baseName, [JetBrains.Annotations.NotNull] string dir, [JetBrains.Annotations.NotNull] string mainZilFile)
+        public void TestProjects(string baseName, string dir, string mainZilFile)
         {
             Console.WriteLine("Testing {0}", dir);
 
@@ -145,22 +145,18 @@ namespace Zilf.Tests.Integration
             }
         }
 
-        [JetBrains.Annotations.NotNull]
         static readonly Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
 
-        [JetBrains.Annotations.NotNull]
         static readonly Regex ZilfVersionRegex = new Regex(@"ZILF [0-9.a-z]+ lib \S+");
 
-        [JetBrains.Annotations.NotNull]
-        static string MassageText([JetBrains.Annotations.NotNull] string text)
+        static string MassageText(string text)
         {
             text = SerialNumberRegex.Replace(text, "######");
             text = ZilfVersionRegex.Replace(text, "ZILF #.# lib ##");
             return text;
         }
 
-        [JetBrains.Annotations.NotNull]
-        static string[] SplitLines([JetBrains.Annotations.NotNull] string text)
+        static string[] SplitLines(string text)
         {
             var lines = text.Split('\n');
             for (int i = 0; i < lines.Length; i++)

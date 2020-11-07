@@ -33,7 +33,7 @@ namespace Zapf.Parsing.Diagnostics
         protected AssemblerError(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Node = (ISourceLine)info.GetValue("node", typeof(ISourceLine));
+            Node = (ISourceLine?)info.GetValue("node", typeof(ISourceLine));
         }
 
         public ISourceLine? Node { get; }

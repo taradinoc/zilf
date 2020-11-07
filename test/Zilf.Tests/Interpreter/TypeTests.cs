@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Common;
 using Zilf.Interpreter;
@@ -36,9 +35,10 @@ namespace Zilf.Tests.Interpreter
     [SuppressMessage("ReSharper", "StringLiteralTypo")]
     public class TypeTests
     {
-        Context ctx;
+        Context ctx = default!;
 
         [TestInitialize]
+        [MemberNotNull(nameof(ctx))]
         public void Initialize()
         {
             ctx = new Context();
@@ -67,7 +67,7 @@ namespace Zilf.Tests.Interpreter
             ctx.SetLocalVal(ZilAtom.Parse("A-FUNCTION", ctx), new ZilFunction(
                 ZilAtom.Parse("MYFUNC", ctx),
                 null,
-                new ZilObject[] { },
+                Array.Empty<ZilObject>(),
                 null,
                 new ZilObject[] { new ZilFix(3) }
             ));
@@ -75,7 +75,7 @@ namespace Zilf.Tests.Interpreter
                 new ZilFunction(
                     ZilAtom.Parse("MYMAC", ctx),
                     null,
-                    new ZilObject[] { },
+                    Array.Empty<ZilObject>(),
                     null,
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
@@ -116,7 +116,7 @@ namespace Zilf.Tests.Interpreter
         [TestCleanup]
         public void Cleanup()
         {
-            ctx = null;
+            ctx = null!;
         }
 
         [TestMethod]
@@ -331,7 +331,7 @@ namespace Zilf.Tests.Interpreter
                 new ZilFalse(new ZilList(new ZilFunction(
                         null,
                         null,
-                        new ZilObject[] { },
+                        Array.Empty<ZilObject>(),
                         null,
                         new ZilObject[] {
                             new ZilForm(new ZilObject[] {
@@ -402,7 +402,7 @@ namespace Zilf.Tests.Interpreter
                 new ZilList(new ZilFunction(
                         null,
                         null,
-                        new ZilObject[] { },
+                        Array.Empty<ZilObject>(),
                         null,
                         new ZilObject[] {
                             new ZilForm(new ZilObject[] {
@@ -436,7 +436,7 @@ namespace Zilf.Tests.Interpreter
         {
             // list-based types can be coerced to FORM
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FALSE FORM>",
-                new ZilForm(new ZilObject[] { }));
+                new ZilForm(Array.Empty<ZilObject>()));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-LIST FORM>",
                 new ZilForm(new ZilObject[] {
                     new ZilFix(1), new ZilFix(2), new ZilFix(3)
@@ -450,7 +450,7 @@ namespace Zilf.Tests.Interpreter
                 new ZilForm(new ZilObject[] { new ZilFunction(
                     null,
                     null,
-                    new ZilObject[] { },
+                    Array.Empty<ZilObject>(),
                     null,
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
@@ -466,7 +466,7 @@ namespace Zilf.Tests.Interpreter
                     ctx.GetStdAtom(StdAtom.LIST), new ZilFix(1), new ZilFix(2)
                 }));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY FORM>",
-                new ZilForm(new ZilObject[] { }));
+                new ZilForm(Array.Empty<ZilObject>()));
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL FORM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FORM>");
@@ -605,7 +605,7 @@ namespace Zilf.Tests.Interpreter
                 new ZilEvalMacro(new ZilFunction(
                     ZilAtom.Parse("MYFUNC", ctx),
                     null,
-                    new ZilObject[] { },
+                    Array.Empty<ZilObject>(),
                     null,
                     new ZilObject[] { new ZilFix(3) })));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE '<#SUBR \"+\"> MACRO>",
@@ -634,7 +634,7 @@ namespace Zilf.Tests.Interpreter
         {
             // list-based types can be coerced to SEGMENT
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FALSE SEGMENT>",
-                new ZilSegment(new ZilForm(new ZilObject[] { })));
+                new ZilSegment(new ZilForm(Array.Empty<ZilObject>())));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-LIST SEGMENT>",
                 new ZilSegment(new ZilForm(new ZilObject[] {
                     new ZilFix(1), new ZilFix(2), new ZilFix(3)
@@ -648,7 +648,7 @@ namespace Zilf.Tests.Interpreter
                 new ZilSegment(new ZilForm(new ZilObject[] { new ZilFunction(
                     null,
                     null,
-                    new ZilObject[] { },
+                    Array.Empty<ZilObject>(),
                     null,
                     new ZilObject[] {
                         new ZilForm(new ZilObject[] {
@@ -664,7 +664,7 @@ namespace Zilf.Tests.Interpreter
                     ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2)
                 })));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY SEGMENT>",
-                new ZilSegment(new ZilForm(new ZilObject[] { })));
+                new ZilSegment(new ZilForm(Array.Empty<ZilObject>())));
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL SEGMENT>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM SEGMENT>");
@@ -901,7 +901,7 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert("<FUNCTION () 5>", new ZilFunction(
                 null,
                 null,
-                new ZilObject[] { },
+                Array.Empty<ZilObject>(),
                 null,
                 new ZilObject[] { new ZilFix(5) }
             ));
@@ -1186,8 +1186,6 @@ namespace Zilf.Tests.Interpreter
                 }));
         }
 
-        [ItemNotNull]
-        [JetBrains.Annotations.NotNull]
         static IEnumerable<Type> GetConcreteZilObjectTypes()
         {
             return from t in typeof(ZilObject).Assembly.GetTypes()
@@ -1235,16 +1233,12 @@ namespace Zilf.Tests.Interpreter
         {
             static bool IsStructuredPrimType(PrimType pt)
             {
-                switch (pt)
+                return pt switch
                 {
-                    case PrimType.LIST:
-                    case PrimType.VECTOR:
-                        return true;
-
-                    //case PrimType.STRING:     // ZilSubr and ZilFSubr shouldn't be structured, come on
-                    default:
-                        return false;
-                }
+                    PrimType.LIST or PrimType.VECTOR => true,
+                    //PrimType.STRING     // ZilSubr and ZilFSubr shouldn't be structured, come on
+                    _ => false,
+                };
             }
 
             var typesWithPrimTypes =
@@ -1282,10 +1276,10 @@ namespace Zilf.Tests.Interpreter
 
             Assert.AreEqual(3, table.ElementCount);
 
-            var array = new ZilObject[3];
+            var array = new ZilObject?[3];
             table.CopyTo(array, (zo, isWord) => zo, null, ctx);
 
-            var expected = new ZilObject[]
+            var expected = new ZilObject?[]
             {
                 new ZilFix(1),
                 new ZilFix(2),
@@ -1316,10 +1310,8 @@ namespace Zilf.Tests.Interpreter
             var allTypesVector = (ZilVector)allTypes;
             var returnedTypes = new HashSet<ZilAtom>();
 
-            var len = allTypesVector.GetLength();
-            for (int i = 0; i < len; i++)
+            foreach (var item in allTypesVector)
             {
-                var item = allTypesVector[i];
                 Assert.IsInstanceOfType(item, typeof(ZilAtom));
                 returnedTypes.Add((ZilAtom)item);
             }
@@ -1418,7 +1410,7 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void OBLIST_Primitive_Structure_Should_Resemble_MDL()
         {
-            if (!(ctx.RootObList.GetPrimitive(ctx) is ZilList prim))
+            if (ctx.RootObList.GetPrimitive(ctx) is not ZilList prim)
             {
                 Assert.Fail("expected primitive to be a list");
                 throw new UnreachableCodeException();

@@ -14,3 +14,6 @@ dotnet_diagnostic.CA1710.severity = suggestion
 
 # CA1307: Specify StringComparison
 dotnet_diagnostic.CA1307.severity = suggestion
+
+# IDE0079: Remove unnecessary suppression
+dotnet_diagnostic.IDE0079.severity = silent

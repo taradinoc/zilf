@@ -5,3 +5,6 @@ dotnet_diagnostic.RCS1194.severity = suggestion
 
 # RCS1139: Add summary element to documentation comment.
 dotnet_diagnostic.RCS1139.severity = silent
+
+# IDE0079: Remove unnecessary suppression
+dotnet_diagnostic.IDE0079.severity = silent

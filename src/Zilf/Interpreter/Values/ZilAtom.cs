@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Language;
 using Zilf.Diagnostics;
 
@@ -85,7 +84,7 @@ namespace Zilf.Interpreter.Values
             {
                 // look for it in <1 .OBLIST>, <2 .OBLIST>...
                 var pathspec = ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.OBLIST));
-                if (!(pathspec is IEnumerable<ZilObject> zos))
+                if (pathspec is not IEnumerable<ZilObject> zos)
                     throw new InterpreterError(InterpreterMessages.No_OBLIST_Path);
 
                 ObList? insertList = null;
@@ -129,7 +128,7 @@ namespace Zilf.Interpreter.Values
             }
             else
             {
-                var olname = Parse(text.Substring(idx + 2), ctx);
+                var olname = Parse(text[(idx + 2)..], ctx);
                 list = ctx.GetProp(olname, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(olname);
             }
 
@@ -143,7 +142,7 @@ namespace Zilf.Interpreter.Values
             return result;
         }
 
-        bool NeedsObListTrailer([InstantHandle] IEnumerable<ZilObject> obListPath)
+        bool NeedsObListTrailer(IEnumerable<ZilObject> obListPath)
         {
             // if this atom can be found by looking up its name in the oblist path, no trailer is needed.
             // thus, the trailer is only needed if (1) looking up that name returns a different atom first
@@ -196,7 +195,7 @@ namespace Zilf.Interpreter.Values
             return sb.ToString();
         }
 
-        protected override string ToStringContextImpl([ProvidesContext] Context ctx, bool friendly)
+        protected override string ToStringContextImpl(Context ctx, bool friendly)
         {
             if (friendly)
                 return ToString();

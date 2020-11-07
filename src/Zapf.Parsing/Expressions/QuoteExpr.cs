@@ -16,8 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
-
 namespace Zapf.Parsing.Expressions
 {
     public sealed class QuoteExpr : AsmExpr
@@ -34,7 +32,7 @@ namespace Zapf.Parsing.Expressions
             return "'" + Inner;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is QuoteExpr other && other.Inner.Equals(Inner);
         }

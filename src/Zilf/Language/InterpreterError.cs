@@ -18,7 +18,6 @@
 
 using System;
 using System.Runtime.Serialization;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 
 namespace Zilf.Language

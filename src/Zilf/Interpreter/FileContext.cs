@@ -18,7 +18,6 @@
 
 using System;
 using Zilf.Interpreter.Values;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {

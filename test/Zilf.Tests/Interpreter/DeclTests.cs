@@ -17,6 +17,7 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -26,9 +27,10 @@ namespace Zilf.Tests.Interpreter
     [TestClass, TestCategory("Interpreter")]
     public class DeclTests
     {
-        Context ctx;
+        Context ctx = default!;
 
         [TestInitialize]
+        [MemberNotNull(nameof(ctx))]
         public void TestInitialize()
         {
             ctx = new Context();

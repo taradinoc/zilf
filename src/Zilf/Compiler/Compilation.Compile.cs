@@ -19,7 +19,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
@@ -127,7 +126,6 @@ namespace Zilf.Compiler
             }
         }
 
-        [ContractAnnotation("longWords: notnull => longWordTable: notnull")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Z-machine requirement.")]
         void BuildLongWordTable(ITableBuilder? longWordTable, Queue<IWord>? longWords)
         {
@@ -548,7 +546,7 @@ namespace Zilf.Compiler
         void PrepareSelfInsertingBreaks()
         {
             // self-inserting breaks
-            if (!(Context.GetGlobalVal(Context.GetStdAtom(StdAtom.SIBREAKS)) is ZilString siBreaks))
+            if (Context.GetGlobalVal(Context.GetStdAtom(StdAtom.SIBREAKS)) is not ZilString siBreaks)
                 return;
 
             Game.SelfInsertingBreaks.Clear();

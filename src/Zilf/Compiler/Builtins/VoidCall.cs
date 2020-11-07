@@ -17,7 +17,6 @@
  */
 
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
 using Zilf.Language;

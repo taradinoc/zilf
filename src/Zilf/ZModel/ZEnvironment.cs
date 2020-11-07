@@ -22,7 +22,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Common.StringEncoding;
 using Zilf.Diagnostics;
@@ -114,7 +113,7 @@ namespace Zilf.ZModel
         public int HeaderExtensionWords;
 
         byte[]? zcharCountCache;   // char -> # of Z-chars
-        string? charset0, charset1, charset2;
+        string charset0, charset1, charset2;
 
         /// <summary>
         /// Compares a Z-machine version number against a range,
@@ -229,9 +228,9 @@ namespace Zilf.ZModel
             var defaultLang = Language.Default;
 
             Language = defaultLang;
-            Charset0 = defaultLang.Charset0;
-            Charset1 = defaultLang.Charset1;
-            Charset2 = defaultLang.Charset2;
+            charset0 = defaultLang.Charset0;
+            charset1 = defaultLang.Charset1;
+            charset2 = defaultLang.Charset2;
 
             var equalizer = new AtomNameEqualityComparer(ctx.IgnoreCase);
 
@@ -554,9 +553,12 @@ namespace Zilf.ZModel
 
                     foreach (var obj in Objects)
                     {
+                        if (!objectsByParent.Contains(obj.Name))
+                            continue;
+
                         // find the object's first-defined child and move it after the last-defined child
-                        var first = objectsByParent[obj.Name].FirstOrDefault();
-                        var last = objectsByParent[obj.Name].LastOrDefault();
+                        var first = objectsByParent[obj.Name].First();
+                        var last = objectsByParent[obj.Name].Last();
 
                         if (first == last)
                             continue;
@@ -732,7 +734,6 @@ namespace Zilf.ZModel
             return CountVocabZCharacters(text) > (ZVersion >= 4 ? 9 : 6);
         }
 
-        [ContractAnnotation("=> false, original: null; => true, original: notnull")]
         public bool TryGetBitSynonym(ZilAtom alias, [NotNullWhen(true)] out ZilAtom? original) =>
             BitSynonyms.TryGetValue(alias, out original);
 

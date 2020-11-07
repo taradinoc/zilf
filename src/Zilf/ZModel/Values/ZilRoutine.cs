@@ -18,7 +18,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -84,7 +83,7 @@ namespace Zilf.ZModel.Values
 
         public override bool StructurallyEquals(ZilObject? obj)
         {
-            if (!(obj is ZilRoutine other))
+            if (obj is not ZilRoutine other)
                 return false;
 
             if (!other.ArgSpec.Equals(ArgSpec))

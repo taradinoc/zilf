@@ -23,7 +23,6 @@ using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
-using JetBrains.Annotations;
 
 namespace Zilf.Language
 {
@@ -114,7 +113,6 @@ namespace Zilf.Language
         }
     }
 
-    [UsedImplicitly(ImplicitUseKindFlags.InstantiatedWithFixedConstructorSignature)]
     [Serializable]
     abstract class ZilError<TMessageSet> : ZilError
         where TMessageSet : class
@@ -178,7 +176,7 @@ namespace Zilf.Language
                 new object[] { message }, MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
-        [ContractAnnotation("notnull => notnull; null => null")]
+        [return: NotNullIfNotNull("errorFrame")]
         static string? MakeStackTrace(Frame? errorFrame)
         {
             if (errorFrame == null)
@@ -203,7 +201,6 @@ namespace Zilf.Language
         }
     }
 
-    [UsedImplicitly(ImplicitUseKindFlags.InstantiatedWithFixedConstructorSignature)]
     [Serializable]
     abstract class ZilFatal<TMessageSet> : ZilFatal
         where TMessageSet : class
@@ -244,7 +241,7 @@ namespace Zilf.Language
                 messageArgs, MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
-        [ContractAnnotation("notnull => notnull; null => null")]
+        [return: NotNullIfNotNull("errorFrame")]
         static string? MakeStackTrace(Frame? errorFrame)
         {
             if (errorFrame == null)

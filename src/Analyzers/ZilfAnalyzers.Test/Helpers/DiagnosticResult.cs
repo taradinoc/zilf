@@ -1,5 +1,4 @@
 ﻿using System;
-using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 
 // ReSharper disable once CheckNamespace
@@ -40,10 +39,9 @@ namespace ZilfAnalyzers.Test.Helpers
     {
         DiagnosticResultLocation[] locations;
 
-        [JetBrains.Annotations.NotNull]
         public DiagnosticResultLocation[] Locations
         {
-            get => locations ??= new DiagnosticResultLocation[] { };
+            get => locations ??= Array.Empty<DiagnosticResultLocation>();
 
             set => locations = value;
         }

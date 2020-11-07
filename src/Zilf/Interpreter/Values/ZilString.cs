@@ -24,7 +24,6 @@ using System.Linq;
 using System.Text;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using JetBrains.Annotations;
 // ReSharper disable StringLiteralTypo
 
 namespace Zilf.Interpreter.Values
@@ -69,9 +68,9 @@ namespace Zilf.Interpreter.Values
         protected sealed override string ToStringContextImpl(Context ctx, bool friendly) =>
             friendly ? Text : ToString();
 
-        public override bool ExactlyEquals(ZilObject? obj) => (obj as ZilString)?.Text.Equals(Text) ?? false;
+        public override bool ExactlyEquals(ZilObject? obj) => (obj as ZilString)?.Text.Equals(Text, StringComparison.Ordinal) ?? false;
 
-        public override int GetHashCode() => Text.GetHashCode();
+        public override int GetHashCode() => Text.GetHashCode(StringComparison.Ordinal);
 
         public sealed override StdAtom StdTypeAtom => StdAtom.STRING;
 
@@ -138,7 +137,7 @@ namespace Zilf.Interpreter.Values
                 }
                 set
                 {
-                    if (!(value is ZilChar ch))
+                    if (value is not ZilChar ch)
                     {
                         throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2,
                             "elements",
@@ -179,7 +178,7 @@ namespace Zilf.Interpreter.Values
 
             public override string Text
             {
-                get => orig.Text.Substring(offset);
+                get => orig.Text[offset..];
                 set => orig.Text = orig.Text.Substring(0, offset) + value;
             }
 
@@ -215,7 +214,7 @@ namespace Zilf.Interpreter.Values
                 }
                 set
                 {
-                    if (!(value is ZilChar ch))
+                    if (value is not ZilChar ch)
                         throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "elements", "a STRING", "CHARACTERs");
 
                     index += offset;

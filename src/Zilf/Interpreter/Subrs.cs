@@ -18,7 +18,6 @@
 
 using System;
 using Zilf.Interpreter.Values;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -26,7 +25,6 @@ namespace Zilf.Interpreter
 
     static partial class Subrs
     {
-        [MeansImplicitUse]
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
         public abstract class SubrAttributeBase : Attribute
         {

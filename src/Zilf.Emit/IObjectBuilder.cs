@@ -16,11 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
-
 namespace Zilf.Emit
 {
-    [PublicAPI]
     public interface IObjectBuilder : IConstantOperand
     {
         string DescriptiveName { get; set; }

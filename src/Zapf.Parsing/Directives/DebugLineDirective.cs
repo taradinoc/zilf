@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives

@@ -142,9 +142,6 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancy", "RCS1163:Unused parameter.", Justification = "<Pending>",
-            MessageId = "args")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "<Pending>")]
         public static ZilObject? MIN(Context ctx, [Required] int[] args)
         {
             return new ZilFix(args.Min());

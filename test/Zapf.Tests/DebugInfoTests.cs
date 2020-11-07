@@ -19,6 +19,7 @@
 using System.Collections.Generic;
 using NSubstitute;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Diagnostics;
 
 namespace Zapf.Tests
 {
@@ -118,6 +119,8 @@ LINE79::	;PRINTI ""This is some long text. We need enough text to force the cond
                 .Do(c => lineRefs.Clear());
             
             Assert.IsTrue(TestHelper.Assemble(SCode, writer, out var symbols));
+
+            Debug.Assert(symbols != null);
 
             Assert.AreEqual(lineRefs[77], symbols["LINE77"].Value);
             Assert.AreEqual(lineRefs[78], symbols["LINE78"].Value);

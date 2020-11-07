@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Zilf.Language;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {

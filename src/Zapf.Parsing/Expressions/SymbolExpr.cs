@@ -16,8 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
-
 namespace Zapf.Parsing.Expressions
 {
     public sealed class SymbolExpr : TextAsmExpr
@@ -30,7 +28,7 @@ namespace Zapf.Parsing.Expressions
             return Text;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is SymbolExpr other && other.Text == Text;
         }

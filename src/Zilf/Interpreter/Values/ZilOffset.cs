@@ -22,7 +22,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -40,7 +39,7 @@ namespace Zilf.Interpreter.Values
             if (vector.GetLength() != 3)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "vector coerced to OFFSET", 3);
 
-            if (!(vector[0] is ZilFix indexFix))
+            if (vector[0] is not ZilFix indexFix)
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "vector coerced to OFFSET", "a FIX");
 
             Index = indexFix.Value;

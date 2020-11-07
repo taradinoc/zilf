@@ -17,11 +17,9 @@
  */
 
 using System;
-using JetBrains.Annotations;
 
 namespace Zilf.Emit
 {
-    [PublicAPI]
     public interface IRoutineBuilder : IConstantOperand
     {
         /// <summary>

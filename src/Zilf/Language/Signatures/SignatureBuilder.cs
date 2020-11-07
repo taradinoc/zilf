@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using JetBrains.Annotations;
 using Zilf.Interpreter;
 
 namespace Zilf.Language.Signatures
@@ -31,7 +30,7 @@ namespace Zilf.Language.Signatures
 
         public static SignaturePart MaybeConvertDecl(ParamDescAttribute attr)
         {
-            if (string.IsNullOrWhiteSpace(attr.Description) || attr.Description.Contains(" "))
+            if (string.IsNullOrWhiteSpace(attr.Description) || attr.Description.Contains(" ", StringComparison.Ordinal))
                 throw new ArgumentException($"Unexpected param description: {attr.Description}");
 
             return Identifier(attr.Description);
@@ -49,7 +48,7 @@ namespace Zilf.Language.Signatures
 
             if (pattern.StartsWith("'", StringComparison.Ordinal))
             {
-                return LiteralPart.From(pattern.Substring(1));
+                return LiteralPart.From(pattern[1..]);
             }
 
             var match = orDeclRegex.Match(pattern);

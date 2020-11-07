@@ -18,10 +18,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Common.StringEncoding;
 
 namespace Zilf.Emit.Zap
@@ -87,7 +87,8 @@ namespace Zilf.Emit.Zap
             }
             else
             {
-                this.options = (GameOptions)Activator.CreateInstance(concreteOptionsType);
+                this.options = (GameOptions?)Activator.CreateInstance(concreteOptionsType)
+                    ?? throw new InvalidOperationException("Failed to construct options");
             }
 
             debug = wantDebugInfo ? new DebugFileBuilder() : null;
@@ -461,7 +462,7 @@ namespace Zilf.Emit.Zap
         public INumericOperand One => ONE;
         public IConstantOperand VocabularyTable => VOCAB;
 
-        public bool IsGloballyDefined(string name, out string? type) => symbols.TryGetValue(name, out type);
+        public bool IsGloballyDefined(string name, [NotNullWhen(true)] out string? type) => symbols.TryGetValue(name, out type);
 
         public void Finish()
         {

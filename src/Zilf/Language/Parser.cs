@@ -23,7 +23,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Common;
 using Zilf.Interpreter.Values;
-using JetBrains.Annotations;
+using System.Globalization;
 
 namespace Zilf.Language
 {
@@ -468,7 +468,7 @@ namespace Zilf.Language
                                 var zarr = zos.ToArray();
                                 if (zarr.Length != 1)
                                 {
-                                    throw new ExpectedButFound("1 object inside '{}'", zarr.Length.ToString());
+                                    throw new ExpectedButFound("1 object inside '{}'", zarr.Length.ToString(CultureInfo.CurrentCulture));
                                 }
                                 foreach (var zo in ZilObject.ExpandTemplateToken(zarr[0], templateParams))
                                 {
@@ -767,7 +767,7 @@ namespace Zilf.Language
                     // decimal
                     try
                     {
-                        return new ZilFix(Convert.ToInt32(sb.ToString()));
+                        return new ZilFix(Convert.ToInt32(sb.ToString(), CultureInfo.InvariantCulture));
                     }
                     catch (OverflowException ex)
                     {
@@ -933,52 +933,19 @@ namespace Zilf.Language
 
     static class CharExtensions
     {
-        public static bool IsTerminator(this char c)
+        public static bool IsTerminator(this char c) => (c & ~128) switch
         {
-            switch (c & ~128)
-            {
-                case ')':
-                case ']':
-                case '}':
-                case '>':
-                case ':':
-                    return true;
+            ')' or ']' or '}' or '>' or ':' => true,
+            _ => false,
+        };
 
-                default:
-                    return false;
-            }
-        }
-
-        public static bool IsNonAtomChar(this char c)
+        public static bool IsNonAtomChar(this char c) => (c & ~128) switch
         {
-            switch (c & ~128)
-            {
-                case ' ':
-                case '\f':
-                case '\n':
-                case '\r':
-                case '\t':
-                case '<':
-                case '>':
-                case '(':
-                case ')':
-                case '{':
-                case '}':
-                case '[':
-                case ']':
-                case ':':
-                case ';':
-                case '"':
-                case '\'':
-                case ',':
-                case '%':
-                case '#':
-                    return true;
-
-                default:
-                    return false;
-            }
-        }
+            ' ' or '\f' or '\n' or '\r' or '\t'
+                or '<' or '>' or '(' or ')' or '{' or '}' or '[' or ']'
+                or ':' or ';' or '"' or '\'' or ',' or '%' or '#' => true,
+            _ => false,
+        };
 
         public static string Rebang(this char ch)
         {

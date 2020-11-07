@@ -20,7 +20,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using JetBrains.Annotations;
+using System.Globalization;
 
 namespace Zilf.Interpreter.Values
 {
@@ -44,7 +44,7 @@ namespace Zilf.Interpreter.Values
 
         public int Value => value;
 
-        public override string ToString() => value.ToString();
+        public override string ToString() => value.ToString(CultureInfo.CurrentCulture);
 
         public override StdAtom StdTypeAtom => StdAtom.FIX;
 

@@ -1,9 +1,8 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
-using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -44,16 +43,19 @@ namespace ZilfAnalyzers
         }
 
         public static bool TryMatchLiteralCreation(ObjectCreationExpressionSyntax creationExpr,
-            SemanticModel semanticModel, [CanBeNull] out LiteralCreation literalCreation)
+            SemanticModel semanticModel, [NotNullWhen(true)] out LiteralCreation? literalCreation)
         {
             var typeSymbol = semanticModel.GetTypeInfo(creationExpr);
             var qualifiedFormat = new SymbolDisplayFormat(
               typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
-            var exceptionTypeName = typeSymbol.Type.ToDisplayString(qualifiedFormat);
+            var exceptionTypeName = typeSymbol.Type?.ToDisplayString(qualifiedFormat);
 
             literalCreation = null;
 
             if (exceptionTypeName == null || !ZilfFacts.MessageTypeMap.ContainsKey(exceptionTypeName))
+                return false;
+
+            if (creationExpr.ArgumentList == null)
                 return false;
 
             var args = creationExpr.ArgumentList.Arguments;
@@ -106,10 +108,10 @@ namespace ZilfAnalyzers
 
         static bool TryExtractFormatAndArgs(
             ExpressionSyntax expressionToReplace, [NotNull] SemanticModel semanticModel,
-            [CanBeNull] out string newMessageFormat, out ImmutableList<ExpressionSyntax> newMessageArgs)
+            [NotNullWhen(true)] out string? newMessageFormat, [NotNullWhen(true)] out ImmutableList<ExpressionSyntax>? newMessageArgs)
         {
-            string format;
-            ImmutableList<ExpressionSyntax> newArgs;
+            string? format;
+            ImmutableList<ExpressionSyntax>? newArgs;
 
             // has a constant value?
             var constantValue = semanticModel.GetConstantValue(expressionToReplace);
@@ -148,7 +150,7 @@ namespace ZilfAnalyzers
             return true;
         }
 
-        static bool IsSpecialTypeMethod([CanBeNull] ISymbol symbol, SpecialType specialType, string methodName)
+        static bool IsSpecialTypeMethod([NotNullWhen(true)] ISymbol? symbol, SpecialType specialType, string methodName)
         {
             return
                 symbol?.Kind == SymbolKind.Method &&
@@ -156,12 +158,12 @@ namespace ZilfAnalyzers
                 symbol.Name == methodName;
         }
 
-        static bool TryUnpackCallToStringFormat(ExpressionSyntax expressionToReplace, SemanticModel semanticModel, out string formatStr, out ImmutableList<ExpressionSyntax> formatArgs)
+        static bool TryUnpackCallToStringFormat(ExpressionSyntax expressionToReplace, SemanticModel semanticModel, [NotNullWhen(true)] out string? formatStr, [NotNullWhen(true)] out ImmutableList<ExpressionSyntax>? formatArgs)
         {
             formatStr = null;
             formatArgs = null;
 
-            if (!(expressionToReplace is InvocationExpressionSyntax invocationExpr))
+            if (expressionToReplace is not InvocationExpressionSyntax invocationExpr)
                 return false;
 
             var invokedSymbol = semanticModel.GetSymbolInfo(invocationExpr.Expression);
@@ -184,12 +186,12 @@ namespace ZilfAnalyzers
             return true;
         }
 
-        static bool TryRewriteConcatAsFormatAndArgs(ExpressionSyntax expressionToReplace, SemanticModel semanticModel, out string formatStr, out ImmutableList<ExpressionSyntax> formatArgs)
+        static bool TryRewriteConcatAsFormatAndArgs(ExpressionSyntax expressionToReplace, SemanticModel semanticModel, [NotNullWhen(true)] out string? formatStr, [NotNullWhen(true)] out ImmutableList<ExpressionSyntax>? formatArgs)
         {
             formatStr = null;
             formatArgs = null;
 
-            if (!(expressionToReplace is BinaryExpressionSyntax binaryExpr) || binaryExpr.Kind() != SyntaxKind.AddExpression)
+            if (expressionToReplace is not BinaryExpressionSyntax binaryExpr || binaryExpr.Kind() != SyntaxKind.AddExpression)
                 return false;
 
             var sb = new StringBuilder();
@@ -236,8 +238,7 @@ namespace ZilfAnalyzers
             }
         }
 
-        [NotNull]
-        public static string IncrementFormatTokens([NotNull] string format)
+        public static string IncrementFormatTokens(string format)
         {
             return MessageConstantAnalyzer.FormatTokenRegex.Replace(
                 format,

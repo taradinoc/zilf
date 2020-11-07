@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
-using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -11,7 +10,6 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace ZilfAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    [UsedImplicitly]
     public class MessageConstantAnalyzer : DiagnosticAnalyzer
     {
         static readonly DiagnosticDescriptor Rule_DuplicateMessageCode = new DiagnosticDescriptor(
@@ -49,7 +47,7 @@ namespace ZilfAnalyzers
                 Rule_DuplicateMessageFormat,
                 Rule_PrefixedMessageFormat);
 
-        public override void Initialize([NotNull] AnalysisContext context)
+        public override void Initialize(AnalysisContext context)
         {
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
@@ -70,12 +68,12 @@ namespace ZilfAnalyzers
             {
                 foreach (var attr in field.DescendantNodes().OfType<AttributeSyntax>())
                 {
-                    if (IsMessageAttribute(context.SemanticModel, attr) && attr.ArgumentList.Arguments.Count >= 1)
+                    if (IsMessageAttribute(context.SemanticModel, attr) && attr.ArgumentList?.Arguments.Count >= 1)
                     {
                         var formatExpr = attr.ArgumentList.Arguments[0].Expression;
                         var constValue = context.SemanticModel.GetConstantValue(formatExpr);
 
-                        if (!constValue.HasValue || !(constValue.Value is string formatStr))
+                        if (!constValue.HasValue || constValue.Value is not string formatStr)
                             continue;
 
                         // check for duplicate message
@@ -142,7 +140,7 @@ namespace ZilfAnalyzers
             }
         }
 
-        public static bool IsMessageAttribute(SemanticModel semanticModel, [NotNull] AttributeSyntax attr)
+        public static bool IsMessageAttribute(SemanticModel semanticModel, AttributeSyntax attr)
         {
             var type = semanticModel.GetTypeInfo(attr).Type;
 
@@ -157,8 +155,7 @@ namespace ZilfAnalyzers
             return false;
         }
 
-        [NotNull]
-        static IEnumerable<FieldDeclarationSyntax> GetConstIntFields([NotNull] ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
+        static IEnumerable<FieldDeclarationSyntax> GetConstIntFields(ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
         {
             return from field in classDecl.Members.OfType<FieldDeclarationSyntax>()
                    where field.Modifiers.Any(SyntaxKind.PublicKeyword) && field.Modifiers.Any(SyntaxKind.ConstKeyword)
@@ -166,7 +163,7 @@ namespace ZilfAnalyzers
                    select field;
         }
 
-        static bool IsMessageSet([NotNull] ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
+        static bool IsMessageSet(ClassDeclarationSyntax classDecl, SemanticModel semanticModel)
         {
             var attributes = from alist in classDecl.AttributeLists
                              from attr in alist.Attributes

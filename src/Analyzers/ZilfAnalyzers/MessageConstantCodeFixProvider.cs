@@ -1,9 +1,9 @@
 ﻿using System.Collections.Immutable;
 using System.Composition;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -15,7 +15,6 @@ using Microsoft.CodeAnalysis.Rename;
 namespace ZilfAnalyzers
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(MessageConstantCodeFixProvider)), Shared]
-    [UsedImplicitly]
     public class MessageConstantCodeFixProvider : CodeFixProvider
     {
         const string Title = "Move prefix to call sites";
@@ -32,6 +31,9 @@ namespace ZilfAnalyzers
         {
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
+            if (root == null)
+                return;
+
             // we can only fix PrefixedMessageFormat
             var diagnostic = context.Diagnostics.FirstOrDefault(d => d.Id == DiagnosticIds.PrefixedMessageFormat);
 
@@ -40,7 +42,11 @@ namespace ZilfAnalyzers
 
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
-            var formatExpr = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<AttributeArgumentSyntax>().First().Expression;
+            var formatExpr = root.FindToken(diagnosticSpan.Start).Parent?.AncestorsAndSelf().OfType<AttributeArgumentSyntax>().First().Expression;
+
+            if (formatExpr == null)
+                return;
+
             var fieldDecl = formatExpr.AncestorsAndSelf().OfType<FieldDeclarationSyntax>().First();
 
             if (fieldDecl.Declaration.Variables.Count != 1)
@@ -80,12 +86,12 @@ namespace ZilfAnalyzers
             var fieldDeclAnnotation = new SyntaxAnnotation();
             var root = await document.GetSyntaxRootAsync(cancellationToken);
             document = document.WithSyntaxRoot(
-                root.ReplaceNode(
+                root!.ReplaceNode(
                     fieldDecl,
                     fieldDecl.WithAdditionalAnnotations(fieldDeclAnnotation)));
             var solution = document.Project.Solution;
 
-            SemanticModel semanticModel;
+            SemanticModel? semanticModel;
 
             FieldDeclarationSyntax FindFieldDecl(SyntaxNode node)
             {
@@ -109,7 +115,7 @@ namespace ZilfAnalyzers
             // get format string and split it into prefix + rest
             semanticModel = await document.GetSemanticModelAsync(cancellationToken);
             root = await document.GetSyntaxRootAsync(cancellationToken);
-            var formatStr = (string)semanticModel.GetConstantValue(FindFormatExpr(root), cancellationToken).Value;
+            var formatStr = (string)semanticModel!.GetConstantValue(FindFormatExpr(root!), cancellationToken).Value;
             var match = MessageConstantAnalyzer.PrefixedMessageFormatRegex.Match(formatStr);
             var prefix = match.Groups["prefix"].Value;
             var rest = match.Groups["rest"].Value;
@@ -122,7 +128,7 @@ namespace ZilfAnalyzers
                 SyntaxFactory.Literal(newFormatStr));
 
             var pendingReplacements = ImmutableList.Create(
-                new PendingReplacement(document, FindFormatExpr(root), newFormatExpr));
+                new PendingReplacement(document, FindFormatExpr(root!), newFormatExpr));
 
             async Task ApplyPendingReplacementsAsync()
             {
@@ -135,6 +141,7 @@ namespace ZilfAnalyzers
                     var syntaxMapping = group.ToDictionary(pr => pr.Old, pr => pr.New);
 
                     var syntaxRoot = await group.Key.GetSyntaxRootAsync(cancellationToken);
+                    Debug.Assert(syntaxRoot != null);
                     var newSyntaxRoot = syntaxRoot.ReplaceNodes(syntaxMapping.Keys, (node, _) => syntaxMapping[node]);
 
                     solution = solution.WithDocumentSyntaxRoot(group.Key.Id, newSyntaxRoot);
@@ -142,8 +149,9 @@ namespace ZilfAnalyzers
                 // ReSharper restore AccessToModifiedClosure
             }
 
+            root = await document.GetSyntaxRootAsync(cancellationToken);
             var fieldSymbol = semanticModel.GetDeclaredSymbol(
-                FindFieldDecl(await document.GetSyntaxRootAsync(cancellationToken)).Declaration.Variables[0],
+                FindFieldDecl(root!).Declaration.Variables[0],
                 cancellationToken);
 
             if (fieldSymbol != null)
@@ -153,7 +161,7 @@ namespace ZilfAnalyzers
                 {
                     await ApplyPendingReplacementsAsync();
 
-                    var newCompilation = await solution.GetDocument(messageDocId).Project.GetCompilationAsync(cancellationToken);
+                    var newCompilation = await solution.GetDocument(messageDocId)!.Project.GetCompilationAsync(cancellationToken);
                     fieldSymbol = SymbolFinder.FindSimilarSymbols(fieldSymbol, newCompilation, cancellationToken).First();
 
                     var newName = ErrorExceptionUsageCodeFixProvider.GetConstantNameFromMessageFormat(newFormatStr);
@@ -161,10 +169,10 @@ namespace ZilfAnalyzers
                         solution.Workspace.Options, cancellationToken);
 
                     var newDocument = solution.GetDocument(messageDocId);
-                    var newRoot = await newDocument.GetSyntaxRootAsync(cancellationToken);
-                    var newFieldDecl = FindFieldDecl(newRoot);
+                    var newRoot = await newDocument!.GetSyntaxRootAsync(cancellationToken);
+                    var newFieldDecl = FindFieldDecl(newRoot!);
                     var newSemanticModel = await newDocument.GetSemanticModelAsync(cancellationToken);
-                    fieldSymbol = newSemanticModel.GetDeclaredSymbol(newFieldDecl.Declaration.Variables[0]);
+                    fieldSymbol = newSemanticModel.GetDeclaredSymbol(newFieldDecl.Declaration.Variables[0], cancellationToken);
                 }
 
                 // update call sites
@@ -192,13 +200,12 @@ namespace ZilfAnalyzers
             return solution;
         }
 
-        [ItemCanBeNull]
-        static async Task<PendingReplacement> ReplacementCallSiteWithPrefixInsertedAsync(
+        static async Task<PendingReplacement?> ReplacementCallSiteWithPrefixInsertedAsync(
             ReferenceLocation location, LiteralExpressionSyntax prefixSyntax, CancellationToken cancellationToken)
         {
             var root = await location.Document.GetSyntaxRootAsync(cancellationToken);
 
-            if (!(root.FindToken(location.Location.SourceSpan.Start).Parent?.Parent is MemberAccessExpressionSyntax accessExpr))
+            if (root?.FindToken(location.Location.SourceSpan.Start).Parent?.Parent is not MemberAccessExpressionSyntax accessExpr)
                 return null;
 
             var argumentListExpr = accessExpr.FirstAncestorOrSelf<ArgumentListSyntax>();

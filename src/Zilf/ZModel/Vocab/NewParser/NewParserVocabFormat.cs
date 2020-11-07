@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -87,7 +86,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 ZilFix.Zero
             });
 
-            if (!((ZilObject)form.Eval(ctx) is ZilHash vword) || vword.StdTypeAtom != StdAtom.VWORD)
+            if ((ZilObject)form.Eval(ctx) is not ZilHash vword || vword.StdTypeAtom != StdAtom.VWORD)
                 throw new InterpreterError(
                     InterpreterMessages._0_1_Must_Return_2,
                     InterpreterMessages.NoFunction,
@@ -498,7 +497,6 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
         }
 
-        [ContractAnnotation("=> false, verbStuffId: null; => true, verbStuffId: notnull")]
         bool TryGetVerbStuffId(ZilObject? verbStuff, [NotNullWhen(true)] out ZilObject? verbStuffId)
         {
             if (verbStuff == null)

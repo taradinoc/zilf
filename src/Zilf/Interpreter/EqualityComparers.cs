@@ -62,7 +62,7 @@ namespace Zilf.Interpreter
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
 
-            return obj.ToString().GetHashCode();
+            return obj.ToString().GetHashCode(StringComparison.Ordinal);
         }
     }
 }

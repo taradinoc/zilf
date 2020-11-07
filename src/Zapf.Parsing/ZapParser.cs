@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using JetBrains.Annotations;
 using Zapf.Parsing.Diagnostics;
 using Zapf.Parsing.Directives;
 using Zapf.Parsing.Expressions;
@@ -28,7 +27,7 @@ using Zapf.Parsing.Instructions;
 
 namespace Zapf.Parsing
 {
-    public class ZapParser : IDisposable
+    public sealed class ZapParser : IDisposable
     {
         readonly IErrorSink sink;
         readonly IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict;
@@ -397,17 +396,11 @@ namespace Zapf.Parsing
 
         static bool CanStartExpr(TokenType type)
         {
-            switch (type)
+            return type switch
             {
-                case TokenType.Symbol:
-                case TokenType.Number:
-                case TokenType.String:
-                case TokenType.Apostrophe:
-                    return true;
-
-                default:
-                    return false;
-            }
+                TokenType.Symbol or TokenType.Number or TokenType.String or TokenType.Apostrophe => true,
+                _ => false,
+            };
         }
 
         AsmExpr ParseExpr()

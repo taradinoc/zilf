@@ -17,13 +17,10 @@
  */
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -45,13 +42,13 @@ namespace Zilf.Interpreter
 
         /// <exception cref="InterpreterError"><paramref name="list"/> has the wrong number or types of elements.</exception>
         [ChtypeMethod]
-        public static ObList FromList([ProvidesContext] Context ctx, ZilListoidBase list)
+        public static ObList FromList(Context ctx, ZilListoidBase list)
         {
             var result = new ObList(ctx.IgnoreCase);
 
             while (list.IsCons(out var first, out var rest))
             {
-                if (!(first is ZilListoidBase bucket))
+                if (first is not ZilListoidBase bucket)
                 {
                     throw new InterpreterError(
                         InterpreterMessages._0_In_1_Must_Be_2,
@@ -62,7 +59,7 @@ namespace Zilf.Interpreter
 
                 foreach (var elem in bucket)
                 {
-                    if (!(elem is ZilAtom atom))
+                    if (elem is not ZilAtom atom)
                     {
                         throw new InterpreterError(
                             InterpreterMessages._0_In_1_Must_Be_2,

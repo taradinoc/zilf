@@ -20,7 +20,6 @@ using System.Diagnostics.CodeAnalysis;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values.Tied;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {

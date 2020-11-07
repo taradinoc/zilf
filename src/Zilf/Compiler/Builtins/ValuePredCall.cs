@@ -19,7 +19,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
-using JetBrains.Annotations;
 
 namespace Zilf.Compiler.Builtins
 {
@@ -28,18 +27,12 @@ namespace Zilf.Compiler.Builtins
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     struct ValuePredCall
     {
-        [PublicAPI]
         public Compilation cc { get; }
-        [PublicAPI]
         public IRoutineBuilder rb { get; }
-        [PublicAPI]
         public ZilForm form { get; }
 
-        [PublicAPI]
         public IVariable resultStorage { get; }
-        [PublicAPI]
         public ILabel label { get; }
-        [PublicAPI]
         public bool polarity { get; }
 
         public ValuePredCall(Compilation cc, IRoutineBuilder rb, ZilForm form,

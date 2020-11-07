@@ -23,7 +23,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
-using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -106,7 +105,6 @@ namespace Zilf.Compiler.Builtins
             });
         }
 
-        [ContractAnnotation("=> true, error: notnull; => false, error: null")]
         public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, [NotNullWhen(true)] out CompilerError? error)
         {
             // is there a match with this zversion but any arg count?
@@ -160,7 +158,7 @@ namespace Zilf.Compiler.Builtins
         [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         static IList<BuiltinArg> ValidateArguments(
             Compilation cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
-            IReadOnlyList<ZilObject> args, [InstantHandle] InvalidArgumentDelegate error)
+            IReadOnlyList<ZilObject> args, InvalidArgumentDelegate error)
         {
             // args may be short (for optional params)
 
@@ -704,7 +702,9 @@ namespace Zilf.Compiler.Builtins
             // another delegate describing how to combine the initial value
             // with the single arg in that case
             // ReSharper disable once ConvertSwitchStatementToSwitchExpression
+#pragma warning disable IDE0066 // Convert switch statement to expression
             switch (op)
+#pragma warning restore IDE0066 // Convert switch statement to expression
             {
                 case BinaryOp.Add:
                 case BinaryOp.Mul:
@@ -1967,7 +1967,7 @@ namespace Zilf.Compiler.Builtins
                 }
 
                 Debug.Assert(list.Rest != null);
-                if (!(list.Rest.First is ZilFix fix) || fix.Value < 0 || fix.Value > 1)
+                if (list.Rest.First is not ZilFix { Value: 0 or 1 } fix)
                 {
                     ctx.HandleError(new CompilerError(src, CompilerMessages._0_Second_List_Element_Must_Be_0_Or_1, name));
                     return false;

@@ -17,7 +17,6 @@
  */
 
 using System;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -32,7 +31,6 @@ namespace Zilf.Interpreter
     /// </remarks>
     /// <seealso cref="BuiltinTypeAttribute"/>
     [AttributeUsage(AttributeTargets.Constructor | AttributeTargets.Method)]
-    [MeansImplicitUse]
     sealed class ChtypeMethodAttribute : Attribute
     {
     }

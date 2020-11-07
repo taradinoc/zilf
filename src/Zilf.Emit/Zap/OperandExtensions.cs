@@ -16,8 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 using Zapf.Parsing.Expressions;
 
 namespace Zilf.Emit.Zap
@@ -36,13 +36,12 @@ namespace Zilf.Emit.Zap
                 NumericOperand num => (AsmExpr)new NumericLiteral(num.Value),
                 IndirectOperand indirect => new QuoteExpr(indirect.Variable.ToAsmExpr()),
                 SumOperand sum => new AdditionExpr(sum.Left.ToAsmExpr(), sum.Right.ToAsmExpr()),
-                _ => new SymbolExpr(operand.ToString())
+                _ => new SymbolExpr(operand.ToString() ?? throw new ArgumentException("Operand has no string representation"))
             };
         }
 
         public static bool IsStack(this AsmExpr asmExpr) => asmExpr is SymbolExpr sym && sym.Text == "STACK";
 
-        [ContractAnnotation("=> false, inner: null; => true, inner: notnull")]
         public static bool IsQuote(this AsmExpr asmExpr, [NotNullWhen(true)] out AsmExpr? inner)
         {
             if (asmExpr is QuoteExpr quote)

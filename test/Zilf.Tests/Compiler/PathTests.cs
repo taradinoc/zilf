@@ -20,9 +20,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Zilf.Common.StringEncoding;
 using Zilf.Compiler;
 
 namespace Zilf.Tests.Compiler
@@ -35,21 +33,20 @@ namespace Zilf.Tests.Compiler
             readonly Dictionary<string, string> inputs = new Dictionary<string, string>();
             readonly Dictionary<string, MemoryStream> outputs = new Dictionary<string, MemoryStream>();
 
-            [JetBrains.Annotations.NotNull]
             public ICollection OutputFilePaths => outputs.Keys;
 
-            public void SetInputFile([JetBrains.Annotations.NotNull] string path, string content)
+            public void SetInputFile(string path, string content)
             {
                 inputs[path] = content;
             }
 
-            public string GetOutputContent([JetBrains.Annotations.NotNull] string path)
+            public string GetOutputContent(string path)
             {
                 var stream = outputs[path];
                 return Encoding.UTF8.GetString(stream.ToArray());
             }
 
-            public void Compile([JetBrains.Annotations.NotNull] string mainZilFile)
+            public void Compile(string mainZilFile)
             {
                 var compiler = new FrontEnd();
 

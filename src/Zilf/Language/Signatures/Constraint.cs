@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 
@@ -28,7 +27,7 @@ namespace Zilf.Language.Signatures
 {
     interface IConstraint
     {
-        bool Allows([ProvidesContext] Context ctx, ZilObject arg);
+        bool Allows(Context ctx, ZilObject arg);
     }
 
     interface IConstraintVisitor
@@ -36,9 +35,9 @@ namespace Zilf.Language.Signatures
         void VisitAnyObjectConstraint();
         void VisitApplicableConstraint();
         void VisitBooleanConstraint();
-        void VisitConjunctionConstraint([InstantHandle] IEnumerable<Constraint> parts);
+        void VisitConjunctionConstraint(IEnumerable<Constraint> parts);
         void VisitDeclConstraint(ZilObject pattern);
-        void VisitDisjunctionConstraint([InstantHandle] IEnumerable<Constraint> alts);
+        void VisitDisjunctionConstraint(IEnumerable<Constraint> alts);
         void VisitForbiddenConstraint();
         void VisitPrimTypeConstraint(PrimType primType);
         void VisitStructuredConstraint();
@@ -56,7 +55,7 @@ namespace Zilf.Language.Signatures
 
         public static Constraint OfPrimType(PrimType primtype) => new PrimTypeConstraint(primtype);
 
-        public static Constraint FromDecl([ProvidesContext] Context ctx, ZilObject pattern)
+        public static Constraint FromDecl(Context ctx, ZilObject pattern)
         {
             switch (pattern)
             {
@@ -123,7 +122,7 @@ namespace Zilf.Language.Signatures
 
         protected abstract CompareOutcome? CompareImpl(Constraint other);
 
-        public abstract bool Allows([ProvidesContext] Context ctx, ZilObject arg);
+        public abstract bool Allows(Context ctx, ZilObject arg);
         public abstract override string ToString();
         public abstract void Accept(IConstraintVisitor visitor);
 

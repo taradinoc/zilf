@@ -17,10 +17,10 @@
  */
 
 using System.Diagnostics;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Vocab;
 
@@ -31,13 +31,12 @@ namespace Zilf.Tests.Interpreter
     [TestClass, TestCategory("Interpreter"), TestCategory("Vocab")]
     public class SyntaxTests
     {
-        [JetBrains.Annotations.NotNull]
-        static Syntax ParseSyntax([JetBrains.Annotations.NotNull] Context ctx, [JetBrains.Annotations.NotNull] string definition)
+        static Syntax ParseSyntax(Context ctx, string definition)
         {
-            var defn = (ZilList)Program.Evaluate(ctx, definition, true);
+            var defn = Program.Evaluate(ctx, definition, true) as ZilList;
             Debug.Assert(defn != null);
 
-            var syntax = Syntax.Parse(null, defn, ctx);
+            var syntax = Syntax.Parse(SourceLines.TopLevel, defn, ctx);
             return syntax;
         }
 
@@ -96,7 +95,7 @@ namespace Zilf.Tests.Interpreter
 
             Assert.AreEqual(1, syntax.NumObjects);
             Assert.IsNotNull(syntax.Preposition1);
-            Assert.AreEqual("BY", syntax.Preposition1.Atom.ToString());
+            Assert.AreEqual("BY", syntax.Preposition1!.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition1));
             Assert.IsNull(syntax.FindFlag1);
             Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
@@ -123,7 +122,7 @@ namespace Zilf.Tests.Interpreter
             Assert.IsNull(syntax.FindFlag1);
             Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.IsNotNull(syntax.Preposition2);
-            Assert.AreEqual("LIKE", syntax.Preposition2.Atom.ToString());
+            Assert.AreEqual("LIKE", syntax.Preposition2!.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition2));
             Assert.IsNull(syntax.FindFlag2);
             Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
@@ -144,12 +143,12 @@ namespace Zilf.Tests.Interpreter
 
             Assert.AreEqual(2, syntax.NumObjects);
             Assert.IsNotNull(syntax.Preposition1);
-            Assert.AreEqual("OUT", syntax.Preposition1.Atom.ToString());
+            Assert.AreEqual("OUT", syntax.Preposition1!.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition1));
             Assert.IsNull(syntax.FindFlag1);
             Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.IsNotNull(syntax.Preposition2);
-            Assert.AreEqual("FOR", syntax.Preposition2.Atom.ToString());
+            Assert.AreEqual("FOR", syntax.Preposition2!.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition2));
             Assert.IsNull(syntax.FindFlag2);
             Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
@@ -170,15 +169,15 @@ namespace Zilf.Tests.Interpreter
 
             Assert.AreEqual(2, syntax.NumObjects);
             Assert.IsNotNull(syntax.Preposition1);
-            Assert.AreEqual("OUT", syntax.Preposition1.Atom.ToString());
+            Assert.AreEqual("OUT", syntax.Preposition1!.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition1));
             Assert.IsNull(syntax.FindFlag1);
             Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.IsNotNull(syntax.Preposition2);
-            Assert.AreEqual("FOR", syntax.Preposition2.Atom.ToString());
+            Assert.AreEqual("FOR", syntax.Preposition2!.Atom.ToString());
             Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition2));
             Assert.IsNotNull(syntax.FindFlag2);
-            Assert.AreEqual("PHONEBOOKBIT", syntax.FindFlag2.ToString());
+            Assert.AreEqual("PHONEBOOKBIT", syntax.FindFlag2!.ToString());
             Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options2);
 
             Assert.AreEqual("V-SWISS-WATCH", syntax.Action.ToString());
@@ -197,10 +196,10 @@ namespace Zilf.Tests.Interpreter
 
             Assert.AreEqual(1, syntax.NumObjects);
             Assert.IsNotNull(syntax.Preposition1);
-            Assert.AreEqual("AROUND", syntax.Preposition1.Atom.ToString());
-            Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition1));
+            Assert.AreEqual("AROUND", syntax.Preposition1?.Atom.ToString());
+            Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition1!));
             Assert.IsNotNull(syntax.FindFlag1);
-            Assert.AreEqual("DUMMYBIT", syntax.FindFlag1.ToString());
+            Assert.AreEqual("DUMMYBIT", syntax.FindFlag1?.ToString());
             Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.IsNull(syntax.Preposition2);
             Assert.IsNull(syntax.FindFlag2);
@@ -247,8 +246,8 @@ namespace Zilf.Tests.Interpreter
 
             Assert.AreEqual(1, syntax.NumObjects);
             Assert.IsNotNull(syntax.Preposition1);
-            Assert.AreEqual("BEHIND", syntax.Preposition1.Atom.ToString());
-            Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition1));
+            Assert.AreEqual("BEHIND", syntax.Preposition1?.Atom.ToString());
+            Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition1!));
             Assert.IsNull(syntax.FindFlag1);
             Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.IsNull(syntax.Preposition2);
@@ -271,8 +270,8 @@ namespace Zilf.Tests.Interpreter
 
             Assert.AreEqual(1, syntax.NumObjects);
             Assert.IsNotNull(syntax.Preposition1);
-            Assert.AreEqual("AT", syntax.Preposition1.Atom.ToString());
-            Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition1));
+            Assert.AreEqual("AT", syntax.Preposition1?.Atom.ToString());
+            Assert.IsTrue(ctx.ZEnvironment.VocabFormat.IsPreposition(syntax.Preposition1!));
             Assert.IsNull(syntax.FindFlag1);
             Assert.AreEqual(ScopeFlags.Original.Default, syntax.Options1);
             Assert.IsNull(syntax.Preposition2);

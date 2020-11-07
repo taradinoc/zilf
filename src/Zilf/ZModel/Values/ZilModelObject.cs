@@ -17,7 +17,6 @@
  */
 
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -46,10 +45,10 @@ namespace Zilf.ZModel.Values
                     "list coerced to OBJECT",
                     new CountableString("at least 1", false));
 
-            if (!(first is ZilAtom objectOrRoom))
+            if (first is not ZilAtom objectOrRoom)
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 1, "list coerced to OBJECT", "an atom");
 
-            if (!rest.IsCons(out first, out var props) || !(first is ZilAtom atom))
+            if (!rest.IsCons(out first, out var props) || first is not ZilAtom atom)
                 throw new InterpreterError(InterpreterMessages.Element_0_Of_1_Must_Be_2, 2, "list coerced to OBJECT", "an atom");
 
             if (!props.All(zo => zo is ZilList))

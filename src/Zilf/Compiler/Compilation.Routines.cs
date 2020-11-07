@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection.Emit;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -28,7 +27,6 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
-using JetBrains.Annotations;
 
 namespace Zilf.Compiler
 {
@@ -296,7 +294,7 @@ namespace Zilf.Compiler
 
         void MarkSequencePoint(IRoutineBuilder rb, IProvideSourceLine node)
         {
-            if (!WantDebugInfo || !(node.SourceLine is FileSourceLine fileSourceLine))
+            if (!WantDebugInfo || node.SourceLine is not FileSourceLine fileSourceLine)
                 return;
 
             Debug.Assert(Game.DebugFile != null);

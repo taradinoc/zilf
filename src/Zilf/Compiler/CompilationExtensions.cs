@@ -24,7 +24,6 @@ using Zilf.Compiler.Builtins;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 
@@ -112,7 +111,7 @@ namespace Zilf.Compiler
 
         public static bool ModifiesLocal(this ZilObject expr, ZilAtom localAtom)
         {
-            if (!(expr is ZilListBase list))
+            if (expr is not ZilListBase list)
                 return false;
 
             if (list is ZilForm &&
@@ -128,22 +127,17 @@ namespace Zilf.Compiler
 
         public static bool IsPredicate(this ZilObject zo, int zversion)
         {
-            if (!(zo is ZilForm form) || !(form.First is ZilAtom head))
+            if (zo is not ZilForm form || form.First is not ZilAtom head)
                 return false;
 
             Debug.Assert(form.Rest != null);
 
             // ReSharper disable once SwitchStatementMissingSomeCases
-            switch (head.StdAtom)
+            return head.StdAtom switch
             {
-                case StdAtom.AND:
-                case StdAtom.OR:
-                case StdAtom.NOT:
-                    return form.Rest.All(a => a.IsPredicate(zversion));
-
-                default:
-                    return ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count());
-            }
+                StdAtom.AND or StdAtom.OR or StdAtom.NOT => form.Rest.All(a => a.IsPredicate(zversion)),
+                _ => ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count()),
+            };
         }
 
         /// <summary>

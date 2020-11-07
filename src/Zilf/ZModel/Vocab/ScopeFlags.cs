@@ -19,7 +19,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -67,7 +66,7 @@ namespace Zilf.ZModel.Vocab
         {
             byte result = 0;
 
-            if (!(ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.NEW_SFLAGS)) is ZilVector sflagsVector))
+            if (ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.NEW_SFLAGS)) is not ZilVector sflagsVector)
             {
                 // use default set of flags
                 if (list == null)
@@ -75,7 +74,7 @@ namespace Zilf.ZModel.Vocab
 
                 foreach (var obj in list)
                 {
-                    if (!(obj is ZilAtom atom))
+                    if (obj is not ZilAtom atom)
                         throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "object options", "SYNTAX", "atoms");
 
                     result |= atom.StdAtom switch
@@ -148,7 +147,7 @@ namespace Zilf.ZModel.Vocab
 
                 foreach (var obj in list)
                 {
-                    if (!(obj is ZilAtom atom))
+                    if (obj is not ZilAtom atom)
                         throw new InterpreterError(InterpreterMessages._0_In_1_Must_Be_2, "object options", "SYNTAX", "atoms");
 
                     string name = atom.Text;
@@ -179,7 +178,7 @@ namespace Zilf.ZModel.Vocab
             if (gval == null)
                 throw new InterpreterError(InterpreterMessages._0_Must_Have_A_GVAL_To_Use_NEWSFLAGS, atom.ToStringContext(ctx, false));
 
-            if (!(gval is ZilFix fix))
+            if (gval is not ZilFix fix)
                 throw new InterpreterError(
                     InterpreterMessages._0_Value_Of_1_Must_Be_2,
                     "global",

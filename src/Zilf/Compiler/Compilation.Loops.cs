@@ -25,7 +25,6 @@ using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using JetBrains.Annotations;
 using Zilf.Common;
 
 namespace Zilf.Compiler
@@ -33,8 +32,6 @@ namespace Zilf.Compiler
     partial class Compilation
     {
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
-        [ContractAnnotation("wantResult: false => null")]
-        [ContractAnnotation("wantResult: true => notnull")]
         internal IOperand? CompilePROG(IRoutineBuilder rb, ZilListoidBase args,
             ISourceLine src,
             bool wantResult, IVariable? resultStorage, string name, bool repeat, bool catchy)
@@ -51,7 +48,7 @@ namespace Zilf.Compiler
                 args = rest;
             }
 
-            if (!args.IsCons(out var bindings, out var body) || !(bindings is ZilList bindingList))
+            if (!args.IsCons(out var bindings, out var body) || bindings is not ZilList bindingList)
             {
                 throw new CompilerError(CompilerMessages._0_Missing_Binding_List, name);
             }
@@ -227,7 +224,7 @@ namespace Zilf.Compiler
         static void TransformProgArgsIfImplementingDeferredReturn(ref ZilList bindingList, ref ZilListoidBase body)
         {
             // ends with <LVAL atom>?
-            if (!(body.EnumerateNonRecursive().LastOrDefault() is ZilForm lastExpr) || !lastExpr.IsLVAL(out var atom))
+            if (body.EnumerateNonRecursive().LastOrDefault() is not ZilForm lastExpr || !lastExpr.IsLVAL(out var atom))
                 return;
 
             // atom is bound in the prog?
@@ -366,9 +363,7 @@ namespace Zilf.Compiler
 
 #pragma warning disable IDE1006 // Naming Styles
             // ReSharper disable InconsistentNaming
-            [ProvidesContext]
             protected Compilation cc => blc.cc;
-            [ProvidesContext]
             protected ISourceLine src => blc.src;
             // ReSharper restore InconsistentNaming
 #pragma warning restore IDE1006 // Naming Styles
@@ -401,8 +396,6 @@ namespace Zilf.Compiler
             }
         }
 
-        [ContractAnnotation("wantResult: true, resultStorage: notnull => notnull")]
-        [ContractAnnotation("wantResult: false, resultStorage: null => canbenull")]
         private IOperand? CompileBoundedLoop(
             IRoutineBuilder rb, IBoundedLoopBuilder builder,
             ZilListoidBase args, ISourceLine src,
@@ -410,7 +403,7 @@ namespace Zilf.Compiler
         {
             // extract loop spec ("binding list", although we don't care about the bindings here)
             // TODO: allow activation atoms in bounded loops?
-            if (!args.IsCons(out var first, out var rest) || !(first is ZilList spec))
+            if (!args.IsCons(out var first, out var rest) || first is not ZilList spec)
             {
                 throw new CompilerError(CompilerMessages.Expected_Binding_List_At_Start_Of_0, builder.Name);
             }
@@ -481,8 +474,6 @@ namespace Zilf.Compiler
         }
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
-        [ContractAnnotation("wantResult: false => null")]
-        [ContractAnnotation("wantResult: true => notnull")]
         internal IOperand CompileDO(IRoutineBuilder rb, ZilListoidBase args, ISourceLine src, bool wantResult,
             IVariable? resultStorage) =>
             CompileBoundedLoop(rb, DoLoop.Builder, args, src, wantResult, resultStorage)!;
@@ -616,8 +607,6 @@ namespace Zilf.Compiler
         }
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
-        [ContractAnnotation("wantResult: false => null")]
-        [ContractAnnotation("wantResult: true => notnull")]
         internal IOperand CompileMAP_CONTENTS(IRoutineBuilder rb, ZilListoidBase args, ISourceLine src, bool wantResult,
             IVariable? resultStorage) =>
             CompileBoundedLoop(rb, MapContentsLoop.Builder, args, src, wantResult, resultStorage)!;
@@ -749,8 +738,6 @@ namespace Zilf.Compiler
         }
 
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
-        [ContractAnnotation("wantResult: false => null")]
-        [ContractAnnotation("wantResult: true => notnull")]
         internal IOperand CompileMAP_DIRECTIONS(IRoutineBuilder rb, ZilListoidBase args, ISourceLine src, bool wantResult,
             IVariable? resultStorage) =>
             CompileBoundedLoop(rb, MapDirectionsLoop.Builder, args, src, wantResult, resultStorage)!;

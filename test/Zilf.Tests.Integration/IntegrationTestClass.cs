@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -25,21 +24,17 @@ namespace Zilf.Tests.Integration
     [TestClass]
     public abstract class IntegrationTestClass
     {
-        [JetBrains.Annotations.NotNull]
-        protected static GlobalsAssertionHelper AssertGlobals([ItemNotNull] [JetBrains.Annotations.NotNull] params string[] globals)
+        protected static GlobalsAssertionHelper AssertGlobals(params string[] globals)
         {
             return new GlobalsAssertionHelper(globals);
         }
 
-        [JetBrains.Annotations.NotNull]
-        protected static RoutineAssertionHelper AssertRoutine([JetBrains.Annotations.NotNull] string argSpec, [JetBrains.Annotations.NotNull] string body)
+        protected static RoutineAssertionHelper AssertRoutine(string argSpec, string body)
         {
             return new RoutineAssertionHelper(argSpec, body);
         }
 
-        [ItemNotNull]
-        [JetBrains.Annotations.NotNull]
-        protected static string[] TreeImplications([ItemNotNull] [JetBrains.Annotations.NotNull] string[] numbering, [ItemNotNull] [JetBrains.Annotations.NotNull] params string[][] chains)
+        protected static string[] TreeImplications(string[] numbering, params string[][] chains)
         {
             var result = new List<string>();
 
@@ -74,20 +69,17 @@ namespace Zilf.Tests.Integration
             return result.ToArray();
         }
 
-        [JetBrains.Annotations.NotNull]
-        protected static EntryPointAssertionHelper AssertEntryPoint([JetBrains.Annotations.NotNull] string argSpec, [JetBrains.Annotations.NotNull] string body)
+        protected static EntryPointAssertionHelper AssertEntryPoint(string argSpec, string body)
         {
             return new EntryPointAssertionHelper(argSpec, body);
         }
 
-        [JetBrains.Annotations.NotNull]
-        protected static RawAssertionHelper AssertRaw([JetBrains.Annotations.NotNull] string code)
+        protected static RawAssertionHelper AssertRaw(string code)
         {
             return new RawAssertionHelper(code);
         }
 
-        [JetBrains.Annotations.NotNull]
-        protected static ExprAssertionHelper AssertExpr([JetBrains.Annotations.NotNull] string expression)
+        protected static ExprAssertionHelper AssertExpr(string expression)
         {
             return new ExprAssertionHelper(expression);
         }

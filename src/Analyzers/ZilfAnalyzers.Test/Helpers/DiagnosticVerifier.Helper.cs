@@ -8,9 +8,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 
 // ReSharper disable once CheckNamespace
 namespace ZilfAnalyzers.Test.Helpers
@@ -24,7 +22,6 @@ namespace ZilfAnalyzers.Test.Helpers
         static readonly IReadOnlyCollection<MetadataReference> ProjectMetadataReferences =
             GetProjectMetadataReferences();
 
-        [JetBrains.Annotations.NotNull, ItemNotNull]
         private static IReadOnlyCollection<MetadataReference> GetProjectMetadataReferences()
         {
             var result = new List<MetadataReference>
@@ -37,7 +34,7 @@ namespace ZilfAnalyzers.Test.Helpers
             };
 
             // https://luisfsgoncalves.wordpress.com/2017/03/20/referencing-system-assemblies-in-roslyn-compilations/
-            var trustedAssembliesPaths = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES"))?.Split(Path.PathSeparator);
+            var trustedAssembliesPaths = ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES"))?.Split(Path.PathSeparator);
 
             if (trustedAssembliesPaths != null)
             {
@@ -71,8 +68,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="language">The language the source classes are in</param>
         /// <param name="analyzer">The analyzer to be run on the sources</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        [ItemNotNull]
-        private static async Task<Diagnostic[]> GetSortedDiagnosticsAsync([JetBrains.Annotations.NotNull] string[] sources, [JetBrains.Annotations.NotNull] string language, DiagnosticAnalyzer analyzer)
+        private static async Task<Diagnostic[]> GetSortedDiagnosticsAsync(string[] sources, string language, DiagnosticAnalyzer analyzer)
         {
             return await GetSortedDiagnosticsFromDocumentsAsync(analyzer, GetDocuments(sources, language)).ConfigureAwait(false);
         }
@@ -84,8 +80,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="analyzer">The analyzer to run on the documents</param>
         /// <param name="documents">The Documents that the analyzer will be run on</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        [ItemNotNull]
-        protected static async Task<Diagnostic[]> GetSortedDiagnosticsFromDocumentsAsync(DiagnosticAnalyzer analyzer, [JetBrains.Annotations.NotNull] Document[] documents)
+        protected static async Task<Diagnostic[]> GetSortedDiagnosticsFromDocumentsAsync(DiagnosticAnalyzer analyzer, Document[] documents)
         {
             var projects = new HashSet<Project>();
             foreach (var document in documents)
@@ -97,7 +92,10 @@ namespace ZilfAnalyzers.Test.Helpers
             foreach (var project in projects)
             {
                 var compilationWithAnalyzers = (await project.GetCompilationAsync().ConfigureAwait(false))
-                    .WithAnalyzers(ImmutableArray.Create(analyzer));
+                    ?.WithAnalyzers(ImmutableArray.Create(analyzer));
+
+                if (compilationWithAnalyzers == null)
+                    continue;
 
                 Debug.WriteLine("*** BEGIN ALL DIAGS ***");
                 foreach (var d in await compilationWithAnalyzers.GetAllDiagnosticsAsync())
@@ -137,8 +135,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// </summary>
         /// <param name="diagnostics">The list of Diagnostics to be sorted</param>
         /// <returns>An IEnumerable containing the Diagnostics in order of Location</returns>
-        [JetBrains.Annotations.NotNull]
-        static Diagnostic[] SortDiagnostics([JetBrains.Annotations.NotNull] IEnumerable<Diagnostic> diagnostics)
+        static Diagnostic[] SortDiagnostics(IEnumerable<Diagnostic> diagnostics)
         {
             return diagnostics.OrderBy(d => d.Location.SourceSpan.Start).ToArray();
         }
@@ -152,8 +149,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="sources">Classes in the form of strings</param>
         /// <param name="language">The language the source code is in</param>
         /// <returns>A Tuple containing the Documents produced from the sources and their TextSpans if relevant</returns>
-        [JetBrains.Annotations.NotNull]
-        static Document[] GetDocuments([JetBrains.Annotations.NotNull] string[] sources, [JetBrains.Annotations.NotNull] string language)
+        static Document[] GetDocuments(string[] sources, string language)
         {
             if (language != LanguageNames.CSharp && language != LanguageNames.VisualBasic)
             {
@@ -188,7 +184,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="sources">Classes in the form of strings</param>
         /// <param name="language">The language the source code is in</param>
         /// <returns>A Project created out of the Documents created from the source strings</returns>
-        static Project CreateProject([JetBrains.Annotations.NotNull] string[] sources, string language = LanguageNames.CSharp)
+        static Project CreateProject(string[] sources, string language = LanguageNames.CSharp)
         {
             string fileNamePrefix = DefaultFilePathPrefix;
             string fileExt = language == LanguageNames.CSharp ? CSharpDefaultFileExt : VisualBasicDefaultExt;
@@ -208,7 +204,7 @@ namespace ZilfAnalyzers.Test.Helpers
                 solution = solution.AddDocument(documentId, newFileName, SourceText.From(source));
                 count++;
             }
-            return solution.GetProject(projectId);
+            return solution.GetProject(projectId)!;
         }
         #endregion
     }

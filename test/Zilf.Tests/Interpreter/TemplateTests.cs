@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
@@ -26,9 +27,10 @@ namespace Zilf.Tests.Interpreter
     [TestClass, TestCategory("Interpreter"), TestCategory("Parsing")]
     public class TemplateTests
     {
-        Context ctx;
+        Context ctx = null!;
 
         [TestInitialize]
+        [MemberNotNull(nameof(ctx))]
         public void Initialize()
         {
             ctx = new Context();

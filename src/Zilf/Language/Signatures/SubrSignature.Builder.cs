@@ -23,7 +23,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -151,7 +150,7 @@ namespace Zilf.Language.Signatures
             return elemPart;
         }
 
-        static SignaturePart ConvertEither([InstantHandle] IEnumerable<Type> altTypes, string name)
+        static SignaturePart ConvertEither(IEnumerable<Type> altTypes, string name)
         {
             var alts = from t in altTypes
                        select ConvertForSubr(t, name, EmptyObjectArray, false, null);

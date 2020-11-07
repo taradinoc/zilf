@@ -30,7 +30,7 @@ using Zilf.ZModel.Vocab;
 using Zilf.ZModel.Vocab.NewParser;
 using Zilf.Diagnostics;
 using Zilf.Common;
-using JetBrains.Annotations;
+using System.Globalization;
 
 namespace Zilf.Interpreter
 {
@@ -340,7 +340,7 @@ namespace Zilf.Interpreter
           (T <CHTYPE {1} GVAL>)>>
 ";
 
-                Program.Evaluate(ctx, string.Format(SMacroTemplate, name, globalAtom), true);
+                Program.Evaluate(ctx, string.Format(CultureInfo.InvariantCulture, SMacroTemplate, name, globalAtom), true);
             }
 
             // enable FUNNY-GLOBALS?
@@ -570,7 +570,7 @@ namespace Zilf.Interpreter
                 {
                     Debug.Assert(flagList.Rest != null);
 
-                    if (!(flagList.First is ZilAtom flag))
+                    if (flagList.First is not ZilAtom flag)
                         throw new InterpreterError(InterpreterMessages._0_Flags_Must_Be_Atoms, name);
 
                     switch (flag.StdAtom)
@@ -600,7 +600,7 @@ namespace Zilf.Interpreter
 
                         case StdAtom.PATTERN:
                             flagList = flagList.Rest;
-                            if (flagList.IsEmpty || !(flagList.First is ZilList patternList))
+                            if (flagList.IsEmpty || flagList.First is not ZilList patternList)
                                 throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, name, "a list", "PATTERN");
                             Debug.Assert(flagList.Rest != null);
                             pattern = patternList.ToArray();
@@ -686,7 +686,7 @@ namespace Zilf.Interpreter
                             new CountableString("at least 2", true));
 
                     // first element must be REST
-                    if (!(vector[0] is ZilAtom atom) || atom.StdAtom != StdAtom.REST)
+                    if (vector[0] is not ZilAtom atom || atom.StdAtom != StdAtom.REST)
                         throw new InterpreterError(InterpreterMessages.Element_0_Of_1_In_2_Must_Be_3, 1, "vector", "PATTERN", "REST");
 
                     // remaining elements must be BYTE or WORD

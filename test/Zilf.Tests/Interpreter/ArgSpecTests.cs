@@ -32,7 +32,7 @@ namespace Zilf.Tests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), ZilAtom.Parse("ACT", ctx), new ZilObject[0]);
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), ZilAtom.Parse("ACT", ctx), System.Array.Empty<ZilObject>());
 
             TestHelpers.AssertStructurallyEqual(
                 new ZilObject[]

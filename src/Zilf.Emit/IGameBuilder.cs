@@ -18,7 +18,7 @@
 
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Zilf.Emit
 {
@@ -177,8 +177,7 @@ namespace Zilf.Emit
         /// if the name is not in use.</param>
         /// <returns><see langword="true"/> if a global symbol is defined with that name, or
         /// <see langword="false"/> otherwise.</returns>
-        [ContractAnnotation("=> true, type: notnull; => false, type: null")]
-        bool IsGloballyDefined(string name, out string? type);
+        bool IsGloballyDefined(string name, [NotNullWhen(true)] out string? type);
 
         /// <summary>
         /// Writes the final output and closes the game builder.

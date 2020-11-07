@@ -257,7 +257,7 @@ namespace Zapf
         void MaybeProcessEscapeChars(ref string str)
         {
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse      // false alarm!
-            if (!(LanguageEscapeChar is char escape) || str.IndexOf((char)LanguageEscapeChar) < 0)
+            if (LanguageEscapeChar is not char escape || str.IndexOf((char)LanguageEscapeChar) < 0)
                 return;
 
             var sb = new StringBuilder(str);
@@ -575,22 +575,13 @@ namespace Zapf
         {
             get
             {
-                switch (ZVersion)
+                return ZVersion switch
                 {
-                    case 1:
-                    case 2:
-                    case 3:
-                        return 2;
-                    case 4:
-                    case 5:
-                    case 6:
-                    case 7:
-                        return 4;
-                    case 8:
-                        return 8;
-                    default:
-                        throw new NotImplementedException();
-                }
+                    1 or 2 or 3 => 2,
+                    4 or 5 or 6 or 7 => 4,
+                    8 => 8,
+                    _ => throw new NotImplementedException(),
+                };
             }
         }
 
@@ -598,28 +589,19 @@ namespace Zapf
         {
             get
             {
-                switch (ZVersion)
+                return ZVersion switch
                 {
-                    case 1:
-                    case 2:
-                    case 3:
-                        return 2;
-                    case 4:
-                    case 5:
-                        return 4;
-                    case 6:
-                    case 7:
-                    case 8:
-                        return 8;
-                    default:
-                        throw new NotImplementedException();
-                }
+                    1 or 2 or 3 => 2,
+                    4 or 5 => 4,
+                    6 or 7 or 8 => 8,
+                    _ => throw new NotImplementedException(),
+                };
             }
         }
 
         public bool UsePackingOffsets => ZVersion == 6 || ZVersion == 7;
 
-        public int PackingOffsetDivisor => 8;
+        public static int PackingOffsetDivisor => 8;
 
         public void BeginReassemblyScope(int nodeIndex, Symbol symbol)
         {
@@ -946,16 +928,11 @@ namespace Zapf
             if (GlobalSymbols.TryGetValue(name1, out var sym) ||
                 (name2 != null && GlobalSymbols.TryGetValue(name2, out sym)))
             {
-                switch (sym.Type)
+                return sym.Type switch
                 {
-                    case SymbolType.Label:
-                    case SymbolType.Function:
-                    case SymbolType.Constant:
-                        return sym.Value;
-
-                    default:
-                        return 0;
-                }
+                    SymbolType.Label or SymbolType.Function or SymbolType.Constant => sym.Value,
+                    _ => 0,
+                };
             }
 
             if (required)

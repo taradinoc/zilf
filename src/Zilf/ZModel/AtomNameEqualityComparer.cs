@@ -16,9 +16,9 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.ZModel
@@ -40,10 +40,7 @@ namespace Zilf.ZModel
             if (x == null || y == null)
                 return false;
 
-            if (ignoreCase)
-                return x.Text.ToUpperInvariant() == y.Text.ToUpperInvariant();
-
-            return x.Text == y.Text;
+            return x.Text.Equals(y.Text, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
         }
 
         public int GetHashCode(ZilAtom? obj)
@@ -51,8 +48,7 @@ namespace Zilf.ZModel
             if (obj == null)
                 return 0;
 
-            var text = ignoreCase ? obj.Text.ToUpperInvariant() : obj.Text;
-            return text.GetHashCode();
+            return obj.Text.GetHashCode(ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
         }
     }
 }

@@ -19,7 +19,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using JetBrains.Annotations;
 
 namespace Zilf.Emit.Zap
 {

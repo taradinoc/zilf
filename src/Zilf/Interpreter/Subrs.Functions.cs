@@ -20,7 +20,6 @@ using System.Runtime.InteropServices;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -41,7 +40,7 @@ namespace Zilf.Interpreter
             return PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE20");
         }
 
-        static ZilObject PerformDefine([ProvidesContext] Context ctx, ZilAtom name,
+        static ZilObject PerformDefine(Context ctx, ZilAtom name,
             ZilAtom? activationAtom,
             ZilList argList, ZilDecl? decl, ZilObject[] body, string subrName)
         {
@@ -94,11 +93,9 @@ namespace Zilf.Interpreter
             return value.Eval(ctx, env);
         }
 
-#pragma warning disable RECS0154 // Parameter is never used
         [Subr("EVAL-IN-SEGMENT")]
-        public static ZilResult EVAL_IN_SEGMENT(Context ctx, ZilObject dummy1,
-             ZilObject value, ZilObject? dummy2 = null)
-#pragma warning restore RECS0154 // Parameter is never used
+        public static ZilResult EVAL_IN_SEGMENT(Context ctx, [ParamDesc("dummy1")] ZilObject _1,
+             ZilObject value, [ParamDesc("dummy2")] ZilObject? _2 = null)
         {
             return value.Eval(ctx);
         }

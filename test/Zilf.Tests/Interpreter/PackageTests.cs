@@ -19,6 +19,7 @@
 using System.IO;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Common;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -138,7 +139,7 @@ namespace Zilf.Tests.Interpreter
                     return new MemoryStream(Encoding.ASCII.GetBytes(fileContent));
                 }
 
-                return null;
+                throw new FileNotFoundException("File not included in test case", path);
             };
 
             TestHelpers.EvalAndAssert(ctx, @"<USE ""FOO""> ,ANSWER", new ZilFix(42));
@@ -150,7 +151,7 @@ namespace Zilf.Tests.Interpreter
             var ctx = new Context();
             ctx.IncludePaths.Add("lib");
             ctx.InterceptFileExists = path => false;
-            ctx.InterceptOpenFile = (path, writing) => null;
+            ctx.InterceptOpenFile = (path, writing) => throw new UnreachableCodeException();
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, @"<USE ""FOO"">");
         }
@@ -161,7 +162,7 @@ namespace Zilf.Tests.Interpreter
             var ctx = new Context();
             ctx.IncludePaths.Add("lib");
             ctx.InterceptFileExists = path => false;
-            ctx.InterceptOpenFile = (path, writing) => null;
+            ctx.InterceptOpenFile = (path, writing) => throw new UnreachableCodeException();
 
             TestHelpers.EvalAndAssert(ctx, @"<USE ""NEWSTRUC"">", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? ZILCH!-PACKAGE>", ctx.TRUE);

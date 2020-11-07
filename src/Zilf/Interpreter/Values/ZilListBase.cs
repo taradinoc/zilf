@@ -78,6 +78,7 @@ namespace Zilf.Interpreter.Values
             }
         }
 
+        // TODO: make first and rest non-nullable, and use a parameterless constructor for empty lists
         protected ZilListBase(ZilObject? first, ZilListoidBase? rest)
         {
             Debug.Assert((first == null) == (rest == null));
@@ -161,7 +162,7 @@ namespace Zilf.Interpreter.Values
             if (ReferenceEquals(obj, this))
                 return true;
 
-            if (!(obj is ZilListBase other) || other.StdTypeAtom != StdTypeAtom)
+            if (obj is not ZilListBase other || other.StdTypeAtom != StdTypeAtom)
                 return false;
 
             if (First == null)

@@ -17,7 +17,6 @@
  */
 
 using System.IO;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -28,8 +27,7 @@ namespace Zilf.Tests.Interpreter
     [TestClass, TestCategory("Interpreter")]
     public class OutputTests
     {
-        [JetBrains.Annotations.NotNull]
-        static ZilStringChannel MakeTestChannel([JetBrains.Annotations.NotNull] Context ctx)
+        static ZilStringChannel MakeTestChannel(Context ctx)
         {
             var channel = new ZilStringChannel(FileAccess.Write);
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.OUTCHAN), channel);

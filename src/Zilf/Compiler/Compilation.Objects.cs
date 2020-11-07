@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter;
@@ -34,7 +33,6 @@ namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        [ContractAnnotation("null => null; notnull => notnull")]
         [return: NotNullIfNotNull("flag")]
         IFlagBuilder? GetFlag(ZilAtom? flag)
         {
@@ -178,7 +176,7 @@ namespace Zilf.Compiler
                 using (DiagnosticContext.Push(prop.SourceLine))
                 {
                     // the first element must be an atom identifying the property
-                    if (!prop.IsCons(out var first, out var propBody) || !(first is ZilAtom atom))
+                    if (!prop.IsCons(out var first, out var propBody) || first is not ZilAtom atom)
                     {
                         Context.HandleError(new CompilerError(model, CompilerMessages.Property_Specification_Must_Start_With_An_Atom));
                         continue;
@@ -500,7 +498,7 @@ namespace Zilf.Compiler
                 bool noSpecialCases = false;
 
                 // the first element must be an atom identifying the property
-                if (!prop.IsCons(out var first, out var propBody) || !(first is ZilAtom propName))
+                if (!prop.IsCons(out var first, out var propBody) || first is not ZilAtom propName)
                 {
                     Context.HandleError(new CompilerError(model, CompilerMessages.Property_Specification_Must_Start_With_An_Atom));
                     continue;
@@ -581,7 +579,7 @@ namespace Zilf.Compiler
                         case StdAtom.FLAGS:
                             foreach (var obj in propBody)
                             {
-                                if (!(obj is ZilAtom atom))
+                                if (obj is not ZilAtom atom)
                                 {
                                     Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "atoms"));
                                     break;
@@ -601,7 +599,7 @@ namespace Zilf.Compiler
                             tb = ob.AddComplexProperty(Properties[propName]);
                             foreach (var obj in propBody)
                             {
-                                if (!(obj is ZilAtom atom))
+                                if (obj is not ZilAtom atom)
                                 {
                                     Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "atoms"));
                                     break;
@@ -619,7 +617,7 @@ namespace Zilf.Compiler
                             tb = ob.AddComplexProperty(Properties[propName]);
                             foreach (var obj in propBody)
                             {
-                                if (!(obj is ZilAtom atom))
+                                if (obj is not ZilAtom atom)
                                 {
                                     Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "atoms"));
                                     break;
@@ -666,7 +664,7 @@ namespace Zilf.Compiler
                                 tb = ob.AddComplexProperty(Properties[propName]);
                                 foreach (var obj in propBody)
                                 {
-                                    if (!(obj is ZilAtom atom))
+                                    if (obj is not ZilAtom atom)
                                     {
                                         Context.HandleError(new CompilerError(model, CompilerMessages.Values_For_0_Property_Must_Be_1, propName, "atoms"));
                                         break;

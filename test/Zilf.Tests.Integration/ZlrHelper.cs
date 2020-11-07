@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,6 +30,7 @@ using Zilf.Interpreter.Values;
 using ZLR.VM;
 using Zilf.Language;
 using System.Text.RegularExpressions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Zilf.Tests.Integration
 {
@@ -57,8 +57,8 @@ namespace Zilf.Tests.Integration
 
     sealed class ZlrHelper : IDisposable
     {
-        public static void RunAndAssert([JetBrains.Annotations.NotNull] string code, string input, [JetBrains.Annotations.NotNull] string expectedOutput,
-            IEnumerable<(Predicate<ZlrHelperRunResult>, string message)> warningChecks = null,
+        public static void RunAndAssert(string code, string? input, string expectedOutput,
+            IEnumerable<(Predicate<ZlrHelperRunResult>, string message)>? warningChecks = null,
             bool wantCompileOutput = false)
         {
             using var helper = new ZlrHelper(code, input);
@@ -93,7 +93,7 @@ namespace Zilf.Tests.Integration
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");
         }
 
-        public static ZlrHelperRunResult Run([JetBrains.Annotations.NotNull] string code, string input, bool compileOnly = false, bool wantDebugInfo = false)
+        public static ZlrHelperRunResult Run(string code, string? input, bool compileOnly = false, bool wantDebugInfo = false)
         {
             var helper = new ZlrHelper(code, input);
             var result = new ZlrHelperRunResult();
@@ -131,24 +131,19 @@ namespace Zilf.Tests.Integration
         const string SMainZapFileName = "Output.zap";
         const string SStoryFileNameTemplate = "Output.z#";
 
-        [JetBrains.Annotations.NotNull]
         readonly string code;
-        [CanBeNull]
-        readonly string input;
+        readonly string? input;
 
-        [JetBrains.Annotations.NotNull]
         readonly Dictionary<string, MemoryStream> zilfOutputFiles = new Dictionary<string, MemoryStream>();
 
-        [CanBeNull]
-        MemoryStream zapfOutputFile;
+        MemoryStream? zapfOutputFile;
 
         public int ErrorCount { get; private set; }
         public int WarningCount { get; private set; }
         public int SuppressedWarningCount { get; private set; }
-        [CanBeNull]
-        public IReadOnlyCollection<Diagnostic> Diagnostics { get; private set; }    // includes suppressed
+        public IReadOnlyCollection<Diagnostic>? Diagnostics { get; private set; }    // includes suppressed
 
-        public ZlrHelper([JetBrains.Annotations.NotNull] string code, [CanBeNull] string input)
+        public ZlrHelper(string code, string? input)
         {
             this.code = code;
             this.input = input;
@@ -180,7 +175,7 @@ namespace Zilf.Tests.Integration
             PrintZapCode("Output_data.zap");
         }
 
-        void PrintZapCode([JetBrains.Annotations.NotNull] string filename)
+        void PrintZapCode(string filename)
         {
             var zapStream = zilfOutputFiles[filename];
             var zapCode = Encoding.UTF8.GetString(zapStream.ToArray());
@@ -189,12 +184,14 @@ namespace Zilf.Tests.Integration
             Console.Error.WriteLine();
         }
 
+        [MemberNotNull(nameof(Diagnostics))]
         public bool Compile(bool wantDebugInfo = false)
         {
             return Compile(null, wantDebugInfo);
         }
 
-        bool Compile([CanBeNull] Action<FrontEnd> initializeFrontEnd, bool wantDebugInfo = false)
+        [MemberNotNull(nameof(Diagnostics))]
+        bool Compile(Action<FrontEnd>? initializeFrontEnd, bool wantDebugInfo = false)
         {
             // write code to a MemoryStream
             var codeStream = new MemoryStream();
@@ -252,7 +249,8 @@ namespace Zilf.Tests.Integration
             return false;
         }
 
-        public bool Compile([JetBrains.Annotations.NotNull] out string compileOutput)
+        [MemberNotNull(nameof(Diagnostics))]
+        public bool Compile(out string compileOutput)
         {
             var channel = new ZilStringChannel(FileAccess.Write);
 
@@ -268,7 +266,6 @@ namespace Zilf.Tests.Integration
             return compiled;
         }
 
-        [JetBrains.Annotations.NotNull]
         public string GetZapCode()
         {
             var sb = new StringBuilder();
@@ -312,11 +309,10 @@ namespace Zilf.Tests.Integration
 
             // run assembly
             var result = assembler.Assemble(SMainZapFileName, SStoryFileNameTemplate);
-            WarningCount += result.Context.WarningCount;
+            WarningCount += result.Context?.WarningCount ?? 0;
             return result.Success;
         }
 
-        [JetBrains.Annotations.NotNull]
         string Execute()
         {
             Debug.Assert(zapfOutputFile != null);
@@ -347,24 +343,19 @@ namespace Zilf.Tests.Integration
     {
         const string SStoryFileNameTemplate = "Output.z#";
 
-        [JetBrains.Annotations.NotNull]
         readonly string codeFile;
 
-        [JetBrains.Annotations.NotNull]
         readonly string zapFileName;
 
-        [JetBrains.Annotations.NotNull]
-        [ItemNotNull]
         readonly string[] includeDirs;
 
-        [CanBeNull]
-        readonly string inputFile;
+        readonly string? inputFile;
 
-        Dictionary<string, MemoryStream> zilfOutputFiles;
+        Dictionary<string, MemoryStream>? zilfOutputFiles;
 
-        MemoryStream zapfOutputFile;
+        MemoryStream? zapfOutputFile;
 
-        public FileBasedZlrHelper([JetBrains.Annotations.NotNull] string codeFile, [ItemNotNull] [JetBrains.Annotations.NotNull] string[] includeDirs, string inputFile)
+        public FileBasedZlrHelper(string codeFile, string[] includeDirs, string inputFile)
         {
             this.codeFile = codeFile;
             this.includeDirs = includeDirs;
@@ -375,6 +366,7 @@ namespace Zilf.Tests.Integration
 
         public bool WantStatusLine { get; set; }
 
+        [MemberNotNull(nameof(zilfOutputFiles))]
         public bool Compile()
         {
             var codeStreams = new Dictionary<string, Stream>();
@@ -448,8 +440,12 @@ namespace Zilf.Tests.Integration
             }
         }
 
+        [MemberNotNullWhen(true, nameof(zapfOutputFile))]
         public bool Assemble()
         {
+            if (zilfOutputFiles == null)
+                throw new InvalidOperationException($"{nameof(Compile)} must be called first");
+
             var codeStreams = new Dictionary<string, Stream>();
 
             try
@@ -519,6 +515,9 @@ namespace Zilf.Tests.Integration
         /// <exception cref="Exception">Oh shit!</exception>
         public string Execute()
         {
+            if (zapfOutputFile == null)
+                throw new InvalidOperationException($"{nameof(Assemble)} must be called first");
+
             Stream inputStream;
             if (inputFile != null)
             {

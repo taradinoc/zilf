@@ -18,7 +18,6 @@
 
 using System.Collections.Generic;
 using System.Text;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zapf.Tests
@@ -26,7 +25,6 @@ namespace Zapf.Tests
     [TestClass, TestCategory("Assembler")]
     public class LabelConvergenceTests
     {
-        [JetBrains.Annotations.NotNull]
         static string PaddingWords(int count)
         {
             if (count < 1)
@@ -39,8 +37,7 @@ namespace Zapf.Tests
             return sb.ToString();
         }
 
-        [JetBrains.Annotations.NotNull]
-        static string FormatAsRanges([JetBrains.Annotations.NotNull] IEnumerable<int> numbers)
+        static string FormatAsRanges(IEnumerable<int> numbers)
         {
             int? last = null, rangeStart = null;
             var ranges = new List<string>();

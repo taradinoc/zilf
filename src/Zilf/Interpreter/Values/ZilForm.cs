@@ -23,7 +23,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Zilf.Diagnostics;
 using Zilf.Language;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
@@ -35,7 +34,7 @@ namespace Zilf.Interpreter.Values
         {
         }
 
-        public ZilForm(ZilObject first, ZilListoidBase rest)
+        public ZilForm(ZilObject? first, ZilListoidBase? rest)
             : base(first, rest) { }
 
         [System.Diagnostics.CodeAnalysis.NotNull]
@@ -184,7 +183,7 @@ namespace Zilf.Interpreter.Values
                         if (result.ShouldPass())
                             return result;
 
-                        if (!((ZilObject)result is ZilForm resultForm) || ReferenceEquals(resultForm, this))
+                        if ((ZilObject)result is not ZilForm resultForm || ReferenceEquals(resultForm, this))
                             return result;
 
                         // set the source info on the expansion to match the macro invocation
@@ -238,10 +237,8 @@ namespace Zilf.Interpreter.Values
             }
         }
 
-        [ContractAnnotation("=> true, atom: notnull; => false, atom: null")]
         public override bool IsLVAL([NotNullWhen(true)] out ZilAtom? atom) => IsTwoElementFormWithStdAtom(StdAtom.LVAL, out atom);
 
-        [ContractAnnotation("=> true, atom: notnull; => false, atom: null")]
         public override bool IsGVAL([NotNullWhen(true)] out ZilAtom? atom) => IsTwoElementFormWithStdAtom(StdAtom.GVAL, out atom);
 
         bool IsTwoElementFormWithStdAtom(StdAtom stdAtom, [NotNullWhen(true)] out ZilAtom? atom)

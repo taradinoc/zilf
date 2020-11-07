@@ -24,7 +24,6 @@ using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using JetBrains.Annotations;
 using Zilf.Common;
 
 namespace Zilf.Interpreter
@@ -252,7 +251,7 @@ namespace Zilf.Interpreter
                 }
 
                 // it'd better be an atom by now
-                if (!(argName is ZilAtom argAtom))
+                if (argName is not ZilAtom argAtom)
                 {
                     throw new InterpreterError(InterpreterMessages._0_Expected_Atom_In_Arg_Spec_But_Found_1, caller, argName.ToString());
                 }
@@ -367,7 +366,7 @@ namespace Zilf.Interpreter
 
         public override bool Equals(object? obj)
         {
-            if (!(obj is ArgSpec other))
+            if (obj is not ArgSpec other)
                 return false;
 
             int numArgs = argAtoms.Length;
@@ -495,7 +494,6 @@ namespace Zilf.Interpreter
             }
 
             /// <exception cref="InterpreterError">The wrong number of arguments were provided.</exception>
-            [ContractAnnotation("=> halt")]
             [DoesNotReturn]
             void DoThrowWrongCount()
             {
@@ -504,7 +502,6 @@ namespace Zilf.Interpreter
             }
 
             /// <exception cref="InterpreterError">Too few arguments were provided.</exception>
-            [ContractAnnotation("=> src: notnull")]
             public ZilResult GetOne(bool eval, out IProvideSourceLine src)
             {
                 var result = GetOneOptional(eval, out var src2);
@@ -572,7 +569,7 @@ namespace Zilf.Interpreter
                         }
 
                         src = result;
-                        return result?.Eval(ctx, env);
+                        return result.Eval(ctx, env);
                     }
 
                     enumerator.Dispose();
@@ -611,9 +608,8 @@ namespace Zilf.Interpreter
         /// In the case of an exception, the new local environment will not be pushed.</para>
         /// <para>Make sure to call <see cref="IDisposable.Dispose"/> on the returned object!</para>
         /// </remarks>
-        [MustUseReturnValue]
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        public Application BeginApply([ProvidesContext] Context ctx, ZilObject[] args, bool eval)
+        public Application BeginApply(Context ctx, ZilObject[] args, bool eval)
         {
             var outerEnv = ctx.LocalEnvironment;
             var innerEnv = ctx.PushEnvironment();
@@ -741,7 +737,7 @@ namespace Zilf.Interpreter
 
         /// <exception cref="DeclCheckError"><paramref name="result"/> did not match the required pattern, and
         /// <paramref name="ctx"/>.<see cref="Context.CheckDecls"/> is <see langword="true"/>.</exception>
-        public void ValidateResult([ProvidesContext] Context ctx, ZilObject result)
+        public void ValidateResult(Context ctx, ZilObject result)
         {
             ctx.MaybeCheckDecl(result, valueDecl, "return value of {0}", (object?)Name ?? "user-defined function");
         }

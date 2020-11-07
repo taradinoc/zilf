@@ -18,8 +18,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
@@ -387,7 +387,7 @@ namespace Zilf.Compiler
             }
         }
 
-        [ContractAnnotation("notnull => notnull")]
+        [return: NotNullIfNotNull("word")]
         IOperand? GetPreposition(IWord? word)
         {
             if (word == null)

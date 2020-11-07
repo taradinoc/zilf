@@ -17,7 +17,6 @@
  */
 
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 
 namespace Zapf.Parsing.Diagnostics
 {
@@ -28,7 +27,6 @@ namespace Zapf.Parsing.Diagnostics
             sink.HandleWarning(new Warning(node, message));
         }
 
-        [StringFormatMethod("format")]
         public static void Warn(IErrorSink sink, ISourceLine? node, string format, params object[] args)
         {
             Warn(sink, node, string.Format(format, args));
@@ -39,7 +37,6 @@ namespace Zapf.Parsing.Diagnostics
             Serious(sink, null, message);
         }
 
-        [StringFormatMethod("format")]
         public static void Serious(IErrorSink sink, string format, params object[] args)
         {
             Serious(sink, string.Format(format, args));
@@ -50,7 +47,6 @@ namespace Zapf.Parsing.Diagnostics
             sink.HandleSeriousError(new SeriousError(node, message));
         }
 
-        [StringFormatMethod("format")]
         public static void Serious(IErrorSink sink, ISourceLine? node, string format,
              params object[] args)
         {
@@ -62,14 +58,12 @@ namespace Zapf.Parsing.Diagnostics
             return new SeriousError(node, message);
         }
 
-        [StringFormatMethod("format")]
         public static SeriousError MakeSerious(ISourceLine? node, string format, params object[] args)
         {
             return MakeSerious(node, string.Format(format, args));
         }
 
         /// <exception cref="SeriousError">Always thrown.</exception>
-        [ContractAnnotation("=> halt")]
         [DoesNotReturn]
         public static void ThrowSerious(string message)
         {
@@ -77,8 +71,6 @@ namespace Zapf.Parsing.Diagnostics
         }
 
         /// <exception cref="SeriousError">Always thrown.</exception>
-        [ContractAnnotation("=> halt")]
-        [StringFormatMethod("format")]
         [DoesNotReturn]
         public static void ThrowSerious(string format, params object[] args)
         {
@@ -86,7 +78,6 @@ namespace Zapf.Parsing.Diagnostics
         }
 
         /// <exception cref="SeriousError">Always thrown.</exception>
-        [ContractAnnotation("=> halt")]
         [DoesNotReturn]
         public static void ThrowSerious(ISourceLine? node, string message)
         {
@@ -94,8 +85,6 @@ namespace Zapf.Parsing.Diagnostics
         }
 
         /// <exception cref="SeriousError">Always thrown.</exception>
-        [ContractAnnotation("=> halt")]
-        [StringFormatMethod("format")]
         [DoesNotReturn]
         public static void ThrowSerious(ISourceLine? node, string format, params object[] args)
         {
@@ -103,7 +92,6 @@ namespace Zapf.Parsing.Diagnostics
         }
 
         /// <exception cref="FatalError">Always thrown.</exception>
-        [ContractAnnotation("=> halt")]
         [DoesNotReturn]
         public static void ThrowFatal(string message)
         {
@@ -111,8 +99,6 @@ namespace Zapf.Parsing.Diagnostics
         }
 
         /// <exception cref="FatalError">Always thrown.</exception>
-        [ContractAnnotation("=> halt")]
-        [StringFormatMethod("format")]
         [DoesNotReturn]
         public static void ThrowFatal(string format, params object[] args)
         {
@@ -120,7 +106,6 @@ namespace Zapf.Parsing.Diagnostics
         }
 
         /// <exception cref="FatalError">Always thrown.</exception>
-        [ContractAnnotation("=> halt")]
         [DoesNotReturn]
         public static void ThrowFatal(ISourceLine? node, string message)
         {
@@ -128,8 +113,6 @@ namespace Zapf.Parsing.Diagnostics
         }
 
         /// <exception cref="FatalError">Always thrown.</exception>
-        [ContractAnnotation("=> halt")]
-        [StringFormatMethod("format")]
         [DoesNotReturn]
         public static void ThrowFatal(ISourceLine? node, string format, params object[] args)
         {

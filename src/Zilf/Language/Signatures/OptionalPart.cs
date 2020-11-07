@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using JetBrains.Annotations;
 
 namespace Zilf.Language.Signatures
 {
@@ -30,18 +29,11 @@ namespace Zilf.Language.Signatures
             Inner = inner;
         }
 
-        public static SignaturePart From(SignaturePart inner)
+        public static SignaturePart From(SignaturePart inner) => inner switch
         {
-            switch (inner)
-            {
-                case VarArgsPart _:
-                case OptionalPart _:
-                    return inner;
-
-                default:
-                    return new OptionalPart(inner);
-            }
-        }
+            VarArgsPart or OptionalPart => inner,
+            _ => new OptionalPart(inner),
+        };
 
         public override void Accept(ISignatureVisitor visitor) => visitor.Visit(this);
 

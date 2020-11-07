@@ -2,7 +2,6 @@
 using System;
 using System.Globalization;
 using System.IO;
-using JetBrains.Annotations;
 
 // ReSharper disable once CheckNamespace
 namespace ZilfAnalyzers.Test.Helpers
@@ -20,7 +19,7 @@ namespace ZilfAnalyzers.Test.Helpers
             ShouldEqualWithDiff(actualValue, expectedValue, diffStyle, Console.Out);
         }
 
-        public static void ShouldEqualWithDiff([CanBeNull] this string actualValue, [CanBeNull] string expectedValue, DiffStyle diffStyle, TextWriter output)
+        public static void ShouldEqualWithDiff(this string? actualValue, string? expectedValue, DiffStyle diffStyle, TextWriter output)
         {
             if (actualValue == null || expectedValue == null)
             {
@@ -53,7 +52,6 @@ namespace ZilfAnalyzers.Test.Helpers
             Assert.AreEqual(expectedValue, actualValue);
         }
 
-        [JetBrains.Annotations.NotNull]
         static string ToSafeString(this char c)
         {
             return c switch

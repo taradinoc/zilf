@@ -17,8 +17,8 @@
  */
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using JetBrains.Annotations;
 using Zapf.Parsing;
 using Zapf.Parsing.Diagnostics;
 
@@ -55,7 +55,7 @@ namespace Zapf
         public Context Context { get; set; }
     }
 
-    struct AssemblyResult
+    readonly struct AssemblyResult
     {
         public AssemblyResult(bool success, Context? context)
         {
@@ -65,6 +65,7 @@ namespace Zapf
 
         public static readonly AssemblyResult Failed = new AssemblyResult(false, null);
 
+        [MemberNotNullWhen(true, nameof(Context))]
         public bool Success { get; }
         public Context? Context { get; }
     }

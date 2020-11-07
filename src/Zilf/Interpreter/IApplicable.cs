@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
@@ -30,7 +29,7 @@ namespace Zilf.Interpreter
         /// <param name="ctx">The current context.</param>
         /// <param name="args">The unevaluated arguments.</param>
         /// <returns>The result of the application.</returns>
-        ZilResult Apply([ProvidesContext] Context ctx, ZilObject[] args);
+        ZilResult Apply(Context ctx, ZilObject[] args);
 
         /// <summary>
         /// Applies the object to the given arguments, without evaluating or expanding them.
@@ -38,6 +37,6 @@ namespace Zilf.Interpreter
         /// <param name="ctx">The current context.</param>
         /// <param name="args">The arguments.</param>
         /// <returns>The result of the application.</returns>
-        ZilResult ApplyNoEval([ProvidesContext] Context ctx, ZilObject[] args);
+        ZilResult ApplyNoEval(Context ctx, ZilObject[] args);
     }
 }

@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Zapf.Parsing.Directives;
 
 namespace Zapf.Parsing

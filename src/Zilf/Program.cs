@@ -24,7 +24,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using JetBrains.Annotations;
 using Zilf.Common;
 using Zilf.Compiler;
 using Zilf.Diagnostics;
@@ -230,18 +229,14 @@ namespace Zilf
                 s.Read(b);
             }
 
-#pragma warning disable PC001 // API not supported on all platforms
-            // false alarm: https://github.com/dotnet/platform-compat/issues/123
             var i = BitConverter.ToInt32(b.Slice(c_PeHeaderOffset, 4));
             var secondsSince1970 = BitConverter.ToInt32(b.Slice(i + c_LinkerTimestampOffset, 4));
-#pragma warning restore PC001 // API not supported on all platforms
             var dt = new DateTime(1970, 1, 1, 0, 0, 0);
             dt = dt.AddSeconds(secondsSince1970);
             dt = dt.ToLocalTime();
             return dt;
         }
 
-        [ContractAnnotation("=> null, inFile: null, outFile: null; => notnull, inFile: notnull, outFile: canbenull")]
         [return: NotNullIfNotNull("inFile")]
         static Context? ParseArgs(string[] args, [NotNullIfNotNull("outFile")] out string? inFile, out string? outFile)
         {
@@ -432,20 +427,11 @@ namespace Zilf
                         break;
                 }
 
-                if (caseSensitive == null)
+                caseSensitive ??= mode.Value switch
                 {
-                    switch (mode.Value)
-                    {
-                        case RunMode.Expression:
-                        case RunMode.Interactive:
-                            caseSensitive = false;
-                            break;
-
-                        default:
-                            caseSensitive = true;
-                            break;
-                    }
-                }
+                    RunMode.Expression or RunMode.Interactive => false,
+                    _ => true,
+                };
 
                 return true;
             }
@@ -621,7 +607,6 @@ Warning message options:
             }
         }
 
-        [ContractAnnotation("wantExceptions: true => notnull")]
         // ReSharper disable once UnusedMethodReturnValue.Global
         public static ZilObject? Evaluate(Context ctx, Stream stream, bool wantExceptions = false)
         {

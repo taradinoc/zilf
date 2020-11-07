@@ -17,7 +17,6 @@
  */
 
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -32,7 +31,6 @@ namespace Zilf.Compiler
         /// <summary>
         /// The ZIL context that resulted from loading the source code.
         /// </summary>
-        [ProvidesContext]
         public Context Context { get; }
         /// <summary>
         /// The game being built.

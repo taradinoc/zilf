@@ -16,7 +16,6 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using JetBrains.Annotations;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -42,7 +41,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                 ctx.GetStdAtom(StdAtom.WORD_LEXICAL_WORD),
                 vword
             });
-            if (!((ZilObject)form.Eval(ctx) is ZilString lexicalWord))
+            if ((ZilObject)form.Eval(ctx) is not ZilString lexicalWord)
                 throw new InterpreterError(
                     InterpreterMessages._0_1_Must_Return_2,
                     InterpreterMessages.NoFunction,

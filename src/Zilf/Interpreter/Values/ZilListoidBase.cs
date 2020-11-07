@@ -20,19 +20,19 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter.Values
 {
     [BuiltinPrimType(PrimType.LIST)]
     abstract class ZilListoidBase : ZilObject, IStructure
     {
-        [NotNullIfNotNull(nameof(Rest)), DisallowNull]
+        [DisallowNull]
         public abstract ZilObject? First { get; set; }
 
-        [NotNullIfNotNull(nameof(First)), DisallowNull]
+        [DisallowNull]
         public abstract ZilListoidBase? Rest { get; set; }
 
+        [MemberNotNull(nameof(First), nameof(Rest))]
         public void Deconstruct(out ZilObject first, out ZilListoidBase rest)
         {
             if (IsEmpty)
@@ -44,10 +44,9 @@ namespace Zilf.Interpreter.Values
             rest = this.Rest;
         }
 
+        [MemberNotNullWhen(true, nameof(First), nameof(Rest))]
         public abstract bool IsEmpty { get; }
 
-        [ContractAnnotation("=> true, first: notnull, rest: notnull")]
-        [ContractAnnotation("=> false, first: null, rest: null")]
         public bool IsCons([NotNullWhen(true)] out ZilObject? first, [NotNullWhen(true)] out ZilListoidBase? rest)
         {
             (first, rest) = (this.First, this.Rest);

@@ -19,8 +19,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using JetBrains.Annotations;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -38,7 +38,8 @@ namespace Zilf.Tests.Interpreter
         {
             readonly Dictionary<string, ZilAtom> atoms = new Dictionary<string, ZilAtom>();
 
-            public Func<ZilObject, ZilObject> OnEvaluate { get; set; }
+            [DisallowNull]
+            public Func<ZilObject, ZilObject>? OnEvaluate { get; set; }
 
             public string CurrentFilePath => "sample.zil";
 
@@ -73,20 +74,21 @@ namespace Zilf.Tests.Interpreter
                 return handler(zo);
             }
 
-            public ZilObject GetGlobalVal(ZilAtom atom)
+            public ZilObject? GetGlobalVal(ZilAtom atom)
             {
                 return null;
             }
 
-            public void AddStdAtom([JetBrains.Annotations.NotNull] string name, StdAtom stdAtom)
+            public void AddStdAtom(string name, StdAtom stdAtom)
             {
                 atoms.Add(name, new ZilAtom(name, null, stdAtom));
             }
         }
 
-        TestParserSite site;
+        TestParserSite site = default!;
 
         [TestInitialize]
+        [MemberNotNull(nameof(site))]
         public void Initialize()
         {
             site = new TestParserSite();
@@ -404,7 +406,7 @@ namespace Zilf.Tests.Interpreter
         [DataRow("!%%FOO", ParserOutputType.EmptySplice)]
         [DataRow("!#2 1010", ParserOutputType.Object)]
         [DataRow("!'FOO", ParserOutputType.Object)]
-        public void TestParsingUglyStructures([JetBrains.Annotations.NotNull] string input, [JetBrains.Annotations.NotNull] object boxedExpectedType)
+        public void TestParsingUglyStructures(string input, object boxedExpectedType)
         {
             site.OnEvaluate = _ => new ZilFix(3);
 

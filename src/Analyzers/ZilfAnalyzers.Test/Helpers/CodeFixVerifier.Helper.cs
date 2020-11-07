@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using JetBrains.Annotations;
 using System.Threading.Tasks;
 
 // ReSharper disable once CheckNamespace
@@ -25,11 +24,11 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="document">The Document to apply the fix on</param>
         /// <param name="codeAction">A CodeAction that will be applied to the Document.</param>
         /// <returns>A Document with the changes from the CodeAction</returns>
-        static async Task<Document> ApplyFixAsync([JetBrains.Annotations.NotNull] Document document, [JetBrains.Annotations.NotNull] CodeAction codeAction)
+        static async Task<Document> ApplyFixAsync(Document document, CodeAction codeAction)
         {
             var operations = await codeAction.GetOperationsAsync(CancellationToken.None).ConfigureAwait(false);
             var solution = operations.OfType<ApplyChangesOperation>().Single().ChangedSolution;
-            return solution.GetDocument(document.Id);
+            return solution.GetDocument(document.Id)!;
         }
 
         /// <summary>
@@ -40,7 +39,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="diagnostics">The Diagnostics that existed in the code before the CodeFix was applied</param>
         /// <param name="newDiagnostics">The Diagnostics that exist in the code after the CodeFix was applied</param>
         /// <returns>A list of Diagnostics that only surfaced in the code after the CodeFix was applied</returns>
-        static IEnumerable<Diagnostic> GetNewDiagnostics([JetBrains.Annotations.NotNull] [InstantHandle] IEnumerable<Diagnostic> diagnostics, [JetBrains.Annotations.NotNull] [InstantHandle] IEnumerable<Diagnostic> newDiagnostics)
+        static IEnumerable<Diagnostic> GetNewDiagnostics(IEnumerable<Diagnostic> diagnostics, IEnumerable<Diagnostic> newDiagnostics)
         {
             var oldArray = diagnostics.OrderBy(d => d.Location.SourceSpan.Start).ToArray();
             var newArray = newDiagnostics.OrderBy(d => d.Location.SourceSpan.Start).ToArray();
@@ -67,9 +66,9 @@ namespace ZilfAnalyzers.Test.Helpers
         /// </summary>
         /// <param name="document">The Document to run the compiler diagnostic analyzers on</param>
         /// <returns>The compiler diagnostics that were found in the code</returns>
-        static async Task<ImmutableArray<Diagnostic>> GetCompilerDiagnosticsAsync([JetBrains.Annotations.NotNull] Document document)
+        static async Task<ImmutableArray<Diagnostic>> GetCompilerDiagnosticsAsync(Document document)
         {
-            return (await document.GetSemanticModelAsync().ConfigureAwait(false)).GetDiagnostics();
+            return (await document.GetSemanticModelAsync().ConfigureAwait(false))!.GetDiagnostics();
         }
 
         /// <summary>
@@ -77,7 +76,6 @@ namespace ZilfAnalyzers.Test.Helpers
         /// </summary>
         /// <param name="document">The Document to be converted to a string</param>
         /// <returns>A string containing the syntax of the Document after formatting</returns>
-        [JetBrains.Annotations.NotNull]
         static async Task<string> GetStringFromDocumentAsync(Document document)
         {
             var simplifiedDoc = await Simplifier.ReduceAsync(document, Simplifier.Annotation).ConfigureAwait(false);

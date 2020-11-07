@@ -23,7 +23,6 @@ using System.Text.RegularExpressions;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
-using JetBrains.Annotations;
 
 namespace Zilf.Interpreter
 {
@@ -238,7 +237,7 @@ namespace Zilf.Interpreter
                 {
                     var c = channel.ReadChar();
                     if (c != null &&
-                        (stopChars == null || stopChars.Text.IndexOf(c.Value) < 0))
+                        (stopChars == null || stopChars.Text.IndexOf(c.Value, StringComparison.Ordinal) < 0))
                     {
                         buffer.Append(c.Value);
                         reading = true;
@@ -247,7 +246,7 @@ namespace Zilf.Interpreter
             } while (reading);
 
             var readCount = buffer.Length;
-            buffer.Append(dest.Text.Substring(readCount));
+            buffer.Append(dest.Text[readCount..]);
             dest.Text = buffer.ToString();
             return new ZilFix(readCount);
         }
@@ -257,7 +256,7 @@ namespace Zilf.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "M_ is not a member prefix here")]
         public static ZilObject M_HPOS(Context ctx, ZilChannel channel)
         {
-            if (!(channel is IChannelWithHPos hposChannel))
+            if (channel is not IChannelWithHPos hposChannel)
                 throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_This_Type_Of_Channel, "M-HPOS");
 
             return new ZilFix(hposChannel.HPos);
@@ -282,7 +281,7 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages._0_Bad_OUTCHAN, "INDENT-TO");
             }
 
-            if (!(channel is IChannelWithHPos hposChannel))
+            if (channel is not IChannelWithHPos hposChannel)
                 throw new InterpreterError(InterpreterMessages._0_Not_Supported_By_This_Type_Of_Channel, "INDENT-TO");
 
             var cur = hposChannel.HPos;

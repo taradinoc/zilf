@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using JetBrains.Annotations;
 using Zilf.Emit;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -30,7 +29,7 @@ namespace Zilf.Compiler.Builtins
 {
     abstract class ParameterTypeHandler
     {
-        public abstract BuiltinArg Process(Compilation cc, [InstantHandle] Action<string> error,
+        public abstract BuiltinArg Process(Compilation cc, Action<string> error,
              ZilObject arg, ParameterInfo pi);
         public virtual bool IsVariable => false;
 
@@ -54,7 +53,7 @@ namespace Zilf.Compiler.Builtins
 
         static VariableRef? GetVariable(Compilation cc, ZilObject expr, VariableScopeQuirks quirks = VariableScopeQuirks.None)
         {
-            if (!(expr is ZilAtom atom) &&
+            if (expr is not ZilAtom atom &&
                 ((quirks & VariableScopeQuirks.Global) == 0 || !expr.IsGVAL(out atom!)) &&
                 ((quirks & VariableScopeQuirks.Local) == 0 || !expr.IsLVAL(out atom!)))
             {
@@ -207,7 +206,7 @@ namespace Zilf.Compiler.Builtins
             public override BuiltinArg Process(Compilation cc, Action<string> error, ZilObject arg, ParameterInfo pi)
             {
                 // arg must be a string
-                if (!(arg is ZilString zstr))
+                if (arg is not ZilString zstr)
                 {
                     error("argument must be a literal string");
                     return new BuiltinArg(BuiltinArgType.Operand, null);

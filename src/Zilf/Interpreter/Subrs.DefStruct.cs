@@ -250,12 +250,12 @@ namespace Zilf.Interpreter
                 if (defaults.CustomCtorSpec.IsEmpty || defaults.CustomCtorSpec.Rest != null && defaults.CustomCtorSpec.Rest.IsEmpty)
                     throw new InterpreterError(InterpreterMessages._0_Not_Enough_Elements_In_CONSTRUCTOR_Spec, "DEFSTRUCT");
 
-                if (!(defaults.CustomCtorSpec.First is ZilAtom ctorName))
+                if (defaults.CustomCtorSpec.First is not ZilAtom ctorName)
                     throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "an atom", "'CONSTRUCTOR");
 
                 Debug.Assert(defaults.CustomCtorSpec.Rest != null);
 
-                if (!(defaults.CustomCtorSpec.Rest.First is ZilList argspecList))
+                if (defaults.CustomCtorSpec.Rest.First is not ZilList argspecList)
                     throw new InterpreterError(InterpreterMessages._0_Second_Element_After_CONSTRUCTOR_Must_Be_An_Argument_List, "DEFSTRUCT");
 
                 var argspec = ArgSpec.Parse("DEFSTRUCT", ctorName, null, argspecList);
@@ -794,7 +794,7 @@ namespace Zilf.Interpreter
                             break;
 
                         case StdAtom.START_OFFSET:
-                            if (!(partRest.First is ZilFix fix))
+                            if (partRest.First is not ZilFix fix)
                                 throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, "DEFSTRUCT", "a FIX", partFirst);
                             defaults.StartOffset = fix.Value;
                             break;

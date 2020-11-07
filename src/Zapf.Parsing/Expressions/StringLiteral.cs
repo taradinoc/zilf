@@ -17,7 +17,6 @@
  */
 
 using System.Text;
-using JetBrains.Annotations;
 
 namespace Zapf.Parsing.Expressions
 {
@@ -44,7 +43,7 @@ namespace Zapf.Parsing.Expressions
             return sb.ToString();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is StringLiteral other && other.Text == Text;
         }

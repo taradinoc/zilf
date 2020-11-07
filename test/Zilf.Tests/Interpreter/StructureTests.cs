@@ -385,7 +385,7 @@ namespace Zilf.Tests.Interpreter
                     return new MemoryStream(Encoding.ASCII.GetBytes(fileContent));
                 }
 
-                return null;
+                throw new FileNotFoundException("File not included in test case", path);
             };
 
             TestHelpers.Evaluate(ctx, "<FLOAD \"inner\">");
@@ -472,9 +472,9 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndCatch<InterpreterError>("<PUTB <TABLE 1> 100 0>");
 
             TestHelpers.EvalAndCatch<InterpreterError>("<ZGET <TABLE 1 2> 2>",
-                ex => ex.Diagnostic.CodeNumber == InterpreterMessages._0_Reading_Past_End_Of_Structure);
+                ex => ex.Diagnostic?.CodeNumber == InterpreterMessages._0_Reading_Past_End_Of_Structure);
             TestHelpers.EvalAndCatch<InterpreterError>("<ZPUT <TABLE 1 2> 2 0>",
-                ex => ex.Diagnostic.CodeNumber == InterpreterMessages._0_Writing_Past_End_Of_Structure);
+                ex => ex.Diagnostic?.CodeNumber == InterpreterMessages._0_Writing_Past_End_Of_Structure);
         }
 
         [TestMethod]
