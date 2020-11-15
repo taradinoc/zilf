@@ -157,22 +157,23 @@ namespace Zapf
                 Console.Error.WriteLine();
 
                 var query = from s in ctx.GlobalSymbols.Values
-                            where s.Type == SymbolType.Function || s.Type == SymbolType.Label ||
-                                  s.Type == SymbolType.String
-                            let addr =
-                            (s.Type == SymbolType.Label)
-                                ? s.Value
-                                : (s.Type == SymbolType.Function)
-                                    ? s.Value * ctx.PackingDivisor + ctx.FunctionsOffset
-                                    : /* (s.Type == SymbolType.String) ? */ s.Value * ctx.PackingDivisor + ctx.StringsOffset
-                            orderby addr
-                            select new { s.Name, Address = addr };
+                            let addr = s.Type switch
+                            {
+                                SymbolType.Label => s.Value,
+                                SymbolType.Function => s.Value * ctx.PackingDivisor + ctx.FunctionsOffset,
+                                SymbolType.String => s.Value * ctx.PackingDivisor + ctx.StringsOffset,
+                                _ => (int?)null
+                            }
+                            where addr != null
+                            orderby addr.Value
+                            select new { s.Name, Address = addr.Value };
 
                 Console.WriteLine("{0,-32} {1,-6} {2,-6}",
                     "Name",
                     "Addr",
                     "Length");
 
+                // TODO: don't allocate an array for the label addresses
                 var entries = query.ToArray();
 
                 for (int i = 0; i < entries.Length; i++)
