@@ -31,6 +31,7 @@ using ZLR.VM;
 using Zilf.Language;
 using System.Text.RegularExpressions;
 using System.Diagnostics.CodeAnalysis;
+using Zilf.Common;
 
 namespace Zilf.Tests.Integration
 {
@@ -55,13 +56,13 @@ namespace Zilf.Tests.Integration
         public IReadOnlyCollection<Diagnostic> Diagnostics;
     }
 
-    sealed class ZlrHelper : IDisposable
+    sealed class ZlrHelper
     {
         public static void RunAndAssert(string code, string? input, string expectedOutput,
             IEnumerable<(Predicate<ZlrHelperRunResult>, string message)>? warningChecks = null,
             bool wantCompileOutput = false)
         {
-            using var helper = new ZlrHelper(code, input);
+            var helper = new ZlrHelper(code, input);
             bool compiled;
             string compileOutput;
             if (wantCompileOutput)
@@ -129,14 +130,12 @@ namespace Zilf.Tests.Integration
 
         const string SZilFileName = "Input.zil";
         const string SMainZapFileName = "Output.zap";
-        const string SStoryFileNameTemplate = "Output.z#";
+        const string SStoryFileName = "Output.zcode";
 
         readonly string code;
         readonly string? input;
 
-        readonly Dictionary<string, MemoryStream> zilfOutputFiles = new Dictionary<string, MemoryStream>();
-
-        MemoryStream? zapfOutputFile;
+        readonly InMemoryFileSystem fileSystem = new();
 
         public int ErrorCount { get; private set; }
         public int WarningCount { get; private set; }
@@ -177,8 +176,7 @@ namespace Zilf.Tests.Integration
 
         void PrintZapCode(string filename)
         {
-            var zapStream = zilfOutputFiles[filename];
-            var zapCode = Encoding.UTF8.GetString(zapStream.ToArray());
+            var zapCode = fileSystem.Exists(filename) ? fileSystem.GetText(filename) : "*** MISSING ***";
             Console.Error.WriteLine("=== {0} ===", filename);
             Console.Error.WriteLine(TransformInvalidXMLChars(zapCode));
             Console.Error.WriteLine();
@@ -193,44 +191,12 @@ namespace Zilf.Tests.Integration
         [MemberNotNull(nameof(Diagnostics))]
         bool Compile(Action<FrontEnd>? initializeFrontEnd, bool wantDebugInfo = false)
         {
-            // write code to a MemoryStream
-            var codeStream = new MemoryStream();
-            using (var wtr = new StreamWriter(codeStream, Encoding.UTF8, 512, true))
-            {
-                wtr.Write(code);
-                wtr.Flush();
-            }
-            codeStream.Seek(0, SeekOrigin.Begin);
+            fileSystem.Clear();
+            fileSystem.SetText(SZilFileName, code);
 
-            // initialize ZilfCompiler
-            zilfOutputFiles.Clear();
-
-            var frontEnd = new FrontEnd();
-            frontEnd.OpeningFile += (sender, e) =>
-            {
-                if (e.FileName == SZilFileName)
-                {
-                    e.Stream = codeStream;
-                    return;
-                }
-
-                if (zilfOutputFiles.TryGetValue(e.FileName, out var mstr))
-                {
-                    e.Stream = mstr;
-                    return;
-                }
-
-                e.Stream = zilfOutputFiles[e.FileName] = new MemoryStream();
-            };
-            frontEnd.CheckingFilePresence += (sender, e) =>
-            {
-                // XXX this isn't right...?
-                e.Exists = zilfOutputFiles.ContainsKey(e.FileName);
-            };
+            var frontEnd = new FrontEnd { FileSystem = fileSystem };
 
             initializeFrontEnd?.Invoke(frontEnd);
-
-            //XXX need to intercept <INSERT-FILE> too
 
             // run compilation
             PrintZilCode();
@@ -270,9 +236,12 @@ namespace Zilf.Tests.Integration
         {
             var sb = new StringBuilder();
 
-            foreach (var stream in zilfOutputFiles.OrderBy(p => p.Key).Select(p => p.Value))
+            foreach (var content in from path in fileSystem.Paths
+                                    where path.EndsWith(".zap") || path.EndsWith(".xzap")
+                                    orderby path
+                                    select fileSystem.GetText(path))
             {
-                sb.Append(Encoding.UTF8.GetString(stream.ToArray()));
+                sb.Append(content);
                 sb.AppendLine();
             }
 
@@ -282,45 +251,20 @@ namespace Zilf.Tests.Integration
         public bool Assemble()
         {
             // initialize ZapfAssembler
-            var assembler = new ZapfAssembler();
-            assembler.OpeningFile += (sender, e) =>
-            {
-                if (e.Writing)
-                {
-                    //XXX this could potentially be the debug file instead!
-
-                    zapfOutputFile = new MemoryStream();
-                    e.Stream = zapfOutputFile;
-                }
-                else if (zilfOutputFiles.ContainsKey(e.FileName))
-                {
-                    var buffer = zilfOutputFiles[e.FileName].ToArray();
-                    e.Stream = new MemoryStream(buffer, false);
-                }
-                else
-                {
-                    throw new InvalidOperationException("No such ZILF output file: " + e.FileName);
-                }
-            };
-            assembler.CheckingFilePresence += (sender, e) =>
-            {
-                e.Exists = zilfOutputFiles.ContainsKey(e.FileName);
-            };
+            var assembler = new ZapfAssembler { FileSystem = fileSystem };
 
             // run assembly
-            var result = assembler.Assemble(SMainZapFileName, SStoryFileNameTemplate);
+            var result = assembler.Assemble(SMainZapFileName, SStoryFileName);
             WarningCount += result.Context?.WarningCount ?? 0;
             return result.Success;
         }
 
         string Execute()
         {
-            Debug.Assert(zapfOutputFile != null);
-
             var inputStream = input != null ? new MemoryStream(Encoding.UTF8.GetBytes(input)) : new MemoryStream();
 
             var io = new ReplayIO(inputStream);
-            var gameStream = new MemoryStream(zapfOutputFile.ToArray(), false);
+            var gameStream = new MemoryStream(fileSystem.GetBytes(SStoryFileName), false);
             var zmachine = new ZMachine(gameStream, io)
             {
                 PredictableRandom = true,
@@ -331,17 +275,12 @@ namespace Zilf.Tests.Integration
 
             return io.CollectOutput();
         }
-
-        public void Dispose()
-        {
-            zapfOutputFile?.Dispose();
-        }
     }
 
     // TODO: merge this with ZlrHelper
     class FileBasedZlrHelper
     {
-        const string SStoryFileNameTemplate = "Output.z#";
+        const string SStoryFileName = "Output.zcode";
 
         readonly string codeFile;
 
@@ -351,9 +290,7 @@ namespace Zilf.Tests.Integration
 
         readonly string? inputFile;
 
-        Dictionary<string, MemoryStream>? zilfOutputFiles;
-
-        MemoryStream? zapfOutputFile;
+        readonly InMemoryFileSystem fileSystem = new();
 
         public FileBasedZlrHelper(string codeFile, string[] includeDirs, string? inputFile)
         {
@@ -366,157 +303,44 @@ namespace Zilf.Tests.Integration
 
         public bool WantStatusLine { get; set; }
 
-        [MemberNotNull(nameof(zilfOutputFiles))]
         public bool Compile()
         {
-            var codeStreams = new Dictionary<string, Stream>();
-
-            try
+            // initialize ZilfCompiler
+            var compiler = new FrontEnd
             {
-                // initialize ZilfCompiler
-                zilfOutputFiles = new Dictionary<string, MemoryStream>();
+                FileSystem = new OverlayFileSystem(fileSystem, new LimitedFileSystem(includeDirs))
+            };
 
-                var compiler = new FrontEnd();
-                compiler.OpeningFile += (sender, e) =>
-                {
-                    if (e.Writing)
-                    {
-                        if (zilfOutputFiles.TryGetValue(e.FileName, out var mstr))
-                        {
-                            e.Stream = mstr;
-                            return;
-                        }
+            compiler.IncludePaths.Add("");
 
-                        e.Stream = zilfOutputFiles[e.FileName] = new MemoryStream();
-                    }
-                    else
-                    {
-                        if (codeStreams.TryGetValue(e.FileName, out var result))
-                        {
-                            e.Stream = result;
-                            return;
-                        }
-
-                        foreach (var idir in includeDirs)
-                        {
-                            var path = Path.Combine(idir, e.FileName);
-                            if (File.Exists(path))
-                            {
-                                e.Stream = codeStreams[e.FileName] = new FileStream(path, FileMode.Open, FileAccess.Read);
-                                return;
-                            }
-                        }
-                    }
-                };
-                compiler.CheckingFilePresence += (sender, e) =>
-                {
-                    foreach (var idir in includeDirs)
-                    {
-                        if (File.Exists(Path.Combine(idir, e.FileName)))
-                        {
-                            e.Exists = true;
-                            return;
-                        }
-                    }
-                };
-                foreach (var dir in includeDirs)
-                    compiler.IncludePaths.Add(dir);
-
-                // run compilation
-                if (compiler.Compile(Path.GetFileName(codeFile), zapFileName).Success)
-                {
-                    return true;
-                }
-                else
-                {
-                    Console.Error.WriteLine();
-                    return false;
-                }
+            // run compilation
+            if (compiler.Compile(Path.GetFileName(codeFile), zapFileName).Success)
+            {
+                return true;
             }
-            finally
+            else
             {
-                foreach (var stream in codeStreams.Values)
-                    stream.Dispose();
+                Console.Error.WriteLine();
+                return false;
             }
         }
 
-        [MemberNotNullWhen(true, nameof(zapfOutputFile))]
         public bool Assemble()
         {
-            if (zilfOutputFiles == null)
-                throw new InvalidOperationException($"{nameof(Compile)} must be called first");
+            // initialize ZapfAssembler
+            var assembler = new ZapfAssembler { FileSystem = fileSystem };
 
-            var codeStreams = new Dictionary<string, Stream>();
-
-            try
-            {
-                // initialize ZapfAssembler
-                var assembler = new ZapfAssembler();
-                assembler.OpeningFile += (sender, e) =>
-                {
-                    if (e.Writing)
-                    {
-                        //XXX this could potentially be the debug file instead!
-
-                        zapfOutputFile = new MemoryStream();
-                        e.Stream = zapfOutputFile;
-                    }
-                    else if (zilfOutputFiles.ContainsKey(e.FileName))
-                    {
-                        var buffer = zilfOutputFiles[e.FileName].ToArray();
-                        e.Stream = new MemoryStream(buffer, false);
-                    }
-                    else
-                    {
-                        foreach (var idir in includeDirs)
-                        {
-                            var path = Path.Combine(idir, e.FileName);
-                            if (File.Exists(path))
-                            {
-                                e.Stream = codeStreams[e.FileName] = new FileStream(path, FileMode.Open, FileAccess.Read);
-                                return;
-                            }
-                        }
-
-                        throw new InvalidOperationException("No such ZILF output file: " + e.FileName);
-                    }
-                };
-                assembler.CheckingFilePresence += (sender, e) =>
-                {
-                    if (zilfOutputFiles.ContainsKey(e.FileName))
-                    {
-                        e.Exists = true;
-                    }
-                    else
-                    {
-                        foreach (var idir in includeDirs)
-                        {
-                            if (File.Exists(Path.Combine(idir, e.FileName)))
-                            {
-                                e.Exists = true;
-                                return;
-                            }
-                        }
-
-                        e.Exists = false;
-                    }
-                };
-
-                // run assembly
-                return assembler.Assemble(zapFileName, SStoryFileNameTemplate).Success;
-            }
-            finally
-            {
-                foreach (var stream in codeStreams.Values)
-                    stream.Dispose();
-            }
+            // run assembly
+            return assembler.Assemble(zapFileName, SStoryFileName).Success;
         }
 
         /// <exception cref="Exception">Oh shit!</exception>
         public string Execute()
         {
-            if (zapfOutputFile == null)
+            if (!fileSystem.Exists(SStoryFileName))
                 throw new InvalidOperationException($"{nameof(Assemble)} must be called first");
+
+            var zapfOutputFile = fileSystem.GetBytes(SStoryFileName);
 
             Stream inputStream;
             if (inputFile != null)
@@ -534,7 +358,7 @@ namespace Zilf.Tests.Integration
 
                 try
                 {
-                    var gameStream = new MemoryStream(zapfOutputFile.ToArray(), false);
+                    var gameStream = new MemoryStream(zapfOutputFile, false);
                     var zmachine = new ZMachine(gameStream, io)
                     {
                         PredictableRandom = true,

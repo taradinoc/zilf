@@ -21,9 +21,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Zapf.Parsing;
 using Zapf.Parsing.Diagnostics;
+using Zilf.Common;
 
 namespace Zapf
 {
+    [Obsolete("Use " + nameof(IFileSystem) + " instead.")]
     class OpeningFileEventArgs : EventArgs
     {
         public OpeningFileEventArgs(string filename, bool writing)
@@ -39,6 +41,7 @@ namespace Zapf
         public Stream? Stream { get; set; }
     }
 
+    [Obsolete("Use " + nameof(IFileSystem) + " instead.")]
     class CheckingFilePresenceEventArgs : EventArgs
     {
         public CheckingFilePresenceEventArgs(string filename) => FileName = filename;
@@ -52,7 +55,7 @@ namespace Zapf
     {
         public InitializingContextEventArgs(Context ctx) => Context = ctx;
 
-        public Context Context { get; set; }
+        public Context Context { get; }
     }
 
     readonly struct AssemblyResult
@@ -72,44 +75,9 @@ namespace Zapf
 
     sealed class ZapfAssembler
     {
-        public event EventHandler<OpeningFileEventArgs>? OpeningFile;
-        public event EventHandler<CheckingFilePresenceEventArgs>? CheckingFilePresence;
+        public IFileSystem FileSystem { get; set; } = PhysicalFileSystem.Instance;
+
         public event EventHandler<InitializingContextEventArgs>? InitializingContext;
-
-        Stream OpenFile(string path, bool writing)
-        {
-            var handler = OpeningFile;
-            if (handler != null)
-            {
-                var args = new OpeningFileEventArgs(path, writing);
-
-                handler(this, args);
-
-                if (args.Stream != null)
-                    return args.Stream;
-            }
-
-            return new FileStream(
-                path,
-                writing ? FileMode.Create : FileMode.Open,
-                writing ? FileAccess.ReadWrite : FileAccess.Read);
-        }
-
-        bool CheckFileExists(string path)
-        {
-            var handler = CheckingFilePresence;
-            if (handler != null)
-            {
-                var args = new CheckingFilePresenceEventArgs(path);
-
-                handler(this, args);
-
-                if (args.Exists.HasValue)
-                    return args.Exists.Value;
-            }
-
-            return File.Exists(path);
-        }
 
         Context InitializeContext(string inputFileName, string? outputFileName)
         {
@@ -118,7 +86,8 @@ namespace Zapf
                 Quiet = true,
                 InFile = inputFileName,
                 OutFile = outputFileName,
-                DebugFile = Path.ChangeExtension(outputFileName, ".dbg")
+                DebugFile = Path.ChangeExtension(outputFileName, ".dbg"),
+                FileSystem = FileSystem
             };
 
             var handler = InitializingContext;
@@ -126,11 +95,7 @@ namespace Zapf
             {
                 var args = new InitializingContextEventArgs(ctx);
                 handler(this, args);
-                ctx = args.Context;
             }
-
-            ctx.InterceptOpenFile = OpenFile;
-            ctx.InterceptFileExists = CheckFileExists;
 
             return ctx;
         }

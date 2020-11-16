@@ -24,33 +24,10 @@ using Zilf.Emit.Zap;
 using Zilf.Interpreter;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Common;
 
 namespace Zilf.Compiler
 {
-    public class OpeningFileEventArgs : EventArgs
-    {
-        public OpeningFileEventArgs(string fileName, bool writing)
-        {
-            FileName = fileName;
-            Writing = writing;
-        }
-
-        public string FileName { get; }
-        public bool Writing { get; }
-        public Stream? Stream { get; set; }
-    }
-
-    public class CheckingFilePresenceEventArgs : EventArgs
-    {
-        public CheckingFilePresenceEventArgs(string fileName)
-        {
-            FileName = fileName;
-        }
-
-        public string FileName { get; }
-        public bool? Exists { get; set; }
-    }
-
     class ContextEventArgs : EventArgs
     {
         public ContextEventArgs(Context ctx)
@@ -61,66 +38,16 @@ namespace Zilf.Compiler
         public Context Context { get; }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-    public struct FrontEndResult
-    {
-        public bool Success { get; set; }
-        public int ErrorCount { get; set; }
-        public int WarningCount { get; set; }
-        public int SuppressedWarningCount { get; set; }
-        public IReadOnlyCollection<Diagnostic> Diagnostics { get; set; }
-    }
+    public record FrontEndResult(bool Success, int ErrorCount, int WarningCount, int SuppressedWarningCount,
+        IReadOnlyCollection<Diagnostic> Diagnostics);
 
     public sealed class FrontEnd
     {
-        public FrontEnd()
-        {
-            IncludePaths = new List<string>();
-        }
+        public IFileSystem FileSystem { get; init; } = PhysicalFileSystem.Instance;
         
-        public event EventHandler<OpeningFileEventArgs>? OpeningFile;
-        public event EventHandler<CheckingFilePresenceEventArgs>? CheckingFilePresence;
         internal event EventHandler<ContextEventArgs>? InitializeContext;
 
-        public IList<string> IncludePaths { get; }
-
-        Stream OpenFile(string path, bool writing)
-        {
-            var handler = OpeningFile;
-            if (handler != null)
-            {
-                var args = new OpeningFileEventArgs(path, writing);
-
-                handler(this, args);
-
-                if (args.Stream != null)
-                    return args.Stream;
-            }
-
-            return new FileStream(
-                path,
-                writing ? FileMode.Create : FileMode.Open,
-                writing ? FileAccess.Write : FileAccess.Read);
-        }
-
-        bool CheckFileExists(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            var handler = CheckingFilePresence;
-            if (handler != null)
-            {
-                var args = new CheckingFilePresenceEventArgs(path);
-
-                handler(this, args);
-
-                if (args.Exists.HasValue)
-                    return args.Exists.Value;
-            }
-
-            return File.Exists(path);
-        }
+        public IList<string> IncludePaths { get; } = new List<string>();
 
         class ZapStreamFactory : IZapStreamFactory
         {
@@ -169,19 +96,19 @@ namespace Zilf.Compiler
                 string? Try(string suffix, string myExt, out string path)
                 {
                     path = Path.Combine(dir, baseName + suffix + myExt);
-                    return owner.CheckFileExists(path) ? path : null;
+                    return owner.FileSystem.Exists(path) ? path : null;
                 }
             }
 
             #region IZapStreamFactory Members
 
-            public Stream CreateMainStream() => owner.OpenFile(mainFile, true);
+            public Stream CreateMainStream() => owner.FileSystem.OpenForWriting(mainFile);
 
-            public Stream CreateFrequentWordsStream() => owner.OpenFile(fwordsFile, true);
+            public Stream CreateFrequentWordsStream() => owner.FileSystem.OpenForWriting(fwordsFile);
 
-            public Stream CreateDataStream() => owner.OpenFile(dataFile, true);
+            public Stream CreateDataStream() => owner.FileSystem.OpenForWriting(dataFile);
 
-            public Stream CreateStringStream() => owner.OpenFile(stringFile, true);
+            public Stream CreateStringStream() => owner.FileSystem.OpenForWriting(stringFile);
 
             public string GetMainFileName(bool withExt)
             {
@@ -207,7 +134,7 @@ namespace Zilf.Compiler
                 return withExt ? result : Path.ChangeExtension(result, null);
             }
 
-            public bool FrequentWordsFileExists => owner.CheckFileExists(fwordsFile);
+            public bool FrequentWordsFileExists => owner.FileSystem.Exists(fwordsFile);
 
             #endregion
         }
@@ -243,18 +170,15 @@ namespace Zilf.Compiler
         FrontEndResult InterpretOrCompile(Context ctx, string inputFileName,
              string? outputFileName, bool wantCompile, bool wantDebugInfo)
         {
-            var result = new FrontEndResult();
-
             Debug.Assert(!wantCompile || outputFileName != null);
 
             // open input file
-            using var inputStream = OpenFile(inputFileName, false);
+            using var inputStream = FileSystem.OpenForReading(inputFileName);
 
             // evaluate source text
             using (ctx.PushFileContext(inputFileName))
             {
-                ctx.InterceptOpenFile = OpenFile;
-                ctx.InterceptFileExists = CheckFileExists;
+                ctx.FileSystem = FileSystem;
                 ctx.IncludePaths.AddRange(IncludePaths);
                 try
                 {
@@ -289,12 +213,13 @@ namespace Zilf.Compiler
                 }
             }
 
-            result.ErrorCount = ctx.ErrorCount;
-            result.WarningCount = ctx.WarningCount;
-            result.SuppressedWarningCount = ctx.SuppressedWarningCount;
-            result.Success = (ctx.ErrorCount == 0);
-            result.Diagnostics = ctx.Diagnostics;
-            return result;
+            return new(
+                Success: ctx.ErrorCount == 0,
+                ErrorCount: ctx.ErrorCount,
+                WarningCount: ctx.WarningCount,
+                SuppressedWarningCount: ctx.SuppressedWarningCount,
+                Diagnostics: ctx.Diagnostics
+            );
         }
 
         static GameOptions MakeGameOptions(Context ctx)

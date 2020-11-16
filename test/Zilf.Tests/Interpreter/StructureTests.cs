@@ -19,6 +19,7 @@
 using System.IO;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -368,25 +369,14 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void TestSET_DEFSTRUCT_FILE_DEFAULTS()
         {
-            var ctx = new Context();
-            ctx.IncludePaths.Add("lib");
-
-            const string FileToIntercept = "inner.zil";
-
-            ctx.InterceptFileExists = path => Path.GetFileName(path) == FileToIntercept;
-            ctx.InterceptOpenFile = (path, writing) =>
-            {
-                if (Path.GetFileName(path) == FileToIntercept)
-                {
-                    const string fileContent = @"
+            const string SFileToIntercept = "inner.zil";
+            const string SFileContent = @"
 <SET-DEFSTRUCT-FILE-DEFAULTS ('NTH MY-NTH)>
 <DEFINE MY-NTH (STRUC IDX) 12345>
 <DEFSTRUCT INNER VECTOR (INNER-X FIX)>";
-                    return new MemoryStream(Encoding.ASCII.GetBytes(fileContent));
-                }
 
-                throw new FileNotFoundException("File not included in test case", path);
-            };
+            var ctx = new Context { FileSystem = InMemoryFileSystem.Of(Path.Combine("lib", SFileToIntercept), SFileContent) };
+            ctx.IncludePaths.Add("lib");
 
             TestHelpers.Evaluate(ctx, "<FLOAD \"inner\">");
             TestHelpers.EvalAndAssert(ctx, "<INNER-X <MAKE-INNER 'INNER-X 100>>", new ZilFix(12345));

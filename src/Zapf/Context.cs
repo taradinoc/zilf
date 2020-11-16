@@ -25,11 +25,10 @@ using System.Text;
 using Zilf.Common.StringEncoding;
 using Zapf.Parsing.Diagnostics;
 using Zapf.Parsing.Instructions;
+using Zilf.Common;
 
 namespace Zapf
 {
-    delegate Stream OpenFileDelegate(string filename, bool writing);
-    delegate bool FileExistsDelegate(string filename);
     delegate IDebugFileWriter GetDebugWriterDelegate(Stream stream);
 
     class Context : IErrorSink, IDisposable
@@ -76,12 +75,9 @@ namespace Zapf
         public int? TableStart, TableSize;
         public bool InVocab;
 
-        public OpenFileDelegate? InterceptOpenFile;
-        public FileExistsDelegate? InterceptFileExists;
+        public IFileSystem FileSystem { get; set; } = PhysicalFileSystem.Instance;
 
-#pragma warning disable CS0649
         public GetDebugWriterDelegate? InterceptGetDebugWriter;
-#pragma warning restore CS0649
 
         char? LanguageEscapeChar { get; set; }
 
@@ -327,8 +323,10 @@ namespace Zapf
             if (InVocab)
             {
                 // restore stream
-                var buffer = ((MemoryStream?)stream)!.GetBuffer();
-                var bufLen = (int)stream.Length;
+                if (!((MemoryStream)stream!).TryGetBuffer(out var bufferSegment))
+                    throw new InvalidOperationException("Can't access vocab buffer");
+
+                var buffer = bufferSegment.AsSpan();
 
                 stream = prevStream;
                 prevStream = null;
@@ -336,8 +334,8 @@ namespace Zapf
 
                 // sort vocab words
                 // we use an insertion sort because ZILF's vocab table is mostly sorted already
-                int records = bufLen / vocabRecSize;
-                var temp = new byte[vocabRecSize];
+                int records = buffer.Length / vocabRecSize;
+                Span<byte> temp = stackalloc byte[vocabRecSize];
 
                 var newIndexes = new int[records];
                 newIndexes[0] = 0;
@@ -346,15 +344,17 @@ namespace Zapf
                 {
                     if (VocabCompare(buffer, i - 1, i) > 0)
                     {
+                        VocabRecord(buffer, i).CopyTo(temp);
+
                         var home = VocabSearch(buffer, i - 1, i);
-                        Array.Copy(buffer, i * vocabRecSize, temp, 0, vocabRecSize);
-                        Array.Copy(buffer, home * vocabRecSize, buffer, (home + 1) * vocabRecSize,
-                            (i - home) * vocabRecSize);
-                        Array.Copy(temp, 0, buffer, home * vocabRecSize, vocabRecSize);
+                        VocabMove(buffer, home, home + 1, i - home);
+
+                        temp.CopyTo(VocabRecord(buffer, home));
 
                         for (int j = 0; j < i; j++)
                             if (newIndexes[j] >= home && newIndexes[j] < i)
                                 newIndexes[j]++;
+
                         newIndexes[i] = home;
                     }
                     else
@@ -388,7 +388,7 @@ namespace Zapf
                     }
                 }
 
-                stream?.Write(buffer, 0, bufLen);
+                stream?.Write(buffer);
 
                 // apply fixups
                 var vocabEnd = position;
@@ -419,6 +419,20 @@ namespace Zapf
             vocabKeySize = 0;
         }
 
+        void VocabMove(Span<byte> buffer, int srcIndex, int destIndex, int recordCount)
+        {
+            var byteCount = recordCount * vocabRecSize;
+            var src = buffer.Slice(srcIndex * vocabRecSize, byteCount);
+            var dest = buffer.Slice(destIndex * vocabRecSize, byteCount);
+            src.CopyTo(dest);
+        }
+
+        Span<byte> VocabRecord(Span<byte> buffer, int index) =>
+            buffer.Slice(index * vocabRecSize, vocabRecSize);
+
+        ReadOnlySpan<byte> VocabRecord(ReadOnlySpan<byte> buffer, int index) =>
+            buffer.Slice(index * vocabRecSize, vocabRecSize);
+
         int MapVocabAddress(int oldAddress, int[] newIndexes)
         {
             var oldOffsetFromVocab = oldAddress - vocabStart;
@@ -428,7 +442,7 @@ namespace Zapf
             return vocabStart + (newIndex * vocabRecSize) + offsetWithinEntry;
         }
 
-        int VocabSearch(byte[] buffer, int numRecs, int keyRec)
+        int VocabSearch(ReadOnlySpan<byte> buffer, int numRecs, int keyRec)
         {
             int start = 0, end = numRecs - 1;
             while (start <= end)
@@ -446,20 +460,8 @@ namespace Zapf
             return start;
         }
 
-        int VocabCompare(byte[] buffer, int idx1, int idx2)
-        {
-            idx1 *= vocabRecSize;
-            idx2 *= vocabRecSize;
-
-            for (int i = 0; i < vocabKeySize; i++)
-            {
-                int diff = buffer[idx1 + i] - buffer[idx2 + i];
-                if (diff != 0)
-                    return diff;
-            }
-
-            return 0;
-        }
+        int VocabCompare(ReadOnlySpan<byte> buffer, int idx1, int idx2) =>
+            VocabRecord(buffer, idx1).SequenceCompareTo(VocabRecord(buffer, idx2));
 
         string? VocabLabel(int index)
         {
@@ -497,7 +499,7 @@ namespace Zapf
                 OutFile = Path.ChangeExtension(OutFile, ".z" + ZVersion);
 
             position = 0;
-            stream = OpenFile(OutFile, true);
+            stream = FileSystem.OpenForWriting(OutFile);
         }
 
         public void CloseOutput()
@@ -510,7 +512,7 @@ namespace Zapf
         {
             Debug.Assert(DebugFile != null);
 
-            var debugStream = OpenFile(DebugFile, true);
+            var debugStream = FileSystem.OpenForWriting(DebugFile);
 
             if (InterceptGetDebugWriter != null)
             {
@@ -850,36 +852,17 @@ namespace Zapf
             Console.Error.WriteLine("fatal error: {0}", fer.Message);
         }
 
-        public Stream OpenFile(string filename, bool writing)
-        {
-            var intercept = InterceptOpenFile;
-            if (intercept != null)
-                return intercept(filename, writing);
-
-            return new FileStream(
-                filename,
-                writing ? FileMode.Create : FileMode.Open,
-                writing ? FileAccess.ReadWrite : FileAccess.Read);
-        }
-
-        public bool FileExists(string filename)
-        {
-            var intercept = InterceptFileExists;
-            return intercept?.Invoke(filename) ?? File.Exists(filename);
-        }
-
-        [SuppressMessage("ReSharper", "ConvertIfStatementToReturnStatement")]
         public string? FindInsertedFile(string name)
         {
-            if (FileExists(name))
+            if (FileSystem.Exists(name))
                 return name;
 
             string search = name + ".zap";
-            if (FileExists(search))
+            if (FileSystem.Exists(search))
                 return search;
 
             search = name + ".xzap";
-            if (FileExists(search))
+            if (FileSystem.Exists(search))
                 return search;
 
             return null;
@@ -973,7 +956,7 @@ namespace Zapf
         Object,
     }
 
-    class Symbol
+    sealed class Symbol
     {
         /// <summary>
         /// The symbol's name in the source code.
@@ -1011,7 +994,7 @@ namespace Zapf
         }
     }
 
-    class Fixup
+    sealed class Fixup
     {
         public Fixup(string symbol) => Symbol = symbol;
 

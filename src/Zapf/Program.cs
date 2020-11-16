@@ -29,6 +29,7 @@ using Zapf.Parsing.Diagnostics;
 using Zapf.Parsing.Directives;
 using Zapf.Parsing.Expressions;
 using Zapf.Parsing.Instructions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Zapf
 {
@@ -40,8 +41,7 @@ namespace Zapf
 
         public static int Main(string[] args)
         {
-            var ctx = ParseArgs(args);
-            if (ctx == null)
+            if (!TryParseArgs(args, out var ctx))
             {
                 Usage();
                 return 1;
@@ -231,82 +231,95 @@ namespace Zapf
             return result;
         }
 
-        internal static Context? ParseArgs(IReadOnlyList<string> args)
+        internal static bool TryParseArgs(IReadOnlyList<string> args, [NotNullWhen(true)] out Context? ctx)
         {
-            using var result = new Context();
+            var result = new Context();
+
+            if (TryParseArgs(args, result))
+            {
+                ctx = result;
+                return true;
+            }
+
+            ctx = null;
+            return false;
+        }
+
+        internal static bool TryParseArgs(IReadOnlyList<string> args, Context ctx)
+        {
+            string? inFile = null, outFile = null;
 
             for (int i = 0; i < args.Count; i++)
             {
                 switch (args[i])
                 {
                     case "-ab":
-                        result.AbbreviateMode = true;
+                        ctx.AbbreviateMode = true;
                         break;
 
                     case "-q":
-                        result.Quiet = true;
+                        ctx.Quiet = true;
                         break;
 
                     case "-i":
-                        result.InformMode = true;
+                        ctx.InformMode = true;
                         break;
 
                     case "-la":
-                        result.ListAddresses = true;
+                        ctx.ListAddresses = true;
                         break;
 
                     case "-r":
                         if (++i == args.Count)
-                            return null;
-                        result.Release = short.Parse(args[i]);
+                            return false;
+                        ctx.Release = short.Parse(args[i]);
                         break;
 
                     case "-s":
                         if (++i == args.Count)
-                            return null;
-                        result.Serial = args[i];
+                            return false;
+                        ctx.Serial = args[i];
                         break;
 
                     case "-c":
                         if (++i == args.Count)
-                            return null;
-                        result.Creator = args[i];
+                            return false;
+                        ctx.Creator = args[i];
                         break;
 
                     case "-c0":
-                        result.Creator = null;
+                        ctx.Creator = null;
                         break;
 
                     case "-dx":
-                        result.XmlDebugMode = true;
+                        ctx.XmlDebugMode = true;
                         break;
 
                     case "-?":
                     case "--help":
                     case "/?":
-                        return null;
+                        return false;
 
                     default:
-                        if (result.InFile == null)
-                            result.InFile = args[i];
-                        else if (result.OutFile == null)
-                            result.OutFile = args[i];
+                        if (inFile == null)
+                            inFile = args[i];
+                        else if (outFile == null)
+                            outFile = args[i];
                         else
-                            return null;
+                            return false;
                         break;
                 }
             }
 
             // validate
-            if (result.InFile == null)
-                return null;
+            if (inFile == null)
+                return false;
 
-            if (result.OutFile == null)
-                result.OutFile = Path.ChangeExtension(result.InFile, ".z#");
+            ctx.InFile = inFile;
+            ctx.OutFile = outFile ?? Path.ChangeExtension(ctx.InFile, ".z#");
+            ctx.DebugFile = Path.ChangeExtension(ctx.OutFile, ctx.XmlDebugMode ? ".dbg.xml" : ".dbg");
 
-            result.DebugFile = Path.ChangeExtension(result.OutFile, result.XmlDebugMode ? ".dbg.xml" : ".dbg");
-
-            return result;
+            return true;
         }
 
         static void Usage()
@@ -806,7 +819,8 @@ General switches:
 
         static IEnumerable<AsmLine> ReadRootsFromFile(Context ctx, string path)
         {
-            using var stream = ctx.OpenFile(path, false);
+            using var stream = ctx.FileSystem.OpenForReading(path);
+
             Debug.Assert(ctx.OpcodeDict != null);
             var parser = new ZapParser(ctx, ctx.OpcodeDict);
             var result = parser.Parse(stream, path);

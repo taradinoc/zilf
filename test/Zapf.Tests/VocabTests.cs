@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Common.StringEncoding;
@@ -55,7 +56,7 @@ W?MULE::
 
             Assert.IsTrue(TestHelper.Assemble(SCode, out var mstr));
 
-            var buffer = mstr!.GetBuffer();
+            var buffer = mstr!.ToArray();
 
             /* After sorting:
              * donkey  firstEntry + entryLength*0   64  70
@@ -85,13 +86,13 @@ W?MULE::
             AssertWord(buffer, zebraAddr + zwordLength, horseAddr);
         }
 
-        static void AssertWord(byte[] buffer, int address, ushort expected)
+        static void AssertWord(ReadOnlySpan<byte> buffer, int address, ushort expected)
         {
             var actual = (ushort)((buffer[address] << 8) + buffer[address + 1]);
             Assert.AreEqual(expected, actual, "Data word differs at address {0}", address);
         }
 
-        static void AssertZword(byte[] buffer, StringEncoder encoder, int zwordLength, int address, string expected)
+        static void AssertZword(ReadOnlySpan<byte> buffer, StringEncoder encoder, int zwordLength, int address, string expected)
         {
             var expectedBytes = encoder.Encode(expected, zwordLength * 3 / 2, StringEncoderMode.NoAbbreviations);
             Debug.Assert(expectedBytes.Length == zwordLength);

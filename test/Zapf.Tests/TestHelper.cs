@@ -22,6 +22,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Zilf.Common;
 
 namespace Zapf.Tests
 {
@@ -73,37 +74,11 @@ namespace Zapf.Tests
         public static AssemblyTestOutput Assemble(AssemblyTestInput input)
         {
             const string InputFileName = "Input.zap";
-            const string OutputFileName = "Output.z#";
-            var inputFiles = new Dictionary<string, string>
-            {
-                { InputFileName, input.Code }
-            };
-            var outputFiles = new Dictionary<string, MemoryStream>();
+            const string OutputFileName = "Output.zcode";
+            var fileSystem = InMemoryFileSystem.Of(InputFileName, input.Code);
 
             // initialize ZapfAssembler
-            var assembler = new ZapfAssembler();
-            assembler.OpeningFile += (sender, e) =>
-            {
-                if (e.Writing)
-                {
-                    var mstr = new MemoryStream();
-                    e.Stream = mstr;
-                    outputFiles.Add(e.FileName, mstr);
-                }
-                else if (inputFiles.ContainsKey(e.FileName))
-                {
-                    var buffer = Encoding.UTF8.GetBytes(inputFiles[e.FileName]);
-                    e.Stream = new MemoryStream(buffer, false);
-                }
-                else
-                {
-                    throw new InvalidOperationException("No such input file: " + e.FileName);
-                }
-            };
-            assembler.CheckingFilePresence += (sender, e) =>
-            {
-                e.Exists = inputFiles.ContainsKey(e.FileName);
-            };
+            var assembler = new ZapfAssembler { FileSystem = fileSystem };
 
             if (input.Args != null)
             {
@@ -124,7 +99,8 @@ namespace Zapf.Tests
                             newArgs.Add(outFile);
                     }
 
-                    e.Context = Program.ParseArgs(newArgs) ?? throw new ArgumentException("Invalid args", nameof(input));
+                    if (!Program.TryParseArgs(newArgs, e.Context))
+                        throw new ArgumentException("Invalid args", nameof(input));
 
                     e.Context.InFile = inFile;
                     e.Context.OutFile = outFile;
@@ -148,12 +124,7 @@ namespace Zapf.Tests
                 return new AssemblyTestOutput
                 {
                     Success = true,
-
-                    StoryFile = (from pair in outputFiles
-                                 let ext = Path.GetExtension(pair.Key)
-                                 where ext.Length == 3 && ext.StartsWith(".z")
-                                 select pair.Value).Single(),
-
+                    StoryFile = (MemoryStream)fileSystem.OpenForReading(OutputFileName),
                     Symbols = result.Context?.GlobalSymbols
                 };
             }

@@ -19,8 +19,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zilf.Common;
 using Zilf.Compiler;
 
 namespace Zilf.Tests.Compiler
@@ -30,52 +32,22 @@ namespace Zilf.Tests.Compiler
     {
         class PathTestHelper
         {
-            readonly Dictionary<string, string> inputs = new Dictionary<string, string>();
-            readonly Dictionary<string, MemoryStream> outputs = new Dictionary<string, MemoryStream>();
+            readonly InMemoryFileSystem fileSystem = new();
+            readonly HashSet<string> inputPaths = new();
 
-            public ICollection OutputFilePaths => outputs.Keys;
+            public ICollection GetOutputFilePaths() => fileSystem.Paths.Except(inputPaths).ToList();
 
             public void SetInputFile(string path, string content)
             {
-                inputs[path] = content;
+                fileSystem.SetText(path, content);
+                inputPaths.Add(path);
             }
 
-            public string GetOutputContent(string path)
-            {
-                var stream = outputs[path];
-                return Encoding.UTF8.GetString(stream.ToArray());
-            }
+            public string GetOutputContent(string path) => fileSystem.GetText(path);
 
             public void Compile(string mainZilFile)
             {
-                var compiler = new FrontEnd();
-
-                compiler.CheckingFilePresence += (sender, e) =>
-                {
-                    e.Exists = inputs.ContainsKey(e.FileName);
-                };
-
-                compiler.OpeningFile += (sender, e) =>
-                {
-                    if (e.Writing)
-                    {
-                        e.Stream = outputs[e.FileName] = new MemoryStream();
-                    }
-                    else if (inputs.TryGetValue(e.FileName, out var content))
-                    {
-                        var result = new MemoryStream();
-
-                        using (var wtr = new StreamWriter(result, Encoding.UTF8, 512, true))
-                        {
-                            wtr.Write(content);
-                            wtr.Flush();
-                        }
-
-                        result.Position = 0;
-                        e.Stream = result;
-                    }
-                };
-
+                var compiler = new FrontEnd { FileSystem = fileSystem };
                 var compilationResult = compiler.Compile(mainZilFile, Path.ChangeExtension(mainZilFile, ".zap"));
 
                 Assert.IsTrue(compilationResult.Success, "Compilation failed");
@@ -106,7 +78,7 @@ namespace Zilf.Tests.Compiler
                 Path.Combine("src", "foo_str.zap")
             };
 
-            CollectionAssert.AreEquivalent(expected, helper.OutputFilePaths);
+            CollectionAssert.AreEquivalent(expected, helper.GetOutputFilePaths());
         }
 
         [TestMethod]
@@ -134,9 +106,9 @@ namespace Zilf.Tests.Compiler
                 "foo_str.zap"
             };
 
-            CollectionAssert.AreEquivalent(expected, helper.OutputFilePaths);
+            CollectionAssert.AreEquivalent(expected, helper.GetOutputFilePaths());
 
-            Assert.IsTrue(helper.GetOutputContent("foo.zap").Contains(@"foofreq"));
+            Assert.IsTrue(helper.GetOutputContent("foo.zap")!.Contains(@"foofreq"));
         }
     }
 }

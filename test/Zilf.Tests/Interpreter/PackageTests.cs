@@ -121,26 +121,19 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void USE_Tries_To_Load_Unknown_Package()
         {
-            var ctx = new Context();
-            ctx.IncludePaths.Add("lib");
-
-            const string FileToIntercept = "FOO.zil";
-
-            ctx.InterceptFileExists = path => Path.GetFileName(path) == FileToIntercept;
-            ctx.InterceptOpenFile = (path, writing) =>
-            {
-                if (Path.GetFileName(path) == FileToIntercept)
-                {
-                    const string fileContent = @"
+            const string SFileToIntercept = "FOO.zil";
+            const string SFileContent = @"
 <PACKAGE ""FOO"">
 <ENTRY ANSWER>
 <SETG ANSWER 42>
 <ENDPACKAGE>";
-                    return new MemoryStream(Encoding.ASCII.GetBytes(fileContent));
-                }
 
-                throw new FileNotFoundException("File not included in test case", path);
+            var ctx = new Context
+            {
+                FileSystem = InMemoryFileSystem.Of(Path.Combine("lib", SFileToIntercept), SFileContent)
             };
+
+            ctx.IncludePaths.Add("lib");
 
             TestHelpers.EvalAndAssert(ctx, @"<USE ""FOO""> ,ANSWER", new ZilFix(42));
         }
@@ -148,10 +141,8 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void USE_Fails_If_Unknown_Package_Does_Not_Exist()
         {
-            var ctx = new Context();
+            var ctx = new Context { FileSystem = NullFileSystem.Instance };
             ctx.IncludePaths.Add("lib");
-            ctx.InterceptFileExists = path => false;
-            ctx.InterceptOpenFile = (path, writing) => throw new UnreachableCodeException();
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, @"<USE ""FOO"">");
         }
@@ -159,10 +150,8 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void USE_Knows_About_Certain_Packages_By_Default()
         {
-            var ctx = new Context();
+            var ctx = new Context { FileSystem = NullFileSystem.Instance };
             ctx.IncludePaths.Add("lib");
-            ctx.InterceptFileExists = path => false;
-            ctx.InterceptOpenFile = (path, writing) => throw new UnreachableCodeException();
 
             TestHelpers.EvalAndAssert(ctx, @"<USE ""NEWSTRUC"">", ctx.TRUE);
             TestHelpers.EvalAndAssert(ctx, "<GASSIGNED? ZILCH!-PACKAGE>", ctx.TRUE);

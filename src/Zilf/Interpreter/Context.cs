@@ -61,6 +61,7 @@ namespace Zilf.Interpreter
     {
         delegate ZilObject ChtypeDelegate(Context ctx, ZilObject original);
 
+        // TODO: make TypeMapEntry a record type?
         abstract class TypeMapEntry
         {
             public Type? BuiltinType { get; set; }
@@ -259,25 +260,7 @@ namespace Zilf.Interpreter
         // TODO: merge AtTopLevel into Frame
         public bool AtTopLevel { get; set; }
 
-        public OpenFileDelegate? InterceptOpenFile;
-        public FileExistsDelegate? InterceptFileExists;
-
-        public Stream OpenFile(string filename, bool writing)
-        {
-            var intercept = InterceptOpenFile;
-            if (intercept != null)
-                return intercept(filename, writing);
-
-            return new FileStream(
-                filename,
-                writing ? FileMode.Create : FileMode.Open,
-                writing ? FileAccess.ReadWrite : FileAccess.Read);
-        }
-
-        public bool FileExists(string filename)
-        {
-            return InterceptFileExists?.Invoke(filename) ?? File.Exists(filename);
-        }
+        public IFileSystem FileSystem { get; set; } = PhysicalFileSystem.Instance;
 
         ZilAtom[] InitStdAtoms()
         {
@@ -719,7 +702,7 @@ namespace Zilf.Interpreter
                 {
                     var combined = Path.Combine(path, nameVariant);
 
-                    if (FileExists(combined))
+                    if (FileSystem.Exists(combined))
                         return combined;
                 }
             }

@@ -17,13 +17,14 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 
 namespace Zapf.Tests
 {
     [TestClass, TestCategory("Assembler")]
     public class HeaderTests
     {
-        static void AssertWordAtOffset(byte[] buffer, int offset, ushort expected)
+        static void AssertWordAtOffset(ReadOnlySpan<byte> buffer, int offset, ushort expected)
         {
             var actual = (ushort)((buffer[offset] << 8) + buffer[offset + 1]);
             Assert.AreEqual(expected, actual, "Wrong word value at byte offset {0}.", offset);
@@ -49,7 +50,7 @@ START::
     .END";
 
             Assert.IsTrue(TestHelper.Assemble(SCode, out var mstr));
-            var buffer = mstr!.GetBuffer();
+            var buffer = mstr!.ToArray();
             AssertWordAtOffset(buffer, 2, 111);
         }
 
@@ -71,7 +72,7 @@ START::
     .END";
 
             Assert.IsTrue(TestHelper.Assemble(SCode, new[] { "-r", "222" }, out var mstr));
-            var buffer = mstr!.GetBuffer();
+            var buffer = mstr!.ToArray();
             AssertWordAtOffset(buffer, 2, 222);
         }
 
@@ -95,7 +96,7 @@ START::
     .END";
 
             Assert.IsTrue(TestHelper.Assemble(SCode, new[] { "-r", "222" }, out var mstr));
-            var buffer = mstr!.GetBuffer();
+            var buffer = mstr!.ToArray();
             AssertWordAtOffset(buffer, 2, 222);
         }
 
@@ -114,7 +115,7 @@ START::
     .END";
 
             Assert.IsTrue(TestHelper.Assemble(SCode, new[] { "-r", "222" }, out var mstr));
-            var buffer = mstr!.GetBuffer();
+            var buffer = mstr!.ToArray();
             AssertWordAtOffset(buffer, 2, 222);
         }
     }

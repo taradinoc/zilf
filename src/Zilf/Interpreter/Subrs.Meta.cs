@@ -42,7 +42,7 @@ namespace Zilf.Interpreter
 
                 using (ctx.PushFileContext(newFile))
                 {
-                    using var stream = ctx.OpenFile(newFile, false);
+                    using var stream = ctx.FileSystem.OpenForReading(newFile);
                     Program.Evaluate(ctx, stream);
                     return ZilString.FromString("DONE");
                 }
