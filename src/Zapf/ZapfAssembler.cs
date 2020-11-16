@@ -51,14 +51,14 @@ namespace Zapf
         public bool? Exists { get; set; }
     }
 
-    class InitializingContextEventArgs : EventArgs
+    public class InitializingContextEventArgs : EventArgs
     {
         public InitializingContextEventArgs(Context ctx) => Context = ctx;
 
         public Context Context { get; }
     }
 
-    readonly struct AssemblyResult
+    public readonly struct AssemblyResult
     {
         public AssemblyResult(bool success, Context? context)
         {
@@ -73,7 +73,7 @@ namespace Zapf
         public Context? Context { get; }
     }
 
-    sealed class ZapfAssembler
+    public sealed class ZapfAssembler
     {
         public IFileSystem FileSystem { get; set; } = PhysicalFileSystem.Instance;
 

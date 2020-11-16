@@ -29,9 +29,9 @@ using Zilf.Common;
 
 namespace Zapf
 {
-    delegate IDebugFileWriter GetDebugWriterDelegate(Stream stream);
+    public delegate IDebugFileWriter GetDebugWriterDelegate(Stream stream);
 
-    class Context : IErrorSink, IDisposable
+    public sealed class Context : IErrorSink, IDisposable
     {
         public bool Quiet, InformMode, ListAddresses, AbbreviateMode, XmlDebugMode;
         public string? InFile, OutFile, DebugFile;
@@ -924,7 +924,7 @@ namespace Zapf
         }
     }
 
-    enum SymbolType
+    public enum SymbolType
     {
         /// <summary>
         /// The symbol has not been defined.
@@ -956,7 +956,7 @@ namespace Zapf
         Object,
     }
 
-    sealed class Symbol
+    public sealed class Symbol
     {
         /// <summary>
         /// The symbol's name in the source code.
@@ -994,7 +994,7 @@ namespace Zapf
         }
     }
 
-    sealed class Fixup
+    public sealed class Fixup
     {
         public Fixup(string symbol) => Symbol = symbol;
 
