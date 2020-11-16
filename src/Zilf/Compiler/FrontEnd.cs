@@ -44,6 +44,7 @@ namespace Zilf.Compiler
     public sealed class FrontEnd
     {
         public IFileSystem FileSystem { get; init; } = PhysicalFileSystem.Instance;
+        public IDiagnosticLogger Logger { get; init; } = new DefaultDiagnosticLogger();
         
         internal event EventHandler<ContextEventArgs>? InitializeContext;
 
@@ -142,6 +143,7 @@ namespace Zilf.Compiler
         Context NewContext(RunMode runMode, bool wantDebugInfo)
         {
             var result = new Context { RunMode = runMode, WantDebugInfo = wantDebugInfo };
+            result.DiagnosticManager.Logger = Logger;
 
             InitializeContext?.Invoke(this, new ContextEventArgs(result));
 

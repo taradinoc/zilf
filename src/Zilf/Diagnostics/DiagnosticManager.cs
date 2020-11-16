@@ -43,15 +43,17 @@ namespace Zilf.Diagnostics
         public bool WarningsAsErrors { get; set; }
         public bool SuppressNoisyWarnings { get; set; }
 
-        public IDiagnosticFormatter Formatter { get; }
-        public TextWriter OutputWriter { get; }
+        public IDiagnosticLogger Logger { get; set; }
 
         public event EventHandler? TooManyErrors;
 
-        public DiagnosticManager(IDiagnosticFormatter? formatter = null, TextWriter? outputWriter = null)
+        public DiagnosticManager() : this(new DefaultDiagnosticLogger())
         {
-            Formatter = formatter ?? new DefaultDiagnosticFormatter();
-            OutputWriter = outputWriter ?? Console.Error;
+        }
+
+        public DiagnosticManager(IDiagnosticLogger logger)
+        {
+            Logger = logger;
         }
 
         public void Suppress(string code)
@@ -98,7 +100,7 @@ namespace Zilf.Diagnostics
             }
             else
             {
-                OutputWriter.WriteLine(Formatter.Format(diag));
+                Logger.Log(diag);
             }
         }
 

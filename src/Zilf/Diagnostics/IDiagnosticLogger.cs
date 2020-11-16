@@ -18,8 +18,8 @@
 
 namespace Zilf.Diagnostics
 {
-    public interface IDiagnosticFormatter
+    public interface IDiagnosticLogger
     {
-        string Format(Diagnostic diagnostic);
+        void Log(Diagnostic diagnostic);
     }
 }
