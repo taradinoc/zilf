@@ -35,7 +35,7 @@ Set-Alias izapf Invoke-Zapf
 
 function Invoke-ZLR {
     param ([string]$StoryFile = $(throw "StoryFile parameter is required."))
-    & dotnet run --project $zlrProjectPath --framework netcoreapp2.2 -- -nowait -dumb $StoryFile
+    & dotnet run --project $zlrProjectPath -- -nowait -dumb $StoryFile
 }
 
 Set-Alias izlr Invoke-ZLR
