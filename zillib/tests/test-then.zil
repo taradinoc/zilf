@@ -81,7 +81,7 @@
 |
 You pick up the banana.|
 |
-You wear the hat.|">>
+You pick up the hat.|">>
 
 <TEST-CASE ("G THEN G")
     <COMMAND [TAKE INVENTORY THEN X ME]>

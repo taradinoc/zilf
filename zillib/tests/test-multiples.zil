@@ -79,13 +79,13 @@
 
 <TEST-CASE ("Take all")
     <COMMAND [TAKE ALL]>
-    <EXPECT "hat: Taken (and worn).|
+    <EXPECT "hat: Taken.|
 banana: Taken.|
 apple: Taken.|">
     <CHECK <IN? ,HAT ,WINNER>>
     <CHECK <IN? ,APPLE ,WINNER>>
     <CHECK <IN? ,BANANA ,WINNER>>
-    <CHECK <AND <IN? ,HAT ,WINNER> <FSET? ,HAT ,WORNBIT>>>
+    <CHECK <AND <IN? ,HAT ,WINNER> <NOT <FSET? ,HAT ,WORNBIT>>>>
     <CHECK <NOT <IN? ,CAGE ,WINNER>>>
     <CHECK <NOT <IN? ,DESK ,WINNER>>>
     <CHECK <NOT <IN? ,BUCKET ,WINNER>>>
@@ -93,12 +93,12 @@ apple: Taken.|">
 
 <TEST-CASE ("Exclude one object with BUT")
     <COMMAND [TAKE ALL BUT BANANA]>
-    <EXPECT "hat: Taken (and worn).|
+    <EXPECT "hat: Taken.|
 apple: Taken.|">
     <CHECK <IN? ,HAT ,WINNER>>
     <CHECK <IN? ,APPLE ,WINNER>>
     <CHECK <NOT <IN? ,BANANA ,WINNER>>>
-    <CHECK <AND <IN? ,HAT ,WINNER> <FSET? ,HAT ,WORNBIT>>>
+    <CHECK <AND <IN? ,HAT ,WINNER> <NOT <FSET? ,HAT ,WORNBIT>>>>
     <CHECK <NOT <IN? ,CAGE ,WINNER>>>
     <CHECK <NOT <IN? ,DESK ,WINNER>>>
     <CHECK <NOT <IN? ,BUCKET ,WINNER>>>
@@ -106,11 +106,11 @@ apple: Taken.|">
 
 <TEST-CASE ("Exclude two objects with BUT")
     <COMMAND [TAKE ALL BUT BANANA AND APPLE]>
-    <EXPECT "You wear the hat.|">
+    <EXPECT "You pick up the hat.|">
     <CHECK <IN? ,HAT ,WINNER>>
     <CHECK <NOT <IN? ,APPLE ,WINNER>>>
     <CHECK <NOT <IN? ,BANANA ,WINNER>>>
-    <CHECK <AND <IN? ,HAT ,WINNER> <FSET? ,HAT ,WORNBIT>>>
+    <CHECK <AND <IN? ,HAT ,WINNER> <NOT <FSET? ,HAT ,WORNBIT>>>>
     <CHECK <NOT <IN? ,CAGE ,WINNER>>>
     <CHECK <NOT <IN? ,DESK ,WINNER>>>
     <CHECK <NOT <IN? ,BUCKET ,WINNER>>>
@@ -118,9 +118,9 @@ apple: Taken.|">
 
 <TEST-CASE ("Take individual objects with AND")
     <COMMAND [TAKE HAT AND BANANA]>
-    <EXPECT "hat: Taken (and worn).|
+    <EXPECT "hat: Taken.|
 banana: Taken.|">
-    <CHECK <AND <IN? ,HAT ,WINNER> <FSET? ,HAT ,WORNBIT>>>
+    <CHECK <AND <IN? ,HAT ,WINNER> <NOT <FSET? ,HAT ,WORNBIT>>>>
     <CHECK <IN? ,BANANA ,WINNER>>
     <CHECK <NOT <IN? APPLE ,WINNER>>>>
 
