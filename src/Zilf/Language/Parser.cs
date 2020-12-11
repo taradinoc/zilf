@@ -332,44 +332,52 @@ namespace Zilf.Language
 
             System.Diagnostics.Debug.Assert(po.Object != null);
 
-            if (!SkipWhitespace(chars))
-                return po;
-
-            var c = chars.Current;
-
-            if (c != ':' && c != Bang.Colon)
+            try
             {
-                chars.PushBack(c);
-                return po;
+                if (!SkipWhitespace(chars))
+                    return po;
+
+                var c = chars.Current;
+
+                if (c != ':' && c != Bang.Colon)
+                {
+                    chars.PushBack(c);
+                    return po;
+                }
+
+                ParserOutput po2;
+                do
+                {
+                    po2 = ParseOneNonAdecl(chars, out _);
+                    // TODO: store comment somewhere? (set SourceLine if so)
+                } while (po2.IsIgnorable);
+
+                switch (po2.Type)
+                {
+                    case ParserOutputType.EndOfInput:
+                        throw new ExpectedButFound("object after ':'", "<EOF>");
+
+                    case ParserOutputType.Object:
+                        var adecl = new ZilAdecl(po.Object, po2.Object);  // TODO: set source line
+                        return po.Type == ParserOutputType.Comment
+                            ? ParserOutput.FromComment(adecl)
+                            : ParserOutput.FromObject(adecl);
+
+                    case ParserOutputType.SyntaxError:
+                        return po2;
+
+                    case ParserOutputType.Terminator:
+                        chars.MoveNext();
+                        throw new ExpectedButFound("object after ':'", $"'{chars.Current.Rebang()}'");
+
+                    default:
+                        throw new UnhandledCaseException("object after ':'");
+                }
             }
-
-            ParserOutput po2;
-            do
+            catch (ParserException ex)
             {
-                po2 = ParseOneNonAdecl(chars, out _);
-                // TODO: store comment somewhere? (set SourceLine if so)
-            } while (po2.IsIgnorable);
-
-            switch (po2.Type)
-            {
-                case ParserOutputType.EndOfInput:
-                    throw new ExpectedButFound("object after ':'", "<EOF>");
-
-                case ParserOutputType.Object:
-                    var adecl = new ZilAdecl(po.Object, po2.Object);
-                    return po.Type == ParserOutputType.Comment
-                        ? ParserOutput.FromComment(adecl)
-                        : ParserOutput.FromObject(adecl);
-
-                case ParserOutputType.SyntaxError:
-                    return po2;
-
-                case ParserOutputType.Terminator:
-                    chars.MoveNext();
-                    throw new ExpectedButFound("object after ':'", $"'{chars.Current.Rebang()}'");
-
-                default:
-                    throw new UnhandledCaseException("object after ':'");
+                sourceLine = new FileSourceLine(site.CurrentFilePath, line);
+                return ParserOutput.FromException(ex);
             }
         }
 
