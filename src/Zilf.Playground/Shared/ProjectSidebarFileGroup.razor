@@ -1,0 +1,34 @@
+﻿<h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+    <span>@Title</span>
+
+    @if (Editable)
+    {
+        <a class="d-flex align-items-center text-muted" aria-label="Add a new project file" @onclick="OnAddProjectFile">
+            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-file-earmark-plus" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 0h5.5v1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h1V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2z" />
+                <path d="M9.5 3V0L14 4.5h-3A1.5 1.5 0 0 1 9.5 3z" />
+                <path fill-rule="evenodd" d="M8 6.5a.5.5 0 0 1 .5.5v1.5H10a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V9.5H6a.5.5 0 0 1 0-1h1.5V7a.5.5 0 0 1 .5-.5z" />
+            </svg>
+        </a>
+    }
+</h6>
+<ul class="nav navbar-nav mb-2">
+    @foreach (var file in Files)
+    {
+        <ProjectSidebarFileLink @key="@file" File="@file" AllowEntryPoint="@Editable" />
+    }
+</ul>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "(Group)";
+
+    [Parameter]
+    public bool Editable { get; set; } = false;
+
+    [Parameter]
+    public IEnumerable<ProjectFile> Files { get; set; } = Enumerable.Empty<ProjectFile>();
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnAddProjectFile { get; set; }
+}

@@ -1,0 +1,70 @@
+{
+  "$id":  "http://play.zilf.io/project-templates-schema.json",
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "JSON Schema for project templates",
+
+  "definitions": {
+    "template": {
+      "type": "object",
+      "properties": {
+        "files": { "$ref": "#/definitions/files" },
+        "include": { "$ref": "#/definitions/include" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string", "format": "uri-reference" },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [ "files", "title", "description" ]
+    },
+    "library": {
+      "type": "object",
+      "properties": {
+        "files": { "$ref": "#/definitions/files" }
+      },
+      "required": [ "files" ]
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "uniqueItems": true,
+        "format": "uri-reference"
+      },
+      "minItems": 1
+    },
+    "include": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "uniqueItems": true
+      }
+    }
+  },
+
+  "type": "object",
+
+  "properties": {
+    "templates": {
+      "description": "Premade projects that can be used as the basis for a new project.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/template" }
+    },
+    "libraries": {
+      "description": "Standard collections of code used in most projects, which may optionally be customized for each project.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/library" }
+    },
+    "showcase": {
+      "description": "The list of projects featured in the New Project menu.",
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+
+  "required": [ "showcase", "templates" ]
+}

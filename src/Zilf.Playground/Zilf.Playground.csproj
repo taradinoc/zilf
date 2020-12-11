@@ -1,13 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BlazorMonaco" Version="1.5.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="5.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="5.0.0" PrivateAssets="all" />
+    <PackageReference Include="BlazorMonaco" Version="1.6.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="5.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="5.0.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
     <PackageReference Include="System.Net.Http.Json" Version="5.0.0" />
   </ItemGroup>
 
@@ -15,5 +16,7 @@
     <ProjectReference Include="..\Zapf\Zapf.csproj" />
     <ProjectReference Include="..\Zilf\Zilf.csproj" />
   </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 
 </Project>

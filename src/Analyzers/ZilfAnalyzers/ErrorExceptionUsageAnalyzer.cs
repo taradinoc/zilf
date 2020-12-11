@@ -116,7 +116,7 @@ namespace ZilfAnalyzers
             // has a constant value?
             var constantValue = semanticModel.GetConstantValue(expressionToReplace);
 
-            if (constantValue.HasValue)
+            if (constantValue.HasValue && constantValue.Value != null)
             {
                 format = (string)constantValue.Value;
                 newArgs = ImmutableList<ExpressionSyntax>.Empty;
@@ -178,7 +178,7 @@ namespace ZilfAnalyzers
 
             var formatConstValue = semanticModel.GetConstantValue(formatExpr);
 
-            if (!formatConstValue.HasValue)
+            if (!formatConstValue.HasValue || formatConstValue.Value == null)
                 return false;
 
             formatStr = (string)formatConstValue.Value;

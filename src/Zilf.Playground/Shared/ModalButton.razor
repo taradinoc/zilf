@@ -1,0 +1,31 @@
+﻿@typeparam TResult
+
+<button type="button" @attributes="AdditionalAttributes" @onclick="@HandleClick">@ChildContent</button>
+
+@code {
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object> AdditionalAttributes { get; set; }
+
+    [CascadingParameter]
+    public Modal<TResult> Modal { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public Func<TResult> Result { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (Modal == null)
+            throw new InvalidOperationException($"Missing parent Modal (expected TResult: {typeof(TResult)})");
+    }
+
+    private void HandleClick()
+    {
+        if (Result != null)
+        {
+            Modal.Close(Result());
+        }
+    }
+}

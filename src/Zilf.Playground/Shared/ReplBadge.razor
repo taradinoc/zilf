@@ -1,0 +1,25 @@
+﻿@inject ReplService Session
+@implements IDisposable
+
+<span class="badge badge-pill badge-light">@ExchangeCount</span>
+
+@code {
+    private int? ExchangeCount
+    {
+        get
+        {
+            var count = Session.Exchanges.Count;
+            return count == 0 ? null : count;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        Session.ExchangesChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Session.ExchangesChanged -= StateHasChanged;
+    }
+}

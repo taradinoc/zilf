@@ -1,37 +1,18 @@
-﻿<div class="top-row pl-4 navbar navbar-dark">
-    <a class="navbar-brand" href="">Zilf.Playground</a>
-    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+﻿<nav class="navbar navbar-expand-sm navbar-dark bg-dark text-light" style="background-color: #e3f2fd;">
+    <a class="navbar-brand" href="">
+        <img src="zilf-logo-transparent.png" width="32" height="32" class="d-inline-block align-top" alt="" loading="lazy" />
+        ZILF
+    </a>
+    <button class="navbar-toggler" data-toggle="collapse" data-target=".navbarToggledContent">
         <span class="navbar-toggler-icon"></span>
     </button>
-</div>
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <ul class="nav flex-column">
-        <li class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </li>
-        @*<li class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="oi oi-plus" aria-hidden="true"></span> Counter
-            </NavLink>
-        </li>
-        <li class="nav-item px-3">
-            <NavLink class="nav-link" href="fetchdata">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
-            </NavLink>
-        </li>*@
-    </ul>
-</div>
-
-@code {
-    private bool collapseNavMenu = true;
-
-    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-}
+    <div class="collapse navbar-collapse navbarToggledContent">
+        <ul class="navbar-nav mr-auto">
+            <NavMenuItem href="" Icon="home" Match="NavLinkMatch.All">Home</NavMenuItem>
+            <NavMenuItem href="project" Icon="project">Project <ProjectBadge /></NavMenuItem>
+            <NavMenuItem href="repl" Icon="terminal">REPL <ReplBadge /></NavMenuItem>
+            <NavMenuItem href="doc" Icon="question-mark">Help</NavMenuItem>
+        </ul>
+    </div>
+</nav>

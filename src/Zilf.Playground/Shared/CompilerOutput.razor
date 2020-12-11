@@ -1,4 +1,4 @@
-﻿@inject IJSRuntime JS
+﻿@inject JSInterop Interop 
 @using System.Text.RegularExpressions
 @using Zapf
 @using Zilf.Common
@@ -117,8 +117,7 @@ else
             string filename = System.IO.Path.GetFileName(path);
             string contentType = "application/x-zmachine";
 
-            var jsu = (IJSUnmarshalledRuntime)JS;
-            jsu.InvokeUnmarshalled<string, string, byte[], bool>("BlazorDownloadFileFast", filename, contentType, file);
+            Interop.DownloadBytesAsFile(file, filename, contentType);
         }
     }
 }

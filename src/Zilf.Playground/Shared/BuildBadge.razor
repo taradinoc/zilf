@@ -1,0 +1,25 @@
+﻿@inject BuildService Build
+@implements IDisposable
+
+<span class="badge badge-pill @ColorClass">@Build.Status</span>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Build.StatusChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Build.StatusChanged -= StateHasChanged;
+    }
+
+    private string ColorClass => Build.Status switch
+    {
+        BuildStatus.NotBuilt => "badge-secondary",
+        BuildStatus.Compiling or BuildStatus.Assembling => "badge-info",
+        BuildStatus.CompilerError or BuildStatus.AssemblerError => "badge-danger",
+        BuildStatus.Built => "badge-success",
+        _ => "badge-warning",
+    };
+}

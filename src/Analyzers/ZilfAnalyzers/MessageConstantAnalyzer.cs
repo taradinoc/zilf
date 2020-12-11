@@ -115,7 +115,7 @@ namespace ZilfAnalyzers
                     {
                         var constValue = context.SemanticModel.GetConstantValue(varDecl.Initializer.Value);
 
-                        if (!constValue.HasValue)
+                        if (!constValue.HasValue || constValue.Value == null)
                             continue;
 
                         // check for duplicate code

@@ -142,9 +142,13 @@ namespace ZilfAnalyzers
                         i.ConstantAccessSyntax.WithTriviaFrom(i.ExpressionToReplace));
 
                     if (i.NewMessageArgs.Any())
+                    {
+                        ArgumentSyntax? ancestor = i.ExpressionToReplace.FirstAncestorOrSelf<ArgumentSyntax>();
+                        Debug.Assert(ancestor != null);
                         docEditor.InsertAfter(
-                            i.ExpressionToReplace.FirstAncestorOrSelf<ArgumentSyntax>(),
+                            ancestor,
                             i.NewMessageArgs.Select(a => SyntaxFactory.Argument(a).WithAdditionalAnnotations(Formatter.Annotation)));
+                    }
                 }
 
                 AddUsingIfNeeded(docEditor);
@@ -335,6 +339,7 @@ namespace ZilfAnalyzers
                 {
                     case FixAllScope.Document:
                         {
+                            Debug.Assert(fixAllContext.Document != null);
                             var diagnostics = await fixAllContext.GetDocumentDiagnosticsAsync(fixAllContext.Document).ConfigureAwait(false);
                             diagnosticsToFix.Add(new KeyValuePair<Project, ImmutableArray<Diagnostic>>(fixAllContext.Project, diagnostics));
                             fixAllTitle = string.Format(TitleFormat, "document", fixAllContext.Document.Name);

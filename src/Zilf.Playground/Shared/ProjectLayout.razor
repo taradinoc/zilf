@@ -1,0 +1,123 @@
+﻿@inherits LayoutComponentBase
+@using System.Linq
+@inject JSInterop Interop
+@inject BuildService Build
+@inject WorkspaceService Workspace
+
+<Modal @ref="AddProjectFileModal" Title="Add project file" TResult="string">
+    <Body>
+        <label for="newProjectFileName">Enter a name for the new file.</label>
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="newProjectFileDir">@ProjectDir/</span>
+            </div>
+            <input @bind="NewProjectFileName" @bind:event="oninput" id="newProjectFileName" class="form-control" type="text" placeholder="qwerty.zil" aria-describedby="newProjectFileDir" />
+        </div>
+    </Body>
+    <Footer>
+        <button type="button" class="btn btn-primary"
+                disabled="@(string.IsNullOrWhiteSpace(NewProjectFileName))"
+                @onclick="() => AddProjectFileModal.Close(NewProjectFileName)">
+            Add
+        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+    </Footer>
+</Modal>
+
+<CascadingValue Value="this" IsFixed="true">
+    <ContainerlessLayout>
+        <Body>
+            <div class="container-fluid">
+                <div class="row">
+                    <ProjectSidebar OnAddProjectFile="@AddProjectFile"
+                                    OnCompile="@Compile"
+                                    ProjectId="@Workspace.Project.Guid.ToString()"
+                                    Files="@Workspace.Project.Files"
+                                    LibraryDirs="@Workspace.Project.Includes"
+                                    ActivePath="@ActivePath"
+                                    EntryPointPath="@Workspace.Project.MainFile.Path" />
+
+                    <div class="col-md-9 ml-sm-auto col-lg-10 px-md-4 main">
+                        @*<div class="content px-4">*@
+                        @Body
+                        @*</div>*@
+                    </div>
+                </div>
+            </div>
+        </Body>
+    </ContainerlessLayout>
+</CascadingValue>
+
+@code {
+    private string NewProjectFileName { get; set; }
+
+    private string activePath;
+
+    public string ActivePath
+    {
+        get => activePath;
+
+        set
+        {
+            if (value != activePath)
+            {
+                activePath = value;
+                InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private Modal<string> AddProjectFileModal { get; set; }
+
+    [System.Diagnostics.CodeAnalysis.MaybeNull]
+    private string ProjectDir
+    {
+        get
+        {
+            var path = Workspace.Project.MainFile?.Path;
+            return path?[..path.LastIndexOf('/')];
+        }
+    }
+
+    private async Task AddProjectFile()
+    {
+        NewProjectFileName = null;
+
+        var name = await AddProjectFileModal.ShowAsync();
+
+        if (name != null)
+        {
+            if (System.IO.Path.GetExtension(name) == null)
+                name += ".zil";
+
+            var newFile = Workspace.Project.AddFile($"{ProjectDir}/{name}");
+        }
+
+        //var name = await Interop.PromptAsync("Enter the new file name", GetUnusedFileName());
+        //if (name != null)
+        //{
+        //    if (System.IO.Path.GetExtension(name) == null)
+        //        name += ".zil";
+
+        //    var newFile = EditState.Project.AddFile(name);
+        //}
+    }
+
+    private void Compile()
+    {
+        Build.CompileWorkspace();
+    }
+
+    private string GetUnusedFileName()
+    {
+        int i = 1;
+
+        string result;
+        do
+        {
+            result = $"file{i++}.zil";
+        } while (Workspace.Project.Files.Any(f => f.Path == result));
+
+        return result;
+    }
+}

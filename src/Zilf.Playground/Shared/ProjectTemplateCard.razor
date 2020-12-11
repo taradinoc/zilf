@@ -1,0 +1,46 @@
+﻿@inject TemplateService Templates 
+
+<div class="card mb-4 shadow-sm">
+    <div class="card-header">
+        <h4 class="my-0 font-weight-normal">@Template.Title</h4>
+    </div>
+    <div class="card-body">
+        @if (Template.Icon != null)
+        {
+            <div class="template-icon">
+                <img src="@Templates.GetIconUri(Template)" />
+            </div>
+        }
+
+        <button type="button"
+                class="btn btn-lg my-3 btn-block @ButtonColorClass"
+                @onclick="OnClick">
+            Use this template
+        </button>
+
+        <p>@Template.Description</p>
+
+        @if (Template.Features != null && Template.Features.Length > 0)
+        {
+            <ul class="mt-3 mb-4 pl-0 px-lg-4 text-muted" style="list-style-position: inside">
+                @foreach (var feature in Template.Features)
+                {
+                    <li>@feature</li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsDefault { get; set; }
+
+    [Parameter]
+    public Template Template { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    private string ButtonColorClass => IsDefault ? "btn-primary" : "btn-outline-primary";
+} 

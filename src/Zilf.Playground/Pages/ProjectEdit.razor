@@ -1,0 +1,53 @@
+﻿@page "/project/{ProjectId:guid}/edit"
+@inject WorkspaceService Workspace
+@inject NavigationManager Nav
+@layout ProjectLayout
+
+<h3>Editing @Path</h3>
+
+<textarea @bind="FileContent" class="w-100 h-75" ></textarea>
+
+@code {
+    public static string GetLink(Project project, string path) => GetLink(project.Guid.ToString(), path);
+
+    public static string GetLink(string projectId, string path) =>
+        $"/project/{projectId}/edit?file={path}";
+
+    [Parameter]
+    public Guid ProjectId { get; set; }
+
+    [Parameter]
+    public string Path { get; set; }
+
+    [System.Diagnostics.CodeAnalysis.MaybeNull]
+    private ProjectFile File => Workspace.Project.Files.SingleOrDefault(f => f.Path == Path);
+
+    public string FileContent
+    {
+        get => File?.Content;
+        set
+        {
+            var f = File;
+            if (f != null)
+                f.Content = value;
+        }
+    }
+
+    [CascadingParameter]
+    public ProjectLayout ProjectLayout { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        var uri = new Uri(Nav.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        Path = query.GetValueOrDefault("file");
+
+        if (Path == null && Workspace.Project.Files.Count > 0)
+        {
+            Nav.NavigateTo(GetLink(Workspace.Project, Workspace.Project.MainFile.Path));
+            return;
+        }
+
+        ProjectLayout.ActivePath = Path;
+    }
+}

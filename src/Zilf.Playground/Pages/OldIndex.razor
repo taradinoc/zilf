@@ -1,0 +1,175 @@
+﻿@page "/oldindex"
+@using Zapf 
+@using Zilf.Compiler
+@using Zilf.Diagnostics
+@inject TemplateService Templates  
+
+<h1>ZIL Playground</h1>
+
+<div>
+    <div style="margin:10px 0;">
+        <label for="theme">Theme:</label>
+        <select id="theme" @onchange="ChangeTheme">
+            <option value="vs">Visual Studio</option>
+            <option value="vs-dark">Visual Studio Dark</option>
+            <option value="hc-black">High Contrast Black</option>
+        </select>
+    </div>
+
+    <div style="margin:10px 0;">
+        <label for="project">Project:</label>
+        <select id="project" @onchange="ChangeProject">
+            @foreach (var name in AvailableTemplates)
+            {
+                <option value="@name">@name</option>
+            }
+        </select>
+    </div>
+
+    @*<FileSystemBrowser FileSystem="FileSystem"
+                       OnChange="FileSystemBrowserOnChange"
+                       />*@
+
+    <div style="margin:10px 0;">
+        <button @onclick="Compile">Compile</button>
+    </div>
+</div>
+
+<MonacoEditor @ref="_editor"
+              Id="code-editor"
+              ConstructionOptions="EditorConstructionOptions"
+              OnDidInit="EditorOnDidInit"
+              OnContextMenu="EditorOnContextMenu"
+              />
+
+<CompilerOutput CompileResult="@CompileResult"
+                AssembleResult="@AssembleResult"
+                FileSystem="@FileSystem" />
+
+@code {
+    private MonacoEditor _editor { get; set; }
+    private string ValueToSet { get; set; }
+    private FrontEndResult CompileResult { get; set; }
+    private AssemblyResult? AssembleResult { get; set; }
+    private InMemoryFileSystem FileSystem { get; } = new InMemoryFileSystem();
+    private IEnumerable<string> AvailableTemplates { get; set; } = Enumerable.Empty<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        AvailableTemplates = await Templates.GetTemplateNamesAsync();
+    }
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(MonacoEditor editor)
+    {
+        return new StandaloneEditorConstructionOptions
+        {
+            Language = "zil",
+            GlyphMargin = true,
+            Value = "<VERSION ZIP>\n" +
+                    "\n" +
+                    "<ROUTINE GO ()\n" +
+                    "    <TELL \"Hello world!\" CR>\n" +
+                    "    <QUIT>>",
+        };
+    }
+
+    private async Task EditorOnDidInit(MonacoEditorBase editor)
+    {
+        await _editor.AddCommand((int)KeyMode.CtrlCmd | (int)KeyCode.KEY_H, (editor, keyCode) =>
+        {
+            Console.WriteLine("Ctrl+H : Initial editor command is triggered.");
+            System.Diagnostics.Debugger.Break();
+        });
+
+        //var newDecorations = new ModelDeltaDecoration[]
+        //{
+        //    new ModelDeltaDecoration
+        //    {
+        //        Range = new BlazorMonaco.Bridge.Range(3,1,3,1),
+        //        Options = new ModelDecorationOptions
+        //        {
+        //            IsWholeLine = true,
+        //            ClassName = "decorationContentClass",
+        //            GlyphMarginClassName = "decorationGlyphMarginClass"
+        //        }
+        //    }
+        //};
+
+        //decorationIds = await _editor.DeltaDecorations(null, newDecorations);
+        // You can now use 'decorationIds' to change or remove the decorations
+    }
+
+    //private string[] decorationIds;
+
+    private void EditorOnContextMenu(EditorMouseEvent eventArg)
+    {
+        Console.WriteLine("OnContextMenu : " + System.Text.Json.JsonSerializer.Serialize(eventArg));
+    }
+
+    private async Task ChangeTheme(ChangeEventArgs e)
+    {
+        Console.WriteLine($"setting theme to: {e.Value.ToString()}");
+        await MonacoEditor.SetTheme(e.Value.ToString());
+    }
+
+    private async Task SetValue()
+    {
+        Console.WriteLine($"setting value to: {ValueToSet}");
+        await _editor.SetValue(ValueToSet);
+    }
+
+    private async Task GetValue()
+    {
+        var val = await _editor.GetValue();
+        Console.WriteLine($"value is: {val}");
+    }
+
+    private async Task AddCommand()
+    {
+        await _editor.AddCommand((int)KeyMode.CtrlCmd | (int)KeyCode.Enter, (editor, keyCode) =>
+        {
+            Console.WriteLine("Ctrl+Enter : Editor command is triggered.");
+        });
+    }
+
+    private async Task AddAction()
+    {
+        await _editor.AddAction("testAction", "Test Action", new int[] { (int)KeyMode.CtrlCmd | (int)KeyCode.KEY_D, (int)KeyMode.CtrlCmd | (int)KeyCode.KEY_B }, null, null, "navigation", 1.5, (editor, keyCodes) =>
+        {
+            Console.WriteLine("Ctrl+D : Editor action is triggered.");
+        });
+    }
+
+    private async Task Compile()
+    {
+        FileSystem.SetText("main.zil", await _editor.GetValue());
+
+        var compiler = new FrontEnd { FileSystem = FileSystem, Logger = NullDiagnosticLogger.Instance };
+        var compResult = compiler.Compile("main.zil", "main.zap", false);
+
+        CompileResult = compResult;
+        AssembleResult = null;
+
+        if (compResult.Success)
+        {
+            var assembler = new Zapf.ZapfAssembler { FileSystem = FileSystem };
+            AssembleResult = assembler.Assemble("main.zap", "main.z#");
+        }
+    }
+
+    private Task ChangeProject(ChangeEventArgs e)
+    {
+        return Task.CompletedTask;
+
+        //if (e.Value is string name)
+        //{
+        //    var (template, fileContents) = await Templates.LoadTemplateAsync(name);
+
+        //    FileSystem.Clear();
+        //    foreach (var (path, content) in fileContents)
+        //        FileSystem.SetText(path, content);
+
+        //    await _editor.SetValue(fileContents[0].content);
+        //}
+    }
+}

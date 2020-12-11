@@ -1,0 +1,23 @@
+﻿<li class="nav-item px-3 px-sm-0">
+    <NavLink @attributes="@AdditionalAttributes" class="nav-link" Match="@Match">
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <span class="oi oi-@Icon mr-2 mr-sm-1" style="height: 1em; width: 1em; text-align: center" aria-hidden="true"></span>
+        }
+        @ChildContent
+    </NavLink>
+</li>
+
+@code {
+    [Parameter]
+    public NavLinkMatch Match { get; set; } = NavLinkMatch.Prefix;
+
+    [Parameter]
+    public string Icon { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object> AdditionalAttributes { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+} 

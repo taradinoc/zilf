@@ -1,0 +1,62 @@
+﻿<CascadingValue Name="ActivePath" Value="@ActivePath">
+    <CascadingValue Name="EntryPointPath" Value="@EntryPointPath">
+        <CascadingValue Name="ProjectId" Value="@ProjectId">
+            <nav id="projectSidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse navbarToggledContent">
+                <div class="sidebar-sticky pt-3">
+                    <div class="d-flex">
+                        <button class="btn btn-primary" @onclick="@OnCompile">Build</button>
+                        <BuildBadge />
+                    </div>
+
+                    <ProjectSidebarFileGroup Title="Project Files" Editable="true" Files="@ProjectFiles" OnAddProjectFile="@OnAddProjectFile" />
+
+                    @foreach (var libraryGroup in LibraryFileGroups)
+                    {
+                        <ProjectSidebarFileGroup @key="@libraryGroup.Key" Title="@libraryGroup.Key" Files="@libraryGroup" />
+                    }
+                </div>
+            </nav>
+        </CascadingValue>
+    </CascadingValue>
+</CascadingValue>
+
+@code {
+    [Parameter]
+    public string ProjectId { get; set; } = Guid.Empty.ToString();
+
+    [Parameter]
+    public string ActivePath { get; set; } = "";
+
+    [Parameter]
+    public string EntryPointPath { get; set; } = "";
+
+    [Parameter]
+    public IEnumerable<ProjectFile> Files { get; set; } = Enumerable.Empty<ProjectFile>();
+
+    [Parameter]
+    public IEnumerable<string> LibraryDirs { get; set; } = Enumerable.Empty<string>();
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnAddProjectFile { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnCompile { get; set; }
+
+    IEnumerable<IGrouping<string, ProjectFile>> FileGroups =>
+        from f in Files
+        let p = f.Path
+        orderby p
+        group f by p[..p.LastIndexOf('/')] into g
+        select g;
+
+    IEnumerable<IGrouping<string, ProjectFile>> LibraryFileGroups =>
+        from g in FileGroups
+        where LibraryDirs.Contains(g.Key) == true
+        select g;
+
+    IEnumerable<ProjectFile> ProjectFiles =>
+        from g in FileGroups
+        where LibraryDirs.Contains(g.Key) == false
+        from p in g
+        select p;
+}

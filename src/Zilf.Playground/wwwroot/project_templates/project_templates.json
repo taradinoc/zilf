@@ -1,0 +1,89 @@
+﻿{
+  "$schema": "project-templates-schema.json#",
+  "showcase": [
+    "$default",
+    "cloak",
+    "advent"
+  ],
+  "templates": {
+    "$default": {
+      "title": "New Project",
+      "description": "Includes the parser and not much else.",
+      "icon": "empty/empty.svg",
+      "features": [
+        "Minimal skeleton of a project",
+        "Z-Machine version 3 or later"
+      ],
+      "files": [
+        "empty/empty.zil"
+      ],
+      "include": [
+        "zillib"
+      ]
+    },
+    "advent": {
+      "title": "Advent",
+      "description": "Also known as “Colossal Cave” or “Adventure,” this is the game that started it all—ported to ZIL, of course.",
+      "icon": "advent/advent.svg",
+      "features": [
+        "NPCs that follow the player and listen to orders",
+        "Simple macros to eliminate duplicate code",
+        "Context-sensitive hint system"
+      ],
+      "files": [
+        "advent/advent.zil",
+        "advent/hints.zil"
+      ],
+      "include": [
+        "zillib"
+      ]
+    },
+    "beer": {
+      "title": "99 Bottles of Beer",
+      "description": "Prints the lyrics to a very long song.",
+      "features": [
+        "Looping"
+      ],
+      "files": [
+        "beer/beer.zil"
+      ]
+    },
+    "cloak": {
+      "title": "Cloak of Darkness",
+      "description": "See how Roger Firth's widely ported example game translates into ZIL.",
+      "icon": "cloak/cloak.svg",
+      "features": [
+        "One simple puzzle involving light sources",
+        "Win/lose conditions",
+        "Z-Machine version 3 or later"
+      ],
+      "files": [
+        "cloak/cloak.zil"
+      ],
+      "include": [
+        "zillib"
+      ]
+    },
+    "hello": {
+      "title": "Hello World",
+      "description": "Prints a classic message.",
+      "files": [
+        "hello/hello.zil"
+      ]
+    }
+  },
+  "libraries": {
+    "zillib": {
+      "files": [
+        "zillib/events.zil",
+        "zillib/orphan.zil",
+        "zillib/parser.zil",
+        "zillib/pronouns.zil",
+        "zillib/pseudo.zil",
+        "zillib/scope.zil",
+        "zillib/template.zil",
+        "zillib/verbs.zil"
+      ]
+    }
+  }
+}

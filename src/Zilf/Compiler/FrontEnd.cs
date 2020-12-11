@@ -41,6 +41,26 @@ namespace Zilf.Compiler
     public record FrontEndResult(bool Success, int ErrorCount, int WarningCount, int SuppressedWarningCount,
         IReadOnlyCollection<Diagnostic> Diagnostics);
 
+    public interface IReplSession
+    {
+        /// <summary>
+        /// Parses and evaluates a series of expressions in the current REPL context.
+        /// </summary>
+        /// <param name="expression">The expression(s) to evaluate.</param>
+        /// <returns>A string representation of the result of evaluating the last given expression,
+        /// or <see langword="null"/> if either no expressions were given or an exception was caught.</returns>
+        /// <remarks>If this method returns <see langword="null"/>, call <see cref="ReadDiagnostics"/>
+        /// to read the error message.</remarks>
+        string? Evaluate(string expression);
+
+        /// <summary>
+        /// Returns any diagnostic messages that have been logged.
+        /// </summary>
+        /// <returns>A string containing the text of any diagnostic messages that have been issued, or an empty
+        /// string if none have been issued.</returns>
+        string ReadDiagnostics();
+    }
+
     public sealed class FrontEnd
     {
         public IFileSystem FileSystem { get; init; } = PhysicalFileSystem.Instance;
@@ -142,7 +162,8 @@ namespace Zilf.Compiler
 
         Context NewContext(RunMode runMode, bool wantDebugInfo)
         {
-            var result = new Context { RunMode = runMode, WantDebugInfo = wantDebugInfo };
+            var ignoreCase = runMode == RunMode.Interactive;
+            var result = new Context(ignoreCase) { RunMode = runMode, WantDebugInfo = wantDebugInfo };
             result.DiagnosticManager.Logger = Logger;
 
             InitializeContext?.Invoke(this, new ContextEventArgs(result));
@@ -150,11 +171,8 @@ namespace Zilf.Compiler
             return result;
         }
 
-        internal FrontEndResult Interpret(Context ctx, string inputFileName)
-        {
-            var f = InterpretOrCompile(ctx, inputFileName, null, false, false);
-            return f;
-        }
+        internal FrontEndResult Interpret(Context ctx, string inputFileName) =>
+            InterpretOrCompile(ctx, inputFileName, null, false, false);
 
         public FrontEndResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo = false)
         {
@@ -162,8 +180,7 @@ namespace Zilf.Compiler
             return Compile(ctx, inputFileName, outputFileName, ctx.WantDebugInfo);
         }
 
-        internal FrontEndResult Compile(Context ctx, string inputFileName,
-             string outputFileName, bool wantDebugInfo = false) =>
+        internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo) =>
             InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
 
         // FIXME: not supported by R#, sadly...
@@ -288,6 +305,75 @@ namespace Zilf.Compiler
 
                 default:
                     throw new ArgumentException("Unsupported Z-machine version", nameof(ctx));
+            }
+        }
+
+        public IReplSession StartRepl()
+        {
+            var ctx = NewContext(RunMode.Interactive, false);
+            return new ReplSession(ctx);
+        }
+
+        private sealed class ReplSession : IReplSession, IDisposable
+        {
+            private readonly Context ctx;
+            private readonly MemoryStream diagnostics;
+            private readonly StreamWriter diagnosticsWriter;
+            private bool disposedValue;
+
+            public ReplSession(Context ctx)
+            {
+                this.ctx = ctx;
+
+                diagnostics = new MemoryStream();
+                diagnosticsWriter = new StreamWriter(diagnostics, leaveOpen: true);
+
+                ctx.DiagnosticManager.Logger = new DefaultDiagnosticLogger { Writer = diagnosticsWriter };
+            }
+
+            public string? Evaluate(string expression)
+            {
+                using (ctx.PushFileContext("<REPL session>"))
+                {
+                    var result = Program.Evaluate(ctx, expression, wantExceptions: false);
+                    return result?.ToStringContext(ctx, friendly: false);
+                }
+            }
+
+            public string ReadDiagnostics()
+            {
+                string result;
+
+                diagnosticsWriter.Flush();
+                diagnostics.Position = 0;
+                using (var rdr = new StreamReader(diagnostics, leaveOpen: true))
+                {
+                    result = rdr.ReadToEnd();
+                }
+
+                diagnostics.SetLength(0);
+                return result;
+            }
+
+            private void Dispose(bool disposing)
+            {
+                if (!disposedValue)
+                {
+                    if (disposing)
+                    {
+                        diagnostics.Dispose();
+                        diagnosticsWriter.Dispose();
+                    }
+
+                    disposedValue = true;
+                }
+            }
+
+            public void Dispose()
+            {
+                // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
             }
         }
     }

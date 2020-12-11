@@ -1,0 +1,45 @@
+﻿@page "/project/new"
+@inject TemplateService Templates
+@inject NavigationManager Nav
+@inject WorkspaceService Workspace
+@layout ContainerlessLayout
+
+<div class="px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
+    <h1 class="display-4">Select template</h1>
+    <p class="lead">Start a new project without having to write out all the boilerplate, or learn ZIL by hacking on one of the example games.</p>
+</div>
+
+<div class="container">
+    @if (Showcase.Length == 0)
+    {
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card-deck mb-3 text-center">
+            @foreach (var (name, template) in Showcase)
+            {
+                <ProjectTemplateCard IsDefault="@(name == "$default")" Template="@template" OnClick="@(e => LoadTemplate(name))" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private KeyValuePair<string, Template>[] Showcase { get; set; } = { };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Showcase = await Templates.GetShowcaseAsync();
+    }
+
+    private async Task LoadTemplate(string name)
+    {
+        Workspace.Project = await Templates.CopyToNewProjectAsync(name);
+        Nav.NavigateTo($"/project/{Workspace.Project.Guid}/edit?file={Workspace.Project.MainFile.Path}");
+    }
+}

@@ -1,0 +1,16 @@
+﻿@inject WorkspaceService Workspace
+@implements IDisposable
+
+<span class="badge badge-pill badge-light">@Workspace.StatusText</span>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Workspace.StatusChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Workspace.StatusChanged -= StateHasChanged;
+    }
+}

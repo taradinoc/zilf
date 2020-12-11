@@ -66,7 +66,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Package", "Package", "{3E28
 		Package\zip\Zip.Packaging.targets = Package\zip\Zip.Packaging.targets
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.Common.Tests", "test\Zilf.Common.Tests\Zilf.Common.Tests.csproj", "{337F098C-4DD4-420D-825C-4A40DF99AD89}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Common.Tests", "test\Zilf.Common.Tests\Zilf.Common.Tests.csproj", "{337F098C-4DD4-420D-825C-4A40DF99AD89}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Playground", "src\Zilf.Playground\Zilf.Playground.csproj", "{D38CAE84-836D-416D-83F6-DE2F2502658C}"
 EndProject

@@ -115,7 +115,8 @@ namespace ZilfAnalyzers
             // get format string and split it into prefix + rest
             semanticModel = await document.GetSemanticModelAsync(cancellationToken);
             root = await document.GetSyntaxRootAsync(cancellationToken);
-            var formatStr = (string)semanticModel!.GetConstantValue(FindFormatExpr(root!), cancellationToken).Value;
+            var formatStr = (string?)semanticModel!.GetConstantValue(FindFormatExpr(root!), cancellationToken).Value;
+            Debug.Assert(formatStr != null);
             var match = MessageConstantAnalyzer.PrefixedMessageFormatRegex.Match(formatStr);
             var prefix = match.Groups["prefix"].Value;
             var rest = match.Groups["rest"].Value;

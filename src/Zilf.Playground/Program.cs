@@ -7,6 +7,11 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Zilf.Common;
+using Zilf.Playground.Services.Builds;
+using Zilf.Playground.Services.Workspaces;
+using Zilf.Playground.Services.Repl;
+using Zilf.Playground.Services.Templates;
 
 namespace Zilf.Playground
 {
@@ -15,9 +20,17 @@ namespace Zilf.Playground
         public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
+            builder.Logging.SetMinimumLevel(LogLevel.Debug);
+
             builder.RootComponents.Add<App>("#app");
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+
+            builder.Services.AddSingleton<JSInterop>();
+            builder.Services.AddScoped<TemplateService>();
+            builder.Services.AddScoped<WorkspaceService>();
+            builder.Services.AddScoped<ReplService>();
+            builder.Services.AddScoped<BuildService>();
 
             await builder.Build().RunAsync();
         }

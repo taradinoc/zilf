@@ -1,0 +1,16 @@
+﻿@page "/project"
+@inject NavigationManager Nav
+@inject WorkspaceService Workspace
+@code {
+    protected override void OnInitialized()
+    {
+        if (Workspace.Project.Files.Count == 0)
+        {
+            Nav.NavigateTo("/project/new");
+        }
+        else
+        {
+            Nav.NavigateTo(Pages.ProjectEdit.GetLink(Workspace.Project, Workspace.Project.MainFile.Path));
+        }
+    }
+}
