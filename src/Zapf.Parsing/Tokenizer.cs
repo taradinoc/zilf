@@ -188,7 +188,8 @@ namespace Zapf.Parsing
                 if (char.IsDigit((char)c))
                     digits++;
 
-                sb.Append(NextChar());
+                sb.Append((char)c);
+                NextChar();
             }
 
             var length = sb.Length;

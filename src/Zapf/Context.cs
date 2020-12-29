@@ -244,7 +244,7 @@ namespace Zapf
             MaybeProcessEscapeChars(ref str);
 
             var zstr = StringEncoder.Encode(str, mode);
-            if (FinalPass && AbbreviateMode)
+            if (FinalPass && AbbreviateMode && mode != StringEncoderMode.NoAbbreviations)
                 AbbrevFinder.AddText(str);
 
             if (withLength)

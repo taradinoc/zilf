@@ -66,6 +66,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Package", "Package", "{3E28
 		Package\zip\Zip.Packaging.targets = Package\zip\Zip.Packaging.targets
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.Common.Tests", "test\Zilf.Common.Tests\Zilf.Common.Tests.csproj", "{337F098C-4DD4-420D-825C-4A40DF99AD89}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		CI|Any CPU = CI|Any CPU
@@ -219,6 +221,18 @@ Global
 		{55BC8693-4255-4F7C-B69D-734406DE6C88}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{55BC8693-4255-4F7C-B69D-734406DE6C88}.Release|x86.ActiveCfg = Release|Any CPU
 		{55BC8693-4255-4F7C-B69D-734406DE6C88}.Release|x86.Build.0 = Release|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.CI|Any CPU.ActiveCfg = Debug|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.CI|Any CPU.Build.0 = Debug|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.CI|x86.ActiveCfg = Debug|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.CI|x86.Build.0 = Debug|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.Debug|x86.Build.0 = Debug|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.Release|Any CPU.Build.0 = Release|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.Release|x86.ActiveCfg = Release|Any CPU
+		{337F098C-4DD4-420D-825C-4A40DF99AD89}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -242,6 +256,7 @@ Global
 		{7C9E4970-9997-451B-BCDA-FB869C753F59} = {1E9A9589-73D4-466C-9A3D-D44D058B2359}
 		{25194AC6-1151-463C-82EA-5D5AD9B56F8D} = {1E9A9589-73D4-466C-9A3D-D44D058B2359}
 		{3E280263-C59C-4A3B-B9ED-466D22C25333} = {1E9A9589-73D4-466C-9A3D-D44D058B2359}
+		{337F098C-4DD4-420D-825C-4A40DF99AD89} = {65A2B38C-4851-42E5-900C-DAD903A288F8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {774D42F0-105F-4B51-BC60-F4661B610BAC}

@@ -5,10 +5,17 @@
     <TargetFrameworkProfile />
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
   <ItemGroup>
     <None Include="..\Zilf.licenseheader">
       <Link>Zilf.licenseheader</Link>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FastHashSet" Version="0.1.0-alpha.2" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

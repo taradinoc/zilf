@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2018 Jesse McGrew
+﻿/* Copyright 2010-2020 Jesse McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -32,6 +33,9 @@ namespace Zilf.Common.StringEncoding
 
         public Horspool(string needle)
         {
+            if (string.IsNullOrEmpty(needle))
+                throw new ArgumentException("Search string must not be empty", nameof(needle));
+
             this.needle = needle;
 
             int nlen = needle.Length;
@@ -44,8 +48,7 @@ namespace Zilf.Common.StringEncoding
 
         public string Text => needle;
 
-/*
-        public int FindIn(string haystack, int startIndex = 0)
+        public int FindIn(ReadOnlySpan<char> haystack, int startIndex = 0)
         {
             int hlen = haystack.Length - startIndex;
             int hstart = startIndex;
@@ -65,7 +68,6 @@ namespace Zilf.Common.StringEncoding
 
             return -1;
         }
-*/
 
         public int FindIn(StringBuilder haystack, int startIndex = 0)
         {

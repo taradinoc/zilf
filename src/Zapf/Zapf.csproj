@@ -16,6 +16,10 @@
       <Link>Zilf.licenseheader</Link>
     </None>
   </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Zapf.Parsing\Zapf.Parsing.csproj" />
     <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj" />

@@ -225,6 +225,17 @@ namespace Zilf.Common.StringEncoding
             charset[charsetNum] = cs.ToArray();
         }
 
+        public IReadOnlyDictionary<char, int> GetCharsetMap()
+        {
+            var result = new Dictionary<char, int>(charset[0].Length + charset[1].Length + charset[2].Length);
+
+            for (int i = 2; i >= 0; i--)
+                foreach (var c in charset[i])
+                    result[(char)c] = i;
+
+            return result;
+        }
+
         public static bool IsPrintable(byte zscii, int zversion)
         {
             switch (zscii)
