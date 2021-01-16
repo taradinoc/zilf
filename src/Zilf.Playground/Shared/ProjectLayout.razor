@@ -103,9 +103,9 @@
         //}
     }
 
-    private void Compile()
+    private async Task Compile()
     {
-        Build.CompileWorkspace();
+        await Build.CompileWorkspaceAsync();
     }
 
     private string GetUnusedFileName()

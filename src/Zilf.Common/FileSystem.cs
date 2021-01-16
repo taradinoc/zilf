@@ -254,11 +254,13 @@ namespace Zilf.Common
 
         public string GetText(string path) => Encoding.UTF8.GetString(GetBytes(path));
 
-        public void SetText(string path, string content)
+        public void SetBytes(string path, byte[] content)
         {
-            readableFiles[path] = Encoding.UTF8.GetBytes(content);
+            readableFiles[path] = content;
             writtenFiles.Remove(path);
         }
+
+        public void SetText(string path, string content) => SetBytes(path, Encoding.UTF8.GetBytes(content));
 
         public bool Exists(string path) => readableFiles.ContainsKey(path) || writtenFiles.ContainsKey(path);
 

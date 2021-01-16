@@ -12,6 +12,7 @@ using Zilf.Playground.Services.Builds;
 using Zilf.Playground.Services.Workspaces;
 using Zilf.Playground.Services.Repl;
 using Zilf.Playground.Services.Templates;
+using BlazorWorker.Core;
 
 namespace Zilf.Playground
 {
@@ -31,6 +32,8 @@ namespace Zilf.Playground
             builder.Services.AddScoped<WorkspaceService>();
             builder.Services.AddScoped<ReplService>();
             builder.Services.AddScoped<BuildService>();
+
+            builder.Services.AddWorkerFactory();
 
             await builder.Build().RunAsync();
         }

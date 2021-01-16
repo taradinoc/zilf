@@ -67,16 +67,6 @@ namespace Zilf.Playground.Services.Workspaces
             return true;
         }
 
-        public IFileSystem CopyToFileSystem()
-        {
-            var result = new InMemoryFileSystem();
-
-            foreach (var f in files)
-                result.SetText(f.Path, f.Content);
-
-            return result;
-        }
-
         public IEnumerable<string> GetIncludePaths()
         {
             var allFilePaths = from f in files
