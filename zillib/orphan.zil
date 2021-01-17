@@ -31,6 +31,8 @@ In the future, we may also need to store something about which part of the noun 
 we're trying to improve (e.g. which YSPEC is ambiguous). So we use the top bits of a word
 to recall whether we're orphaning and why, and reserve the rest for future use."
 
+<USE "QQ">
+
 <CONSTANT P-OF-ORPHANING 32768>
 <CONSTANT P-OF-MISSING 16384>
 <CONSTANT P-OF-PRSI 8192>
@@ -57,10 +59,10 @@ to recall whether we're orphaning and why, and reserve the rest for future use."
                   <SET V <ORB .V ,P-OF-PRSI>>)
                  (<N==? .WHICH PRSO>
                   <ERROR BAD-ARGUMENT WHICH .WHICH>)>)>
-    <FORM PROG '()
-          <FORM SETG P-O-REASON .V>
-          '<SETG P-V-WORDN 0>
-          '<SETG P-O-CONT ,P-CONT>>>
+    `<PROG ()
+          <SETG P-O-REASON ~.V>
+          <SETG P-V-WORDN 0>
+          <SETG P-O-CONT ,P-CONT>>>
 
 <CONSTANT O-RES-NOT-HANDLED 0>   ;"Not an orphaning response; parse as usual"
 <CONSTANT O-RES-REORPHANED 1>    ;"We asked another question; abort parse"

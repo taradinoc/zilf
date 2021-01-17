@@ -32,19 +32,19 @@
 <CONSTANT PDO-SIZE 8>
 
 <DEFMAC PDO-NADJ ('PDO)
-    <FORM GETB .PDO 0>>
+    `<GETB ~.PDO 0>>
 
 <DEFMAC PDO-NNOUN ('PDO)
-    <FORM GETB .PDO 1>>
+    `<GETB ~.PDO 1>>
 
 <DEFMAC PDO-ADJ/TBL ('PDO)
-    <FORM GET .PDO 1>>
+    `<GET ~.PDO 1>>
 
 <DEFMAC PDO-NOUN/TBL ('PDO)
-    <FORM GET .PDO 2>>
+    `<GET ~.PDO 2>>
 
 <DEFMAC PDO-ACTION ('PDO)
-    <FORM GET .PDO 3>>
+    `<GET ~.PDO 3>>
 
 ;"Like REFERS? but for pseudo entries.
 
@@ -213,9 +213,8 @@ Returns:
                                     <SETG NEXT-PSEUDO-AUTO-ACTION <+ .NUM 1>>
                                     <SET NAME <PARSE <STRING "PSEUDO-AUTO-ACTION-"
                                                              <UNPARSE .NUM>>>>
-                                    <EVAL <FORM ROUTINE .NAME '()
-                                                <FORM COND <LIST <FORM VERB? !.VERBS>
-                                                                 <FORM PRINTR .F>>>>>
+                                    <EVAL `<ROUTINE ~.NAME ()
+                                                <COND (<VERB? ~!.VERBS> <PRINTR ~.F>)>>>
                                     .NAME>)
                                (<TYPE? .F ATOM FALSE> .F)
                                (ELSE <ERROR BAD-PSEUDO-ACTION .F>)>>>>>

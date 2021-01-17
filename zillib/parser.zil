@@ -1,5 +1,7 @@
 "Library header"
 
+<USE "QQ">
+
 <SETG ZILLIB-VERSION "J5">
 
 <VERSION?
@@ -23,14 +25,14 @@
      <GLOBAL TRACE-INDENT 0>
 
      <DEFMAC TRACE ('N "ARGS" A)
-         <FORM COND <LIST <FORM G=? ',TRACE-LEVEL .N>
-                          '<PRINT-TRACE-INDENT>
-                          <FORM TELL !.A>>
-                    '(ELSE T)>>
+         `<COND (<G=? ,TRACE-LEVEL ~.N>
+                 <PRINT-TRACE-INDENT>
+                 <TELL ~!.A>)
+                (ELSE T)>>
 
      <DEFMAC TRACE-DO ('N "ARGS" A)
-         <FORM COND <LIST <FORM G=? ',TRACE-LEVEL .N> !.A>
-                    '(ELSE T)>>
+         `<COND (<G=? ,TRACE-LEVEL ~.N> ~!.A)
+                (ELSE T)>>
 
      <ROUTINE PRINT-TRACE-INDENT ()
          <OR ,TRACE-INDENT <RETURN>>
@@ -91,15 +93,15 @@ other versions. These macros let us write the same code for all versions."
 
 <VERSION?
     (ZIP
-        <DEFMAC GET/B ('T 'O) <FORM GETB .T .O>>
-        <DEFMAC PUT/B ('T 'O 'V) <FORM PUTB .T .O .V>>
-        <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PBTBL? .O .P .V>>
-        <DEFMAC IN-B/WTBL? ('T 'C 'V) <FORM IN-BTBL? .T .C .V>>)
+        <DEFMAC GET/B ('T 'O) `<GETB ~.T ~.O>>
+        <DEFMAC PUT/B ('T 'O 'V) `<PUTB ~.T ~.O ~.V>>
+        <DEFMAC IN-PB/WTBL? ('O 'P 'V) `<IN-PBTBL? ~.O ~.P ~.V>>
+        <DEFMAC IN-B/WTBL? ('T 'C 'V) `<IN-BTBL? ~.T ~.C ~.V>>)
     (ELSE
-        <DEFMAC GET/B ('T 'O) <FORM GET .T .O>>
-        <DEFMAC PUT/B ('T 'O 'V) <FORM PUT .T .O .V>>
-        <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PWTBL? .O .P .V>>
-        <DEFMAC IN-B/WTBL? ('T 'C 'V) <FORM IN-WTBL? .T .C .V>>)>
+        <DEFMAC GET/B ('T 'O) `<GET ~.T ~.O>>
+        <DEFMAC PUT/B ('T 'O 'V) `<PUT ~.T ~.O ~.V>>
+        <DEFMAC IN-PB/WTBL? ('O 'P 'V) `<IN-PWTBL? ~.O ~.P ~.V>>
+        <DEFMAC IN-B/WTBL? ('T 'C 'V) `<IN-WTBL? ~.T ~.C ~.V>>)>
 
 "Property and flag defaults"
 
@@ -183,14 +185,14 @@ other versions. These macros let us write the same code for all versions."
 <GLOBAL LEXBUF KBD-LEXBUF>
 
 <DEFMAC ACTIVATE-BUFS (PREFIX)
-    <FORM BIND '()
-        <FORM SETG READBUF <FORM GVAL <PARSE <STRING .PREFIX "-READBUF">>>>
-        <FORM SETG LEXBUF <FORM GVAL <PARSE <STRING .PREFIX "-LEXBUF">>>>>>
+    `<BIND ()
+        <SETG READBUF ,~<PARSE <STRING .PREFIX "-READBUF">>>
+        <SETG LEXBUF ,~<PARSE <STRING .PREFIX "-LEXBUF">>>>>
 
 <DEFMAC COPY-TO-BUFS (PREFIX)
-    <FORM BIND '()
-        <FORM COPY-READBUF ',READBUF <FORM GVAL <PARSE <STRING .PREFIX "-READBUF">>>>
-        <FORM COPY-LEXBUF ',LEXBUF <FORM GVAL <PARSE <STRING .PREFIX "-LEXBUF">>>>>>
+    `<BIND ()
+        <COPY-READBUF ,READBUF ,~<PARSE <STRING .PREFIX "-READBUF">>>
+        <COPY-LEXBUF ,LEXBUF ,~<PARSE <STRING .PREFIX "-LEXBUF">>>>>
 
 <CONSTANT P1MASK 3>
 
@@ -203,21 +205,20 @@ other versions. These macros let us write the same code for all versions."
 
 <DEFMAC VERB? ("ARGS" A "AUX" O)
     <SET O <MAPF ,LIST
-        <FUNCTION (I)
-            <FORM GVAL <PARSE <STRING "V?" <SPNAME .I>>>>>
+        <FUNCTION (I) `,~<PARSE <STRING "V?" <SPNAME .I>>>>
         .A>>
-    <FORM EQUAL? ',PRSA !.O>>
+    `<EQUAL? ,PRSA ~!.O>>
 
 <DEFMAC PRSO? ("ARGS" A)
-    <FORM EQUAL? ',PRSO !.A>>
+    `<EQUAL? ,PRSO ~!.A>>
 
 <DEFMAC PRSI? ("ARGS" A)
-    <FORM EQUAL? ',PRSI !.A>>
+    `<EQUAL? ,PRSI ~!.A>>
 
 <DEFMAC WORD? ('W 'T)
-    <FORM CHKWORD? .W
-        <FORM GVAL <PARSE <STRING "PS?" <SPNAME .T>>>>
-        <FORM GVAL <PARSE <STRING "P1?" <SPNAME .T>>>>>>
+    `<CHKWORD? ~.W
+        ,~<PARSE <STRING "PS?" <SPNAME .T>>>
+        ,~<PARSE <STRING "P1?" <SPNAME .T>>>>>
 
 <VERSION?
     (ZIP
@@ -315,8 +316,8 @@ Args:
 
 <MAPF <>
     <FUNCTION (FIELD)
-        <EVAL <FORM DEFMAC <PARSE <STRING "P-" <SPNAME .FIELD>>> '("ARGS" A)
-                    <FORM FORM .FIELD '',P-OOPS-DATA '!.A>>>>
+        <EVAL `<DEFMAC ~<PARSE <STRING "P-" <SPNAME .FIELD>>> ("ARGS" A)
+                    `<~.FIELD ,P-OOPS-DATA ~'~!.A>>>>
     '(OOPS-WN OOPS-CONT OOPS-O-REASON OOPS-WINNER)>
 
 "Structured types for storing noun phrases.
@@ -350,19 +351,19 @@ Args:
 
 <DEFMAC NP-YSPEC ('NP 'I)
     <COND (<==? .I 1>
-           <FORM NP-YTBL .NP>)
+           `<NP-YTBL ~.NP>)
           (<TYPE? .I FIX>
-           <FORM REST <FORM NP-YTBL .NP> <* ,P-OBJSPEC-SIZE <- .I 1>>>)
+           `<REST <NP-YTBL ~.NP> <* ,P-OBJSPEC-SIZE ~<- .I 1>>>)
           (ELSE
-           <FORM REST <FORM NP-YTBL .NP> <FORM * ,P-OBJSPEC-SIZE <FORM - .I 1>>>)>>
+           `<REST <NP-YTBL ~.NP> <* ,P-OBJSPEC-SIZE <- ~.I 1>>>)>>
 
 <DEFMAC NP-NSPEC ('NP 'I)
     <COND (<==? .I 1>
-           <FORM NP-NTBL .NP>)
+           `<NP-NTBL ~.NP>)
           (<TYPE? .I FIX>
-           <FORM REST <FORM NP-NTBL .NP> <* ,P-OBJSPEC-SIZE <- .I 1>>>)
+           `<REST <NP-NTBL ~.NP> <* ,P-OBJSPEC-SIZE ~<- .I 1>>>)
           (ELSE
-           <FORM REST <FORM NP-NTBL .NP> <FORM * ,P-OBJSPEC-SIZE <FORM - .I 1>>>)>>
+           `<REST <NP-NTBL ~.NP> <* ,P-OBJSPEC-SIZE <- ~.I 1>>>)>>
 
 <DEFSTRUCT OBJSPEC (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
     (OBJSPEC-ADJ VOC)
@@ -425,10 +426,10 @@ Args:
          <VERSION?
              (ZIP
                  <DEFMAC PRINT-ADJ ('A)
-                     <FORM PRINT-MATCHING-WORD .A ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
+                     `<PRINT-MATCHING-WORD ~.A ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
              (ELSE
                  <DEFMAC PRINT-ADJ ('A)
-                     <FORM TELL B .A>>)>
+                     `<TELL B ~.A>>)>
 )>
 
 <IFFLAG (<OR DEBUG DEBUGGING-VERBS>
@@ -470,7 +471,7 @@ Args:
 <GLOBAL P-XOBJS <PRSTBL>>
 
 <DEFMAC COPY-PRSTBL ('SRC 'DEST)
-    <FORM <VERSION? (ZIP COPY-TABLE-B) (ELSE COPY-TABLE)> .SRC .DEST <+ 1 ,P-MAX-OBJECTS>>>
+    `<~<VERSION? (ZIP COPY-TABLE-B) (ELSE COPY-TABLE)> ~.SRC ~.DEST <+ 1 ,P-MAX-OBJECTS>>>
 
 "Structured type for backing up a complete parsed command"
 <DEFSTRUCT PARSER-RESULT (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
@@ -610,11 +611,11 @@ These extensions will be respected by other code that simulates the main loop, e
         <MAIN-LOOP-END-OF-ITERATION>>>
 
 <DEFMAC WITH-HOOK (NAME:ATOM 'EXPR "AUX" (RA ?RESULT))
-    <FORM BIND (.RA)
-        <FORM <PARSE <STRING "HOOK-BEFORE-" <SPNAME .NAME>>>>
-        <FORM SET .RA .EXPR>
-        <FORM <PARSE <STRING "HOOK-AFTER-" <SPNAME .NAME>>> .RA>
-        <FORM LVAL .RA>>>
+    `<BIND (~.RA)
+        <~<PARSE <STRING "HOOK-BEFORE-" <SPNAME .NAME>>>>
+        <SET ~.RA ~.EXPR>
+        <~<PARSE <STRING "HOOK-AFTER-" <SPNAME .NAME>>> ~.RA>
+        .~.RA>>
 
 <DEFAULT-DEFINITION MAIN-LOOP-PARSER
     <DEFMAC MAIN-LOOP-PARSER ()
@@ -1318,12 +1319,12 @@ Returns:
     (ELSE
         <DEFMAC COPY-TABLE ('SRC 'DEST 'LEN "AUX" BYTES)
             ;"someday the compiler should do this optimization on its own..."
-            <COND (<TYPE? .LEN FIX> <SET BYTES <* .LEN 2>>)
-                  (ELSE <SET BYTES <FORM * .LEN 2>>)>
-            <FORM COPYT .SRC .DEST .BYTES>>
+            <SET BYTES <COND (<TYPE? .LEN FIX> <* .LEN 2>)
+                             (ELSE `<* ~.LEN 2>)>>
+            `<COPYT ~.SRC ~.DEST ~.BYTES>>
 
         <DEFMAC COPY-TABLE-B ('SRC 'DEST 'LEN)
-            <FORM COPYT .SRC .DEST .LEN>>)>
+            `<COPYT ~.SRC ~.DEST ~.LEN>>)>
 
 ;"Determines whether a given word can start a noun phrase.
 
@@ -1982,10 +1983,10 @@ Returns:
     <RFALSE>>
 
 <DEFMAC ENCODE-NOUN-BITS ('F 'O)
-    <FORM BOR <FORM * .F 256> .O>>
+    `<BOR <* ~.F 256> ~.O>>
 
 <DEFMAC DECODE-FINDBIT ('E)
-    <FORM BAND <FORM / .E 256> 255>>
+    `<BAND </ ~.E 256> 255>>
 
 ;"Searches scope for a usable light source.
 
@@ -2196,13 +2197,13 @@ Returns:
     <LIST-OBJECTS .TBL <> <+ ,L-PRSTABLE ,L-THE ,L-OR>>
     <TELL "?" CR>>
 
-;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL.
+;"Determines whether an object is included by a NOUN-PHRASE's YTBL.
   Note: NP may be evaluated twice."
 <DEFMAC NP-INCLUDES? ('NP 'O)
-    <FORM ANY-SPEC-REFERS? <FORM NP-YTBL .NP> <FORM NP-YCNT .NP> .O>>
+    `<ANY-SPEC-REFERS? <NP-YTBL ~.NP> <NP-YCNT ~.NP> ~.O>>
 
 <DEFMAC NP-INCLUDES-PSEUDO? ('NP 'PDO)
-    <FORM ANY-SPEC-REFERS-PSEUDO? <FORM NP-YTBL .NP> <FORM NP-YCNT .NP> .PDO>>
+    `<ANY-SPEC-REFERS-PSEUDO? <NP-YTBL ~.NP> <NP-YCNT ~.NP> ~.PDO>>
 
 <ROUTINE ANY-SPEC-REFERS? (TBL N O)
     <COND (<0? .N> <RFALSE>)>
@@ -2221,10 +2222,10 @@ Returns:
 ;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL.
   Note: NP may be evaluated twice."
 <DEFMAC NP-EXCLUDES? ('NP 'O)
-    <FORM ANY-SPEC-REFERS? <FORM NP-NTBL .NP> <FORM NP-NCNT .NP> .O>>
+    `<ANY-SPEC-REFERS? <NP-NTBL ~.NP> <NP-NCNT ~.NP> ~.O>>
 
 <DEFMAC NP-EXCLUDES-PSEUDO? ('NP 'PDO)
-    <FORM ANY-SPEC-REFERS-PSEUDO? <FORM NP-NTBL .NP> <FORM NP-NCNT .NP> .PDO>>
+    `<ANY-SPEC-REFERS-PSEUDO? <NP-NTBL ~.NP> <NP-NCNT ~.NP> ~.PDO>>
 
 ;"Determines whether a local-global object is present in a given room.
 
@@ -2449,38 +2450,38 @@ Example:
                          .GATOMS>>
     <SET NEWVALUES <MAPF ,LIST 2 .TEMPS>>
     <SET BINDINGS <MAPF ,LIST
-                        <FUNCTION (T G) <LIST .T <CHTYPE .G GVAL>>>
+                        <FUNCTION (T G) `(~.T ,~.G)>
                         .TEMPATOMS
                         .GATOMS>>
     <SET SETGS <MAPF ,LIST
-                     <FUNCTION (G V) <FORM SETG .G .V>>
+                     <FUNCTION (G V) `<SETG ~.G ~.V>>
                      .GATOMS
                      .NEWVALUES>>
     <SET RESTORES <MAPF ,LIST
-                        <FUNCTION (G T) <FORM SETG .G <CHTYPE .T LVAL>>>
+                        <FUNCTION (G T) `<SETG ~.G .~.T>>
                         .GATOMS
                         .TEMPATOMS>>
     ;"And finally..."
-    <FORM BIND (!.BINDINGS ?RESULT)
-          !.SETGS
-          <FORM SET ?RESULT <FORM PROG '() !.BODY>>
-          !.RESTORES
-          '.?RESULT>>
+    `<BIND (~!.BINDINGS ?RESULT)
+          ~!.SETGS
+          <SET ?RESULT <PROG () ~!.BODY>>
+          ~!.RESTORES
+          .?RESULT>>
 
 <VERSION?
     (ZIP
      ;"If unlit, change HERE to 'Darkness' temporarily."
      <DEFMAC DO-READ ('RB 'LB)
-         <EXPAND <FORM WRAP-FOR-DARK-STATUS <FORM READ .RB .LB>>>>
+         <EXPAND `<WRAP-FOR-DARK-STATUS <READ ~.RB ~.LB>>>>
 
      <DEFMAC WRAP-FOR-DARK-STATUS ('F)
-         <FORM BIND '((OHERE ,HERE))
-             '<COND (<NOT ,HERE-LIT> <SETG HERE ,ROOMS>)>
-             .F
-             '<SETG HERE .OHERE>>>)
+         `<BIND ((OHERE ,HERE))
+             <COND (<NOT ,HERE-LIT> <SETG HERE ,ROOMS>)>
+             ~.F
+             <SETG HERE .OHERE>>>)
     (ELSE
      <DEFMAC DO-READ ('RB 'LB)
-         <FORM READ .RB .LB>>)>
+         `<READ ~.RB ~.LB>>)>
 
 "Action framework"
 
@@ -2771,10 +2772,10 @@ Returns:
 <DEFAULT-DEFINITION RANDOM-IN-RANGE
   <DEFMAC RANDOM-IN-RANGE ('LO 'HI)
     <COND (<TYPE? .LO LVAL GVAL FIX FALSE CONSTANT>
-           <FORM - <FORM + .LO <FORM RANDOM <FORM + <FORM - .HI .LO> 1>>> 1>)
+           `<- <+ ~.LO <RANDOM <+ <- ~.HI ~.LO> 1>>> 1>)
           (ELSE
-           <FORM BIND ((?LO .LO))
-               <FORM - <FORM + '.?LO <FORM RANDOM <FORM + <FORM - .HI '.?LO> 1>>> 1>>)>>>
+           `<BIND ((?LO ~.LO))
+               <- <+ .?LO <RANDOM <+ <- ~.HI .?LO> 1>>> 1>>)>>>
 
 ;"Returns a random element from a table, possibly repeating.
 

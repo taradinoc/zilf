@@ -261,7 +261,7 @@
     <TELL "Not here, not now." CR>>
 
 <DEFMAC IF-PLURAL ('O 'IF-PL 'IF-SG)
-    <FORM COND <LIST <FORM FSET? .O ',PLURALBIT> .IF-PL> <LIST ELSE .IF-SG>>>
+    `<COND (<FSET? ~.O ,PLURALBIT> ~.IF-PL) (ELSE ~.IF-SG)>>
 
 <ROUTINE PRE-REQUIRES-LIGHT ()
     <COND (<NOT ,HERE-LIT>
@@ -422,8 +422,8 @@ Args:
 >
 
 <DEFMAC UPPERCASE-CHAR ('C)
-    <FORM BIND <LIST <LIST ?TMP .C>>
-        '<COND (<AND <G=? .?TMP !\a> <L=? .?TMP !\z>>
+    `<BIND ((?TMP ~.C))
+        <COND (<AND <G=? .?TMP !\a> <L=? .?TMP !\z>>
                 <- .?TMP 32>)
                (ELSE .?TMP)>>>
 
@@ -699,15 +699,15 @@ Returns:
 
 ;"Checks whether PRSA is a meta-verb that does not cause time to pass."
 <DEFMAC GAME-VERB? ()
-    <FORM VERB? QUIT VERSION WAIT SAVE RESTORE RESTART INVENTORY UNDO
-                SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT
-                PRONOUNS TELL
-                !<IFFLAG (DEBUG '(XTRACE)) (ELSE '())>
-                !<IFFLAG
-                    (DEBUGGING-VERBS
-                     '(XTREE XGOTO XMOVE XREMOVE XLIGHT XEXITS XOBJ XIT))
-                    (ELSE '())>
-                !,EXTRA-GAME-VERBS>>
+    `<VERB? QUIT VERSION WAIT SAVE RESTORE RESTART INVENTORY UNDO
+            SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT
+            PRONOUNS TELL
+            ~!<IFFLAG (DEBUG '(XTRACE)) (ELSE '())>
+            ~!<IFFLAG
+                (DEBUGGING-VERBS
+                 '(XTREE XGOTO XMOVE XREMOVE XLIGHT XEXITS XOBJ XIT))
+                (ELSE '())>
+            ~!,EXTRA-GAME-VERBS>>
 
 <COND (<NOT <GASSIGNED? EXTRA-GAME-VERBS>> <SETG EXTRA-GAME-VERBS '()>)>
 
@@ -976,7 +976,7 @@ Returns:
                  <NOT <FSET? .OBJ ,OPENBIT>>>>>>
 
 <DEFMAC COMMON-PARENT? ('A 'B)
-    <FORM COMMON-PARENT-R .A .B ',HERE>>
+    `<COMMON-PARENT-R ~.A ~.B ,HERE>>
 
 <ROUTINE COMMON-PARENT-R CPR (A B ROOT "AUX" N F R)
     <OR .ROOT <RFALSE>>

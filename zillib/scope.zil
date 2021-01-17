@@ -22,14 +22,14 @@
             ,LIST
             <FUNCTION (N) <PARSE <STRING <SPNAME .N> "-SCOPE-STAGE">>>
             .NAMES>>
-    <FORM ==?
-          '<GET ,SCOPE-CURRENT-STAGES ,SCOPE-CURRENT-STAGE>
-          !.SSS>>
+    `<==?
+          <GET ,SCOPE-CURRENT-STAGES ,SCOPE-CURRENT-STAGE>
+          ~!.SSS>>
 
 <DEFMAC SCOPE-EXIT ('STATUS)
-    <FORM BIND ()
-          <FORM SETG MAP-SCOPE-STATUS .STATUS>
-          '<RETURN -1 .SCOPE-STAGE-ACTIVATION>>>
+    `<BIND ()
+          <SETG MAP-SCOPE-STATUS ~.STATUS>
+          <RETURN -1 .SCOPE-STAGE-ACTIVATION>>>
 
 "Scope stages"
 
@@ -73,9 +73,9 @@
         <SET INIT-CODE <3 .S>>
         <SET NEXT-CODE <4 .S>>
         <EVAL
-            <FORM ROUTINE .NAME SCOPE-STAGE-ACTIVATION '(INIT)
-                  <FORM COND <LIST '.INIT !.INIT-CODE>
-                        <LIST ELSE !.NEXT-CODE>>>>>
+            `<ROUTINE ~.NAME SCOPE-STAGE-ACTIVATION (INIT)
+                  <COND (.INIT ~!.INIT-CODE)
+                        (ELSE ~!.NEXT-CODE)>>>>
     ,SCOPE-STAGES>
 
 ;"Define enough state for the most demanding stage"
@@ -110,7 +110,7 @@
                   (<AND <==? <LENGTH .SV> 2> <==? <1 .SV> BITS>>
                    <SET STAGES <>>
                    <SET INIT-STAGES
-                       <LIST <FORM MAP-SCOPE-INIT-STAGES-FROM-BITS <2 .SV>>>>)
+                       `(<MAP-SCOPE-INIT-STAGES-FROM-BITS ~<2 .SV>>)>)
                   (<AND <==? <LENGTH .SV> 2> <==? <1 .SV> STAGES>>
                    <SET STAGES <2 .SV>>
                    <SET INIT-STAGES <>>)
@@ -128,24 +128,23 @@
                     <MAPF ,LIST
                           <FUNCTION (S)
                               <SET I <+ .I 1>>
-                              <FORM PUT
-                                    ',SCOPE-CURRENT-STAGES
-                                    .I
-                                    <PARSE <STRING <SPNAME .S> "-SCOPE-STAGE">>>>
+                              `<PUT
+                                    ,SCOPE-CURRENT-STAGES
+                                    ~.I
+                                    ~<PARSE <STRING <SPNAME .S> "-SCOPE-STAGE">>>>
                           .STAGES>>>
            <SET INIT-STAGES
-               <CONS <FORM PUT ',SCOPE-CURRENT-STAGES 0 <LENGTH .INIT-STAGES>>
+               <CONS `<PUT ,SCOPE-CURRENT-STAGES 0 ~<LENGTH .INIT-STAGES>>
                      .INIT-STAGES>>)>
-    <FORM PROG '()
-          !.INIT-STAGES
-          .INIT-OPTIONS
-          '<COND (<NOT <MAP-SCOPE-START>>
-                  <RETURN>)>
-          <FORM REPEAT <LIST .VAR>
-                <FORM SET .VAR '<MAP-SCOPE-NEXT>>
-                <FORM COND <LIST <FORM 0? <FORM LVAL .VAR>>
-                                 '<RETURN>>>
-                !.BODY>>>
+    `<PROG ()
+          ~!.INIT-STAGES
+          ~.INIT-OPTIONS
+          <COND (<NOT <MAP-SCOPE-START>>
+                 <RETURN>)>
+          <REPEAT (~.VAR)
+                <SET ~.VAR <MAP-SCOPE-NEXT>>
+                <COND (<0? .~.VAR> <RETURN>)>
+                ~!.BODY>>>
 
 <ROUTINE MAP-SCOPE-INIT-STAGES-FROM-BITS (BITS "AUX" (CNT 0))
     ;"Special case: -1 means all stages in definition order."
@@ -154,9 +153,9 @@
            %<FORM PROG '()
                   !<MAPF ,LIST
                       <FUNCTION (I "AUX" (S <1 .I>))
-                          <FORM PUT ',SCOPE-CURRENT-STAGES
-                                    '<SET CNT <+ .CNT 1>>
-                                    <PARSE <STRING <SPNAME .S> "-SCOPE-STAGE">>>>
+                          `<PUT ,SCOPE-CURRENT-STAGES
+                                <SET CNT <+ .CNT 1>>
+                                ~<PARSE <STRING <SPNAME .S> "-SCOPE-STAGE">>>>
                       ,SCOPE-STAGES>>
            <RETURN>)>
     ;"We don't distinguish between HELD and CARRIED, or ON-GROUND and IN-ROOM."
