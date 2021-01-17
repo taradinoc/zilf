@@ -14,11 +14,6 @@
     <PackageReference Include="ZLR.VM" Version="0.9.0-*" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="ZLR.VM">
-      <HintPath>.\ZLR.VM.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="$(SolutionDir)src\Zapf\Zapf.csproj" />
     <ProjectReference Include="$(SolutionDir)src\Zilf\Zilf.csproj" />
   </ItemGroup>

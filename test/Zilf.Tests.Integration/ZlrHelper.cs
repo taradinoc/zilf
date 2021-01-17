@@ -355,7 +355,7 @@ namespace Zilf.Tests.Integration
 
         MemoryStream? zapfOutputFile;
 
-        public FileBasedZlrHelper(string codeFile, string[] includeDirs, string inputFile)
+        public FileBasedZlrHelper(string codeFile, string[] includeDirs, string? inputFile)
         {
             this.codeFile = codeFile;
             this.includeDirs = includeDirs;

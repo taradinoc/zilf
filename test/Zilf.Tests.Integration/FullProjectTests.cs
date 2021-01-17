@@ -80,7 +80,7 @@ namespace Zilf.Tests.Integration
 
         /// <exception cref="AssertInconclusiveException">Always thrown.</exception>
         [DataTestMethod]
-        [DynamicData("GetProjects", DynamicDataSourceType.Method)]
+        [DynamicData(nameof(GetProjects), DynamicDataSourceType.Method)]
         [Timeout(PerTestTimeoutMilliseconds)]
         public void TestProjects(string baseName, string dir, string mainZilFile)
         {
