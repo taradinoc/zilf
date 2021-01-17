@@ -16,7 +16,7 @@
     <PackageReference Include="MSTest.TestFramework" Version="2.1.2" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Zilf.licenseheader">
+    <None Include="$(SolutionDir)\Zilf.licenseheader">
       <Link>Zilf.licenseheader</Link>
     </None>
     <EmbeddedResource Include="Resources\hello.z3" />

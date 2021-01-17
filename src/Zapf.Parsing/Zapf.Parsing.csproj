@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="..\Zilf.licenseheader">
+    <None Include="$(SolutionDir)\Zilf.licenseheader">
       <Link>Zilf.licenseheader</Link>
     </None>
   </ItemGroup>

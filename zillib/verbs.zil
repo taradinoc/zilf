@@ -1149,7 +1149,7 @@ Returns:
     (ELSE <TELL "You aren't wearing that." CR>)>>
 
 <ROUTINE V-EAT ()
-    <COND (<PRSO? ,WINNER> <TSD> <RTRUE>)
+    <COND (<PRSO? ,WINNER> <TSD> <RTRUE> ;"FIXME: impossible?")
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER> <RTRUE>)
           (<FSET? ,PRSO ,EDIBLEBIT>
            <REMOVE ,PRSO>
@@ -1346,7 +1346,7 @@ Returns:
     <RTRUE>>
 
 <ROUTINE V-THROW-AT ()
-    <COND (<PRSO? ,WINNER> <TELL "Get " <IF-PLURAL ,PRSO "them" "it"> " yourself." CR>)
+    <COND (<PRSO? ,WINNER> <TELL "Get " <IF-PLURAL ,PRSO "them" "it"> " yourself." CR> ;"FIXME: impossible?")
           (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI>)
           (ELSE <POINTLESS "Taking your frustration out on" <> T>)>
     <RTRUE>>
@@ -1354,7 +1354,7 @@ Returns:
 <ROUTINE V-GIVE ()
     <COND (<PRSI? ,WINNER>
            <COND (<HELD? ,PRSO> <TELL "You already have that." CR>)
-                 (ELSE <TELL "Get " <IF-PLURAL ,PRSO "them" "it"> " yourself." CR>)>)
+                 (ELSE <TELL "Get " <IF-PLURAL ,PRSO "them" "it"> " yourself." CR> ;"FIXME: impossible?")>)
           (<PRSO? ,WINNER> <SILLY>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
           (<NOT <FSET? ,PRSI ,PERSONBIT>> <NOT-POSSIBLE "give things to">)

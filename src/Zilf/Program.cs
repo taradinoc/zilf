@@ -30,6 +30,7 @@ using Zilf.Diagnostics;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Language.Parsing;
 
 namespace Zilf
 {

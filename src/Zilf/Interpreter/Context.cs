@@ -32,6 +32,7 @@ using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
+using Zilf.Language.Parsing;
 
 namespace Zilf.Interpreter
 {
@@ -101,6 +102,8 @@ namespace Zilf.Interpreter
         public DiagnosticManager DiagnosticManager { get; }
 
         readonly ObList compilationFlagsObList, hooksObList;
+        public ParserMacros ParserMacros { get; }
+
         readonly Stack<ZilObject> previousObPaths;
         LocalEnvironment localEnvironment;
         readonly Dictionary<ZilAtom, Binding> globalValues;
@@ -134,6 +137,8 @@ namespace Zilf.Interpreter
         public Context(bool ignoreCase)
         {
             this.IgnoreCase = ignoreCase;
+
+            this.ParserMacros = new ParserMacros(this);
 
             this.DiagnosticManager = new DiagnosticManager();
             this.DiagnosticManager.TooManyErrors += (sender, args) =>
@@ -519,7 +524,6 @@ namespace Zilf.Interpreter
         /// <remarks>The MDL documentation refers to the macro expansion environment as a
         /// "top level environment", but for the purposes of MDL-ZIL?, the environment is
         /// not considered "top level" (i.e. SUBR names are not redirected).</remarks>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public T ExecuteInMacroEnvironment<T>(Func<T> func)
         {
             var oblistAtom = GetStdAtom(StdAtom.OBLIST);
@@ -1462,6 +1466,8 @@ B * <PRINTB .X>
         ZilAtom IParserSite.GetTypeAtom(ZilObject zo) => zo.GetTypeAtom(this);
 
         ZilObject IParserSite.Evaluate(ZilObject zo) => (ZilObject)zo.Eval(this);
+
+        SimplePrefixMacroHandler? IParserSite.GetPrefixMacro(char prefix) => ParserMacros.GetPrefixMacro(prefix);
 
         #endregion
     }

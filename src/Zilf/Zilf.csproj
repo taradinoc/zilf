@@ -26,7 +26,7 @@
     <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\Zilf.licenseheader">
+    <None Include="$(SolutionDir)\Zilf.licenseheader">
       <Link>Zilf.licenseheader</Link>
     </None>
     <None Include="Zilf.ruleset" />

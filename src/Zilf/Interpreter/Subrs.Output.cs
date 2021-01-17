@@ -23,6 +23,7 @@ using System.Text.RegularExpressions;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
+using Zilf.Language.Parsing;
 
 namespace Zilf.Interpreter
 {
@@ -300,6 +301,18 @@ namespace Zilf.Interpreter
             }
 
             return position;
+        }
+
+        [Subr("MAKE-PREFIX-MACRO", ObList = "READER-MACROS")]
+        public static ZilObject MAKE_PREFIX_MACRO(Context ctx, ZilChar ch,
+            [Either(typeof(IApplicable), typeof(ZilFalse))]
+            object handlerOrFalse)
+        {
+            ctx.ParserMacros.MakePrefixMacro(ch.Char,
+                handlerOrFalse is IApplicable a
+                    ? (c, zo) => ParserOutput.FromObject((ZilObject)a.ApplyNoEval(c, new[] { zo }))
+                    : (SimplePrefixMacroHandlerWithContext?)null);
+            return ctx.TRUE;
         }
     }
 }

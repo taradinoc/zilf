@@ -18,241 +18,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text;
 using Zilf.Common;
+using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
-using System.Globalization;
 
-namespace Zilf.Language
+namespace Zilf.Language.Parsing
 {
-    sealed class CharBuffer
-    {
-        readonly IEnumerator<char> source;
-        readonly Stack<char> heldChars = new Stack<char>(2);
-        char? curChar;
-
-        public CharBuffer(IEnumerable<char> source)
-        {
-            this.source = source.GetEnumerator();
-        }
-
-        public bool MoveNext()
-        {
-            if (heldChars.Count > 0)
-            {
-                curChar = heldChars.Pop();
-                return true;
-            }
-
-            if (source.MoveNext())
-            {
-                curChar = source.Current;
-                return true;
-            }
-
-            curChar = null;
-            return false;
-        }
-
-        /// <exception cref="InvalidOperationException" accessor="get">No character to read</exception>
-        public char Current => curChar ?? throw new InvalidOperationException("No character to read");
-
-        public void PushBack(char ch) => heldChars.Push(ch);
-    }
-
-    [Serializable]
-    public abstract class ParserException : Exception
-    {
-        protected ParserException(string message, Exception innerException)
-            : base(message, innerException) { }
-
-        protected ParserException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
-
-        public ParserException() : base()
-        {
-        }
-
-        public ParserException(string message) : base(message)
-        {
-        }
-    }
-
-    [Serializable]
-    sealed class ExpectedButFound : ParserException
-    {
-        public ExpectedButFound(string expected, string actual, Exception innerException)
-            : base($"expected {expected} but found {actual}", innerException) { }
-
-        public ExpectedButFound(string expected, string actual)
-            : base($"expected {expected} but found {actual}") { }
-
-        ExpectedButFound(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
-
-        public ExpectedButFound()
-        {
-        }
-
-        public ExpectedButFound(string message) : base(message)
-        {
-        }
-
-        public ExpectedButFound(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-    }
-
-    [Serializable]
-    sealed class ParsedNumberOverflowed : ParserException
-    {
-        const string DefaultRadix = "decimal";
-
-        public ParsedNumberOverflowed(string number, string radix, Exception innerException)
-            : base($"{radix} number '{number}' cannot be represented in 32 bits", innerException) { }
-
-        public ParsedNumberOverflowed(string number, string radix = DefaultRadix)
-            : base($"{radix} number '{number}' cannot be represented in 32 bits") { }
-
-        public ParsedNumberOverflowed(string number, Exception innerException)
-            : this(number, DefaultRadix, innerException) { }
-
-        ParsedNumberOverflowed(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
-
-        public ParsedNumberOverflowed() : base()
-        {
-        }
-
-        public ParsedNumberOverflowed(string message) : base(message)
-        {
-        }
-    }
-
-    interface IParserSite
-    {
-        ZilAtom ParseAtom(string text);
-
-        ZilAtom GetTypeAtom(ZilObject zo);
-
-        ZilObject ChangeType(ZilObject zo, ZilAtom type);
-
-        ZilObject Evaluate(ZilObject zo);
-
-        ZilObject? GetGlobalVal(ZilAtom atom);
-
-        string CurrentFilePath { get; }
-    }
-
-    enum ParserOutputType
-    {
-        /// <summary>
-        /// A valid <see cref="ZilObject"/> was parsed.
-        /// </summary>
-        Object,
-        /// <summary>
-        /// A valid <see cref="ZilObject"/> was parsed, with a comment prefix.
-        /// </summary>
-        Comment,
-        /// <summary>
-        /// A valid object could not be parsed.
-        /// </summary>
-        SyntaxError,
-        /// <summary>
-        /// There are no more characters to read.
-        /// </summary>
-        EndOfInput,
-        /// <summary>
-        /// A character was read (and pushed back) that may have terminated an outer structure.
-        /// </summary>
-        Terminator,
-        /// <summary>
-        /// A special object was parsed and evaluated, and there were no objects to insert in its place.
-        /// </summary>
-        /// <remarks>
-        /// This happens whenever a %%macro is evaluated, or when a %macro returns #SPLICE (), or when
-        /// the left side of a {...:SPLICE} template invocation evaluates to an empty structure.
-        /// </remarks>
-        EmptySplice,
-    }
-
-    struct ParserOutput
-    {
-        public ParserOutputType Type;
-        public ZilObject Object;
-        public ParserException Exception;
-
-        public bool IsIgnorable => Type == ParserOutputType.Comment || Type == ParserOutputType.EmptySplice;
-
-        public override string ToString()
-        {
-            var sb = new StringBuilder();
-
-            sb.Append(Type);
-
-            if (Object != null)
-            {
-                sb.Append(' ');
-                sb.Append(Object);
-            }
-
-            if (Exception != null)
-            {
-                sb.Append(' ');
-                sb.Append(Exception.GetType().Name);
-                sb.Append("(\"");
-                sb.Append(Exception.Message);
-                sb.Append("\")");
-            }
-
-            return sb.ToString();
-        }
-
-        public static readonly ParserOutput EmptySplice =
-            new ParserOutput { Type = ParserOutputType.EmptySplice };
-
-        public static readonly ParserOutput EndOfInput =
-            new ParserOutput { Type = ParserOutputType.EndOfInput };
-
-        public static readonly ParserOutput Terminator =
-            new ParserOutput { Type = ParserOutputType.Terminator };
-
-        public static ParserOutput FromObject(ZilObject zo)
-        {
-            return new ParserOutput
-            {
-                Type = ParserOutputType.Object,
-                Object = zo
-            };
-        }
-
-        public static ParserOutput FromComment(ZilObject zo)
-        {
-            return new ParserOutput
-            {
-                Type = ParserOutputType.Comment,
-                Object = zo
-            };
-        }
-
-        public static ParserOutput FromException(ParserException ex)
-        {
-            return new ParserOutput
-            {
-                Type = ParserOutputType.SyntaxError,
-                Exception = ex
-            };
-        }
-    }
-
     // TODO: Non-evaluating parser mode, to return %MACROs, %%MACROs, and LINKs as-is, and keep inner comments
     sealed class Parser
     {
@@ -260,7 +34,6 @@ namespace Zilf.Language
         readonly ISourceLine? srcOverride;
         readonly ZilObject[]? templateParams;
         readonly Queue<ZilObject> heldObjects = new Queue<ZilObject>();
-        int line = 1;
 
         public Parser(IParserSite site)
             : this(site, (ISourceLine?)null, null)
@@ -279,12 +52,9 @@ namespace Zilf.Language
             this.templateParams = templateParams;
         }
 
-        public int Line => line;
+        public int Line { get; private set; } = 1;
 
-        public IEnumerable<ParserOutput> Parse(IEnumerable<char> chars)
-        {
-            return Parse(new CharBuffer(chars));
-        }
+        public IEnumerable<ParserOutput> Parse(IEnumerable<char> chars) => Parse(new CharBuffer(chars));
 
         IEnumerable<ParserOutput> Parse(CharBuffer chars)
         {
@@ -376,7 +146,7 @@ namespace Zilf.Language
             }
             catch (ParserException ex)
             {
-                sourceLine = new FileSourceLine(site.CurrentFilePath, line);
+                sourceLine = new FileSourceLine(site.CurrentFilePath, Line);
                 return ParserOutput.FromException(ex);
             }
         }
@@ -388,11 +158,11 @@ namespace Zilf.Language
                 // handle whitespace
                 if (!SkipWhitespace(chars))
                 {
-                    sourceLine = new FileSourceLine(site.CurrentFilePath, line);
+                    sourceLine = new FileSourceLine(site.CurrentFilePath, Line);
                     return ParserOutput.EndOfInput;
                 }
 
-                sourceLine = new FileSourceLine(site.CurrentFilePath, line);
+                sourceLine = new FileSourceLine(site.CurrentFilePath, Line);
                 var c = chars.Current;
 
                 // '!' adds 128 to the next character (assuming it's below 128)
@@ -616,13 +386,16 @@ namespace Zilf.Language
                     case var _ when c.IsNonAtomChar():
                         throw new ExpectedButFound("atom", $"'{c.Rebang()}'");
 
+                    case var _ when site.GetPrefixMacro(c) is SimplePrefixMacroHandler handler:
+                        return ParsePrefixed(chars, c, handler);
+
                     default:
                         return ParserOutput.FromObject(ParseCurrentAtomOrNumber(chars));
                 }
             }
             catch (ParserException ex)
             {
-                sourceLine = new FileSourceLine(site.CurrentFilePath, line);
+                sourceLine = new FileSourceLine(site.CurrentFilePath, Line);
                 return ParserOutput.FromException(ex);
             }
         }
@@ -647,7 +420,7 @@ namespace Zilf.Language
 
                     case '\n':
                         // count line breaks
-                        line++;
+                        Line++;
                         continue;
 
                     case '!':
@@ -669,7 +442,7 @@ namespace Zilf.Language
 
                             case '\n':
                                 // count line breaks
-                                line++;
+                                Line++;
                                 continue;
 
                             default:
@@ -712,7 +485,7 @@ namespace Zilf.Language
                             c = chars.Current;
 
                             if (c == '\n')
-                                line++;
+                                Line++;
 
                             sb.Append(c);
                         }
@@ -823,7 +596,7 @@ namespace Zilf.Language
                             c = chars.Current;
 
                             if (c == '\n')
-                                line++;
+                                Line++;
 
                             sb.Append(c);
                         }
@@ -834,7 +607,7 @@ namespace Zilf.Language
                         break;
 
                     case '\n':
-                        line++;
+                        Line++;
                         goto default;
 
                     default:
@@ -901,12 +674,12 @@ namespace Zilf.Language
             }
         }
 
-        ParserOutput ParsePrefixed(CharBuffer chars, char prefix, Func<ZilObject, ParserOutput> convert)
+        ParserOutput ParsePrefixed(CharBuffer chars, char prefix, SimplePrefixMacroHandler convert)
         {
             return ParsePrefixed(chars, prefix.Rebang(), convert);
         }
 
-        ParserOutput ParsePrefixed(CharBuffer chars, string prefix, Func<ZilObject, ParserOutput> convert)
+        ParserOutput ParsePrefixed(CharBuffer chars, string prefix, SimplePrefixMacroHandler convert)
         {
             ParserOutput po;
             ISourceLine src;

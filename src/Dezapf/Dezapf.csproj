@@ -10,7 +10,7 @@
     <Copyright>Copyright 2010-2018 Jesse McGrew</Copyright>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="..\Zilf.licenseheader" Link="Zilf.licenseheader" />
+    <None Include="$(SolutionDir)\Zilf.licenseheader" Link="Zilf.licenseheader" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Zapf\Zapf.csproj" />

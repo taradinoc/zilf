@@ -25,6 +25,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.Language.Parsing;
 
 namespace Zilf.Tests.Interpreter
 {
@@ -37,6 +38,8 @@ namespace Zilf.Tests.Interpreter
         class TestParserSite : IParserSite
         {
             readonly Dictionary<string, ZilAtom> atoms = new Dictionary<string, ZilAtom>();
+
+            public ParserMacros Macros { get; } = new ParserMacros(new Context());
 
             [DisallowNull]
             public Func<ZilObject, ZilObject>? OnEvaluate { get; set; }
@@ -83,6 +86,8 @@ namespace Zilf.Tests.Interpreter
             {
                 atoms.Add(name, new ZilAtom(name, null, stdAtom));
             }
+
+            public SimplePrefixMacroHandler? GetPrefixMacro(char prefix) => Macros.GetPrefixMacro(prefix);
         }
 
         TestParserSite site = default!;
@@ -316,7 +321,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
-        public void TestParsingReadMacro()
+        public void TestParsingStandardReadMacro()
         {
             var parser = new Parser(site);
 
@@ -343,6 +348,25 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.AssertStructurallyEqual(
                 new ZilList(new ZilFix(1), new ZilList(new ZilFix(2), new ZilList(null, null))),
                 result[0].Object);
+            Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
+        }
+
+        [TestMethod]
+        public void TestParsingCustomReadMacro()
+        {
+            var keywords = new ObList();
+            var nameKeyword = keywords["NAME"];
+
+            var parser = new Parser(site);
+            site.Macros.MakePrefixMacro('&',
+                (_, zo) => zo is ZilAtom atom
+                    ? ParserOutput.FromObject(keywords[atom.Text])
+                    : ParserOutput.FromException(new ExpectedButFound("atom", zo.ToString())));
+
+            var result = parser.Parse("&NAME").ToArray();
+            Assert.AreEqual(2, result.Length);
+            Assert.AreEqual(ParserOutputType.Object, result[0].Type);
+            Assert.AreSame(nameKeyword, result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
         }
 

@@ -16,7 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Zilf.Language
+namespace Zilf.Language.Parsing
 {
     /// <summary>
     /// Character constants for ASCII symbols with the 8th bit set,
