@@ -314,5 +314,12 @@ namespace Zilf.Interpreter
                     : (SimplePrefixMacroHandlerWithContext?)null);
             return ctx.TRUE;
         }
+        
+        [Subr("SET-SOURCE-INFO", ObList = "READER-MACROS!-PACKAGE")]
+        public static ZilObject SET_SOURCE_INFO(Context ctx, ZilObject dest, ZilObject src)
+        {
+            dest.SourceLine = src.SourceLine;
+            return dest;
+        }
     }
 }

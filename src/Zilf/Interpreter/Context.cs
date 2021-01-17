@@ -1166,6 +1166,8 @@ namespace Zilf.Interpreter
             if (value.GetTypeAtom(this) == newType)
                 return value;
 
+            ZilObject result;
+
             // TODO: standardize special cases
             switch (newType.StdAtom)
             {
@@ -1178,34 +1180,42 @@ namespace Zilf.Interpreter
                     if (value.PrimType != PrimType.ATOM)
                         throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Requires_1, "GVAL or LVAL", "ATOM");
 
-                    return new ZilForm(new[] { newType, value.GetPrimitive(this) }) { SourceLine = SourceLines.Chtyped };
+                    result = new ZilForm(new[] { newType, value.GetPrimitive(this) });
+                    break;
 
                 case StdAtom.ATOM when value.StdTypeAtom == StdAtom.FORM:
                     if (value.IsGVAL(out var atom) || value.IsLVAL(out atom))
+                    {
+                        // don't set SourceLine
                         return atom;
+                    }
 
                     throw new InterpreterError(InterpreterMessages.CHTYPE_To_0_Requires_1, "ATOM", "ATOM, GVAL, or LVAL");
 
                 // special case for TABLE: its primtype is TABLE, but VECTOR can be converted too
                 case StdAtom.TABLE when value.PrimType == PrimType.VECTOR:
                     var vector = (ZilVector)value.GetPrimitive(this);
-                    return ZilTable.Create(1, vector.ToArray(), 0, null);
+                    result = ZilTable.Create(1, vector.ToArray(), 0, null);
+                    break;
+
+                // look it up in the typemap
+                case var _ when typeMap.TryGetValue(newType, out var entry):
+                    if (value.PrimType != entry.PrimType)
+                    {
+                        throw new InterpreterError(
+                            InterpreterMessages.CHTYPE_To_0_Requires_1, newType, entry.PrimType);
+                    }
+
+                    result = entry.ChtypeMethod(this, value.GetPrimitive(this));
+                    break;
+
+                // unknown type
+                default:
+                    throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "type", newType);
             }
 
-            // look it up in the typemap
-            if (typeMap.TryGetValue(newType, out var entry))
-            {
-                if (value.PrimType != entry.PrimType)
-                {
-                    throw new InterpreterError(
-                        InterpreterMessages.CHTYPE_To_0_Requires_1, newType, entry.PrimType);
-                }
-
-                return entry.ChtypeMethod(this, value.GetPrimitive(this));
-            }
-
-            // unknown type
-            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "type", newType);
+            result.SourceLine ??= SourceLines.Chtyped;
+            return result;
         }
 
         void InitTellPatterns()
