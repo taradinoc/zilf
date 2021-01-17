@@ -708,30 +708,59 @@ namespace Zilf.Interpreter
         public void HandleError(ZilErrorBase ex) =>
             DiagnosticManager.Handle(ex.Diagnostic ?? throw new ArgumentException("Missing diagnostic", nameof(ex)));
 
+        private static readonly string[] IncludeFileExtensions = { ".zil", ".mud", ".ZIL", ".MUD" };
+
         /// <exception cref="FileNotFoundException">The file wasn't found in any include path.</exception>
         public string FindIncludeFile(string name)
         {
-            // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
             foreach (var path in IncludePaths)
             {
-                var combined = Path.Combine(path, name);
+                foreach (var nameVariant in GetIncludeFileNameVariants(name))
+                {
+                    var combined = Path.Combine(path, nameVariant);
 
-                if (FileExists(combined))
-                    return combined;
-
-                if (!string.IsNullOrEmpty(Path.GetExtension(combined)))
-                    continue;
-
-                combined = Path.ChangeExtension(combined, ".zil");
-                if (FileExists(combined))
-                    return combined;
-
-                combined = Path.ChangeExtension(combined, ".mud");
-                if (FileExists(combined))
-                    return combined;
+                    if (FileExists(combined))
+                        return combined;
+                }
             }
 
             throw new FileNotFoundException();
+        }
+
+        [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase",
+            Justification = "This method looks for a lowercase filename when the source specifies an uppercase filename.")]
+        private static IEnumerable<string> GetIncludeFileNameVariants(string name)
+        {
+            // try the name as-is
+            yield return name;
+
+            // try adding a .zil or .mud extension
+            bool hasExtension = !string.IsNullOrEmpty(Path.GetExtension(name));
+
+            if (!hasExtension)
+            {
+                foreach (var ext in IncludeFileExtensions)
+                {
+                    yield return Path.ChangeExtension(name, ext);
+                }
+            }
+
+            // try lowercasing the name
+            var lower = name.ToLowerInvariant();
+
+            if (lower != name)
+            {
+                yield return lower;
+
+                // try adding a .zil or .mud extension
+                if (!hasExtension)
+                {
+                    foreach (var ext in IncludeFileExtensions)
+                    {
+                        yield return Path.ChangeExtension(lower, ext);
+                    }
+                }
+            }
         }
 
         /// <summary>
