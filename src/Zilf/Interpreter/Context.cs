@@ -319,7 +319,7 @@ namespace Zilf.Interpreter
 
         void InitPackages()
         {
-            var emptyPackageNames = new[] { "NEWSTRUC", "ZILCH", "ZIL" };
+            var emptyPackageNames = new[] { "NEWSTRUC", "ZILCH", "ZIL", "READER-MACROS" };
 
             foreach (var name in emptyPackageNames)
             {
@@ -351,7 +351,7 @@ namespace Zilf.Interpreter
 
                     // these atoms need to be on the root oblist
                     var atom = ZilAtom.Parse(name + "!-", this);
-                    SetGlobalVal(atom, isFSubr ? new ZilFSubr(name, del) : new ZilSubr(name, del));
+                    SetGlobalVal(atom, isFSubr ? new ZilFSubr(baseName, del) : new ZilSubr(baseName, del));
                 }
             }
         }

@@ -303,7 +303,7 @@ namespace Zilf.Interpreter
             return position;
         }
 
-        [Subr("MAKE-PREFIX-MACRO", ObList = "READER-MACROS")]
+        [Subr("MAKE-PREFIX-MACRO", ObList = "READER-MACROS!-PACKAGE")]
         public static ZilObject MAKE_PREFIX_MACRO(Context ctx, ZilChar ch,
             [Either(typeof(IApplicable), typeof(ZilFalse))]
             object handlerOrFalse)

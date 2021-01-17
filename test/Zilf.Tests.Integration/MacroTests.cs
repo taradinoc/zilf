@@ -65,7 +65,8 @@ namespace Zilf.Tests.Integration
         public void MAKE_PREFIX_MACRO_Should_Work()
         {
             AssertExpr(@"<TELL B @HELLO "" "" B @WORLD CR>")
-                .WithGlobal(@"<MAKE-PREFIX-MACRO!-READER-MACROS !\@ <FUNCTION (W:ATOM) <VOC <SPNAME .W> BUZZ>>>")
+                .WithGlobal(@"<USE ""READER-MACROS"">")
+                .WithGlobal(@"<MAKE-PREFIX-MACRO !\@ <FUNCTION (W:ATOM) <VOC <SPNAME .W> BUZZ>>>")
                 .Outputs("hello world\n");
         }
 
