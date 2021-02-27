@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -37,7 +38,6 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("AsyncUsage", "AsyncFixer01:Unnecessary async/await usage", Justification = "VS template code")]
         protected async Task VerifyCSharpFixAsync(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
         {
             await VerifyFixAsync(LanguageNames.CSharp,
@@ -57,7 +57,6 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("AsyncUsage", "AsyncFixer01:Unnecessary async/await usage", Justification = "VS template code")]
         protected async Task VerifyBasicFixAsync(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
         {
             await VerifyFixAsync(LanguageNames.VisualBasic,
@@ -122,7 +121,10 @@ namespace ZilfAnalyzers.Test.Helpers
                 if (!allowNewCompilerDiagnostics && newCompilerDiagnostics.Any())
                 {
                     // Format and get the compiler diagnostics again so that the locations make sense in the output
-                    document = document.WithSyntaxRoot(Formatter.Format(await document.GetSyntaxRootAsync().ConfigureAwait(false), Formatter.Annotation, document.Project.Solution.Workspace));
+                    document = document.WithSyntaxRoot(Formatter.Format(
+                        await document.GetSyntaxRootAsync().ConfigureAwait(false) ?? throw new NotSupportedException(),
+                        Formatter.Annotation,
+                        document.Project.Solution.Workspace));
                     newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, await GetCompilerDiagnosticsAsync(document).ConfigureAwait(false));
 
                     Assert.Fail(

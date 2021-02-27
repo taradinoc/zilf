@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Simplification;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -80,7 +81,7 @@ namespace ZilfAnalyzers.Test.Helpers
         {
             var simplifiedDoc = await Simplifier.ReduceAsync(document, Simplifier.Annotation).ConfigureAwait(false);
             var root = await simplifiedDoc.GetSyntaxRootAsync().ConfigureAwait(false);
-            root = Formatter.Format(root, Formatter.Annotation, simplifiedDoc.Project.Solution.Workspace);
+            root = Formatter.Format(root ?? throw new NotSupportedException(), Formatter.Annotation, simplifiedDoc.Project.Solution.Workspace);
             return root.GetText().ToString();
         }
     }
