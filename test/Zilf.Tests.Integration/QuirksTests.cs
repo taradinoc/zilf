@@ -17,6 +17,7 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading.Tasks;
 
 namespace Zilf.Tests.Integration
 {
@@ -24,22 +25,22 @@ namespace Zilf.Tests.Integration
     public class QuirksTests : IntegrationTestClass
     {
         [TestMethod]
-        public void TestGVALWithLocal()
+        public async Task TestGVALWithLocal()
         {
-            AssertRoutine("\"AUX\" (X 5)", "<FOO ,X>")
+            await AssertRoutine("\"AUX\" (X 5)", "<FOO ,X>")
                 .WithGlobal("<ROUTINE FOO (A) .A>")
                 .WithWarnings()
-                .GivesNumber("5");
+                .GivesNumberAsync("5");
         }
 
         [TestMethod]
-        public void TestLVALWithGlobal()
+        public async Task TestLVALWithGlobal()
         {
-            AssertRoutine("", "<FOO .X>")
+            await AssertRoutine("", "<FOO .X>")
                 .WithGlobal("<GLOBAL X 5>")
                 .WithGlobal("<ROUTINE FOO (A) .A>")
                 .WithWarnings()
-                .GivesNumber("5");
+                .GivesNumberAsync("5");
         }
     }
 }

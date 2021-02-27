@@ -17,6 +17,7 @@
  */
 
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
@@ -35,23 +36,23 @@ namespace Zilf.Tests.Integration
          */
 
         [TestMethod]
-        public void TestContents_DefaultOrder()
+        public async Task TestContents_DefaultOrder()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<OBJECT RAINBOW>",
                 "<OBJECT RED (IN RAINBOW)>",
                 "<OBJECT YELLOW (IN RAINBOW)>",
                 "<OBJECT GREEN (IN RAINBOW)>",
                 "<OBJECT BLUE (IN RAINBOW)>")
-                .Implies(TreeImplications(
+                .ImpliesAsync(TreeImplications(
                     new[] { "BLUE", "GREEN", "YELLOW", "RED", "RAINBOW" },
                     new[] { "RAINBOW", "RED", "BLUE", "GREEN", "YELLOW" }));
         }
 
         [TestMethod]
-        public void TestHouse_DefaultOrder()
+        public async Task TestHouse_DefaultOrder()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<OBJECT FRIDGE (IN KITCHEN)>",
                 "<OBJECT SINK (IN KITCHEN)>",
                 "<OBJECT MICROWAVE (IN KITCHEN)>",
@@ -62,7 +63,7 @@ namespace Zilf.Tests.Integration
                 "<OBJECT ROOMS>",
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
-                .Implies(TreeImplications(
+                .ImpliesAsync(TreeImplications(
                     new[] { "BED", "BEDROOM", "LOCAL-GLOBALS", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE" },
                     new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
                     new[] { "BEDROOM", "BED" },
@@ -71,9 +72,9 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void TestHouse_Objects_RoomsFirst()
+        public async Task TestHouse_Objects_RoomsFirst()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<ORDER-OBJECTS? ROOMS-FIRST>",
                 "<OBJECT FRIDGE (IN KITCHEN)>",
                 "<OBJECT SINK (IN KITCHEN)>",
@@ -85,7 +86,7 @@ namespace Zilf.Tests.Integration
                 "<OBJECT ROOMS>",
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
-                .Implies(TreeImplications(
+                .ImpliesAsync(TreeImplications(
                     new[] { "KITCHEN", "BEDROOM", "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "FLOOR", "CEILING", "LOCAL-GLOBALS", "BED" },
                     new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
                     new[] { "BEDROOM", "BED" },
@@ -94,9 +95,9 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void TestHouse_Objects_RoomsAndLgsFirst()
+        public async Task TestHouse_Objects_RoomsAndLgsFirst()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<ORDER-OBJECTS? ROOMS-AND-LGS-FIRST>",
                 "<OBJECT FRIDGE (IN KITCHEN)>",
                 "<OBJECT SINK (IN KITCHEN)>",
@@ -108,7 +109,7 @@ namespace Zilf.Tests.Integration
                 "<OBJECT ROOMS>",
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
-                .Implies(TreeImplications(
+                .ImpliesAsync(TreeImplications(
                     new[] { "KITCHEN", "FLOOR", "CEILING", "BEDROOM", "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "LOCAL-GLOBALS", "BED" },
                     new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
                     new[] { "BEDROOM", "BED" },
@@ -117,9 +118,9 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void TestHouse_Objects_RoomsLast()
+        public async Task TestHouse_Objects_RoomsLast()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<ORDER-OBJECTS? ROOMS-LAST>",
                 "<OBJECT FRIDGE (IN KITCHEN)>",
                 "<OBJECT SINK (IN KITCHEN)>",
@@ -131,7 +132,7 @@ namespace Zilf.Tests.Integration
                 "<OBJECT ROOMS>",
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
-                .Implies(TreeImplications(
+                .ImpliesAsync(TreeImplications(
                     new[] { "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "FLOOR", "CEILING", "LOCAL-GLOBALS", "BED", "KITCHEN", "BEDROOM" },
                     new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
                     new[] { "BEDROOM", "BED" },
@@ -140,9 +141,9 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void TestHouse_Objects_Defined()
+        public async Task TestHouse_Objects_Defined()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<ORDER-OBJECTS? DEFINED>",
                 "<OBJECT FRIDGE (IN KITCHEN)>",
                 "<OBJECT SINK (IN KITCHEN)>",
@@ -154,7 +155,7 @@ namespace Zilf.Tests.Integration
                 "<OBJECT ROOMS>",
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
-                .Implies(TreeImplications(
+                .ImpliesAsync(TreeImplications(
                     new[] { "FRIDGE", "SINK", "MICROWAVE", "KITCHEN", "FLOOR", "BEDROOM", "BED", "ROOMS", "LOCAL-GLOBALS", "CEILING" },
                     new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
                     new[] { "BEDROOM", "BED" },
@@ -172,24 +173,24 @@ namespace Zilf.Tests.Integration
          */
 
         [TestMethod]
-        public void TestContents_Tree_ReverseDefined()
+        public async Task TestContents_Tree_ReverseDefined()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<ORDER-TREE? REVERSE-DEFINED>",
                 "<OBJECT RAINBOW>",
                 "<OBJECT RED (IN RAINBOW)>",
                 "<OBJECT YELLOW (IN RAINBOW)>",
                 "<OBJECT GREEN (IN RAINBOW)>",
                 "<OBJECT BLUE (IN RAINBOW)>")
-                .Implies(TreeImplications(
+                .ImpliesAsync(TreeImplications(
                     new[] { "BLUE", "GREEN", "YELLOW", "RED", "RAINBOW" },
                     new[] { "RAINBOW", "BLUE", "GREEN", "YELLOW", "RED" }));
         }
 
         [TestMethod]
-        public void TestHouse_Tree_ReverseDefined()
+        public async Task TestHouse_Tree_ReverseDefined()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<ORDER-TREE? REVERSE-DEFINED>",
                 "<OBJECT FRIDGE (IN KITCHEN)>",
                 "<OBJECT SINK (IN KITCHEN)>",
@@ -201,7 +202,7 @@ namespace Zilf.Tests.Integration
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT FLOOR (IN LOCAL-GLOBALS)>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
-                .Implies(TreeImplications(
+                .ImpliesAsync(TreeImplications(
                     new[] { "LOCAL-GLOBALS", "BED", "BEDROOM", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE" },
                     new[] { "KITCHEN", "MICROWAVE", "SINK", "FRIDGE" },
                     new[] { "BEDROOM", "BED" },
@@ -214,9 +215,9 @@ namespace Zilf.Tests.Integration
         #region Attribute Numbering
 
         [TestMethod]
-        public void Bits_Mentioned_In_FIND_Must_Be_Nonzero()
+        public async Task Bits_Mentioned_In_FIND_Must_Be_Nonzero()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<OBJECT FOO (FLAGS F1BIT F2BIT F3BIT F4BIT F5BIT F6BIT F7BIT F8BIT " +
                                    "F9BIT F10BIT F11BIT F12BIT F13BIT F14BIT F15BIT F16BIT " +
                                    "F17BIT F18BIT F19BIT F20BIT F21BIT F22BIT F23BIT F24BIT " +
@@ -225,7 +226,7 @@ namespace Zilf.Tests.Integration
                 "<SYNTAX BAZ OBJECT (FIND F31BIT) WITH OBJECT (FIND F32BIT) = V-BAZ>",
                 "<ROUTINE V-BAR () <>>",
                 "<ROUTINE V-BAZ () <>>")
-                .Implies(
+                .ImpliesAsync(
                     "<NOT <0? ,F1BIT>>",
                     "<NOT <0? ,F2BIT>>",
                     "<NOT <0? ,F31BIT>>",
@@ -233,38 +234,38 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void Bit_Synonym_Should_Work_In_FLAGS()
+        public async Task Bit_Synonym_Should_Work_In_FLAGS()
         {
-            AssertRoutine("", "<AND <==? ,MAINBIT ,ALIASBIT> <FSET? ,FOO ,MAINBIT> <FSET? ,BAR ,ALIASBIT>>")
+            await AssertRoutine("", "<AND <==? ,MAINBIT ,ALIASBIT> <FSET? ,FOO ,MAINBIT> <FSET? ,BAR ,ALIASBIT>>")
                 .WithGlobal("<BIT-SYNONYM MAINBIT ALIASBIT>")
                 .WithGlobal("<OBJECT FOO (FLAGS MAINBIT)>")
                 .WithGlobal("<OBJECT BAR (FLAGS ALIASBIT)>")
-                .GivesNumber("1");
+                .GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void Bit_Synonym_Should_Not_Be_Clobbered_By_FIND()
+        public async Task Bit_Synonym_Should_Not_Be_Clobbered_By_FIND()
         {
-            AssertRoutine("", "<==? ,MAINBIT ,ALIASBIT>")
+            await AssertRoutine("", "<==? ,MAINBIT ,ALIASBIT>")
                 .WithGlobal("<BIT-SYNONYM MAINBIT ALIASBIT>")
                 .WithGlobal("<OBJECT FOO (FLAGS MAINBIT)>")
                 .WithGlobal("<OBJECT BAR (FLAGS ALIASBIT)>")
                 .WithGlobal("<SYNTAX FOO OBJECT (FIND ALIASBIT) = V-FOO>")
                 .WithGlobal("<ROUTINE V-FOO () <>>")
-                .GivesNumber("1");
+                .GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void Bit_Synonym_Should_Work_Even_If_Original_Is_Never_Set()
+        public async Task Bit_Synonym_Should_Work_Even_If_Original_Is_Never_Set()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<BIT-SYNONYM MAINBIT ALIASBIT>",
                 "<OBJECT FOO (FLAGS ALIASBIT)>")
-                .Compiles();
+                .CompilesAsync();
         }
 
         [TestMethod]
-        public void Too_Many_Bits_Should_Spoil_The_Build()
+        public async Task Too_Many_Bits_Should_Spoil_The_Build()
         {
             var tooManyBits = new StringBuilder();
 
@@ -274,10 +275,10 @@ namespace Zilf.Tests.Integration
                 tooManyBits.AppendFormat(" TESTBIT{0}", i);
             }
 
-            AssertGlobals(
+            await AssertGlobals(
                 $"<OBJECT FOO (FLAGS {tooManyBits})>")
                 .InV3()
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
 
             // V4+ limit: 48 flags
             for (int i = 32; i < 49; i++)
@@ -285,10 +286,10 @@ namespace Zilf.Tests.Integration
                 tooManyBits.AppendFormat(" TESTBIT{0}", i);
             }
 
-            AssertGlobals(
+            await AssertGlobals(
                 $"<OBJECT FOO (FLAGS {tooManyBits})>")
                 .InV4()
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         #endregion
@@ -296,27 +297,27 @@ namespace Zilf.Tests.Integration
         #region PROPDEF/PROPSPEC
 
         [TestMethod]
-        public void PROPDEF_Basic_Pattern_Should_Work()
+        public async Task PROPDEF_Basic_Pattern_Should_Work()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<PROPDEF HEIGHT <> " +
                 " (HEIGHT FEET:FIX FOOT INCHES:FIX = 2 <WORD .FEET> <BYTE .INCHES>)" +
                 " (HEIGHT FEET:FIX FT INCHES:FIX = 2 <WORD .FEET> <BYTE .INCHES>)>",
                 "<OBJECT GIANT (HEIGHT 10 FT 8)>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <GET <GETPT ,GIANT ,P?HEIGHT> 0> 10>",
                     "<=? <GETB <GETPT ,GIANT ,P?HEIGHT> 2> 8>");
         }
 
         [TestMethod]
-        public void PROPDEF_OPT_Should_Work()
+        public async Task PROPDEF_OPT_Should_Work()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<PROPDEF HEIGHT <> " +
                 " (HEIGHT FEET:FIX FT \"OPT\" INCHES:FIX = <WORD .FEET> <BYTE .INCHES>)>",
                 "<OBJECT GIANT1 (HEIGHT 100 FT)>",
                 "<OBJECT GIANT2 (HEIGHT 50 FT 11)>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <PTSIZE <GETPT ,GIANT1 ,P?HEIGHT>> 3>",
                     "<=? <GET <GETPT ,GIANT1 ,P?HEIGHT> 0> 100>",
                     "<=? <GETB <GETPT ,GIANT1 ,P?HEIGHT> 2> 0>",
@@ -326,13 +327,13 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void PROPDEF_MANY_Should_Work()
+        public async Task PROPDEF_MANY_Should_Work()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<PROPDEF TRANSLATE <> " +
                 " (TRANSLATE \"MANY\" A:ATOM N:FIX = \"MANY\" <VOC .A BUZZ> <WORD .N>)>",
                 "<OBJECT NUMBERS (TRANSLATE ONE 1 TWO 2)>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <PTSIZE <GETPT ,NUMBERS ,P?TRANSLATE>> 8>",
                     "<=? <GET <GETPT ,NUMBERS ,P?TRANSLATE> 0> ,W?ONE>",
                     "<=? <GET <GETPT ,NUMBERS ,P?TRANSLATE> 1> 1>",
@@ -341,151 +342,151 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void PROPDEF_Constants_Should_Work()
+        public async Task PROPDEF_Constants_Should_Work()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<PROPDEF HEIGHT <> " +
                 " (HEIGHT FEET:FIX FT INCHES:FIX = (HEIGHTSIZE 3) (H-FEET <WORD .FEET>) (H-INCHES <BYTE .INCHES>))>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? ,HEIGHTSIZE 3>",
                     "<=? ,H-FEET 0>",
                     "<=? ,H-INCHES 2>");
         }
 
         [TestMethod]
-        public void PROPDEF_With_Empty_FORM_For_Length_Should_Work()
+        public async Task PROPDEF_With_Empty_FORM_For_Length_Should_Work()
         {
-            AssertGlobals(
+            await AssertGlobals(
                     "<PROPDEF HEIGHT <> " +
                     " (HEIGHT FEET:FIX FT INCHES:FIX = <> (H-FEET <WORD .FEET>) (H-INCHES <BYTE .INCHES>))>")
-                .Compiles();
+                .CompilesAsync();
         }
 
 
         [TestMethod]
-        public void PROPDEF_For_DIRECTIONS_Should_Be_Used_For_All_Directions()
+        public async Task PROPDEF_For_DIRECTIONS_Should_Be_Used_For_All_Directions()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<PROPDEF DIRECTIONS <> " +
                 " (DIR GOES TO R:ROOM = (MY-UEXIT 3) <WORD 0> (MY-REXIT <ROOM .R>))>",
                 "<DIRECTIONS NORTH SOUTH>",
                 "<OBJECT HOUSE (SOUTH GOES TO WOODS)>",
                 "<OBJECT WOODS (NORTH GOES TO HOUSE)>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <PTSIZE <GETPT ,HOUSE ,P?SOUTH>> ,MY-UEXIT>",
                     "<=? <GETB <GETPT ,HOUSE ,P?SOUTH> ,MY-REXIT> ,WOODS>");
         }
 
         [TestMethod]
-        public void Clearing_PROPSPEC_For_DIRECTIONS_Should_Override_Default_Patterns()
+        public async Task Clearing_PROPSPEC_For_DIRECTIONS_Should_Override_Default_Patterns()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<PUTPROP DIRECTIONS PROPSPEC>",
                 "<DIRECTIONS NORTH SOUTH>",
                 "<OBJECT HOUSE (SOUTH TO WOODS)>",
                 "<OBJECT WOODS (NORTH TO HOUSE)>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void PROPDEF_For_DIRECTIONS_Can_Be_Used_For_Implicit_Directions()
+        public async Task PROPDEF_For_DIRECTIONS_Can_Be_Used_For_Implicit_Directions()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<PROPDEF DIRECTIONS <> " +
                 " (DIR GOES TO R:ROOM = (MY-UEXIT 3) <WORD 0> (MY-REXIT <ROOM .R>))>",
                 "<DIRECTIONS NORTH SOUTH>",
                 "<OBJECT HOUSE (EAST GOES TO WOODS)>",
                 "<OBJECT WOODS (WEST GOES TO HOUSE)>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <PTSIZE <GETPT ,HOUSE ,P?EAST>> ,MY-UEXIT>",
                     "<=? <GETB <GETPT ,HOUSE ,P?EAST> ,MY-REXIT> ,WOODS>",
                     "<BAND <GETB ,W?EAST 4> ,PS?DIRECTION>");
         }
 
         [TestMethod]
-        public void Vocab_Created_By_PROPDEF_Should_Work_Correctly()
+        public async Task Vocab_Created_By_PROPDEF_Should_Work_Correctly()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<PROPDEF FOO <> (FOO A:ATOM = <VOC .A PREP>)>",
                 "<OBJECT BAR (FOO FOO)>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <GETP ,BAR ,P?FOO> ,W?FOO>");
         }
 
         [TestMethod]
-        public void Vocab_Created_By_PROPSPEC_Should_Work_Correctly()
+        public async Task Vocab_Created_By_PROPSPEC_Should_Work_Correctly()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<PUTPROP FOO PROPSPEC FOO-PROP>",
                 "<DEFINE FOO-PROP (L) (<> <EVAL <CHTYPE (TABLE <VOC \"FOO\" PREP>) FORM>>)>",
                 "<OBJECT BAR (FOO FOO)>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <GET <GETP ,BAR ,P?FOO> 0> ,W?FOO>");
         }
 
         [TestMethod]
-        public void Routines_Created_By_PROPSPEC_Should_Work_Correctly()
+        public async Task Routines_Created_By_PROPSPEC_Should_Work_Correctly()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<PUTPROP FOO PROPSPEC FOO-PROP>",
                 "<DEFINE FOO-PROP (L) <ROUTINE PROP-ROUTINE () 123> (<> PROP-ROUTINE)>",
                 "<OBJECT BAR (FOO FOO)>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <APPLY <GETP ,BAR ,P?FOO>> 123>");
         }
 
         #endregion
 
         [TestMethod]
-        public void Non_Constants_As_Property_Values_Should_Be_Rejected()
+        public async Task Non_Constants_As_Property_Values_Should_Be_Rejected()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<GLOBAL FOO 123>",
                 "<OBJECT BAR (BAZ FOO)>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void Non_Constants_In_Property_Initializers_Should_Be_Rejected()
+        public async Task Non_Constants_In_Property_Initializers_Should_Be_Rejected()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<GLOBAL FOO 123>",
                 "<OBJECT BAR (BAZ 4 5 FOO)>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void Nonexistent_Object_In_Direction_Property_Should_Be_Rejected()
+        public async Task Nonexistent_Object_In_Direction_Property_Should_Be_Rejected()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<DIRECTIONS NORTH>",
                 "<OBJECT FOO (NORTH TO BAR)>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void Direction_Synonyms_Should_Work_Identically()
+        public async Task Direction_Synonyms_Should_Work_Identically()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<DIRECTIONS SOUTHWEST>",
                 "<SYNONYM SOUTHWEST SW>",
                 "<OBJECT FOO (SW TO FOO)>")
                 .InV3()
-                .Implies(
+                .ImpliesAsync(
                     "<=? ,P?SOUTHWEST ,P?SW>",
                     "<=? <GETB ,W?SW 5> ,P?SOUTHWEST>",
                     "<=? <GETB ,W?SOUTHWEST 5> ,P?SOUTHWEST>");
         }
 
         [TestMethod]
-        public void Direction_Properties_Should_Not_Be_Merged_With_Words()
+        public async Task Direction_Properties_Should_Not_Be_Merged_With_Words()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<DIRECTIONS NORTHNORTHEAST NORTHNORTHWEST>",
                 "<OBJECT FOO (NORTHNORTHEAST TO FOO) (NORTHNORTHWEST TO BAR)>",
                 "<OBJECT BAR>")
                 .InV3()
-                .Implies(
+                .ImpliesAsync(
                     "<=? ,W?NORTHNORTHEAST ,W?NORTHNORTHWEST>",
                     "<N=? ,P?NORTHNORTHEAST ,P?NORTHNORTHWEST>",
                     "<=? <GETP ,FOO ,P?NORTHNORTHEAST> ,FOO>",
@@ -493,85 +494,85 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void ROOM_In_PROPDEF_Should_Be_One_Byte_When_ORDER_OBJECTS_Is_ROOMS_FIRST()
+        public async Task ROOM_In_PROPDEF_Should_Be_One_Byte_When_ORDER_OBJECTS_Is_ROOMS_FIRST()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<ORDER-OBJECTS? ROOMS-FIRST>",
                 "<DIRECTIONS NORTH>",
                 "<PROPDEF DIRECTIONS <> (DIR TO R:ROOM = (UEXIT 1) (REXIT <ROOM .R>))>",
                 "<OBJECT FOO (NORTH TO BAR)>",
                 "<OBJECT BAR>")
                 .InV5()
-                .Implies(
+                .ImpliesAsync(
                     "<=? <PTSIZE <GETPT ,FOO ,P?NORTH>> 1>");
         }
 
         [TestMethod]
-        public void Duplicate_Property_Definitions_Should_Not_Be_Allowed()
+        public async Task Duplicate_Property_Definitions_Should_Not_Be_Allowed()
         {
             // user-defined property
-            AssertGlobals(
+            await AssertGlobals(
                 "<OBJECT FOO (MYPROP 1) (MYPROP 2)>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
 
             // standard pseudo-properties
-            AssertGlobals(
+            await AssertGlobals(
                 "<OBJECT FOO (DESC \"foo\") (DESC \"bar\")>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
 
-            AssertGlobals(
+            await AssertGlobals(
                 "<OBJECT ROOM1>",
                 "<OBJECT ROOM2>",
                 "<OBJECT FOO (IN ROOM1) (LOC ROOM2)>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void IN_Pseudo_Property_Should_Not_Conflict_With_IN_String_NEXIT()
+        public async Task IN_Pseudo_Property_Should_Not_Conflict_With_IN_String_NEXIT()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<DIRECTIONS IN>",
                 "<OBJECT ROOMS>",
                 "<OBJECT FOO (IN ROOMS) (IN \"You can't go in.\")>")
-                .Compiles();
+                .CompilesAsync();
 
             // even if IN isn't defined as a direction!
-            AssertGlobals(
+            await AssertGlobals(
                 "<OBJECT ROOMS>",
                 "<OBJECT FOO (IN ROOMS) (IN \"You can't go in.\")>")
-                .Compiles();
+                .CompilesAsync();
         }
 
         [TestMethod]
-        public void Multiple_FLAGS_Definitions_Should_Combine()
+        public async Task Multiple_FLAGS_Definitions_Should_Combine()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<OBJECT FOO (FLAGS FOOBIT) (FLAGS BARBIT)>")
-                .Implies(
+                .ImpliesAsync(
                     "<FSET? ,FOO ,FOOBIT>",
                     "<FSET? ,FOO ,BARBIT>");
         }
 
         [TestMethod]
-        public void Mentioning_A_Routine_As_An_Object_Should_Not_Throw()
+        public async Task Mentioning_A_Routine_As_An_Object_Should_Not_Throw()
         {
-            AssertGlobals(
+            await AssertGlobals(
                     @"<ROOM WEST-SIDE-OF-FISSURE
                       (DESC ""West Side of Fissure"")
                       (ACTION WEST-SIDE-OF-FISSURE-F)>",
                     @"<ROUTINE WEST-SIDE-OF-FISSURE-F (RARG) <>>",
                     @"<OBJECT DIAMONDS (DESC ""diamonds"") (IN WEST-SIDE-OF-FISSURE-F)>")
                 .WithoutWarnings()
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void DESC_Pseudo_Property_Should_Be_Stripped_Of_Newlines()
+        public async Task DESC_Pseudo_Property_Should_Be_Stripped_Of_Newlines()
         {
-            AssertRoutine("",
+            await AssertRoutine("",
                 "<PRINTD ,FOO>")
                 .WithGlobal("<OBJECT FOO (DESC \"first\nsecond\r\nthird\")>")
-                .Outputs("first second third");
+                .OutputsAsync("first second third");
         }
     }
 }

@@ -129,248 +129,248 @@ namespace Zilf.Tests.Integration
         #region Z-Machine Opcodes
 
         [TestMethod]
-        public void TestADD()
+        public async System.Threading.Tasks.Task TestADDAsync()
         {
-            AssertExpr("<+ 1 2>").GivesNumber("3");
-            AssertExpr("<+ 1 -2>").GivesNumber("-1");
-            AssertExpr("<+ 32767 1>").GivesNumber("-32768");
-            AssertExpr("<+ -32768 -1>").GivesNumber("32767");
-            AssertExpr("<+>").GivesNumber("0");
-            AssertExpr("<+ 5>").GivesNumber("5");
-            AssertExpr("<+ 1 2 3>").GivesNumber("6");
-            AssertExpr("<+ 1 2 3 4>").GivesNumber("10");
-            AssertExpr("<+ 1 2 3 4 5>").GivesNumber("15");
+            await AssertExpr("<+ 1 2>").GivesNumberAsync("3");
+            await AssertExpr("<+ 1 -2>").GivesNumberAsync("-1");
+            await AssertExpr("<+ 32767 1>").GivesNumberAsync("-32768");
+            await AssertExpr("<+ -32768 -1>").GivesNumberAsync("32767");
+            await AssertExpr("<+>").GivesNumberAsync("0");
+            await AssertExpr("<+ 5>").GivesNumberAsync("5");
+            await AssertExpr("<+ 1 2 3>").GivesNumberAsync("6");
+            await AssertExpr("<+ 1 2 3 4>").GivesNumberAsync("10");
+            await AssertExpr("<+ 1 2 3 4 5>").GivesNumberAsync("15");
 
             // alias
-            AssertExpr("<ADD 1 2>").GivesNumber("3");
+            await AssertExpr("<ADD 1 2>").GivesNumberAsync("3");
         }
 
         [TestMethod]
-        public void TestADD_REST()
+        public async System.Threading.Tasks.Task TestADD_RESTAsync()
         {
             // alias where 2nd operand defaults to 1
-            AssertExpr("<REST 1>").GivesNumber("2");
-            AssertExpr("<REST 1 2>").GivesNumber("3");
+            await AssertExpr("<REST 1>").GivesNumberAsync("2");
+            await AssertExpr("<REST 1 2>").GivesNumberAsync("3");
         }
 
         [TestMethod]
-        public void TestAPPLY()
+        public async System.Threading.Tasks.Task TestAPPLYAsync()
         {
-            AssertExpr("<APPLY 0>").GivesNumber("0");
-            AssertExpr("<APPLY 0 1 2 3>").GivesNumber("0");
-            AssertExpr("<APPLY 0 1 2 3 4 5 6 7>").InV5().GivesNumber("0");
+            await AssertExpr("<APPLY 0>").GivesNumberAsync("0");
+            await AssertExpr("<APPLY 0 1 2 3>").GivesNumberAsync("0");
+            await AssertExpr("<APPLY 0 1 2 3 4 5 6 7>").InV5().GivesNumberAsync("0");
 
-            AssertRoutine("\"AUX\" X", "<SET X ,OTHER-ROUTINE> <APPLY .X 12>")
+            await AssertRoutine("\"AUX\" X", "<SET X ,OTHER-ROUTINE> <APPLY .X 12>")
                 .WithGlobal("<ROUTINE OTHER-ROUTINE (N) <* .N 2>>")
-                .GivesNumber("24");
+                .GivesNumberAsync("24");
         }
 
         [TestMethod]
-        public void TestAPPLY_ChoosesValueCallForPred()
+        public async System.Threading.Tasks.Task TestAPPLY_ChoosesValueCallForPredAsync()
         {
             /* V5 has void-context and value-context versions of APPLY.
              * the void-context version is always true in predicate context,
              * so we need to prefer the value-context version. */
 
-            AssertRoutine("\"AUX\" X", "<SET X ,FALSE-ROUTINE> <COND (<APPLY .X> 123) (T 456)>")
+            await AssertRoutine("\"AUX\" X", "<SET X ,FALSE-ROUTINE> <COND (<APPLY .X> 123) (T 456)>")
                 .InV5()
                 .WithGlobal("<ROUTINE FALSE-ROUTINE () 0>")
-                .GivesNumber("456");
-            AssertRoutine("\"AUX\" X", "<SET X ,FALSE-ROUTINE> <COND (<NOT <APPLY .X>> 123) (T 456)>")
+                .GivesNumberAsync("456");
+            await AssertRoutine("\"AUX\" X", "<SET X ,FALSE-ROUTINE> <COND (<NOT <APPLY .X>> 123) (T 456)>")
                 .InV5()
                 .WithGlobal("<ROUTINE FALSE-ROUTINE () 0>")
-                .GivesNumber("123");
+                .GivesNumberAsync("123");
         }
 
         [TestMethod]
-        public void TestAPPLY_Error()
+        public async System.Threading.Tasks.Task TestAPPLY_ErrorAsync()
         {
-            AssertExpr("<APPLY>").DoesNotCompile();
-            AssertExpr("<APPLY 0 1 2 3 4>").InV3().DoesNotCompile();
-            AssertExpr("<APPLY 0 1 2 3 4 5 6 7 8>").InV5().DoesNotCompile();
+            await AssertExpr("<APPLY>").DoesNotCompileAsync();
+            await AssertExpr("<APPLY 0 1 2 3 4>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<APPLY 0 1 2 3 4 5 6 7 8>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestASH()
+        public async System.Threading.Tasks.Task TestASHAsync()
         {
             // only exists in V5+
-            AssertExpr("<ASH 4 0>").InV5().GivesNumber("4");
-            AssertExpr("<ASH 4 1>").InV5().GivesNumber("8");
-            AssertExpr("<ASH 4 -2>").InV5().GivesNumber("1");
+            await AssertExpr("<ASH 4 0>").InV5().GivesNumberAsync("4");
+            await AssertExpr("<ASH 4 1>").InV5().GivesNumberAsync("8");
+            await AssertExpr("<ASH 4 -2>").InV5().GivesNumberAsync("1");
 
             // alias
-            AssertExpr("<ASHIFT 4 0>").InV5().GivesNumber("4");
+            await AssertExpr("<ASHIFT 4 0>").InV5().GivesNumberAsync("4");
         }
 
         [TestMethod]
-        public void TestASH_Error()
+        public async System.Threading.Tasks.Task TestASH_ErrorAsync()
         {
-            AssertExpr("<ASH 4 0>").InV3().DoesNotCompile();
-            AssertExpr("<ASH 4 0>").InV4().DoesNotCompile();
+            await AssertExpr("<ASH 4 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<ASH 4 0>").InV4().DoesNotCompileAsync();
 
-            AssertExpr("<ASH>").InV5().DoesNotCompile();
-            AssertExpr("<ASH 4>").InV5().DoesNotCompile();
-            AssertExpr("<ASH 4 1 9>").InV5().DoesNotCompile();
+            await AssertExpr("<ASH>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<ASH 4>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<ASH 4 1 9>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestASSIGNED_P()
+        public async System.Threading.Tasks.Task TestASSIGNED_PAsync()
         {
-            AssertRoutine("X", "<ASSIGNED? X>").InV5()
-                .WhenCalledWith("999").GivesNumber("1");
-            AssertRoutine("\"OPT\" X", "<ASSIGNED? X>").InV5()
-                .WhenCalledWith("0").GivesNumber("1");
-            AssertRoutine("\"OPT\" X", "<ASSIGNED? X>").InV5()
-                .WhenCalledWith("").GivesNumber("0");
+            await AssertRoutine("X", "<ASSIGNED? X>").InV5()
+                .WhenCalledWith("999").GivesNumberAsync("1");
+            await AssertRoutine("\"OPT\" X", "<ASSIGNED? X>").InV5()
+                .WhenCalledWith("0").GivesNumberAsync("1");
+            await AssertRoutine("\"OPT\" X", "<ASSIGNED? X>").InV5()
+                .WhenCalledWith("").GivesNumberAsync("0");
         }
 
         [TestMethod]
-        public void TestASSIGNED_P_Error()
+        public async System.Threading.Tasks.Task TestASSIGNED_P_ErrorAsync()
         {
-            AssertRoutine("X", "<ASSIGNED? Y>").InV5().DoesNotCompile();
-            AssertRoutine("X", "<ASSIGNED? 1>").InV5().DoesNotCompile();
-            AssertRoutine("X", "<ASSIGNED?>").InV5().DoesNotCompile();
-            AssertRoutine("X", "<ASSIGNED? X X>").InV5().DoesNotCompile();
+            await AssertRoutine("X", "<ASSIGNED? Y>").InV5().DoesNotCompileAsync();
+            await AssertRoutine("X", "<ASSIGNED? 1>").InV5().DoesNotCompileAsync();
+            await AssertRoutine("X", "<ASSIGNED?>").InV5().DoesNotCompileAsync();
+            await AssertRoutine("X", "<ASSIGNED? X X>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestBAND()
+        public async System.Threading.Tasks.Task TestBANDAsync()
         {
-            AssertExpr("<BAND>").GivesNumber("-1");
-            AssertExpr("<BAND 33>").GivesNumber("33");
-            AssertExpr("<BAND 33 96>").GivesNumber("32");
-            AssertExpr("<BAND 33 96 64>").GivesNumber("0");
+            await AssertExpr("<BAND>").GivesNumberAsync("-1");
+            await AssertExpr("<BAND 33>").GivesNumberAsync("33");
+            await AssertExpr("<BAND 33 96>").GivesNumberAsync("32");
+            await AssertExpr("<BAND 33 96 64>").GivesNumberAsync("0");
 
             // alias
-            AssertExpr("<ANDB 33 96>").GivesNumber("32");
+            await AssertExpr("<ANDB 33 96>").GivesNumberAsync("32");
         }
 
         [TestMethod]
-        public void TestBCOM()
+        public async System.Threading.Tasks.Task TestBCOMAsync()
         {
-            AssertExpr("<BCOM 32767>").GivesNumber("-32768");
+            await AssertExpr("<BCOM 32767>").GivesNumberAsync("-32768");
 
             // opcode changes in V5
-            AssertExpr("<BCOM 32767>").InV5().GivesNumber("-32768");
+            await AssertExpr("<BCOM 32767>").InV5().GivesNumberAsync("-32768");
         }
 
         [TestMethod]
-        public void TestBCOM_Error()
+        public async System.Threading.Tasks.Task TestBCOM_ErrorAsync()
         {
-            AssertExpr("<BCOM>").DoesNotCompile();
-            AssertExpr("<BCOM 33 96>").DoesNotCompile();
+            await AssertExpr("<BCOM>").DoesNotCompileAsync();
+            await AssertExpr("<BCOM 33 96>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestBOR()
+        public async System.Threading.Tasks.Task TestBORAsync()
         {
-            AssertExpr("<BOR>").GivesNumber("0");
-            AssertExpr("<BOR 33>").GivesNumber("33");
-            AssertExpr("<BOR 33 96>").GivesNumber("97");
-            AssertExpr("<BOR 33 96 64>").GivesNumber("97");
+            await AssertExpr("<BOR>").GivesNumberAsync("0");
+            await AssertExpr("<BOR 33>").GivesNumberAsync("33");
+            await AssertExpr("<BOR 33 96>").GivesNumberAsync("97");
+            await AssertExpr("<BOR 33 96 64>").GivesNumberAsync("97");
 
             // alias
-            AssertExpr("<ORB 33 96>").GivesNumber("97");
+            await AssertExpr("<ORB 33 96>").GivesNumberAsync("97");
         }
 
         [TestMethod]
-        public void TestBTST()
+        public async System.Threading.Tasks.Task TestBTSTAsync()
         {
-            AssertExpr("<BTST 64 64>").GivesNumber("1");
-            AssertExpr("<BTST 64 63>").GivesNumber("0");
-            AssertExpr("<BTST 97 33>").GivesNumber("1");
+            await AssertExpr("<BTST 64 64>").GivesNumberAsync("1");
+            await AssertExpr("<BTST 64 63>").GivesNumberAsync("0");
+            await AssertExpr("<BTST 97 33>").GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestBTST_Error()
+        public async System.Threading.Tasks.Task TestBTST_ErrorAsync()
         {
-            AssertExpr("<BTST>").DoesNotCompile();
-            AssertExpr("<BTST 97>").DoesNotCompile();
-            AssertExpr("<BTST 97 31 29>").DoesNotCompile();
+            await AssertExpr("<BTST>").DoesNotCompileAsync();
+            await AssertExpr("<BTST 97>").DoesNotCompileAsync();
+            await AssertExpr("<BTST 97 31 29>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestBUFOUT()
+        public async System.Threading.Tasks.Task TestBUFOUTAsync()
         {
             // only exists in V4+
 
             // we can't really test its side-effect here
-            AssertExpr("<BUFOUT 0>").InV4().GivesNumber("1");
+            await AssertExpr("<BUFOUT 0>").InV4().GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestBUFOUT_Error()
+        public async System.Threading.Tasks.Task TestBUFOUT_ErrorAsync()
         {
-            AssertExpr("<BUFOUT 0>").InV3().DoesNotCompile();
+            await AssertExpr("<BUFOUT 0>").InV3().DoesNotCompileAsync();
 
-            AssertExpr("<BUFOUT>").InV4().DoesNotCompile();
-            AssertExpr("<BUFOUT 0 1>").InV4().DoesNotCompile();
+            await AssertExpr("<BUFOUT>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<BUFOUT 0 1>").InV4().DoesNotCompileAsync();
         }
 
         // CALL1 and CALL2 are not supported in ZIL
 
         [TestMethod]
-        public void TestCATCH()
+        public async System.Threading.Tasks.Task TestCATCHAsync()
         {
             // only exists in V5+
 
             // the return value is unpredictable
-            AssertExpr("<CATCH>").InV5().Compiles();
+            await AssertExpr("<CATCH>").InV5().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestCATCH_Error()
+        public async System.Threading.Tasks.Task TestCATCH_ErrorAsync()
         {
-            AssertExpr("<CATCH>").InV3().DoesNotCompile();
-            AssertExpr("<CATCH>").InV4().DoesNotCompile();
+            await AssertExpr("<CATCH>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<CATCH>").InV4().DoesNotCompileAsync();
 
-            AssertExpr("<CATCH 123>").InV5().DoesNotCompile();
+            await AssertExpr("<CATCH 123>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestCHECKU()
+        public async System.Threading.Tasks.Task TestCHECKUAsync()
         {
             // only exists in V5+
 
             // only the lower 2 bits of the return value are defined
-            AssertExpr("<BAND 3 <CHECKU 65>>").InV5().GivesNumber("3");
+            await AssertExpr("<BAND 3 <CHECKU 65>>").InV5().GivesNumberAsync("3");
         }
 
         [TestMethod]
-        public void TestCHECKU_Error()
+        public async System.Threading.Tasks.Task TestCHECKU_ErrorAsync()
         {
-            AssertExpr("<CHECKU 65>").InV3().DoesNotCompile();
-            AssertExpr("<CHECKU 65>").InV4().DoesNotCompile();
+            await AssertExpr("<CHECKU 65>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<CHECKU 65>").InV4().DoesNotCompileAsync();
 
-            AssertExpr("<CHECKU>").InV5().DoesNotCompile();
-            AssertExpr("<CHECKU 65 66>").InV5().DoesNotCompile();
+            await AssertExpr("<CHECKU>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<CHECKU 65 66>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestCLEAR()
+        public async System.Threading.Tasks.Task TestCLEARAsync()
         {
             // only exists in V4+
 
             // we can't really test its side-effect here
-            AssertExpr("<CLEAR 0>").InV4().GivesNumber("1");
+            await AssertExpr("<CLEAR 0>").InV4().GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestCLEAR_Error()
+        public async System.Threading.Tasks.Task TestCLEAR_ErrorAsync()
         {
-            AssertExpr("<CLEAR 0>").InV3().DoesNotCompile();
+            await AssertExpr("<CLEAR 0>").InV3().DoesNotCompileAsync();
 
-            AssertExpr("<CLEAR>").InV4().DoesNotCompile();
-            AssertExpr("<CLEAR 0 1>").InV4().DoesNotCompile();
+            await AssertExpr("<CLEAR>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<CLEAR 0 1>").InV4().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestCOLOR()
+        public async System.Threading.Tasks.Task TestCOLORAsync()
         {
             // only exists in V5+
 
             // we can't really test its side-effect here
-            AssertExpr("<COLOR 5 5>").InV5().GivesNumber("1");
+            await AssertExpr("<COLOR 5 5>").InV5().GivesNumberAsync("1");
         }
 
         [TestMethod]
@@ -380,99 +380,99 @@ namespace Zilf.Tests.Integration
 
             // third argument is supported in V6+
 /*
-            AssertExpr("<COLOR 5 5 1>").InV6().Compiles();
+            await AssertExpr("<COLOR 5 5 1>").InV6().Compiles();
 */
         }
 
         [TestMethod]
-        public void TestCOLOR_Error()
+        public async System.Threading.Tasks.Task TestCOLOR_ErrorAsync()
         {
-            AssertExpr("<COLOR 5 5>").InV3().DoesNotCompile();
-            AssertExpr("<COLOR 5 5>").InV4().DoesNotCompile();
+            await AssertExpr("<COLOR 5 5>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<COLOR 5 5>").InV4().DoesNotCompileAsync();
 
-            AssertExpr("<COLOR 5 5 1>").InV5().DoesNotCompile();
+            await AssertExpr("<COLOR 5 5 1>").InV5().DoesNotCompileAsync();
 
-            AssertExpr("<COLOR>").InV5().DoesNotCompile();
-            AssertExpr("<COLOR 5>").InV5().DoesNotCompile();
+            await AssertExpr("<COLOR>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<COLOR 5>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestCOPYT()
+        public async System.Threading.Tasks.Task TestCOPYTAsync()
         {
             // only exists in V5+
 
-            AssertRoutine("", "<COPYT ,TABLE1 ,TABLE2 6> <GET ,TABLE2 2>")
+            await AssertRoutine("", "<COPYT ,TABLE1 ,TABLE2 6> <GET ,TABLE2 2>")
                 .InV5()
                 .WithGlobal("<GLOBAL TABLE1 <TABLE 1 2 3>>")
                 .WithGlobal("<GLOBAL TABLE2 <TABLE 0 0 0>>")
-                .GivesNumber("3");
+                .GivesNumberAsync("3");
         }
 
         [TestMethod]
-        public void TestCOPYT_Error()
+        public async System.Threading.Tasks.Task TestCOPYT_ErrorAsync()
         {
             // only exists in V5+
-            AssertExpr("<COPYT 0 0 0>").InV3().DoesNotCompile();
-            AssertExpr("<COPYT 0 0 0>").InV4().DoesNotCompile();
+            await AssertExpr("<COPYT 0 0 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<COPYT 0 0 0>").InV4().DoesNotCompileAsync();
 
-            AssertExpr("<COPYT>").InV5().DoesNotCompile();
-            AssertExpr("<COPYT 0>").InV5().DoesNotCompile();
-            AssertExpr("<COPYT 0 0>").InV5().DoesNotCompile();
-            AssertExpr("<COPYT 0 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<COPYT>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<COPYT 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<COPYT 0 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<COPYT 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestCRLF()
+        public async System.Threading.Tasks.Task TestCRLFAsync()
         {
-            AssertExpr("<CRLF>").Outputs("\n");
+            await AssertExpr("<CRLF>").OutputsAsync("\n");
         }
 
         [TestMethod]
-        public void TestCRLF_Error()
+        public async System.Threading.Tasks.Task TestCRLF_ErrorAsync()
         {
-            AssertExpr("<CRLF 1>").DoesNotCompile();
+            await AssertExpr("<CRLF 1>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestCURGET()
+        public async System.Threading.Tasks.Task TestCURGETAsync()
         {
             // only exists in V4+
 
             // needs a table
-            AssertExpr("<CURGET ,CURTABLE>")
+            await AssertExpr("<CURGET ,CURTABLE>")
                 .InV4()
                 .WithGlobal("<GLOBAL CURTABLE <TABLE 0 0>>")
-                .Compiles();
+                .CompilesAsync();
         }
 
         [TestMethod]
-        public void TestCURGET_Error()
+        public async System.Threading.Tasks.Task TestCURGET_ErrorAsync()
         {
             // only exists in V4+
-            AssertExpr("<CURGET 0>").InV3().DoesNotCompile();
+            await AssertExpr("<CURGET 0>").InV3().DoesNotCompileAsync();
 
-            AssertExpr("<CURGET>").InV4().DoesNotCompile();
-            AssertExpr("<CURGET 0 0>").InV4().DoesNotCompile();
+            await AssertExpr("<CURGET>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<CURGET 0 0>").InV4().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestCURSET()
+        public async System.Threading.Tasks.Task TestCURSETAsync()
         {
             // only exists in V4+
 
             // we can't really test its side-effect here
-            AssertExpr("<CURSET 1 1>").InV4().GivesNumber("1");
+            await AssertExpr("<CURSET 1 1>").InV4().GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestCURSET_Error()
+        public async System.Threading.Tasks.Task TestCURSET_ErrorAsync()
         {
             // only exists in V4+
-            AssertExpr("<CURSET 1 1>").InV3().DoesNotCompile();
+            await AssertExpr("<CURSET 1 1>").InV3().DoesNotCompileAsync();
 
-            AssertExpr("<CURSET>").InV4().DoesNotCompile();
-            AssertExpr("<CURSET 1>").InV4().DoesNotCompile();
-            AssertExpr("<CURSET 1 1 1>").InV4().DoesNotCompile();
+            await AssertExpr("<CURSET>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<CURSET 1>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<CURSET 1 1 1>").InV4().DoesNotCompileAsync();
         }
 
         [TestMethod]
@@ -483,62 +483,62 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void TestDEC()
+        public async System.Threading.Tasks.Task TestDECAsync()
         {
-            AssertRoutine("FOO", "<DEC FOO> .FOO").WhenCalledWith("200").GivesNumber("199");
+            await AssertRoutine("FOO", "<DEC FOO> .FOO").WhenCalledWith("200").GivesNumberAsync("199");
         }
 
         [TestMethod]
-        public void TestDEC_Quirks()
+        public async System.Threading.Tasks.Task TestDEC_QuirksAsync()
         {
-            AssertRoutine("FOO", "<DEC .FOO> .FOO").WhenCalledWith("200").GivesNumber("199");
-            AssertRoutine("", "<DEC ,FOO> ,FOO").WithGlobal("<GLOBAL FOO 5>").GivesNumber("4");
+            await AssertRoutine("FOO", "<DEC .FOO> .FOO").WhenCalledWith("200").GivesNumberAsync("199");
+            await AssertRoutine("", "<DEC ,FOO> ,FOO").WithGlobal("<GLOBAL FOO 5>").GivesNumberAsync("4");
         }
 
         [TestMethod]
-        public void TestDEC_Error()
+        public async System.Threading.Tasks.Task TestDEC_ErrorAsync()
         {
-            AssertExpr("<DEC>").DoesNotCompile();
-            AssertExpr("<DEC 1>").DoesNotCompile();
-            AssertRoutine("FOO", "<DEC BAR>").DoesNotCompile();
+            await AssertExpr("<DEC>").DoesNotCompileAsync();
+            await AssertExpr("<DEC 1>").DoesNotCompileAsync();
+            await AssertRoutine("FOO", "<DEC BAR>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestDIRIN()
+        public async System.Threading.Tasks.Task TestDIRINAsync()
         {
-            AssertExpr("<DIRIN 0>").GivesNumber("1");
+            await AssertExpr("<DIRIN 0>").GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestDIRIN_Error()
+        public async System.Threading.Tasks.Task TestDIRIN_ErrorAsync()
         {
-            AssertExpr("<DIRIN>").DoesNotCompile();
-            AssertExpr("<DIRIN 0 0>").DoesNotCompile();
+            await AssertExpr("<DIRIN>").DoesNotCompileAsync();
+            await AssertExpr("<DIRIN 0 0>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestDIROUT()
+        public async System.Threading.Tasks.Task TestDIROUTAsync()
         {
-            AssertExpr("<DIROUT 1>").GivesNumber("1");
+            await AssertExpr("<DIROUT 1>").GivesNumberAsync("1");
 
             // output stream 3 needs a table
-            AssertRoutine("", "<DIROUT 3 ,OUTTABLE> <PRINTI \"A\"> <DIROUT -3> <GETB ,OUTTABLE 2>")
+            await AssertRoutine("", "<DIROUT 3 ,OUTTABLE> <PRINTI \"A\"> <DIROUT -3> <GETB ,OUTTABLE 2>")
                 .WithGlobal("<GLOBAL OUTTABLE <LTABLE (BYTE) 0 0 0 0 0 0 0 0>>")
-                .GivesNumber("65");
+                .GivesNumberAsync("65");
         }
 
         [TestMethod]
-        public void TestDIROUT_V6()
+        public async System.Threading.Tasks.Task TestDIROUT_V6Async()
         {
             // third operand allowed in V6
-            AssertExpr("<DIROUT 3 0 0>").InV6().Compiles();
+            await AssertExpr("<DIROUT 3 0 0>").InV6().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestDIROUT_Error()
+        public async System.Threading.Tasks.Task TestDIROUT_ErrorAsync()
         {
-            AssertExpr("<DIROUT>").DoesNotCompile();
-            AssertExpr("<DIROUT 3 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<DIROUT>").DoesNotCompileAsync();
+            await AssertExpr("<DIROUT 3 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
@@ -549,695 +549,695 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void TestDIV()
+        public async System.Threading.Tasks.Task TestDIVAsync()
         {
-            AssertExpr("<DIV 360 90>").GivesNumber("4");
-            AssertExpr("<DIV 100 -2>").GivesNumber("-50");
-            AssertExpr("<DIV -100 -2>").GivesNumber("50");
-            AssertExpr("<DIV -17 2>").GivesNumber("-8");
-            AssertExpr("<DIV>").GivesNumber("1");
-            AssertExpr("<DIV 1>").GivesNumber("1");
-            AssertExpr("<DIV 2>").GivesNumber("0");
-            AssertExpr("<DIV 1 1>").GivesNumber("1");
-            AssertExpr("<DIV 1 1 1>").GivesNumber("1");
+            await AssertExpr("<DIV 360 90>").GivesNumberAsync("4");
+            await AssertExpr("<DIV 100 -2>").GivesNumberAsync("-50");
+            await AssertExpr("<DIV -100 -2>").GivesNumberAsync("50");
+            await AssertExpr("<DIV -17 2>").GivesNumberAsync("-8");
+            await AssertExpr("<DIV>").GivesNumberAsync("1");
+            await AssertExpr("<DIV 1>").GivesNumberAsync("1");
+            await AssertExpr("<DIV 2>").GivesNumberAsync("0");
+            await AssertExpr("<DIV 1 1>").GivesNumberAsync("1");
+            await AssertExpr("<DIV 1 1 1>").GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestDLESS_P()
+        public async System.Threading.Tasks.Task TestDLESS_PAsync()
         {
             // V1 to V6
-            AssertRoutine("FOO", "<PRINTN <DLESS? FOO 100>> <CRLF> <PRINTN .FOO>")
-                .WhenCalledWith("100").Outputs("1\n99");
-            AssertRoutine("FOO", "<PRINTN <DLESS? FOO 100>> <CRLF> <PRINTN .FOO>")
-                .WhenCalledWith("101").Outputs("0\n100");
+            await AssertRoutine("FOO", "<PRINTN <DLESS? FOO 100>> <CRLF> <PRINTN .FOO>")
+                .WhenCalledWith("100").OutputsAsync("1\n99");
+            await AssertRoutine("FOO", "<PRINTN <DLESS? FOO 100>> <CRLF> <PRINTN .FOO>")
+                .WhenCalledWith("101").OutputsAsync("0\n100");
         }
 
         [TestMethod]
-        public void TestDLESS_P_Error()
+        public async System.Threading.Tasks.Task TestDLESS_P_ErrorAsync()
         {
             // V1 to V6
-            AssertExpr("<DLESS?>").DoesNotCompile();
-            AssertRoutine("FOO", "<DLESS? FOO>").DoesNotCompile();
-            AssertExpr("<DLESS? 11 22>").DoesNotCompile();
-            AssertRoutine("FOO", "<DLESS? BAR 100>").DoesNotCompile();
-            AssertRoutine("FOO BAR", "<DLESS? FOO BAR>").DoesNotCompile();
+            await AssertExpr("<DLESS?>").DoesNotCompileAsync();
+            await AssertRoutine("FOO", "<DLESS? FOO>").DoesNotCompileAsync();
+            await AssertExpr("<DLESS? 11 22>").DoesNotCompileAsync();
+            await AssertRoutine("FOO", "<DLESS? BAR 100>").DoesNotCompileAsync();
+            await AssertRoutine("FOO BAR", "<DLESS? FOO BAR>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestEQUAL_P()
+        public async System.Threading.Tasks.Task TestEQUAL_PAsync()
         {
-            AssertExpr("<EQUAL? 1 1>").GivesNumber("1");
-            AssertExpr("<EQUAL? 1 2>").GivesNumber("0");
-            AssertExpr("<EQUAL? 1 2 1>").GivesNumber("1");
-            AssertExpr("<EQUAL? 1 2 3 4>").GivesNumber("0");
-            AssertExpr("<EQUAL? 1 2 3 4 5 6 7 8 9 0 1>").GivesNumber("1");
+            await AssertExpr("<EQUAL? 1 1>").GivesNumberAsync("1");
+            await AssertExpr("<EQUAL? 1 2>").GivesNumberAsync("0");
+            await AssertExpr("<EQUAL? 1 2 1>").GivesNumberAsync("1");
+            await AssertExpr("<EQUAL? 1 2 3 4>").GivesNumberAsync("0");
+            await AssertExpr("<EQUAL? 1 2 3 4 5 6 7 8 9 0 1>").GivesNumberAsync("1");
 
-            AssertExpr("<COND (<EQUAL? 1 2 3 4 5 6 1> 99) (T 0)>").GivesNumber("99");
-            AssertRoutine("X", "<COND (<EQUAL? <+ .X 1> 2 4 6 8> 99) (T 0)>")
+            await AssertExpr("<COND (<EQUAL? 1 2 3 4 5 6 1> 99) (T 0)>").GivesNumberAsync("99");
+            await AssertRoutine("X", "<COND (<EQUAL? <+ .X 1> 2 4 6 8> 99) (T 0)>")
                 .WhenCalledWith("7")
-                .GivesNumber("99");
+                .GivesNumberAsync("99");
 
             // alias
-            AssertExpr("<=? 1 1>").GivesNumber("1");
-            AssertExpr("<==? 1 1>").GivesNumber("1");
+            await AssertExpr("<=? 1 1>").GivesNumberAsync("1");
+            await AssertExpr("<==? 1 1>").GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestEQUAL_P_Error()
+        public async System.Threading.Tasks.Task TestEQUAL_P_ErrorAsync()
         {
-            AssertExpr("<EQUAL?>").DoesNotCompile();
+            await AssertExpr("<EQUAL?>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestERASE()
+        public async System.Threading.Tasks.Task TestERASEAsync()
         {
             // only exists in V4+
 
             // we can't really test its side-effect here
-            AssertExpr("<ERASE 1>").InV4().GivesNumber("1");
+            await AssertExpr("<ERASE 1>").InV4().GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestERASE_Error()
+        public async System.Threading.Tasks.Task TestERASE_ErrorAsync()
         {
             // only exists in V4+
-            AssertExpr("<ERASE 1>").InV3().DoesNotCompile();
+            await AssertExpr("<ERASE 1>").InV3().DoesNotCompileAsync();
 
-            AssertExpr("<ERASE>").InV4().DoesNotCompile();
-            AssertExpr("<ERASE 1 2>").InV4().DoesNotCompile();
+            await AssertExpr("<ERASE>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<ERASE 1 2>").InV4().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestFCLEAR()
+        public async System.Threading.Tasks.Task TestFCLEARAsync()
         {
-            AssertExpr("<FCLEAR ,MYOBJECT ,FOOBIT>")
+            await AssertExpr("<FCLEAR ,MYOBJECT ,FOOBIT>")
                 .WithGlobal("<OBJECT MYOBJECT (FLAGS FOOBIT)>")
-                .GivesNumber("1");
+                .GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestFCLEAR_Error()
+        public async System.Threading.Tasks.Task TestFCLEAR_ErrorAsync()
         {
-            AssertExpr("<FCLEAR>").DoesNotCompile();
-            AssertExpr("<FCLEAR 1>").DoesNotCompile();
-            AssertExpr("<FCLEAR 1 2 3>").DoesNotCompile();
+            await AssertExpr("<FCLEAR>").DoesNotCompileAsync();
+            await AssertExpr("<FCLEAR 1>").DoesNotCompileAsync();
+            await AssertExpr("<FCLEAR 1 2 3>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestFIRST_P()
+        public async System.Threading.Tasks.Task TestFIRST_PAsync()
         {
-            AssertExpr("<FIRST? ,MYOBJECT>")
+            await AssertExpr("<FIRST? ,MYOBJECT>")
                 .WithGlobal("<OBJECT MYOBJECT>")
-                .GivesNumber("0");
-            AssertExpr("<==? <FIRST? ,MYOBJECT> ,INNEROBJECT>")
+                .GivesNumberAsync("0");
+            await AssertExpr("<==? <FIRST? ,MYOBJECT> ,INNEROBJECT>")
                 .WithGlobal("<OBJECT MYOBJECT>")
                 .WithGlobal("<OBJECT INNEROBJECT (LOC MYOBJECT)>")
-                .GivesNumber("1");
-            AssertExpr("<COND (<FIRST? ,MYOBJECT> <PRINTI \"yes\">)>")
+                .GivesNumberAsync("1");
+            await AssertExpr("<COND (<FIRST? ,MYOBJECT> <PRINTI \"yes\">)>")
                 .WithGlobal("<OBJECT MYOBJECT>")
                 .WithGlobal("<OBJECT INNEROBJECT (LOC MYOBJECT)>")
-                .Outputs("yes");
-            AssertExpr("<COND (<FIRST? ,INNEROBJECT> <PRINTI \"yes\">) (T <PRINTI \"no\">)>")
+                .OutputsAsync("yes");
+            await AssertExpr("<COND (<FIRST? ,INNEROBJECT> <PRINTI \"yes\">) (T <PRINTI \"no\">)>")
                 .WithGlobal("<OBJECT MYOBJECT>")
                 .WithGlobal("<OBJECT INNEROBJECT (LOC MYOBJECT)>")
-                .Outputs("no");
+                .OutputsAsync("no");
         }
 
         [TestMethod]
-        public void TestFIRST_P_Error()
+        public async System.Threading.Tasks.Task TestFIRST_P_ErrorAsync()
         {
-            AssertExpr("<FIRST?>").DoesNotCompile();
-            AssertExpr("<FIRST? 0 0>").DoesNotCompile();
+            await AssertExpr("<FIRST?>").DoesNotCompileAsync();
+            await AssertExpr("<FIRST? 0 0>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestFONT()
+        public async System.Threading.Tasks.Task TestFONTAsync()
         {
             // only exists in V5+
-            AssertExpr("<FONT 1>").InV5().Compiles();
+            await AssertExpr("<FONT 1>").InV5().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestFONT_Error()
+        public async System.Threading.Tasks.Task TestFONT_ErrorAsync()
         {
             // only exists in V5+
-            AssertExpr("<FONT 1>").InV3().DoesNotCompile();
-            AssertExpr("<FONT 1>").InV4().DoesNotCompile();
+            await AssertExpr("<FONT 1>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<FONT 1>").InV4().DoesNotCompileAsync();
 
-            AssertExpr("<FONT>").InV5().DoesNotCompile();
-            AssertExpr("<FONT 1 2>").InV5().DoesNotCompile();
+            await AssertExpr("<FONT>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<FONT 1 2>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestFSET()
+        public async System.Threading.Tasks.Task TestFSETAsync()
         {
-            AssertExpr("<FSET ,MYOBJECT ,FOOBIT>")
+            await AssertExpr("<FSET ,MYOBJECT ,FOOBIT>")
                 .WithGlobal("<OBJECT MYOBJECT (FLAGS FOOBIT)>")
-                .GivesNumber("1");
+                .GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestFSET_Error()
+        public async System.Threading.Tasks.Task TestFSET_ErrorAsync()
         {
-            AssertExpr("<FSET>").DoesNotCompile();
-            AssertExpr("<FSET 0>").DoesNotCompile();
-            AssertExpr("<FSET 0 1 2>").DoesNotCompile();
+            await AssertExpr("<FSET>").DoesNotCompileAsync();
+            await AssertExpr("<FSET 0>").DoesNotCompileAsync();
+            await AssertExpr("<FSET 0 1 2>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestFSET_P()
+        public async System.Threading.Tasks.Task TestFSET_PAsync()
         {
-            AssertRoutine("", "<PRINTN <FSET? ,OBJECT1 FOOBIT>> <CRLF> <PRINTN <FSET? ,OBJECT2 FOOBIT>>")
+            await AssertRoutine("", "<PRINTN <FSET? ,OBJECT1 FOOBIT>> <CRLF> <PRINTN <FSET? ,OBJECT2 FOOBIT>>")
                 .WithGlobal("<OBJECT OBJECT1 (FLAGS FOOBIT)>")
                 .WithGlobal("<OBJECT OBJECT2>")
-                .Outputs("1\n0");
+                .OutputsAsync("1\n0");
         }
 
         [TestMethod]
-        public void TestFSET_P_Error()
+        public async System.Threading.Tasks.Task TestFSET_P_ErrorAsync()
         {
-            AssertExpr("<FSET?>").DoesNotCompile();
-            AssertExpr("<FSET? 0>").DoesNotCompile();
-            AssertExpr("<FSET? 0 1 2>").DoesNotCompile();
+            await AssertExpr("<FSET?>").DoesNotCompileAsync();
+            await AssertExpr("<FSET? 0>").DoesNotCompileAsync();
+            await AssertExpr("<FSET? 0 1 2>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestFSTACK_V6()
+        public async System.Threading.Tasks.Task TestFSTACK_V6Async()
         {
             // only the V6 version is supported in ZIL
-            AssertRoutine("",
+            await AssertRoutine("",
                 "<PUSH 123> <PUSH 0> <PUSH 0> <PUSH 0> <FSTACK 3> <POP>")
                 .InV6()
-                .GivesNumber("123");
+                .GivesNumberAsync("123");
 
-            AssertRoutine("",
+            await AssertRoutine("",
                 "<FSTACK 3 ,MY-STACK> <GET ,MY-STACK 0>")
                 .WithGlobal("<GLOBAL MY-STACK <TABLE 0 4 3 2 1>>")
                 .InV6()
-                .GivesNumber("3");
+                .GivesNumberAsync("3");
         }
 
         [TestMethod]
-        public void TestFSTACK_Error()
+        public async System.Threading.Tasks.Task TestFSTACK_ErrorAsync()
         {
             // only the V6 version is supported in ZIL
-            AssertExpr("<FSTACK 0>").InV3().DoesNotCompile();
-            AssertExpr("<FSTACK 0>").InV4().DoesNotCompile();
-            AssertExpr("<FSTACK 0>").InV5().DoesNotCompile();
+            await AssertExpr("<FSTACK 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<FSTACK 0>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<FSTACK 0>").InV5().DoesNotCompileAsync();
 
-            AssertExpr("<FSTACK>").InV6().DoesNotCompile();
-            AssertExpr("<FSTACK 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<FSTACK>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<FSTACK 0 0 0>").InV6().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestGET()
+        public async System.Threading.Tasks.Task TestGETAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GET 0 0>").InV3().Compiles();
+            await AssertExpr("<GET 0 0>").InV3().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestGET_Error()
+        public async System.Threading.Tasks.Task TestGET_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GET>").InV3().DoesNotCompile();
-            AssertExpr("<GET 0>").InV3().DoesNotCompile();
-            AssertExpr("<GET 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<GET>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<GET 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<GET 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestGETB()
+        public async System.Threading.Tasks.Task TestGETBAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GETB 0 0>").InV3().GivesNumber("3");
+            await AssertExpr("<GETB 0 0>").InV3().GivesNumberAsync("3");
         }
 
         [TestMethod]
-        public void TestGETB_Error()
+        public async System.Threading.Tasks.Task TestGETB_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GETB>").InV3().DoesNotCompile();
-            AssertExpr("<GETB 0>").InV3().DoesNotCompile();
-            AssertExpr("<GETB 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<GETB>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<GETB 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<GETB 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestGETP()
+        public async System.Threading.Tasks.Task TestGETPAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GETP ,MYOBJECT ,P?MYPROP>")
+            await AssertExpr("<GETP ,MYOBJECT ,P?MYPROP>")
                 .WithGlobal("<OBJECT MYOBJECT (MYPROP 123)>")
-                .GivesNumber("123");
-            AssertExpr("<GETP ,OBJECT2 ,P?MYPROP>")
+                .GivesNumberAsync("123");
+            await AssertExpr("<GETP ,OBJECT2 ,P?MYPROP>")
                 .WithGlobal("<OBJECT OBJECT1 (MYPROP 1)>")
                 .WithGlobal("<OBJECT OBJECT2>")
-                .GivesNumber("0");
+                .GivesNumberAsync("0");
         }
 
         [TestMethod]
-        public void TestGETP_Error()
+        public async System.Threading.Tasks.Task TestGETP_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GETP>").InV3().DoesNotCompile();
-            AssertExpr("<GETP 0>").InV3().DoesNotCompile();
-            AssertExpr("<GETP 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<GETP>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<GETP 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<GETP 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestGETPT()
+        public async System.Threading.Tasks.Task TestGETPTAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GET <GETPT ,MYOBJECT ,P?MYPROP> 0>")
+            await AssertExpr("<GET <GETPT ,MYOBJECT ,P?MYPROP> 0>")
                 .WithGlobal("<OBJECT MYOBJECT (MYPROP 123)>")
-                .GivesNumber("123");
-            AssertExpr("<GETPT ,OBJECT2 ,P?MYPROP>")
+                .GivesNumberAsync("123");
+            await AssertExpr("<GETPT ,OBJECT2 ,P?MYPROP>")
                 .WithGlobal("<OBJECT OBJECT1 (MYPROP 1)>")
                 .WithGlobal("<OBJECT OBJECT2>")
-                .GivesNumber("0");
+                .GivesNumberAsync("0");
         }
 
         [TestMethod]
-        public void TestGETPT_Error()
+        public async System.Threading.Tasks.Task TestGETPT_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GETPT>").InV3().DoesNotCompile();
-            AssertExpr("<GETPT 0>").InV3().DoesNotCompile();
-            AssertExpr("<GETPT 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<GETPT>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<GETPT 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<GETPT 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestGEq_P()
+        public async System.Threading.Tasks.Task TestGEq_PAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<G=? -1 3>").InV3().GivesNumber("0");
-            AssertExpr("<G=? 3 -1>").InV3().GivesNumber("1");
-            AssertExpr("<G=? 37 37>").InV3().GivesNumber("1");
+            await AssertExpr("<G=? -1 3>").InV3().GivesNumberAsync("0");
+            await AssertExpr("<G=? 3 -1>").InV3().GivesNumberAsync("1");
+            await AssertExpr("<G=? 37 37>").InV3().GivesNumberAsync("1");
 
             // alias
-            AssertExpr("<G? 3 -1>").InV3().GivesNumber("1");
+            await AssertExpr("<G? 3 -1>").InV3().GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestGEq_P_Error()
+        public async System.Threading.Tasks.Task TestGEq_P_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<G=?>").InV3().DoesNotCompile();
-            AssertExpr("<G=? 0>").InV3().DoesNotCompile();
-            AssertExpr("<G=? 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<G=?>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<G=? 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<G=? 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestGRTR_P()
+        public async System.Threading.Tasks.Task TestGRTR_PAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GRTR? -1 3>").InV3().GivesNumber("0");
-            AssertExpr("<GRTR? 3 -1>").InV3().GivesNumber("1");
-            AssertExpr("<GRTR? 37 37>").InV3().GivesNumber("0");
+            await AssertExpr("<GRTR? -1 3>").InV3().GivesNumberAsync("0");
+            await AssertExpr("<GRTR? 3 -1>").InV3().GivesNumberAsync("1");
+            await AssertExpr("<GRTR? 37 37>").InV3().GivesNumberAsync("0");
 
             // alias
-            AssertExpr("<G? 3 -1>").InV3().GivesNumber("1");
+            await AssertExpr("<G? 3 -1>").InV3().GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestGRTR_P_Error()
+        public async System.Threading.Tasks.Task TestGRTR_P_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<GRTR?>").InV3().DoesNotCompile();
-            AssertExpr("<GRTR? 0>").InV3().DoesNotCompile();
-            AssertExpr("<GRTR? 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<GRTR?>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<GRTR? 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<GRTR? 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestHLIGHT()
+        public async System.Threading.Tasks.Task TestHLIGHTAsync()
         {
             // V4 to V6
             // 1 operand
-            AssertExpr("<HLIGHT 4>").InV4().Compiles();
+            await AssertExpr("<HLIGHT 4>").InV4().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestHLIGHT_Error()
+        public async System.Threading.Tasks.Task TestHLIGHT_ErrorAsync()
         {
             // only exists in V4+
-            AssertExpr("<HLIGHT>").InV3().DoesNotCompile();
+            await AssertExpr("<HLIGHT>").InV3().DoesNotCompileAsync();
 
             // V4 to V6
             // 1 operand
-            AssertExpr("<HLIGHT>").InV4().DoesNotCompile();
-            AssertExpr("<HLIGHT 0 0>").InV4().DoesNotCompile();
+            await AssertExpr("<HLIGHT>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<HLIGHT 0 0>").InV4().DoesNotCompileAsync();
         }
 
         // ICALL, ICALL1, and ICALL2 are not supported in ZIL
 
         [TestMethod]
-        public void TestIGRTR_P()
+        public async System.Threading.Tasks.Task TestIGRTR_PAsync()
         {
             // V1 to V6
-            AssertRoutine("FOO", "<PRINTN <IGRTR? FOO 100>> <CRLF> <PRINTN .FOO>")
-                .WhenCalledWith("100").Outputs("1\n101");
-            AssertRoutine("FOO", "<PRINTN <IGRTR? FOO 100>> <CRLF> <PRINTN .FOO>")
-                .WhenCalledWith("99").Outputs("0\n100");
+            await AssertRoutine("FOO", "<PRINTN <IGRTR? FOO 100>> <CRLF> <PRINTN .FOO>")
+                .WhenCalledWith("100").OutputsAsync("1\n101");
+            await AssertRoutine("FOO", "<PRINTN <IGRTR? FOO 100>> <CRLF> <PRINTN .FOO>")
+                .WhenCalledWith("99").OutputsAsync("0\n100");
         }
 
         [TestMethod]
-        public void TestIGRTR_P_Error()
+        public async System.Threading.Tasks.Task TestIGRTR_P_ErrorAsync()
         {
             // V1 to V6
-            AssertExpr("<IGRTR?>").DoesNotCompile();
-            AssertRoutine("FOO", "<IGRTR? FOO>").DoesNotCompile();
-            AssertExpr("<IGRTR? 11 22>").DoesNotCompile();
-            AssertRoutine("FOO", "<IGRTR? BAR 100>").DoesNotCompile();
-            AssertRoutine("FOO BAR", "<IGRTR? FOO BAR>").DoesNotCompile();
+            await AssertExpr("<IGRTR?>").DoesNotCompileAsync();
+            await AssertRoutine("FOO", "<IGRTR? FOO>").DoesNotCompileAsync();
+            await AssertExpr("<IGRTR? 11 22>").DoesNotCompileAsync();
+            await AssertRoutine("FOO", "<IGRTR? BAR 100>").DoesNotCompileAsync();
+            await AssertRoutine("FOO BAR", "<IGRTR? FOO BAR>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestIN_P()
+        public async System.Threading.Tasks.Task TestIN_PAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<COND (<IN? ,CAT ,HAT> 123) (T 456)>")
+            await AssertExpr("<COND (<IN? ,CAT ,HAT> 123) (T 456)>")
                 .WithGlobal("<OBJECT HAT>")
                 .WithGlobal("<OBJECT CAT (LOC HAT)>")
-                .GivesNumber("123");
-            AssertExpr("<COND (<IN? ,CAT ,HAT> 123) (T 456)>")
+                .GivesNumberAsync("123");
+            await AssertExpr("<COND (<IN? ,CAT ,HAT> 123) (T 456)>")
                 .WithGlobal("<OBJECT HAT (LOC CAT)>")
                 .WithGlobal("<OBJECT CAT>")
-                .GivesNumber("456");
+                .GivesNumberAsync("456");
         }
 
         [TestMethod]
-        public void TestIN_P_Error()
+        public async System.Threading.Tasks.Task TestIN_P_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<IN?>").InV3().DoesNotCompile();
-            AssertExpr("<IN? 0>").InV3().DoesNotCompile();
-            AssertExpr("<IN? 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<IN?>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<IN? 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<IN? 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestINC()
+        public async System.Threading.Tasks.Task TestINCAsync()
         {
-            AssertRoutine("FOO", "<INC FOO> .FOO").WhenCalledWith("200").GivesNumber("201");
+            await AssertRoutine("FOO", "<INC FOO> .FOO").WhenCalledWith("200").GivesNumberAsync("201");
         }
 
         [TestMethod]
-        public void TestINC_Quirks()
+        public async System.Threading.Tasks.Task TestINC_QuirksAsync()
         {
-            AssertRoutine("FOO", "<INC .FOO> .FOO").WhenCalledWith("200").GivesNumber("201");
-            AssertRoutine("", "<INC ,FOO> ,FOO").WithGlobal("<GLOBAL FOO 5>").GivesNumber("6");
+            await AssertRoutine("FOO", "<INC .FOO> .FOO").WhenCalledWith("200").GivesNumberAsync("201");
+            await AssertRoutine("", "<INC ,FOO> ,FOO").WithGlobal("<GLOBAL FOO 5>").GivesNumberAsync("6");
         }
 
         [TestMethod]
-        public void TestINC_Error()
+        public async System.Threading.Tasks.Task TestINC_ErrorAsync()
         {
-            AssertExpr("<INC>").DoesNotCompile();
-            AssertExpr("<INC 1>").DoesNotCompile();
-            AssertRoutine("FOO", "<INC BAR>").DoesNotCompile();
+            await AssertExpr("<INC>").DoesNotCompileAsync();
+            await AssertExpr("<INC 1>").DoesNotCompileAsync();
+            await AssertRoutine("FOO", "<INC BAR>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestINPUT()
+        public async System.Threading.Tasks.Task TestINPUTAsync()
         {
             // V4 to V6
             // 1 to 3 operands
-            AssertExpr("<INPUT 1>")
+            await AssertExpr("<INPUT 1>")
                 .InV4()
                 .WithInput("A")
-                .GivesNumber("65");
+                .GivesNumberAsync("65");
 
-            AssertExpr("<INPUT 1 0>").InV4().Compiles();
-            AssertExpr("<INPUT 1 0 0>").InV4().Compiles();
+            await AssertExpr("<INPUT 1 0>").InV4().CompilesAsync();
+            await AssertExpr("<INPUT 1 0 0>").InV4().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestINPUT_Error()
+        public async System.Threading.Tasks.Task TestINPUT_ErrorAsync()
         {
             // only exists in V4+
-            AssertExpr("<INPUT 1>").InV3().DoesNotCompile();
+            await AssertExpr("<INPUT 1>").InV3().DoesNotCompileAsync();
 
             // V4 to V6
             // 0 to 4 operands
-            AssertExpr("<INPUT>").InV4().DoesNotCompile();
-            AssertExpr("<INPUT 0 0 0 0>").InV4().DoesNotCompile();
+            await AssertExpr("<INPUT>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<INPUT 0 0 0 0>").InV4().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestINTBL_P()
+        public async System.Threading.Tasks.Task TestINTBL_PAsync()
         {
             // V4 to V6
             // 3 to 4 operands
-            AssertExpr("<COND (<INTBL? 3 ,MYTABLE 4> 123) (T 456)>")
+            await AssertExpr("<COND (<INTBL? 3 ,MYTABLE 4> 123) (T 456)>")
                 .InV4()
                 .WithGlobal("<GLOBAL MYTABLE <TABLE 1 2 3 4>>")
-                .GivesNumber("123");
-            AssertExpr("<GET <INTBL? 3 ,MYTABLE 4> 0>")
+                .GivesNumberAsync("123");
+            await AssertExpr("<GET <INTBL? 3 ,MYTABLE 4> 0>")
                 .InV4()
                 .WithGlobal("<GLOBAL MYTABLE <TABLE 1 2 3 4>>")
-                .GivesNumber("3");
-            AssertExpr("<INTBL? 9 ,MYTABLE 4>")
+                .GivesNumberAsync("3");
+            await AssertExpr("<INTBL? 9 ,MYTABLE 4>")
                 .InV4()
                 .WithGlobal("<GLOBAL MYTABLE <TABLE 1 2 3 4>>")
-                .GivesNumber("0");
+                .GivesNumberAsync("0");
 
             // 4th operand is allowed in V5
-            AssertExpr("<GETB <INTBL? 10 ,MYTABLE 9 3> 0>")
+            await AssertExpr("<GETB <INTBL? 10 ,MYTABLE 9 3> 0>")
                 .InV5()
                 .WithGlobal("<GLOBAL MYTABLE <TABLE (BYTE) 111 111 111 222 222 222 10 123 123>>")
-                .GivesNumber("10");
+                .GivesNumberAsync("10");
         }
 
         [TestMethod]
-        public void TestINTBL_P_Error()
+        public async System.Threading.Tasks.Task TestINTBL_P_ErrorAsync()
         {
             // only exists in V4+
-            AssertExpr("<INTBL? 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<INTBL? 0 0 0>").InV3().DoesNotCompileAsync();
 
             // V4 to V6
             // 3 to 4 operands
-            AssertExpr("<INTBL?>").InV4().DoesNotCompile();
-            AssertExpr("<INTBL? 0>").InV4().DoesNotCompile();
-            AssertExpr("<INTBL? 0 0>").InV4().DoesNotCompile();
+            await AssertExpr("<INTBL?>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<INTBL? 0>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<INTBL? 0 0>").InV4().DoesNotCompileAsync();
 
             // 4th operand is only allowed in V5
-            AssertExpr("<INTBL? 0 0 0 0>").InV4().DoesNotCompile();
-            AssertExpr("<INTBL? 0 0 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<INTBL? 0 0 0 0>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<INTBL? 0 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestIRESTORE()
+        public async System.Threading.Tasks.Task TestIRESTOREAsync()
         {
             // V5 to V6
             // 0 operands
-            AssertExpr("<IRESTORE>").InV5().Compiles();
+            await AssertExpr("<IRESTORE>").InV5().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestIRESTORE_Error()
-        {
-            // only exists in V5+
-            AssertExpr("<IRESTORE>").InV4().DoesNotCompile();
-
-            // V5 to V6
-            // 0 operands
-            AssertExpr("<IRESTORE 0>").InV5().DoesNotCompile();
-        }
-
-        [TestMethod]
-        public void TestISAVE()
-        {
-            // V5 to V6
-            // 0 operands
-            AssertExpr("<ISAVE>").InV5().Compiles();
-        }
-
-        [TestMethod]
-        public void TestISAVE_Error()
+        public async System.Threading.Tasks.Task TestIRESTORE_ErrorAsync()
         {
             // only exists in V5+
-            AssertExpr("<ISAVE>").InV4().DoesNotCompile();
+            await AssertExpr("<IRESTORE>").InV4().DoesNotCompileAsync();
 
             // V5 to V6
             // 0 operands
-            AssertExpr("<ISAVE 0>").InV5().DoesNotCompile();
+            await AssertExpr("<IRESTORE 0>").InV5().DoesNotCompileAsync();
+        }
+
+        [TestMethod]
+        public async System.Threading.Tasks.Task TestISAVEAsync()
+        {
+            // V5 to V6
+            // 0 operands
+            await AssertExpr("<ISAVE>").InV5().CompilesAsync();
+        }
+
+        [TestMethod]
+        public async System.Threading.Tasks.Task TestISAVE_ErrorAsync()
+        {
+            // only exists in V5+
+            await AssertExpr("<ISAVE>").InV4().DoesNotCompileAsync();
+
+            // V5 to V6
+            // 0 operands
+            await AssertExpr("<ISAVE 0>").InV5().DoesNotCompileAsync();
         }
 
         // IXCALL and JUMP are not supported in ZIL
 
         [TestMethod]
-        public void TestLEq_P()
+        public async System.Threading.Tasks.Task TestLEq_PAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<L=? -1 3>").InV3().GivesNumber("1");
-            AssertExpr("<L=? 3 -1>").InV3().GivesNumber("0");
-            AssertExpr("<L=? 37 37>").InV3().GivesNumber("1");
+            await AssertExpr("<L=? -1 3>").InV3().GivesNumberAsync("1");
+            await AssertExpr("<L=? 3 -1>").InV3().GivesNumberAsync("0");
+            await AssertExpr("<L=? 37 37>").InV3().GivesNumberAsync("1");
 
             // alias
-            AssertExpr("<L? 3 -1>").InV3().GivesNumber("0");
+            await AssertExpr("<L? 3 -1>").InV3().GivesNumberAsync("0");
         }
 
         [TestMethod]
-        public void TestLEq_P_Error()
+        public async System.Threading.Tasks.Task TestLEq_P_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<L=?>").InV3().DoesNotCompile();
-            AssertExpr("<L=? 0>").InV3().DoesNotCompile();
-            AssertExpr("<L=? 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<L=?>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<L=? 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<L=? 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestLESS_P()
+        public async System.Threading.Tasks.Task TestLESS_PAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<LESS? -1 3>").InV3().GivesNumber("1");
-            AssertExpr("<LESS? 3 -1>").InV3().GivesNumber("0");
-            AssertExpr("<LESS? 37 37>").InV3().GivesNumber("0");
+            await AssertExpr("<LESS? -1 3>").InV3().GivesNumberAsync("1");
+            await AssertExpr("<LESS? 3 -1>").InV3().GivesNumberAsync("0");
+            await AssertExpr("<LESS? 37 37>").InV3().GivesNumberAsync("0");
 
             // alias
-            AssertExpr("<L? 3 -1>").InV3().GivesNumber("0");
+            await AssertExpr("<L? 3 -1>").InV3().GivesNumberAsync("0");
         }
 
         [TestMethod]
-        public void TestLESS_P_Error()
+        public async System.Threading.Tasks.Task TestLESS_P_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<LESS?>").InV3().DoesNotCompile();
-            AssertExpr("<LESS? 0>").InV3().DoesNotCompile();
-            AssertExpr("<LESS? 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<LESS?>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<LESS? 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<LESS? 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestLEX()
+        public async System.Threading.Tasks.Task TestLEXAsync()
         {
             // V5 to V6
             // 2 to 4 operands
 
-            AssertRoutine("", "<LEX ,TEXTBUF ,LEXBUF> <PRINTB <GET ,LEXBUF 1>>")
+            await AssertRoutine("", "<LEX ,TEXTBUF ,LEXBUF> <PRINTB <GET ,LEXBUF 1>>")
                 .InV5()
                 .WithGlobal("<GLOBAL TEXTBUF <TABLE (BYTE) 3 3 !\\c !\\a !\\t>>")
                 .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0 0>>")
                 .WithGlobal("<OBJECT CAT (SYNONYM CAT)>")
-                .Outputs("cat");
+                .OutputsAsync("cat");
 
-            AssertExpr("<LEX 0 0 0>").InV5().Compiles();
-            AssertExpr("<LEX 0 0 0 0>").InV5().Compiles();
+            await AssertExpr("<LEX 0 0 0>").InV5().CompilesAsync();
+            await AssertExpr("<LEX 0 0 0 0>").InV5().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestLEX_Error()
+        public async System.Threading.Tasks.Task TestLEX_ErrorAsync()
         {
             // only exists in V5+
-            AssertExpr("<LEX>").InV4().DoesNotCompile();
+            await AssertExpr("<LEX>").InV4().DoesNotCompileAsync();
 
             // V5 to V6
             // 2 to 4 operands
-            AssertExpr("<LEX>").InV5().DoesNotCompile();
-            AssertExpr("<LEX 0>").InV5().DoesNotCompile();
-            AssertExpr("<LEX 0 0 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<LEX>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<LEX 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<LEX 0 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestLOC()
+        public async System.Threading.Tasks.Task TestLOCAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<==? <LOC ,CAT> ,HAT>")
+            await AssertExpr("<==? <LOC ,CAT> ,HAT>")
                 .WithGlobal("<OBJECT CAT (LOC HAT)>")
                 .WithGlobal("<OBJECT HAT>")
-                .GivesNumber("1");
-            AssertExpr("<LOC ,HAT>")
+                .GivesNumberAsync("1");
+            await AssertExpr("<LOC ,HAT>")
                 .WithGlobal("<OBJECT CAT (LOC HAT)>")
                 .WithGlobal("<OBJECT HAT>")
-                .GivesNumber("0");
+                .GivesNumberAsync("0");
         }
 
         [TestMethod]
-        public void TestLOC_Error()
+        public async System.Threading.Tasks.Task TestLOC_ErrorAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<LOC>").InV3().DoesNotCompile();
-            AssertExpr("<LOC 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<LOC>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<LOC 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestMARGIN_V6()
+        public async System.Threading.Tasks.Task TestMARGIN_V6Async()
         {
             // V6 to V6
             // 2 to 3 operands
-            AssertExpr("<MARGIN 0 0>").InV6().Compiles();
-            AssertExpr("<MARGIN 0 0 0>").InV6().Compiles();
+            await AssertExpr("<MARGIN 0 0>").InV6().CompilesAsync();
+            await AssertExpr("<MARGIN 0 0 0>").InV6().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestMARGIN_Error_V6()
+        public async System.Threading.Tasks.Task TestMARGIN_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<MARGIN>").InV5().DoesNotCompile();
+            await AssertExpr("<MARGIN>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 2 to 3 operands
-            AssertExpr("<MARGIN 0>").InV6().DoesNotCompile();
-            AssertExpr("<MARGIN 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<MARGIN 0>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<MARGIN 0 0 0 0>").InV6().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestMENU_V6()
+        public async System.Threading.Tasks.Task TestMENU_V6Async()
         {
             // V6 to V6
             // 2 operands
-            AssertExpr("<MENU 0 0>").InV6().Compiles();
+            await AssertExpr("<MENU 0 0>").InV6().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestMENU_Error_V6()
+        public async System.Threading.Tasks.Task TestMENU_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<MENU>").InV5().DoesNotCompile();
+            await AssertExpr("<MENU>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 2 operands
-            AssertExpr("<MENU>").InV6().DoesNotCompile();
-            AssertExpr("<MENU 0>").InV6().DoesNotCompile();
-            AssertExpr("<MENU 0 0 0>").InV6().DoesNotCompile();
-            AssertExpr("<MENU 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<MENU>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<MENU 0>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<MENU 0 0 0>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<MENU 0 0 0 0>").InV6().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestMOD()
+        public async System.Threading.Tasks.Task TestMODAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<MOD 15 4>").InV3().GivesNumber("3");
-            AssertExpr("<MOD -15 4>").InV3().GivesNumber("-3");
-            AssertExpr("<MOD -15 4>").InV3().GivesNumber("-3");
-            AssertExpr("<MOD 15 -4>").InV3().GivesNumber("3");
+            await AssertExpr("<MOD 15 4>").InV3().GivesNumberAsync("3");
+            await AssertExpr("<MOD -15 4>").InV3().GivesNumberAsync("-3");
+            await AssertExpr("<MOD -15 4>").InV3().GivesNumberAsync("-3");
+            await AssertExpr("<MOD 15 -4>").InV3().GivesNumberAsync("3");
         }
 
         [TestMethod]
-        public void TestMOD_Error()
+        public async System.Threading.Tasks.Task TestMOD_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<MOD>").InV3().DoesNotCompile();
-            AssertExpr("<MOD 0>").InV3().DoesNotCompile();
-            AssertExpr("<MOD 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<MOD>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<MOD 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<MOD 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
@@ -1249,194 +1249,194 @@ namespace Zilf.Tests.Integration
             // V6 to V6
             // 0 to 4 operands
 /*
-            AssertExpr("<MOUSE-INFO>").InV6().Compiles();
-            AssertExpr("<MOUSE-INFO 0>").InV6().Compiles();
-            AssertExpr("<MOUSE-INFO 0 0>").InV6().Compiles();
-            AssertExpr("<MOUSE-INFO 0 0 0>").InV6().Compiles();
-            AssertExpr("<MOUSE-INFO 0 0 0 0>").InV6().Compiles();
+            await AssertExpr("<MOUSE-INFO>").InV6().Compiles();
+            await AssertExpr("<MOUSE-INFO 0>").InV6().Compiles();
+            await AssertExpr("<MOUSE-INFO 0 0>").InV6().Compiles();
+            await AssertExpr("<MOUSE-INFO 0 0 0>").InV6().Compiles();
+            await AssertExpr("<MOUSE-INFO 0 0 0 0>").InV6().Compiles();
             Assert.Inconclusive("This test was automatically generated.");
 */
         }
 
         [TestMethod]
-        public void TestMOUSE_INFO_Error_V6()
+        public async System.Threading.Tasks.Task TestMOUSE_INFO_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<MOUSE-INFO>").InV5().DoesNotCompile();
+            await AssertExpr("<MOUSE-INFO>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 4 operands
-            AssertExpr("<MOUSE-INFO 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<MOUSE-INFO 0 0 0 0 0>").InV6().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestMOUSE_LIMIT_V6()
+        public async System.Threading.Tasks.Task TestMOUSE_LIMIT_V6Async()
         {
             // V6 to V6
             // 1 operand
-            AssertExpr("<MOUSE-LIMIT 0>").InV6().Compiles();
+            await AssertExpr("<MOUSE-LIMIT 0>").InV6().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestMOUSE_LIMIT_Error_V6()
+        public async System.Threading.Tasks.Task TestMOUSE_LIMIT_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<MOUSE-LIMIT>").InV5().DoesNotCompile();
+            await AssertExpr("<MOUSE-LIMIT>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 1 operand
-            AssertExpr("<MOUSE-LIMIT>").InV6().DoesNotCompile();
-            AssertExpr("<MOUSE-LIMIT 0 0>").InV6().DoesNotCompile();
-            AssertExpr("<MOUSE-LIMIT 0 0 0>").InV6().DoesNotCompile();
-            AssertExpr("<MOUSE-LIMIT 0 0 0 0>").InV6().DoesNotCompile();
-            AssertExpr("<MOUSE-LIMIT 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<MOUSE-LIMIT>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<MOUSE-LIMIT 0 0>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<MOUSE-LIMIT 0 0 0>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<MOUSE-LIMIT 0 0 0 0>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<MOUSE-LIMIT 0 0 0 0 0>").InV6().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestMOVE()
+        public async System.Threading.Tasks.Task TestMOVEAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertRoutine("", "<MOVE ,CAT ,HAT> <IN? ,CAT ,HAT>")
+            await AssertRoutine("", "<MOVE ,CAT ,HAT> <IN? ,CAT ,HAT>")
                 .WithGlobal("<OBJECT CAT>")
                 .WithGlobal("<OBJECT HAT>")
-                .GivesNumber("1");
+                .GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestMOVE_Error()
+        public async System.Threading.Tasks.Task TestMOVE_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<MOVE>").InV3().DoesNotCompile();
-            AssertExpr("<MOVE 0>").InV3().DoesNotCompile();
-            AssertExpr("<MOVE 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<MOVE>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<MOVE 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<MOVE 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestMUL()
+        public async System.Threading.Tasks.Task TestMULAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<MUL 150 0>").InV3().GivesNumber("0");
-            AssertExpr("<MUL 0 -6>").InV3().GivesNumber("0");
-            AssertExpr("<MUL 150 3>").InV3().GivesNumber("450");
-            AssertExpr("<MUL 150 -3>").InV3().GivesNumber("-450");
-            AssertExpr("<MUL -15 4>").InV3().GivesNumber("-60");
-            AssertExpr("<MUL -1 128>").InV3().GivesNumber("-128");
-            AssertExpr("<MUL>").GivesNumber("1");
-            AssertExpr("<MUL 5>").GivesNumber("5");
-            AssertExpr("<MUL 1 2 3>").GivesNumber("6");
-            AssertExpr("<MUL 1 2 3 4>").GivesNumber("24");
-            AssertExpr("<MUL 1 2 3 4 -5>").GivesNumber("-120");
+            await AssertExpr("<MUL 150 0>").InV3().GivesNumberAsync("0");
+            await AssertExpr("<MUL 0 -6>").InV3().GivesNumberAsync("0");
+            await AssertExpr("<MUL 150 3>").InV3().GivesNumberAsync("450");
+            await AssertExpr("<MUL 150 -3>").InV3().GivesNumberAsync("-450");
+            await AssertExpr("<MUL -15 4>").InV3().GivesNumberAsync("-60");
+            await AssertExpr("<MUL -1 128>").InV3().GivesNumberAsync("-128");
+            await AssertExpr("<MUL>").GivesNumberAsync("1");
+            await AssertExpr("<MUL 5>").GivesNumberAsync("5");
+            await AssertExpr("<MUL 1 2 3>").GivesNumberAsync("6");
+            await AssertExpr("<MUL 1 2 3 4>").GivesNumberAsync("24");
+            await AssertExpr("<MUL 1 2 3 4 -5>").GivesNumberAsync("-120");
         }
 
         [TestMethod]
-        public void TestNEXT_P()
+        public async System.Threading.Tasks.Task TestNEXT_PAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertRoutine("", "<MOVE ,RAT ,HAT> <==? <NEXT? ,RAT> ,CAT>")
+            await AssertRoutine("", "<MOVE ,RAT ,HAT> <==? <NEXT? ,RAT> ,CAT>")
                 .WithGlobal("<OBJECT CAT (LOC HAT)>")
                 .WithGlobal("<OBJECT HAT>")
                 .WithGlobal("<OBJECT RAT>")
-                .GivesNumber("1");
-            AssertExpr("<NEXT? ,CAT>")
+                .GivesNumberAsync("1");
+            await AssertExpr("<NEXT? ,CAT>")
                 .WithGlobal("<OBJECT CAT (LOC HAT)>")
                 .WithGlobal("<OBJECT HAT>")
-                .GivesNumber("0");
+                .GivesNumberAsync("0");
         }
 
         [TestMethod]
-        public void TestNEXT_P_Error()
+        public async System.Threading.Tasks.Task TestNEXT_P_ErrorAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<NEXT?>").InV3().DoesNotCompile();
-            AssertExpr("<NEXT? 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<NEXT?>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<NEXT? 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestNEXTP()
+        public async System.Threading.Tasks.Task TestNEXTPAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<==? <NEXTP ,MYOBJECT 0> ,P?FOO>")
+            await AssertExpr("<==? <NEXTP ,MYOBJECT 0> ,P?FOO>")
                 .WithGlobal("<OBJECT MYOBJECT (FOO 123) (BAR 456)>")
-                .GivesNumber("1");
-            AssertExpr("<==? <NEXTP ,MYOBJECT ,P?FOO> ,P?BAR>")
+                .GivesNumberAsync("1");
+            await AssertExpr("<==? <NEXTP ,MYOBJECT ,P?FOO> ,P?BAR>")
                 .WithGlobal("<OBJECT MYOBJECT (FOO 123) (BAR 456)>")
-                .GivesNumber("1");
-            AssertExpr("<==? <NEXTP ,MYOBJECT ,P?BAR> 0>")
+                .GivesNumberAsync("1");
+            await AssertExpr("<==? <NEXTP ,MYOBJECT ,P?BAR> 0>")
                 .WithGlobal("<OBJECT MYOBJECT (FOO 123) (BAR 456)>")
-                .GivesNumber("1");
+                .GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestNEXTP_Error()
+        public async System.Threading.Tasks.Task TestNEXTP_ErrorAsync()
         {
             // V1 to V6
             // 2 to 2 operands
-            AssertExpr("<NEXTP>").InV3().DoesNotCompile();
-            AssertExpr("<NEXTP 0>").InV3().DoesNotCompile();
-            AssertExpr("<NEXTP 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<NEXTP>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<NEXTP 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<NEXTP 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         // NOOP is not supported in ZIL
 
         [TestMethod]
-        public void TestNOT()
+        public async System.Threading.Tasks.Task TestNOTAsync()
         {
-            AssertExpr("<NOT 0>").GivesNumber("1");
-            AssertExpr("<NOT 123>").GivesNumber("0");
+            await AssertExpr("<NOT 0>").GivesNumberAsync("1");
+            await AssertExpr("<NOT 123>").GivesNumberAsync("0");
 
-            AssertExpr("<NOT ,FOO>")
+            await AssertExpr("<NOT ,FOO>")
                 .WithGlobal("<GLOBAL FOO 0>")
-                .GivesNumber("1");
-            AssertExpr("<NOT ,FOO>")
+                .GivesNumberAsync("1");
+            await AssertExpr("<NOT ,FOO>")
                 .WithGlobal("<GLOBAL FOO 123>")
-                .GivesNumber("0");
+                .GivesNumberAsync("0");
 
-            AssertRoutine("", "<COND (<NOT 0> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
-                .Outputs("hello");
-            AssertRoutine("", "<COND (<NOT 123> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
-                .Outputs("goodbye");
+            await AssertRoutine("", "<COND (<NOT 0> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
+                .OutputsAsync("hello");
+            await AssertRoutine("", "<COND (<NOT 123> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
+                .OutputsAsync("goodbye");
 
-            AssertRoutine("", "<COND (<NOT ,FOO> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
+            await AssertRoutine("", "<COND (<NOT ,FOO> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
                 .WithGlobal("<GLOBAL FOO 0>")
-                .Outputs("hello");
-            AssertRoutine("", "<COND (<NOT ,FOO> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
+                .OutputsAsync("hello");
+            await AssertRoutine("", "<COND (<NOT ,FOO> <PRINTI \"hello\">) (T <PRINTI \"goodbye\">)>")
                 .WithGlobal("<GLOBAL FOO 123>")
-                .Outputs("goodbye");
+                .OutputsAsync("goodbye");
         }
 
         [TestMethod]
-        public void TestNOT_Error()
+        public async System.Threading.Tasks.Task TestNOT_ErrorAsync()
         {
-            AssertExpr("<NOT>").DoesNotCompile();
-            AssertExpr("<NOT 0 0>").DoesNotCompile();
+            await AssertExpr("<NOT>").DoesNotCompileAsync();
+            await AssertExpr("<NOT 0 0>").DoesNotCompileAsync();
 
-            AssertExpr("<COND (<NOT>)>").DoesNotCompile();
-            AssertExpr("<COND (<NOT 0 0>)>").DoesNotCompile();
+            await AssertExpr("<COND (<NOT>)>").DoesNotCompileAsync();
+            await AssertExpr("<COND (<NOT 0 0>)>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestORIGINAL_P()
+        public async System.Threading.Tasks.Task TestORIGINAL_PAsync()
         {
             // V5 to V6
             // 0 to 0 operands
-            AssertExpr("<ORIGINAL?>").InV5().GivesNumber("1");
+            await AssertExpr("<ORIGINAL?>").InV5().GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestORIGINAL_P_Error()
+        public async System.Threading.Tasks.Task TestORIGINAL_P_ErrorAsync()
         {
             // only exists in V5+
-            AssertExpr("<ORIGINAL?>").InV4().DoesNotCompile();
+            await AssertExpr("<ORIGINAL?>").InV4().DoesNotCompileAsync();
 
             // V5 to V6
             // 0 to 0 operands
-            AssertExpr("<ORIGINAL? 0>").InV5().DoesNotCompile();
+            await AssertExpr("<ORIGINAL? 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
@@ -1448,24 +1448,24 @@ namespace Zilf.Tests.Integration
             // V6 to V6
             // 0 to 4 operands
 /*
-            AssertExpr("<PICINF>").InV6().Compiles();
-            AssertExpr("<PICINF 0>").InV6().Compiles();
-            AssertExpr("<PICINF 0 0>").InV6().Compiles();
-            AssertExpr("<PICINF 0 0 0>").InV6().Compiles();
-            AssertExpr("<PICINF 0 0 0 0>").InV6().Compiles();
+            await AssertExpr("<PICINF>").InV6().Compiles();
+            await AssertExpr("<PICINF 0>").InV6().Compiles();
+            await AssertExpr("<PICINF 0 0>").InV6().Compiles();
+            await AssertExpr("<PICINF 0 0 0>").InV6().Compiles();
+            await AssertExpr("<PICINF 0 0 0 0>").InV6().Compiles();
             Assert.Inconclusive("This test was automatically generated.");
 */
         }
 
         [TestMethod]
-        public void TestPICINF_Error_V6()
+        public async System.Threading.Tasks.Task TestPICINF_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<PICINF>").InV5().DoesNotCompile();
+            await AssertExpr("<PICINF>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 4 operands
-            AssertExpr("<PICINF 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<PICINF 0 0 0 0 0>").InV6().DoesNotCompileAsync();
             Assert.Inconclusive("This test was automatically generated.");
         }
 
@@ -1478,129 +1478,129 @@ namespace Zilf.Tests.Integration
             // V6 to V6
             // 0 to 4 operands
 /*
-            AssertExpr("<PICSET>").InV6().Compiles();
-            AssertExpr("<PICSET 0>").InV6().Compiles();
-            AssertExpr("<PICSET 0 0>").InV6().Compiles();
-            AssertExpr("<PICSET 0 0 0>").InV6().Compiles();
-            AssertExpr("<PICSET 0 0 0 0>").InV6().Compiles();
+            await AssertExpr("<PICSET>").InV6().Compiles();
+            await AssertExpr("<PICSET 0>").InV6().Compiles();
+            await AssertExpr("<PICSET 0 0>").InV6().Compiles();
+            await AssertExpr("<PICSET 0 0 0>").InV6().Compiles();
+            await AssertExpr("<PICSET 0 0 0 0>").InV6().Compiles();
             Assert.Inconclusive("This test was automatically generated.");
 */
         }
 
         [TestMethod]
-        public void TestPICSET_Error_V6()
+        public async System.Threading.Tasks.Task TestPICSET_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<PICSET>").InV5().DoesNotCompile();
+            await AssertExpr("<PICSET>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 4 operands
-            AssertExpr("<PICSET 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<PICSET 0 0 0 0 0>").InV6().DoesNotCompileAsync();
             Assert.Inconclusive("This test was automatically generated.");
         }
 
         // only the V6 version of POP is supported in ZIL
 
         [TestMethod]
-        public void TestPOP_V6()
+        public async System.Threading.Tasks.Task TestPOP_V6Async()
         {
             // V6 to V6
             // 0 to 1 operands
-            AssertRoutine("\"AUX\" X", "<PUSH 123> <SET X <POP>> .X")
+            await AssertRoutine("\"AUX\" X", "<PUSH 123> <SET X <POP>> .X")
                 .InV6()
-                .GivesNumber("123");
+                .GivesNumberAsync("123");
 
-            AssertExpr("<POP ,MY-STACK>")
+            await AssertExpr("<POP ,MY-STACK>")
                 .WithGlobal("<GLOBAL MY-STACK <TABLE 3 0 0 0 123>>")
                 .InV6()
-                .GivesNumber("123");
+                .GivesNumberAsync("123");
         }
 
         [TestMethod]
-        public void TestPOP_Error()
+        public async System.Threading.Tasks.Task TestPOP_ErrorAsync()
         {
             // only exists in V6+
-            AssertExpr("<POP>").InV5().DoesNotCompile();
+            await AssertExpr("<POP>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 1 operands
-            AssertExpr("<POP 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<POP 0 0>").InV6().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPRINT()
+        public async System.Threading.Tasks.Task TestPRINTAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PRINT ,MESSAGE>")
+            await AssertExpr("<PRINT ,MESSAGE>")
                 .InV3()
                 .WithGlobal("<GLOBAL MESSAGE \"hello\">")
-                .Outputs("hello");
+                .OutputsAsync("hello");
         }
 
         [TestMethod]
-        public void TestPRINT_Error()
+        public async System.Threading.Tasks.Task TestPRINT_ErrorAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PRINT>").InV3().DoesNotCompile();
-            AssertExpr("<PRINT 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<PRINT>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<PRINT 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPRINTB()
+        public async System.Threading.Tasks.Task TestPRINTBAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PRINTB <GETP ,MYOBJECT ,P?SYNONYM>>")
+            await AssertExpr("<PRINTB <GETP ,MYOBJECT ,P?SYNONYM>>")
                 .InV3()
                 .WithGlobal("<OBJECT MYOBJECT (SYNONYM HELLO)>")
-                .Outputs("hello");
+                .OutputsAsync("hello");
         }
 
         [TestMethod]
-        public void TestPRINTB_Error()
+        public async System.Threading.Tasks.Task TestPRINTB_ErrorAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PRINTB>").InV3().DoesNotCompile();
-            AssertExpr("<PRINTB 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<PRINTB>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<PRINTB 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPRINTC()
+        public async System.Threading.Tasks.Task TestPRINTCAsync()
         {
             // V1 to V6
             // 1 operand
-            AssertExpr("<PRINTC 65>").InV3().Outputs("A");
+            await AssertExpr("<PRINTC 65>").InV3().OutputsAsync("A");
         }
 
         [TestMethod]
-        public void TestPRINTC_Error()
+        public async System.Threading.Tasks.Task TestPRINTC_ErrorAsync()
         {
             // V1 to V6
             // 1 operand
-            AssertExpr("<PRINTC>").InV3().DoesNotCompile();
-            AssertExpr("<PRINTC 65 0>").InV3().DoesNotCompile();
+            await AssertExpr("<PRINTC>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<PRINTC 65 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPRINTD()
+        public async System.Threading.Tasks.Task TestPRINTDAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PRINTD ,MYOBJECT>")
+            await AssertExpr("<PRINTD ,MYOBJECT>")
                 .WithGlobal("<OBJECT MYOBJECT (DESC \"pocket fisherman\")>")
-                .Outputs("pocket fisherman");
+                .OutputsAsync("pocket fisherman");
         }
 
         [TestMethod]
-        public void TestPRINTD_Error()
+        public async System.Threading.Tasks.Task TestPRINTD_ErrorAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PRINTD>").InV3().DoesNotCompile();
-            AssertExpr("<PRINTD 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<PRINTD>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<PRINTD 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
@@ -1612,492 +1612,492 @@ namespace Zilf.Tests.Integration
             // V6 to V6
             // 0 to 4 operands
 /*
-            AssertExpr("<PRINTF>").InV6().Compiles();
-            AssertExpr("<PRINTF 0>").InV6().Compiles();
-            AssertExpr("<PRINTF 0 0>").InV6().Compiles();
-            AssertExpr("<PRINTF 0 0 0>").InV6().Compiles();
-            AssertExpr("<PRINTF 0 0 0 0>").InV6().Compiles();
+            await AssertExpr("<PRINTF>").InV6().Compiles();
+            await AssertExpr("<PRINTF 0>").InV6().Compiles();
+            await AssertExpr("<PRINTF 0 0>").InV6().Compiles();
+            await AssertExpr("<PRINTF 0 0 0>").InV6().Compiles();
+            await AssertExpr("<PRINTF 0 0 0 0>").InV6().Compiles();
             Assert.Inconclusive("This test was automatically generated.");
 */
         }
 
         [TestMethod]
-        public void TestPRINTF_Error_V6()
+        public async System.Threading.Tasks.Task TestPRINTF_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<PRINTF>").InV5().DoesNotCompile();
+            await AssertExpr("<PRINTF>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 4 operands
-            AssertExpr("<PRINTF 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<PRINTF 0 0 0 0 0>").InV6().DoesNotCompileAsync();
             Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
-        public void TestPRINTI()
+        public async System.Threading.Tasks.Task TestPRINTIAsync()
         {
             // V1 to V6
-            AssertExpr("<PRINTI \"hello|world\">").Outputs("hello\nworld");
-            AssertExpr("<PRINTI \"foo||\r\n\r\n    BAR\">").Outputs("foo\n\n     BAR");
+            await AssertExpr("<PRINTI \"hello|world\">").OutputsAsync("hello\nworld");
+            await AssertExpr("<PRINTI \"foo||\r\n\r\n    BAR\">").OutputsAsync("foo\n\n     BAR");
         }
 
         [TestMethod]
-        public void TestPRINTI_Error()
+        public async System.Threading.Tasks.Task TestPRINTI_ErrorAsync()
         {
             // V1 to V6
-            AssertExpr("<PRINTI>").DoesNotCompile();
-            AssertExpr("<PRINTI \"foo\" \"bar\">").DoesNotCompile();
-            AssertExpr("<PRINTI 123>").DoesNotCompile();
+            await AssertExpr("<PRINTI>").DoesNotCompileAsync();
+            await AssertExpr("<PRINTI \"foo\" \"bar\">").DoesNotCompileAsync();
+            await AssertExpr("<PRINTI 123>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPRINTN()
-        {
-            // V1 to V6
-            // 1 to 1 operands
-            AssertExpr("<PRINTN 0>").InV3().Outputs("0");
-            AssertExpr("<PRINTN -12345>").InV3().Outputs("-12345");
-        }
-
-        [TestMethod]
-        public void TestPRINTN_Error()
+        public async System.Threading.Tasks.Task TestPRINTNAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PRINTN>").InV3().DoesNotCompile();
-            AssertExpr("<PRINTN 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<PRINTN 0>").InV3().OutputsAsync("0");
+            await AssertExpr("<PRINTN -12345>").InV3().OutputsAsync("-12345");
         }
 
         [TestMethod]
-        public void TestPRINTR()
+        public async System.Threading.Tasks.Task TestPRINTN_ErrorAsync()
         {
             // V1 to V6
-            AssertRoutine("", "<PRINTR \"hello|world\">").Outputs("hello\nworld\n");
+            // 1 to 1 operands
+            await AssertExpr("<PRINTN>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<PRINTN 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPRINTR_Error()
+        public async System.Threading.Tasks.Task TestPRINTRAsync()
         {
             // V1 to V6
-            AssertExpr("<PRINTR>").DoesNotCompile();
-            AssertExpr("<PRINTR \"foo\" \"bar\">").DoesNotCompile();
-            AssertExpr("<PRINTR 123>").DoesNotCompile();
+            await AssertRoutine("", "<PRINTR \"hello|world\">").OutputsAsync("hello\nworld\n");
         }
 
         [TestMethod]
-        public void TestPRINTT()
+        public async System.Threading.Tasks.Task TestPRINTR_ErrorAsync()
+        {
+            // V1 to V6
+            await AssertExpr("<PRINTR>").DoesNotCompileAsync();
+            await AssertExpr("<PRINTR \"foo\" \"bar\">").DoesNotCompileAsync();
+            await AssertExpr("<PRINTR 123>").DoesNotCompileAsync();
+        }
+
+        [TestMethod]
+        public async System.Threading.Tasks.Task TestPRINTTAsync()
         {
             // V5 to V6
             // 2 to 4 operands
-            AssertExpr("<PRINTT ,MYTEXT 6>")
+            await AssertExpr("<PRINTT ,MYTEXT 6>")
                 .InV5()
                 .WithGlobal("<GLOBAL MYTEXT <TABLE (STRING) \"hansprestige\">>")
-                .Outputs($"hanspr{System.Environment.NewLine}");
+                .OutputsAsync($"hanspr{System.Environment.NewLine}");
 
-            AssertExpr("<PRINTT ,MYTEXT 4 3>")
+            await AssertExpr("<PRINTT ,MYTEXT 4 3>")
                 .InV5()
                 .WithGlobal("<GLOBAL MYTEXT <TABLE (STRING) \"hansprestige\">>")
-                .Outputs($"hans{System.Environment.NewLine}pres{System.Environment.NewLine}tige{System.Environment.NewLine}");
+                .OutputsAsync($"hans{System.Environment.NewLine}pres{System.Environment.NewLine}tige{System.Environment.NewLine}");
 
-            AssertExpr("<PRINTT ,MYTEXT 3 3 1>")
+            await AssertExpr("<PRINTT ,MYTEXT 3 3 1>")
                 .InV5()
                 .WithGlobal("<GLOBAL MYTEXT <TABLE (STRING) \"hansprestige\">>")
-                .Outputs($"han{System.Environment.NewLine}pre{System.Environment.NewLine}tig{System.Environment.NewLine}");
+                .OutputsAsync($"han{System.Environment.NewLine}pre{System.Environment.NewLine}tig{System.Environment.NewLine}");
         }
 
         [TestMethod]
-        public void TestPRINTT_Error()
+        public async System.Threading.Tasks.Task TestPRINTT_ErrorAsync()
         {
             // only exists in V5+
-            AssertExpr("<PRINTT>").InV4().DoesNotCompile();
+            await AssertExpr("<PRINTT>").InV4().DoesNotCompileAsync();
 
             // V5 to V6
             // 2 to 4 operands
-            AssertExpr("<PRINTT>").InV5().DoesNotCompile();
-            AssertExpr("<PRINTT 0>").InV5().DoesNotCompile();
-            AssertExpr("<PRINTT 0 0 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<PRINTT>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<PRINTT 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<PRINTT 0 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPRINTU()
+        public async System.Threading.Tasks.Task TestPRINTUAsync()
         {
             // V5 to V6
             // 1 operand
-            AssertExpr("<PRINTU 65>").InV5().Compiles();
+            await AssertExpr("<PRINTU 65>").InV5().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestPRINTU_Error()
+        public async System.Threading.Tasks.Task TestPRINTU_ErrorAsync()
         {
             // only exists in V5+
-            AssertExpr("<PRINTU>").InV4().DoesNotCompile();
+            await AssertExpr("<PRINTU>").InV4().DoesNotCompileAsync();
 
             // V5 to V6
             // 1 operand
-            AssertExpr("<PRINTU>").InV5().DoesNotCompile();
-            AssertExpr("<PRINTU 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<PRINTU>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<PRINTU 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPTSIZE()
+        public async System.Threading.Tasks.Task TestPTSIZEAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PTSIZE <GETPT ,MYOBJECT ,P?FOO>>")
+            await AssertExpr("<PTSIZE <GETPT ,MYOBJECT ,P?FOO>>")
                 .WithGlobal("<OBJECT MYOBJECT (FOO 1 2 3)>")
-                .GivesNumber("6");
+                .GivesNumberAsync("6");
         }
 
         [TestMethod]
-        public void TestPTSIZE_Error()
+        public async System.Threading.Tasks.Task TestPTSIZE_ErrorAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<PTSIZE>").InV3().DoesNotCompile();
-            AssertExpr("<PTSIZE 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<PTSIZE>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<PTSIZE 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPUSH()
+        public async System.Threading.Tasks.Task TestPUSHAsync()
         {
             // V1 to V6
             // 1 operand
-            AssertExpr("<PUSH 1234>").InV3().Compiles();
+            await AssertExpr("<PUSH 1234>").InV3().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestPUSH_Error()
+        public async System.Threading.Tasks.Task TestPUSH_ErrorAsync()
         {
             // V1 to V6
             // 1 operand
-            AssertExpr("<PUSH>").InV3().DoesNotCompile();
-            AssertExpr("<PUSH 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<PUSH>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<PUSH 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPUT()
+        public async System.Threading.Tasks.Task TestPUTAsync()
         {
             // V1 to V6
             // 3 to 3 operands
-            AssertExpr("<PUT 0 0 0>").InV3().Compiles();
+            await AssertExpr("<PUT 0 0 0>").InV3().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestPUT_Error()
+        public async System.Threading.Tasks.Task TestPUT_ErrorAsync()
         {
             // V1 to V6
             // 3 to 3 operands
-            AssertExpr("<PUT 0 0>").InV3().DoesNotCompile();
-            AssertExpr("<PUT 0 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<PUT 0 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<PUT 0 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPUTB()
+        public async System.Threading.Tasks.Task TestPUTBAsync()
         {
             // V1 to V6
             // 3 to 3 operands
-            AssertExpr("<PUTB 0 0 0>").InV3().Compiles();
+            await AssertExpr("<PUTB 0 0 0>").InV3().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestPUTB_Error()
+        public async System.Threading.Tasks.Task TestPUTB_ErrorAsync()
         {
             // V1 to V6
             // 3 to 3 operands
-            AssertExpr("<PUTB 0 0>").InV3().DoesNotCompile();
-            AssertExpr("<PUTB 0 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<PUTB 0 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<PUTB 0 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestPUTP()
+        public async System.Threading.Tasks.Task TestPUTPAsync()
         {
             // V1 to V6
             // 3 to 3 operands
-            AssertExpr("<PUTP 0 0 0>").InV3().Compiles();
+            await AssertExpr("<PUTP 0 0 0>").InV3().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestPUTP_Error()
+        public async System.Threading.Tasks.Task TestPUTP_ErrorAsync()
         {
             // V1 to V6
             // 3 to 3 operands
-            AssertExpr("<PUTP 0 0>").InV3().DoesNotCompile();
-            AssertExpr("<PUTP 0 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<PUTP 0 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<PUTP 0 0 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestQUIT()
+        public async System.Threading.Tasks.Task TestQUITAsync()
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<QUIT> <PRINTI \"foo\"> <CRLF>").InV3().Outputs("");
+            await AssertExpr("<QUIT> <PRINTI \"foo\"> <CRLF>").InV3().OutputsAsync("");
         }
 
         [TestMethod]
-        public void TestQUIT_Error()
+        public async System.Threading.Tasks.Task TestQUIT_ErrorAsync()
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<QUIT 0>").InV3().DoesNotCompile();
+            await AssertExpr("<QUIT 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestRANDOM()
+        public async System.Threading.Tasks.Task TestRANDOMAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<RANDOM 14>").InV3().Compiles();
+            await AssertExpr("<RANDOM 14>").InV3().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestRANDOM_Error()
+        public async System.Threading.Tasks.Task TestRANDOM_ErrorAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<RANDOM>").InV3().DoesNotCompile();
-            AssertExpr("<RANDOM 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<RANDOM>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<RANDOM 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestREAD()
+        public async System.Threading.Tasks.Task TestREADAsync()
         {
             // V1 to V3
             // 2 operands
             // ,HERE must point to a valid object for status line purposes
-            AssertRoutine("", "<READ ,TEXTBUF ,LEXBUF> <PRINTC <GETB ,TEXTBUF 2>> <PRINTB <GET ,LEXBUF 1>>")
+            await AssertRoutine("", "<READ ,TEXTBUF ,LEXBUF> <PRINTC <GETB ,TEXTBUF 2>> <PRINTB <GET ,LEXBUF 1>>")
                 .InV3()
                 .WithGlobal("<GLOBAL TEXTBUF <ITABLE 50 (BYTE LENGTH) 0>>")
                 .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0 0>>")
                 .WithGlobal("<OBJECT CAT (SYNONYM CAT)>")
                 .WithGlobal("<GLOBAL HERE CAT>")
                 .WithInput("cat")
-                .Outputs("acat");
+                .OutputsAsync("acat");
             // V4
             // 2 to 4 operands
-            AssertExpr("<READ 0 0>").InV4().Compiles();
-            AssertExpr("<READ 0 0 0>").InV4().Compiles();
-            AssertExpr("<READ 0 0 0 0>").InV4().Compiles();
+            await AssertExpr("<READ 0 0>").InV4().CompilesAsync();
+            await AssertExpr("<READ 0 0 0>").InV4().CompilesAsync();
+            await AssertExpr("<READ 0 0 0 0>").InV4().CompilesAsync();
             // V5 to V6
             // 1 to 4 operands
-            AssertRoutine("", "<PRINTN <READ ,TEXTBUF ,LEXBUF>> <PRINTC <GETB ,TEXTBUF 2>> <PRINTB <GET ,LEXBUF 1>>")
+            await AssertRoutine("", "<PRINTN <READ ,TEXTBUF ,LEXBUF>> <PRINTC <GETB ,TEXTBUF 2>> <PRINTB <GET ,LEXBUF 1>>")
                 .InV5()
                 .WithGlobal("<GLOBAL TEXTBUF <ITABLE 50 (BYTE LENGTH) 0>>")
                 .WithGlobal("<GLOBAL LEXBUF <ITABLE 1 (LEXV) 0 0 0>>")
                 .WithGlobal("<OBJECT CAT (SYNONYM CAT)>")
                 .WithInput("cat")
-                .Outputs("13ccat");
-            AssertExpr("<READ 0>").InV5().Compiles();
-            AssertExpr("<READ 0 0 0>").InV5().Compiles();
-            AssertExpr("<READ 0 0 0 0>").InV5().Compiles();
+                .OutputsAsync("13ccat");
+            await AssertExpr("<READ 0>").InV5().CompilesAsync();
+            await AssertExpr("<READ 0 0 0>").InV5().CompilesAsync();
+            await AssertExpr("<READ 0 0 0 0>").InV5().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestREAD_Error()
+        public async System.Threading.Tasks.Task TestREAD_ErrorAsync()
         {
             // V1 to V3
             // 2 operands
-            AssertExpr("<READ>").InV3().DoesNotCompile();
-            AssertExpr("<READ 0>").InV3().DoesNotCompile();
-            AssertExpr("<READ 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<READ>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<READ 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<READ 0 0 0>").InV3().DoesNotCompileAsync();
             // V4
             // 2 to 4 operands
-            AssertExpr("<READ>").InV4().DoesNotCompile();
-            AssertExpr("<READ 0>").InV4().DoesNotCompile();
-            AssertExpr("<READ 0 0 0 0 0>").InV4().DoesNotCompile();
+            await AssertExpr("<READ>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<READ 0>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<READ 0 0 0 0 0>").InV4().DoesNotCompileAsync();
             // V5 to V6
             // 1 to 4 operands
-            AssertExpr("<READ>").InV5().DoesNotCompile();
-            AssertExpr("<READ 0 0 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<READ>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<READ 0 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestREMOVE()
+        public async System.Threading.Tasks.Task TestREMOVEAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertRoutine("", "<REMOVE ,CAT> <LOC ,CAT>")
+            await AssertRoutine("", "<REMOVE ,CAT> <LOC ,CAT>")
                 .WithGlobal("<OBJECT CAT (LOC HAT)>")
                 .WithGlobal("<OBJECT HAT>")
-                .GivesNumber("0");
+                .GivesNumberAsync("0");
         }
 
         [TestMethod]
-        public void TestREMOVE_Error()
+        public async System.Threading.Tasks.Task TestREMOVE_ErrorAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<REMOVE>").InV3().DoesNotCompile();
-            AssertExpr("<REMOVE 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<REMOVE>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<REMOVE 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestRESTART()
+        public async System.Threading.Tasks.Task TestRESTARTAsync()
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<RESTART>").InV3().Compiles();
+            await AssertExpr("<RESTART>").InV3().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestRESTART_Error()
+        public async System.Threading.Tasks.Task TestRESTART_ErrorAsync()
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<RESTART 0>").InV3().DoesNotCompile();
+            await AssertExpr("<RESTART 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestRESTORE()
+        public async System.Threading.Tasks.Task TestRESTOREAsync()
         {
             // V1 to V3
             // 0 to 0 operands
-            AssertExpr("<RESTORE>").InV3().Compiles();
+            await AssertExpr("<RESTORE>").InV3().CompilesAsync();
             // V4 to V4
             // 0 to 0 operands
-            AssertExpr("<RESTORE>").InV4().Compiles();
+            await AssertExpr("<RESTORE>").InV4().CompilesAsync();
             // V5 to V6
             // 0 or(!) 3 operands
-            AssertExpr("<RESTORE>").InV5().Compiles();
-            AssertExpr("<RESTORE 0 0 0>").InV5().Compiles();
+            await AssertExpr("<RESTORE>").InV5().CompilesAsync();
+            await AssertExpr("<RESTORE 0 0 0>").InV5().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestRESTORE_Error()
+        public async System.Threading.Tasks.Task TestRESTORE_ErrorAsync()
         {
             // V1 to V3
             // 0 to 0 operands
-            AssertExpr("<RESTORE 0>").InV3().DoesNotCompile();
+            await AssertExpr("<RESTORE 0>").InV3().DoesNotCompileAsync();
             // V4 to V4
             // 0 to 0 operands
-            AssertExpr("<RESTORE 0>").InV4().DoesNotCompile();
+            await AssertExpr("<RESTORE 0>").InV4().DoesNotCompileAsync();
             // V5 to V6
             // 0 or(!) 3 operands
-            AssertExpr("<RESTORE 0>").InV5().DoesNotCompile();
-            AssertExpr("<RESTORE 0 0>").InV5().DoesNotCompile();
-            AssertExpr("<RESTORE 0 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<RESTORE 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<RESTORE 0 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<RESTORE 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestRETURN()
+        public async System.Threading.Tasks.Task TestRETURNAsync()
         {
             // NOTE: <RETURN> is more than just the Z-machine opcode. it also returns from <REPEAT>, and with no argument it returns true.
 
             // V1 to V6
             // 0 to 1 operands
-            AssertRoutine("", "<RETURN>").InV3().GivesNumber("1");
-            AssertRoutine("", "<RETURN 41>").InV3().GivesNumber("41");
+            await AssertRoutine("", "<RETURN>").InV3().GivesNumberAsync("1");
+            await AssertRoutine("", "<RETURN 41>").InV3().GivesNumberAsync("41");
         }
 
         [TestMethod]
-        public void TestRETURN_FromBlock()
+        public async System.Threading.Tasks.Task TestRETURN_FromBlockAsync()
         {
-            AssertRoutine("", "<* 2 <PROG () <RETURN 41>>>").GivesNumber("82");
-            AssertRoutine("", "<PROG () <RETURN>> 42").GivesNumber("42");
+            await AssertRoutine("", "<* 2 <PROG () <RETURN 41>>>").GivesNumberAsync("82");
+            await AssertRoutine("", "<PROG () <RETURN>> 42").GivesNumberAsync("42");
         }
 
         [TestMethod]
-        public void TestRETURN_Error()
+        public async System.Threading.Tasks.Task TestRETURN_ErrorAsync()
         {
             // V1 to V6
             // 0 to 1 operands
-            AssertExpr("<RETURN 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<RETURN 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestRFALSE()
+        public async System.Threading.Tasks.Task TestRFALSEAsync()
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertRoutine("", "<RFALSE>").GivesNumber("0");
+            await AssertRoutine("", "<RFALSE>").GivesNumberAsync("0");
         }
 
         [TestMethod]
-        public void TestRFALSE_Error()
+        public async System.Threading.Tasks.Task TestRFALSE_ErrorAsync()
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<RFALSE 0>").InV3().DoesNotCompile();
-            AssertExpr("<RFALSE 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<RFALSE 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<RFALSE 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestRSTACK()
+        public async System.Threading.Tasks.Task TestRSTACKAsync()
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertRoutine("", "<PUSH 1234> <RSTACK>").GivesNumber("1234");
+            await AssertRoutine("", "<PUSH 1234> <RSTACK>").GivesNumberAsync("1234");
         }
 
         [TestMethod]
-        public void TestRSTACK_Error()
+        public async System.Threading.Tasks.Task TestRSTACK_ErrorAsync()
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<RSTACK 0>").InV3().DoesNotCompile();
+            await AssertExpr("<RSTACK 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestRTRUE()
+        public async System.Threading.Tasks.Task TestRTRUEAsync()
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertRoutine("", "<RTRUE>").GivesNumber("1");
+            await AssertRoutine("", "<RTRUE>").GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestRTRUE_Error()
+        public async System.Threading.Tasks.Task TestRTRUE_ErrorAsync()
         {
             // V1 to V6
             // 0 to 0 operands
-            AssertExpr("<RTRUE 0>").InV3().DoesNotCompile();
+            await AssertExpr("<RTRUE 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestSAVE()
+        public async System.Threading.Tasks.Task TestSAVEAsync()
         {
             // V1 to V3
             // 0 to 0 operands
-            AssertExpr("<SAVE>").InV3().Compiles();
+            await AssertExpr("<SAVE>").InV3().CompilesAsync();
             // V4 to V4
             // 0 to 0 operands
-            AssertExpr("<SAVE>").InV4().Compiles();
+            await AssertExpr("<SAVE>").InV4().CompilesAsync();
             // V5 to V6
             // 0 or(!) 3 operands
-            AssertExpr("<SAVE>").InV5().Compiles();
-            AssertExpr("<SAVE 0 0 0>").InV5().Compiles();
+            await AssertExpr("<SAVE>").InV5().CompilesAsync();
+            await AssertExpr("<SAVE 0 0 0>").InV5().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestSAVE_Error()
+        public async System.Threading.Tasks.Task TestSAVE_ErrorAsync()
         {
             // V1 to V3
             // 0 to 0 operands
-            AssertExpr("<SAVE 0>").InV3().DoesNotCompile();
+            await AssertExpr("<SAVE 0>").InV3().DoesNotCompileAsync();
             // V4 to V4
             // 0 to 0 operands
-            AssertExpr("<SAVE 0>").InV4().DoesNotCompile();
+            await AssertExpr("<SAVE 0>").InV4().DoesNotCompileAsync();
             // V5 to V6
             // 0 or(!) 3 operands
-            AssertExpr("<SAVE 0>").InV5().DoesNotCompile();
-            AssertExpr("<SAVE 0 0>").InV5().DoesNotCompile();
-            AssertExpr("<SAVE 0 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<SAVE 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<SAVE 0 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<SAVE 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestSCREEN()
+        public async System.Threading.Tasks.Task TestSCREENAsync()
         {
             // V3 to V6
             // 1 operand
-            AssertExpr("<SCREEN 0>").InV3().Compiles();
+            await AssertExpr("<SCREEN 0>").InV3().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestSCREEN_Error()
+        public async System.Threading.Tasks.Task TestSCREEN_ErrorAsync()
         {
             // V3 to V6
             // 1 operand
-            AssertExpr("<SCREEN>").InV3().DoesNotCompile();
-            AssertExpr("<SCREEN 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<SCREEN>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<SCREEN 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
@@ -2109,59 +2109,59 @@ namespace Zilf.Tests.Integration
             // V6 to V6
             // 0 to 4 operands
 /*
-            AssertExpr("<SCROLL>").InV6().Compiles();
-            AssertExpr("<SCROLL 0>").InV6().Compiles();
-            AssertExpr("<SCROLL 0 0>").InV6().Compiles();
-            AssertExpr("<SCROLL 0 0 0>").InV6().Compiles();
-            AssertExpr("<SCROLL 0 0 0 0>").InV6().Compiles();
+            await AssertExpr("<SCROLL>").InV6().Compiles();
+            await AssertExpr("<SCROLL 0>").InV6().Compiles();
+            await AssertExpr("<SCROLL 0 0>").InV6().Compiles();
+            await AssertExpr("<SCROLL 0 0 0>").InV6().Compiles();
+            await AssertExpr("<SCROLL 0 0 0 0>").InV6().Compiles();
             Assert.Inconclusive("This test was automatically generated.");
 */
         }
 
         [TestMethod]
-        public void TestSCROLL_Error_V6()
+        public async System.Threading.Tasks.Task TestSCROLL_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<SCROLL>").InV5().DoesNotCompile();
+            await AssertExpr("<SCROLL>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 4 operands
-            AssertExpr("<SCROLL 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<SCROLL 0 0 0 0 0>").InV6().DoesNotCompileAsync();
             Assert.Inconclusive("This test was automatically generated.");
         }
 
         [TestMethod]
-        public void TestSET()
+        public async System.Threading.Tasks.Task TestSETAsync()
         {
             // V1 to V6
-            AssertRoutine("\"AUX\" FOO", "<SET FOO 111> .FOO")
-                .GivesNumber("111");
-            AssertRoutine("", "<SET FOO 111> ,FOO")
+            await AssertRoutine("\"AUX\" FOO", "<SET FOO 111> .FOO")
+                .GivesNumberAsync("111");
+            await AssertRoutine("", "<SET FOO 111> ,FOO")
                 .WithGlobal("<GLOBAL FOO 0>")
-                .GivesNumber("111");
+                .GivesNumberAsync("111");
 
             // value version
-            AssertRoutine("\"AUX\" FOO", "<PRINTN <SET FOO 111>>")
-                .Outputs("111");
+            await AssertRoutine("\"AUX\" FOO", "<PRINTN <SET FOO 111>>")
+                .OutputsAsync("111");
 
             // void version
-            AssertRoutine("\"AUX\" FOO", "<SET 1 111> <PRINTN .FOO>")
-                .Outputs("111");
-            AssertRoutine("\"AUX\" BAR", "<SET <ONE> <ONE-ELEVEN>> <PRINTN .BAR>")
+            await AssertRoutine("\"AUX\" FOO", "<SET 1 111> <PRINTN .FOO>")
+                .OutputsAsync("111");
+            await AssertRoutine("\"AUX\" BAR", "<SET <ONE> <ONE-ELEVEN>> <PRINTN .BAR>")
                 .WithGlobal("<ROUTINE ONE () <PRINTI \"ONE.\"> 1>")
                 .WithGlobal("<ROUTINE ONE-ELEVEN () <PRINTI \"ONE-ELEVEN.\"> 111>")
-                .Outputs("ONE.ONE-ELEVEN.111");
+                .OutputsAsync("ONE.ONE-ELEVEN.111");
 
             // alias: SETG
-            AssertRoutine("\"AUX\" FOO", "<SETG FOO 111> .FOO")
-                .GivesNumber("111");
-            AssertRoutine("", "<SETG FOO 111> ,FOO")
+            await AssertRoutine("\"AUX\" FOO", "<SETG FOO 111> .FOO")
+                .GivesNumberAsync("111");
+            await AssertRoutine("", "<SETG FOO 111> ,FOO")
                 .WithGlobal("<GLOBAL FOO 0>")
-                .GivesNumber("111");
+                .GivesNumberAsync("111");
         }
 
         [TestMethod]
-        public void TestSET_Quirks()
+        public async System.Threading.Tasks.Task TestSET_QuirksAsync()
         {
             /* SET and SETG have different VariableScopeQuirks behavior:
              * 
@@ -2174,224 +2174,224 @@ namespace Zilf.Tests.Integration
              * variable whose index is in FOO. */
 
             // void context
-            AssertRoutine("\"AUX\" (FOO 16)", "<SET .FOO 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
+            await AssertRoutine("\"AUX\" (FOO 16)", "<SET .FOO 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
                 .WithGlobal("<GLOBAL MYGLOBAL 1>")
-                .Outputs("123\n1");
+                .OutputsAsync("123\n1");
 
-            AssertRoutine("\"AUX\" (FOO 16)", "<SETG ,MYGLOBAL 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
+            await AssertRoutine("\"AUX\" (FOO 16)", "<SETG ,MYGLOBAL 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
                 .WithGlobal("<GLOBAL MYGLOBAL 1>")
-                .Outputs("16\n123");
+                .OutputsAsync("16\n123");
 
-            AssertRoutine("\"AUX\" (FOO 16)", "<SETG .FOO 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
+            await AssertRoutine("\"AUX\" (FOO 16)", "<SETG .FOO 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
                 .WithGlobal("<GLOBAL MYGLOBAL 1>")
-                .Outputs("16\n123");
+                .OutputsAsync("16\n123");
 
-            AssertRoutine("\"AUX\" (FOO 16)", "<SET ,MYGLOBAL 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
+            await AssertRoutine("\"AUX\" (FOO 16)", "<SET ,MYGLOBAL 123> <PRINTN .FOO> <CRLF> <PRINTN ,MYGLOBAL>")
                 .WithGlobal("<GLOBAL MYGLOBAL 1>")
-                .Outputs("123\n1");
+                .OutputsAsync("123\n1");
 
             // value context (more limited)
-            AssertRoutine("\"AUX\" (FOO 16)", "<PRINTN <SET .FOO 123>> <CRLF> <PRINTN ,MYGLOBAL>")
+            await AssertRoutine("\"AUX\" (FOO 16)", "<PRINTN <SET .FOO 123>> <CRLF> <PRINTN ,MYGLOBAL>")
                 .WithGlobal("<GLOBAL MYGLOBAL 1>")
-                .Outputs("123\n1");
+                .OutputsAsync("123\n1");
 
-            AssertRoutine("\"AUX\" (FOO 16)", "<PRINTN <SETG ,MYGLOBAL 123>> <CRLF> <PRINTN .FOO>")
+            await AssertRoutine("\"AUX\" (FOO 16)", "<PRINTN <SETG ,MYGLOBAL 123>> <CRLF> <PRINTN .FOO>")
                 .WithGlobal("<GLOBAL MYGLOBAL 1>")
-                .Outputs("123\n16");
+                .OutputsAsync("123\n16");
         }
 
         [TestMethod]
-        public void TestSET_Error()
+        public async System.Threading.Tasks.Task TestSET_ErrorAsync()
         {
             // V1 to V6
-            AssertExpr("<SET>").DoesNotCompile();
-            AssertRoutine("X", "<SET X>").DoesNotCompile();
-            AssertExpr("<SET 1 2>").DoesNotCompile();
-            AssertRoutine("X", "<SET Y 1>").DoesNotCompile();
+            await AssertExpr("<SET>").DoesNotCompileAsync();
+            await AssertRoutine("X", "<SET X>").DoesNotCompileAsync();
+            await AssertExpr("<SET 1 2>").DoesNotCompileAsync();
+            await AssertRoutine("X", "<SET Y 1>").DoesNotCompileAsync();
 
             // if the first arg is a bare atom, it must be a variable
-            AssertRoutine("", "<SETG FOO 1> T")
+            await AssertRoutine("", "<SETG FOO 1> T")
                 .WithGlobal("<CONSTANT FOO <TABLE 1 2 3>>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestSHIFT()
+        public async System.Threading.Tasks.Task TestSHIFTAsync()
         {
             // V5 to V6
             // 2 to 2 operands
-            AssertExpr("<SHIFT 1 3>").InV5().GivesNumber("8");
-            AssertExpr("<SHIFT 16 -3>").InV5().GivesNumber("2");
-            AssertExpr("<SHIFT 1 16>").InV5().GivesNumber("0");
-            AssertExpr("<SHIFT 1 15>").InV5().GivesNumber("-32768");
-            AssertExpr("<SHIFT 16384 -14>").InV5().GivesNumber("1");
+            await AssertExpr("<SHIFT 1 3>").InV5().GivesNumberAsync("8");
+            await AssertExpr("<SHIFT 16 -3>").InV5().GivesNumberAsync("2");
+            await AssertExpr("<SHIFT 1 16>").InV5().GivesNumberAsync("0");
+            await AssertExpr("<SHIFT 1 15>").InV5().GivesNumberAsync("-32768");
+            await AssertExpr("<SHIFT 16384 -14>").InV5().GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestSHIFT_Error()
+        public async System.Threading.Tasks.Task TestSHIFT_ErrorAsync()
         {
             // only exists in V5+
-            AssertExpr("<SHIFT>").InV4().DoesNotCompile();
+            await AssertExpr("<SHIFT>").InV4().DoesNotCompileAsync();
 
             // V5 to V6
             // 2 to 2 operands
-            AssertExpr("<SHIFT 0>").InV5().DoesNotCompile();
-            AssertExpr("<SHIFT 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<SHIFT 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<SHIFT 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestSOUND()
+        public async System.Threading.Tasks.Task TestSOUNDAsync()
         {
             // V3 to V4
             // 1 to 3 operands
-            AssertExpr("<SOUND 0>").InV3().Compiles();
-            AssertExpr("<SOUND 0 0>").InV3().Compiles();
-            AssertExpr("<SOUND 0 0 0>").InV3().Compiles();
+            await AssertExpr("<SOUND 0>").InV3().CompilesAsync();
+            await AssertExpr("<SOUND 0 0>").InV3().CompilesAsync();
+            await AssertExpr("<SOUND 0 0 0>").InV3().CompilesAsync();
             // V5 to V6
             // 1 to 4 operands
-            AssertExpr("<SOUND 0>").InV5().Compiles();
-            AssertExpr("<SOUND 0 0>").InV5().Compiles();
-            AssertExpr("<SOUND 0 0 0>").InV5().Compiles();
-            AssertExpr("<SOUND 0 0 0 0>").InV5().Compiles();
+            await AssertExpr("<SOUND 0>").InV5().CompilesAsync();
+            await AssertExpr("<SOUND 0 0>").InV5().CompilesAsync();
+            await AssertExpr("<SOUND 0 0 0>").InV5().CompilesAsync();
+            await AssertExpr("<SOUND 0 0 0 0>").InV5().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestSOUND_Error()
+        public async System.Threading.Tasks.Task TestSOUND_ErrorAsync()
         {
             // V3 to V4
             // 1 to 3 operands
-            AssertExpr("<SOUND>").InV3().DoesNotCompile();
-            AssertExpr("<SOUND 0 0 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<SOUND>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<SOUND 0 0 0 0>").InV3().DoesNotCompileAsync();
             // V5 to V6
             // 1 to 4 operands
-            AssertExpr("<SOUND>").InV5().DoesNotCompile();
-            AssertExpr("<SOUND 0 0 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<SOUND>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<SOUND 0 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestSPLIT()
+        public async System.Threading.Tasks.Task TestSPLITAsync()
         {
             // V3 to V6
             // 1 to 1 operands
-            AssertExpr("<SPLIT 1>").InV3().Compiles();
+            await AssertExpr("<SPLIT 1>").InV3().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestSPLIT_Error()
+        public async System.Threading.Tasks.Task TestSPLIT_ErrorAsync()
         {
             // V3 to V6
             // 1 to 1 operands
-            AssertExpr("<SPLIT>").InV3().DoesNotCompile();
-            AssertExpr("<SPLIT 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<SPLIT>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<SPLIT 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestSUB()
+        public async System.Threading.Tasks.Task TestSUBAsync()
         {
-            AssertExpr("<- 1 2>").GivesNumber("-1");
-            AssertExpr("<- 1 -2>").GivesNumber("3");
-            AssertExpr("<- -32768 1>").GivesNumber("32767");
-            AssertExpr("<- 32767 -1>").GivesNumber("-32768");
+            await AssertExpr("<- 1 2>").GivesNumberAsync("-1");
+            await AssertExpr("<- 1 -2>").GivesNumberAsync("3");
+            await AssertExpr("<- -32768 1>").GivesNumberAsync("32767");
+            await AssertExpr("<- 32767 -1>").GivesNumberAsync("-32768");
 
             // a single argument is unary negation
-            AssertExpr("<- 123>").GivesNumber("-123");
-            AssertExpr("<- -200>").GivesNumber("200");
-            AssertExpr("<- 0>").GivesNumber("0");
+            await AssertExpr("<- 123>").GivesNumberAsync("-123");
+            await AssertExpr("<- -200>").GivesNumberAsync("200");
+            await AssertExpr("<- 0>").GivesNumberAsync("0");
 
-            AssertExpr("<->").GivesNumber("0");
-            AssertExpr("<- 5>").GivesNumber("-5");
-            AssertExpr("<- 1 2 3>").GivesNumber("-4");
-            AssertExpr("<- 1 2 3 4>").GivesNumber("-8");
-            AssertExpr("<- 1 2 3 4 5>").GivesNumber("-13");
+            await AssertExpr("<->").GivesNumberAsync("0");
+            await AssertExpr("<- 5>").GivesNumberAsync("-5");
+            await AssertExpr("<- 1 2 3>").GivesNumberAsync("-4");
+            await AssertExpr("<- 1 2 3 4>").GivesNumberAsync("-8");
+            await AssertExpr("<- 1 2 3 4 5>").GivesNumberAsync("-13");
 
             // alias
-            AssertExpr("<SUB 1 2>").GivesNumber("-1");
+            await AssertExpr("<SUB 1 2>").GivesNumberAsync("-1");
         }
 
         [TestMethod]
-        public void TestSUB_BACK()
+        public async System.Threading.Tasks.Task TestSUB_BACKAsync()
         {
             // alias where 2nd operand defaults to 1
-            AssertExpr("<BACK 1>").GivesNumber("0");
-            AssertExpr("<BACK 1 2>").GivesNumber("-1");
+            await AssertExpr("<BACK 1>").GivesNumberAsync("0");
+            await AssertExpr("<BACK 1 2>").GivesNumberAsync("-1");
         }
 
         [TestMethod]
-        public void TestTHROW()
+        public async System.Threading.Tasks.Task TestTHROWAsync()
         {
             // V5 to V6
             // 2 to 2 operands
-            AssertRoutine("\"AUX\" X", "<SET X <CATCH>> <THROWER .X> 123")
+            await AssertRoutine("\"AUX\" X", "<SET X <CATCH>> <THROWER .X> 123")
                 .InV5()
                 .WithGlobal("<ROUTINE THROWER (F) <THROW 456 .F>>")
-                .GivesNumber("456");
+                .GivesNumberAsync("456");
         }
 
         [TestMethod]
-        public void TestTHROW_Error()
+        public async System.Threading.Tasks.Task TestTHROW_ErrorAsync()
         {
             // only exists in V5+
-            AssertExpr("<THROW 0 0>").InV4().DoesNotCompile();
+            await AssertExpr("<THROW 0 0>").InV4().DoesNotCompileAsync();
 
             // V5 to V6
             // 2 to 2 operands
-            AssertExpr("<THROW>").InV5().DoesNotCompile();
-            AssertExpr("<THROW 0>").InV5().DoesNotCompile();
-            AssertExpr("<THROW 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<THROW>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<THROW 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<THROW 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestUSL()
+        public async System.Threading.Tasks.Task TestUSLAsync()
         {
             // V1 to V3
             // 0 to 0 operands
-            AssertExpr("<USL>").InV3().Compiles();
+            await AssertExpr("<USL>").InV3().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestUSL_Error()
+        public async System.Threading.Tasks.Task TestUSL_ErrorAsync()
         {
             // V1 to V3
             // 0 to 0 operands
-            AssertExpr("<USL 0>").InV3().DoesNotCompile();
+            await AssertExpr("<USL 0>").InV3().DoesNotCompileAsync();
 
-            AssertExpr("<USL>").InV4().DoesNotCompile();
+            await AssertExpr("<USL>").InV4().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestVALUE()
+        public async System.Threading.Tasks.Task TestVALUEAsync()
         {
             // V1 to V6
-            AssertRoutine("\"AUX\" (X 123)", "<VALUE X>").GivesNumber("123");
-            AssertExpr("<VALUE G>")
+            await AssertRoutine("\"AUX\" (X 123)", "<VALUE X>").GivesNumberAsync("123");
+            await AssertExpr("<VALUE G>")
                 .WithGlobal("<GLOBAL G 123>")
-                .GivesNumber("123");
-            AssertRoutine("", "<PUSH 1234> <VALUE 0>").GivesNumber("1234");
+                .GivesNumberAsync("123");
+            await AssertRoutine("", "<PUSH 1234> <VALUE 0>").GivesNumberAsync("1234");
         }
 
         [TestMethod]
-        public void TestVALUE_Error()
+        public async System.Threading.Tasks.Task TestVALUE_ErrorAsync()
         {
             // V1 to V6
-            AssertExpr("<VALUE>").DoesNotCompile();
-            AssertExpr("<VALUE 0 0>").DoesNotCompile();
-            AssertExpr("<VALUE ASDF>").DoesNotCompile();
+            await AssertExpr("<VALUE>").DoesNotCompileAsync();
+            await AssertExpr("<VALUE 0 0>").DoesNotCompileAsync();
+            await AssertExpr("<VALUE ASDF>").DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestVERIFY()
+        public async System.Threading.Tasks.Task TestVERIFYAsync()
         {
             // V3 to V6
             // 0 to 0 operands
-            AssertExpr("<VERIFY>").InV3().GivesNumber("1");
+            await AssertExpr("<VERIFY>").InV3().GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestVERIFY_Error()
+        public async System.Threading.Tasks.Task TestVERIFY_ErrorAsync()
         {
             // V3 to V6
             // 0 to 0 operands
-            AssertExpr("<VERIFY 0>").InV3().DoesNotCompile();
+            await AssertExpr("<VERIFY 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
@@ -2403,24 +2403,24 @@ namespace Zilf.Tests.Integration
             // V6 to V6
             // 0 to 4 operands
 /*
-            AssertExpr("<WINATTR>").InV6().Compiles();
-            AssertExpr("<WINATTR 0>").InV6().Compiles();
-            AssertExpr("<WINATTR 0 0>").InV6().Compiles();
-            AssertExpr("<WINATTR 0 0 0>").InV6().Compiles();
-            AssertExpr("<WINATTR 0 0 0 0>").InV6().Compiles();
+            await AssertExpr("<WINATTR>").InV6().Compiles();
+            await AssertExpr("<WINATTR 0>").InV6().Compiles();
+            await AssertExpr("<WINATTR 0 0>").InV6().Compiles();
+            await AssertExpr("<WINATTR 0 0 0>").InV6().Compiles();
+            await AssertExpr("<WINATTR 0 0 0 0>").InV6().Compiles();
             Assert.Inconclusive("This test was automatically generated.");
 */
         }
 
         [TestMethod]
-        public void TestWINATTR_Error_V6()
+        public async System.Threading.Tasks.Task TestWINATTR_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<WINATTR>").InV5().DoesNotCompile();
+            await AssertExpr("<WINATTR>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 4 operands
-            AssertExpr("<WINATTR 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<WINATTR 0 0 0 0 0>").InV6().DoesNotCompileAsync();
             Assert.Inconclusive("This test was automatically generated.");
         }
 
@@ -2433,24 +2433,24 @@ namespace Zilf.Tests.Integration
             // V6 to V6
             // 0 to 4 operands
 /*
-            AssertExpr("<WINGET>").InV6().Compiles();
-            AssertExpr("<WINGET 0>").InV6().Compiles();
-            AssertExpr("<WINGET 0 0>").InV6().Compiles();
-            AssertExpr("<WINGET 0 0 0>").InV6().Compiles();
-            AssertExpr("<WINGET 0 0 0 0>").InV6().Compiles();
+            await AssertExpr("<WINGET>").InV6().Compiles();
+            await AssertExpr("<WINGET 0>").InV6().Compiles();
+            await AssertExpr("<WINGET 0 0>").InV6().Compiles();
+            await AssertExpr("<WINGET 0 0 0>").InV6().Compiles();
+            await AssertExpr("<WINGET 0 0 0 0>").InV6().Compiles();
             Assert.Inconclusive("This test was automatically generated.");
 */
         }
 
         [TestMethod]
-        public void TestWINGET_Error_V6()
+        public async System.Threading.Tasks.Task TestWINGET_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<WINGET>").InV5().DoesNotCompile();
+            await AssertExpr("<WINGET>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 4 operands
-            AssertExpr("<WINGET 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<WINGET 0 0 0 0 0>").InV6().DoesNotCompileAsync();
             Assert.Inconclusive("This test was automatically generated.");
         }
 
@@ -2463,24 +2463,24 @@ namespace Zilf.Tests.Integration
             // V6 to V6
             // 0 to 4 operands
 /*
-            AssertExpr("<WINPOS>").InV6().Compiles();
-            AssertExpr("<WINPOS 0>").InV6().Compiles();
-            AssertExpr("<WINPOS 0 0>").InV6().Compiles();
-            AssertExpr("<WINPOS 0 0 0>").InV6().Compiles();
-            AssertExpr("<WINPOS 0 0 0 0>").InV6().Compiles();
+            await AssertExpr("<WINPOS>").InV6().Compiles();
+            await AssertExpr("<WINPOS 0>").InV6().Compiles();
+            await AssertExpr("<WINPOS 0 0>").InV6().Compiles();
+            await AssertExpr("<WINPOS 0 0 0>").InV6().Compiles();
+            await AssertExpr("<WINPOS 0 0 0 0>").InV6().Compiles();
             Assert.Inconclusive("This test was automatically generated.");
 */
         }
 
         [TestMethod]
-        public void TestWINPOS_Error_V6()
+        public async System.Threading.Tasks.Task TestWINPOS_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<WINPOS>").InV5().DoesNotCompile();
+            await AssertExpr("<WINPOS>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 4 operands
-            AssertExpr("<WINPOS 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<WINPOS 0 0 0 0 0>").InV6().DoesNotCompileAsync();
             Assert.Inconclusive("This test was automatically generated.");
         }
 
@@ -2493,24 +2493,24 @@ namespace Zilf.Tests.Integration
             // V6 to V6
             // 0 to 4 operands
 /*
-            AssertExpr("<WINPUT>").InV6().Compiles();
-            AssertExpr("<WINPUT 0>").InV6().Compiles();
-            AssertExpr("<WINPUT 0 0>").InV6().Compiles();
-            AssertExpr("<WINPUT 0 0 0>").InV6().Compiles();
-            AssertExpr("<WINPUT 0 0 0 0>").InV6().Compiles();
+            await AssertExpr("<WINPUT>").InV6().Compiles();
+            await AssertExpr("<WINPUT 0>").InV6().Compiles();
+            await AssertExpr("<WINPUT 0 0>").InV6().Compiles();
+            await AssertExpr("<WINPUT 0 0 0>").InV6().Compiles();
+            await AssertExpr("<WINPUT 0 0 0 0>").InV6().Compiles();
             Assert.Inconclusive("This test was automatically generated.");
 */
         }
 
         [TestMethod]
-        public void TestWINPUT_Error_V6()
+        public async System.Threading.Tasks.Task TestWINPUT_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<WINPUT>").InV5().DoesNotCompile();
+            await AssertExpr("<WINPUT>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 4 operands
-            AssertExpr("<WINPUT 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<WINPUT 0 0 0 0 0>").InV6().DoesNotCompileAsync();
             Assert.Inconclusive("This test was automatically generated.");
         }
 
@@ -2523,96 +2523,96 @@ namespace Zilf.Tests.Integration
             // V6 to V6
             // 0 to 4 operands
 /*
-            AssertExpr("<WINSIZE>").InV6().Compiles();
-            AssertExpr("<WINSIZE 0>").InV6().Compiles();
-            AssertExpr("<WINSIZE 0 0>").InV6().Compiles();
-            AssertExpr("<WINSIZE 0 0 0>").InV6().Compiles();
-            AssertExpr("<WINSIZE 0 0 0 0>").InV6().Compiles();
+            await AssertExpr("<WINSIZE>").InV6().Compiles();
+            await AssertExpr("<WINSIZE 0>").InV6().Compiles();
+            await AssertExpr("<WINSIZE 0 0>").InV6().Compiles();
+            await AssertExpr("<WINSIZE 0 0 0>").InV6().Compiles();
+            await AssertExpr("<WINSIZE 0 0 0 0>").InV6().Compiles();
             Assert.Inconclusive("This test was automatically generated.");
 */
         }
 
         [TestMethod]
-        public void TestWINSIZE_Error_V6()
+        public async System.Threading.Tasks.Task TestWINSIZE_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<WINSIZE>").InV5().DoesNotCompile();
+            await AssertExpr("<WINSIZE>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 0 to 4 operands
-            AssertExpr("<WINSIZE 0 0 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<WINSIZE 0 0 0 0 0>").InV6().DoesNotCompileAsync();
             Assert.Inconclusive("This test was automatically generated.");
         }
 
         // XCALL is not supported in ZIL
 
         [TestMethod]
-        public void TestXPUSH_V6()
+        public async System.Threading.Tasks.Task TestXPUSH_V6Async()
         {
             // V6 to V6
             // 2 to 2 operands
-            AssertExpr("<XPUSH 0 0>").InV6().Compiles();
+            await AssertExpr("<XPUSH 0 0>").InV6().CompilesAsync();
         }
 
         [TestMethod]
-        public void TestXPUSH_Error_V6()
+        public async System.Threading.Tasks.Task TestXPUSH_Error_V6Async()
         {
             // only exists in V6+
-            AssertExpr("<XPUSH>").InV5().DoesNotCompile();
+            await AssertExpr("<XPUSH>").InV5().DoesNotCompileAsync();
 
             // V6 to V6
             // 2 to 2 operands
-            AssertExpr("<XPUSH>").InV6().DoesNotCompile();
-            AssertExpr("<XPUSH 0>").InV6().DoesNotCompile();
-            AssertExpr("<XPUSH 0 0 0>").InV6().DoesNotCompile();
+            await AssertExpr("<XPUSH>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<XPUSH 0>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<XPUSH 0 0 0>").InV6().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestZERO_P()
+        public async System.Threading.Tasks.Task TestZERO_PAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<ZERO? 0>").InV3().GivesNumber("1");
-            AssertExpr("<ZERO? -5>").InV3().GivesNumber("0");
+            await AssertExpr("<ZERO? 0>").InV3().GivesNumberAsync("1");
+            await AssertExpr("<ZERO? -5>").InV3().GivesNumberAsync("0");
 
             // alias
-            AssertExpr("<0? 0>").InV3().GivesNumber("1");
+            await AssertExpr("<0? 0>").InV3().GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void TestZERO_P_Error()
+        public async System.Threading.Tasks.Task TestZERO_P_ErrorAsync()
         {
             // V1 to V6
             // 1 to 1 operands
-            AssertExpr("<ZERO?>").InV3().DoesNotCompile();
-            AssertExpr("<ZERO? 0 0>").InV3().DoesNotCompile();
+            await AssertExpr("<ZERO?>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<ZERO? 0 0>").InV3().DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void TestZWSTR()
+        public async System.Threading.Tasks.Task TestZWSTRAsync()
         {
             // V5 to V6
             // 4 operands
-            AssertRoutine("", "<ZWSTR ,SRCBUF 5 0 ,DSTBUF> <PRINTB ,DSTBUF>")
+            await AssertRoutine("", "<ZWSTR ,SRCBUF 5 0 ,DSTBUF> <PRINTB ,DSTBUF>")
                 .InV5()
                 .WithGlobal("<GLOBAL SRCBUF <TABLE (STRING) \"hello\">>")
                 .WithGlobal("<GLOBAL DSTBUF <TABLE 0 0 0>>")
-                .Outputs("hello");
+                .OutputsAsync("hello");
         }
 
         [TestMethod]
-        public void TestZWSTR_Error()
+        public async System.Threading.Tasks.Task TestZWSTR_ErrorAsync()
         {
             // only exists in V5+
-            AssertExpr("<ZWSTR>").InV4().DoesNotCompile();
+            await AssertExpr("<ZWSTR>").InV4().DoesNotCompileAsync();
 
             // V5 to V6
             // 4 operands
-            AssertExpr("<ZWSTR>").InV5().DoesNotCompile();
-            AssertExpr("<ZWSTR 0>").InV5().DoesNotCompile();
-            AssertExpr("<ZWSTR 0 0>").InV5().DoesNotCompile();
-            AssertExpr("<ZWSTR 0 0 0>").InV5().DoesNotCompile();
-            AssertExpr("<ZWSTR 0 0 0 0 0>").InV5().DoesNotCompile();
+            await AssertExpr("<ZWSTR>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<ZWSTR 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<ZWSTR 0 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<ZWSTR 0 0 0>").InV5().DoesNotCompileAsync();
+            await AssertExpr("<ZWSTR 0 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         #endregion
@@ -2620,44 +2620,44 @@ namespace Zilf.Tests.Integration
         #region Not Exactly Opcodes
 
         [TestMethod]
-        public void TestLOWCORE()
+        public async System.Threading.Tasks.Task TestLOWCOREAsync()
         {
-            AssertRoutine("", "<LOWCORE FLAGS>")
-                .GeneratesCodeMatching(@"^\s*GET 0,8 >STACK\s*$");
-            AssertRoutine("", "<LOWCORE FLAGS 123>")
-                .GeneratesCodeMatching(@"^\s*PUT 0,8,123");
+            await AssertRoutine("", "<LOWCORE FLAGS>")
+                .GeneratesCodeMatchingAsync(@"^\s*GET 0,8 >STACK\s*$");
+            await AssertRoutine("", "<LOWCORE FLAGS 123>")
+                .GeneratesCodeMatchingAsync(@"^\s*PUT 0,8,123");
         }
 
         [TestMethod]
-        public void TestLOWCORE_Extension()
+        public async System.Threading.Tasks.Task TestLOWCORE_ExtensionAsync()
         {
-            AssertRoutine("\"AUX\" X", "<SET X <LOWCORE MSLOCY>> <LOWCORE MSETBL 12345>")
+            await AssertRoutine("\"AUX\" X", "<SET X <LOWCORE MSLOCY>> <LOWCORE MSETBL 12345>")
                 .InV5()
-                .Implies(
+                .ImpliesAsync(
                     "<T? <LOWCORE EXTAB>>",
                     "<G=? <GET <LOWCORE EXTAB> 0> 2>");
         }
 
         [TestMethod]
-        public void TestLOWCORE_SubField()
+        public async System.Threading.Tasks.Task TestLOWCORE_SubFieldAsync()
         {
-            AssertRoutine("\"AUX\" X", "<SET X <LOWCORE (ZVERSION 1)>>")
-                .Compiles();
+            await AssertRoutine("\"AUX\" X", "<SET X <LOWCORE (ZVERSION 1)>>")
+                .CompilesAsync();
 
-            AssertRoutine("", "<LOWCORE (FLAGS 1) 123>")
-                .Compiles();
+            await AssertRoutine("", "<LOWCORE (FLAGS 1) 123>")
+                .CompilesAsync();
         }
 
         [TestMethod]
-        public void TestXORB()
+        public async System.Threading.Tasks.Task TestXORBAsync()
         {
-            AssertRoutine("X", "<XORB .X -1>")
+            await AssertRoutine("X", "<XORB .X -1>")
                 .WhenCalledWith("12345")
-                .GivesNumber("-12346");
+                .GivesNumberAsync("-12346");
 
-            AssertRoutine("X", "<XORB -1 .X>")
+            await AssertRoutine("X", "<XORB -1 .X>")
                 .WhenCalledWith("32767")
-                .GivesNumber("-32768");
+                .GivesNumberAsync("-32768");
         }
 
         #endregion

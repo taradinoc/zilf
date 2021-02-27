@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.ZModel.Vocab;
 
@@ -26,9 +27,9 @@ namespace Zilf.Tests.Integration
     public class VocabTests : IntegrationTestClass
     {
         [TestMethod]
-        public void SIBREAKS_Should_Affect_Lexing()
+        public async Task SIBREAKS_Should_Affect_Lexing()
         {
-            AssertRoutine("",
+            await AssertRoutine("",
                 "<READ ,INBUF ,LEXBUF> " +
                 "<TELL N <GETB ,LEXBUF 0> CR " +
                  "N <GETB ,LEXBUF 1> CR> " +
@@ -44,17 +45,17 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<GLOBAL HERE DUMMY> <GLOBAL SCORE 0> <GLOBAL MOVES 0>")
                 .InV3()
                 .WithInput("grant's tomb")
-                .Outputs("59\n4\ngrant\n'\ns\ntomb\n");
+                .OutputsAsync("59\n4\ngrant\n'\ns\ntomb\n");
         }
 
         [TestMethod]
-        public void TCHARS_Should_Affect_Header()
+        public async Task TCHARS_Should_Affect_Header()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<CONSTANT F12 144>",
                 "<CONSTANT TCHARS <TABLE (BYTE) F12 0>>")
                 .InV5()
-                .Implies(
+                .ImpliesAsync(
                     "<==? <LOWCORE TCHARS> ,TCHARS>",
                     "<==? <GETB ,TCHARS 0> 144>");
         }
@@ -85,16 +86,16 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void PREPOSITIONS_NonCompact_Should_Use_4_Byte_Entries_And_Not_List_Synonyms()
+        public async Task PREPOSITIONS_NonCompact_Should_Use_4_Byte_Entries_And_Not_List_Synonyms()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<ROUTINE V-LOOK () <>>",
                 "<ROUTINE V-PICK-UP-WITH () <>>",
                 "<SYNTAX LOOK THROUGH OBJECT = V-LOOK>",
                 "<PREP-SYNONYM THROUGH THRU>",
                 "<SYNTAX PICK UP OBJECT WITH OBJECT = V-PICK-UP-WITH>")
                 .InV5()
-                .Implies(PrepImplications(
+                .ImpliesAsync(PrepImplications(
                     false,
                     "W?THROUGH", "PR?THROUGH",
                     "W?UP", "PR?UP",
@@ -102,9 +103,9 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void PREPOSITIONS_Compact_Should_Use_3_Byte_Entries_And_List_Synonyms()
+        public async Task PREPOSITIONS_Compact_Should_Use_3_Byte_Entries_And_List_Synonyms()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<SETG COMPACT-VOCABULARY? T>",
                 "<ROUTINE V-LOOK () <>>",
                 "<ROUTINE V-PICK-UP-WITH () <>>",
@@ -112,7 +113,7 @@ namespace Zilf.Tests.Integration
                 "<PREP-SYNONYM THROUGH THRU>",
                 "<SYNTAX PICK UP OBJECT WITH OBJECT = V-PICK-UP-WITH>")
                 .InV5()
-                .Implies(PrepImplications(
+                .ImpliesAsync(PrepImplications(
                     true,
                     "W?THROUGH", "PR?THROUGH",
                     "W?THRU", "PR?THROUGH",
@@ -121,21 +122,21 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void LONG_WORDS_P_Should_Generate_LONG_WORD_TABLE()
+        public async Task LONG_WORDS_P_Should_Generate_LONG_WORD_TABLE()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<LONG-WORDS?>",
                 "<OBJECT FOO (SYNONYM HEMIDEMISEMIQUAVER)>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? <GET ,LONG-WORD-TABLE 0> 1>",
                     "<==? <GET ,LONG-WORD-TABLE 1> ,W?HEMIDEMISEMIQUAVER>",
                     "<==? <GET ,LONG-WORD-TABLE 2> \"hemidemisemiquaver\">");
         }
 
         [TestMethod]
-        public void LANGUAGE_Should_Affect_Lexing()
+        public async Task LANGUAGE_Should_Affect_Lexing()
         {
-            AssertRoutine("",
+            await AssertRoutine("",
                 "<READ ,INBUF ,LEXBUF> " +
                 @"<==? <GET ,LEXBUF 1> ,W?AU\%SER>")
                 .WithGlobal("<LANGUAGE GERMAN>")
@@ -144,69 +145,69 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<GLOBAL INBUF <ITABLE 80 (BYTE LENGTH) 0>>")
                 .InV5()
                 .WithInput("außer")
-                .GivesNumber("1");
+                .GivesNumberAsync("1");
         }
 
         [TestMethod]
-        public void Punctuation_Symbol_Words_Should_Still_Work_When_Given_Definitions()
+        public async Task Punctuation_Symbol_Words_Should_Still_Work_When_Given_Definitions()
         {
-            AssertRoutine("",
+            await AssertRoutine("",
                 @"<TELL B <GETP ,FOO ,P?SYNONYM> %,SPACE B ,W?COMMA %,SPACE B ,W?\,>")
                 .WithGlobal("<CONSTANT SPACE <ASCII 32>>")
                 .WithGlobal(@"<OBJECT FOO (SYNONYM \,)>")
-                .Outputs(", , ,");
+                .OutputsAsync(", , ,");
         }
 
         [TestMethod]
-        public void Punctuation_Name_Words_Should_Split_From_Symbol_Words_When_Given_Definitions()
+        public async Task Punctuation_Name_Words_Should_Split_From_Symbol_Words_When_Given_Definitions()
         {
-            AssertRoutine("",
+            await AssertRoutine("",
                 @"<TELL B <GETP ,FOO ,P?SYNONYM> %,SPACE B ,W?COMMA %,SPACE B ,W?\,>")
                 .WithGlobal("<CONSTANT SPACE <ASCII 32>>")
                 .WithGlobal(@"<OBJECT FOO (SYNONYM COMMA)>")
-                .Outputs("comma comma ,");
+                .OutputsAsync("comma comma ,");
         }
 
         #region Old Parser
 
         [TestMethod]
-        public void VOC_With_2nd_Arg_Atom_Should_Set_PartOfSpeech()
+        public async Task VOC_With_2nd_Arg_Atom_Should_Set_PartOfSpeech()
         {
-            AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
+            await AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
                 .WithGlobal("<GLOBAL VOC-TABLE <PTABLE <VOC \"XYZZY\" ADJ>>>")
                 .InV3()
-                .GivesNumber(((int)(PartOfSpeech.Adjective | PartOfSpeech.AdjectiveFirst)).ToString());
+                .GivesNumberAsync(((int)(PartOfSpeech.Adjective | PartOfSpeech.AdjectiveFirst)).ToString());
         }
 
         [TestMethod]
-        public void VOC_With_2nd_Arg_False_Should_Not_Set_PartOfSpeech()
+        public async Task VOC_With_2nd_Arg_False_Should_Not_Set_PartOfSpeech()
         {
-            AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
+            await AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
                 .WithGlobal("<GLOBAL VOC-TABLE <PTABLE <VOC \"XYZZY\" <>>>>")
                 .InV3()
-                .GivesNumber(((int)(PartOfSpeech.None)).ToString());
+                .GivesNumberAsync(((int)(PartOfSpeech.None)).ToString());
         }
 
         [TestMethod]
-        public void VOC_With_2nd_Arg_Missing_Should_Not_Set_PartOfSpeech()
+        public async Task VOC_With_2nd_Arg_Missing_Should_Not_Set_PartOfSpeech()
         {
-            AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
+            await AssertRoutine("\"AUX\" (P <GET ,VOC-TABLE 0>)", "<GETB .P 4>")
                 .WithGlobal("<GLOBAL VOC-TABLE <PTABLE <VOC \"XYZZY\">>>")
                 .InV3()
-                .GivesNumber(((int)(PartOfSpeech.None)).ToString());
+                .GivesNumberAsync(((int)(PartOfSpeech.None)).ToString());
         }
 
         [TestMethod]
-        public void Colliding_Words_Should_Be_Merged()
+        public async Task Colliding_Words_Should_Be_Merged()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<OBJECT FOO (SYNONYM HEMIDEMISEMIQUAVER)>",
                 "<OBJECT BAR (SYNONYM HEMIDE)>",
                 "<OBJECT BAZ (ADJECTIVE HEMIDEISH SAMPLED)>",
                 "<ROUTINE V-SAMPLE () <>>",
                 "<SYNTAX SAMPLE = V-SAMPLE>")
                 .InV3()
-                .Implies(
+                .ImpliesAsync(
                     "<==? ,W?HEMIDEMISEMIQUAVER ,W?HEMIDE>",
                     "<==? ,W?HEMIDE ,W?HEMIDEISH>",
                     "<BTST <GETB ,W?HEMIDE 4> ,PS?OBJECT>",
@@ -217,14 +218,14 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void Adjective_Numbers_Of_Colliding_Words_Should_Be_Merged()
+        public async Task Adjective_Numbers_Of_Colliding_Words_Should_Be_Merged()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<OBJECT FOO (ADJECTIVE ABCDEFGHIJKL ABCDEF) (FOO 123)>",
                 "<DEFINE FOO-PROP (L) <VOC \"ABCDEFGHI\" ADJ> .L>",
                 "<PUTPROP FOO PROPSPEC FOO-PROP>")
                 .InV3()
-                .Implies(
+                .ImpliesAsync(
                     "<==? ,A?ABCDEFGHIJKL ,A?ABCDEF>",
                     "<==? ,A?ABCDEFGHI ,A?ABCDEF>");
         }
@@ -261,48 +262,48 @@ namespace Zilf.Tests.Integration
 ";
 
         [TestMethod, TestCategory("NEW-PARSER?")]
-        public void Game_Without_Objects_Should_Compile_With_NEW_PARSER_P()
+        public async Task Game_Without_Objects_Should_Compile_With_NEW_PARSER_P()
         {
-            AssertRoutine("", @"<PRINTR ""Hello, world!"">")
+            await AssertRoutine("", @"<PRINTR ""Hello, world!"">")
                 .WithGlobal(SNewParserBootstrap)
-                .Outputs("Hello, world!\n");
+                .OutputsAsync("Hello, world!\n");
         }
 
         [TestMethod, TestCategory("NEW-PARSER?")]
-        public void NEW_PARSER_P_Should_Affect_Vocab_Word_Size()
+        public async Task NEW_PARSER_P_Should_Affect_Vocab_Word_Size()
         {
-            AssertRoutine("", "<GETB ,VOCAB <+ 1 <GETB ,VOCAB 0>>>")
+            await AssertRoutine("", "<GETB ,VOCAB <+ 1 <GETB ,VOCAB 0>>>")
                 .WithGlobal(SNewParserBootstrap)
                 .WithGlobal("<COMPILATION-FLAG WORD-FLAGS-IN-TABLE <>>")
                 .WithGlobal("<COMPILATION-FLAG ONE-BYTE-PARTS-OF-SPEECH <>>")
                 .InV3()
-                .GivesNumber("12");
+                .GivesNumberAsync("12");
         }
 
         [TestMethod, TestCategory("NEW-PARSER?")]
-        public void NEW_PARSER_P_Verbs_Should_Have_Verb_Data()
+        public async Task NEW_PARSER_P_Verbs_Should_Have_Verb_Data()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 SNewParserBootstrap,
                 "<COMPILATION-FLAG WORD-FLAGS-IN-TABLE T>",
                 "<COMPILATION-FLAG ONE-BYTE-PARTS-OF-SPEECH T>",
                 "<ROUTINE V-SING () <>>",
                 "<SYNTAX SING = V-SING>")
                 .InV4()
-                .Implies("<N=? <GET ,W?SING 3> 0>");
+                .ImpliesAsync("<N=? <GET ,W?SING 3> 0>");
         }
 
         [TestMethod, TestCategory("NEW-PARSER?")]
-        public void NEW_PARSER_P_Should_Affect_Syntax_Format()
+        public async Task NEW_PARSER_P_Should_Affect_Syntax_Format()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 SNewParserBootstrap,
                 "<COMPILATION-FLAG WORD-FLAGS-IN-TABLE T>",
                 "<COMPILATION-FLAG ONE-BYTE-PARTS-OF-SPEECH T>",
                 "<ROUTINE V-ATTACK () <>>",
                 "<SYNTAX ATTACK OBJECT WITH OBJECT = V-ATTACK>")
                 .InV4()
-                .Implies(
+                .ImpliesAsync(
                     "<=? <GET <GET ,W?ATTACK 3> 0> -1>",
                     "<=? <GET <GET ,W?ATTACK 3> 1> 0>",
                     "<=? <GET <GET ,W?ATTACK 3> 2> 0>",
@@ -310,41 +311,41 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void WORD_FLAG_TABLE_Should_List_Words_And_Flags()
+        public async Task WORD_FLAG_TABLE_Should_List_Words_And_Flags()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 SNewParserBootstrap,
                 "<NEW-ADD-WORD FOO TOBJECT <> 12345>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <GET ,WORD-FLAG-TABLE 0> 2>",
                     "<=? <GET ,WORD-FLAG-TABLE 1> ,W?FOO>",
                     "<=? <GET ,WORD-FLAG-TABLE 2> 12345>");
         }
 
         [TestMethod, Timeout(5000)]
-        public void WORD_FLAGS_LIST_With_Duplicates_Should_Compile()
+        public async Task WORD_FLAGS_LIST_With_Duplicates_Should_Compile()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 SNewParserBootstrap,
                 "<COMPILATION-FLAG WORD-FLAGS-IN-TABLE T>",
                 "<NEW-ADD-WORD FOO TBUZZ 123 456>",
                 "<NEW-ADD-WORD BAR TBUZZ 234 567>",
                 "<NEW-ADD-WORD FOO TADJ 345 678>")
                 .InV6()
-                .Compiles();
+                .CompilesAsync();
         }
 
         [TestMethod, TestCategory("NEW-PARSER?")]
-        public void NEW_PARSER_P_Synonyms_Should_Use_Pointers()
+        public async Task NEW_PARSER_P_Synonyms_Should_Use_Pointers()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 SNewParserBootstrap,
                 "<COMPILATION-FLAG WORD-FLAGS-IN-TABLE T>",
                 "<COMPILATION-FLAG ONE-BYTE-PARTS-OF-SPEECH T>",
                 "<NEW-ADD-WORD FOO TBUZZ>",
                 "<SYNONYM FOO BAR>")
                 .InV4()
-                .Implies(
+                .ImpliesAsync(
                     "<=? <GET ,W?BAR 3> ,W?FOO>",
                     "<=? <GETB ,W?BAR 8> 0>");
         }

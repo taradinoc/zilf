@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
@@ -26,7 +27,7 @@ namespace Zilf.Tests.Integration
     public class VariableTests : IntegrationTestClass
     {
         [TestMethod]
-        public void FUNNY_GLOBALS_Should_Allow_Lots_Of_Globals()
+        public async Task FUNNY_GLOBALS_Should_Allow_Lots_Of_Globals()
         {
             const int NumGlobals = 500;
 
@@ -46,13 +47,13 @@ namespace Zilf.Tests.Integration
                 expectedOutput.Append('\n');
             }
 
-            AssertRoutine("", myRoutineBody.ToString())
+            await AssertRoutine("", myRoutineBody.ToString())
                 .WithGlobal(string.Join("\n", myGlobals))
-                .Outputs(expectedOutput.ToString());
+                .OutputsAsync(expectedOutput.ToString());
         }
 
         [TestMethod]
-        public void FUNNY_GLOBALS_Should_Work_With_INC()
+        public async Task FUNNY_GLOBALS_Should_Work_With_INC()
         {
             const int NumGlobals = 500;
 
@@ -72,13 +73,13 @@ namespace Zilf.Tests.Integration
                 expectedOutput.Append('\n');
             }
 
-            AssertRoutine("", myRoutineBody.ToString())
+            await AssertRoutine("", myRoutineBody.ToString())
                 .WithGlobal(string.Join("\n", myGlobals))
-                .Outputs(expectedOutput.ToString());
+                .OutputsAsync(expectedOutput.ToString());
         }
 
         [TestMethod]
-        public void FUNNY_GLOBALS_Should_Work_With_IGRTR_P()
+        public async Task FUNNY_GLOBALS_Should_Work_With_IGRTR_P()
         {
             const int NumGlobals = 500;
 
@@ -101,13 +102,13 @@ namespace Zilf.Tests.Integration
                 }
             }
 
-            AssertRoutine("", myRoutineBody.ToString())
+            await AssertRoutine("", myRoutineBody.ToString())
                 .WithGlobal(string.Join("\n", myGlobals))
-                .Outputs(expectedOutput.ToString());
+                .OutputsAsync(expectedOutput.ToString());
         }
 
         [TestMethod]
-        public void Special_Globals_Should_Always_Be_Hard_Globals()
+        public async Task Special_Globals_Should_Always_Be_Hard_Globals()
         {
             const int NumGlobals = 500;
 
@@ -120,14 +121,14 @@ namespace Zilf.Tests.Integration
             myGlobals.Add("<GLOBAL SCORE <>>");
             myGlobals.Add("<GLOBAL MOVES <>>");
 
-            AssertRoutine("", "<>")
+            await AssertRoutine("", "<>")
                 .WithGlobal(string.Join("\n", myGlobals))
                 .InV3()
-                .GeneratesCodeMatching(@"\.GVAR HERE=.*\.GVAR SCORE=.*\.GVAR MOVES=");
+                .GeneratesCodeMatchingAsync(@"\.GVAR HERE=.*\.GVAR SCORE=.*\.GVAR MOVES=");
         }
 
         [TestMethod]
-        public void PROPDEF_Referenced_Globals_Should_Always_Be_Hard_Globals()
+        public async Task PROPDEF_Referenced_Globals_Should_Always_Be_Hard_Globals()
         {
             const int NumGlobals = 500;
 
@@ -139,13 +140,13 @@ namespace Zilf.Tests.Integration
             myGlobals.Add("<PROPDEF GLOB <> (GLOB REF G:GLOBAL = 1 <GLOBAL .G>)>");
             myGlobals.Add("<OBJECT FOO (GLOB REF MY-GLOBAL-400)>");
 
-            AssertRoutine("", "<>")
+            await AssertRoutine("", "<>")
                 .WithGlobal(string.Join("\n", myGlobals))
-                .GeneratesCodeMatching(@"\.GVAR MY-GLOBAL-400=");
+                .GeneratesCodeMatchingAsync(@"\.GVAR MY-GLOBAL-400=");
         }
 
         [TestMethod]
-        public void Parameter_Globals_Should_Always_Be_Hard_Globals()
+        public async Task Parameter_Globals_Should_Always_Be_Hard_Globals()
         {
             const int NumGlobals = 500;
 
@@ -156,16 +157,16 @@ namespace Zilf.Tests.Integration
 
             myGlobals.Add(@"<ROUTINE PRINTGN (GN) <PRINTN .GN>>");
 
-            AssertRoutine("", @"<PRINTGN MY-GLOBAL-400>")
+            await AssertRoutine("", @"<PRINTGN MY-GLOBAL-400>")
                 .WithGlobal(string.Join("\n", myGlobals))
                 .WithWarnings("ZIL0200" /* bare atom as global index */)
-                .GeneratesCodeMatching(@"\.GVAR MY-GLOBAL-400=");
+                .GeneratesCodeMatchingAsync(@"\.GVAR MY-GLOBAL-400=");
         }
 
         [TestMethod]
-        public void DEFINE_GLOBALS_Should_Work()
+        public async Task DEFINE_GLOBALS_Should_Work()
         {
-            AssertRoutine("",
+            await AssertRoutine("",
                 "<PRINTN <MY-WORD>> <CRLF> " +
                 "<PRINTN <MY-BYTE>> <CRLF> " +
                 "<MY-WORD 12345> " +
@@ -173,82 +174,82 @@ namespace Zilf.Tests.Integration
                 "<PRINTN <MY-WORD>> <CRLF> " +
                 "<PRINTN <MY-BYTE>> <CRLF> ")
                 .WithGlobal("<DEFINE-GLOBALS TEST-GLOBALS (MY-WORD 32767) (MY-BYTE BYTE 255) (HAS-ADECL:FIX 0)>")
-                .Outputs("32767\n255\n12345\n67\n");
+                .OutputsAsync("32767\n255\n12345\n67\n");
         }
 
         [TestMethod]
-        public void GLOBAL_And_CONSTANT_Should_Work_With_ADECLs()
+        public async Task GLOBAL_And_CONSTANT_Should_Work_With_ADECLs()
         {
-            AssertRoutine("", "<>")
+            await AssertRoutine("", "<>")
                 .WithGlobal("<GLOBAL FOO:FIX 12>")
                 .WithGlobal("<CONSTANT BAR:FIX 34>")
-                .Compiles();
+                .CompilesAsync();
         }
 
         [TestMethod]
-        public void Global_Can_Be_Initialized_To_A_Global_Index_With_Warning()
+        public async Task Global_Can_Be_Initialized_To_A_Global_Index_With_Warning()
         {
-            AssertRoutine("", "<PRINTN ,BAR>")
+            await AssertRoutine("", "<PRINTN ,BAR>")
                 .WithGlobal("<GLOBAL GLOBAL-16 <>>")
                 .WithGlobal("<GLOBAL GLOBAL-17 <>>")
                 .WithGlobal("<GLOBAL FOO <>>")
                 .WithGlobal("<GLOBAL BAR FOO>")
                 .WithWarnings()
-                .Outputs("18");
+                .OutputsAsync("18");
         }
 
         [TestMethod]
-        public void Locals_Can_Have_The_Same_Names_As_Globals()
+        public async Task Locals_Can_Have_The_Same_Names_As_Globals()
         {
             // global can be accessed with SETG and GVAL
-            AssertRoutine("", "<BUMP-IT 111> ,FOO")
+            await AssertRoutine("", "<BUMP-IT 111> ,FOO")
                 .WithGlobal("<GLOBAL FOO 123>")
                 .WithGlobal("<ROUTINE BUMP-IT (FOO) <SETG FOO <+ ,FOO .FOO>>>")
-                .GivesNumber("234");
+                .GivesNumberAsync("234");
 
             // PROG local shadows ROUTINE local
-            AssertRoutine("", "<BUMP-IT 111> ,FOO")
+            await AssertRoutine("", "<BUMP-IT 111> ,FOO")
                 .WithGlobal("<GLOBAL FOO 123>")
                 .WithGlobal("<ROUTINE BUMP-IT (FOO) <PROG ((FOO 1000)) <SETG FOO <+ ,FOO .FOO>>>>")
-                .GivesNumber("1123");
+                .GivesNumberAsync("1123");
         }
 
         [TestMethod]
-        public void Unused_Locals_Should_Warn()
+        public async Task Unused_Locals_Should_Warn()
         {
             const string SWarningCode = "ZIL0210";
 
             // unreferenced, uninitialized routine local => warn
-            AssertRoutine(@"""AUX"" X", @"<>")
+            await AssertRoutine(@"""AUX"" X", @"<>")
                 .WithWarnings(SWarningCode)
-                .Compiles();
+                .CompilesAsync();
 
             // add a read => OK
-            AssertRoutine(@"""AUX"" X", @".X")
+            await AssertRoutine(@"""AUX"" X", @".X")
                 .WithoutWarnings()
-                .Compiles();
+                .CompilesAsync();
 
             // unreferenced routine local, initialized to routine call => OK
-            AssertRoutine(@"""AUX"" (X <FOO>)", @"<>")
+            await AssertRoutine(@"""AUX"" (X <FOO>)", @"<>")
                 .WithGlobal(@"<ROUTINE FOO () <TELL ""hi""> 123>")
                 .WithoutWarnings()
-                .Compiles();
+                .CompilesAsync();
 
             // unreferenced, uninitialized BIND local => warn
-            AssertRoutine("", @"<BIND (X) <>>")
+            await AssertRoutine("", @"<BIND (X) <>>")
                 .WithWarnings(SWarningCode)
-                .Compiles();
+                .CompilesAsync();
 
             // add a read => OK
-            AssertRoutine("", @"<BIND (X) .X>")
+            await AssertRoutine("", @"<BIND (X) .X>")
                 .WithoutWarnings()
-                .Compiles();
+                .CompilesAsync();
 
             // unreferenced BIND local, initialized to routine call => OK
-            AssertRoutine("", @"<BIND ((X <FOO>)) <>>")
+            await AssertRoutine("", @"<BIND ((X <FOO>)) <>>")
                 .WithGlobal(@"<ROUTINE FOO () <TELL ""hi""> 123>")
                 .WithoutWarnings()
-                .Compiles();
+                .CompilesAsync();
         }
 
     }

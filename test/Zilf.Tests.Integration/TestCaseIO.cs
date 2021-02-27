@@ -19,6 +19,8 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ZLR.VM;
 
@@ -36,7 +38,7 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    sealed class ReplayIO : TestCaseIO, IZMachineIO, IDisposable
+    sealed class ReplayIO : TestCaseIO, IAsyncZMachineIO, IDisposable
     {
         readonly Stream inputStream;
 
@@ -242,6 +244,37 @@ namespace Zilf.Tests.Integration
         bool IZMachineIO.DrawCustomStatusLine(string location, short hoursOrScore, short minsOrTurns, bool useTime)
         {
             return !wantStatusLine;
+        }
+
+        Task<ReadLineResult> IAsyncZMachineIO.ReadLineAsync(string initial, byte[] terminatingKeys, bool allowDebuggerBreak, CancellationToken cancellationToken)
+        {
+            return Task.FromException<ReadLineResult>(new AssertFailedException("Unexpected line input request"));
+        }
+
+        Task<short> IAsyncZMachineIO.ReadKeyAsync(CharTranslator translator, CancellationToken cancellationToken)
+        {
+            return Task.FromException<short>(new AssertFailedException("Unexpected character input request"));
+        }
+
+        Task<Stream?> IAsyncZMachineIO.OpenSaveFileAsync(int size, CancellationToken cancellationToken)
+        {
+            saveStream = new MemoryStream();
+            return Task.FromResult<Stream?>(saveStream);
+        }
+
+        Task<Stream?> IAsyncZMachineIO.OpenRestoreFileAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult<Stream?>(saveStream != null ? new MemoryStream(saveStream.ToArray()) : null);
+        }
+
+        Task<Stream?> IAsyncZMachineIO.OpenAuxiliaryFileAsync(string name, int size, bool writing, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<Stream?>(null);
+        }
+
+        Task<Stream?> IAsyncZMachineIO.OpenCommandFileAsync(bool writing, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(writing ? null : inputStream);
         }
 
         #endregion

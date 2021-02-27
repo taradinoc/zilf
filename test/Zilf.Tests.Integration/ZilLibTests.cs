@@ -23,6 +23,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Zilf.Tests.Integration
 {
@@ -77,7 +78,7 @@ namespace Zilf.Tests.Integration
         [DataTestMethod]
         [DynamicData(nameof(GetTestCaseNames), DynamicDataSourceType.Method)]
         [Timeout(PerTestTimeoutMilliseconds)]
-        public void TestLibraryCases(string testCaseName)
+        public async Task TestLibraryCasesAsync(string testCaseName)
         {
             Console.WriteLine("Testing {0}", testCaseName);
 
@@ -88,7 +89,7 @@ namespace Zilf.Tests.Integration
             Assert.IsTrue(helper.Compile(), "Failed to compile");
             Assert.IsTrue(helper.Assemble(), "Failed to assemble");
 
-            var actualOutput = helper.Execute();
+            var actualOutput = await helper.ExecuteAsync();
 
             if (!PassRegex.IsMatch(actualOutput))
             {

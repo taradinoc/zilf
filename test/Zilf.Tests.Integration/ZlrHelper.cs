@@ -32,6 +32,7 @@ using Zilf.Language;
 using System.Text.RegularExpressions;
 using System.Diagnostics.CodeAnalysis;
 using Zilf.Common;
+using System.Threading.Tasks;
 
 namespace Zilf.Tests.Integration
 {
@@ -58,7 +59,7 @@ namespace Zilf.Tests.Integration
 
     sealed class ZlrHelper
     {
-        public static void RunAndAssert(string code, string? input, string expectedOutput,
+        public static async Task RunAndAssertAsync(string code, string? input, string expectedOutput,
             IEnumerable<(Predicate<ZlrHelperRunResult>, string message)>? warningChecks = null,
             bool wantCompileOutput = false)
         {
@@ -90,11 +91,11 @@ namespace Zilf.Tests.Integration
                     if (!check(result))
                         Assert.Fail(message);
             }
-            string actualOutput = compileOutput + helper.Execute();
+            string actualOutput = compileOutput + await helper.ExecuteAsync();
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");
         }
 
-        public static ZlrHelperRunResult Run(string code, string? input, bool compileOnly = false, bool wantDebugInfo = false)
+        public static async Task<ZlrHelperRunResult> RunAsync(string code, string? input, bool compileOnly = false, bool wantDebugInfo = false)
         {
             var helper = new ZlrHelper(code, input);
             var result = new ZlrHelperRunResult();
@@ -121,7 +122,7 @@ namespace Zilf.Tests.Integration
                 return result;
             }
 
-            string actualOutput = helper.Execute();
+            string actualOutput = await helper.ExecuteAsync();
 
             result.Status = ZlrTestStatus.Finished;
             result.Output = actualOutput;
@@ -259,19 +260,16 @@ namespace Zilf.Tests.Integration
             return result.Success;
         }
 
-        string Execute()
+        async Task<string> ExecuteAsync()
         {
             var inputStream = input != null ? new MemoryStream(Encoding.UTF8.GetBytes(input)) : new MemoryStream();
 
             var io = new ReplayIO(inputStream);
             var gameStream = new MemoryStream(fileSystem.GetBytes(SStoryFileName), false);
-            var zmachine = new ZMachine(gameStream, io)
-            {
-                PredictableRandom = true,
-                ReadingCommandsFromFile = true
-            };
+            var zmachine = new ZMachine(gameStream, io) { PredictableRandom = true };
+            await zmachine.SetReadingCommandsFromFileAsync(true);
 
-            zmachine.Run();
+            await zmachine.RunAsync();
 
             return io.CollectOutput();
         }
@@ -335,7 +333,7 @@ namespace Zilf.Tests.Integration
         }
 
         /// <exception cref="Exception">Oh shit!</exception>
-        public string Execute()
+        public async Task<string> ExecuteAsync()
         {
             if (!fileSystem.Exists(SStoryFileName))
                 throw new InvalidOperationException($"{nameof(Assemble)} must be called first");
@@ -359,13 +357,10 @@ namespace Zilf.Tests.Integration
                 try
                 {
                     var gameStream = new MemoryStream(zapfOutputFile, false);
-                    var zmachine = new ZMachine(gameStream, io)
-                    {
-                        PredictableRandom = true,
-                        ReadingCommandsFromFile = true
-                    };
+                    var zmachine = new ZMachine(gameStream, io) { PredictableRandom = true };
+                    await zmachine.SetReadingCommandsFromFileAsync(true);
 
-                    zmachine.Run();
+                    await zmachine.RunAsync();
                 }
                 catch
                 {

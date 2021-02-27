@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Diagnostics;
 
@@ -184,33 +185,33 @@ namespace Zilf.Tests.Integration
             this.body = body;
         }
 
-        public void Compiles()
+        public async Task CompilesAsync()
         {
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO ({argSpec})\r\n" +
                            $"\t{body}\r\n" +
                            "\t<QUIT>>";
 
-            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+            var result = await ZlrHelper.RunAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.Finished, result.Status);
 
             CheckWarnings(result);
         }
 
-        public void DoesNotCompile()
+        public async Task DoesNotCompileAsync()
         {
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO ({argSpec})\r\n" +
                            $"\t{body}\r\n" +
                            "\t<QUIT>>";
 
-            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+            var result = await ZlrHelper.RunAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
 
             CheckWarnings(result);
         }
 
-        public void DoesNotThrow()
+        public async Task DoesNotThrowAsync()
         {
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO ({argSpec})\r\n" +
@@ -221,7 +222,7 @@ namespace Zilf.Tests.Integration
 
             try
             {
-                result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+                result = await ZlrHelper.RunAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             }
             catch (Exception ex)
             {
@@ -243,23 +244,23 @@ namespace Zilf.Tests.Integration
     {
         protected abstract string Expression();
 
-        public void GivesNumber(string expectedValue)
+        public async Task GivesNumberAsync(string expectedValue)
         {
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () <PRINTN {Expression()}>>";
 
-            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, warningChecks);
+            await ZlrHelper.RunAndAssertAsync(testCode, input.ToString(), expectedValue, warningChecks);
         }
 
-        public void Outputs(string expectedValue)
+        public async Task OutputsAsync(string expectedValue)
         {
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () {Expression()}>";
 
-            ZlrHelper.RunAndAssert(testCode, input.ToString(), expectedValue, warningChecks, wantCompileOutput);
+            await ZlrHelper.RunAndAssertAsync(testCode, input.ToString(), expectedValue, warningChecks, wantCompileOutput);
         }
 
-        public void Implies(params string[] conditions)
+        public async Task ImpliesAsync(params string[] conditions)
         {
             var sb = new StringBuilder();
             foreach (var c in conditions)
@@ -275,10 +276,10 @@ namespace Zilf.Tests.Integration
                 $"<ROUTINE TEST-IMPLIES (\"AUX\" FAILS) {sb} .FAILS>\r\n" +
                 "<ROUTINE GO () <OR <TEST-IMPLIES> <PRINTI \"PASS\">>>";
 
-            ZlrHelper.RunAndAssert(testCode, input.ToString(), "PASS", warningChecks);
+            await ZlrHelper.RunAndAssertAsync(testCode, input.ToString(), "PASS", warningChecks);
         }
 
-        public void DoesNotCompile(Predicate<ZlrHelperRunResult>? resultFilter = null,
+        public async Task DoesNotCompileAsync(Predicate<ZlrHelperRunResult>? resultFilter = null,
             string? message = null)
         {
             var testCode =
@@ -288,7 +289,7 @@ namespace Zilf.Tests.Integration
                 $"\t<SETG DUMMY?VAR {Expression()}>\r\n" +
                 "\t<QUIT>>";
 
-            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+            var result = await ZlrHelper.RunAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
 
             CheckWarnings(result);
@@ -299,9 +300,9 @@ namespace Zilf.Tests.Integration
             }
         }
 
-        public void DoesNotCompile(string diagnosticCode, Predicate<Diagnostic>? diagFilter = null)
+        public async Task DoesNotCompileAsync(string diagnosticCode, Predicate<Diagnostic>? diagFilter = null)
         {
-            DoesNotCompile(res =>
+            await DoesNotCompileAsync(res =>
                 {
                     var diag = res.Diagnostics.FirstOrDefault(d => d.Code == diagnosticCode);
                     return diag != null && (diagFilter == null || diagFilter(diag));
@@ -309,7 +310,7 @@ namespace Zilf.Tests.Integration
                 $"Expected diagnostic {diagnosticCode} was not produced");
         }
 
-        public void Compiles()
+        public async Task CompilesAsync()
         {
             var testCode =
                 $"{GlobalCode()}\r\n" +
@@ -318,40 +319,38 @@ namespace Zilf.Tests.Integration
                 $"\t<SETG DUMMY?VAR {Expression()}>\r\n" +
                 "\t<QUIT>>";
 
-            var result = ZlrHelper.Run(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+            var result = await ZlrHelper.RunAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.IsTrue(result.Status > ZlrTestStatus.CompilationFailed,
                 "Failed to compile");
 
             CheckWarnings(result);
         }
 
-        public CodeMatchingResult GeneratesCodeMatching(string pattern)
+        public async Task<CodeMatchingResult> GeneratesCodeMatchingAsync(string pattern)
         {
-            return GeneratesCodeMatching(CheckOutputMatches(pattern));
+            return await GeneratesCodeMatchingAsync(output => CheckOutputMatches(output, pattern));
         }
 
-        static Action<string> CheckOutputMatches(string pattern)
+        public static void CheckOutputMatches(string output, string pattern)
         {
-            return output =>
-                Assert.IsTrue(
-                    Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
-                    "Output did not match. Expected pattern: " + pattern);
+            Assert.IsTrue(
+                Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
+                "Output did not match. Expected pattern: " + pattern);
         }
 
-        public CodeMatchingResult GeneratesCodeNotMatching(string pattern)
+        public async Task<CodeMatchingResult> GeneratesCodeNotMatchingAsync(string pattern)
         {
-            return GeneratesCodeMatching(CheckOutputDoesNotMatch(pattern));
+            return await GeneratesCodeMatchingAsync(output => CheckOutputDoesNotMatch(output, pattern));
         }
 
-        static Action<string> CheckOutputDoesNotMatch(string pattern)
+        public static void CheckOutputDoesNotMatch(string output, string pattern)
         {
-            return output =>
-                Assert.IsFalse(
-                    Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
-                    "Output should not have matched. Anti-pattern: " + pattern);
+            Assert.IsFalse(
+                Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
+                "Output should not have matched. Anti-pattern: " + pattern);
         }
 
-        CodeMatchingResult GeneratesCodeMatching(Action<string> checkGeneratedCode)
+        Task<CodeMatchingResult> GeneratesCodeMatchingAsync(Action<string> checkGeneratedCode)
         {
             var testCode = $"{GlobalCode()}\r\n" +
                            "<ROUTINE GO ()\r\n" +
@@ -371,7 +370,7 @@ namespace Zilf.Tests.Integration
                 SuppressedWarningCount = helper.SuppressedWarningCount,
             });
 
-            return new CodeMatchingResult(output);
+            return Task.FromResult(new CodeMatchingResult(output));
         }
 
         public sealed class CodeMatchingResult
@@ -382,18 +381,27 @@ namespace Zilf.Tests.Integration
             {
                 this.Output = output;
             }
+        }
+    }
 
-            public CodeMatchingResult AndMatching(string pattern)
-            {
-                CheckOutputMatches(pattern)(Output);
-                return this;
-            }
+    public static class CodeMatchingResultTaskExtensions
+    {
+        public static async Task<AbstractAssertionHelperWithEntryPoint<T>.CodeMatchingResult> AndMatching<T>(
+            this Task<AbstractAssertionHelperWithEntryPoint<T>.CodeMatchingResult> task, string pattern)
+            where T : AbstractAssertionHelperWithEntryPoint<T>
+        {
+            var result = await task;
+            AbstractAssertionHelperWithEntryPoint<T>.CheckOutputMatches(result.Output, pattern);
+            return result;
+        }
 
-            public CodeMatchingResult AndNotMatching(string pattern)
-            {
-                CheckOutputDoesNotMatch(pattern)(Output);
-                return this;
-            }
+        public static async Task<AbstractAssertionHelperWithEntryPoint<T>.CodeMatchingResult> AndNotMatching<T>(
+            this Task<AbstractAssertionHelperWithEntryPoint<T>.CodeMatchingResult> task, string pattern)
+            where T : AbstractAssertionHelperWithEntryPoint<T>
+        {
+            var result = await task;
+            AbstractAssertionHelperWithEntryPoint<T>.CheckOutputDoesNotMatch(result.Output, pattern);
+            return result;
         }
     }
 
@@ -465,9 +473,9 @@ namespace Zilf.Tests.Integration
             this.code = code;
         }
 
-        public void Outputs(string expectedValue)
+        public async Task OutputsAsync(string expectedValue)
         {
-            ZlrHelper.RunAndAssert(code, null, expectedValue);
+            await ZlrHelper.RunAndAssertAsync(code, null, expectedValue);
         }
     }
 }

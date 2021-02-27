@@ -30,7 +30,7 @@ namespace Zilf.Tests.Integration
         [DataRow("YZIP", DisplayName = "V6")]
         [DataRow("7", DisplayName = "V7")]
         [DataRow("8", DisplayName = "V8")]
-        public void HelloWorld(string zversion)
+        public async System.Threading.Tasks.Task HelloWorldAsync(string zversion)
         {
             string code = $@"
 <VERSION {zversion}>
@@ -46,7 +46,7 @@ namespace Zilf.Tests.Integration
     <QUIT>>";
 
             const string expectedOutput = "Hello, world!\n";
-            AssertRaw(code).Outputs(expectedOutput);
+            await AssertRaw(code).OutputsAsync(expectedOutput);
         }
     }
 }

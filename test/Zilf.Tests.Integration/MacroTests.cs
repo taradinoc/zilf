@@ -17,6 +17,7 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading.Tasks;
 
 namespace Zilf.Tests.Integration
 {
@@ -24,50 +25,50 @@ namespace Zilf.Tests.Integration
     public class MacroTests : IntegrationTestClass
     {
         [TestMethod]
-        public void SPLICEs_Should_Work_Inside_Routines()
+        public async Task SPLICEs_Should_Work_Inside_Routines()
         {
             // void context
-            AssertRoutine("", "<VARIOUS-THINGS> T")
+            await AssertRoutine("", "<VARIOUS-THINGS> T")
                 .WithGlobal("<DEFMAC VARIOUS-THINGS () <CHTYPE '(<TELL \"hello\"> <TELL CR> <TELL \"world\">) SPLICE>>")
-                .Outputs("hello\nworld");
+                .OutputsAsync("hello\nworld");
 
             // value context
-            AssertRoutine("", "<VARIOUS-THINGS>")
+            await AssertRoutine("", "<VARIOUS-THINGS>")
                 .WithGlobal("<DEFMAC VARIOUS-THINGS () <CHTYPE '(123 456) SPLICE>>")
-                .GivesNumber("456");
+                .GivesNumberAsync("456");
         }
 
         [TestMethod]
-        public void Macro_Call_With_Wrong_Argument_Count_Should_Raise_An_Error()
+        public async Task Macro_Call_With_Wrong_Argument_Count_Should_Raise_An_Error()
         {
-            AssertRoutine("\"AUX\" S", "<SET S <FOO A>>")
+            await AssertRoutine("\"AUX\" S", "<SET S <FOO A>>")
                 .WithGlobal("<DEFMAC FOO ('X 'Y 'Z) <FORM TELL \"hello world\" CR>>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void Macros_Can_Define_Globals_Inside_Routines()
+        public async Task Macros_Can_Define_Globals_Inside_Routines()
         {
-            AssertRoutine("", "<PRINTN <MAKE-GLOBAL 123>>")
+            await AssertRoutine("", "<PRINTN <MAKE-GLOBAL 123>>")
                 .WithGlobal("<DEFMAC MAKE-GLOBAL (N) <EVAL <FORM GLOBAL NEW-GLOBAL .N>> ',NEW-GLOBAL>")
-                .Outputs("123");
+                .OutputsAsync("123");
         }
 
         [TestMethod]
-        public void Macros_Can_Be_Used_In_Local_Initializers()
+        public async Task Macros_Can_Be_Used_In_Local_Initializers()
         {
-            AssertRoutine("\"AUX\" (X <MY-VALUE>)", ".X")
+            await AssertRoutine("\"AUX\" (X <MY-VALUE>)", ".X")
                 .WithGlobal("<DEFMAC MY-VALUE () 123>")
-                .GivesNumber("123");
+                .GivesNumberAsync("123");
         }
 
         [TestMethod, TestCategory("Reader Macros")]
-        public void MAKE_PREFIX_MACRO_Should_Work()
+        public async Task MAKE_PREFIX_MACRO_Should_Work()
         {
-            AssertExpr(@"<TELL B @HELLO "" "" B @WORLD CR>")
+            await AssertExpr(@"<TELL B @HELLO "" "" B @WORLD CR>")
                 .WithGlobal(@"<USE ""READER-MACROS"">")
                 .WithGlobal(@"<MAKE-PREFIX-MACRO !\@ <FUNCTION (W:ATOM) <VOC <SPNAME .W> BUZZ>>>")
-                .Outputs("hello world\n");
+                .OutputsAsync("hello world\n");
         }
 
     }

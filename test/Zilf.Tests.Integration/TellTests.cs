@@ -16,7 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
@@ -25,24 +25,24 @@ namespace Zilf.Tests.Integration
     public class TellTests : IntegrationTestClass
     {
         [TestMethod]
-        public void Tell_Macro_Should_Be_Used_If_Defined()
+        public async Task Tell_Macro_Should_Be_Used_If_Defined()
         {
-            AssertRoutine("", "<TELL 21>")
+            await AssertRoutine("", "<TELL 21>")
                 .WithGlobal("<DEFMAC TELL ('X) <FORM PRINTN <* .X 2>>>")
-                .Outputs("42");
+                .OutputsAsync("42");
             
         }
 
         [TestMethod]
-        public void Tell_Builtin_Should_Support_Basic_Operations()
+        public async Task Tell_Builtin_Should_Support_Basic_Operations()
         {
-            AssertRoutine("", "<TELL \"AB\" C 67 CR N 123 CRLF D ,OBJ>")
+            await AssertRoutine("", "<TELL \"AB\" C 67 CR N 123 CRLF D ,OBJ>")
                 .WithGlobal("<OBJECT OBJ (DESC \"obj\")>")
-                .Outputs("ABC\n123\nobj");
+                .OutputsAsync("ABC\n123\nobj");
         }
 
         [TestMethod]
-        public void Tell_Builtin_Should_Support_New_Tokens()
+        public async Task Tell_Builtin_Should_Support_New_Tokens()
         {
             const string STokens = @"
 <TELL-TOKENS
@@ -60,134 +60,134 @@ namespace Zilf.Tests.Integration
 <DEFMAC PRINT-MAC-1 () '<PRINT ""macro"">>
 <DEFMAC PRINT-MAC-2 () #SPLICE (<PRINT ""mac""> <PRINT ""ro"">)>";
 
-            AssertRoutine("", @"<TELL DBL 21 CRLF>")
+            await AssertRoutine("", @"<TELL DBL 21 CRLF>")
                 .WithGlobal(STokens)
-                .Outputs("42\n");
+                .OutputsAsync("42\n");
 
-            AssertRoutine("", @"<TELL DBL0>")
+            await AssertRoutine("", @"<TELL DBL0>")
                 .WithGlobal(STokens)
-                .Outputs("0");
+                .OutputsAsync("0");
 
-            AssertRoutine("", @"<TELL WUTEVA ""hello"">")
+            await AssertRoutine("", @"<TELL WUTEVA ""hello"">")
                 .WithGlobal(STokens)
-                .Outputs("hello");
+                .OutputsAsync("hello");
 
-            AssertRoutine("", @"<TELL GLOB WUTEVA 45 CR>")
+            await AssertRoutine("", @"<TELL GLOB WUTEVA 45 CR>")
                 .WithGlobal(STokens)
-                .Outputs("12345\n");
+                .OutputsAsync("12345\n");
 
-            AssertRoutine("", @"<TELL MAC1 MAC2>")
+            await AssertRoutine("", @"<TELL MAC1 MAC2>")
                 .WithGlobal(STokens)
-                .Outputs("macromacro");
+                .OutputsAsync("macromacro");
         }
 
         [TestMethod]
-        public void Tell_Builtin_Should_Reject_Complex_Outputs()
+        public async Task Tell_Builtin_Should_Reject_Complex_Outputs()
         {
-            AssertRoutine("", "<>")
+            await AssertRoutine("", "<>")
                 .WithGlobal("<TELL-TOKENS DBL * <PRINTN <* 2 .X>>>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void Tell_Builtin_Should_Reject_Mismatched_Captures()
+        public async Task Tell_Builtin_Should_Reject_Mismatched_Captures()
         {
-            AssertRoutine("", "<>")
+            await AssertRoutine("", "<>")
                 .WithGlobal("<TELL-TOKENS DBL * <PRINT-DBL>>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
 
-            AssertRoutine("", "<>")
+            await AssertRoutine("", "<>")
                 .WithGlobal("<TELL-TOKENS DBL * <PRINT-DBL .X .Y>>")
-                .DoesNotCompile();
+                .DoesNotCompileAsync();
         }
 
         [TestMethod]
-        public void Tell_Builtin_Should_Translate_Strings()
+        public async Task Tell_Builtin_Should_Translate_Strings()
         {
-            AssertRoutine("", "<TELL \"foo|bar|\nbaz\nquux\">")
-                .Outputs("foo\nbar\nbaz quux");
+            await AssertRoutine("", "<TELL \"foo|bar|\nbaz\nquux\">")
+                .OutputsAsync("foo\nbar\nbaz quux");
         }
 
         [TestMethod]
-        public void Tell_Builtin_Should_Support_Characters()
+        public async Task Tell_Builtin_Should_Support_Characters()
         {
-            AssertRoutine("", @"<TELL !\A !\B !\C>")
-                .Outputs("ABC");
+            await AssertRoutine("", @"<TELL !\A !\B !\C>")
+                .OutputsAsync("ABC");
         }
 
         [TestMethod]
-        public void CR_In_String_Should_Be_Ignored()
+        public async Task CR_In_String_Should_Be_Ignored()
         {
-            AssertRoutine("", "<TELL \"First line.\r\nSecond line.\r\nLast line.\">")
-                .Outputs("First line. Second line. Last line.");
+            await AssertRoutine("", "<TELL \"First line.\r\nSecond line.\r\nLast line.\">")
+                .OutputsAsync("First line. Second line. Last line.");
         }
 
         [TestMethod]
-        public void CRLF_CHARACTER_Should_Affect_String_Translation()
+        public async Task CRLF_CHARACTER_Should_Affect_String_Translation()
         {
-            AssertRoutine("", "<TELL \"foo^bar\">")
+            await AssertRoutine("", "<TELL \"foo^bar\">")
                 .WithGlobal("<SETG CRLF-CHARACTER !\\^>")
-                .Outputs("foo\nbar");
+                .OutputsAsync("foo\nbar");
         }
 
         [TestMethod]
-        public void Two_Spaces_After_Period_Should_Collapse_By_Default()
+        public async Task Two_Spaces_After_Period_Should_Collapse_By_Default()
         {
-            AssertRoutine("", "<TELL \"Hi.  Hi.   Hi.|  Hi!  Hi?  \" CR>")
-                .Outputs("Hi. Hi.  Hi.\n Hi!  Hi?  \n");
+            await AssertRoutine("", "<TELL \"Hi.  Hi.   Hi.|  Hi!  Hi?  \" CR>")
+                .OutputsAsync("Hi. Hi.  Hi.\n Hi!  Hi?  \n");
         }
 
         [TestMethod]
-        public void Two_Spaces_After_Period_Should_Not_Collapse_With_PRESERVE_SPACES()
+        public async Task Two_Spaces_After_Period_Should_Not_Collapse_With_PRESERVE_SPACES()
         {
-            AssertRoutine("", "<TELL \"Hi.  Hi.   Hi.|  Hi!  Hi?  \" CR>")
+            await AssertRoutine("", "<TELL \"Hi.  Hi.   Hi.|  Hi!  Hi?  \" CR>")
                 .WithGlobal("<SETG PRESERVE-SPACES? T>")
-                .Outputs("Hi.  Hi.   Hi.\n  Hi!  Hi?  \n");
+                .OutputsAsync("Hi.  Hi.   Hi.\n  Hi!  Hi?  \n");
         }
 
         [TestMethod]
-        public void Two_Spaces_After_Period_Bang_Or_Question_Should_Become_Sentence_Space_With_SENTENCE_ENDS()
+        public async Task Two_Spaces_After_Period_Bang_Or_Question_Should_Become_Sentence_Space_With_SENTENCE_ENDS()
         {
             // Note: a space followed by embedded newline will produce two spaces instead of collapsing.
-            AssertRoutine("", "<TELL \"Hi.  Hi.   Hi.|  Hi!  Hi?  Hi. \nHi.\" CR>")
+            await AssertRoutine("", "<TELL \"Hi.  Hi.   Hi.|  Hi!  Hi?  Hi. \nHi.\" CR>")
                 .InV6()
                 .WithGlobal("<FILE-FLAGS SENTENCE-ENDS?>")
-                .Outputs("Hi.\u000bHi.\u000b Hi.\n  Hi!\u000bHi?\u000bHi.  Hi.\n");
+                .OutputsAsync("Hi.\u000bHi.\u000b Hi.\n  Hi!\u000bHi?\u000bHi.  Hi.\n");
         }
 
         [TestMethod]
-        public void Unprintable_Characters_In_Strings_Should_Warn()
+        public async Task Unprintable_Characters_In_Strings_Should_Warn()
         {
             const string SCodeWithTab = "<TELL \"foo\tbar\" CR>";
             const string SCodeWithBackspace = "<TELL \"foo\x0008bar\" CR>";
             const string SCodeWithCtrlZ = "<TELL \"foo\x001abar\" CR>";
 
             // tab is legal in V6...
-            AssertRoutine("", SCodeWithTab)
+            await AssertRoutine("", SCodeWithTab)
                 .InV6()
                 .WithoutWarnings()
-                .Compiles();
+                .CompilesAsync();
 
             // ...but not in V5
-            AssertRoutine("", SCodeWithTab)
+            await AssertRoutine("", SCodeWithTab)
                 .InV5()
                 .WithWarnings("ZIL0410")
-                .Compiles();
+                .CompilesAsync();
 
             // backspace is never legal
-            AssertRoutine("", SCodeWithBackspace)
+            await AssertRoutine("", SCodeWithBackspace)
                 .WithWarnings("ZIL0410")
-                .Compiles();
+                .CompilesAsync();
 
             // nor is ^Z
-            AssertRoutine("", SCodeWithCtrlZ)
+            await AssertRoutine("", SCodeWithCtrlZ)
                 .WithWarnings("ZIL0410")
-                .Compiles();
+                .CompilesAsync();
         }
 
 
         [TestMethod]
-        public void CHRSET_Should_Affect_Text_Decoding()
+        public async Task CHRSET_Should_Affect_Text_Decoding()
         {
             /*     1         2         3 
              * 67890123456789012345678901
@@ -196,44 +196,44 @@ namespace Zilf.Tests.Integration
              *   z=6   i=23  l=20
              * 1 00110 10111 10100
              */
-            AssertRoutine("", @"<PRINTB ,MYTEXT>")
+            await AssertRoutine("", @"<PRINTB ,MYTEXT>")
                 .WithGlobal(@"<CHRSET 0 ""zyxwvutsrqponmlkjihgfedcba"">")
                 .WithGlobal(@"<CONSTANT MYTEXT <TABLE #2 1001101011110100>>")
                 .InV5()
-                .Outputs("zil");
+                .OutputsAsync("zil");
         }
 
         [TestMethod]
-        public void CHRSET_Should_Affect_Text_Encoding()
+        public async Task CHRSET_Should_Affect_Text_Encoding()
         {
-            AssertRoutine("",
+            await AssertRoutine("",
                     @"<PRINT ,MYTEXT> <CRLF> " +
                     @"<PRINTN <- <GET <* 4 ,MYTEXT> 0> ,ENCODED-TEXT>>")
                 .WithGlobal(@"<CHRSET 0 ""zyxwvutsrqponmlkjihgfedcba"">")
                 .WithGlobal(@"<CONSTANT MYTEXT ""zil"">")
                 .WithGlobal(@"<CONSTANT ENCODED-TEXT #2 1001101011110100>")
                 .InV5()
-                .Outputs("zil\n0");
+                .OutputsAsync("zil\n0");
         }
 
         [TestMethod]
-        public void LANGUAGE_Should_Affect_Text_Encoding()
+        public async Task LANGUAGE_Should_Affect_Text_Encoding()
         {
-            AssertRoutine("",
+            await AssertRoutine("",
                     @"<TELL ""%>M%obeltr%agerf%u%se%<"">")
                 .WithGlobal(@"<LANGUAGE GERMAN>")
                 .InV5()
-                .Outputs(@"»Möbelträgerfüße«");
+                .OutputsAsync(@"»Möbelträgerfüße«");
         }
 
         [TestMethod]
-        public void LANGUAGE_Should_Affect_Vocabulary_Encoding()
+        public async Task LANGUAGE_Should_Affect_Vocabulary_Encoding()
         {
-            AssertRoutine("", @"<PRINTB ,W?\%A\%S>")
+            await AssertRoutine("", @"<PRINTB ,W?\%A\%S>")
                 .WithGlobal(@"<LANGUAGE GERMAN>")
                 .WithGlobal(@"<OBJECT FOO (SYNONYM \%A\%S)>")
                 .InV5()
-                .Outputs(@"äß");
+                .OutputsAsync(@"äß");
         }
     }
 }

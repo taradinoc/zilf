@@ -17,6 +17,7 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading.Tasks;
 
 namespace Zilf.Tests.Integration
 {
@@ -24,34 +25,34 @@ namespace Zilf.Tests.Integration
     public class TableTests : IntegrationTestClass
     {
         [TestMethod]
-        public void BYTE_Elements_Should_Compile_As_Bytes()
+        public async Task BYTE_Elements_Should_Compile_As_Bytes()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<GLOBAL TBL <TABLE 12345 #BYTE 123 #BYTE 45>>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? <GET ,TBL 0> 12345>",
                     "<==? <GETB ,TBL 2> 123>",
                     "<==? <GETB ,TBL 3> 45>");
         }
 
         [TestMethod]
-        public void WORD_Elements_Should_Compile_As_Words()
+        public async Task WORD_Elements_Should_Compile_As_Words()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<GLOBAL TBL <TABLE (BYTE) #WORD (12345) 123 45>>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? <GET ,TBL 0> 12345>",
                     "<==? <GETB ,TBL 2> 123>",
                     "<==? <GETB ,TBL 3> 45>");
         }
 
         [TestMethod]
-        public void ITABLE_Multi_Element_Initializers_Should_Repeat_N_Times()
+        public async Task ITABLE_Multi_Element_Initializers_Should_Repeat_N_Times()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<GLOBAL TBL1 <ITABLE 2 1 2 3>>",
                 "<GLOBAL TBL2 <ITABLE 3 9 8 7 6>>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? <GET ,TBL1 0> 1>",
                     "<==? <GET ,TBL1 1> 2>",
                     "<==? <GET ,TBL1 2> 3>",
@@ -61,30 +62,30 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void ITABLE_LEXV_Should_Warn_If_Not_A_Multiple_Of_3_Elements()
+        public async Task ITABLE_LEXV_Should_Warn_If_Not_A_Multiple_Of_3_Elements()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<CONSTANT LEXBUF <ITABLE 1 (LEXV) 0 0>>")
                 .WithWarnings("MDL0428")
-                .Compiles();
+                .CompilesAsync();
 
-            AssertGlobals(
+            await AssertGlobals(
                 "<CONSTANT LEXBUF <ITABLE 1 (LEXV)>>")
                 .WithWarnings("MDL0428")
-                .Compiles();
+                .CompilesAsync();
 
-            AssertGlobals(
+            await AssertGlobals(
                 "<CONSTANT LEXBUF <ITABLE 3 (LEXV)>>")
                 .WithoutWarnings()
-                .Compiles();
+                .CompilesAsync();
         }
 
         [TestMethod]
-        public void TABLE_PATTERN_Should_Affect_Element_Sizes()
+        public async Task TABLE_PATTERN_Should_Affect_Element_Sizes()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<GLOBAL TBL <TABLE (PATTERN (BYTE WORD BYTE BYTE [REST WORD])) 1 2 3 4 5 6>>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? <GETB ,TBL 0> 1>",
                     "<==? <GET <REST ,TBL 1> 0> 2>",
                     "<==? <GETB ,TBL 3> 3>",
@@ -94,99 +95,99 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void PURE_ITABLE_Should_Be_In_Pure_Memory()
+        public async Task PURE_ITABLE_Should_Be_In_Pure_Memory()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<GLOBAL TBL <ITABLE 10 (PURE)>>")
-                .Implies(
+                .ImpliesAsync(
                     "<G=? ,TBL <LOWCORE PURBOT>>");
         }
 
         [TestMethod]
-        public void TABLE_Should_Be_Mutable_At_Compile_Time()
+        public async Task TABLE_Should_Be_Mutable_At_Compile_Time()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<SETG MY-TBL <TABLE 0 <BYTE 0>>>",
                 "<ZPUT ,MY-TBL 0 1>",
                 "<PUTB ,MY-TBL 2 2>",
                 "<GLOBAL TBL ,MY-TBL>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? <GET ,TBL 0> 1>",
                     "<==? <GETB ,TBL 2> 2>");
 
-            AssertGlobals(
+            await AssertGlobals(
                 "<SETG MY-TBL <ITABLE 3 <>>>",
                 "<ZPUT ,MY-TBL 1 1>",
                 "<GLOBAL TBL ,MY-TBL>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? <GET ,TBL 1> 1>");
         }
 
         [TestMethod]
-        public void TABLE_Length_Words_Should_Be_Accessible_At_Compile_Time()
+        public async Task TABLE_Length_Words_Should_Be_Accessible_At_Compile_Time()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<SETG MY-TBL <LTABLE 100 200 300 400>>",
                 "<GLOBAL ORIG-LENGTH <ZGET ,MY-TBL 0>>",
                 "<ZPUT ,MY-TBL 0 -1>",
                 "<GLOBAL TBL ,MY-TBL>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? ,ORIG-LENGTH 4>",
                     "<==? <GET ,TBL 0> -1>",
                     "<==? <GET ,TBL 4> 400>");
         }
 
         [TestMethod]
-        public void TABLE_With_Adjacent_Bytes_Can_Be_Overwritten_With_Words()
+        public async Task TABLE_With_Adjacent_Bytes_Can_Be_Overwritten_With_Words()
         {
             // this doesn't change the length of the table (in bytes)
-            AssertGlobals(
+            await AssertGlobals(
                 "<SETG MY-TBL <TABLE (BYTE) 0 0 67 0>>",
                 "<ZPUT ,MY-TBL 0 12345>",
                 "<PUTB ,MY-TBL 3 89>",
                 "<GLOBAL TBL ,MY-TBL>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? <GET ,TBL 0> 12345>",
                     "<==? <GETB ,TBL 2> 67>",
                     "<==? <GETB ,TBL 3> 89>");
         }
 
         [TestMethod]
-        public void TABLE_With_Words_Can_Be_Overwritten_With_Bytes()
+        public async Task TABLE_With_Words_Can_Be_Overwritten_With_Bytes()
         {
             // this also doesn't change the length of the table
-            AssertGlobals(
+            await AssertGlobals(
                 "<SETG MY-TBL <TABLE 12345 6789>>",
                 "<PUTB ,MY-TBL 0 123>",
                 "<PUTB ,MY-TBL 1 45>",
                 "<GLOBAL TBL ,MY-TBL>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? <GETB ,TBL 0> 123>",
                     "<==? <GETB ,TBL 1> 45>",
                     "<==? <GET ,TBL 1> 6789>");
         }
 
         [TestMethod]
-        public void Round_Tripping_Table_Elements_Between_Bytes_And_Words_Preserves_Widths()
+        public async Task Round_Tripping_Table_Elements_Between_Bytes_And_Words_Preserves_Widths()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<SETG MY-TBL <LTABLE 1 2 3>>",
                 "<PUTB ,MY-TBL 2 100>",
                 "<ZPUT ,MY-TBL 1 1>",
                 "<GLOBAL TBL ,MY-TBL>")
-                .Implies(
+                .ImpliesAsync(
                     "<==? <GET ,TBL 0> 3>",
                     "<==? <GET ,TBL 1> 1>",
                     "<==? <GET ,TBL 2> 2>",
                     "<==? <GET ,TBL 3> 3>");
 
-            AssertGlobals(
+            await AssertGlobals(
               "<SETG MY-TBL <LTABLE (BYTE) 1 2 3>>",
               "<ZPUT ,MY-TBL 1 2>",
               "<PUTB ,MY-TBL 2 2>",
               "<PUTB ,MY-TBL 3 3>",
               "<GLOBAL TBL ,MY-TBL>")
-              .Implies(
+              .ImpliesAsync(
                   "<==? <GETB ,TBL 0> 3>",
                   "<==? <GETB ,TBL 1> 1>",
                   "<==? <GETB ,TBL 2> 2>",
@@ -194,48 +195,48 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void PARSER_TABLEs_Come_Before_Other_Pure_Tables()
+        public async Task PARSER_TABLEs_Come_Before_Other_Pure_Tables()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<CONSTANT PURE-TBL <TABLE (PURE) 1 2 3>>",
                 "<CONSTANT PARSER-TBL <TABLE (PARSER-TABLE) 1 2 3>>",
                 "<CONSTANT IMPURE-TBL <TABLE 1 2 3>>")
-                .Implies(
+                .ImpliesAsync(
                     "<L? ,IMPURE-TBL ,PARSER-TBL>",
                     "<L=? <LOWCORE PURBOT> ,PARSER-TBL>",
                     "<L? ,PARSER-TBL ,PURE-TBL>");
         }
 
         [TestMethod]
-        public void PARSER_TABLEs_Start_At_PRSTBL()
+        public async Task PARSER_TABLEs_Start_At_PRSTBL()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<CONSTANT PARSER-TBL <TABLE (PARSER-TABLE) 1 2 3>>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? ,PARSER-TBL ,PRSTBL>");
         }
 
         [TestMethod]
-        public void ZREST_Creates_A_Compile_Time_Offset_Table()
+        public async Task ZREST_Creates_A_Compile_Time_Offset_Table()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<SETG MY-TBL <TABLE 100 200 300>>",
                 "<GLOBAL TBL ,MY-TBL>",
                 "<SETG RESTED <ZREST ,MY-TBL 2>>",
                 "<CONSTANT RESTED-OLD-0 <ZGET ,RESTED 0>>",
                 "<ZPUT ,RESTED 1 345>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? ,RESTED-OLD-0 200>",
                     "<=? <GET ,TBL 2> 345>");
         }
 
         [TestMethod]
-        public void ZREST_Works_With_2OP_Instruction()
+        public async Task ZREST_Works_With_2OP_Instruction()
         {
-            AssertGlobals(
+            await AssertGlobals(
                 "<CONSTANT PADDING-TBL <ITABLE 500>>",
                 "<CONSTANT TBL <TABLE 100 200 300>>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <GET <ZREST ,TBL 4> 0> 300>");
         }
     }

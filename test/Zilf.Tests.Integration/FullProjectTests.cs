@@ -24,6 +24,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Zilf.Tests.Integration
 {
@@ -82,7 +83,7 @@ namespace Zilf.Tests.Integration
         [DataTestMethod]
         [DynamicData(nameof(GetProjects), DynamicDataSourceType.Method)]
         [Timeout(PerTestTimeoutMilliseconds)]
-        public void TestProjects(string baseName, string dir, string mainZilFile)
+        public async Task TestProjectsAsync(string baseName, string dir, string mainZilFile)
         {
             Console.WriteLine("Testing {0}", dir);
 
@@ -102,7 +103,7 @@ namespace Zilf.Tests.Integration
 
             if (testExecution)
             {
-                var actualOutput = helper.Execute();
+                var actualOutput = await helper.ExecuteAsync();
 
                 var massagedActual = MassageText(actualOutput);
                 var massagedExpected = MassageText(File.ReadAllText(outputFile));

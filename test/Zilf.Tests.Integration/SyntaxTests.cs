@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Zilf.Tests.Integration
@@ -26,9 +27,9 @@ namespace Zilf.Tests.Integration
     public class SyntaxTests : IntegrationTestClass
     {
         [TestMethod]
-        public void First_Preaction_Definition_Per_Action_Name_Should_Persist()
+        public async Task First_Preaction_Definition_Per_Action_Name_Should_Persist()
         {
-            AssertRoutine("",
+            await AssertRoutine("",
                     @"<TELL N <=? <GET ,ACTIONS ,V?FOO> ,V-FOO> CR" +
                     @" N <=? <GET ,ACTIONS ,V?FOO-WITH> ,V-FOO> CR" +
                     @" N <=? <GET ,ACTIONS ,V?BAR> ,V-BAR> CR" +
@@ -47,23 +48,23 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<SYNTAX BAR = V-BAR>")
                 .WithGlobal("<SYNTAX BAR OBJECT = V-BAR PRE-BAR>")
                 .WithWarnings("ZIL0208")
-                .Outputs("1\n1\n1\n1\n1\n1\n");
+                .OutputsAsync("1\n1\n1\n1\n1\n1\n");
         }
 
         [TestMethod]
-        public void Syntax_Lines_Can_Define_Verb_Synonyms()
+        public async Task Syntax_Lines_Can_Define_Verb_Synonyms()
         {
-            AssertRoutine("", "<DO (I 4 6) <PRINTN <=? <GETB ,W?TOSS .I> <GETB ,W?CHUCK .I>>>>")
+            await AssertRoutine("", "<DO (I 4 6) <PRINTN <=? <GETB ,W?TOSS .I> <GETB ,W?CHUCK .I>>>>")
                 .WithGlobal("<ROUTINE V-TOSS () <>>")
                 .WithGlobal("<SYNTAX TOSS (CHUCK) OBJECT AT OBJECT = V-TOSS>")
                 .InV3()
-                .Outputs("111");
+                .OutputsAsync("111");
         }
 
         [TestMethod]
-        public void NEW_SFLAGS_Defines_New_Scope_Flags()
+        public async Task NEW_SFLAGS_Defines_New_Scope_Flags()
         {
-            AssertGlobals(
+            await AssertGlobals(
                     @"<ROUTINE GET-OPTS1 (ACT ""AUX"" (ST <GET ,VERBS <- 255 .ACT>>)) <GETB .ST 6>>",
                     "<CONSTANT SEARCH-DO-TAKE 1>",
                     "<CONSTANT SEARCH-MUST-HAVE 2>",
@@ -76,52 +77,52 @@ namespace Zilf.Tests.Integration
                     "<SYNTAX FOO OBJECT (OPTIONAL) = V-DUMMY>",
                     "<SYNTAX BAR OBJECT (HAVE) = V-DUMMY>",
                     "<SYNTAX BAZ OBJECT (HAVE OPTIONAL) = V-DUMMY>")
-                .Implies(
+                .ImpliesAsync(
                     "<=? <GET-OPTS1 ,ACT?FOO> ,SEARCH-OPTIONAL>",
                     "<=? <GET-OPTS1 ,ACT?BAR> <+ ,SEARCH-STANDARD ,SEARCH-MUST-HAVE>>",
                     "<=? <GET-OPTS1 ,ACT?BAZ> <+ ,SEARCH-OPTIONAL ,SEARCH-MUST-HAVE>>");
         }
 
         [TestMethod]
-        public void Late_Syntax_Tables_Can_Be_Referenced_From_Macros()
+        public async Task Late_Syntax_Tables_Can_Be_Referenced_From_Macros()
         {
-            AssertRoutine("", "<PRINTN <FOO>>")
+            await AssertRoutine("", "<PRINTN <FOO>>")
                 .WithGlobal(@"<DEFMAC FOO () <FORM REST ,PRTBL 1>>")
-                .Compiles();
+                .CompilesAsync();
         }
 
         [TestMethod]
-        public void Old_Parser_Only_Allows_255_Verbs()
+        public async Task Old_Parser_Only_Allows_255_Verbs()
         {
             var globals = Enumerable.Range(0, 256)
                 .Select(i => $"<SYNTAX VERB-{i} = V-FOO>")
                 .ToArray();
 
-            AssertGlobals(globals)
+            await AssertGlobals(globals)
                 .WithGlobal("<ROUTINE V-FOO () <>>")
-                .DoesNotCompile("MDL0426", // too many {0}, only {1} allowed in this vocab format
+                .DoesNotCompileAsync("MDL0426", // too many {0}, only {1} allowed in this vocab format
                     d => d.GetFormattedMessage().Contains("verbs"));
         }
 
         [TestMethod]
-        public void Old_Parser_Only_Allows_255_Actions()
+        public async Task Old_Parser_Only_Allows_255_Actions()
         {
             var globals = Enumerable.Range(0, 256)
                 .Select(i => $"<SYNTAX VERB-{i / 100} PREP-{i % 100} OBJECT = V-FOO-{i}> <ROUTINE V-FOO-{i} () <>>")
                 .ToArray();
 
-            AssertGlobals(globals)
-                .DoesNotCompile("MDL0426", // too many {0}, only {1} allowed in this vocab format
+            await AssertGlobals(globals)
+                .DoesNotCompileAsync("MDL0426", // too many {0}, only {1} allowed in this vocab format
                     d => d.GetFormattedMessage().Contains("actions"));
         }
 
         [TestMethod, TestCategory("NEW-PARSER?")]
-        public void NEW_PARSER_P_Supports_More_Than_255_Verbs_And_Actions()
+        public async Task NEW_PARSER_P_Supports_More_Than_255_Verbs_And_Actions()
         {
             var globals = new List<string>(258) { VocabTests.SNewParserBootstrap };
             globals.AddRange(Enumerable.Range(0, 257).Select(i => $"<SYNTAX VERB-{i} = V-VERB-{i}> <ROUTINE V-VERB-{i} () <>>"));
 
-            AssertGlobals(globals.ToArray()).GeneratesCodeMatching(@"V\?VERB-256=256");
+            await AssertGlobals(globals.ToArray()).GeneratesCodeMatchingAsync(@"V\?VERB-256=256");
         }
 
     }
