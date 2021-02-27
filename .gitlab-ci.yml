@@ -113,7 +113,7 @@ tests:
   # You may want to define separate testing jobs for different types of testing
   # (e.g. integration tests, unit tests etc).
   script:
-    - 'dotnet test Zilf.sln --no-restore -c CI --test-adapter-path:. --logger:"junit;LogFilePath=..\artifacts\{assembly}-test-result.xml;MethodFormat=Class;FailureBodyFormat=Verbose"'
+    - 'dotnet test Zilf.sln --no-restore -c CI --test-adapter-path:. --logger:"junit;LogFilePath=..\artifacts\{assembly}-test-result.xml;MethodFormat=Class;FailureBodyFormat=Verbose" -maxcpucount:1'
   artifacts:
     when: always
     paths:
