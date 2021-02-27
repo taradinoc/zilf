@@ -114,9 +114,9 @@ namespace Dezapf
 
             foreach (var fi in typeof(Opcodes).GetFields(BindingFlags.Static | BindingFlags.Public))
             {
-                if (fi.FieldType == typeof(Opcodes))
+                if (fi.FieldType == typeof(ushort))
                 {
-                    ushort num = (ushort)(Opcodes)fi.GetValue(null);
+                    ushort num = (ushort)fi.GetValue(null);
                     foreach (ZOpAttribute attr in fi.GetCustomAttributes(typeof(ZOpAttribute), false))
                         if (effectiveVersion >= attr.MinVer && effectiveVersion <= attr.MaxVer)
                             opcodes.Add(num, attr);

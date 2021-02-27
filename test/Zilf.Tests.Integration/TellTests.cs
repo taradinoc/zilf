@@ -187,7 +187,6 @@ namespace Zilf.Tests.Integration
 
 
         [TestMethod]
-        [SuppressMessage("ReSharper", "CommentTypo")]
         public void CHRSET_Should_Affect_Text_Decoding()
         {
             /*     1         2         3 

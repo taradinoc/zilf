@@ -124,7 +124,6 @@ namespace Zilf.Tests.Integration
     }
 
     [TestClass, TestCategory("Compiler")]
-    [SuppressMessage("ReSharper", "ExceptionNotDocumented")]
     public class OpcodeTests : IntegrationTestClass
     {
         #region Z-Machine Opcodes

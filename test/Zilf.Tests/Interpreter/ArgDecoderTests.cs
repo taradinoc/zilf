@@ -30,8 +30,6 @@ using Zilf.Language;
 #pragma warning disable CS0649
 // IDE0060: Remove unused parameter
 #pragma warning disable IDE0060
-// RECS0154: Parameter '___' is never used
-#pragma warning disable RECS0154
 
 namespace Zilf.Tests.Interpreter
 {

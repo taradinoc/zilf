@@ -8,6 +8,7 @@
     <Description>Tests for Dezapf.</Description>
     <Copyright>Copyright 2010-2019 Jesse McGrew</Copyright>
     <IsPackable>false</IsPackable>
+    <NeutralLanguage>English</NeutralLanguage>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JunitXml.TestLogger" Version="2.1.81" />

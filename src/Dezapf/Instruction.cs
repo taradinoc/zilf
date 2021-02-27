@@ -109,7 +109,7 @@ namespace Dezapf
                 else
                 {
                     // 0OP
-                    otypes = new OperandType[] { };
+                    otypes = System.Array.Empty<OperandType>();
                 }
             }
             else

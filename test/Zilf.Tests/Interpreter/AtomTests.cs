@@ -478,7 +478,6 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
-        [SuppressMessage("ReSharper", "ConvertToLocalFunction")]
         public void TestREMOVE()
         {
             // must have 1-2 args

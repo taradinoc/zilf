@@ -8,6 +8,7 @@
     <Company />
     <Description>A ZAP disassembler.</Description>
     <Copyright>Copyright 2010-2018 Jesse McGrew</Copyright>
+    <NeutralLanguage></NeutralLanguage>
   </PropertyGroup>
   <ItemGroup>
     <None Include="$(SolutionDir)\Zilf.licenseheader" Link="Zilf.licenseheader" />

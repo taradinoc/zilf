@@ -32,7 +32,6 @@ using Zilf.ZModel.Values;
 namespace Zilf.Tests.Interpreter
 {
     [TestClass, TestCategory("Interpreter")]
-    [SuppressMessage("ReSharper", "StringLiteralTypo")]
     public class TypeTests
     {
         Context ctx = default!;
