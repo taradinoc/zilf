@@ -593,20 +593,6 @@ namespace Zilf.Emit.Zap
         public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form,
             IVariable result, ILabel label, bool polarity)
         {
-            var sb = new StringBuilder("INTBL? ");
-            sb.Append(value);
-            sb.Append(',');
-            sb.Append(table);
-            sb.Append(',');
-            sb.Append(length);
-            if (form != null)
-            {
-                sb.Append(',');
-                sb.Append(form);
-            }
-            sb.Append(" >");
-            sb.Append(result);
-
             var inst = new Instruction("INTBL?", value.ToAsmExpr(), table.ToAsmExpr(), length.ToAsmExpr())
             {
                 StoreTarget = result.ToString()
@@ -1017,6 +1003,9 @@ namespace Zilf.Emit.Zap
                 }
 
                 game.WriteOutput(sb.ToString());
+
+                if (game.abbrevs != null && code.Instruction.HasStringOperand(out var str))
+                    game.abbrevs.AddText(str);
             });
 
             if (game.debug != null)

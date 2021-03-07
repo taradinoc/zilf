@@ -72,10 +72,12 @@ namespace Zilf.Common.StringEncoding
         /// <returns>A sequence of abbreviations, in descending order of overall savings.</returns>
         public IEnumerable<Result> GetResults(int max)
         {
+#if DEBUG_ABBREV
             Console.Error.WriteLine("Indexing {0} strings", allTexts.Count);
 
             var outerStopw = new Stopwatch();
             outerStopw.Start();
+#endif
 
             var isc = new IndexedStringCollection(allTexts);
             var charsetMap = encoder.GetCharsetMap();
@@ -151,8 +153,10 @@ namespace Zilf.Common.StringEncoding
 #endif
             }
 
+#if DEBUG_ABBREV
             outerStopw.Stop();
             Console.Error.WriteLine("Abbreviation search finished in {0}", outerStopw.Elapsed);
+#endif
         }
     }
 }

@@ -140,5 +140,17 @@ namespace Zapf.Parsing.Instructions
 
             return result;
         }
+
+        public bool HasStringOperand([NotNullWhen(true)] out string? str)
+        {
+            if (Operands.Count >= 1 && Operands[0] is StringLiteral lit)
+            {
+                str = lit.Text;
+                return true;
+            }
+
+            str = null;
+            return false;
+        }
     }
 }

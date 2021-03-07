@@ -26,6 +26,14 @@ using Zilf.Common.StringEncoding;
 
 namespace Zilf.Emit.Zap
 {
+    [Flags]
+    public enum GameBuilderOptions
+    {
+        None = 0,
+        WantDebugInfo = 1,
+        WantFrequentWords = 2,
+    }
+
     public sealed class GameBuilder : IGameBuilder
     {
         const string INDENT = "\t";
@@ -54,6 +62,7 @@ namespace Zilf.Emit.Zap
         readonly IZapStreamFactory streamFactory;
         internal readonly int zversion;
         internal readonly DebugFileBuilder? debug;
+        internal readonly AbbrevFinder? abbrevs;
         readonly GameOptions options;
 
         IRoutineBuilder? entryRoutine;
@@ -62,9 +71,9 @@ namespace Zilf.Emit.Zap
         TextWriter writer;
 
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="zversion"/> is not a supported Z-machine version.</exception>
-        /// <exception cref="ArgumentException"><paramref name="options"/> is the wrong type for this Z-machine version.</exception>
-        public GameBuilder(int zversion, IZapStreamFactory streamFactory, bool wantDebugInfo,
-             GameOptions? options = null)
+        /// <exception cref="ArgumentException"><paramref name="gameOptions"/> is the wrong type for this Z-machine version.</exception>
+        public GameBuilder(int zversion, IZapStreamFactory streamFactory, GameBuilderOptions builderOptions = GameBuilderOptions.None,
+             GameOptions? gameOptions = null)
         {
             if (!IsSupportedZversion(zversion))
                 throw new ArgumentOutOfRangeException(nameof(zversion), "Unsupported Z-machine version");
@@ -72,17 +81,17 @@ namespace Zilf.Emit.Zap
             this.streamFactory = streamFactory ?? throw new ArgumentNullException(nameof(streamFactory));
             GetOptionsTypeForZVersion(zversion, out var requiredOptionsType, out var concreteOptionsType);
 
-            if (options != null)
+            if (gameOptions != null)
             {
                 const string SOptionsNotCompatible = "Options not compatible with this Z-machine version";
 
-                if (requiredOptionsType.IsInstanceOfType(options))
+                if (requiredOptionsType.IsInstanceOfType(gameOptions))
                 {
-                    this.options = options;
+                    this.options = gameOptions;
                 }
                 else
                 {
-                    throw new ArgumentException(SOptionsNotCompatible, nameof(options));
+                    throw new ArgumentException(SOptionsNotCompatible, nameof(gameOptions));
                 }
             }
             else
@@ -91,7 +100,8 @@ namespace Zilf.Emit.Zap
                     ?? throw new InvalidOperationException("Failed to construct options");
             }
 
-            debug = wantDebugInfo ? new DebugFileBuilder() : null;
+            debug = builderOptions.HasFlag(GameBuilderOptions.WantDebugInfo) ? new DebugFileBuilder() : null;
+            abbrevs = builderOptions.HasFlag(GameBuilderOptions.WantFrequentWords) ? new AbbrevFinder() : null;
 
             stream = streamFactory.CreateMainStream();
             writer = new StreamWriter(stream);
@@ -540,18 +550,36 @@ namespace Zilf.Emit.Zap
             writer.Close();
 
             // write frequent words file if necessary
-            if (!streamFactory.FrequentWordsFileExists)
+            if (abbrevs != null)
             {
                 stream = streamFactory.CreateFrequentWordsStream();
                 writer = new StreamWriter(stream);
 
-                writer.WriteLine(INDENT + "; Dummy frequent words file for {0}", streamFactory.GetMainFileName(true));
-                writer.WriteLine(INDENT + ".FSTR FSTR?DUMMY,\"\"");
+                const int maxAbbrevs = 96;
+                writer.WriteLine(INDENT + "; Frequent words file for {0}", streamFactory.GetMainFileName(true));
+                writer.WriteLine();
+                int num = 1, totalSavings = 0;
+                foreach (var r in abbrevs.GetResults(maxAbbrevs))
+                {
+                    writer.WriteLine(INDENT + ".FSTR FSTR?{0},\"{1}\"\t\t; {2}x, saved {3}",
+                        num++, SanitizeString(r.Text), r.Count, r.Score);
+                    totalSavings += r.Score;
+                }
+
+                if (num < maxAbbrevs)
+                    writer.WriteLine(INDENT + ".FSTR FSTR?DUMMY,\"\"");
                 writer.WriteLine("WORDS::");
-                for (int i = 0; i < 96; i++)
+                for (int i = 1; i < num; i++)
+                    writer.WriteLine(INDENT + "FSTR?{0}", i);
+                for (int i = num; i < maxAbbrevs; i++)
                     writer.WriteLine(INDENT + "FSTR?DUMMY");
 
+                writer.WriteLine();
                 writer.WriteLine(INDENT + ".ENDI");
+
+                writer.WriteLine(INDENT + "; Total savings: {0} Z-chars (~{1} bytes)",
+                    totalSavings, totalSavings * 2 / 3);
+
                 writer.Close();
             }
 
@@ -704,6 +732,8 @@ namespace Zilf.Emit.Zap
             // property tables
             foreach (var ob in objects)
             {
+                abbrevs?.AddText(ob.DescriptiveName);
+
                 writer.WriteLine();
                 writer.WriteLine("?PTBL?{0}:: .TABLE", ob.SymbolicName);
                 ob.WriteProperties(writer);
@@ -833,8 +863,11 @@ namespace Zilf.Emit.Zap
             if (stringPool.Count > 0)
                 writer.WriteLine();
 
-            foreach (var pair in stringPool.OrderBy(p => p.Key))
-                writer.WriteLine(INDENT + ".GSTR {0},\"{1}\"", pair.Value, SanitizeString(pair.Key));
+            foreach (var (text, symbol) in stringPool.OrderBy(p => p.Key))
+            {
+                abbrevs?.AddText(text);
+                writer.WriteLine(INDENT + ".GSTR {0},\"{1}\"", symbol, SanitizeString(text));
+            }
         }
 
         internal void WriteOutput(string str)

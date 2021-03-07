@@ -220,9 +220,13 @@ namespace Zilf.Compiler
                     {
                         var zversion = ctx.ZEnvironment.ZVersion;
                         var streamFactory = new ZapStreamFactory(this, outputFileName);
-                        var options = MakeGameOptions(ctx);
+                        var gameOptions = MakeGameOptions(ctx);
 
-                        using var gameBuilder = new GameBuilder(zversion, streamFactory, wantDebugInfo, options);
+                        var builderOptions = wantDebugInfo ? GameBuilderOptions.WantDebugInfo : GameBuilderOptions.None;
+                        if (!streamFactory.FrequentWordsFileExists)
+                            builderOptions |= GameBuilderOptions.WantFrequentWords;
+
+                        using var gameBuilder = new GameBuilder(zversion, streamFactory, builderOptions, gameOptions);
                         Compilation.Compile(ctx, gameBuilder);
                     }
                     catch (ZilErrorBase ex)     // catch fatals too

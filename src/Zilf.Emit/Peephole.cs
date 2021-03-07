@@ -384,7 +384,7 @@ namespace Zilf.Emit
         ///     </description></item>
         ///     <item><description>Instruction types may be toggled between
         ///     <see cref="PeepholeLineType.BranchNegative"/> and
-        ///     <see cref="PeepholeLineType.BranchPositive"/>.)
+        ///     <see cref="PeepholeLineType.BranchPositive"/>.
         ///     </description></item>
         /// </list>
         /// </remarks>
