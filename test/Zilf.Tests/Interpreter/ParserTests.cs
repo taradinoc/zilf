@@ -37,7 +37,7 @@ namespace Zilf.Tests.Interpreter
     {
         class TestParserSite : IParserSite
         {
-            readonly Dictionary<string, ZilAtom> atoms = new Dictionary<string, ZilAtom>();
+            readonly Dictionary<string, ZilAtom> atoms = new();
 
             public ParserMacros Macros { get; } = new ParserMacros(new Context());
 

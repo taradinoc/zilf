@@ -278,8 +278,8 @@ namespace Zilf.Emit
         }
 
         ILabel? pendingLabel;
-        readonly Dictionary<ILabel, ILabel> aliases = new Dictionary<ILabel, ILabel>();
-        readonly LinkedList<Line> lines = new LinkedList<Line>();
+        readonly Dictionary<ILabel, ILabel> aliases = new();
+        readonly LinkedList<Line> lines = new();
 
         /// <summary>
         /// Gets or sets the delegate that will be used to combine adjacent instructions.

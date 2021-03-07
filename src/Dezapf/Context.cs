@@ -28,7 +28,7 @@ namespace Dezapf
     {
         int zversion;
 
-        readonly Dictionary<ushort, ZOpAttribute> opcodes = new Dictionary<ushort, ZOpAttribute>();
+        readonly Dictionary<ushort, ZOpAttribute> opcodes = new();
 
         public Context()
         {

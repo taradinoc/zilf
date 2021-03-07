@@ -6,7 +6,7 @@ namespace Zilf.Language.Parsing
     sealed class CharBuffer
     {
         readonly IEnumerator<char> source;
-        readonly Stack<char> heldChars = new Stack<char>(2);
+        readonly Stack<char> heldChars = new(2);
         char? curChar;
 
         public CharBuffer(IEnumerable<char> source)

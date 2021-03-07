@@ -46,7 +46,7 @@ namespace Zilf.Interpreter
 
     class StructuralEqualityComparer : IEqualityComparer<ZilObject>
     {
-        public static readonly StructuralEqualityComparer Instance = new StructuralEqualityComparer();
+        public static readonly StructuralEqualityComparer Instance = new();
 
         StructuralEqualityComparer()
         {

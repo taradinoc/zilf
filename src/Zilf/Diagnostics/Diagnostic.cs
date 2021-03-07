@@ -118,7 +118,7 @@ namespace Zilf.Diagnostics
 
         sealed class CustomFormatter : IFormatProvider, ICustomFormatter
         {
-            public static readonly CustomFormatter Instance = new CustomFormatter();
+            public static readonly CustomFormatter Instance = new();
 
             CustomFormatter()
             {
@@ -198,11 +198,11 @@ namespace Zilf.Diagnostics
         where TMessageSet : class
     {
         readonly string prefix;
-        readonly Dictionary<int, MessageAttribute> messages = new Dictionary<int, MessageAttribute>();
+        readonly Dictionary<int, MessageAttribute> messages = new();
 
         [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-        public static readonly DiagnosticFactory<TMessageSet> Instance = new DiagnosticFactory<TMessageSet>();
+        public static readonly DiagnosticFactory<TMessageSet> Instance = new();
 
         protected DiagnosticFactory()
         {

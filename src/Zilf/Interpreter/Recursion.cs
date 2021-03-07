@@ -22,7 +22,7 @@ namespace Zilf.Interpreter
 {
     static class Recursion
     {
-        static readonly ConditionalWeakTable<object, object?> table = new ConditionalWeakTable<object, object?>();
+        static readonly ConditionalWeakTable<object, object?> table = new();
 
         public static bool TryLock(object obj)
         {

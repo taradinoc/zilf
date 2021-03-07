@@ -29,7 +29,7 @@ namespace Zilf.Interpreter.Values
     {
         readonly int value;
 
-        public static readonly ZilFix Zero = new ZilFix(0);
+        public static readonly ZilFix Zero = new(0);
 
         public ZilFix(int value)
         {

@@ -181,7 +181,7 @@ namespace Zilf.Interpreter
             return ch;
         }
 
-        static readonly Regex RetroPathRE = new Regex(@"^(?:(?<device>[^:]+):)?(?:<(?<directory>[^>]+)>)?(?<filename>[^:<>]+)$");
+        static readonly Regex RetroPathRE = new(@"^(?:(?<device>[^:]+):)?(?:<(?<directory>[^>]+)>)?(?<filename>[^:<>]+)$");
 
         [Subr]
         public static ZilObject OPEN(Context ctx, [Decl("'\"READ\"")] string mode, string path)

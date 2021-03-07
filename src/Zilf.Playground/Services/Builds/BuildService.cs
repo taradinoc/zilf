@@ -136,7 +136,7 @@ namespace Zilf.Playground.Services.Builds
             this.jsInterop = jsInterop;
         }
 
-        private static readonly Regex StoryFileRegExp = new Regex(@"\.z\d$", RegexOptions.IgnoreCase);
+        private static readonly Regex StoryFileRegExp = new(@"\.z\d$", RegexOptions.IgnoreCase);
 
         public async Task CompileWorkspaceAsync()
         {

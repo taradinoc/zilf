@@ -71,7 +71,7 @@ namespace Zilf.Interpreter.Values.Tied
                 zo => zo.ToStringContext(ctx, friendly));
         }
 
-        static readonly ObList detachedObList = new ObList();
+        static readonly ObList detachedObList = new();
 
         protected static ZilAtom GetStdAtom(StdAtom stdAtom)
         {

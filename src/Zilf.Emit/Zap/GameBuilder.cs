@@ -30,26 +30,26 @@ namespace Zilf.Emit.Zap
     {
         const string INDENT = "\t";
 
-        internal static readonly NumericOperand ZERO = new NumericOperand(0);
+        internal static readonly NumericOperand ZERO = new(0);
 
-        internal static readonly NumericOperand ONE = new NumericOperand(1);
+        internal static readonly NumericOperand ONE = new(1);
 
-        static readonly ConstantLiteralOperand VOCAB = new ConstantLiteralOperand("VOCAB");
+        static readonly ConstantLiteralOperand VOCAB = new("VOCAB");
 
         // all global names go in here
-        readonly Dictionary<string, string> symbols = new Dictionary<string, string>(250);
+        readonly Dictionary<string, string> symbols = new(250);
 
-        readonly List<ObjectBuilder> objects = new List<ObjectBuilder>(100);
-        readonly Dictionary<string, PropertyBuilder> props = new Dictionary<string, PropertyBuilder>(32);
-        readonly Dictionary<string, FlagBuilder> flags = new Dictionary<string, FlagBuilder>(32);
-        readonly Dictionary<string, IOperand> constants = new Dictionary<string, IOperand>(100);
-        readonly List<GlobalBuilder> globals = new List<GlobalBuilder>(100);
-        readonly List<TableBuilder> impureTables = new List<TableBuilder>(10);
-        readonly List<TableBuilder> pureTables = new List<TableBuilder>(10);
-        readonly List<WordBuilder> vocabulary = new List<WordBuilder>(100);
-        readonly HashSet<char> siBreaks = new HashSet<char>();
-        readonly Dictionary<string, IOperand> stringPool = new Dictionary<string, IOperand>(100);
-        readonly Dictionary<int, NumericOperand> numberPool = new Dictionary<int, NumericOperand>(50);
+        readonly List<ObjectBuilder> objects = new(100);
+        readonly Dictionary<string, PropertyBuilder> props = new(32);
+        readonly Dictionary<string, FlagBuilder> flags = new(32);
+        readonly Dictionary<string, IOperand> constants = new(100);
+        readonly List<GlobalBuilder> globals = new(100);
+        readonly List<TableBuilder> impureTables = new(10);
+        readonly List<TableBuilder> pureTables = new(10);
+        readonly List<WordBuilder> vocabulary = new(100);
+        readonly HashSet<char> siBreaks = new();
+        readonly Dictionary<string, IOperand> stringPool = new(100);
+        readonly Dictionary<int, NumericOperand> numberPool = new(50);
 
         readonly IZapStreamFactory streamFactory;
         internal readonly int zversion;

@@ -47,15 +47,15 @@ namespace Zilf.ZModel
         public bool TimeStatusLine;
         public ZilAtom? EntryRoutineName;
 
-        public readonly List<ZilRoutine> Routines = new List<ZilRoutine>();
+        public readonly List<ZilRoutine> Routines = new();
 
-        public readonly List<ZilConstant> Constants = new List<ZilConstant>();
+        public readonly List<ZilConstant> Constants = new();
 
-        public readonly List<ZilGlobal> Globals = new List<ZilGlobal>();
+        public readonly List<ZilGlobal> Globals = new();
 
-        public readonly List<ZilModelObject> Objects = new List<ZilModelObject>();
+        public readonly List<ZilModelObject> Objects = new();
 
-        public readonly List<ZilTable> Tables = new List<ZilTable>();
+        public readonly List<ZilTable> Tables = new();
 
         /// <summary>
         /// Maps property names to default property values.
@@ -69,9 +69,9 @@ namespace Zilf.ZModel
         /// </summary>
         public readonly Dictionary<ZilAtom, ZilAtom> BitSynonyms;
 
-        public readonly List<ZilAtom> FlagsOrderedLast = new List<ZilAtom>();
+        public readonly List<ZilAtom> FlagsOrderedLast = new();
 
-        public readonly List<Syntax> Syntaxes = new List<Syntax>();
+        public readonly List<Syntax> Syntaxes = new();
 
         /// <summary>
         /// Maps vocab word atoms to parser-specific word structures.
@@ -79,11 +79,11 @@ namespace Zilf.ZModel
         /// </summary>
         public readonly Dictionary<ZilAtom, IWord> Vocabulary;
 
-        public readonly List<Synonym> Synonyms = new List<Synonym>();
+        public readonly List<Synonym> Synonyms = new();
 
-        public readonly List<ZilAtom> Directions = new List<ZilAtom>();
+        public readonly List<ZilAtom> Directions = new();
 
-        public readonly List<KeyValuePair<ZilAtom, ISourceLine>> Buzzwords = new List<KeyValuePair<ZilAtom, ISourceLine>>();
+        public readonly List<KeyValuePair<ZilAtom, ISourceLine>> Buzzwords = new();
 
         /// <summary>
         /// Maps global symbol atoms to the first atom used to define a
@@ -101,7 +101,7 @@ namespace Zilf.ZModel
         public ObjectOrdering ObjectOrdering = ObjectOrdering.Default;
         public TreeOrdering TreeOrdering = TreeOrdering.Default;
 
-        public readonly List<TellPattern> TellPatterns = new List<TellPattern>();
+        public readonly List<TellPattern> TellPatterns = new();
 
         /// <summary>
         /// The last direction defined with &lt;DIRECTIONS&gt;.

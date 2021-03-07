@@ -66,7 +66,7 @@ namespace Zapf
             Context = context;
         }
 
-        public static readonly AssemblyResult Failed = new AssemblyResult(false, null);
+        public static readonly AssemblyResult Failed = new(false, null);
 
         [MemberNotNullWhen(true, nameof(Context))]
         public bool Success { get; }

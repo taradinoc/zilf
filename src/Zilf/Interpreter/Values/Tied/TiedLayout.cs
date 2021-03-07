@@ -26,7 +26,7 @@ namespace Zilf.Interpreter.Values.Tied
 {
     sealed class TiedLayout
     {
-        internal static readonly Dictionary<Type, TiedLayout> Layouts = new Dictionary<Type, TiedLayout>();
+        internal static readonly Dictionary<Type, TiedLayout> Layouts = new();
 
         public static TiedLayout Create<T>(params Expression<Func<T, ZilObject?>>[] elements)
             where T : ZilObject, IStructure

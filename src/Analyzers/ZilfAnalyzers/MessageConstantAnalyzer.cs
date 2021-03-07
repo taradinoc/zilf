@@ -12,7 +12,7 @@ namespace ZilfAnalyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class MessageConstantAnalyzer : DiagnosticAnalyzer
     {
-        static readonly DiagnosticDescriptor Rule_DuplicateMessageCode = new DiagnosticDescriptor(
+        static readonly DiagnosticDescriptor Rule_DuplicateMessageCode = new(
             DiagnosticIds.DuplicateMessageCode,
             "Duplicate message code",
             "The code '{0}' is used more than once in message set '{1}'",
@@ -20,7 +20,7 @@ namespace ZilfAnalyzers
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        static readonly DiagnosticDescriptor Rule_DuplicateMessageFormat = new DiagnosticDescriptor(
+        static readonly DiagnosticDescriptor Rule_DuplicateMessageFormat = new(
             DiagnosticIds.DuplicateMessageFormat,
             "Duplicate message format",
             "This format string is used more than once in message set '{0}'",
@@ -28,7 +28,7 @@ namespace ZilfAnalyzers
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        static readonly DiagnosticDescriptor Rule_PrefixedMessageFormat = new DiagnosticDescriptor(
+        static readonly DiagnosticDescriptor Rule_PrefixedMessageFormat = new(
             DiagnosticIds.PrefixedMessageFormat,
             "Message has hardcoded prefix",
             "This format string has the prefix '{0}', which should be moved to the call site",
@@ -36,9 +36,9 @@ namespace ZilfAnalyzers
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        public static readonly Regex PrefixedMessageFormatRegex = new Regex(
+        public static readonly Regex PrefixedMessageFormatRegex = new(
             @"^(?<prefix>[^a-z .,;:()\[\]{}]+)(?<rest>: .*)$");
-        public static readonly Regex FormatTokenRegex = new Regex(
+        public static readonly Regex FormatTokenRegex = new(
             @"\{(?<number>\d+)(?<suffix>:[^}]*)?\}");
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =

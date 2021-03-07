@@ -18,7 +18,7 @@ namespace ZilfAnalyzers
         const string MessageFormat = "This exception should use a diagnostic code instead";
         const string Category = "Error Reporting";
 
-        static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+        static readonly DiagnosticDescriptor Rule = new(
             DiagnosticIds.ExceptionShouldUseDiagnosticCode, Title, MessageFormat,
             Category, DiagnosticSeverity.Warning, isEnabledByDefault: true);
 

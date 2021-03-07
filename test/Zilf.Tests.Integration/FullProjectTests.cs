@@ -146,9 +146,9 @@ namespace Zilf.Tests.Integration
             }
         }
 
-        static readonly Regex SerialNumberRegex = new Regex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
+        static readonly Regex SerialNumberRegex = new(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
 
-        static readonly Regex ZilfVersionRegex = new Regex(@"ZILF [0-9.a-z]+ lib \S+");
+        static readonly Regex ZilfVersionRegex = new(@"ZILF [0-9.a-z]+ lib \S+");
 
         static string MassageText(string text)
         {

@@ -68,13 +68,16 @@ namespace Zilf.Language.Parsing
         }
 
         public static readonly ParserOutput EmptySplice =
-            new ParserOutput { Type = ParserOutputType.EmptySplice };
+            new()
+            { Type = ParserOutputType.EmptySplice };
 
         public static readonly ParserOutput EndOfInput =
-            new ParserOutput { Type = ParserOutputType.EndOfInput };
+            new()
+            { Type = ParserOutputType.EndOfInput };
 
         public static readonly ParserOutput Terminator =
-            new ParserOutput { Type = ParserOutputType.Terminator };
+            new()
+            { Type = ParserOutputType.Terminator };
 
         public static ParserOutput FromObject(ZilObject zo)
         {

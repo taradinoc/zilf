@@ -96,8 +96,8 @@ namespace Zilf.Compiler
         /// </remarks>
         static class PseudoPropertyAtoms
         {
-            public static readonly ZilAtom Desc = new ZilAtom("?DESC?", null, StdAtom.None);
-            public static readonly ZilAtom Location = new ZilAtom("?IN/LOC?", null, StdAtom.None);
+            public static readonly ZilAtom Desc = new("?DESC?", null, StdAtom.None);
+            public static readonly ZilAtom Location = new("?IN/LOC?", null, StdAtom.None);
         }
 
         /// <summary>

@@ -28,7 +28,7 @@ namespace Zilf.Tests.Integration
 {
     abstract class TestCaseIO
     {
-        protected readonly StringBuilder outputBuffer = new StringBuilder();
+        protected readonly StringBuilder outputBuffer = new();
 
         public string CollectOutput()
         {

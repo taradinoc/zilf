@@ -66,9 +66,9 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             }
         }
 
-        public KeyCollection Keys => new KeyCollection(dict);
+        public KeyCollection Keys => new(dict);
 
-        public ValueCollection Values => new ValueCollection(dict);
+        public ValueCollection Values => new(dict);
 
         public IEnumerator<KeyValuePair<char, IEdge<T>>> GetEnumerator()
         {

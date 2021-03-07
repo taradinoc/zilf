@@ -72,7 +72,7 @@ namespace Dezapf
 
     class CompoundChunk : Chunk
     {
-        protected readonly List<Chunk> contents = new List<Chunk>();
+        protected readonly List<Chunk> contents = new();
 
 /*
         public static CompoundChunk Combine(Chunk first, Chunk second)

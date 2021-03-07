@@ -72,17 +72,17 @@ namespace Zilf.Interpreter
             return sb.ToString();
         }
 
-        public static implicit operator ZilResult(ZilObject value) => new ZilResult(Outcome.Value, value, null);
+        public static implicit operator ZilResult(ZilObject value) => new(Outcome.Value, value, null);
 
-        public static ZilResult MapRet(ZilObject[] values) => new ZilResult(Outcome.MapRet, new ZilVector(values), null);
+        public static ZilResult MapRet(ZilObject[] values) => new(Outcome.MapRet, new ZilVector(values), null);
 
-        public static ZilResult MapStop(ZilObject[] values) => new ZilResult(Outcome.MapStop, new ZilVector(values), null);
+        public static ZilResult MapStop(ZilObject[] values) => new(Outcome.MapStop, new ZilVector(values), null);
 
-        public static ZilResult MapLeave(ZilObject value) => new ZilResult(Outcome.MapLeave, value, null);
+        public static ZilResult MapLeave(ZilObject value) => new(Outcome.MapLeave, value, null);
 
-        public static ZilResult Return(ZilActivation activation, ZilObject value) => new ZilResult(Outcome.Return, value, activation);
+        public static ZilResult Return(ZilActivation activation, ZilObject value) => new(Outcome.Return, value, activation);
 
-        public static ZilResult Again(ZilActivation activation) => new ZilResult(Outcome.Again, null, activation);
+        public static ZilResult Again(ZilActivation activation) => new(Outcome.Again, null, activation);
 
         /// <summary>
         /// Extracts the value, if this result is a simple value, or throws an exception.

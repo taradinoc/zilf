@@ -46,11 +46,11 @@ namespace Zilf.ZModel.Vocab
             /// <summary>
             /// A map from scope flag names to their bit values.
             /// </summary>
-            public readonly Dictionary<string, byte> Dict = new Dictionary<string, byte>();
+            public readonly Dictionary<string, byte> Dict = new();
             /// <summary>
             /// The names of scope flags that add to the defaults instead of overriding (if only additive flags are given).
             /// </summary>
-            public readonly HashSet<string> Additive = new HashSet<string>();
+            public readonly HashSet<string> Additive = new();
             /// <summary>
             /// The default set of flags to use when no scope flags are given.
             /// </summary>
@@ -60,7 +60,7 @@ namespace Zilf.ZModel.Vocab
             public byte DefaultFlags;
         }
 
-        static readonly ConditionalWeakTable<ZilVector, CacheEntry> sflagsCache = new ConditionalWeakTable<ZilVector, CacheEntry>();
+        static readonly ConditionalWeakTable<ZilVector, CacheEntry> sflagsCache = new();
 
         public static byte Parse(ZilList? list, Context ctx)
         {

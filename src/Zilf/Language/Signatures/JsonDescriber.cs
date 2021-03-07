@@ -86,7 +86,7 @@ namespace Zilf.Language.Signatures
 
     sealed class JsonDescriber : SignatureVisitorWithValue<JObject>
     {
-        static readonly JsonDescriber Instance = new JsonDescriber();
+        static readonly JsonDescriber Instance = new();
 
         JsonDescriber()
         {

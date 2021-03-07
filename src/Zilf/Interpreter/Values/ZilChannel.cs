@@ -127,7 +127,7 @@ namespace Zilf.Interpreter.Values
     [BuiltinAlternate(typeof(ZilChannel))]
     sealed class ZilStringChannel : ZilChannel
     {
-        readonly StringBuilder sb = new StringBuilder();
+        readonly StringBuilder sb = new();
 
         /// <exception cref="ArgumentException"><paramref name="fileAccess"/> is not <see cref="FileAccess.Write"/>.</exception>
         public ZilStringChannel(FileAccess fileAccess)

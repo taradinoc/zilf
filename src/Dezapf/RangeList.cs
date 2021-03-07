@@ -67,7 +67,7 @@ namespace Dezapf
             }
         }
 
-        readonly List<Range> list = new List<Range>();
+        readonly List<Range> list = new();
 
         public void Add(Range range)
         {

@@ -32,7 +32,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public static ZilDecl FromList(ZilListBase list) => new ZilDecl(list);
+        public static ZilDecl FromList(ZilListBase list) => new(list);
 
         public override StdAtom StdTypeAtom => StdAtom.DECL;
 

@@ -34,7 +34,7 @@ namespace Zilf.Interpreter.Values
             : base(first, rest) { }
 
         [ChtypeMethod]
-        public static ZilList FromList(ZilListBase list) => new ZilList(list.First, list.Rest);
+        public static ZilList FromList(ZilListBase list) => new(list.First, list.Rest);
 
         public override StdAtom StdTypeAtom => StdAtom.LIST;
 

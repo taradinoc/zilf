@@ -45,7 +45,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public static ZilForm FromList(ZilListBase list) => new ZilForm(list.First!, list.Rest!);
+        public static ZilForm FromList(ZilListBase list) => new(list.First!, list.Rest!);
 
         protected override string OpenBracket => "<";
 
@@ -219,7 +219,7 @@ namespace Zilf.Interpreter.Values
         }
 
         static ZilForm DeepRewriteSourceInfo(ZilForm other, ISourceLine? src) =>
-            new ZilForm(DeepRewriteSourceInfoContents(other, src)) { SourceLine = src };
+            new(DeepRewriteSourceInfoContents(other, src)) { SourceLine = src };
 
         static IEnumerable<ZilObject> DeepRewriteSourceInfoContents(
             IEnumerable<ZilObject> contents, ISourceLine? src)

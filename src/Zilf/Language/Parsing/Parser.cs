@@ -33,7 +33,7 @@ namespace Zilf.Language.Parsing
         readonly IParserSite site;
         readonly ISourceLine? srcOverride;
         readonly ZilObject[]? templateParams;
-        readonly Queue<ZilObject> heldObjects = new Queue<ZilObject>();
+        readonly Queue<ZilObject> heldObjects = new();
 
         public Parser(IParserSite site)
             : this(site, (ISourceLine?)null, null)

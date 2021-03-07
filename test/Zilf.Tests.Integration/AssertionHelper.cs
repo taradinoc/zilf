@@ -31,10 +31,10 @@ namespace Zilf.Tests.Integration
         where TThis : AbstractAssertionHelper<TThis>
     {
         protected string versionDirective = "<VERSION ZIP>";
-        protected readonly StringBuilder miscGlobals = new StringBuilder();
-        protected readonly StringBuilder input = new StringBuilder();
+        protected readonly StringBuilder miscGlobals = new();
+        protected readonly StringBuilder input = new();
         protected readonly List<(Predicate<ZlrHelperRunResult>, string message)> warningChecks =
-            new List<(Predicate<ZlrHelperRunResult>, string message)>();
+            new();
         protected bool wantCompileOutput;
         protected bool wantDebugInfo;
 

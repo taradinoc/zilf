@@ -30,9 +30,9 @@ namespace Zilf.Emit.Zap
 {
     class RoutineBuilder : ConstantOperandBase, IRoutineBuilder
     {
-        internal static readonly Label RTRUE = new Label("TRUE");
-        internal static readonly Label RFALSE = new Label("FALSE");
-        internal static readonly VariableOperand STACK = new VariableOperand("STACK");
+        internal static readonly Label RTRUE = new("TRUE");
+        internal static readonly Label RFALSE = new("FALSE");
+        internal static readonly VariableOperand STACK = new("STACK");
         const char INDENT = '\t';
 
         readonly GameBuilder game;
@@ -45,9 +45,9 @@ namespace Zilf.Emit.Zap
         int nextLabelNum;
         string? pendingDebugText;
 
-        readonly List<LocalBuilder> requiredParams = new List<LocalBuilder>();
-        readonly List<LocalBuilder> optionalParams = new List<LocalBuilder>();
-        readonly List<LocalBuilder> locals = new List<LocalBuilder>();
+        readonly List<LocalBuilder> requiredParams = new();
+        readonly List<LocalBuilder> optionalParams = new();
+        readonly List<LocalBuilder> locals = new();
 
         public RoutineBuilder(GameBuilder game, string name, bool entryPoint, bool cleanStack)
         {

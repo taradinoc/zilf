@@ -27,7 +27,7 @@ namespace Zilf.Interpreter
     [BuiltinType(StdAtom.OBLIST, PrimType.LIST)]
     class ObList : ZilTiedListBase
     {
-        readonly Dictionary<string, ZilAtom> dict = new Dictionary<string, ZilAtom>();
+        readonly Dictionary<string, ZilAtom> dict = new();
         readonly bool ignoreCase;
 
         public ObList()

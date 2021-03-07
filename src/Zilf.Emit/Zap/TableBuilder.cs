@@ -23,9 +23,9 @@ namespace Zilf.Emit.Zap
 {
     class TableBuilder : ConstantOperandBase, ITableBuilder
     {
-        readonly List<short> numericValues = new List<short>();
-        readonly List<IOperand> operandValues = new List<IOperand>();
-        readonly List<byte> types = new List<byte>();
+        readonly List<short> numericValues = new();
+        readonly List<IOperand> operandValues = new();
+        readonly List<byte> types = new();
         int size;
 
         const byte WORD_FLAG = 1;

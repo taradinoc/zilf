@@ -69,7 +69,7 @@ namespace Zilf.ZModel.Values
 
         public ZilAtom ObjectOrRoom => GetStdAtom(IsRoom ? StdAtom.ROOM : StdAtom.OBJECT);
 
-        public ZilList PropertiesList => new ZilList(Properties);
+        public ZilList PropertiesList => new(Properties);
 
         protected override TiedLayout GetLayout()
         {

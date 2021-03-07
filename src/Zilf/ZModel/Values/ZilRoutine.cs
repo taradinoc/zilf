@@ -77,7 +77,7 @@ namespace Zilf.ZModel.Values
 
         ZilList ArgSpecAsList => ArgSpec.ToZilList();
 
-        ZilList BodyAsList => new ZilList(body);
+        ZilList BodyAsList => new(body);
 
         public override StdAtom StdTypeAtom => StdAtom.ROUTINE;
 

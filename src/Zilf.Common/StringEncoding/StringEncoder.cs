@@ -59,8 +59,8 @@ namespace Zilf.Common.StringEncoding
         };
         readonly byte[][] charset;
 
-        readonly List<AbbrevEntry> abbrevs = new List<AbbrevEntry>();
-        static readonly AbbrevComparer abbrevLengthComparer = new AbbrevComparer();
+        readonly List<AbbrevEntry> abbrevs = new();
+        static readonly AbbrevComparer abbrevLengthComparer = new();
 
         public StringEncoder()
         {

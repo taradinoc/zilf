@@ -31,7 +31,7 @@ namespace Zilf.Interpreter
     {
         readonly Context ctx;
 
-        readonly Dictionary<ZilAtom, Binding> bindings = new Dictionary<ZilAtom, Binding>();
+        readonly Dictionary<ZilAtom, Binding> bindings = new();
 
         /// <summary>
         /// Creates a new environment, optionally inheriting bindings from a parent environment.

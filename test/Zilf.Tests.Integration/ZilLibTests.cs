@@ -72,7 +72,7 @@ namespace Zilf.Tests.Integration
                    select new[] { Path.GetFileNameWithoutExtension(f) };
         }
 
-        private static readonly Regex PassRegex = new Regex(@"^PASS$", RegexOptions.Multiline);
+        private static readonly Regex PassRegex = new(@"^PASS$", RegexOptions.Multiline);
 
         /// <exception cref="AssertInconclusiveException">Always thrown.</exception>
         [DataTestMethod]

@@ -66,7 +66,7 @@ namespace Zilf.Interpreter.Values
 
         public ZilList ArgSpecAsList => argspec.ToZilList();
 
-        public ZilList BodyAsList => new ZilList(body);
+        public ZilList BodyAsList => new(body);
 
         public override StdAtom StdTypeAtom => StdAtom.FUNCTION;
 

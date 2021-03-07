@@ -37,7 +37,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        readonly Dictionary<int, List<Cell>> buckets = new Dictionary<int, List<Cell>>();
+        readonly Dictionary<int, List<Cell>> buckets = new();
 
         public void Add(T value)
         {

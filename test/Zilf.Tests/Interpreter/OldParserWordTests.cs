@@ -360,7 +360,7 @@ namespace Zilf.Tests.Interpreter
 
         class MockWordBuilder : IWordBuilder
         {
-            public readonly List<byte> ActualBytes = new List<byte>(3);
+            public readonly List<byte> ActualBytes = new(3);
 
             public void AddByte(byte value)
             {

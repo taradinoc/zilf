@@ -38,7 +38,7 @@ namespace Zilf.Language.Signatures
 
         public static SignaturePart Quote(SignaturePart second) => QuotedPart.From(second);
 
-        static readonly Regex orDeclRegex = new Regex(@"^<OR (?:('[^ <>]+)\s*)+>$");
+        static readonly Regex orDeclRegex = new(@"^<OR (?:('[^ <>]+)\s*)+>$");
 
         public static SignaturePart? MaybeConvertDecl(DeclAttribute decl) => MaybeConvertDecl(decl.Pattern);
 

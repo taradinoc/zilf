@@ -31,7 +31,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         private int depth = -1;
         private int leafCount = -1;
         private int resultCount = -1;
-        private EdgeMap<T> edges = new EdgeMap<T>();
+        private EdgeMap<T> edges = new();
 
         public Node<T>? Suffix { get; set; } = null;
         public ref EdgeMap<T> Edges => ref edges;

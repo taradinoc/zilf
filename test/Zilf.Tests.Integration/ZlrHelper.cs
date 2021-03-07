@@ -149,7 +149,7 @@ namespace Zilf.Tests.Integration
             this.input = input;
         }
 
-        private static readonly Regex _invalidXMLChars = new Regex(
+        private static readonly Regex _invalidXMLChars = new(
             @"(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFEFF\uFFFE\uFFFF]",
             RegexOptions.Compiled);
 

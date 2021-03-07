@@ -60,20 +60,20 @@ namespace Zilf.Compiler
         }
 
         // TODO: helper class for managing local variables
-        public readonly Dictionary<ZilAtom, LocalBindingRecord> Locals = new Dictionary<ZilAtom, LocalBindingRecord>();
-        public readonly List<LocalBindingRecord> AllLocalBindingRecords = new List<LocalBindingRecord>();
-        public readonly HashSet<ZilAtom> TempLocalNames = new HashSet<ZilAtom>();
-        public readonly Stack<ILocalBuilder> SpareLocals = new Stack<ILocalBuilder>();
-        public readonly Dictionary<ZilAtom, Stack<LocalBindingRecord>> OuterLocals = new Dictionary<ZilAtom, Stack<LocalBindingRecord>>();
+        public readonly Dictionary<ZilAtom, LocalBindingRecord> Locals = new();
+        public readonly List<LocalBindingRecord> AllLocalBindingRecords = new();
+        public readonly HashSet<ZilAtom> TempLocalNames = new();
+        public readonly Stack<ILocalBuilder> SpareLocals = new();
+        public readonly Dictionary<ZilAtom, Stack<LocalBindingRecord>> OuterLocals = new();
 
-        public readonly Stack<Block> Blocks = new Stack<Block>();
+        public readonly Stack<Block> Blocks = new();
 
         public readonly Dictionary<ZilAtom, IGlobalBuilder> Globals;
         public readonly Dictionary<ZilAtom, IOperand> Constants;
         public readonly Dictionary<ZilAtom, IRoutineBuilder> Routines;
         public readonly Dictionary<ZilAtom, IObjectBuilder> Objects;
-        public readonly Dictionary<ZilTable, ITableBuilder> Tables = new Dictionary<ZilTable, ITableBuilder>();
-        public readonly Dictionary<IWord, IWordBuilder> Vocabulary = new Dictionary<IWord, IWordBuilder>();
+        public readonly Dictionary<ZilTable, ITableBuilder> Tables = new();
+        public readonly Dictionary<IWord, IWordBuilder> Vocabulary = new();
         public readonly Dictionary<ZilAtom, IPropertyBuilder> Properties;
         public readonly Dictionary<ZilAtom, IFlagBuilder> Flags;
 

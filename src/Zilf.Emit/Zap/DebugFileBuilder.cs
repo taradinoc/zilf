@@ -22,8 +22,8 @@ namespace Zilf.Emit.Zap
 {
     class DebugFileBuilder : IDebugFileBuilder
     {
-        readonly Dictionary<string, int> files = new Dictionary<string, int>();
-        readonly List<string> storedLines = new List<string>();
+        readonly Dictionary<string, int> files = new();
+        readonly List<string> storedLines = new();
 
         public int GetFileNumber(string? filename)
         {

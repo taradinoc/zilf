@@ -35,8 +35,8 @@ namespace Zilf.ZModel.Vocab.OldParser
         public PartOfSpeech PartOfSpeech;
         public PartOfSpeech SynonymTypes;
 
-        readonly Dictionary<PartOfSpeech, byte> speechValues = new Dictionary<PartOfSpeech, byte>(2);
-        readonly Dictionary<PartOfSpeech, ISourceLine> definitions = new Dictionary<PartOfSpeech, ISourceLine>(2);
+        readonly Dictionary<PartOfSpeech, byte> speechValues = new(2);
+        readonly Dictionary<PartOfSpeech, ISourceLine> definitions = new(2);
 
         public OldParserWord(ZilAtom atom)
         {

@@ -36,7 +36,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [ChtypeMethod]
-        public static ZilChar FromFix(ZilFix fix) => new ZilChar(fix.Value);
+        public static ZilChar FromFix(ZilFix fix) => new(fix.Value);
 
         public char Char => (char)value;
 

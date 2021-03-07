@@ -44,8 +44,8 @@ namespace Zilf.Emit.Zap
             }
         }
 
-        readonly List<PropertyEntry> props = new List<PropertyEntry>();
-        readonly List<FlagBuilder> flags = new List<FlagBuilder>();
+        readonly List<PropertyEntry> props = new();
+        readonly List<FlagBuilder> flags = new();
 
         public ObjectBuilder(string name)
         {

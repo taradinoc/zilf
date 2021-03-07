@@ -36,7 +36,7 @@ namespace Zilf.ZModel
             MaxVersion = maxVersion;
         }
 
-        static readonly Dictionary<string, LowCoreField> allFields = new Dictionary<string, LowCoreField>
+        static readonly Dictionary<string, LowCoreField> allFields = new()
         {
             { "ZVERSION", new LowCoreField(0) },
             { "ZORKID", new LowCoreField(1) },

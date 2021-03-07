@@ -44,13 +44,13 @@ namespace Zilf.ZModel
             SpecialChars = specialCharDict;
         }
 
-        public static readonly Language Default = new Language(
+        public static readonly Language Default = new(
             0,
             "abcdefghijklmnopqrstuvwxyz",
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
             "0123456789.,!?_#'\"/\\-:()");
 
-        public static readonly Language German = new Language(
+        public static readonly Language German = new(
             1,
             "abcdefghiklmnoprstuwzäöü.,",
             "ABCDEFGHIKLMNOPRSTUWZjqvxy",
@@ -65,7 +65,7 @@ namespace Zilf.ZModel
             '<', '«',
             '>', '»');
 
-        static readonly Dictionary<string, Language> allLanguages = new Dictionary<string, Language>
+        static readonly Dictionary<string, Language> allLanguages = new()
         {
             { "DEFAULT", Default },
             { "GERMAN", German }

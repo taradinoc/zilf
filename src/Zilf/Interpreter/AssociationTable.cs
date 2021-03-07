@@ -26,9 +26,9 @@ namespace Zilf.Interpreter
     class AssociationTable : IEnumerable<AsocResult>
     {
         readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>> associations =
-            new ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>>();
-        readonly WeakCountingSet<ZilObject> firsts = new WeakCountingSet<ZilObject>();
-        readonly WeakCountingSet<ZilObject> seconds = new WeakCountingSet<ZilObject>();
+            new();
+        readonly WeakCountingSet<ZilObject> firsts = new();
+        readonly WeakCountingSet<ZilObject> seconds = new();
 
         /// <summary>
         /// Gets the value associated with a pair of objects.

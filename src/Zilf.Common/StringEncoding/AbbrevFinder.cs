@@ -38,8 +38,8 @@ namespace Zilf.Common.StringEncoding
             }
         }
 
-        readonly List<string> allTexts = new List<string>();
-        readonly StringEncoder encoder = new StringEncoder();
+        readonly List<string> allTexts = new();
+        readonly StringEncoder encoder = new();
 
         /// <summary>
         /// Adds some text to the accumulator.

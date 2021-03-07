@@ -12,7 +12,7 @@ namespace Zilf.Interpreter
     class ParserMacros
     {
         readonly Dictionary<char, SimplePrefixMacroHandler> prefixMacros =
-            new Dictionary<char, SimplePrefixMacroHandler>();
+            new();
 
         readonly Context ctx;
 

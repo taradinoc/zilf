@@ -27,7 +27,7 @@ namespace Zapf.Parsing
 {
     class Tokenizer : IDisposable
     {
-        static readonly Dictionary<char, TokenType> CharTokens = new Dictionary<char, TokenType>
+        static readonly Dictionary<char, TokenType> CharTokens = new()
         {
             { '=', TokenType.Equals },
             { ',', TokenType.Comma },

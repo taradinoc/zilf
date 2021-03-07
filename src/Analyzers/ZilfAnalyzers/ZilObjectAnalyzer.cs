@@ -13,7 +13,7 @@ namespace ZilfAnalyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class ZilObjectAnalyzer : DiagnosticAnalyzer
     {
-        static readonly DiagnosticDescriptor Rule_ComparingZilObjectsWithEquals = new DiagnosticDescriptor(
+        static readonly DiagnosticDescriptor Rule_ComparingZilObjectsWithEquals = new(
             DiagnosticIds.ComparingZilObjectsWithEquals,
             "Comparing ZilObjects with Equals",
             "'{0}' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
@@ -21,7 +21,7 @@ namespace ZilfAnalyzers
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        static readonly DiagnosticDescriptor Rule_PartiallyOverriddenZilObjectComparison = new DiagnosticDescriptor(
+        static readonly DiagnosticDescriptor Rule_PartiallyOverriddenZilObjectComparison = new(
             DiagnosticIds.PartiallyOverriddenZilObjectComparison,
             "Partially overridden ZilObject comparison",
             "'{0}' overrides {1} but does not override {2}",

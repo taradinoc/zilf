@@ -27,11 +27,11 @@ namespace Zilf.Diagnostics
     {
         const int MaxErrorCount = 100;
 
-        readonly List<Diagnostic> diagnostics = new List<Diagnostic>();
+        readonly List<Diagnostic> diagnostics = new();
 
-        readonly List<Diagnostic> suppressedDiagnostics = new List<Diagnostic>();
+        readonly List<Diagnostic> suppressedDiagnostics = new();
 
-        readonly HashSet<string> suppressions = new HashSet<string>();
+        readonly HashSet<string> suppressions = new();
 
         bool suppressAllTheThings;
 
