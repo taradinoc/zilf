@@ -58,7 +58,7 @@ namespace ZilfAnalyzers
             if (zilObjectType == null)
                 return;
 
-            if (!GetTypeAndBases(type).Contains(zilObjectType))
+            if (!GetTypeAndBases(type).Contains(zilObjectType, SymbolEqualityComparer.Default))
                 return;
 
             foreach (var (ifThis, thenThat) in MethodsToOverrideTogether)
@@ -89,7 +89,7 @@ namespace ZilfAnalyzers
             {
                 foreach (var bm in GetMethodAndOverridden(dm))
                 {
-                    if (GetTypeAndBases(baseType).Contains(bm.ContainingType))
+                    if (GetTypeAndBases(baseType).Contains(bm.ContainingType, SymbolEqualityComparer.Default))
                     {
                         overridingMethod = dm;
                         overriddenMethod = bm;
@@ -150,7 +150,7 @@ namespace ZilfAnalyzers
                 if (IsEqualsBasedAssertion(method))
                 {
                     // applies if any argument inherits from ZilObject
-                    if (!argTypes.Any(argType => GetTypeAndBases(argType).Contains(zilObjectType)))
+                    if (!argTypes.Any(argType => GetTypeAndBases(argType).Contains(zilObjectType, SymbolEqualityComparer.Default)))
                         return false;
                 }
                 else if (IsEqualsBasedCollectionComparison(method))
@@ -251,7 +251,7 @@ namespace ZilfAnalyzers
             if (!DetectMemberAccess(context.Node, out var objType, out var memberNode, context.SemanticModel))
                 return;
 
-            if (objType == null || !GetTypeAndBases(objType).Contains(zilObjectType))
+            if (objType == null || !GetTypeAndBases(objType).Contains(zilObjectType, SymbolEqualityComparer.Default))
                 return;
 
             var zilObjectEquals = GetTypeAndBases(zilObjectType)
@@ -261,7 +261,7 @@ namespace ZilfAnalyzers
             var memberSymInfo = context.SemanticModel.GetSymbolInfo(memberNode);
 
             if (memberSymInfo.Symbol is IMethodSymbol method &&
-                GetMethodAndOverridden(method).Contains(zilObjectEquals))
+                GetMethodAndOverridden(method).Contains(zilObjectEquals, SymbolEqualityComparer.Default))
             {
                 var diagnostic = Diagnostic.Create(
                     Rule_ComparingZilObjectsWithEquals,

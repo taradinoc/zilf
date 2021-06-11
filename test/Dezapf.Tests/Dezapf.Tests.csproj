@@ -11,10 +11,10 @@
     <NeutralLanguage>English</NeutralLanguage>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="JunitXml.TestLogger" Version="2.1.81" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
-    <PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
-    <PackageReference Include="MSTest.TestFramework" Version="2.1.2" />
+    <PackageReference Include="JunitXml.TestLogger" Version="3.0.98" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.10.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="2.2.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="2.2.4" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(SolutionDir)\Zilf.licenseheader">
