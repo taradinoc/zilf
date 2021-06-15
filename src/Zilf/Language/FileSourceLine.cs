@@ -31,5 +31,7 @@ namespace Zilf.Language
         public string FileName { get; }
 
         public int Line { get; }
+
+        public override string ToString() => SourceInfo;
     }
 }

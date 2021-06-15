@@ -70,6 +70,12 @@ namespace Zilf.Interpreter.Values
 
         public override int GetHashCode() => form.GetHashCode();
 
+        public override ISourceLine? SourceLine
+        {
+            get => Form.SourceLine;
+            set => Form.SourceLine = value;
+        }
+
         #region IStructure Members
 
         public ZilObject? GetFirst() => form.GetFirst();

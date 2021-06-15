@@ -26,5 +26,7 @@ namespace Zilf.Language
         }
 
         public string SourceInfo { get; }
+
+        public override string ToString() => SourceInfo;
     }
 }

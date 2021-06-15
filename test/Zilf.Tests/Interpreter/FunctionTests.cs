@@ -17,6 +17,7 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Text.RegularExpressions;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -423,6 +424,15 @@ namespace Zilf.Tests.Interpreter
             ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<MAPF ,STRING <FUNCTION (I) <UNPARSE .I>> '(!<FOO>)>",
                 ZilString.FromString("!<FOO>"));
+        }
+
+        [TestMethod]
+        public void Error_During_SEGMENT_Evaluation_Should_Include_Source_Line()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<DEFINE SPLICE-ELEMS () <ERROR FOO>>");
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "[!<SPLICE-ELEMS>]",
+                ex => Regex.Match(ex.Diagnostic?.StackTrace ?? "", @"^\s*in SPLICE-ELEMS called at .*:\d+$").Success);
         }
 
         [TestMethod]
