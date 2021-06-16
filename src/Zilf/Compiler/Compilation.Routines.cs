@@ -203,6 +203,8 @@ namespace Zilf.Compiler
                 if (lb.DefaultValue != null)
                     return;
 
+                MarkSequencePoint(rb, arg.DefaultValue);
+
                 ILabel? nextLabel = null;
 
                 // ReSharper disable once SwitchStatementMissingSomeCases

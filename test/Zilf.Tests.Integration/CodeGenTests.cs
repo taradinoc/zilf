@@ -674,5 +674,19 @@ namespace Zilf.Tests.Integration
                 .GeneratesCodeMatchingAsync(@"\.DEBUG-LINE")
                 .AndNotMatching(@"(\.DEBUG-LINE ([^\r\n]*)\r?\n).*\1");
         }
+
+        [TestMethod]
+        public async Task Local_Variable_Initializers_Should_Have_Debug_Line_Info()
+        {
+            const string ArgSpec = @"""OPT"" (A <FOO>) ""AUX"" (B <FOO>)";
+            const string Body = @"<>";
+
+            await AssertRoutine(ArgSpec, Body)
+                .InV5()
+                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithDebugInfo()
+                .GeneratesCodeMatchingAsync(@"\.DEBUG-LINE ([^\r\n]*)\r?\n\s*ASSIGNED\? 'A")
+                .AndMatching(@"\.DEBUG-LINE ([^\r\n]*)\r?\n\s*(\S+:\s*)?CALL1 FOO >B");
+        }
     }
 }
