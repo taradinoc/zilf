@@ -158,6 +158,7 @@ namespace Zilf.Common
         /// <returns>A task representing the asynchronous write operation.</returns>
         /// <exception cref="NotSupportedException">The file system does not support writing.</exception>
         /// <exception cref="IOException">The file could not be written.</exception>
+        [SuppressMessage("AsyncUsage", "AsyncFixer01:Unnecessary async/await usage", Justification = "await using")]
         async Task SetTextAsync(string path, string content)
         {
             var output = OpenForWriting(path);

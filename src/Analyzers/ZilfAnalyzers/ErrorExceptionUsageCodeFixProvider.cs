@@ -76,10 +76,10 @@ namespace ZilfAnalyzers
             IEnumerable<ExpressionSyntax> NewMessageArgs,
             Func<int, FieldDeclarationSyntax> GetConstantDeclarationSyntax);
 
-        static async Task<Solution> ConvertMessagesToConstantsAsync(Document document, LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
+        static Task<Solution> ConvertMessagesToConstantsAsync(Document document, LiteralCreation[] creations, string severity, CancellationToken cancellationToken)
         {
             var invocations = PlanInvocations(creations, severity);
-            return await ApplyInvocationsAsync(
+            return ApplyInvocationsAsync(
                 document.Project.Solution,
                 Enumerable.Repeat(new KeyValuePair<DocumentId, Invocation[]>(document.Id, invocations), 1),
                 cancellationToken);

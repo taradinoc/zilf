@@ -24,19 +24,19 @@ namespace Zilf.Playground
             jsu.InvokeUnmarshalled<string, string, byte[], bool>("ZilfJsInterop.BlazorDownloadFileFast", filename, contentType, bytes);
         }
 
-        public async Task ScrollToBottomAsync(ElementReference element)
+        public ValueTask ScrollToBottomAsync(ElementReference element)
         {
-            await js.InvokeVoidAsync("ZilfJsInterop.scrollToBottom", element);
+            return js.InvokeVoidAsync("ZilfJsInterop.scrollToBottom", element);
         }
 
-        public async Task<string> PromptAsync(string prompt, string value)
+        public ValueTask<string> PromptAsync(string prompt, string value)
         {
-            return await js.InvokeAsync<string>("prompt", prompt, value);
+            return js.InvokeAsync<string>("prompt", prompt, value);
         }
 
-        public async Task AddEventListenerAsync(ElementReference element, string eventName, string jsHandler, params object[] extraHandlerArgs)
+        public ValueTask AddEventListenerAsync(ElementReference element, string eventName, string jsHandler, params object[] extraHandlerArgs)
         {
-            await js.InvokeVoidAsync("ZilfJsInterop.addEventListener", element, eventName, jsHandler, extraHandlerArgs);
+            return js.InvokeVoidAsync("ZilfJsInterop.addEventListener", element, eventName, jsHandler, extraHandlerArgs);
         }
     }
 }

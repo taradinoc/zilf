@@ -88,7 +88,7 @@ namespace Zilf.Playground.Services.Templates
             return project;
         }
 
-        private async Task CacheFileAsync(string path)
+        private Task CacheFileAsync(string path)
         {
             if (!content.TryGetValue(path, out var httpTask))
             {
@@ -96,7 +96,7 @@ namespace Zilf.Playground.Services.Templates
                 content.Add(path, httpTask);
             }
 
-            await httpTask.ConfigureAwait(false);
+            return httpTask;
         }
 
         public void Dispose()

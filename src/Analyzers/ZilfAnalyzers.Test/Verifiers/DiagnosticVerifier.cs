@@ -35,9 +35,9 @@ namespace ZilfAnalyzers.Test.Helpers
         /// </summary>
         /// <param name="source">A class in the form of a string to run the analyzer on</param>
         /// <param name="expected"> DiagnosticResults that should appear after the analyzer is run on the source</param>
-        protected async Task VerifyCSharpDiagnosticAsync(string source, params DiagnosticResult[] expected)
+        protected Task VerifyCSharpDiagnosticAsync(string source, params DiagnosticResult[] expected)
         {
-            await VerifyDiagnosticsAsync(new[] { source }, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
+            return VerifyDiagnosticsAsync(new[] { source }, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -46,9 +46,9 @@ namespace ZilfAnalyzers.Test.Helpers
         /// </summary>
         /// <param name="source">A class in the form of a string to run the analyzer on</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the source</param>
-        protected async Task VerifyBasicDiagnosticAsync(string source, params DiagnosticResult[] expected)
+        protected Task VerifyBasicDiagnosticAsync(string source, params DiagnosticResult[] expected)
         {
-            await VerifyDiagnosticsAsync(new[] { source }, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
+            return VerifyDiagnosticsAsync(new[] { source }, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -57,9 +57,9 @@ namespace ZilfAnalyzers.Test.Helpers
         /// </summary>
         /// <param name="sources">An array of strings to create source documents from to run the analyzers on</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
-        protected async Task VerifyCSharpDiagnosticAsync(string[] sources, params DiagnosticResult[] expected)
+        protected Task VerifyCSharpDiagnosticAsync(string[] sources, params DiagnosticResult[] expected)
         {
-            await VerifyDiagnosticsAsync(sources, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
+            return VerifyDiagnosticsAsync(sources, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -68,9 +68,9 @@ namespace ZilfAnalyzers.Test.Helpers
         /// </summary>
         /// <param name="sources">An array of strings to create source documents from to run the analyzers on</param>
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
-        protected async Task VerifyBasicDiagnosticAsync(string[] sources, params DiagnosticResult[] expected)
+        protected Task VerifyBasicDiagnosticAsync(string[] sources, params DiagnosticResult[] expected)
         {
-            await VerifyDiagnosticsAsync(sources, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
+            return VerifyDiagnosticsAsync(sources, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>

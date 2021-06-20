@@ -68,9 +68,9 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="language">The language the source classes are in</param>
         /// <param name="analyzer">The analyzer to be run on the sources</param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        private static async Task<Diagnostic[]> GetSortedDiagnosticsAsync(string[] sources, string language, DiagnosticAnalyzer analyzer)
+        private static Task<Diagnostic[]> GetSortedDiagnosticsAsync(string[] sources, string language, DiagnosticAnalyzer analyzer)
         {
-            return await GetSortedDiagnosticsFromDocumentsAsync(analyzer, GetDocuments(sources, language)).ConfigureAwait(false);
+            return GetSortedDiagnosticsFromDocumentsAsync(analyzer, GetDocuments(sources, language));
         }
 
         /// <summary>

@@ -106,7 +106,7 @@ namespace Zilf.Tests.Integration
                 var actualOutput = await helper.ExecuteAsync();
 
                 var massagedActual = MassageText(actualOutput);
-                var massagedExpected = MassageText(File.ReadAllText(outputFile));
+                var massagedExpected = MassageText(await File.ReadAllTextAsync(outputFile));
                 if (massagedActual != massagedExpected)
                 {
                     var expectedLines = SplitLines(massagedExpected);

@@ -38,16 +38,15 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        protected async Task VerifyCSharpFixAsync(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
+        protected Task VerifyCSharpFixAsync(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
         {
-            await VerifyFixAsync(LanguageNames.CSharp,
+            return VerifyFixAsync(LanguageNames.CSharp,
                     GetCSharpDiagnosticAnalyzer(),
                     GetCSharpCodeFixProvider(),
                     oldSource,
                     newSource,
                     codeFixIndex,
-                    allowNewCompilerDiagnostics)
-                .ConfigureAwait(false);
+                    allowNewCompilerDiagnostics);
         }
 
         /// <summary>
@@ -57,16 +56,15 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="newSource">A class in the form of a string after the CodeFix was applied to it</param>
         /// <param name="codeFixIndex">Index determining which codefix to apply if there are multiple</param>
         /// <param name="allowNewCompilerDiagnostics">A bool controlling whether or not the test will fail if the CodeFix introduces other warnings after being applied</param>
-        protected async Task VerifyBasicFixAsync(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
+        protected Task VerifyBasicFixAsync(string oldSource, string newSource, int? codeFixIndex = null, bool allowNewCompilerDiagnostics = false)
         {
-            await VerifyFixAsync(LanguageNames.VisualBasic,
+            return VerifyFixAsync(LanguageNames.VisualBasic,
                     GetBasicDiagnosticAnalyzer(),
                     GetBasicCodeFixProvider(),
                     oldSource,
                     newSource,
                     codeFixIndex,
-                    allowNewCompilerDiagnostics)
-                .ConfigureAwait(false);
+                    allowNewCompilerDiagnostics);
         }
 
         /// <summary>

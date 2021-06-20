@@ -18,7 +18,7 @@ namespace Zilf.Playground
 {
     public class Program
     {
-        public static async Task Main(string[] args)
+        public static Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.Logging.SetMinimumLevel(LogLevel.Debug);
@@ -35,7 +35,7 @@ namespace Zilf.Playground
 
             builder.Services.AddWorkerFactory();
 
-            await builder.Build().RunAsync();
+            return builder.Build().RunAsync();
         }
     }
 }
