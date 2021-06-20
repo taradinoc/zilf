@@ -25,32 +25,6 @@ using Zilf.Common;
 
 namespace Zapf
 {
-    [Obsolete("Use " + nameof(IFileSystem) + " instead.")]
-    class OpeningFileEventArgs : EventArgs
-    {
-        public OpeningFileEventArgs(string filename, bool writing)
-        {
-            FileName = filename;
-            Writing = writing;
-        }
-
-        public string FileName { get; }
-
-        public bool Writing { get; }
-
-        public Stream? Stream { get; set; }
-    }
-
-    [Obsolete("Use " + nameof(IFileSystem) + " instead.")]
-    class CheckingFilePresenceEventArgs : EventArgs
-    {
-        public CheckingFilePresenceEventArgs(string filename) => FileName = filename;
-
-        public string FileName { get; }
-
-        public bool? Exists { get; set; }
-    }
-
     public class InitializingContextEventArgs : EventArgs
     {
         public InitializingContextEventArgs(Context ctx) => Context = ctx;

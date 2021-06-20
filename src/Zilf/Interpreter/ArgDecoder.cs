@@ -1268,7 +1268,7 @@ namespace Zilf.Interpreter
         /// <para>It does <b>not</b> include <see cref="IApplicable"/>, because any ZIL type can be
         /// made applicable via <c>APPLYTYPE</c> even if its C# type does not implement the interface.
         /// Arguments must be converted to <see cref="IApplicable"/> with
-        /// <see cref="ApplicableExtensions.AsApplicable(ZilObject, Context)"/> instead.</para>
+        /// <see cref="ApplicableExtensions.IsApplicable(ZilObject?, Context, out IApplicable?)"/> instead.</para>
         /// </remarks>
         static bool IsZilObjectType(Type t) => typeof(ZilObject).IsAssignableFrom(t) || t == typeof(IStructure);
 

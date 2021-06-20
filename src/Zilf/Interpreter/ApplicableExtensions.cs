@@ -24,20 +24,6 @@ namespace Zilf.Interpreter
 {
     static class ApplicableExtensions
     {
-        [Obsolete("Use IsApplicable(this ZilObject, Context, out IApplicable?) instead.")]
-        public static IApplicable? AsApplicable(this ZilObject? zo, Context ctx)
-        {
-            if (zo == null)
-                return null;
-
-            var del = ctx.GetApplyTypeDelegate(zo.GetTypeAtom(ctx));
-
-            if (del != null)
-                return new ApplicableWrapper(zo, del);
-
-            return zo as IApplicable;
-        }
-
         public static bool IsApplicable([NotNullWhen(true)] this ZilObject? zo, Context ctx)
         {
             if (zo == null)
