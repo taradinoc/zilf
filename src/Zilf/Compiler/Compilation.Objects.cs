@@ -289,35 +289,41 @@ namespace Zilf.Compiler
                         }
                     }
 
-                    if (!phony && !Properties.ContainsKey(atom))
+                    if (!phony)
                     {
-                        if (isSynonym == null)
-                        {
-                            synonym = Context.ZEnvironment.Synonyms.FirstOrDefault(s => s.SynonymWord.Atom == atom);
-                            isSynonym = (synonym != null);
-                        }
+                        PropertyDefinitions.TryAdd(atom, prop.SourceLine);
 
-                        if (isSynonym.Value)
+                        if (!Properties.ContainsKey(atom))
                         {
-                            Debug.Assert(synonym != null);
-
-                            var origAtom = synonym.OriginalWord.Atom;
-                            if (!Properties.TryGetValue(origAtom, out var origPb))
+                            if (isSynonym == null)
                             {
-                                DefineProperty(origAtom);
-                                origPb = Properties[origAtom];
+                                synonym = Context.ZEnvironment.Synonyms.FirstOrDefault(s => s.SynonymWord.Atom == atom);
+                                isSynonym = (synonym != null);
                             }
-                            Properties.Add(atom, origPb);
 
-                            var pAtom = ZilAtom.Parse("P?" + atom.Text, Context);
-                            Constants.Add(pAtom, origPb);
+                            if (isSynonym.Value)
+                            {
+                                Debug.Assert(synonym != null);
 
-                            var origSpec = Context.GetProp(origAtom, Context.GetStdAtom(StdAtom.PROPSPEC));
-                            Context.PutProp(atom, Context.GetStdAtom(StdAtom.PROPSPEC), origSpec);
-                        }
-                        else
-                        {
-                            DefineProperty(atom);
+                                var origAtom = synonym.OriginalWord.Atom;
+                                PropertyDefinitions.TryAdd(origAtom, prop.SourceLine);
+                                if (!Properties.TryGetValue(origAtom, out var origPb))
+                                {
+                                    DefineProperty(origAtom);
+                                    origPb = Properties[origAtom];
+                                }
+                                Properties.Add(atom, origPb);
+
+                                var pAtom = ZilAtom.Parse("P?" + atom.Text, Context);
+                                Constants.Add(pAtom, origPb);
+
+                                var origSpec = Context.GetProp(origAtom, Context.GetStdAtom(StdAtom.PROPSPEC));
+                                Context.PutProp(atom, Context.GetStdAtom(StdAtom.PROPSPEC), origSpec);
+                            }
+                            else
+                            {
+                                DefineProperty(atom);
+                            }
                         }
                     }
 
@@ -407,6 +413,7 @@ namespace Zilf.Compiler
                                         DefineFlag(Context.ZEnvironment.TryGetBitSynonym(word, out var original)
                                             ? original
                                             : word);
+                                        FlagDefinitions.TryAdd(word, prop.SourceLine);
                                     }
                                     catch (ZilError ex)
                                     {

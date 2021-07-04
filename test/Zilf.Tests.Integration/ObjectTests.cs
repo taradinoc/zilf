@@ -558,8 +558,7 @@ namespace Zilf.Tests.Integration
         {
             await AssertGlobals(
                     @"<ROOM WEST-SIDE-OF-FISSURE
-                      (DESC ""West Side of Fissure"")
-                      (ACTION WEST-SIDE-OF-FISSURE-F)>",
+                      (DESC ""West Side of Fissure"")>",
                     @"<ROUTINE WEST-SIDE-OF-FISSURE-F (RARG) <>>",
                     @"<OBJECT DIAMONDS (DESC ""diamonds"") (IN WEST-SIDE-OF-FISSURE-F)>")
                 .WithoutWarnings()
@@ -573,6 +572,58 @@ namespace Zilf.Tests.Integration
                 "<PRINTD ,FOO>")
                 .WithGlobal("<OBJECT FOO (DESC \"first\nsecond\r\nthird\")>")
                 .OutputsAsync("first second third");
+        }
+
+        [TestMethod]
+        public async Task Unused_Flags_Should_Warn()
+        {
+            // only referenced in one object definition - warning
+            await AssertGlobals("<OBJECT FOO (FLAGS MYBIT)>")
+                .WithWarnings("ZIL0211")
+                .CompilesAsync();
+
+            // referenced in two object definitions - warning
+            await AssertGlobals(
+                "<OBJECT FOO (FLAGS MYBIT)>",
+                "<OBJECT BAR (FLAGS MYBIT)>")
+                .WithWarnings("ZIL0211")
+                .CompilesAsync();
+
+            // referenced in a routine - no warning
+            await AssertRoutine("", "<FCLEAR ,FOO ,MYBIT>")
+                .WithGlobal("<OBJECT FOO (FLAGS MYBIT)>")
+                .WithoutWarnings()
+                .CompilesAsync();
+
+            // referenced in syntax - no warning
+            await AssertGlobals(
+                "<OBJECT FOO (FLAGS MYBIT MYBIT2)>",
+                "<SYNTAX BLAH OBJECT (FIND MYBIT) WITH OBJECT (FIND MYBIT2) = V-BLAH>",
+                "<ROUTINE V-BLAH () <>>")
+                .WithoutWarnings()
+                .CompilesAsync();
+        }
+
+        [TestMethod]
+        public async Task Unused_Properties_Should_Warn()
+        {
+            // only referenced in one object definition - warning
+            await AssertGlobals("<OBJECT FOO (MYPROP 123)>")
+                .WithWarnings("ZIL0212")
+                .CompilesAsync();
+
+            // referenced in two object definitions - warning
+            await AssertGlobals(
+                "<OBJECT FOO (MYPROP 123)>",
+                "<OBJECT BAR (MYPROP 456)>")
+                .WithWarnings("ZIL0212")
+                .CompilesAsync();
+
+            // referenced in a routine - no warning
+            await AssertRoutine("", "<GETP ,FOO ,P?MYPROP>")
+                .WithGlobal("<OBJECT FOO (MYPROP 123)>")
+                .WithoutWarnings()
+                .CompilesAsync();
         }
     }
 }

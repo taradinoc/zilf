@@ -121,6 +121,10 @@ namespace Zilf.Diagnostics
         public const int Mentioned_Object_0_Is_Defined_Elsewhere_As_A_1 = 209;
         [Warning("local variable '{0}' is never used", Noisy = true)]
         public const int Local_Variable_0_Is_Never_Used = 210;
+        [Warning("flag '{0}' is defined but never used", Noisy = true)]
+        public const int Flag_0_Is_Defined_But_Never_Used = 211;
+        [Warning("property '{0}' is defined but never used", Noisy = true)]
+        public const int Property_0_Is_Defined_But_Never_Used = 212;
 
         // Z-machine Structures - 0300
 

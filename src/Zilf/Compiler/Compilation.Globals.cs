@@ -288,17 +288,27 @@ namespace Zilf.Compiler
                         if (atom.StdAtom == StdAtom.T)
                             return Game.One;
                         if (Routines.TryGetValue(atom, out var routine))
+                        {
+                            MarkGlobalAsRead(atom);
                             return routine;
+                        }
                         if (Objects.TryGetValue(atom, out var obj))
+                        {
+                            MarkGlobalAsRead(atom);
                             return obj;
+                        }
                         if (Constants.TryGetValue(atom, out var operand))
+                        {
+                            MarkGlobalAsRead(atom);
                             return operand;
+                        }
 
                         if (mode == AmbiguousConstantMode.Optimistic && Globals.TryGetValue(atom, out var global))
                         {
                             Context.HandleError(new CompilerError((ISourceLine?)null,
                                 CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index,
                                 atom));
+                            MarkGlobalAsRead(atom);
                             return global;
                         }
 
@@ -316,6 +326,7 @@ namespace Zilf.Compiler
                         return tb;
 
                     case ZilConstant constant:
+                        MarkGlobalAsRead(constant.Name);
                         return CompileConstant(constant.Value);
 
                     case ZilForm form:
@@ -331,7 +342,10 @@ namespace Zilf.Compiler
                     case ZilHash hash when hash.StdTypeAtom == StdAtom.VOC && hash.GetPrimitive(Context) is ZilAtom primAtom:
                         var wordAtom = ZilAtom.Parse("W?" + primAtom.Text, Context);
                         if (Constants.TryGetValue(wordAtom, out operand))
+                        {
+                            MarkGlobalAsRead(wordAtom);
                             return operand;
+                        }
 
                         return null;
 
@@ -341,6 +355,77 @@ namespace Zilf.Compiler
                             return CompileConstant(primitive);
 
                         return null;
+                }
+            }
+        }
+
+        private void MarkGlobalAsRead(ZilAtom name)
+        {
+            ReadAccessedGlobalNames.Add(name);
+        }
+
+        private void WarnAboutUnusedGlobals()
+        {
+            var alreadyWarned = new HashSet<ZilAtom>();
+
+            SuppressImplicitlyUsedNames();
+
+            Check(
+                CompilerMessages.Flag_0_Is_Defined_But_Never_Used,
+                from flagName in Flags.Keys
+                select (flagName, flagName, FlagDefinitions.GetValueOrDefault(flagName)));
+
+            Check(
+                CompilerMessages.Property_0_Is_Defined_But_Never_Used,
+                from propName in Properties.Keys
+                let propConst = ZilAtom.Parse("P?" + propName.Text, Context)
+                select (propConst, propName, PropertyDefinitions.GetValueOrDefault(propName)));
+
+            void SuppressImplicitlyUsedNames()
+            {
+                // TODO(ZILF-239): this works around the bug where PROPDEF DIRECTIONS incorrectly defines a DIRECTIONS property
+                alreadyWarned.Add(Context.GetStdAtom(StdAtom.DIRECTIONS));
+
+                // direction properties are implicitly used (written into the vocab table)
+                foreach (var dir in Context.ZEnvironment.Directions)
+                {
+                    var dirPropConst = ZilAtom.Parse("P?" + dir.Text, Context);
+                    alreadyWarned.Add(dirPropConst);
+                }
+
+                // FIND flags from syntax are implicitly used (written into the syntax table)
+                foreach (var syn in Context.ZEnvironment.Syntaxes)
+                {
+                    if (syn.FindFlag1 != null)
+                        alreadyWarned.Add(syn.FindFlag1);
+
+                    if (syn.FindFlag2 != null)
+                        alreadyWarned.Add(syn.FindFlag2);
+                }
+
+                /* If we warn about unused globals and routines in the future, this should be extended
+                 * to suppress:
+                 *   GO
+                 *   ACTIONS
+                 *   PREACTIONS
+                 *   PREPOSITIONS
+                 *   VERBS
+                 *   
+                 * ...and, for V3 only, the first 3 global variables defined.
+                 */
+            }
+
+            void Check(int diagnosticCode, IEnumerable<(ZilAtom globalAtom, ZilAtom displayAtom, ISourceLine? src)> names)
+            {
+                foreach (var (globalAtom, displayAtom, src) in names.OrderBy(n => n.displayAtom.Text))
+                {
+                    if (!ReadAccessedGlobalNames.Contains(globalAtom) && alreadyWarned.Add(globalAtom))
+                    {
+                        Context.HandleError(new CompilerError(
+                            src,
+                            diagnosticCode,
+                            displayAtom));
+                    }
                 }
             }
         }

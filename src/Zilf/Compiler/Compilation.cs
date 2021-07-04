@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using Zilf.Emit;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.Language;
 using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
@@ -55,7 +56,9 @@ namespace Zilf.Compiler
             Routines = new Dictionary<ZilAtom, IRoutineBuilder>(equalizer);
             Objects = new Dictionary<ZilAtom, IObjectBuilder>(equalizer);
             Properties = new Dictionary<ZilAtom, IPropertyBuilder>(equalizer);
+            PropertyDefinitions = new Dictionary<ZilAtom, ISourceLine?>(equalizer);
             Flags = new Dictionary<ZilAtom, IFlagBuilder>(equalizer);
+            FlagDefinitions = new Dictionary<ZilAtom, ISourceLine?>(equalizer);
             SoftGlobals = new Dictionary<ZilAtom, SoftGlobal>(equalizer);
         }
 
@@ -74,12 +77,22 @@ namespace Zilf.Compiler
         public readonly Dictionary<ZilAtom, IObjectBuilder> Objects;
         public readonly Dictionary<ZilTable, ITableBuilder> Tables = new();
         public readonly Dictionary<IWord, IWordBuilder> Vocabulary = new();
+
         public readonly Dictionary<ZilAtom, IPropertyBuilder> Properties;
+        public readonly Dictionary<ZilAtom, ISourceLine?> PropertyDefinitions;
+
         public readonly Dictionary<ZilAtom, IFlagBuilder> Flags;
+        public readonly Dictionary<ZilAtom, ISourceLine?> FlagDefinitions;
 
         public readonly Dictionary<ZilAtom, SoftGlobal> SoftGlobals;
         public IOperand? SoftGlobalsTable;
 
         public int UniqueFlags { get; set; }
+
+        /// <summary>
+        /// A set of atoms identifying the global values (constants, globals, routines, objects, flags, etc.) that are "read",
+        /// i.e. used anywhere in the story file as an operand or initializer.
+        /// </summary>
+        public readonly HashSet<ZilAtom> ReadAccessedGlobalNames = new();
     }
 }

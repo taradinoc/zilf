@@ -142,7 +142,9 @@ namespace Zilf.Compiler
                 }
 
                 // routine calls
-                var obj = Context.GetZVal(Context.ZEnvironment.InternGlobalName(head));
+                ZilAtom internedHead = Context.ZEnvironment.InternGlobalName(head);
+                MarkGlobalAsRead(internedHead);
+                var obj = Context.GetZVal(internedHead);
 
                 while (obj is ZilConstant cnst)
                     obj = cnst.Value;
@@ -219,6 +221,7 @@ namespace Zilf.Compiler
                             src,
                             CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index,
                             atom));
+                        MarkGlobalAsRead(atom);
                         return Globals[atom].Indirect;
                     }
                     if (SoftGlobals.ContainsKey(atom))

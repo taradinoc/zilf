@@ -99,6 +99,8 @@ namespace Zilf.Compiler
             BuildUserDefinedTables();
             BuildHeaderExtensionTable();
 
+            WarnAboutUnusedGlobals();
+
             Game.Finish();
         }
 
