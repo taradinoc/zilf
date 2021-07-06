@@ -48,7 +48,7 @@ namespace Zilf.ZModel.Values
             Atom
         }
 
-        struct InputElement
+        readonly struct InputElement
         {
             public readonly InputElementType Type;
             public readonly ZilAtom? Variable;
@@ -111,7 +111,7 @@ namespace Zilf.ZModel.Values
             String
         }
 
-        struct OutputElement
+        readonly struct OutputElement
         {
             public readonly OutputElementType Type;
             public readonly ZilAtom? Constant, Variable, PartOfSpeech;
@@ -212,7 +212,7 @@ namespace Zilf.ZModel.Values
             }
         }
 
-        struct Pattern
+        readonly struct Pattern
         {
             public readonly InputElement[] Inputs;
             public readonly OutputElement[] Outputs;

@@ -72,6 +72,25 @@ namespace Zilf.Interpreter.Values.Tied
         }
 
         static readonly ObList detachedObList = new();
+        static readonly Dictionary<StdAtom, string> stdAtomNames = new();
+
+        static ZilTiedListBase()
+        {
+            var names = Enum.GetNames<StdAtom>();
+
+            foreach (var pname in names)
+            {
+                var sa = Enum.Parse<StdAtom>(pname);
+
+                if (sa == StdAtom.None)
+                    continue;
+
+                var attr = typeof(StdAtom).GetField(pname)!.GetCustomAttributes<AtomAttribute>(false).SingleOrDefault();
+
+                if (attr != null && attr.Name != pname)
+                    stdAtomNames.Add(sa, attr.Name);
+            }
+        }
 
         protected static ZilAtom GetStdAtom(StdAtom stdAtom)
         {
@@ -81,7 +100,12 @@ namespace Zilf.Interpreter.Values.Tied
             if (Diagnostics.DiagnosticContext.Current.Frame?.Context is Context ctx)
                 return ctx.GetStdAtom(stdAtom);
 
-            return detachedObList[stdAtom.ToString()];
+            var pname = stdAtomNames.GetValueOrDefault(stdAtom) ?? stdAtom.ToString();
+
+            if (!detachedObList.Contains(pname))
+                detachedObList[pname] = new ZilAtom(pname, detachedObList, stdAtom);
+
+            return detachedObList[pname];
         }
 
         protected static ZilObject FALSE
