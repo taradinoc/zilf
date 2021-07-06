@@ -142,15 +142,15 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject? MIN(Context ctx, [Required] int[] args)
+        public static ZilObject MIN(Context ctx, int[] args)
         {
-            return new ZilFix(args.Min());
+            return new ZilFix(args.Length == 0 ? int.MaxValue : args.Min());
         }
 
         [Subr]
-        public static ZilObject MAX(Context ctx, [Required] int[] args)
+        public static ZilObject MAX(Context ctx, int[] args)
         {
-            return new ZilFix(args.Max());
+            return new ZilFix(args.Length == 0 ? int.MinValue : args.Max());
         }
 
         [Subr("OR?")]
