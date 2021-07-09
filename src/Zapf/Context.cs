@@ -499,7 +499,7 @@ namespace Zapf
                 OutFile = Path.ChangeExtension(OutFile, ".z" + ZVersion);
 
             position = 0;
-            stream = FileSystem.OpenForWriting(OutFile);
+            stream = FileSystem.OpenForWritingAndReading(OutFile);
         }
 
         public void CloseOutput()
