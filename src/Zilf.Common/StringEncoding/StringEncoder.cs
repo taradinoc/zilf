@@ -31,7 +31,7 @@ namespace Zilf.Common.StringEncoding
 
     public class StringEncoder
     {
-        struct AbbrevEntry
+        readonly struct AbbrevEntry
         {
             public readonly Horspool Pattern;
             public readonly byte Number;
@@ -48,7 +48,7 @@ namespace Zilf.Common.StringEncoding
             public int Compare(AbbrevEntry x, AbbrevEntry y)
             {
                 int d = y.Pattern.Text.Length - x.Pattern.Text.Length;
-                return d != 0 ? d : String.Compare(x.Pattern.Text, y.Pattern.Text, StringComparison.Ordinal);
+                return d != 0 ? d : string.Compare(x.Pattern.Text, y.Pattern.Text, StringComparison.Ordinal);
             }
         }
 
@@ -94,21 +94,22 @@ namespace Zilf.Common.StringEncoding
         public byte[] Encode(string str, int? size, StringEncoderMode mode) =>
             Encode(str, size, mode, out _);
 
-        private void Abbreviate(ref StringBuilder sb)
+        /// <summary>
+        /// Replaces occurrences of abbreviated strings in the <see cref="StringBuilder"/> with Unicode private use characters.
+        /// </summary>
+        /// <param name="sb">A <see cref="StringBuilder"/> containing the string to abbreviate, which may be modified in place.</param>
+        /// <remarks>
+        /// This was based on Matthew Russotto's implementation of Robert A. Wagner's optimal parse algorithm.
+        /// </remarks>
+        private void Abbreviate(StringBuilder sb)
         {
-            // Parse string using Wagner's optimal parse and...
-            // temporarily replace abbreviated strings with Unicode private use characters (E000-E05F)
-            var abbrLocs = new List<int>[sb.Length];
-            for (int i = 0; i < abbrLocs.Length; i++)
-            {
-                abbrLocs[i] = new List<int>();
-            }
+            var abbrLocs = new List<int>?[sb.Length];
             for (int i = 0; i < abbrevs.Count; i++)
             {
                 var idx = abbrevs[i].Pattern.FindIn(sb);
                 while (idx >= 0)
                 {
-                    abbrLocs[idx].Add(i);
+                    (abbrLocs[idx] ??= new()).Add(i);
                     idx = abbrevs[i].Pattern.FindIn(sb, idx + 1);
                 }
             }
@@ -118,18 +119,21 @@ namespace Zilf.Common.StringEncoding
             const int abbrRefCost = 2; // An abbreviation reference is 2 characters, always.
             for (int idx = sb.Length - 1; idx >= 0; idx--)
             {
-                int charCost;
-                Encode(new string(sb[idx], 1), null, StringEncoderMode.NoAbbreviations, out charCost);
+                int charCost = GetCharCostInZchars(sb[idx]);
                 minRemainingCost[idx] = minRemainingCost[idx + 1] + charCost;
                 chosenAbbr[idx] = -1;
-                foreach (int abbrNo in abbrLocs[idx])
+                var locs = abbrLocs[idx];
+                if (locs != null)
                 {
-                    int abbrLen = abbrevs[abbrNo].Pattern.Text.Length;
-                    int costWithPattern = abbrRefCost + minRemainingCost[idx + abbrLen];
-                    if (costWithPattern < minRemainingCost[idx])
+                    foreach (int abbrNo in locs)
                     {
-                        chosenAbbr[idx] = abbrNo;
-                        minRemainingCost[idx] = costWithPattern;
+                        int abbrLen = abbrevs[abbrNo].Pattern.Text.Length;
+                        int costWithPattern = abbrRefCost + minRemainingCost[idx + abbrLen];
+                        if (costWithPattern < minRemainingCost[idx])
+                        {
+                            chosenAbbr[idx] = abbrNo;
+                            minRemainingCost[idx] = costWithPattern;
+                        }
                     }
                 }
             }
@@ -150,9 +154,30 @@ namespace Zilf.Common.StringEncoding
             // Must be done backwards so index values are still valid when we replace abbrs.
             for (int i = replacements.Count - 1; i >= 0; i--)
             {
-                sb.Remove(replacements[i].idx, abbrevs[replacements[i].abbrNo].Pattern.Text.Length - 1);
-                sb[replacements[i].idx] = (char)(0xE000 + abbrevs[replacements[i].abbrNo].Number);
+                var (idx, abbrNo) = replacements[i];
+                sb.Remove(idx, abbrevs[abbrNo].Pattern.Text.Length - 1);
+                sb[idx] = (char)(0xE000 + abbrevs[abbrNo].Number);
             }
+        }
+
+        private int GetCharCostInZchars(char c)
+        {
+            if (c == ' ')
+                return 1;
+
+            if (c == '\n')
+                return 2;
+
+            if (UnicodeTranslation.Table.TryGetValue(c, out byte b) == false)
+                b = (byte)c;
+
+            if (Array.IndexOf(charset[0], b) >= 0)
+                return 1;
+
+            if (Array.IndexOf(charset[1], b) >= 0 || Array.IndexOf(charset[2], b) >= 0)
+                return 2;
+
+            return 4;
         }
 
         public byte[] Encode(string str, int? size, StringEncoderMode mode, out int zchars)
@@ -166,7 +191,7 @@ namespace Zilf.Common.StringEncoding
             var sb = new StringBuilder(str);
 
             if (!noAbbrevs)
-                Abbreviate(ref sb);
+                Abbreviate(sb);
 
             for (int i = 0; i < sb.Length; i++)
             {
@@ -300,8 +325,8 @@ namespace Zilf.Common.StringEncoding
 
                 case 0:
                 case 13:
-                case var _ when zscii >= 32 && zscii <= 126:
-                case var _ when zscii >= 155 && zscii <= 251:
+                case >= 32 and <= 126:
+                case >= 155 and <= 251:
                     // printable in all versions
                     return true;
 
