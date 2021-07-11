@@ -207,6 +207,7 @@ namespace Zilf.Tests.Integration
                 "<ROUTINE V-SAMPLE () <>>",
                 "<SYNTAX SAMPLE = V-SAMPLE>")
                 .InV3()
+                .WithWarnings("ZIL0310", "ZIL0311")
                 .ImpliesAsync(
                     "<==? ,W?HEMIDEMISEMIQUAVER ,W?HEMIDE>",
                     "<==? ,W?HEMIDE ,W?HEMIDEISH>",
@@ -215,6 +216,14 @@ namespace Zilf.Tests.Integration
                     "<==? ,W?SAMPLE ,W?SAMPLED>",
                     "<BTST <GETB ,W?SAMPLE 4> ,PS?VERB>",
                     "<BTST <GETB ,W?SAMPLE 4> ,PS?ADJECTIVE>");
+
+            await AssertGlobals(
+                "<OBJECT FOO (SYNONYM LONGWORDEVENINV4A)>",
+                "<OBJECT BAR (SYNONYM LONGWORDEVENINV4B)>")
+                .InV4()
+                .WithWarnings("ZIL0310")
+                .ImpliesAsync(
+                    "<==? ,W?LONGWORDEVENINV4A ,W?LONGWORDEVENINV4B>");
         }
 
         [TestMethod]

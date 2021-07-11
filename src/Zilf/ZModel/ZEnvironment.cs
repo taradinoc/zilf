@@ -580,6 +580,8 @@ namespace Zilf.ZModel
 
         void MakeZcharCountCache()
         {
+            // TODO: combine ZEnvironment.MakeZcharCountCache with the zchar counting/caching logic in StringEncoder
+
             if (charset0 == null || charset1 == null || charset2 == null)
                 throw new InvalidOperationException("Missing charset(s)");
 
@@ -619,13 +621,24 @@ namespace Zilf.ZModel
         }
 
         /// <summary>
+        /// A callback used to report that two words are being merged due to vocabulary resolution.
+        /// </summary>
+        /// <param name="mainWord">The first word.</param>
+        /// <param name="duplicateWord">The second word.</param>
+        /// <param name="blameV3"><b>true</b> if the current target is V3, and V4's higher vocab resolution would
+        /// make the words distinguishable. <b>false</b> if the current target is already V4+, or if the words would
+        /// still have to be merged in V4+.
+        /// </param>
+        public delegate void NotifyVocabularyMergeDelegate(IWord mainWord, IWord duplicateWord, bool blameV3);
+
+        /// <summary>
         /// Merges words that are indistinguishable because of the vocabulary resolution.
         /// </summary>
         /// <param name="notifyMerge">A callback to notify the caller that the first word
         /// has absorbed the second, and any references to the second should be retargeted
         /// to the first.</param>
         [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Not normalizing.")]
-        public void MergeVocabulary(Action<IWord, IWord> notifyMerge)
+        public void MergeVocabulary(NotifyVocabularyMergeDelegate notifyMerge)
         {
             /* NOTE: words may end with incomplete multi-ZChar constructs that are still
              * significant for lexing, so even if the printed forms of two vocab words are
@@ -647,7 +660,7 @@ namespace Zilf.ZModel
 
             foreach (var g in groupedWords)
             {
-                if (g.Take(2).Count() != 2)
+                if (!g.Skip(1).Any())
                     continue;
 
                 // found a collision: merge words[1..N] into words[0]
@@ -655,7 +668,7 @@ namespace Zilf.ZModel
                 for (int i = 1; i < words.Length; i++)
                 {
                     VocabFormat.MergeWords(words[0].Word, words[i].Word);
-                    notifyMerge(words[0].Word, words[i].Word);
+                    notifyMerge(words[0].Word, words[i].Word, resolution == 6 && CanBlameV3(words[0].Word, words[1].Word));
                     Vocabulary[words[i].Atom] = Vocabulary[words[0].Atom];
                 }
 
@@ -665,45 +678,42 @@ namespace Zilf.ZModel
                     VocabFormat.MergeWords(words[i].Word, words[0].Word);
                 }
             }
+
+            bool CanBlameV3(IWord word1, IWord word2)
+            {
+                // re-encode with V4+'s higher resolution and see if they become distinguishable
+                const int upgradedResolution = 9;
+                var upgraded1 = encoder.Encode(word1.Atom.Text.ToLowerInvariant(), upgradedResolution, StringEncoderMode.NoAbbreviations);
+                var upgraded2 = encoder.Encode(word2.Atom.Text.ToLowerInvariant(), upgradedResolution, StringEncoderMode.NoAbbreviations);
+                return !upgraded1.SequenceEqual(upgraded2);
+            }
         }
 
-        struct EncodedWord : IEquatable<EncodedWord>
+        readonly struct EncodedWord : IEquatable<EncodedWord>
         {
             readonly byte[] data;
+            readonly int hashCode;
 
             public EncodedWord(byte[] data)
             {
                 this.data = data;
+                hashCode = ((System.Collections.IStructuralEquatable)data).GetHashCode(EqualityComparer<byte>.Default);
             }
 
             [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
             public bool Equals(EncodedWord other)
             {
-                if (other.data == data)
-                    return true;
-
-                if (other.data.Length != data.Length)
+                if (other.hashCode != hashCode)
                     return false;
 
-                for (int i = 0; i < data.Length; i++)
-                {
-                    if (other.data[i] != data[i])
-                        return false;
-                }
-
-                return true;
+                return data.SequenceEqual(other.data);
             }
 
             public override bool Equals(object? obj) => obj is EncodedWord word && Equals(word);
 
             public override int GetHashCode()
             {
-                int result = data.Length;
-
-                foreach (byte b in data)
-                    result = unchecked(result * 13 + b);
-
-                return result;
+                return hashCode;
             }
 
             public override string ToString()

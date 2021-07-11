@@ -511,8 +511,18 @@ namespace Zilf.Compiler
         void PlanVocabMerges(out Dictionary<IWord, IWord> vocabMerges)
         {
             var merges = new Dictionary<IWord, IWord>();
-            Context.ZEnvironment.MergeVocabulary((mainWord, duplicateWord) =>
+            Context.ZEnvironment.MergeVocabulary((mainWord, duplicateWord, blameV3) =>
             {
+                var warning = new CompilerError(
+                    CompilerMessages.Vocab_Collision_0_And_1_Are_Indistinguishable_And_Will_Be_Merged,
+                    mainWord.Atom.Text.ToLowerInvariant(),
+                    duplicateWord.Atom.Text.ToLowerInvariant());
+
+                if (blameV3)
+                    warning = warning.Combine(new CompilerError(CompilerMessages.They_Would_Be_Distinguishable_In_Zmachine_V4_Or_Above));
+
+                Context.HandleError(warning);
+
                 Game.RemoveVocabularyWord(duplicateWord.Atom.Text);
                 merges.Add(duplicateWord, mainWord);
             });

@@ -148,6 +148,11 @@ namespace Zilf.Diagnostics
         public const int Too_Many_Parts_Of_Speech_For_0_1 = 308;
         [Error("WORD-FLAGS-LIST must have an even number of elements")]
         public const int WORDFLAGSLIST_Must_Have_An_Even_Number_Of_Elements = 309;
+        [Warning("vocab collision: '{0}' and '{1}' are indistinguishable and will be merged")]
+        public const int Vocab_Collision_0_And_1_Are_Indistinguishable_And_Will_Be_Merged = 310;
+        [Info("they would be distinguishable in Z-machine V4 or above")]
+        public const int They_Would_Be_Distinguishable_In_Zmachine_V4_Or_Above = 311;
+
 
         // Platform Limits - 0400
 
