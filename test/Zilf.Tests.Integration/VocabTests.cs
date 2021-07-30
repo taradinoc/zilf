@@ -359,6 +359,30 @@ namespace Zilf.Tests.Integration
                     "<=? <GETB ,W?BAR 8> 0>");
         }
 
+        [TestMethod]
+        public async Task Synonym_Used_As_Preposition_Should_Copy_The_Preposition_Number()
+        {
+            await AssertGlobals(
+                "<SYNONYM ON ONTO>",
+                "<SYNTAX CLIMB ON OBJECT = V-CLIMB>",
+                "<SYNTAX CLIMB ONTO OBJECT = V-CLIMB>",
+                "<ROUTINE V-CLIMB () <>>")
+                .InV3()
+                .ImpliesAsync(
+                    // original word ON should be a preposition = PR?ON
+                    "<=? <GETB ,W?ON 4> ,PS?PREPOSITION>",
+                    "<=? <GETB ,W?ON 5> ,PR?ON>",
+                    "<=? <GETB ,W?ON 6> 0>",
+                    // synonym ONTO should also be a preposition = PR?ON
+                    "<=? <GETB ,W?ONTO 4> ,PS?PREPOSITION>",
+                    "<=? <GETB ,W?ONTO 5> ,PR?ON>",
+                    "<=? <GETB ,W?ONTO 6> 0>",
+                    // preposition table should only list ON
+                    "<=? <GET ,PREPOSITIONS 0> 1>",
+                    "<=? <GET ,PREPOSITIONS 1> ,W?ON>",
+                    "<=? <GET ,PREPOSITIONS 2> ,PR?ON>");
+        }
+
         #endregion
     }
 }
