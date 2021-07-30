@@ -625,5 +625,17 @@ namespace Zilf.Tests.Integration
                 .WithoutWarnings()
                 .CompilesAsync();
         }
+
+        [TestMethod]
+        public async Task Vocab_Properties_With_Apostrophes_Should_Warn()
+        {
+            await AssertGlobals("<OBJECT CATS-PAJAMAS (SYNONYM PAJAMAS) (ADJECTIVE CAT'S)>")
+                .WithWarnings("MDL0429")
+                .CompilesAsync();
+
+            await AssertGlobals("<OBJECT FOO (SYNONYM WOULDN'T'VE) (ADJECTIVE 90'S)>")
+                .WithWarnings("MDL0429")
+                .DoesNotCompileAsync(); // because 90 can't be an adjective
+        }
     }
 }

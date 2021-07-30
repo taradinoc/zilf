@@ -353,6 +353,7 @@ namespace Zilf.Interpreter
         public static ZilObject OBJECT(Context ctx, ZilAtom name,
              [Decl("<LIST [REST LIST]>")] ZilList[] props)
         {
+            CheckObjectDefinitionForShadyQuotedAtoms(ctx);
             return PerformObject(ctx, name, props, false);
         }
 
@@ -360,7 +361,53 @@ namespace Zilf.Interpreter
         public static ZilObject ROOM(Context ctx, ZilAtom name,
             [Decl("<LIST [REST LIST]>")] ZilList[] props)
         {
+            CheckObjectDefinitionForShadyQuotedAtoms(ctx);
             return PerformObject(ctx, name, props, true);
+        }
+
+        private static void CheckObjectDefinitionForShadyQuotedAtoms(Context ctx)
+        {
+            // OBJECT and ROOM are SUBRs, so quotes will have already been evaluated before the call,
+            // but we can use ctx.TopFrame to access the original calling form
+            if (ctx.TopFrame is CallFrame { SourceLine: var sourceLine, CallingForm: var objectForm })
+            {
+                foreach (var elem in objectForm)
+                {
+                    // check property clauses for SYNONYM and ADJECTIVE
+                    if (elem is ZilList { First: ZilAtom { StdAtom: StdAtom.SYNONYM or StdAtom.ADJECTIVE }, Rest: { } propValues })
+                    {
+                        ZilObject? prevWord = null;
+
+                        foreach (var word in propValues)
+                        {
+                            switch (word)
+                            {
+                                // issue warning for each quoted atom-or-fix in the property value that
+                                // follows another (optionally quoted) atom-or-fix
+                                case ZilForm {
+                                    First: ZilAtom { StdAtom: StdAtom.QUOTE },
+                                    Rest: { First: { } quotedWord, Rest: { IsEmpty: true } }
+                                } when prevWord != null && quotedWord is ZilAtom or ZilFix:
+                                    ctx.HandleError(new InterpreterError(
+                                        sourceLine,
+                                        InterpreterMessages._0_1_Is_Parsed_As_Two_Separate_Words_0_And_1_Did_You_Mean_0_1,
+                                        prevWord,
+                                        quotedWord));
+                                    prevWord = quotedWord;
+                                    break;
+
+                                case ZilAtom or ZilFix:
+                                    prevWord = word;
+                                    break;
+
+                                default:
+                                    prevWord = null;
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         static ZilObject PerformObject(Context ctx, ZilAtom atom, ZilList[] props, bool isRoom)

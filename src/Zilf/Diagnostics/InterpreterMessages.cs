@@ -267,6 +267,8 @@ namespace Zilf.Diagnostics
         public const int _0_Routines_May_Not_Define_BIND_TUPLE_Or_ARGS_Arguments = 427;
         [Warning("{0}: LEXV table initializer is not a multiple of 3 elements")]
         public const int _0_LEXV_Table_Initializer_Is_Not_A_Multiple_Of_3_Elements = 428;
+        [Warning("{0}'{1} is parsed as two separate words, {0} and {1}; did you mean {0}\\'{1}?")]
+        public const int _0_1_Is_Parsed_As_Two_Separate_Words_0_And_1_Did_You_Mean_0_1 = 429;
 
         // Modularity (package system, definitions sections) - 0500
 
