@@ -492,22 +492,40 @@ namespace Zilf.ZModel.Vocab.OldParser
         public void Merge(Context ctx, OldParserWord other)
         {
             if ((other.PartOfSpeech & PartOfSpeech.Adjective) != 0)
+            {
+                UnsetPartOfSpeech(ctx, PartOfSpeech.Adjective);
                 SetAdjective(ctx, other.GetDefinition(PartOfSpeech.Adjective), other.GetValue(PartOfSpeech.Adjective));
+            }
 
             if ((other.PartOfSpeech & PartOfSpeech.Buzzword) != 0)
+            {
+                UnsetPartOfSpeech(ctx, PartOfSpeech.Buzzword);
                 SetBuzzword(ctx, other.GetDefinition(PartOfSpeech.Buzzword), other.GetValue(PartOfSpeech.Buzzword));
+            }
 
             if ((other.PartOfSpeech & PartOfSpeech.Direction) != 0)
+            {
+                UnsetPartOfSpeech(ctx, PartOfSpeech.Direction);
                 SetDirection(ctx, other.GetDefinition(PartOfSpeech.Direction), other.GetValue(PartOfSpeech.Direction));
+            }
 
             if ((other.PartOfSpeech & PartOfSpeech.Object) != 0)
+            {
+                UnsetPartOfSpeech(ctx, PartOfSpeech.Object);
                 SetObject(other.GetDefinition(PartOfSpeech.Object));
+            }
 
             if ((other.PartOfSpeech & PartOfSpeech.Preposition) != 0)
+            {
+                UnsetPartOfSpeech(ctx, PartOfSpeech.Preposition);
                 SetPreposition(ctx, other.GetDefinition(PartOfSpeech.Preposition), other.GetValue(PartOfSpeech.Preposition));
+            }
 
             if ((other.PartOfSpeech & PartOfSpeech.Verb) != 0)
+            {
+                UnsetPartOfSpeech(ctx, PartOfSpeech.Verb);
                 SetVerb(ctx, other.GetDefinition(PartOfSpeech.Verb), other.GetValue(PartOfSpeech.Verb));
+            }
 
             MarkAsSynonym(other.PartOfSpeech & ~PartOfSpeech.FirstMask);
         }
