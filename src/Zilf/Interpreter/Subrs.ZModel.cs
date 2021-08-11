@@ -571,22 +571,50 @@ namespace Zilf.Interpreter
                 }
             }
 
-            if ((flags & TableFlags.Lexv) != 0)
+            var elementCount = count * Math.Max(initializer.Length, 1);
+
+            if ((flags & TableFlags.Lexv) != 0 && (elementCount % 3) != 0)
             {
-                var elementCount = count * Math.Max(initializer.Length, 1);
-                if ((elementCount % 3) != 0)
-                {
-                    ctx.HandleError(new InterpreterError(
-                        InterpreterMessages._0_LEXV_Table_Initializer_Is_Not_A_Multiple_Of_3_Elements,
-                        "ITABLE"));
-                }
+                ctx.HandleError(new InterpreterError(
+                    InterpreterMessages._0_LEXV_Table_Initializer_Is_Not_A_Multiple_Of_3_Elements,
+                    "ITABLE"));
             }
+
+            CheckForTableLengthPrefixOverflow(ctx, "ITABLE", flags, elementCount);
 
             var tab = ZilTable.Create(count, initializer.Length == 0 ? null : initializer, flags, null);
             tab.SourceLine = ctx.TopFrame.SourceLine;
             if ((flags & TableFlags.TempTable) == 0)
                 ctx.ZEnvironment.Tables.Add(tab);
             return tab;
+        }
+
+        static void CheckForTableLengthPrefixOverflow(Context ctx, string name, TableFlags flags, int elementCount)
+        {
+            int maxPrefixValue;
+            string prefixType;
+
+            if ((flags & TableFlags.ByteLength) != 0)
+            {
+                (maxPrefixValue, prefixType) = (byte.MaxValue, "byte");
+            }
+            else if ((flags & TableFlags.WordLength) != 0)
+            {
+                (maxPrefixValue, prefixType) = (ushort.MaxValue, "word");
+            }
+            else
+            {
+                return;
+            }
+
+            if (elementCount > maxPrefixValue)
+            {
+                ctx.HandleError(new InterpreterError(
+                    InterpreterMessages._0_Length_Prefix_Overflow_Table_Element_Count_1_Cannot_Be_Stored_In_A_2,
+                    name,
+                    elementCount,
+                    prefixType));
+            }
         }
 
         static ZilTable PerformTable(Context ctx, ZilListoidBase? flagList, ZilObject[] values,
@@ -699,6 +727,8 @@ namespace Zilf.Interpreter
                 else
                     newValues.Add(val);
             }
+
+            CheckForTableLengthPrefixOverflow(ctx, name, flags, newValues.Count);
 
             var tab = ZilTable.Create(1, newValues.ToArray(), flags, pattern?.ToArray());
             tab.SourceLine = ctx.TopFrame.SourceLine;

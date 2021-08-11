@@ -239,5 +239,32 @@ namespace Zilf.Tests.Integration
                 .ImpliesAsync(
                     "<=? <GET <ZREST ,TBL 4> 0> 300>");
         }
+
+        [TestMethod]
+        public async Task Table_With_Length_Prefix_Should_Warn_If_Overflowing()
+        {
+            await AssertGlobals(
+                "<CONSTANT FIELD <ITABLE BYTE 2500>>")
+                .WithWarnings("MDL0430")
+                .CompilesAsync();
+
+            await AssertGlobals(
+                "<CONSTANT FIELD <ITABLE WORD 70000>>")
+                .WithWarnings("MDL0430")
+                .CompilesAsync();
+
+            const string SOver256 =
+                "This string is longer than two hundred and fifty-six characters. " +
+                "This string is longer than two hundred and fifty-six characters. " +
+                "This string is longer than two hundred and fifty-six characters. " +
+                "This string is longer than two hundred and fifty-six characters. " +
+                "This string is longer than two hundred and fifty-six characters. " +
+                "This string is longer than two hundred and fifty-six characters. ";
+
+            await AssertGlobals(
+                @$"<CONSTANT FIELD <TABLE (STRING LENGTH) ""{SOver256}"">>")
+                .WithWarnings("MDL0430")
+                .CompilesAsync();
+        }
     }
 }

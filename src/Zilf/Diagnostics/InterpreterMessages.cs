@@ -269,6 +269,8 @@ namespace Zilf.Diagnostics
         public const int _0_LEXV_Table_Initializer_Is_Not_A_Multiple_Of_3_Elements = 428;
         [Warning("{0}'{1} is parsed as two separate words, {0} and {1}; did you mean {0}\\'{1}?")]
         public const int _0_1_Is_Parsed_As_Two_Separate_Words_0_And_1_Did_You_Mean_0_1 = 429;
+        [Warning("{0}: length prefix overflow: table element count ({1}) cannot be stored in a {2}")]
+        public const int _0_Length_Prefix_Overflow_Table_Element_Count_1_Cannot_Be_Stored_In_A_2 = 430;
 
         // Modularity (package system, definitions sections) - 0500
 
