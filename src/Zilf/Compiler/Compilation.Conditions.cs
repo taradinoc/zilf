@@ -346,46 +346,46 @@ namespace Zilf.Compiler
 
                 switch (clause)
                 {
-                    case ZilFalse _:
+                    case ZilFalse:
                         // previously, FALSE was only allowed when returned by a macro call, but now we expand macros before generating any code
                         continue;
 
-                    case ZilListoidBase list when list.IsEmpty:
-                    default:
-                        throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "COND");
-
-                    case ZilListoidBase list:
+                    case ZilListoidBase { IsEmpty: false, StdTypeAtom: StdAtom.LIST } list:
                         (origCondition, body) = list;
                         condition = origCondition.Unwrap(Context);
                         break;
+
+                    default:
+                        throw new CompilerError(CompilerMessages.All_Clauses_In_0_Must_Be_Lists, "COND");
                 }
 
                 // if condition is always true (i.e. not a FORM or a FALSE), this is the "else" part
                 switch (condition)
                 {
-                    case ZilForm _:
+                    case ZilForm:
                         // must be evaluated
                         MarkSequencePoint(rb, condition);
                         CompileCondition(rb, condition, condition.SourceLine, nextLabel, false);
                         break;
 
-                    case ZilFalse _:
+                    case ZilFalse:
                         // never true
-                        if (!(origCondition is ZilMacroResult))
+                        if (origCondition is not ZilMacroResult)
                         {
                             Context.HandleError(new CompilerError(condition, CompilerMessages._0_Condition_Is_Always_1,
                                 "COND", "false"));
                         }
                         continue;
 
-                    case ZilAtom atom when atom.StdAtom == StdAtom.T || atom.StdAtom == StdAtom.ELSE:
+                    case ZilAtom { StdAtom: StdAtom.T or StdAtom.ELSE }:
                         // non-shady else part
                         elsePart = true;
                         break;
 
                     default:
                         // shady else part (always true, but not T or ELSE)
-                        Context.HandleError(new CompilerError(condition, CompilerMessages._0_Condition_Is_Always_1, "COND", "true"));
+                        Context.HandleError(new CompilerError(condition, CompilerMessages._0_Condition_Is_Always_1,
+                            "COND", "true"));
                         elsePart = true;
                         break;
                 }
@@ -453,7 +453,7 @@ namespace Zilf.Compiler
                             wantThisResult ? resultStorage : null);
                         break;
 
-                    case ZilList _:
+                    case ZilList:
                         throw new CompilerError(stmt,
                                 CompilerMessages.Expressions_Of_Type_0_Cannot_Be_Compiled,
                                 stmt.GetTypeAtom(Context))
@@ -582,7 +582,7 @@ namespace Zilf.Compiler
                         match = ((ZilObject)form.Eval(Context)).IsTrue;
                         break;
 
-                    case ZilAtom atom when atom.StdAtom != StdAtom.ELSE && atom.StdAtom != StdAtom.T:
+                    case ZilAtom { StdAtom: not (StdAtom.ELSE or StdAtom.T) } atom:
                         shadyElseAtom = atom;
                         goto default;
 

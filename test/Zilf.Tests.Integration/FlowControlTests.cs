@@ -400,6 +400,14 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task COND_Should_Reject_Non_Macro_Forms()
+        {
+            await AssertRoutine("\"AUX\" FOO",
+                    "<COND <SET FOO 123> (<=? .FOO 123> <PRINTN 456>)>")
+                .DoesNotCompileAsync("ZIL0100");
+        }
+
+        [TestMethod]
         public async Task Constants_In_COND_Clause_Should_Only_Be_Stored_If_At_End()
         {
             await AssertRoutine("\"AUX\" (A 0)",
