@@ -312,28 +312,17 @@ namespace Zilf.Common.StringEncoding
 
         public static bool IsPrintable(byte zscii, int zversion)
         {
-            switch (zscii)
+            return zscii switch
             {
-                case 9:
-                case 11:
-                    // only printable in V6
-                    return zversion == 6;
-
-                case 10:
-                    // technically unprintable, but in encoded strings we translate it to a printable newline
-                    return true;
-
-                case 0:
-                case 13:
-                case >= 32 and <= 126:
-                case >= 155 and <= 251:
-                    // printable in all versions
-                    return true;
-
-                default:
-                    // unprintable
-                    return false;
-            }
+                // only printable in V6
+                9 or 11 => zversion == 6,
+                // technically unprintable, but in encoded strings we translate it to a printable newline
+                10 => true,
+                // printable in all versions
+                0 or 13 or >= 32 and <= 126 or >= 155 and <= 251 => true,
+                // unprintable
+                _ => false,
+            };
         }
     }
 }

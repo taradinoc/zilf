@@ -404,7 +404,7 @@ namespace Zilf.Compiler
 
         void FindAndMarkVariable(IVariable var, Action<LocalBindingRecord> markAction)
         {
-            if (!(var is ILocalBuilder))
+            if (var is not ILocalBuilder)
                 return;
 
             var lbr = Locals.Values.First(r => r.LocalBuilder == var);

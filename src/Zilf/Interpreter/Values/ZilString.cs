@@ -148,7 +148,7 @@ namespace Zilf.Interpreter.Values
                     if (index < 0 || index >= Text.Length)
                         throw new ArgumentOutOfRangeException(nameof(index));
 
-                    Text = Text.Substring(0, index) + ch.Char +
+                    Text = Text[..index] + ch.Char +
                            Text.Substring(index + 1, Text.Length - index - 1);
                 }
             }
@@ -179,7 +179,7 @@ namespace Zilf.Interpreter.Values
             public override string Text
             {
                 get => orig.Text[offset..];
-                set => orig.Text = orig.Text.Substring(0, offset) + value;
+                set => orig.Text = string.Concat(orig.Text.AsSpan(0, offset), value);
             }
 
             public override bool StructurallyEquals(ZilObject? obj)
@@ -222,7 +222,7 @@ namespace Zilf.Interpreter.Values
                     if (index >= 0 && index < orig.Text.Length)
                     {
                         orig.Text =
-                            orig.Text.Substring(0, index) +
+                            orig.Text[..index] +
                             ch.Char +
                             orig.Text.Substring(index + 1, orig.Text.Length - index - 1);
                     }

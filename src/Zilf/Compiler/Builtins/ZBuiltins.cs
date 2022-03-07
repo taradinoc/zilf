@@ -413,7 +413,7 @@ namespace Zilf.Compiler.Builtins
                         queue.Enqueue(arg2);
 
                     foreach (var arg in restOfArgs)
-                        if (!(arg is INumericOperand))
+                        if (arg is not INumericOperand)
                             queue.Enqueue(arg);
 
                     arg2 = queue.Dequeue();
@@ -740,7 +740,7 @@ namespace Zilf.Compiler.Builtins
         {
             // make sure all args are constants
             foreach (var arg in args)
-                if (!(arg is INumericOperand))
+                if (arg is not INumericOperand)
                     return null;
 
             if (args.Length == 1)
@@ -1192,7 +1192,7 @@ namespace Zilf.Compiler.Builtins
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET", HasSideEffect = true)]
         public static IOperand SetValueOp(
-            ValueCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Local)]  SoftGlobal dest, ZilObject value)
+            ValueCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Local)] SoftGlobal dest, ZilObject value)
         {
             var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, c.rb.Stack);
 

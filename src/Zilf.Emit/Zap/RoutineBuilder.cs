@@ -217,7 +217,7 @@ namespace Zilf.Emit.Zap
                     throw UnhandledCaseException.FromEnum(cond, "conditional operation");
             }
 
-            if (leftVar && !(left is IVariable))
+            if (leftVar && left is not IVariable)
                 throw new ArgumentException("This condition requires a variable", nameof(left));
 
             if (nullary)

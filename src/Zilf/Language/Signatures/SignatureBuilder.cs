@@ -30,7 +30,7 @@ namespace Zilf.Language.Signatures
 
         public static SignaturePart MaybeConvertDecl(ParamDescAttribute attr)
         {
-            if (string.IsNullOrWhiteSpace(attr.Description) || attr.Description.Contains(" ", StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(attr.Description) || attr.Description.Contains(' ', StringComparison.Ordinal))
                 throw new ArgumentException($"Unexpected param description: {attr.Description}");
 
             return Identifier(attr.Description);

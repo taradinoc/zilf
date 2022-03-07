@@ -641,10 +641,10 @@ namespace Zilf.Compiler
                         new CountableString("2 or 3", true));
                 }
 
-                if (!(atomObj is ZilAtom))
+                if (atomObj is not ZilAtom)
                     throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "first", "an atom");
 
-                if (nextAtomObj != null && !(nextAtomObj is ZilAtom))
+                if (nextAtomObj != null && nextAtomObj is not ZilAtom)
                     throw new CompilerError(CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, "MAP-CONTENTS", "middle", "an atom");
 
                 // shouldn't get here
@@ -764,11 +764,11 @@ namespace Zilf.Compiler
                 if (!blc.spec.Matches(out ZilObject? dirObj, out ZilObject? ptObj, out room))
                     throw new CompilerError(CompilerMessages._0_Expected_1_Element1s_In_Binding_List, Name, 3);
 
-                if (!(dirObj is ZilAtom))
+                if (dirObj is not ZilAtom)
                     throw new CompilerError(
                         CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, Name, "first", "an atom");
 
-                if (!(ptObj is ZilAtom))
+                if (ptObj is not ZilAtom)
                     throw new CompilerError(
                         CompilerMessages._0_1_Element_In_Binding_List_Must_Be_2, Name, "middle", "an atom");
 

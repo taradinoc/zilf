@@ -717,7 +717,7 @@ namespace Zilf.Tests.Interpreter
                 }));
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PUTREST <ASSOCIATIONS> '()>",
-                ex => !(ex is ArgumentDecodingError));
+                ex => ex is not ArgumentDecodingError);
 
             TestHelpers.EvalAndCatch<ArgumentTypeError>("<PUTREST [1 2] [FOO]>");
 

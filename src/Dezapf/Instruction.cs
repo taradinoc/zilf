@@ -237,7 +237,7 @@ namespace Dezapf
 
         public override bool WantNewParagraph(Chunk previous)
         {
-            return !(previous is Instruction);
+            return previous is not Instruction;
         }
     }
 }

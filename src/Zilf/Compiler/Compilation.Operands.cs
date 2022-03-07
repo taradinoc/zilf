@@ -91,7 +91,7 @@ namespace Zilf.Compiler
                     }
                     else
                     {
-                        needTemp = !(value is INumericOperand);
+                        needTemp = value is not INumericOperand;
                     }
                 }
 

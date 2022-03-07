@@ -101,7 +101,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
                 var label = currentEdge.Label;
                 int lenToMatch = Math.Min(word.Length - i, label.Length);
 
-                if (!word.Slice(i, lenToMatch).Equals(label.Span.Slice(0, lenToMatch), StringComparison.Ordinal))
+                if (!word.Slice(i, lenToMatch).Equals(label.Span[..lenToMatch], StringComparison.Ordinal))
                     return null;
 
                 if (label.Length >= word.Length - i)

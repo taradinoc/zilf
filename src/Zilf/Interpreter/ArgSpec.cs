@@ -211,7 +211,7 @@ namespace Zilf.Interpreter
                 ZilObject? argValue, argDecl;
 
                 // could be an atom or a list: (atom defaultValue)
-                if (arg is ZilList al && !(arg is ZilForm))
+                if (arg is ZilList al && arg is not ZilForm)
                 {
                     if (al.IsEmpty)
                         throw new InterpreterError(InterpreterMessages._0_Empty_List_In_Arg_Spec, caller);

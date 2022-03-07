@@ -484,7 +484,7 @@ namespace Zilf
                     if (pos >= 0)
                     {
                         // remove part after split point and keep looking
-                        zilfDir = zilfDir.Substring(0, pos);
+                        zilfDir = zilfDir[..pos];
 
                         if (!string.IsNullOrEmpty(zilfDir))
                             continue;

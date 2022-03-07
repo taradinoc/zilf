@@ -132,7 +132,7 @@ namespace Zilf.Interpreter.Values
                 list = ctx.GetProp(olname, ctx.GetStdAtom(StdAtom.OBLIST)) as ObList ?? ctx.MakeObList(olname);
             }
 
-            var pname = text.Substring(0, idx);
+            var pname = text[..idx];
 
             if (list.Contains(pname))
                 return list[pname];

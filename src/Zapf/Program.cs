@@ -506,7 +506,7 @@ General switches:
                     }
                     break;
 
-                case TimeDirective _:
+                case TimeDirective:
                     if (ctx.ZVersion == 3)
                     {
                         ctx.ZFlags |= 2;
@@ -517,7 +517,7 @@ General switches:
                     }
                     break;
 
-                case SoundDirective _:
+                case SoundDirective:
                     switch (ctx.ZVersion)
                     {
                         case 3:
@@ -543,8 +543,8 @@ General switches:
                         HandleDirective(ctx, node, nodeIndex, false);
                     break;
 
-                case LocalLabel _:
-                case GlobalLabel _:
+                case LocalLabel:
+                case GlobalLabel:
                     HandleLabel(ctx, node, ref nodeIndex);
                     break;
 
@@ -680,7 +680,7 @@ General switches:
             if (ctx.Serial == null)
                 ctx.Serial = DateTime.Now.ToString("yyMMdd");
             else if (ctx.Serial.Length != 6)
-                ctx.Serial = ctx.Serial.PadRight(6).Substring(0, 6);
+                ctx.Serial = ctx.Serial.PadRight(6)[..6];
 
             ctx.Position = 0x12;
             foreach (char c in ctx.Serial)
@@ -695,7 +695,7 @@ General switches:
             if (ctx.Creator != null)
             {
                 if (ctx.Creator.Length != 4)
-                    ctx.Creator = ctx.Creator.PadRight(4).Substring(0, 4);
+                    ctx.Creator = ctx.Creator.PadRight(4)[..4];
 
                 ctx.Position = 0x3C;
                 foreach (char c in ctx.Creator)
@@ -772,8 +772,8 @@ General switches:
                     HandleInstruction(ctx, inst);
                     break;
 
-                case LocalLabel _:
-                case GlobalLabel _:
+                case LocalLabel:
+                case GlobalLabel:
                     HandleLabel(ctx, node, ref nodeIndex);
                     break;
 
@@ -990,8 +990,8 @@ General switches:
                     var right = EvalExpr(ctx, add.Right);
                     return ((uint)(left.Value + right.Value) & 0xffffff00) != 0;
 
-                case StringLiteral _:
-                case QuoteExpr _:
+                case StringLiteral:
+                case QuoteExpr:
                     return false;
 
                 default:
@@ -1002,18 +1002,18 @@ General switches:
         static void HandleDirective(Context ctx, AsmLine node, int nodeIndex, bool assembling)
         {
             // local scope is terminated by any directive except .DEBUG_LINE (not counting labels)
-            if (!(node is DebugLineDirective))
+            if (node is not DebugLineDirective)
                 ctx.EndReassemblyScope(nodeIndex);
 
             switch (node)
             {
-                case NullDirective _:
+                case NullDirective:
                     // nada
                     break;
 
-                case NewDirective _:
-                case TimeDirective _:
-                case SoundDirective _:
+                case NewDirective:
+                case TimeDirective:
+                case SoundDirective:
                     // these are explicitly handled by PassOne or PassTwo
                     break;
 
@@ -1077,7 +1077,7 @@ General switches:
                     }
                     break;
 
-                case EndtDirective _:
+                case EndtDirective:
                     if (ctx.TableStart == null)
                     {
                         Errors.Warn(ctx, node, "ignoring .ENDT outside of a table definition");
@@ -1109,7 +1109,7 @@ General switches:
                     }
                     break;
 
-                case VocendDirective _:
+                case VocendDirective:
                     if (!ctx.InVocab)
                         Errors.Warn(ctx, node, "ignoring .VOCEND outside of a vocabulary block");
                     else
