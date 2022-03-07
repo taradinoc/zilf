@@ -108,6 +108,23 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Assigned_FUNNY_GLOBALS_Should_Work_In_Value_Context()
+        {
+            const int NumGlobals = 500;
+
+            var myGlobals = new List<string> { "<FUNNY-GLOBALS?>" };
+
+            for (int i = 1; i <= NumGlobals; i++)
+                myGlobals.Add($"<GLOBAL MY-GLOBAL-{i} {i}>");
+
+            myGlobals.Add("<GLOBAL VARIABLE 4>");
+
+            await AssertRoutine("", @"<COND (<==? <SETG VARIABLE <- ,VARIABLE 1>> 3> <TELL ""Three."" CR>)>")
+                .WithGlobal(string.Join("\n", myGlobals))
+                .OutputsAsync("Three.\n");
+        }
+
+        [TestMethod]
         public async Task Special_Globals_Should_Always_Be_Hard_Globals()
         {
             const int NumGlobals = 500;

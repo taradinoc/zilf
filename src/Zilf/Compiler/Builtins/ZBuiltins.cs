@@ -1201,7 +1201,7 @@ namespace Zilf.Compiler.Builtins
             if (storage == c.rb.Stack)
             {
                 // duplicate the value
-                c.rb.EmitUnary(UnaryOp.LoadIndirect, c.rb.Stack, c.rb.Stack);
+                c.rb.EmitUnary(UnaryOp.LoadIndirect, c.rb.Stack.Indirect, c.rb.Stack);
             }
 
             c.rb.EmitTernary(
