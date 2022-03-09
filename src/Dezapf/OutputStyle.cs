@@ -37,7 +37,7 @@ namespace Dezapf
         public abstract void FormatGlobalsEnd(TextWriter writer, Context ctx);
         public abstract void FormatGlobal(TextWriter writer, Context ctx, ushort varNum, ushort defaultValue);
 
-        protected string FormatFlags1(Context ctx, byte flags1)
+        protected static string FormatFlags1(Context ctx, byte flags1)
         {
             var sb = new StringBuilder();
             if (ctx.ZVersion <= 3)

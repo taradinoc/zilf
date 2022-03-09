@@ -25,11 +25,9 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
     sealed class Leaderboard : IEnumerable<(int score, string substring)>
     {
         private readonly int maxResults;
-        private readonly Comparison<string> tieBreaker;
 
         private readonly SortedList<(int score, string substring), string> winners;
         private int minScore = int.MinValue;
-        private int maxScore = int.MaxValue;
 
         private class TieBreakingComparer : IComparer<(int score, string str)>
         {
@@ -55,7 +53,6 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         {
             winners = new SortedList<(int score, string substring), string>(new TieBreakingComparer(tieBreaker));
             this.maxResults = maxResults;
-            this.tieBreaker = tieBreaker;
         }
 
         public bool Add(int score, ReadOnlySpan<char> substring)
@@ -74,7 +71,6 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             if (winners.Count > maxResults)
                 winners.RemoveAt(winners.Count - 1);
 
-            maxScore = winners.Keys[0].score;
             minScore = winners.Keys[^1].score;
 
             return true;
