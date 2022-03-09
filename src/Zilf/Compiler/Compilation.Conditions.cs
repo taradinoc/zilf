@@ -201,6 +201,7 @@ namespace Zilf.Compiler
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1508:Avoid dead conditional code", Justification = "False positive")]
         internal IOperand? CompileBoolean(IRoutineBuilder rb, ZilListoidBase args, ISourceLine src,
             bool and, bool wantResult, IVariable? resultStorage)
         {
@@ -546,6 +547,7 @@ namespace Zilf.Compiler
             return wantResult ? resultStorage : null;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Maintainability", "CA1508:Avoid dead conditional code", Justification = "False positive")]
         internal IOperand? CompileIFFLAG(IRoutineBuilder rb, ZilListoidBase clauses, ISourceLine src,
             bool wantResult, IVariable? resultStorage)
         {

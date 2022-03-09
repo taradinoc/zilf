@@ -21,7 +21,7 @@ using System;
 namespace Zilf.ZModel.Values
 {
     [Flags]
-    public enum TableFlags
+    public enum TableFormat
     {
         /// <summary>
         /// The table elements are bytes rather than words.

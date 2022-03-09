@@ -195,6 +195,7 @@ namespace Zilf.Language
             }
         }
 
+        [SuppressMessage("Maintainability", "CA1508:Avoid dead conditional code", Justification = "False positive")]
         static bool CheckFormOrSegment(Context ctx, ZilObject value, ZilForm form,
             bool segment, bool ignoreErrors)
         {

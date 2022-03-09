@@ -729,7 +729,7 @@ namespace Zilf.Interpreter
 
             foreach (var part in fileDefaults)
             {
-                if (part is ZilForm { First: var qt, Rest: { First: ZilAtom tag } } && qt == quoteAtom)
+                if (part is ZilForm { First: var qt, Rest.First: ZilAtom tag } && qt == quoteAtom)
                 {
                     switch (tag.StdAtom)
                     {
@@ -766,7 +766,7 @@ namespace Zilf.Interpreter
                     //}
 
                     if (!(partList is {
-                              First: ZilForm { First: var qt2, Rest: { First: ZilAtom tag2 } } partFirst,
+                              First: ZilForm { First: var qt2, Rest.First: ZilAtom tag2 } partFirst,
                               Rest: {} partRest
                             } && qt2 == quoteAtom))
                     {

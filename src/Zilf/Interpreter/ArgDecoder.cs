@@ -274,9 +274,9 @@ namespace Zilf.Interpreter
         AttributeTargets.Parameter | AttributeTargets.Field)]
     sealed class ParamDescAttribute : Attribute
     {
-        public ParamDescAttribute(string name)
+        public ParamDescAttribute(string description)
         {
-            Description = name;
+            Description = description;
         }
 
         public string Description { get; }

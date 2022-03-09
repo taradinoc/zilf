@@ -2085,7 +2085,7 @@ namespace Zilf.Compiler.Builtins
         public static IOperand TableOp(ValueCall c, params ZilObject[] args)
         {
             var table = (ZilTable)c.form.Eval(c.cc.Context);
-            var tableBuilder = c.cc.Game.DefineTable(table.Name, (table.Flags & TableFlags.Pure) != 0);
+            var tableBuilder = c.cc.Game.DefineTable(table.Name, (table.Flags & TableFormat.Pure) != 0);
             c.cc.Tables.Add(table, tableBuilder);
             return tableBuilder;
         }

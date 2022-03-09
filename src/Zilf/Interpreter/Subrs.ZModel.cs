@@ -501,7 +501,7 @@ namespace Zilf.Interpreter
             // 'init' is a sequence of values to be repeated 'count' times.
             // values are compiled as words unless BYTE/LEXV flag is specified.
 
-            TableFlags flags = 0;
+            TableFormat flags = 0;
 
             // optional specifier
             if (specifier != null)
@@ -512,10 +512,10 @@ namespace Zilf.Interpreter
                         // no change
                         break;
                     case StdAtom.BYTE:
-                        flags = TableFlags.ByteLength;
+                        flags = TableFormat.ByteLength;
                         break;
                     case StdAtom.WORD:
-                        flags = TableFlags.WordLength;
+                        flags = TableFormat.WordLength;
                         break;
                     default:
                         throw new InterpreterError(InterpreterMessages._0_Specifier_Must_Be_NONE_BYTE_Or_WORD, "ITABLE");
@@ -537,25 +537,25 @@ namespace Zilf.Interpreter
                     switch (flag.StdAtom)
                     {
                         case StdAtom.BYTE:
-                            flags |= TableFlags.Byte;
+                            flags |= TableFormat.Byte;
                             break;
                         case StdAtom.WORD:
-                            flags &= ~TableFlags.Byte;
+                            flags &= ~TableFormat.Byte;
                             break;
                         case StdAtom.LENGTH:
                             gotLength = true;
                             break;
                         case StdAtom.LEXV:
-                            flags |= TableFlags.Lexv;
+                            flags |= TableFormat.Lexv;
                             break;
                         case StdAtom.PURE:
-                            flags |= TableFlags.Pure;
+                            flags |= TableFormat.Pure;
                             break;
                         case StdAtom.PARSER_TABLE:
-                            flags |= TableFlags.Pure | TableFlags.ParserTable;
+                            flags |= TableFormat.Pure | TableFormat.ParserTable;
                             break;
                         case StdAtom.TEMP_TABLE:
-                            flags |= TableFlags.TempTable;
+                            flags |= TableFormat.TempTable;
                             break;
                         default:
                             throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "ITABLE", "flag", flag);
@@ -564,16 +564,16 @@ namespace Zilf.Interpreter
 
                 if (gotLength)
                 {
-                    if ((flags & TableFlags.Byte) != 0)
-                        flags |= TableFlags.ByteLength;
+                    if ((flags & TableFormat.Byte) != 0)
+                        flags |= TableFormat.ByteLength;
                     else
-                        flags |= TableFlags.WordLength;
+                        flags |= TableFormat.WordLength;
                 }
             }
 
             var elementCount = count * Math.Max(initializer.Length, 1);
 
-            if ((flags & TableFlags.Lexv) != 0 && (elementCount % 3) != 0)
+            if ((flags & TableFormat.Lexv) != 0 && (elementCount % 3) != 0)
             {
                 ctx.HandleError(new InterpreterError(
                     InterpreterMessages._0_LEXV_Table_Initializer_Is_Not_A_Multiple_Of_3_Elements,
@@ -584,21 +584,21 @@ namespace Zilf.Interpreter
 
             var tab = ZilTable.Create(count, initializer.Length == 0 ? null : initializer, flags, null);
             tab.SourceLine = ctx.TopFrame.SourceLine;
-            if ((flags & TableFlags.TempTable) == 0)
+            if ((flags & TableFormat.TempTable) == 0)
                 ctx.ZEnvironment.Tables.Add(tab);
             return tab;
         }
 
-        static void CheckForTableLengthPrefixOverflow(Context ctx, string name, TableFlags flags, int elementCount)
+        static void CheckForTableLengthPrefixOverflow(Context ctx, string name, TableFormat flags, int elementCount)
         {
             int maxPrefixValue;
             string prefixType;
 
-            if ((flags & TableFlags.ByteLength) != 0)
+            if ((flags & TableFormat.ByteLength) != 0)
             {
                 (maxPrefixValue, prefixType) = (byte.MaxValue, "byte");
             }
-            else if ((flags & TableFlags.WordLength) != 0)
+            else if ((flags & TableFormat.WordLength) != 0)
             {
                 (maxPrefixValue, prefixType) = (ushort.MaxValue, "word");
             }
@@ -698,22 +698,22 @@ namespace Zilf.Interpreter
                 }
             }
 
-            TableFlags flags = 0;
+            TableFormat flags = 0;
             if (pure)
-                flags |= TableFlags.Pure;
+                flags |= TableFormat.Pure;
             if (type == T_BYTES || type == T_STRING)
-                flags |= TableFlags.Byte;
+                flags |= TableFormat.Byte;
             if (wantLength)
             {
                 if (type == T_BYTES || type == T_STRING)
-                    flags |= TableFlags.ByteLength;
+                    flags |= TableFormat.ByteLength;
                 else
-                    flags |= TableFlags.WordLength;
+                    flags |= TableFormat.WordLength;
             }
             if (tempTable)
-                flags |= TableFlags.TempTable;
+                flags |= TableFormat.TempTable;
             if (parserTable)
-                flags |= TableFlags.ParserTable;
+                flags |= TableFormat.ParserTable;
 
             var newValues = new List<ZilObject>(values.Length);
             foreach (var val in values)

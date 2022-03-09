@@ -62,7 +62,7 @@ namespace Zilf.ZModel.Values
     {
         public string? Name { get; set; }
 
-        public abstract TableFlags Flags { get; }
+        public abstract TableFormat Flags { get; }
         public abstract int ElementCount { get; }
         public abstract int ByteCount { get; }
 
@@ -82,7 +82,7 @@ namespace Zilf.ZModel.Values
 
         protected abstract string ToString(Func<ZilObject, string> convert);
 
-        public static ZilTable Create(int repetitions, ZilObject[]? initializer, TableFlags flags,
+        public static ZilTable Create(int repetitions, ZilObject[]? initializer, TableFormat flags,
             ZilObject[]? pattern)
         {
             return new OriginalTable(repetitions, initializer, flags, pattern);
@@ -117,14 +117,14 @@ namespace Zilf.ZModel.Values
         [BuiltinAlternate(typeof(ZilTable))]
         sealed class OriginalTable : ZilTable
         {
-            TableFlags flags;
+            TableFormat flags;
 
             int repetitions;
             ZilObject[]? initializer;
             int[]? elementToByteOffsets;
             ZilObject[]? pattern;
 
-            public OriginalTable(int repetitions, ZilObject[]? initializer, TableFlags flags,
+            public OriginalTable(int repetitions, ZilObject[]? initializer, TableFormat flags,
                 ZilObject[]? pattern)
             {
                 this.repetitions = repetitions;
@@ -134,7 +134,7 @@ namespace Zilf.ZModel.Values
             }
 
             [System.Diagnostics.Contracts.Pure]
-            bool HasLengthPrefix => (flags & (TableFlags.ByteLength | TableFlags.WordLength)) != 0;
+            bool HasLengthPrefix => (flags & (TableFormat.ByteLength | TableFormat.WordLength)) != 0;
 
             [System.Diagnostics.Contracts.Pure]
             int ElementCountWithoutLength => repetitions * initializer?.Length ?? repetitions;
@@ -171,7 +171,7 @@ namespace Zilf.ZModel.Values
                 }
             }
 
-            public override TableFlags Flags => flags;
+            public override TableFormat Flags => flags;
 
             public override void CopyTo<T>(T[] array, TableToArrayElementConverter<T> convert, T defaultFiller, Context ctx)
             {
@@ -179,7 +179,7 @@ namespace Zilf.ZModel.Values
 
                 if (HasLengthPrefix)
                 {
-                    array[0] = convert(new ZilFix(ElementCountWithoutLength), (flags & TableFlags.ByteLength) == 0);
+                    array[0] = convert(new ZilFix(ElementCountWithoutLength), (flags & TableFormat.ByteLength) == 0);
                     start = 1;
                 }
                 else
@@ -214,18 +214,18 @@ namespace Zilf.ZModel.Values
                 var useItable =
                     repetitions != 1 ||
                     initializer == null ||
-                    (flags & (TableFlags.ByteLength | TableFlags.Byte)) == TableFlags.ByteLength ||
-                    (flags & (TableFlags.WordLength | TableFlags.Byte)) == (TableFlags.WordLength | TableFlags.Byte);
+                    (flags & (TableFormat.ByteLength | TableFormat.Byte)) == TableFormat.ByteLength ||
+                    (flags & (TableFormat.WordLength | TableFormat.Byte)) == (TableFormat.WordLength | TableFormat.Byte);
 
                 if (useItable)
                 {
                     sb.Append("%<ITABLE ");
 
-                    if ((flags & TableFlags.ByteLength) != 0)
+                    if ((flags & TableFormat.ByteLength) != 0)
                     {
                         sb.Append("BYTE ");
                     }
-                    else if ((flags & TableFlags.WordLength) != 0)
+                    else if ((flags & TableFormat.WordLength) != 0)
                     {
                         sb.Append("WORD ");
                     }
@@ -242,15 +242,15 @@ namespace Zilf.ZModel.Values
 
                 int pos = sb.Length;
 
-                if ((flags & TableFlags.Byte) != 0)
+                if ((flags & TableFormat.Byte) != 0)
                     sb.Append("BYTE ");
                 if (!useItable && HasLengthPrefix)
                     sb.Append("LENGTH ");
-                if ((flags & TableFlags.Lexv) != 0)
+                if ((flags & TableFormat.Lexv) != 0)
                     sb.Append("LEXV ");
-                if ((flags & TableFlags.Pure) != 0)
+                if ((flags & TableFormat.Pure) != 0)
                     sb.Append("PURE ");
-                if ((flags & TableFlags.TempTable) != 0)
+                if ((flags & TableFormat.TempTable) != 0)
                     sb.Append("TEMP-TABLE ");
 
                 if (pattern != null)
@@ -286,12 +286,12 @@ namespace Zilf.ZModel.Values
             bool IsWord(int index)
             {
                 if (index == -1 && HasLengthPrefix)
-                    return (flags & TableFlags.WordLength) != 0;
+                    return (flags & TableFormat.WordLength) != 0;
 
                 if (index < 0 || index >= ElementCountWithoutLength)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
-                if ((flags & TableFlags.Lexv) != 0)
+                if ((flags & TableFormat.Lexv) != 0)
                 {
                     // word-byte-byte repeating
                     return index % 3 == 0;
@@ -327,7 +327,7 @@ namespace Zilf.ZModel.Values
                     }
                 }
 
-                return (flags & TableFlags.Byte) == 0;
+                return (flags & TableFormat.Byte) == 0;
             }
 
             void ExpandInitializer(ZilObject defaultValue)
@@ -390,14 +390,14 @@ namespace Zilf.ZModel.Values
             internal int? ByteOffsetToIndex(int offset)
             {
                 // account for initial length markers
-                if ((flags & TableFlags.ByteLength) != 0)
+                if ((flags & TableFormat.ByteLength) != 0)
                 {
                     if (offset == 0)
                         return -1;
 
                     offset--;
                 }
-                else if ((flags & TableFlags.WordLength) != 0)
+                else if ((flags & TableFormat.WordLength) != 0)
                 {
                     if (offset == 0)
                         return -1;
@@ -617,13 +617,13 @@ namespace Zilf.ZModel.Values
                 initializer = newInitializer;
 
                 // set width of the length element in pattern
-                if ((flags & TableFlags.ByteLength) != 0)
+                if ((flags & TableFormat.ByteLength) != 0)
                     pattern![0] = ctx.GetStdAtom(StdAtom.BYTE);
                 else
                     pattern![0] = ctx.GetStdAtom(StdAtom.WORD);
 
                 // clear length prefix flags
-                flags &= ~(TableFlags.ByteLength | TableFlags.WordLength);
+                flags &= ~(TableFormat.ByteLength | TableFormat.WordLength);
             }
 
             protected override ZilTable AsNewTable() =>
@@ -659,7 +659,7 @@ namespace Zilf.ZModel.Values
 
             public override int ElementCount => orig.ElementCount - ElementOffset;
             public override int ByteCount => orig.ByteCount - byteOffset;
-            public override TableFlags Flags => orig.Flags & ~(TableFlags.ByteLength | TableFlags.WordLength);
+            public override TableFormat Flags => orig.Flags & ~(TableFormat.ByteLength | TableFormat.WordLength);
 
             public override void CopyTo<T>(T[] array, TableToArrayElementConverter<T> convert, T defaultFiller, Context ctx)
             {

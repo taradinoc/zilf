@@ -28,9 +28,9 @@ namespace Zilf.Interpreter
     [AttributeUsage(AttributeTargets.Class)]
     sealed class BuiltinAlternateAttribute : Attribute
     {
-        public BuiltinAlternateAttribute(Type mainClass)
+        public BuiltinAlternateAttribute(Type mainType)
         {
-            MainType = mainClass;
+            MainType = mainType;
         }
 
         public Type MainType { get; }

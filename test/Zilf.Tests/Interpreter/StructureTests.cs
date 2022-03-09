@@ -246,7 +246,7 @@ namespace Zilf.Tests.Interpreter
 
             var table = point.GetPrimitive(ctx);
             Assert.IsInstanceOfType(table, typeof(ZilTable));
-            Assert.AreEqual(TableFlags.Pure, ((ZilTable)table).Flags);
+            Assert.AreEqual(TableFormat.Pure, ((ZilTable)table).Flags);
         }
 
         [TestMethod]

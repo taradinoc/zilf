@@ -63,7 +63,7 @@ namespace Zilf.Compiler
 
         void BuildTable(ZilTable zt, ITableBuilder tb)
         {
-            if ((zt.Flags & TableFlags.Lexv) != 0)
+            if ((zt.Flags & TableFormat.Lexv) != 0)
             {
                 var values = new IOperand[zt.ElementCount];
                 zt.CopyTo(values, (zo, isWord) => CompileConstant(zo), Game.Zero, Context);
@@ -116,7 +116,7 @@ namespace Zilf.Compiler
                     values[i] = defaultFiller;
                 }
 
-                bool defaultWord = (zt.Flags & TableFlags.Byte) == 0;
+                bool defaultWord = (zt.Flags & TableFormat.Byte) == 0;
 
                 for (int i = 0; i < values.Length; i++)
                 {

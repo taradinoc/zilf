@@ -515,8 +515,8 @@ namespace Zilf.Compiler
             {
                 var warning = new CompilerError(
                     CompilerMessages.Vocab_Collision_0_And_1_Are_Indistinguishable_And_Will_Be_Merged,
-                    mainWord.Atom.Text.ToLowerInvariant(),
-                    duplicateWord.Atom.Text.ToLowerInvariant());
+                    mainWord.Atom.Text.ToUpperInvariant(),
+                    duplicateWord.Atom.Text.ToUpperInvariant());
 
                 if (blameV3)
                     warning = warning.Combine(new CompilerError(CompilerMessages.They_Would_Be_Distinguishable_In_Zmachine_V4_Or_Above));
@@ -573,12 +573,12 @@ namespace Zilf.Compiler
 
             static int ParserTablesFirst(ZilTable t)
             {
-                return (t.Flags & TableFlags.ParserTable) != 0 ? 1 : 2;
+                return (t.Flags & TableFormat.ParserTable) != 0 ? 1 : 2;
             }
 
             foreach (var table in Context.ZEnvironment.Tables.OrderBy(ParserTablesFirst))
             {
-                var pure = (table.Flags & TableFlags.Pure) != 0;
+                var pure = (table.Flags & TableFormat.Pure) != 0;
                 var builder = Game.DefineTable(table.Name, pure);
                 Tables.Add(table, builder);
 
