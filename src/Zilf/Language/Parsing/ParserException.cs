@@ -32,11 +32,11 @@ namespace Zilf.Language.Parsing
         {
         }
 
-        public ParserException()
+        protected ParserException()
         {
         }
 
-        public ParserException(string message) : base(message)
+        protected ParserException(string message) : base(message)
         {
         }
     }

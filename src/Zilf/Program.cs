@@ -239,6 +239,7 @@ namespace Zilf
         }
 
         [return: NotNullIfNotNull("inFile")]
+        [SuppressMessage("Maintainability", "CA1508:Avoid dead conditional code", Justification = "<Pending>")]
         static Context? ParseArgs(string[] args, [NotNullIfNotNull("outFile")] out string? inFile, out string? outFile)
         {
             string? newInFile = inFile = null;

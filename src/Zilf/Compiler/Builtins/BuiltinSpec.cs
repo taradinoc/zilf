@@ -124,8 +124,6 @@ namespace Zilf.Compiler.Builtins
                     throw new ArgumentException("Inscrutable parameter: " + pi.Name);
                 }
 
-                Debug.Assert(CallType != null);
-
                 MinArgs = min;
                 MaxArgs = max;
 
