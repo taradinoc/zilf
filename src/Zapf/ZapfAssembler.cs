@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Zapf.Parsing;
 using Zapf.Parsing.Diagnostics;
@@ -25,28 +24,6 @@ using Zilf.Common;
 
 namespace Zapf
 {
-    public class InitializingContextEventArgs : EventArgs
-    {
-        public InitializingContextEventArgs(Context ctx) => Context = ctx;
-
-        public Context Context { get; }
-    }
-
-    public readonly struct AssemblyResult
-    {
-        public AssemblyResult(bool success, Context? context)
-        {
-            Success = success;
-            Context = context;
-        }
-
-        public static readonly AssemblyResult Failed = new(false, null);
-
-        [MemberNotNullWhen(true, nameof(Context))]
-        public bool Success { get; }
-        public Context? Context { get; }
-    }
-
     public sealed class ZapfAssembler
     {
         public IFileSystem FileSystem { get; set; } = PhysicalFileSystem.Instance;

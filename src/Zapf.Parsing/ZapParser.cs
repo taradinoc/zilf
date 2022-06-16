@@ -394,14 +394,7 @@ namespace Zapf.Parsing
             }
         }
 
-        static bool CanStartExpr(TokenType type)
-        {
-            return type switch
-            {
-                TokenType.Symbol or TokenType.Number or TokenType.String or TokenType.Apostrophe => true,
-                _ => false,
-            };
-        }
+        static bool CanStartExpr(TokenType type) => type is TokenType.Symbol or TokenType.Number or TokenType.String or TokenType.Apostrophe;
 
         AsmExpr ParseExpr()
         {

@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using Zilf.Common.StringEncoding;
@@ -922,84 +921,5 @@ namespace Zapf
                 Errors.Serious(this, "required global symbol '{0}' is missing", name1);
             return 0;
         }
-    }
-
-    public enum SymbolType
-    {
-        /// <summary>
-        /// The symbol has not been defined.
-        /// </summary>
-        Unknown,
-        /// <summary>
-        /// The symbol is a numeric constant.
-        /// </summary>
-        Constant,
-        /// <summary>
-        /// The symbol is a local or global variable.
-        /// </summary>
-        Variable,
-        /// <summary>
-        /// The symbol is a local or global label (byte address).
-        /// </summary>
-        Label,
-        /// <summary>
-        /// The symbol is a packed function address.
-        /// </summary>
-        Function,
-        /// <summary>
-        /// The symbol is a packed string address.
-        /// </summary>
-        String,
-        /// <summary>
-        /// The symbol is an object number.
-        /// </summary>
-        Object,
-    }
-
-    public sealed class Symbol
-    {
-        /// <summary>
-        /// The symbol's name in the source code.
-        /// </summary>
-        public readonly string? Name;
-        /// <summary>
-        /// The symbol's type.
-        /// </summary>
-        public SymbolType Type;
-        /// <summary>
-        /// The symbol's value, usually a numeric constant or an address.
-        /// </summary>
-        public int Value;
-        /// <summary>
-        /// Indicates whether the symbol has a value from a previous attempt,
-        /// but has not yet been defined in the current attempt.
-        /// </summary>
-        public bool Phantom;
-
-        public Symbol()
-        {
-        }
-
-        public Symbol(int value)
-        {
-            Type = SymbolType.Constant;
-            Value = value;
-        }
-
-        public Symbol(string? name, SymbolType type, int value)
-        {
-            Name = name;
-            Type = type;
-            Value = value;
-        }
-    }
-
-    public sealed class Fixup
-    {
-        public Fixup(string symbol) => Symbol = symbol;
-
-        public string Symbol { get; }
-
-        public int Location { get; set; }
     }
 }
