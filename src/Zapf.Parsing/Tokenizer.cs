@@ -85,8 +85,7 @@ namespace Zapf.Parsing
         /// <exception cref="SeriousError">Syntax error.</exception>
         public Token PeekToken()
         {
-            if (heldToken == null)
-                heldToken = NextToken();
+            heldToken ??= NextToken();
 
             return (Token)heldToken;
         }

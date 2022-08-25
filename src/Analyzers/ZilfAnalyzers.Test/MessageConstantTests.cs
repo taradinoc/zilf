@@ -32,7 +32,7 @@ namespace ZilfAnalyzers.Test
         //No diagnostics expected to show up
         [TestMethod]
         [Timeout(10000)]
-        public async Task MessageConstantAnalyzer_NotTriggered()
+        public async Task MessageConstantAnalyzer_NotTriggeredAsync()
         {
             var test = @"";
 
@@ -42,7 +42,7 @@ namespace ZilfAnalyzers.Test
         //Diagnostic and CodeFix both triggered and checked for
         [TestMethod]
         [Timeout(10000)]
-        public async Task MessageConstantAnalyzer_Triggered()
+        public async Task MessageConstantAnalyzer_TriggeredAsync()
         {
             var test = @"
 using System;

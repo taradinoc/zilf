@@ -232,8 +232,7 @@ namespace Zilf.Emit.Zap
         static string ExpandChrSet(string? alphabet)
         {
             var sb = new StringBuilder(100);
-            if (alphabet == null)
-                alphabet = "";
+            alphabet ??= "";
 
             for (int i = 26; i > alphabet.Length; i--)
             {
@@ -263,9 +262,12 @@ namespace Zilf.Emit.Zap
 
             constants.Add(name, value);
             symbols.Add(name, "constant");
-            return value is INumericOperand num
-                ? (IOperand)new NumericConstantOperand(name, num.Value)
-                : new ConstantLiteralOperand(name);
+
+            return value switch
+            {
+                INumericOperand num => new NumericConstantOperand(name, num.Value),
+                _ => new ConstantLiteralOperand(name),
+            };
         }
 
         /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>

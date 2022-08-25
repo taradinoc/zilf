@@ -929,8 +929,7 @@ namespace Zilf.Emit
 
                                 addAfter = newNode;
 
-                                if (node == null)
-                                    node = newNode;
+                                node ??= newNode;
                             }
 
                             // fix targets for old and new lines

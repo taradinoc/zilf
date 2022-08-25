@@ -125,8 +125,7 @@ namespace Zilf.Common.StringEncoding
                     }
                     else
                     {
-                        if (big == null)
-                            big = new Dictionary<char, int>();
+                        big ??= new Dictionary<char, int>();
 
                         big[c] = value;
                     }

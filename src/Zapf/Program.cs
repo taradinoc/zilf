@@ -205,6 +205,7 @@ namespace Zapf
             return sb.ToString();
         }
 
+        // TODO: use tuples instead of KeyValuePair
         internal static Dictionary<string, KeyValuePair<ushort, ZOpAttribute>> MakeOpcodeDict(
             int zversion, bool inform)
         {
@@ -219,13 +220,15 @@ namespace Zapf
             foreach (var fi in fields)
             {
                 var attrs = fi.GetCustomAttributes(typeof(ZOpAttribute), false);
-                foreach (ZOpAttribute attr in attrs)
+                foreach (var attr in attrs.Cast<ZOpAttribute>())
+                {
                     if (effectiveVersion >= attr.MinVer && effectiveVersion <= attr.MaxVer)
                     {
                         var pair = new KeyValuePair<ushort, ZOpAttribute>((ushort)fi.GetValue(null)!, attr);
                         result.Add(inform ? attr.InformName : attr.ClassicName, pair);
                         break;
                     }
+                }
             }
 
             return result;

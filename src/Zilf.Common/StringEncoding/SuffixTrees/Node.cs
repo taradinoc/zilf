@@ -82,8 +82,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         {
             for (var node = this; node != null; node = node.Suffix)
             {
-                if (node.data == null)
-                    node.data = new FastHashSet<T>();
+                node.data ??= new FastHashSet<T>();
 
                 if (!node.data.Add(value))
                     return;

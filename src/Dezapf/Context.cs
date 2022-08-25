@@ -117,18 +117,16 @@ namespace Dezapf
                 if (fi.FieldType == typeof(ushort))
                 {
                     ushort num = (ushort)fi.GetValue(null);
-                    foreach (ZOpAttribute attr in fi.GetCustomAttributes(typeof(ZOpAttribute), false))
+                    foreach (var attr in fi.GetCustomAttributes<ZOpAttribute>(false))
+                    {
                         if (effectiveVersion >= attr.MinVer && effectiveVersion <= attr.MaxVer)
                             opcodes.Add(num, attr);
+                    }
                 }
             }
         }
 
-        public ZOpAttribute GetOpcodeInfo(ushort op)
-        {
-            opcodes.TryGetValue(op, out var result);
-            return result;
-        }
+        public ZOpAttribute GetOpcodeInfo(ushort op) => opcodes.GetValueOrDefault(op);
 
         static readonly char[] defaultAlphabet0 =
         {

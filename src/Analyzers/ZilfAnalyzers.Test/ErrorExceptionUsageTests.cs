@@ -31,7 +31,7 @@ namespace ZilfAnalyzers.Test
     {
         //No diagnostics expected to show up
         [TestMethod]
-        public async Task ErrorExceptionUsageAnalyzer_NotTriggered()
+        public async Task ErrorExceptionUsageAnalyzer_NotTriggeredAsync()
         {
             var test = @"";
 
@@ -40,7 +40,7 @@ namespace ZilfAnalyzers.Test
 
         //Diagnostic and CodeFix both triggered and checked for
         [TestMethod]
-        public async Task ErrorExceptionUsageAnalyzer_TriggeredAndFixed()
+        public async Task ErrorExceptionUsageAnalyzer_TriggeredAndFixedAsync()
         {
             var test = @"
 using System;
@@ -149,7 +149,7 @@ class Program {
         }
 
         [TestMethod]
-        public async Task ErrorExceptionUsageAnalyzer_DontFlagWhenFirstArgIsAlreadyACode()
+        public async Task ErrorExceptionUsageAnalyzer_DontFlagWhenFirstArgIsAlreadyACodeAsync()
         {
             var test = @"
 using System;

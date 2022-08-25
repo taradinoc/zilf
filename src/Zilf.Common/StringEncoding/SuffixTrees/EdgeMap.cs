@@ -35,8 +35,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
 
         public void Add(char c, Edge<T> edge)
         {
-            if (dict == null)
-                dict = new Dictionary<char, Edge<T>>();
+            dict ??= new Dictionary<char, Edge<T>>();
 
             dict.Add(c, edge);
         }
@@ -72,8 +71,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             }
             set
             {
-                if (dict == null)
-                    dict = new Dictionary<char, Edge<T>>();
+                dict ??= new Dictionary<char, Edge<T>>();
 
                 dict[c] = value;
             }

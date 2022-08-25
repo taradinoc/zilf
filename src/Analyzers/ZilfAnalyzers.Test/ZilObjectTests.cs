@@ -31,7 +31,7 @@ namespace ZilfAnalyzers.Test
         //No diagnostics expected to show up
         [TestMethod]
         [Timeout(10000)]
-        public async Task ZilObjectAnalyzer_NotTriggered()
+        public async Task ZilObjectAnalyzer_NotTriggeredAsync()
         {
             var test = @"";
 
@@ -42,7 +42,7 @@ namespace ZilfAnalyzers.Test
         [TestMethod]
         //[Timeout(10000)]
         [Timeout(999999999)]
-        public async Task ZilObjectAnalyzer_Triggered()
+        public async Task ZilObjectAnalyzer_TriggeredAsync()
         {
             var test = @"
 using System;

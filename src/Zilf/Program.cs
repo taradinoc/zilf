@@ -44,10 +44,10 @@ namespace Zilf
 
         internal static int Main(string[] args)
         {
-            var ctx = ParseArgs(args, out var inFile, out var outFile);
+            var ctx = BuildContext(args, out var inFile, out var outFile);
 
             if (ctx == null)
-                return 1;       // ParseArgs signaled an error
+                return 1;       // BuildContext signaled an error
 
             if (!ctx.Quiet)
             {
@@ -239,8 +239,7 @@ namespace Zilf
         }
 
         [return: NotNullIfNotNull("inFile")]
-        [SuppressMessage("Maintainability", "CA1508:Avoid dead conditional code", Justification = "<Pending>")]
-        static Context? ParseArgs(string[] args, [NotNullIfNotNull("outFile")] out string? inFile, out string? outFile)
+        static Context? BuildContext(string[] args, [NotNullIfNotNull("outFile")] out string? inFile, out string? outFile)
         {
             string? newInFile = inFile = null;
             string? newOutFile = outFile = null;
@@ -391,10 +390,8 @@ namespace Zilf
 
             bool SetDefaultsAndValidate()
             {
-                if (mode == null)
-                    mode = (newInFile == null ? RunMode.Interactive : RunMode.Compiler);
-                if (quiet == null)
-                    quiet = (mode == RunMode.Expression || mode == RunMode.Interpreter);
+                mode ??= (newInFile == null ? RunMode.Interactive : RunMode.Compiler);
+                quiet ??= (mode is RunMode.Expression or RunMode.Interpreter);
 
                 switch (mode.Value)
                 {
@@ -405,8 +402,7 @@ namespace Zilf
                             return false;
                         }
 
-                        if (newOutFile == null)
-                            newOutFile = Path.ChangeExtension(newInFile, ".zap");
+                        newOutFile ??= Path.ChangeExtension(newInFile, ".zap");
                         break;
 
                     case RunMode.Expression:
@@ -499,18 +495,7 @@ namespace Zilf
             {
                 var first = Enumerable.Repeat(parent, 1);
 
-                static bool Excluded(string name)
-                {
-                    switch (name.ToUpperInvariant())
-                    {
-                        case "TEST":
-                        case "TESTS":
-                        case var _ when name[0] == '.' || name[0] == '_':
-                            return true;
-                    }
-
-                    return false;
-                }
+                static bool Excluded(string name) => name[0] is '.' or '_' || name.ToUpperInvariant() is "TEST" or "TESTS";
 
                 var rest = from subdir in Directory.EnumerateDirectories(parent)
                            let name = Path.GetFileName(subdir)

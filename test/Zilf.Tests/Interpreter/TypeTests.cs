@@ -1418,12 +1418,14 @@ namespace Zilf.Tests.Interpreter
             var items = prim.ToArray();
             CollectionAssert.AllItemsAreInstancesOfType(items, typeof(ZilList));
 
-            // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
-            foreach (ZilList i in items)
+            var query = from i in items.Cast<ZilList>()
+                        let subItems = i.ToArray()
+                        from j in subItems
+                        select j;
+
+            foreach (var j in query)
             {
-                var subItems = i.ToArray();
-                foreach (var j in subItems)
-                    Assert.IsInstanceOfType(j, typeof(ZilAtom), "expected bucket item to be atom, but found '{0}'", j);
+                Assert.IsInstanceOfType(j, typeof(ZilAtom), "expected bucket item to be atom, but found '{0}'", j);
             }
         }
 

@@ -60,8 +60,7 @@ namespace Zilf.Playground.Services.Workspaces
             var result = new ProjectFile(path);
             files.Add(result);
 
-            if (mainFile == null)
-                mainFile = result;
+            mainFile ??= result;
 
             FilesChanged?.Invoke();
 
