@@ -173,256 +173,261 @@ namespace Zilf.Compiler
             // SYNONYM and ADJECTIVE property values, and constants for FLAGS values.
             foreach (var prop in model.Properties)
             {
-                using (DiagnosticContext.Push(prop.SourceLine))
+                using var foo = DiagnosticContext.Push(prop.SourceLine);
+
+                // the first element must be an atom identifying the property
+                if (prop.IsCons(out var first, out var propBody) && first is ZilAtom atom)
                 {
-                    // the first element must be an atom identifying the property
-                    if (!prop.IsCons(out var first, out var propBody) || first is not ZilAtom atom)
+                    PreBuildProperty(model, propertiesSoFar, preBuilders, directionPattern, prop, propBody, atom);
+                }
+                else
+                {
+                    Context.HandleError(new CompilerError(prop, CompilerMessages.Property_Specification_Must_Start_With_An_Atom));
+                }
+            }
+        }
+
+        private void PreBuildProperty(ZilModelObject model, HashSet<ZilAtom> propertiesSoFar, ComplexPropDef.ElementPreBuilders preBuilders, ComplexPropDef? directionPattern, ZilList prop, ZilListoidBase propBody, ZilAtom atom)
+        {
+            ZilAtom? uniquePropertyName;
+
+            // exclude phony built-in properties
+            bool phony;
+            bool? isSynonym = null;
+            Synonym? synonym = null;
+
+            /* We also detect direction properties here, which are tricky for a few reasons:
+             * - They can be implicitly defined by a property spec that looks sufficiently direction-like.
+             * - (IN ROOMS) is not a direction, even if IN has been explicitly defined as a direction...
+             *   but (IN "string") is!
+             * - (FOO BAR) is not enough to implicitly define FOO as a direction, even if (DIR R:ROOM)
+             *   is a pattern for directions.
+             *
+             * Thus, there are a few ways to write a property that ZILF will recognize as a direction.
+             *
+             * If the property name has already been defined as one (e.g. by <DIRECTIONS>), you can either:
+             *   - Put two or more values after the property name: (NORTH TO FOREST), (NORTH 123 456)
+             *   - Put one value after the property name that isn't an atom: (NORTH "You can't go that way.")
+             *
+             * If it hasn't been defined as a direction, you can still implicitly define it right here:
+             *   - Put two or more values after the property name, *and* match the PROPDEF for DIRECTIONS:
+             *     (STARBOARD TO BRIG), (PORT SORRY "You can't jump that far.")
+             */
+
+            var isKnownDirectionName = Context.ZEnvironment.Directions.Contains(atom);
+
+            var isDirectionProp = isKnownDirectionName
+                ? propBody.HasLengthAtLeast(2) || !(propBody.IsEmpty || propBody.First is ZilAtom)
+                : propBody.HasLengthAtLeast(2) && directionPattern?.Matches(Context, prop) == true;
+
+            if (isDirectionProp)
+            {
+                // it's a direction
+                phony = false;
+
+                // could be a new implicitly defined direction
+                if (!isKnownDirectionName)
+                {
+                    synonym = Context.ZEnvironment.Synonyms.FirstOrDefault(s => s.SynonymWord.Atom == atom);
+
+                    if (synonym == null)
                     {
-                        Context.HandleError(new CompilerError(model, CompilerMessages.Property_Specification_Must_Start_With_An_Atom));
-                        continue;
+                        isSynonym = false;
+                        Context.ZEnvironment.Directions.Add(atom);
+                        Context.ZEnvironment.GetVocabDirection(atom, prop.SourceLine ?? SourceLines.Unknown);
+                        if (directionPattern != null)
+                            Context.SetPropDef(atom, directionPattern);
+                        uniquePropertyName = atom;
                     }
-
-                    ZilAtom? uniquePropertyName;
-
-                    // exclude phony built-in properties
-                    bool phony;
-                    bool? isSynonym = null;
-                    Synonym? synonym = null;
-
-                    /* We also detect direction properties here, which are tricky for a few reasons:
-                     * - They can be implicitly defined by a property spec that looks sufficiently direction-like.
-                     * - (IN ROOMS) is not a direction, even if IN has been explicitly defined as a direction...
-                     *   but (IN "string") is!
-                     * - (FOO BAR) is not enough to implicitly define FOO as a direction, even if (DIR R:ROOM)
-                     *   is a pattern for directions.
-                     *
-                     * Thus, there are a few ways to write a property that ZILF will recognize as a direction.
-                     *
-                     * If the property name has already been defined as one (e.g. by <DIRECTIONS>), you can either:
-                     *   - Put two or more values after the property name: (NORTH TO FOREST), (NORTH 123 456)
-                     *   - Put one value after the property name that isn't an atom: (NORTH "You can't go that way.")
-                     *
-                     * If it hasn't been defined as a direction, you can still implicitly define it right here:
-                     *   - Put two or more values after the property name, *and* match the PROPDEF for DIRECTIONS:
-                     *     (STARBOARD TO BRIG), (PORT SORRY "You can't jump that far.")
-                     */
-
-                    var isKnownDirectionName = Context.ZEnvironment.Directions.Contains(atom);
-
-                    var isDirectionProp = isKnownDirectionName
-                        ? propBody.HasLengthAtLeast(2) || !(propBody.IsEmpty || propBody.First is ZilAtom)
-                        : propBody.HasLengthAtLeast(2) && directionPattern?.Matches(Context, prop) == true;
-
-                    if (isDirectionProp)
+                    else
                     {
-                        // it's a direction
+                        isSynonym = true;
+                        uniquePropertyName = synonym.OriginalWord.Atom;
+                    }
+                }
+                else
+                {
+                    uniquePropertyName = atom;
+                }
+            }
+            else
+            {
+                // ReSharper disable once SwitchStatementMissingSomeCases
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.DESC:
+                        phony = true;
+                        uniquePropertyName = PseudoPropertyAtoms.Desc;
+                        break;
+                    case StdAtom.IN:
+                        // (IN FOO) is a location, but (IN "foo") is a property
+                        if (propBody.First is ZilAtom)
+                            goto case StdAtom.LOC;
+                        goto default;
+                    case StdAtom.LOC:
+                        phony = true;
+                        uniquePropertyName = PseudoPropertyAtoms.Location;
+                        break;
+                    case StdAtom.FLAGS:
+                        phony = true;
+                        // multiple FLAGS definitions are OK
+                        uniquePropertyName = null;
+                        break;
+                    default:
                         phony = false;
+                        uniquePropertyName = atom;
+                        break;
+                }
+            }
 
-                        // could be a new implicitly defined direction
-                        if (!isKnownDirectionName)
-                        {
-                            synonym = Context.ZEnvironment.Synonyms.FirstOrDefault(s => s.SynonymWord.Atom == atom);
+            if (uniquePropertyName != null)
+            {
+                if (propertiesSoFar.Contains(uniquePropertyName))
+                {
+                    Context.HandleError(new CompilerError(
+                        prop,
+                        CompilerMessages.Duplicate_0_Definition_1,
+                        phony ? "pseudo-property" : "property",
+                        atom.ToStringContext(Context, false)));
+                }
+                else
+                {
+                    propertiesSoFar.Add(uniquePropertyName);
+                }
+            }
 
-                            if (synonym == null)
-                            {
-                                isSynonym = false;
-                                Context.ZEnvironment.Directions.Add(atom);
-                                Context.ZEnvironment.GetVocabDirection(atom, prop.SourceLine ?? SourceLines.Unknown);
-                                if (directionPattern != null)
-                                    Context.SetPropDef(atom, directionPattern);
-                                uniquePropertyName = atom;
-                            }
-                            else
-                            {
-                                isSynonym = true;
-                                uniquePropertyName = synonym.OriginalWord.Atom;
-                            }
-                        }
-                        else
+            if (!phony)
+            {
+                PropertyDefinitions.TryAdd(atom, prop.SourceLine);
+
+                if (!Properties.ContainsKey(atom))
+                {
+                    if (isSynonym == null)
+                    {
+                        synonym = Context.ZEnvironment.Synonyms.FirstOrDefault(s => s.SynonymWord.Atom == atom);
+                        isSynonym = (synonym != null);
+                    }
+
+                    if (isSynonym.Value)
+                    {
+                        Debug.Assert(synonym != null);
+
+                        var origAtom = synonym.OriginalWord.Atom;
+                        PropertyDefinitions.TryAdd(origAtom, prop.SourceLine);
+                        if (!Properties.TryGetValue(origAtom, out var origPb))
                         {
-                            uniquePropertyName = atom;
+                            DefineProperty(origAtom);
+                            origPb = Properties[origAtom];
                         }
+                        Properties.Add(atom, origPb);
+
+                        var pAtom = ZilAtom.Parse("P?" + atom.Text, Context);
+                        Constants.Add(pAtom, origPb);
+
+                        var origSpec = Context.GetProp(origAtom, Context.GetStdAtom(StdAtom.PROPSPEC));
+                        Context.PutProp(atom, Context.GetStdAtom(StdAtom.PROPSPEC), origSpec);
                     }
                     else
                     {
-                        // ReSharper disable once SwitchStatementMissingSomeCases
-                        switch (atom.StdAtom)
-                        {
-                            case StdAtom.DESC:
-                                phony = true;
-                                uniquePropertyName = PseudoPropertyAtoms.Desc;
-                                break;
-                            case StdAtom.IN:
-                                // (IN FOO) is a location, but (IN "foo") is a property
-                                if (propBody.First is ZilAtom)
-                                    goto case StdAtom.LOC;
-                                goto default;
-                            case StdAtom.LOC:
-                                phony = true;
-                                uniquePropertyName = PseudoPropertyAtoms.Location;
-                                break;
-                            case StdAtom.FLAGS:
-                                phony = true;
-                                // multiple FLAGS definitions are OK
-                                uniquePropertyName = null;
-                                break;
-                            default:
-                                phony = false;
-                                uniquePropertyName = atom;
-                                break;
-                        }
+                        DefineProperty(atom);
                     }
+                }
+            }
 
-                    if (uniquePropertyName != null)
+            // check for a PROPSPEC
+            var propspec = Context.GetProp(atom, Context.GetStdAtom(StdAtom.PROPSPEC));
+            if (propspec != null)
+            {
+                if (propspec is ComplexPropDef complexDef)
+                {
+                    // PROPDEF pattern
+                    if (complexDef.Matches(Context, prop))
                     {
-                        if (propertiesSoFar.Contains(uniquePropertyName))
-                        {
-                            Context.HandleError(new CompilerError(
-                                prop,
-                                CompilerMessages.Duplicate_0_Definition_1,
-                                phony ? "pseudo-property" : "property",
-                                atom.ToStringContext(Context, false)));
-                        }
-                        else
-                        {
-                            propertiesSoFar.Add(uniquePropertyName);
-                        }
+                        complexDef.PreBuildProperty(Context, prop, preBuilders);
                     }
+                }
+                else
+                {
+                    // name of a custom property builder function
+                    var form = new ZilForm(new[] { propspec, prop }) { SourceLine = prop.SourceLine };
+                    var specOutput = (ZilObject)form.Eval(Context);
 
-                    if (!phony)
+                    if (specOutput is ZilListoidBase list && list.StdTypeAtom == StdAtom.LIST &&
+                        list.Rest is { IsEmpty: false } customBody)
                     {
-                        PropertyDefinitions.TryAdd(atom, prop.SourceLine);
-
-                        if (!Properties.ContainsKey(atom))
-                        {
-                            if (isSynonym == null)
-                            {
-                                synonym = Context.ZEnvironment.Synonyms.FirstOrDefault(s => s.SynonymWord.Atom == atom);
-                                isSynonym = (synonym != null);
-                            }
-
-                            if (isSynonym.Value)
-                            {
-                                Debug.Assert(synonym != null);
-
-                                var origAtom = synonym.OriginalWord.Atom;
-                                PropertyDefinitions.TryAdd(origAtom, prop.SourceLine);
-                                if (!Properties.TryGetValue(origAtom, out var origPb))
-                                {
-                                    DefineProperty(origAtom);
-                                    origPb = Properties[origAtom];
-                                }
-                                Properties.Add(atom, origPb);
-
-                                var pAtom = ZilAtom.Parse("P?" + atom.Text, Context);
-                                Constants.Add(pAtom, origPb);
-
-                                var origSpec = Context.GetProp(origAtom, Context.GetStdAtom(StdAtom.PROPSPEC));
-                                Context.PutProp(atom, Context.GetStdAtom(StdAtom.PROPSPEC), origSpec);
-                            }
-                            else
-                            {
-                                DefineProperty(atom);
-                            }
-                        }
-                    }
-
-                    // check for a PROPSPEC
-                    var propspec = Context.GetProp(atom, Context.GetStdAtom(StdAtom.PROPSPEC));
-                    if (propspec != null)
-                    {
-                        if (propspec is ComplexPropDef complexDef)
-                        {
-                            // PROPDEF pattern
-                            if (complexDef.Matches(Context, prop))
-                            {
-                                complexDef.PreBuildProperty(Context, prop, preBuilders);
-                            }
-                        }
-                        else
-                        {
-                            // name of a custom property builder function
-                            var form = new ZilForm(new[] { propspec, prop }) { SourceLine = prop.SourceLine };
-                            var specOutput = (ZilObject)form.Eval(Context);
-
-                            if (specOutput is ZilListoidBase list && list.StdTypeAtom == StdAtom.LIST &&
-                                list.Rest is { IsEmpty: false } customBody)
-                            {
-                                // replace the property body with the propspec's output
-                                prop.Rest = customBody;
-                            }
-                            else
-                            {
-                                Context.HandleError(new CompilerError(model,
-                                    CompilerMessages.PROPSPEC_For_Property_0_Returned_A_Bad_Value_1, atom, specOutput));
-                            }
-                        }
+                        // replace the property body with the propspec's output
+                        prop.Rest = customBody;
                     }
                     else
                     {
-                        // ReSharper disable once SwitchStatementMissingSomeCases
-                        switch (atom.StdAtom)
-                        {
-                            case StdAtom.SYNONYM:
-                                foreach (var word in propBody.OfType<ZilAtom>())
-                                {
-                                    try
-                                    {
-                                        Context.ZEnvironment.GetVocabNoun(word, prop.SourceLine ?? SourceLines.Unknown);
-                                    }
-                                    catch (ZilError ex)
-                                    {
-                                        Context.HandleError(ex);
-                                    }
-                                }
-                                break;
-
-                            case StdAtom.ADJECTIVE:
-                                foreach (var word in propBody.OfType<ZilAtom>())
-                                {
-                                    try
-                                    {
-                                        Context.ZEnvironment.GetVocabAdjective(word, prop.SourceLine ?? SourceLines.Unknown);
-                                    }
-                                    catch (ZilError ex)
-                                    {
-                                        Context.HandleError(ex);
-                                    }
-                                }
-                                break;
-
-                            case StdAtom.PSEUDO:
-                                foreach (var word in propBody.OfType<ZilString>())
-                                {
-                                    try
-                                    {
-                                        Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(word.Text, Context), prop.SourceLine ?? SourceLines.Unknown);
-                                    }
-                                    catch (ZilError ex)
-                                    {
-                                        Context.HandleError(ex);
-                                    }
-                                }
-                                break;
-
-                            case StdAtom.FLAGS:
-                                foreach (var word in propBody.OfType<ZilAtom>())
-                                {
-                                    try
-                                    {
-                                        DefineFlag(Context.ZEnvironment.TryGetBitSynonym(word, out var original)
-                                            ? original
-                                            : word);
-                                        FlagDefinitions.TryAdd(word, prop.SourceLine);
-                                    }
-                                    catch (ZilError ex)
-                                    {
-                                        Context.HandleError(ex);
-                                    }
-                                }
-                                break;
-                        }
+                        Context.HandleError(new CompilerError(model,
+                            CompilerMessages.PROPSPEC_For_Property_0_Returned_A_Bad_Value_1, atom, specOutput));
                     }
+                }
+            }
+            else
+            {
+                // ReSharper disable once SwitchStatementMissingSomeCases
+                switch (atom.StdAtom)
+                {
+                    case StdAtom.SYNONYM:
+                        foreach (var word in propBody.OfType<ZilAtom>())
+                        {
+                            try
+                            {
+                                Context.ZEnvironment.GetVocabNoun(word, prop.SourceLine ?? SourceLines.Unknown);
+                            }
+                            catch (ZilError ex)
+                            {
+                                Context.HandleError(ex);
+                            }
+                        }
+                        break;
+
+                    case StdAtom.ADJECTIVE:
+                        foreach (var word in propBody.OfType<ZilAtom>())
+                        {
+                            try
+                            {
+                                Context.ZEnvironment.GetVocabAdjective(word, prop.SourceLine ?? SourceLines.Unknown);
+                            }
+                            catch (ZilError ex)
+                            {
+                                Context.HandleError(ex);
+                            }
+                        }
+                        break;
+
+                    case StdAtom.PSEUDO:
+                        foreach (var word in propBody.OfType<ZilString>())
+                        {
+                            try
+                            {
+                                Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(word.Text, Context), prop.SourceLine ?? SourceLines.Unknown);
+                            }
+                            catch (ZilError ex)
+                            {
+                                Context.HandleError(ex);
+                            }
+                        }
+                        break;
+
+                    case StdAtom.FLAGS:
+                        foreach (var word in propBody.OfType<ZilAtom>())
+                        {
+                            try
+                            {
+                                DefineFlag(Context.ZEnvironment.TryGetBitSynonym(word, out var original)
+                                    ? original
+                                    : word);
+                                FlagDefinitions.TryAdd(word, prop.SourceLine);
+                            }
+                            catch (ZilError ex)
+                            {
+                                Context.HandleError(ex);
+                            }
+                        }
+                        break;
                 }
             }
         }

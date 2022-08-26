@@ -27,6 +27,7 @@ using CodeFixVerifier = ZilfAnalyzers.Test.Helpers.CodeFixVerifier;
 namespace ZilfAnalyzers.Test
 {
     [TestClass, TestCategory("Analyzers")]
+    [TestCategory("Slow")]
     public class ErrorExceptionUsageTests : CodeFixVerifier
     {
         //No diagnostics expected to show up

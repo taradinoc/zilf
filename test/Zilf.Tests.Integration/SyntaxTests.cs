@@ -117,6 +117,7 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod, TestCategory("NEW-PARSER?")]
+        [TestCategory("Slow")]
         public async Task NEW_PARSER_P_Supports_More_Than_255_Verbs_And_Actions()
         {
             var globals = new List<string>(258) { VocabTests.SNewParserBootstrap };

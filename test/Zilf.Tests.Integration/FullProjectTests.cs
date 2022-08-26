@@ -83,6 +83,7 @@ namespace Zilf.Tests.Integration
         [DataTestMethod]
         [DynamicData(nameof(GetProjects), DynamicDataSourceType.Method)]
         [Timeout(PerTestTimeoutMilliseconds)]
+        [TestCategory("Slow")]
         public async Task TestProjectsAsync(string baseName, string dir, string mainZilFile)
         {
             Console.WriteLine("Testing {0}", dir);

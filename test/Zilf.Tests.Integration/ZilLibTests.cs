@@ -78,6 +78,7 @@ namespace Zilf.Tests.Integration
         [DataTestMethod]
         [DynamicData(nameof(GetTestCaseNames), DynamicDataSourceType.Method)]
         [Timeout(PerTestTimeoutMilliseconds)]
+        [TestCategory("Slow")]
         public async Task TestLibraryCasesAsync(string testCaseName)
         {
             Console.WriteLine("Testing {0}", testCaseName);
