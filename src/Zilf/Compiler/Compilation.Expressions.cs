@@ -77,7 +77,7 @@ namespace Zilf.Compiler
 
                 if (wantResult)
                 {
-                    // prefer the value version, then value+predicate, predicate, void
+                    // prefer the gb version, then gb+predicate, predicate, void
                     if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
                     {
                         return ZBuiltins.CompileValueCall(head.Text, this, rb, form, resultStorage);
@@ -111,7 +111,7 @@ namespace Zilf.Compiler
                 }
                 else
                 {
-                    // prefer the void version, then predicate, value, value+predicate
+                    // prefer the void version, then predicate, gb, gb+predicate
                     // (predicate saves a cleanup instruction)
                     if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
                     {
@@ -215,14 +215,14 @@ namespace Zilf.Compiler
 
                 case StdAtom.ATOM:
                     var atom = (ZilAtom)expr;
-                    if (Globals.ContainsKey(atom))
+                    if (Globals.TryGetValue(atom, out var gb))
                     {
                         Context.HandleError(new CompilerError(
                             src,
                             CompilerMessages.Bare_Atom_0_Interpreted_As_Global_Variable_Index,
                             atom));
                         MarkGlobalAsRead(atom);
-                        return Globals[atom].Indirect;
+                        return gb.Indirect;
                     }
                     if (SoftGlobals.ContainsKey(atom))
                     {
@@ -250,19 +250,19 @@ namespace Zilf.Compiler
         }
 
         /// <summary>
-        /// Compiles an expression for its value, and then branches on whether the value is nonzero.
+        /// Compiles an expression for its gb, and then branches on whether the gb is nonzero.
         /// </summary>
         /// <param name="rb">The routine builder.</param>
         /// <param name="expr">The expression to compile.</param>
-        /// <param name="resultStorage">The variable in which to store the value, or <see langword="null"/> to
+        /// <param name="resultStorage">The variable in which to store the gb, or <see langword="null"/> to
         /// use a natural or temporary location. Must not be the stack.</param>
         /// <param name="label">The label to branch to.</param>
-        /// <param name="polarity"><see langword="true"/> to branch when the expression's value is nonzero,
+        /// <param name="polarity"><see langword="true"/> to branch when the expression's gb is nonzero,
         /// or <see langword="false"/> to branch when it's zero.</param>
         /// <param name="tempVarProvider">A delegate that returns a temporary variable to use for
         /// the result. Will only be called when <paramref name="resultStorage"/> is <see langword="null"/> and
         /// the expression has no natural location.</param>
-        /// <returns>The variable where the expression value was stored: always <paramref name="resultStorage"/> if
+        /// <returns>The variable where the expression gb was stored: always <paramref name="resultStorage"/> if
         /// it is non-null and the expression is valid. Otherwise, may be a constant, or the natural
         /// location of the expression, or a temporary variable from <paramref name="tempVarProvider"/>.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
@@ -314,7 +314,7 @@ namespace Zilf.Compiler
                     }
 
                     // check for standard built-ins
-                    // prefer the value+predicate version, then value, predicate, void
+                    // prefer the gb+predicate version, then gb, predicate, void
                     var zversion = Context.ZEnvironment.ZVersion;
                     var argCount = form.Count() - 1;
                     if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
@@ -386,7 +386,7 @@ namespace Zilf.Compiler
                         return result;
                     }
 
-                    // for anything more complicated, treat it as a value
+                    // for anything more complicated, treat it as a gb
                     result = CompileAsOperand(rb, form, form.SourceLine, resultStorage);
                     if (resultStorage != null && resultStorage != result)
                     {

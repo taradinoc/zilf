@@ -91,7 +91,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
 
         #region Key/Value Collections
 
-        public struct KeyCollection : IEnumerable<char>
+        public readonly struct KeyCollection : IEnumerable<char>
         {
             private readonly Dictionary<char, Edge<T>>? dict;
 
@@ -150,7 +150,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             }
         }
 
-        public struct ValueCollection : IEnumerable<Edge<T>>
+        public readonly struct ValueCollection : IEnumerable<Edge<T>>
         {
             private readonly Dictionary<char, Edge<T>>? dict;
 

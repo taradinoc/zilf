@@ -57,7 +57,7 @@ namespace Zilf.Tests.Integration
         public IReadOnlyCollection<Diagnostic> Diagnostics;
     }
 
-    sealed class ZlrHelper
+    sealed partial class ZlrHelper
     {
         public static async Task RunAndAssertAsync(string code, string? input, string expectedOutput,
             IEnumerable<(Predicate<ZlrHelperRunResult>, string message)>? warningChecks = null,
@@ -149,9 +149,7 @@ namespace Zilf.Tests.Integration
             this.input = input;
         }
 
-        private static readonly Regex _invalidXMLChars = new(
-            @"(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFEFF\uFFFE\uFFFF]",
-            RegexOptions.Compiled);
+        private static readonly Regex _invalidXMLChars = GetInvalidXMLCharsRegex();
 
         /// <summary>
         /// https://stackoverflow.com/questions/397250/unicode-regex-invalid-xml-characters/961504#961504
@@ -273,6 +271,9 @@ namespace Zilf.Tests.Integration
 
             return io.CollectOutput();
         }
+
+        [GeneratedRegex(@"(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFEFF\uFFFE\uFFFF]", RegexOptions.Compiled)]
+        private static partial Regex GetInvalidXMLCharsRegex();
     }
 
     // TODO: merge this with ZlrHelper

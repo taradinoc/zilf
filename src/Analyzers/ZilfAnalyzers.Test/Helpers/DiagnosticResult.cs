@@ -25,7 +25,7 @@ namespace ZilfAnalyzers.Test.Helpers
     /// <summary>
     /// Location where the diagnostic appears, as determined by path, line number, and column number.
     /// </summary>
-    public struct DiagnosticResultLocation
+    public readonly struct DiagnosticResultLocation
     {
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="line"/> or <paramref name="column"/> are out of range.</exception>
         public DiagnosticResultLocation(string path, int line, int column)

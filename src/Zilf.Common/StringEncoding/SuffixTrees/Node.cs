@@ -94,7 +94,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             AnnotateRecursive(0);
         }
 
-        private struct AnnotationResult
+        private readonly record struct AnnotationResult
         {
             public int LeafCount { get; init; }
             public int ResultCount { get; init; }

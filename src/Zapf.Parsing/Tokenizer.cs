@@ -44,17 +44,7 @@ namespace Zapf.Parsing
         Token? heldToken;
         char? heldChar;
 
-        struct BasicSourceLine : ISourceLine
-        {
-            public BasicSourceLine(int lineNum, string sourceFile)
-            {
-                LineNum = lineNum;
-                SourceFile = sourceFile;
-            }
-
-            public int LineNum { get; }
-            public string? SourceFile { get; }
-        }
+        readonly record struct BasicSourceLine(int LineNum, string? SourceFile) : ISourceLine;
 
         ISourceLine CurrentSourceLine => new BasicSourceLine(line, filename);
 

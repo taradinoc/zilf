@@ -60,35 +60,9 @@ namespace Zilf.Emit
         BranchNegative,
     }
 
-    struct CombinableLine<TCode>
-    {
-        public ILabel? Label { get; }
-        public TCode Code { get; }
-        public ILabel? Target { get; }
-        public PeepholeLineType Type { get; }
+    readonly record struct CombinableLine<TCode>(ILabel? Label, TCode Code, ILabel? Target, PeepholeLineType Type);
 
-        public CombinableLine(ILabel? label, TCode code, ILabel? target, PeepholeLineType type)
-            : this()
-        {
-            Label = label;
-            Code = code;
-            Target = target;
-            Type = type;
-        }
-    }
-
-    struct CombinerResult<TCode>
-    {
-        public readonly int LinesConsumed;
-
-        public readonly IEnumerable<CombinableLine<TCode>> NewLines;
-
-        public CombinerResult(int linesConsumed, IEnumerable<CombinableLine<TCode>> newLines)
-        {
-            LinesConsumed = linesConsumed;
-            NewLines = newLines;
-        }
-    }
+    readonly record struct CombinerResult<TCode>(int LinesConsumed, IEnumerable<CombinableLine<TCode>> NewLines);
 
     /// <summary>
     /// Indicates whether two branches test the same condition.

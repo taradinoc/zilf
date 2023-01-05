@@ -25,6 +25,7 @@ using Zilf.Language;
 namespace Zilf.Tests.Interpreter
 {
     [TestClass, TestCategory("Interpreter")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("GeneratedRegex", "SYSLIB1045:Convert to 'GeneratedRegexAttribute'.", Justification = "These are one-off regex matches for unit tests.")]
     public class FunctionTests
     {
         [TestMethod]

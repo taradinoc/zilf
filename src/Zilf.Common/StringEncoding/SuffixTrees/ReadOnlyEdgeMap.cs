@@ -24,7 +24,7 @@ using System.Linq;
 
 namespace Zilf.Common.StringEncoding.SuffixTrees
 {
-    public struct ReadOnlyEdgeMap<T>
+    public readonly struct ReadOnlyEdgeMap<T>
     {
         private readonly Dictionary<char, Edge<T>>? dict;
 
@@ -80,7 +80,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
 
         #region Key/Value Collections
 
-        public struct KeyCollection : IEnumerable<char>
+        public readonly struct KeyCollection : IEnumerable<char>
         {
             private readonly Dictionary<char, Edge<T>>? dict;
 
@@ -139,7 +139,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             }
         }
 
-        public struct ValueCollection : IEnumerable<IEdge<T>>
+        public readonly struct ValueCollection : IEnumerable<IEdge<T>>
         {
             private readonly Dictionary<char, Edge<T>>? dict;
 

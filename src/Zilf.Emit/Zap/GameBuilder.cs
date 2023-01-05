@@ -382,9 +382,8 @@ namespace Zilf.Emit.Zap
         public void RemoveVocabularyWord(string word)
         {
             string name = "W?" + SanitizeSymbol(word.ToUpperInvariant());
-            if (symbols.ContainsKey(name))
+            if (symbols.Remove(name))
             {
-                symbols.Remove(name);
                 vocabulary.RemoveAll(wb => wb.Name == name);
             }
         }

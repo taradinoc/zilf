@@ -28,7 +28,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace ZilfAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class MessageConstantAnalyzer : DiagnosticAnalyzer
+    public partial class MessageConstantAnalyzer : DiagnosticAnalyzer
     {
         static readonly DiagnosticDescriptor Rule_DuplicateMessageCode = new(
             DiagnosticIds.DuplicateMessageCode,
@@ -54,10 +54,8 @@ namespace ZilfAnalyzers
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        public static readonly Regex PrefixedMessageFormatRegex = new(
-            @"^(?<prefix>[^a-z .,;:()\[\]{}]+)(?<rest>: .*)$");
-        public static readonly Regex FormatTokenRegex = new(
-            @"\{(?<number>\d+)(?<suffix>:[^}]*)?\}");
+        public static readonly Regex PrefixedMessageFormatRegex = GetPrefixedMessageFormatRegex();
+        public static readonly Regex FormatTokenRegex = GetFormatTokenRegex();
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
             ImmutableArray.Create(
@@ -97,12 +95,12 @@ namespace ZilfAnalyzers
                         // check for duplicate message
                         Diagnostic diagnostic;
 
-                        if (seenFormats.ContainsKey(formatStr))
+                        if (seenFormats.TryGetValue(formatStr, out var pastLocation))
                         {
                             diagnostic = Diagnostic.Create(
                                 Rule_DuplicateMessageFormat,
                                 formatExpr.GetLocation(),
-                                new[] { seenFormats[formatStr] },
+                                new[] { pastLocation },
                                 classDecl.Identifier);
 
                             context.ReportDiagnostic(diagnostic);
@@ -191,5 +189,10 @@ namespace ZilfAnalyzers
                 ti.Type?.Name == "MessageSetAttribute" &&
                 ti.Type?.ContainingNamespace.ToString() == "Zilf.Diagnostics");
         }
+
+        [GeneratedRegex("^(?<prefix>[^a-z .,;:()\\[\\]{}]+)(?<rest>: .*)$")]
+        private static partial Regex GetPrefixedMessageFormatRegex();
+        [GeneratedRegex("\\{(?<number>\\d+)(?<suffix>:[^}]*)?\\}")]
+        private static partial Regex GetFormatTokenRegex();
     }
 }

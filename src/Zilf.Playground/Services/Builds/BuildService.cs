@@ -120,7 +120,7 @@ namespace Zilf.Playground.Services.Builds
         }
     }
 
-    sealed class BuildService
+    sealed partial class BuildService
     {
         private readonly WorkspaceService workspace;
         private readonly IWorkerFactory workerFactory;
@@ -154,7 +154,8 @@ namespace Zilf.Playground.Services.Builds
             this.jsInterop = jsInterop;
         }
 
-        private static readonly Regex StoryFileRegExp = new(@"\.z\d$", RegexOptions.IgnoreCase);
+        [GeneratedRegex("\\.z\\d$", RegexOptions.IgnoreCase, "en-US")]
+        private static partial Regex GetStoryFileRegex();
 
         public async Task CompileWorkspaceAsync()
         {
@@ -204,7 +205,7 @@ namespace Zilf.Playground.Services.Builds
                 {
                     var p = newPaths[i];
 
-                    if (StoryFileRegExp.IsMatch(p))
+                    if (GetStoryFileRegex().IsMatch(p))
                     {
                         var filename = p[(p.LastIndexOf('/') + 1)..];
                         const string contentType = "application/x-zmachine";

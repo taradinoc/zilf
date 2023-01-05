@@ -28,7 +28,7 @@ using System.Threading.Tasks;
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Slow"), TestCategory("Library")]
-    public class ZilLibTests
+    public partial class ZilLibTests
     {
         const string LibraryDirName = "zillib";
         const string TestsSubDirName = "tests";
@@ -72,7 +72,7 @@ namespace Zilf.Tests.Integration
                    select new[] { Path.GetFileNameWithoutExtension(f) };
         }
 
-        private static readonly Regex PassRegex = new(@"^PASS$", RegexOptions.Multiline);
+        private static readonly Regex PassRegex = GetPassRegex();
 
         /// <exception cref="AssertInconclusiveException">Always thrown.</exception>
         [DataTestMethod]
@@ -98,5 +98,8 @@ namespace Zilf.Tests.Integration
                 Assert.Fail("Test case failed (output written to console)");
             }
         }
+
+        [GeneratedRegex("^PASS$", RegexOptions.Multiline)]
+        private static partial Regex GetPassRegex();
     }
 }

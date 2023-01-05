@@ -1307,9 +1307,9 @@ General switches:
             LineRef MakeLineRef(AsmExpr file, AsmExpr line, AsmExpr column)
             {
                 return new LineRef(
-                    file: (byte)EvalExpr(ctx, file).Value,
-                    line: (ushort)EvalExpr(ctx, line).Value,
-                    col: (byte)EvalExpr(ctx, column).Value);
+                    File: (byte)EvalExpr(ctx, file).Value,
+                    Line: (ushort)EvalExpr(ctx, line).Value,
+                    Col: (byte)EvalExpr(ctx, column).Value);
             }
 
             switch (node)

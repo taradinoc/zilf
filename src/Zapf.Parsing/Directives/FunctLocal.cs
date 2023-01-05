@@ -20,15 +20,5 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public struct FunctLocal
-    {
-        public FunctLocal(string name, AsmExpr? defaultValue)
-        {
-            Name = name;
-            DefaultValue = defaultValue;
-        }
-
-        public readonly string Name;
-        public readonly AsmExpr? DefaultValue;
-    }
+    public readonly record struct FunctLocal(string Name, AsmExpr? DefaultValue);
 }

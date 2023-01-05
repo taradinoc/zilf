@@ -23,18 +23,8 @@ namespace Dezapf
 {
     class RangeList<T> : IEnumerable<RangeList<T>.Range>
     {
-        public struct Range : IComparable<Range>
+        public readonly record struct Range(int Start, int Length, T Value) : IComparable<Range>
         {
-            public readonly int Start, Length;
-            public readonly T Value;
-
-            public Range(int start, int length, T value)
-            {
-                Start = start;
-                Length = length;
-                Value = value;
-            }
-
             public int CompareTo(Range other)
             {
                 return Start - other.Start;
@@ -46,16 +36,8 @@ namespace Dezapf
             }
         }
 
-        public struct Gap : IComparable<Gap>
+        public readonly record struct Gap(int Start, int Length) : IComparable<Gap>
         {
-            public readonly int Start, Length;
-
-            public Gap(int start, int length)
-            {
-                Start = start;
-                Length = length;
-            }
-
             public int CompareTo(Gap other)
             {
                 return Start - other.Start;

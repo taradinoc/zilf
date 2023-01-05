@@ -29,7 +29,7 @@ using System.Threading.Tasks;
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler"), TestCategory("Slow"), TestCategory("Library")]
-    public class FullProjectTests
+    public partial class FullProjectTests
     {
         const string TestDirName = "test";
         const string ProjectsSubDirName = "FullTestProjects";
@@ -147,9 +147,9 @@ namespace Zilf.Tests.Integration
             }
         }
 
-        static readonly Regex SerialNumberRegex = new(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase);
+        static readonly Regex SerialNumberRegex = GetSerialNumberRegex();
 
-        static readonly Regex ZilfVersionRegex = new(@"ZILF [0-9.a-z]+ lib \S+");
+        static readonly Regex ZilfVersionRegex = GetZilfVersionRegex();
 
         static string MassageText(string text)
         {
@@ -169,5 +169,10 @@ namespace Zilf.Tests.Integration
 
             return lines;
         }
+
+        [GeneratedRegex(@"ZILF [0-9.a-z]+ lib \S+")]
+        private static partial Regex GetZilfVersionRegex();
+        [GeneratedRegex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase, "en-US")]
+        private static partial Regex GetSerialNumberRegex();
     }
 }

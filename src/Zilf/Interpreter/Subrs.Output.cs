@@ -181,7 +181,8 @@ namespace Zilf.Interpreter
             return ch;
         }
 
-        static readonly Regex RetroPathRE = new(@"^(?:(?<device>[^:]+):)?(?:<(?<directory>[^>]+)>)?(?<filename>[^:<>]+)$");
+        [GeneratedRegex("^(?:(?<device>[^:]+):)?(?:<(?<directory>[^>]+)>)?(?<filename>[^:<>]+)$")]
+        private static partial Regex GetRetroPathRegex();
 
         [Subr]
         public static ZilObject OPEN(Context ctx, [Decl("'\"READ\"")] string mode, string path)
@@ -193,7 +194,7 @@ namespace Zilf.Interpreter
 
         static string ConvertPath(string retroPath)
         {
-            var match = RetroPathRE.Match(retroPath);
+            var match = GetRetroPathRegex().Match(retroPath);
             return match.Success ? match.Groups["filename"].Value : retroPath;
         }
 

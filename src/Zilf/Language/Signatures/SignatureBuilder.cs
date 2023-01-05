@@ -24,7 +24,7 @@ using Zilf.Interpreter;
 
 namespace Zilf.Language.Signatures
 {
-    static class SignatureBuilder
+    static partial class SignatureBuilder
     {
         #region Basics
 
@@ -38,7 +38,8 @@ namespace Zilf.Language.Signatures
 
         public static SignaturePart Quote(SignaturePart second) => QuotedPart.From(second);
 
-        static readonly Regex orDeclRegex = new(@"^<OR (?:('[^ <>]+)\s*)+>$");
+        [GeneratedRegex("^<OR (?:('[^ <>]+)\\s*)+>$")]
+        private static partial Regex GetOrDeclRegex();
 
         public static SignaturePart? MaybeConvertDecl(DeclAttribute decl) => MaybeConvertDecl(decl.Pattern);
 
@@ -51,7 +52,7 @@ namespace Zilf.Language.Signatures
                 return LiteralPart.From(pattern[1..]);
             }
 
-            var match = orDeclRegex.Match(pattern);
+            var match = GetOrDeclRegex().Match(pattern);
             if (!match.Success)
                 return null;
 

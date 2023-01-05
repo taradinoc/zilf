@@ -18,34 +18,5 @@
 
 namespace Zapf
 {
-    public struct LineRef
-    {
-        public LineRef(byte file, ushort line, byte col)
-        {
-            File = file;
-            Line = line;
-            Col = col;
-        }
-
-        public readonly byte File;
-        public readonly ushort Line;
-        public readonly byte Col;
-
-        public static bool operator ==(LineRef a, LineRef b) =>
-            a.File == b.File &&
-            a.Line == b.Line &&
-            a.Col == b.Col;
-
-        public static bool operator !=(LineRef a, LineRef b) =>
-            a.File != b.File ||
-            a.Line != b.Line ||
-            a.Col != b.Col;
-
-        public override bool Equals(object? obj) => obj is LineRef lineRef && lineRef == this;
-
-        public override int GetHashCode()
-        {
-            return System.HashCode.Combine(File, Line, Col);
-        }
-    }
+    public record struct LineRef(byte File, ushort Line, byte Col);
 }

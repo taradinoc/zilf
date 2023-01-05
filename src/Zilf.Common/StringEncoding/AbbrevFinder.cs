@@ -25,18 +25,7 @@ namespace Zilf.Common.StringEncoding
 {
     public sealed class AbbrevFinder
     {
-        public struct Result
-        {
-            public readonly int Score, Count;
-            public readonly string Text;
-
-            public Result(int score, int count, string text)
-            {
-                Score = score;
-                Count = count;
-                Text = text;
-            }
-        }
+        public readonly record struct Result(int Score, int Count, string Text);
 
         readonly List<string> allTexts = new();
         readonly StringEncoder encoder = new();
