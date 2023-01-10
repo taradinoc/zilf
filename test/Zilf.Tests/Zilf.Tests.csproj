@@ -14,11 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="$(SolutionDir)src\Zilf\Zilf.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="$(SolutionDir)\Zilf.licenseheader">
-      <Link>Zilf.licenseheader</Link>
-    </None>
-  </ItemGroup>
 
   <!-- only use the analyzer if it's been built for this target -->
   <PropertyGroup>

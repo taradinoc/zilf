@@ -10,11 +10,6 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="$(SolutionDir)\Zilf.licenseheader">
-      <Link>Zilf.licenseheader</Link>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="FastHashSet" Version="0.1.0-alpha.2" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

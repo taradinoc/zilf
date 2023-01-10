@@ -1,4 +1,4 @@
-/* Copyright 2010-2018 Jesse McGrew
+/* Copyright 2010-2023 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -16,8 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-/* Copyright 2010-2017 Jesse McGrew
+/* Copyright 2010-2017 Tara McGrew
  * 
  * This file is part of ZILF.
  * 

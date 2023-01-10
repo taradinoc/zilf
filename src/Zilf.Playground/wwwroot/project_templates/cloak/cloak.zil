@@ -9,7 +9,7 @@
 "Cloak of Darkness|
 A basic IF demonstration.|
 Original game by Roger Firth|
-ZIL conversion by Jesse McGrew, Jayson Smith, and Josh Lawrence">
+ZIL conversion by Tara McGrew, Jayson Smith, and Josh Lawrence">
 
 <ROUTINE GO ()
     <CRLF> <CRLF>

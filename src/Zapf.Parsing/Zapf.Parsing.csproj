@@ -5,9 +5,4 @@
     <TargetFrameworkProfile />
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <None Include="$(SolutionDir)\Zilf.licenseheader">
-      <Link>Zilf.licenseheader</Link>
-    </None>
-  </ItemGroup>
 </Project>

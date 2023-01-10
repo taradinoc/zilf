@@ -5,11 +5,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="$(SolutionDir)\Zilf.licenseheader">
-      <Link>Zilf.licenseheader</Link>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Zapf.Parsing\Zapf.Parsing.csproj" />
     <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj" />
   </ItemGroup>

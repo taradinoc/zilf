@@ -1,12 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <Product>ZILF</Product>
     <Version>0.8</Version>
-    <Authors>Jesse McGrew</Authors>
-    <Company />
     <Description>Tests for Dezapf.</Description>
-    <Copyright>Copyright 2010-2019 Jesse McGrew</Copyright>
     <IsPackable>false</IsPackable>
     <NeutralLanguage>English</NeutralLanguage>
   </PropertyGroup>
@@ -17,9 +13,6 @@
     <PackageReference Include="MSTest.TestFramework" Version="2.2.4" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="$(SolutionDir)\Zilf.licenseheader">
-      <Link>Zilf.licenseheader</Link>
-    </None>
     <EmbeddedResource Include="Resources\hello.z3" />
     <EmbeddedResource Include="Resources\name.z3" />
   </ItemGroup>

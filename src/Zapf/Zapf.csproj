@@ -11,11 +11,6 @@
   <PropertyGroup Condition="!($(PortableTarget))">
     <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
-  <ItemGroup>
-    <None Include="$(SolutionDir)\Zilf.licenseheader">
-      <Link>Zilf.licenseheader</Link>
-    </None>
-  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>

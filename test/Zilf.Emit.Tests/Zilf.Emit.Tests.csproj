@@ -14,11 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="$(SolutionDir)src\Zilf.Emit\Zilf.Emit.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="$(SolutionDir)Zilf.licenseheader">
-      <Link>Zilf.licenseheader</Link>
-    </None>
-  </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

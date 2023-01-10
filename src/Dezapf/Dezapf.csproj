@@ -4,15 +4,12 @@
     <OutputType>Exe</OutputType>
     <Product>ZILF</Product>
     <Version>0.8</Version>
-    <Authors>Jesse McGrew</Authors>
+    <Authors>Tara McGrew</Authors>
     <Company />
     <Description>A ZAP disassembler.</Description>
-    <Copyright>Copyright 2010-2018 Jesse McGrew</Copyright>
+    <Copyright>Copyright 2010-2018 Tara McGrew</Copyright>
     <NeutralLanguage></NeutralLanguage>
   </PropertyGroup>
-  <ItemGroup>
-    <None Include="$(SolutionDir)\Zilf.licenseheader" Link="Zilf.licenseheader" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Zapf\Zapf.csproj" />
   </ItemGroup>

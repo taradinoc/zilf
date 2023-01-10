@@ -16,7 +16,7 @@
     <Product>ZILF</Product>
     <Company />
     <Version>$(MajorVersion).$(MinorVersion)</Version>
-    <Authors>Jesse McGrew</Authors>
-    <Copyright>Copyright 2010-2019 Jesse McGrew</Copyright>
+    <Authors>Tara McGrew</Authors>
+    <Copyright>Copyright 2010-$([System.DateTime]::Now.ToString('yyyy')) Tara McGrew</Copyright>
   </PropertyGroup>
 </Project>
