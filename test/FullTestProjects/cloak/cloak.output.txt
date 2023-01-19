@@ -5,7 +5,7 @@ Hurrying through the rainswept November night, you're glad to see the bright lig
 Cloak of Darkness
 A basic IF demonstration.
 Original game by Roger Firth
-ZIL conversion by Jesse McGrew, Jayson Smith, and Josh Lawrence
+ZIL conversion by Tara McGrew, Jayson Smith, and Josh Lawrence
 Release 1 / Serial number 150611 / ZILF 0.6 lib J2+
 
 Foyer of the Opera House
@@ -59,7 +59,7 @@ Hurrying through the rainswept November night, you're glad to see the bright lig
 Cloak of Darkness
 A basic IF demonstration.
 Original game by Roger Firth
-ZIL conversion by Jesse McGrew, Jayson Smith, and Josh Lawrence
+ZIL conversion by Tara McGrew, Jayson Smith, and Josh Lawrence
 Release 1 / Serial number 150611 / ZILF 0.6 lib J2+
 
 Foyer of the Opera House

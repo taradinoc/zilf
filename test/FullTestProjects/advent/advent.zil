@@ -1,5 +1,5 @@
 ;"Main file for ADVENTURE"
-;"Ported to ZIL by Jesse McGrew, July-September 2015"
+;"Ported to ZIL by Tara McGrew, July-September 2015"
 
 ;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
 ;"TODO: Add CANT-GO property?"
@@ -26,7 +26,7 @@
         "A Modern Classic|
 Based on Adventure by Willie Crowther and Don Woods (1977)|
 And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and others|
-Adapted once more by Jesse McGrew (2015)">>
+Adapted once more by Tara McGrew (2015)">>
 
 ;----------------------------------------------------------------------
 "Main entry point"
@@ -4607,7 +4607,7 @@ explicitly ask me to." CR>>
 
 <ROUTINE V-CREDITS ()
     <TELL "Adventure was originally developed by Willie Crowther, with many features added by Don
-Woods. This version was ported to ZIL by Jesse McGrew, thanks to prior porting work done by David
+Woods. This version was ported to ZIL by Tara McGrew, thanks to prior porting work done by David
 M. Baggett (TADS), Graham Nelson (Inform), Kent Tessman (Hugo), David Given and Arthur O'Dwyer
 (vbccz), among others.|
 |

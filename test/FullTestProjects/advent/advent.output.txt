@@ -7,7 +7,7 @@ ADVENTURE (beta)
 A Modern Classic
 Based on Adventure by Willie Crowther and Don Woods (1977)
 And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and others
-Adapted once more by Jesse McGrew (2015)
+Adapted once more by Tara McGrew (2015)
 Release 1 / Serial number 161219 / ZILF 0.7 lib J3
 
 At End Of Road

@@ -64,7 +64,7 @@ which provides light.
 - You should have to hold the book to be able to read it.
 
 Note: TURN OFF FLASHLIGHT works, but TURN FLASHLIGHT OFF doesn't.  The syntax VERB OBJ PREPOSITION 
-is not supported yet - Jesse may make changes to the ZILF parser in the future to implement
+is not supported yet - Tara may make changes to the ZILF parser in the future to implement
 this syntax.
 
 GENERAL

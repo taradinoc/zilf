@@ -14,7 +14,7 @@ Someday we'll fill in this section with instructions for writing tests, getting 
 
 ### Who do I talk to? ###
 
-The primary contact is Jesse McGrew (a.k.a. vaporware), who may be found on the [IntFic forum](https://www.intfic.com/), [IntFiction forum](http://intfiction.org/forum/), or [ifMUD](http://ifmud.port4000.com/).
+The primary contact is Tara McGrew (a.k.a. vaporware), who may be found on the [IntFic forum](https://www.intfic.com/), [IntFiction forum](http://intfiction.org/forum/), or [ifMUD](http://ifmud.port4000.com/).
 
 To report a bug or request a feature, please use our JIRA server at [vaporware.atlassian.net](https://vaporware.atlassian.net/projects/ZILF).
 
