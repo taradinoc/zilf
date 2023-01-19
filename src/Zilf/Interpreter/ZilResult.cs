@@ -28,7 +28,7 @@ using Zilf.Language;
 
 namespace Zilf.Interpreter
 {
-    struct ZilResult
+    readonly struct ZilResult
     {
         private readonly Outcome outcome;
         private readonly ZilObject? value;

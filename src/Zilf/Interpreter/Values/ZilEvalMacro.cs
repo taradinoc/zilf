@@ -24,7 +24,7 @@ using Zilf.Interpreter.Values.Tied;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.MACRO, PrimType.LIST)]
-    class ZilEvalMacro : ZilTiedListBase, IApplicable
+    sealed class ZilEvalMacro : ZilTiedListBase, IApplicable
     {
         public ZilEvalMacro(ZilObject value)
         {

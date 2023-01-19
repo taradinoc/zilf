@@ -20,7 +20,7 @@ using System.Collections.Generic;
 
 namespace Zilf.Language.Signatures
 {
-    class ConstrainedPart : SignaturePart
+    sealed class ConstrainedPart : SignaturePart
     {
         public SignaturePart Inner { get; }
 

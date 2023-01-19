@@ -5,7 +5,6 @@
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
     <OutputType>Exe</OutputType>
     <Description>The ZIL Implementation You Really, Really Like.</Description>
-    <CodeAnalysisRuleSet>Zilf.ruleset</CodeAnalysisRuleSet>
     <Deterministic>false</Deterministic>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -21,15 +20,14 @@
     <ProjectReference Include="..\Zilf.Emit\Zilf.Emit.csproj" />
     <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Zilf.ruleset" />
-  </ItemGroup>
 
   <!-- only use the analyzer if it's been built for this target -->
   <PropertyGroup>
     <ZilfAnalyzersAssembly>..\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\$(Configuration)\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-all</AnalysisLevel>
+    <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
   </PropertyGroup>
   <ItemGroup>
     <Analyzer Condition="Exists('$(ZilfAnalyzersAssembly)')" Include="$(ZilfAnalyzersAssembly)" />

@@ -1782,10 +1782,7 @@ namespace Zilf.Compiler.Builtins
         {
             var origBlock = block;
 
-            if (block == null)
-            {
-                block = c.cc.Blocks.First(b => (b.Flags & BlockFlags.ExplicitOnly) == 0);
-            }
+            block ??= c.cc.Blocks.First(b => (b.Flags & BlockFlags.ExplicitOnly) == 0);
 
             IOperand value;
 
@@ -1854,10 +1851,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("AGAIN", HasSideEffect = true)]
         public static void AgainOp(VoidCall c, Block? block = null)
         {
-            if (block == null)
-            {
-                block = c.cc.Blocks.First(b => (b.Flags & BlockFlags.ExplicitOnly) == 0);
-            }
+            block ??= c.cc.Blocks.First(b => (b.Flags & BlockFlags.ExplicitOnly) == 0);
 
             if (block.AgainLabel != null)
             {

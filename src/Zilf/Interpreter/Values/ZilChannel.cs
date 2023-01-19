@@ -76,8 +76,7 @@ namespace Zilf.Interpreter.Values
 
         public override void Reset(Context ctx)
         {
-            if (stream == null)
-                stream = ctx.OpenChannelStream(path, fileAccess);
+            stream ??= ctx.OpenChannelStream(path, fileAccess);
         }
 
         public override void Close()

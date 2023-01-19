@@ -49,7 +49,7 @@ namespace Zilf.Compiler
             }
         }
 
-        struct TableElementOperand
+        readonly struct TableElementOperand
         {
             public readonly IOperand Operand;
             public readonly bool? IsWord;

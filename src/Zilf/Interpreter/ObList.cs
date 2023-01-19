@@ -25,7 +25,7 @@ using Zilf.Interpreter.Values.Tied;
 namespace Zilf.Interpreter
 {
     [BuiltinType(StdAtom.OBLIST, PrimType.LIST)]
-    class ObList : ZilTiedListBase
+    sealed class ObList : ZilTiedListBase
     {
         readonly Dictionary<string, ZilAtom> dict = new();
         readonly bool ignoreCase;

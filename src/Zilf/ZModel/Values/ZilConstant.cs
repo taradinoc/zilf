@@ -25,7 +25,7 @@ using Zilf.Language;
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.CONSTANT, PrimType.LIST)]
-    class ZilConstant : ZilTiedListBase
+    sealed class ZilConstant : ZilTiedListBase
     {
         public ZilConstant(ZilAtom name, ZilObject value)
         {

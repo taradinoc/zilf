@@ -29,7 +29,7 @@ namespace Zilf.Interpreter.Values
     {
         #region Storage
 
-        class VectorStorage
+        sealed class VectorStorage
         {
             ZilObject[] items;
 

@@ -301,7 +301,7 @@ namespace Zilf.Compiler
             IBoundedLoop MakeLoop(BoundedLoopContext blc);
         }
 
-        private struct BoundedLoopContext
+        private readonly struct BoundedLoopContext
         {
             public readonly Compilation cc;
             public readonly ZilList spec;
@@ -478,7 +478,7 @@ namespace Zilf.Compiler
             IVariable? resultStorage) =>
             CompileBoundedLoop(rb, DoLoop.Builder, args, src, wantResult, resultStorage)!;
 
-        private class DoLoop : IBoundedLoopBuilder
+        private sealed class DoLoop : IBoundedLoopBuilder
         {
             public static readonly IBoundedLoopBuilder Builder = new DoLoop();
 
@@ -513,7 +513,7 @@ namespace Zilf.Compiler
                 return new Loop(blc, atom, start, end, inc);
             }
 
-            private class Loop : BoundedLoop
+            private sealed class Loop : BoundedLoop
             {
                 readonly ZilAtom atom;
                 readonly ZilObject start, end;
@@ -611,7 +611,7 @@ namespace Zilf.Compiler
             IVariable? resultStorage) =>
             CompileBoundedLoop(rb, MapContentsLoop.Builder, args, src, wantResult, resultStorage)!;
 
-        private class MapContentsLoop : IBoundedLoopBuilder
+        private sealed class MapContentsLoop : IBoundedLoopBuilder
         {
             public static readonly IBoundedLoopBuilder Builder = new MapContentsLoop();
 
@@ -681,7 +681,7 @@ namespace Zilf.Compiler
                 }
             }
 
-            private class OneVarLoop : LoopBase
+            private sealed class OneVarLoop : LoopBase
             {
                 public OneVarLoop(BoundedLoopContext blc, ZilAtom atom, ZilObject container)
                     : base(blc, atom, container)
@@ -700,7 +700,7 @@ namespace Zilf.Compiler
                 }
             }
 
-            private class TwoVarLoop : LoopBase
+            private sealed class TwoVarLoop : LoopBase
             {
                 readonly ZilAtom nextAtom;
 
@@ -742,7 +742,7 @@ namespace Zilf.Compiler
             IVariable? resultStorage) =>
             CompileBoundedLoop(rb, MapDirectionsLoop.Builder, args, src, wantResult, resultStorage)!;
 
-        private class MapDirectionsLoop : IBoundedLoopBuilder
+        private sealed class MapDirectionsLoop : IBoundedLoopBuilder
         {
             public static readonly IBoundedLoopBuilder Builder = new MapDirectionsLoop();
 
@@ -780,7 +780,7 @@ namespace Zilf.Compiler
                 throw new UnreachableCodeException();
             }
 
-            private class Loop : BoundedLoop
+            private sealed class Loop : BoundedLoop
             {
                 readonly ZilAtom dirAtom, ptAtom;
                 readonly ZilObject room;

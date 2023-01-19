@@ -20,7 +20,7 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
-    class Binding
+    sealed class Binding
     {
         public ZilObject? Value;
         public ZilObject? Decl;

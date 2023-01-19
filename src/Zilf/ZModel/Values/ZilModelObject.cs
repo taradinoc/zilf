@@ -26,7 +26,7 @@ using Zilf.Language;
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.OBJECT, PrimType.LIST)]
-    class ZilModelObject : ZilTiedListBase
+    sealed class ZilModelObject : ZilTiedListBase
     {
         public ZilModelObject(ZilAtom name, ZilList[] props, bool isRoom)
         {

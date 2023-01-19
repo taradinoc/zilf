@@ -23,7 +23,7 @@ using Zilf.Diagnostics;
 namespace Zilf.Language
 {
     [Serializable]
-    class CompilerFatal : ZilFatal<CompilerMessages>
+    sealed class CompilerFatal : ZilFatal<CompilerMessages>
     {
         public CompilerFatal(int code)
             : this(code, null)
@@ -60,20 +60,15 @@ namespace Zilf.Language
         {
         }
 
-        protected CompilerFatal(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
-        {
-        }
-
         public CompilerFatal()
         {
         }
 
-        protected CompilerFatal(string message) : base(message)
+        public CompilerFatal(string message) : base(message)
         {
         }
 
-        protected CompilerFatal(string message, Exception innerException) : base(message, innerException)
+        public CompilerFatal(string message, Exception innerException) : base(message, innerException)
         {
         }
     }

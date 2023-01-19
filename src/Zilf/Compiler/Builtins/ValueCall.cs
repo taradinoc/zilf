@@ -24,8 +24,7 @@ using Zilf.Language;
 namespace Zilf.Compiler.Builtins
 {
 #pragma warning disable IDE1006 // Naming Styles
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
-    struct ValueCall
+    readonly struct ValueCall
     {
         public Compilation cc { get; }
         public IRoutineBuilder rb { get; }

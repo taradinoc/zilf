@@ -34,7 +34,8 @@ namespace Zilf.Diagnostics
         [ThreadStatic]
         static DiagnosticContext? threadLocalCurrent;
 
-        class Disposer : IDisposable
+        // TODO: make Disposer a struct instead?
+        sealed class Disposer : IDisposable
         {
             DiagnosticContext? oldContext;
             DiagnosticContext? newContext;

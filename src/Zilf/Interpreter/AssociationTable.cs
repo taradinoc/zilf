@@ -23,7 +23,7 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
-    class AssociationTable : IEnumerable<AsocResult>
+    sealed class AssociationTable : IEnumerable<AsocResult>
     {
         readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>> associations =
             new();

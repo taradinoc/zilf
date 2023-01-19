@@ -25,7 +25,7 @@ using System.Globalization;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.FIX, PrimType.FIX)]
-    class ZilFix : ZilObject, IApplicable
+    sealed class ZilFix : ZilObject, IApplicable
     {
         readonly int value;
 

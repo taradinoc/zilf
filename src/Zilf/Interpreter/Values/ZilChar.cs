@@ -21,7 +21,7 @@ using Zilf.Language;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.CHARACTER, PrimType.FIX)]
-    class ZilChar : ZilObject
+    sealed class ZilChar : ZilObject
     {
         readonly int value;
 

@@ -22,10 +22,10 @@ using System.Collections.Generic;
 
 namespace Zilf.Interpreter
 {
-    class WeakCountingSet<T> : IEnumerable<T>
+    sealed class WeakCountingSet<T> : IEnumerable<T>
         where T : class
     {
-        class Cell
+        sealed class Cell
         {
             public WeakReference<T> Ref;
             public int Count;

@@ -26,15 +26,9 @@ using Zilf.Language;
 
 namespace Zilf.ZModel
 {
-    interface ITellPatternMatchResult
+    sealed class TellPattern
     {
-        bool Matched { get; }
-        ZilForm? Output { get; }
-    }
-
-    class TellPattern
-    {
-        class MatchResult : ITellPatternMatchResult
+        public sealed class MatchResult
         {
             public bool Matched { get; set; }
             public ZilForm? Output { get; set; }
@@ -52,7 +46,7 @@ namespace Zilf.ZModel
             public abstract bool Match(Context ctx, ZilObject input, MatchResult result);
         }
 
-        class AtomToken : Token
+        sealed class AtomToken : Token
         {
             public IList<ZilAtom> Atoms { get; }
 
@@ -67,7 +61,7 @@ namespace Zilf.ZModel
             }
         }
 
-        class AnyToken : Token
+        sealed class AnyToken : Token
         {
             public override bool Match(Context ctx, ZilObject input, MatchResult result)
             {
@@ -76,7 +70,7 @@ namespace Zilf.ZModel
             }
         }
 
-        class DeclToken : Token
+        sealed class DeclToken : Token
         {
             // ReSharper disable once MemberCanBePrivate.Local
             [DisallowNull]
@@ -92,7 +86,7 @@ namespace Zilf.ZModel
             }
         }
 
-        class GvalToken : Token
+        sealed class GvalToken : Token
         {
             // ReSharper disable once MemberCanBePrivate.Local
             public ZilAtom? Atom { get; set; }
@@ -122,13 +116,15 @@ namespace Zilf.ZModel
             {
                 AtomToken atomToken;
 
-                switch (zo.StdTypeAtom)
+                switch (zo)
                 {
-                    case StdAtom.LIST:
+                    case ZilList when tokensSoFar.Count > 0:
+                        throw new InterpreterError(InterpreterMessages.Lists_And_Atoms_In_TELL_Token_Specs_Must_Come_At_The_Beginning);
+
+                    case ZilList list:
                         // one or more atoms to introduce the token
                         atomToken = new AtomToken();
 
-                        var list = (ZilList)zo;
                         if (list.IsEmpty || !list.All(e => e is ZilAtom))
                         {
                             throw new InterpreterError(
@@ -142,82 +138,73 @@ namespace Zilf.ZModel
                         foreach (var o in list.Cast<ZilAtom>())
                             atomToken.Atoms.Add(o);
 
-                        if (tokensSoFar.Count != 0)
-                            throw new InterpreterError(InterpreterMessages.Lists_And_Atoms_In_TELL_Token_Specs_Must_Come_At_The_Beginning);
-
                         tokensSoFar.Add(atomToken);
                         break;
 
-                    case StdAtom.ATOM:
-                        // * to capture any value, or any other atom to introduce the token
-                        if (((ZilAtom)zo).StdAtom == StdAtom.Times)
-                        {
-                            tokensSoFar.Add(new AnyToken());
-                            capturesSoFar++;
-                        }
-                        else
-                        {
-                            atomToken = new AtomToken();
-                            atomToken.Atoms.Add((ZilAtom)zo);
-
-                            if (tokensSoFar.Count != 0)
-                                throw new InterpreterError(InterpreterMessages.Lists_And_Atoms_In_TELL_Token_Specs_Must_Come_At_The_Beginning);
-
-                            tokensSoFar.Add(atomToken);
-                        }
-                        break;
-
-                    case StdAtom.ADECL:
-                        // *:DECL to capture any value that matches the decl
-                        var adecl = (ZilAdecl)zo;
-                        if (adecl.First is not ZilAtom adeclAtom || adeclAtom.StdAtom != StdAtom.Times)
-                            throw new InterpreterError(
-                                InterpreterMessages._0_Must_Be_1,
-                                "left side of ADECL in TELL token spec",
-                                "'*'");
-                        tokensSoFar.Add(new DeclToken { Pattern = adecl.Second });
+                    case ZilAtom { StdAtom: StdAtom.Times }:
+                        // * to capture any value...
+                        tokensSoFar.Add(new AnyToken());
                         capturesSoFar++;
                         break;
 
-                    case StdAtom.FORM:
-                        // <GVAL atom> to match an exact GVAL, or any other FORM to specify the pattern's output
-                        var form = (ZilForm)zo;
-                        if (form.IsGVAL(out var gvAtom))
-                        {
-                            tokensSoFar.Add(new GvalToken { Atom = gvAtom });
-                        }
-                        else
-                        {
-                            // validate the output FORM
-                            int lvalCount = 0;
-                            foreach (var elem in form)
-                            {
-                                if (elem.IsLVAL(out _))
-                                {
-                                    lvalCount++;
-                                }
-                                else if (!IsSimpleOutputElement(elem))
-                                {
-                                    throw new InterpreterError(
-                                        form,
-                                        InterpreterMessages.Unrecognized_0_1,
-                                        "value in TELL output template",
-                                        elem);
-                                }
-                            }
+                    case ZilAtom when tokensSoFar.Count > 0:
+                        throw new InterpreterError(InterpreterMessages.Lists_And_Atoms_In_TELL_Token_Specs_Must_Come_At_The_Beginning);
 
-                            if (lvalCount != capturesSoFar)
+                    case ZilAtom atom:
+                        // ...or any other atom to introduce the token
+                        atomToken = new AtomToken();
+                        atomToken.Atoms.Add(atom);
+                        tokensSoFar.Add(atomToken);
+                        break;
+
+                    case ZilAdecl { First: ZilAtom { StdAtom: StdAtom.Times}, Second: var decl }:
+                        // *:DECL to capture any value that matches the decl
+                        tokensSoFar.Add(new DeclToken { Pattern = decl });
+                        capturesSoFar++;
+                        break;
+
+                    case ZilAdecl:
+                        throw new InterpreterError(
+                            InterpreterMessages._0_Must_Be_1,
+                            "left side of ADECL in TELL token spec",
+                            "'*'");
+
+                    case ZilForm form when form.IsGVAL(out var gvAtom):
+                        // <GVAL atom> to match an exact GVAL...
+                        tokensSoFar.Add(new GvalToken { Atom = gvAtom });
+                        break;
+
+                    case ZilForm form:
+                        // ...or any other FORM to specify the pattern's output
+                        // validate the output FORM
+                        int lvalCount = 0;
+                        foreach (var elem in form)
+                        {
+                            if (elem.IsLVAL(out _))
+                            {
+                                lvalCount++;
+                            }
+                            else if (!IsSimpleOutputElement(elem))
+                            {
                                 throw new InterpreterError(
                                     form,
-                                    InterpreterMessages.Expected_0_LVAL0s_In_TELL_Output_Template_But_Found_1,
-                                    capturesSoFar,
-                                    lvalCount);
-
-                            var pattern = new TellPattern(tokensSoFar.ToArray(), form);
-                            tokensSoFar.Clear();
-                            capturesSoFar = 0;
-                            yield return pattern;
+                                    InterpreterMessages.Unrecognized_0_1,
+                                    "value in TELL output template",
+                                    elem);
+                            }
                         }
+
+                        if (lvalCount != capturesSoFar)
+                            throw new InterpreterError(
+                                form,
+                                InterpreterMessages.Expected_0_LVAL0s_In_TELL_Output_Template_But_Found_1,
+                                capturesSoFar,
+                                lvalCount);
+
+                        var pattern = new TellPattern(tokensSoFar.ToArray(), form);
+                        tokensSoFar.Clear();
+                        capturesSoFar = 0;
+                        yield return pattern;
                         break;
 
                     default:
@@ -237,7 +224,7 @@ namespace Zilf.ZModel
 
         public int Length => tokens.Length;
 
-        public ITellPatternMatchResult Match(IList<ZilObject> input, int startIndex, Context ctx, ISourceLine src)
+        public MatchResult Match(IList<ZilObject> input, int startIndex, Context ctx, ISourceLine src)
         {
             var result = new MatchResult { Matched = false };
 
@@ -277,8 +264,7 @@ namespace Zilf.ZModel
 
         static bool IsSimpleOutputElement(ZilObject obj)
         {
-            return obj is ZilAtom || obj is ZilFix || obj is ZilString || obj is ZilFalse ||
-                   obj.IsLVAL(out _) || obj.IsGVAL(out _) || (obj as ZilForm)?.IsEmpty == true;
+            return obj is ZilAtom or ZilFix or ZilString or ZilFalse or ZilForm { IsEmpty: true } || obj.IsLVAL(out _) || obj.IsGVAL(out _);
         }
     }
 }

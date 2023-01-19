@@ -306,15 +306,13 @@ namespace Zilf.Compiler
 
                     return result;
 
-                case ZilForm form:
-                    if (form.First is not ZilAtom head)
-                    {
-                        Context.HandleError(new CompilerError(form, CompilerMessages.FORM_Must_Start_With_An_Atom));
-                        return Game.Zero;
-                    }
+                case ZilForm { First: not ZilAtom }:
+                    Context.HandleError(new CompilerError(expr, CompilerMessages.FORM_Must_Start_With_An_Atom));
+                    return Game.Zero;
 
+                case ZilForm { First: ZilAtom head } form:
                     // check for standard built-ins
-                    // prefer the gb+predicate version, then gb, predicate, void
+                    // prefer the value+predicate version, then value, predicate, void
                     var zversion = Context.ZEnvironment.ZVersion;
                     var argCount = form.Count() - 1;
                     if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))

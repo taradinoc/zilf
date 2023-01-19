@@ -23,7 +23,7 @@ using System.Linq;
 
 namespace Zilf.Diagnostics
 {
-    struct CountableString
+    readonly struct CountableString
     {
         public readonly string Text;
         public readonly bool Plural;

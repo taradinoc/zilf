@@ -43,7 +43,7 @@ namespace Zilf.Interpreter
     delegate ZilResult EvalTypeDelegate(ZilObject zo);
     delegate ZilResult ApplyTypeDelegate(ZilObject zo, ZilObject[] args);
 
-    class ZValEventArgs : EventArgs
+    sealed class ZValEventArgs : EventArgs
     {
         public ZilAtom Name { get; }
         public ZilObject? NewValue { get; }

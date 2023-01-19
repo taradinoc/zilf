@@ -25,7 +25,7 @@ using Zilf.Interpreter;
 
 namespace Zilf.Language.Signatures
 {
-    class ZBuiltinSignature : ISignature
+    sealed class ZBuiltinSignature : ISignature
     {
         public IReadOnlyList<ISignaturePart> Parts { get; }
         public ISignaturePart ReturnPart { get; }

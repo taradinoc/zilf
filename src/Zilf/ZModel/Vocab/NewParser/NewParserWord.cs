@@ -23,7 +23,7 @@ using Zilf.Language;
 
 namespace Zilf.ZModel.Vocab.NewParser
 {
-    class NewParserWord : IWord
+    sealed class NewParserWord : IWord
     {
         readonly Context ctx;
 

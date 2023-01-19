@@ -24,7 +24,7 @@ using Zilf.Diagnostics;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.ACTIVATION, PrimType.ATOM)]
-    class ZilActivation : ZilObject, IDisposable, IEvanescent
+    sealed class ZilActivation : ZilObject, IDisposable, IEvanescent
     {
         readonly ZilAtom name;
 

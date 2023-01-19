@@ -26,7 +26,7 @@ namespace Zilf.Interpreter.Values
 {
     // TODO: abstract base class for FUNCTION and ROUTINE
     [BuiltinType(StdAtom.FUNCTION, PrimType.LIST)]
-    class ZilFunction : ZilTiedListBase, IApplicable
+    sealed class ZilFunction : ZilTiedListBase, IApplicable
     {
         readonly ArgSpec argspec;
 

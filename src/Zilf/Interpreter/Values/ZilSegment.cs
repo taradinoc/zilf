@@ -27,7 +27,7 @@ using System.Linq;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.SEGMENT, PrimType.LIST)]
-    class ZilSegment : ZilObject, IStructure, IMayExpandBeforeEvaluation
+    sealed class ZilSegment : ZilObject, IStructure, IMayExpandBeforeEvaluation
     {
         readonly ZilForm form;
 

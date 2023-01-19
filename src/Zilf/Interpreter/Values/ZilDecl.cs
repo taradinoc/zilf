@@ -24,7 +24,7 @@ using Zilf.Diagnostics;
 namespace Zilf.Interpreter.Values
 {
     [BuiltinType(StdAtom.DECL, PrimType.LIST)]
-    class ZilDecl : ZilListBase
+    sealed class ZilDecl : ZilListBase
     {
         public ZilDecl(IEnumerable<ZilObject> sequence)
             : base(sequence)

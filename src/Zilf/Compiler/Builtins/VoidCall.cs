@@ -25,7 +25,7 @@ namespace Zilf.Compiler.Builtins
 {
 #pragma warning disable IDE1006 // Naming Styles
     [SuppressMessage("ReSharper", "InconsistentNaming")]
-    struct VoidCall
+    readonly struct VoidCall
     {
         public Compilation cc { get; }
         public IRoutineBuilder rb { get; }

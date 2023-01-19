@@ -24,7 +24,7 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
-    class ReferenceEqualityComparer<T> : IEqualityComparer<T>
+    sealed class ReferenceEqualityComparer<T> : IEqualityComparer<T>
         where T : class
     {
         public static readonly IEqualityComparer<T> Instance = new ReferenceEqualityComparer<T>();
@@ -44,7 +44,7 @@ namespace Zilf.Interpreter
         }
     }
 
-    class StructuralEqualityComparer : IEqualityComparer<ZilObject>
+    sealed class StructuralEqualityComparer : IEqualityComparer<ZilObject>
     {
         public static readonly StructuralEqualityComparer Instance = new();
 

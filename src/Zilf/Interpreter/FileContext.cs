@@ -21,7 +21,7 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
-    class FileContext : IDisposable
+    sealed class FileContext : IDisposable
     {
         public Context Context { get; }
         public FileContext Parent { get; }

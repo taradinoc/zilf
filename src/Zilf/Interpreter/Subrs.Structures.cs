@@ -343,19 +343,13 @@ namespace Zilf.Interpreter
 #pragma warning restore CS0649
 
         [Serializable]
-        class SortAbortedException : Exception
+        sealed class SortAbortedException : Exception
         {
             public ZilResult ZilResult { get; }
 
             public SortAbortedException(ZilResult zilResult)
             {
                 ZilResult = zilResult;
-            }
-
-            protected SortAbortedException(
-                SerializationInfo info,
-                StreamingContext context) : base(info, context)
-            {
             }
 
             public SortAbortedException(string message, Exception innerException) : base(message, innerException)

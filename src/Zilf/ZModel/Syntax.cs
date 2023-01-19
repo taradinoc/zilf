@@ -30,7 +30,7 @@ using Zilf.ZModel.Vocab;
 
 namespace Zilf.ZModel
 {
-    class Syntax : IProvideSourceLine
+    sealed class Syntax : IProvideSourceLine
     {
         public readonly int NumObjects;
         public readonly IWord Verb;

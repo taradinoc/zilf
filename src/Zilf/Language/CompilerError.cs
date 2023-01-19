@@ -24,7 +24,7 @@ using Zilf.Diagnostics;
 namespace Zilf.Language
 {
     [Serializable]
-    class CompilerError : ZilError<CompilerMessages>
+    sealed class CompilerError : ZilError<CompilerMessages>
     {
         public CompilerError(int code)
             : this(code, null)
@@ -61,7 +61,7 @@ namespace Zilf.Language
         {
         }
 
-        protected CompilerError(SerializationInfo si, StreamingContext sc)
+        public CompilerError(SerializationInfo si, StreamingContext sc)
             : base(si, sc)
         {
         }
@@ -99,15 +99,15 @@ namespace Zilf.Language
         {
         }
 
-        protected CompilerError(string message) : base(message)
+        public CompilerError(string message) : base(message)
         {
         }
 
-        protected CompilerError(string message, Exception innerException) : base(message, innerException)
+        public CompilerError(string message, Exception innerException) : base(message, innerException)
         {
         }
 
-        protected CompilerError(ISourceLine src, string message) : base(src, message)
+        public CompilerError(ISourceLine src, string message) : base(src, message)
         {
         }
     }

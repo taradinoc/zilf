@@ -28,7 +28,7 @@ using Zilf.Language;
 
 namespace Zilf.ZModel.Vocab.OldParser
 {
-    class OldParserVocabFormat : IVocabFormat
+    sealed class OldParserVocabFormat : IVocabFormat
     {
         readonly Context ctx;
 

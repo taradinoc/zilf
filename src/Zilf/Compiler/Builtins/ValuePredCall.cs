@@ -25,7 +25,7 @@ namespace Zilf.Compiler.Builtins
 #pragma warning disable IDE1006 // Naming Styles
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    struct ValuePredCall
+    readonly struct ValuePredCall
     {
         public Compilation cc { get; }
         public IRoutineBuilder rb { get; }

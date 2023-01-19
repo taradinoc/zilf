@@ -21,24 +21,5 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Compiler
 {
-    class Action
-    {
-        public readonly int Index;
-        public readonly IOperand Constant;
-        public readonly IRoutineBuilder Routine;
-        public readonly IRoutineBuilder? PreRoutine;
-        public readonly ZilAtom RoutineName;
-        public readonly ZilAtom? PreRoutineName;
-
-        public Action(int index, IOperand constant, IRoutineBuilder routine, IRoutineBuilder? preRoutine,
-            ZilAtom routineName, ZilAtom? preRoutineName)
-        {
-            Index = index;
-            Constant = constant;
-            Routine = routine;
-            RoutineName = routineName;
-            PreRoutine = preRoutine;
-            PreRoutineName = preRoutineName;
-        }
-    }
+    sealed record Action(int Index, IOperand Constant, IRoutineBuilder Routine, IRoutineBuilder? PreRoutine, ZilAtom RoutineName, ZilAtom? PreRoutineName);
 }

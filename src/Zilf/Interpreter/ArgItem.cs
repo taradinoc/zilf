@@ -20,7 +20,7 @@ using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
-    struct ArgItem
+    readonly struct ArgItem
     {
         public enum ArgType { Required, Optional, Auxiliary }
 

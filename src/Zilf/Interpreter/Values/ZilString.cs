@@ -165,7 +165,7 @@ namespace Zilf.Interpreter.Values
         }
 
         [BuiltinAlternate(typeof(ZilString))]
-        class OffsetString : ZilString
+        sealed class OffsetString : ZilString
         {
             readonly OriginalString orig;
             readonly int offset;

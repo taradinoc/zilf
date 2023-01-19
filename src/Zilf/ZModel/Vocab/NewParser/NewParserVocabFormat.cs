@@ -29,7 +29,7 @@ using Zilf.Language;
 
 namespace Zilf.ZModel.Vocab.NewParser
 {
-    class NewParserVocabFormat : IVocabFormat
+    sealed class NewParserVocabFormat : IVocabFormat
     {
         readonly Context ctx;
         readonly int adjClass, buzzClass, dirClass, objectClass, particleClass, prepClass, verbClass;

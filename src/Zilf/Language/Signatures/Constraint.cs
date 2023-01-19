@@ -157,7 +157,7 @@ namespace Zilf.Language.Signatures
             };
         }
 
-        class AnyObjectConstraint : Constraint
+        sealed class AnyObjectConstraint : Constraint
         {
             public override bool Allows(Context ctx, ZilObject arg) => true;
 
@@ -169,7 +169,7 @@ namespace Zilf.Language.Signatures
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitAnyObjectConstraint();
         }
 
-        class BooleanConstraint : Constraint
+        sealed class BooleanConstraint : Constraint
         {
             public override bool Allows(Context ctx, ZilObject arg) => true;
 
@@ -186,7 +186,7 @@ namespace Zilf.Language.Signatures
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitAnyObjectConstraint();
         }
 
-        class ForbiddenConstraint : Constraint
+        sealed class ForbiddenConstraint : Constraint
         {
             public override bool Allows(Context ctx, ZilObject arg) => false;
 
@@ -198,7 +198,7 @@ namespace Zilf.Language.Signatures
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitForbiddenConstraint();
         }
 
-        class TypeConstraint : Constraint
+        sealed class TypeConstraint : Constraint
         {
             public StdAtom TypeAtom { get; }
 
@@ -224,7 +224,7 @@ namespace Zilf.Language.Signatures
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitTypeConstraint(TypeAtom);
         }
 
-        class PrimTypeConstraint : Constraint
+        sealed class PrimTypeConstraint : Constraint
         {
             PrimType PrimType { get; }
 
@@ -250,7 +250,7 @@ namespace Zilf.Language.Signatures
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitPrimTypeConstraint(PrimType);
         }
 
-        class StructuredConstraint : Constraint
+        sealed class StructuredConstraint : Constraint
         {
             public override bool Allows(Context ctx, ZilObject arg) => arg is IStructure;
 
@@ -269,7 +269,7 @@ namespace Zilf.Language.Signatures
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitStructuredConstraint();
         }
 
-        class ApplicableConstraint : Constraint
+        sealed class ApplicableConstraint : Constraint
         {
             public override bool Allows(Context ctx, ZilObject arg) => arg.IsApplicable(ctx);
 
@@ -288,7 +288,7 @@ namespace Zilf.Language.Signatures
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitApplicableConstraint();
         }
 
-        class DeclConstraint : Constraint
+        sealed class DeclConstraint : Constraint
         {
             ZilObject Pattern { get; }
 
@@ -313,7 +313,7 @@ namespace Zilf.Language.Signatures
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitDeclConstraint(Pattern);
         }
 
-        class Conjunction : Constraint
+        sealed class Conjunction : Constraint
         {
             IEnumerable<Constraint> Constraints { get; }
 
@@ -429,7 +429,7 @@ namespace Zilf.Language.Signatures
             public override void Accept(IConstraintVisitor visitor) => visitor.VisitConjunctionConstraint(Constraints);
         }
 
-        class Disjunction : Constraint
+        sealed class Disjunction : Constraint
         {
             IEnumerable<Constraint> Constraints { get; }
 

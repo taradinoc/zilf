@@ -192,7 +192,7 @@ namespace Zilf.Compiler
             IOperand this[int index] { get; }
         }
 
-        class Operands : IOperands
+        sealed class Operands : IOperands
         {
             readonly Compilation compilation;
             readonly IOperand[] values;

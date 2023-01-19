@@ -39,7 +39,7 @@ namespace Zilf.Language
     /// Raised when a user-defined DECL check fails.
     /// </summary>
     [Serializable]
-    class DeclCheckError : InterpreterError
+    sealed class DeclCheckError : InterpreterError
     {
         const int DiagnosticCode = InterpreterMessages.Expected_0_To_Match_DECL_1_But_Got_2;
 
@@ -64,11 +64,6 @@ namespace Zilf.Language
         public DeclCheckError(IProvideSourceLine src, Context ctx, ZilObject value,
             ZilObject pattern, string usageFormat, object arg0)
             : this(src, ctx, value, pattern, string.Format(CultureInfo.CurrentCulture, usageFormat, arg0))
-        {
-        }
-
-        protected DeclCheckError(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
         {
         }
 
@@ -114,10 +109,6 @@ namespace Zilf.Language
         public DeclCheckError(Diagnostic diagnostic) : base(diagnostic)
         {
         }
-
-        protected DeclCheckError(ISourceLine src, string message) : base(src, message)
-        {
-        }
     }
 
     static class Decl
@@ -146,36 +137,34 @@ namespace Zilf.Language
                             // special case
                             return (value.StdTypeAtom == StdAtom.LIST);
 
-                        default:
+                        case var _ when ctx.IsRegisteredType(atom):
                             // arbitrary atoms can be type names...
-                            if (ctx.IsRegisteredType(atom))
-                            {
-                                var typeAtom = value.GetTypeAtom(ctx);
+                            var typeAtom = value.GetTypeAtom(ctx);
 
-                                if (typeAtom == atom)
-                                    return true;
+                            if (typeAtom == atom)
+                                return true;
 
-                                // special cases: a raw TABLE value can substitute for a TABLE-based type, or VECTOR
-                                return typeAtom.StdAtom == StdAtom.TABLE &&
-                                       (atom.StdAtom == StdAtom.VECTOR || ctx.GetTypePrim(atom) == PrimType.TABLE);
-                            }
+                            // special cases: a raw TABLE value can substitute for a TABLE-based type, or VECTOR
+                            return typeAtom.StdAtom == StdAtom.TABLE &&
+                                    (atom.StdAtom == StdAtom.VECTOR || ctx.GetTypePrim(atom) == PrimType.TABLE);
 
+                        case var _ when IsNonCircularAlias(ctx, atom, out var aliased):
                             // ...or aliases
-                            if (IsNonCircularAlias(ctx, atom, out var aliased))
-                                return Check(ctx, value, aliased, ignoreErrors);
+                            return Check(ctx, value, aliased, ignoreErrors);
 
-                            // special cases for GVAL and LVAL
-                            // ReSharper disable once SwitchStatementMissingSomeCases
-                            return atom.StdAtom switch
-                            {
-                                StdAtom.GVAL => value.IsGVAL(out _),
-                                StdAtom.LVAL => value.IsLVAL(out _),
-                                _ => (ignoreErrors
-                                    ? false
-                                    : throw new InterpreterError(InterpreterMessages.Unrecognized_0_1,
-                                        "atom in DECL pattern",
-                                        atom))
-                            };
+                        case StdAtom.GVAL:
+                            return value.IsGVAL(out _);
+
+                        case StdAtom.LVAL:
+                            return value.IsLVAL(out _);
+
+                        case var _ when ignoreErrors:
+                            return false;
+
+                        default:
+                            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1,
+                                "atom in DECL pattern",
+                                atom);
                     }
 
                 case ZilSegment seg:

@@ -30,7 +30,7 @@ using Zilf.Language;
 
 namespace Zilf.ZModel.Vocab.OldParser
 {
-    class OldParserWord : IWord
+    sealed class OldParserWord : IWord
     {
         public PartOfSpeech PartOfSpeech;
         public PartOfSpeech SynonymTypes;

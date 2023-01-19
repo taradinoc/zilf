@@ -386,7 +386,7 @@ namespace Zilf.Interpreter
                                 // follows another (optionally quoted) atom-or-fix
                                 case ZilForm {
                                     First: ZilAtom { StdAtom: StdAtom.QUOTE },
-                                    Rest: { First: { } quotedWord, Rest: { IsEmpty: true } }
+                                    Rest: { First: { } quotedWord, Rest.IsEmpty: true }
                                 } when prevWord != null && quotedWord is ZilAtom or ZilFix:
                                     ctx.HandleError(new InterpreterError(
                                         sourceLine,

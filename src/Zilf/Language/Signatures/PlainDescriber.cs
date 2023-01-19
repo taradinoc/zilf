@@ -25,7 +25,7 @@ using Zilf.Interpreter.Values;
 namespace Zilf.Language.Signatures
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Not normalizing.")]
-    class PlainDescriber : ISignatureVisitor, IConstraintVisitor
+    sealed class PlainDescriber : ISignatureVisitor, IConstraintVisitor
     {
         readonly StringBuilder sb;
 

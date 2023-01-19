@@ -461,7 +461,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        class ArgEvaluator : IDisposable
+        sealed class ArgEvaluator : IDisposable
         {
             readonly Context ctx;
             readonly LocalEnvironment env;

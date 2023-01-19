@@ -27,7 +27,7 @@ namespace Zilf.Interpreter
     /// Represents a set of LVAL bindings, e.g. those belonging to a PROG or FUNCTION invocation,
     /// with optional dynamic inheritance from a parent environment.
     /// </summary>
-    class LocalEnvironment : IDisposable
+    sealed class LocalEnvironment : IDisposable
     {
         readonly Context ctx;
 

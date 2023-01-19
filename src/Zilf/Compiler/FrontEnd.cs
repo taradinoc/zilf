@@ -28,7 +28,7 @@ using Zilf.Common;
 
 namespace Zilf.Compiler
 {
-    class ContextEventArgs : EventArgs
+    sealed class ContextEventArgs : EventArgs
     {
         public ContextEventArgs(Context ctx)
         {
@@ -70,7 +70,7 @@ namespace Zilf.Compiler
 
         public IList<string> IncludePaths { get; } = new List<string>();
 
-        class ZapStreamFactory : IZapStreamFactory
+        sealed class ZapStreamFactory : IZapStreamFactory
         {
             readonly FrontEnd owner;
 

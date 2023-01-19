@@ -31,7 +31,7 @@ namespace Zilf.Interpreter.Values
     }
 
     [BuiltinType(StdAtom.ASOC, PrimType.LIST)]
-    class ZilAsoc : ZilTiedListBase
+    sealed class ZilAsoc : ZilTiedListBase
     {
         readonly AsocResult[] results;
         readonly int index;

@@ -41,7 +41,7 @@ namespace Zilf.ZModel.Vocab
             public const byte Default = OnGround | InRoom | Carried | Held;
         }
 
-        class CacheEntry
+        sealed class CacheEntry
         {
             /// <summary>
             /// A map from scope flag names to their bit values.

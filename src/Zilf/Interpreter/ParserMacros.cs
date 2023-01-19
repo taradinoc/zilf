@@ -27,7 +27,7 @@ namespace Zilf.Interpreter
 {
     delegate ParserOutput SimplePrefixMacroHandlerWithContext(Context ctx, ZilObject zo);
 
-    class ParserMacros
+    sealed class ParserMacros
     {
         readonly Dictionary<char, SimplePrefixMacroHandler> prefixMacros =
             new();

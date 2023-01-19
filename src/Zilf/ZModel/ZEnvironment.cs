@@ -38,7 +38,7 @@ namespace Zilf.ZModel
     /// <summary>
     /// Holds the state built up during the load phase for the compiler to use.
     /// </summary>
-    class ZEnvironment
+    sealed class ZEnvironment
     {
         readonly Context ctx;
         IVocabFormat? vocabFormat;
@@ -396,7 +396,7 @@ namespace Zilf.ZModel
             }
         }
 
-        class ObjectOrderingEntry
+        sealed class ObjectOrderingEntry
         {
             public readonly ZilAtom Name;
             public ZilModelObject? Object;

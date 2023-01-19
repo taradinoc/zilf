@@ -25,7 +25,7 @@ using Zilf.Language;
 namespace Zilf.ZModel.Values
 {
     [BuiltinType(StdAtom.GLOBAL, PrimType.LIST)]
-    class ZilGlobal : ZilTiedListBase
+    sealed class ZilGlobal : ZilTiedListBase
     {
         public ZilGlobal(ZilAtom name, ZilObject? value, GlobalStorageType storageType = GlobalStorageType.Any)
         {

@@ -21,7 +21,7 @@ using Zilf.Interpreter;
 namespace Zilf.ZModel.Vocab
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Late bound")]
-    class VerbSynonym : Synonym
+    sealed class VerbSynonym : Synonym
     {
         public VerbSynonym(IWord original, IWord synonym)
             : base(original, synonym)

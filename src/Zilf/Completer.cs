@@ -25,7 +25,7 @@ using Zilf.Language;
 
 namespace Zilf
 {
-    class Completer : IAutoCompleteHandler, IDisposable
+    sealed class Completer : IAutoCompleteHandler, IDisposable
     {
         readonly Context ctx;
 

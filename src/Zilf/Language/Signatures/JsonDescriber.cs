@@ -222,7 +222,7 @@ namespace Zilf.Language.Signatures
             };
         }
 
-        class ConstraintDescriber : IConstraintVisitor
+        sealed class ConstraintDescriber : IConstraintVisitor
         {
             public static JObject? Describe(Constraint constraint)
             {
