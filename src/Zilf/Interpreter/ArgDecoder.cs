@@ -433,7 +433,7 @@ namespace Zilf.Interpreter
             return OverrideParamDesc(fi.FieldType);
         }
 
-        static SignaturePart? OverrideParamDesc(Type t)
+        static SignaturePart? OverrideParamDesc([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type t)
         {
             var typeAttr = t.GetCustomAttribute<ParamDescAttribute>();
 
@@ -490,7 +490,7 @@ namespace Zilf.Interpreter
 
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "LocalEnvironment")]
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "BuiltinTypeAttribute")]
-        static DecodingStepInfo PrepareOne(Context ctx, Type paramType,
+        static DecodingStepInfo PrepareOne(Context ctx, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type paramType,
             string name, object[] customAttributes,
             bool isOptional, object? defaultValueWhenOptional)
         {
@@ -1022,7 +1022,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result
-        static DecodingStepInfo PrepareOneStructured(Context ctx, Type structType)
+        static DecodingStepInfo PrepareOneStructured(Context ctx, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type structType)
         {
             var typeAtom = structType.GetCustomAttribute<ZilStructuredParamAttribute>()!.TypeAtom;
 
@@ -1099,7 +1099,7 @@ namespace Zilf.Interpreter
             };
         }
 
-        static DecodingStepInfo[] PrepareStepsFromStruct(Context ctx, Type structType,
+        static DecodingStepInfo[] PrepareStepsFromStruct(Context ctx, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type structType,
             out FieldInfo[] fields, out int lowerBound, out int? upperBound)
         {
             fields = GetStructFieldsInOrder(structType);
@@ -1126,7 +1126,7 @@ namespace Zilf.Interpreter
             return stepInfos;
         }
 
-        static FieldInfo[] GetStructFieldsInOrder(Type structType)
+        static FieldInfo[] GetStructFieldsInOrder([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type structType)
         {
             return structType.GetFields()
                 .OrderBy(f => f.MetadataToken)
@@ -1214,7 +1214,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result?
-        static DecodingStepInfo PrepareOneSequence(Context ctx, Type seqType)
+        static DecodingStepInfo PrepareOneSequence(Context ctx, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type seqType)
         {
             var stepInfos = PrepareStepsFromStruct(ctx, seqType, out var fields, out var lowerBound, out var upperBound);
 

@@ -7,6 +7,7 @@
     <Description>The ZIL Implementation You Really, Really Like.</Description>
     <Deterministic>false</Deterministic>
     <Nullable>enable</Nullable>
+	<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
   <PropertyGroup Condition="!($(PortableTarget))">
     <PublishTrimmed>true</PublishTrimmed>
@@ -33,6 +34,12 @@
     <Analyzer Condition="Exists('$(ZilfAnalyzersAssembly)')" Include="$(ZilfAnalyzersAssembly)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Analyzers\ZilfSourceGenerators\ZilfSourceGenerators.csproj"
+	                  OutputItemType="Analyzer"
+					  ReferenceOutputAssembly="false" />
+  </ItemGroup>
+	
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -31,6 +31,7 @@ using Zilf.ZModel.Vocab.NewParser;
 using Zilf.Diagnostics;
 using Zilf.Common;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Zilf.Interpreter
 {
@@ -1299,7 +1300,7 @@ namespace Zilf.Interpreter
             return syntax.Verb.Atom;
         }
 
-        static ZilObject PerformSynonym(Context ctx, ZilAtom original, ZilAtom[] synonyms, Type synonymType)
+        static ZilObject PerformSynonym(Context ctx, ZilAtom original, ZilAtom[] synonyms, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type synonymType)
         {
             if (!ctx.ZEnvironment.Vocabulary.TryGetValue(original, out var oldWord))
             {

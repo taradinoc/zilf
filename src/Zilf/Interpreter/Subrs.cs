@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
@@ -67,12 +68,13 @@ namespace Zilf.Interpreter
         [AttributeUsage(AttributeTargets.Method)]
         public sealed class MdlZilRedirectAttribute : Attribute
         {
-            public MdlZilRedirectAttribute(Type type, string target)
+            public MdlZilRedirectAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type type, string target)
             {
                 Type = type;
                 Target = target;
             }
 
+            [field: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
             public Type Type { get; }
 
             public string Target { get; }

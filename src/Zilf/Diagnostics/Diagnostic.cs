@@ -194,7 +194,7 @@ namespace Zilf.Diagnostics
         }
     }
 
-    public class DiagnosticFactory<TMessageSet> : IDiagnosticFactory
+    public class DiagnosticFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TMessageSet> : IDiagnosticFactory
         where TMessageSet : class
     {
         readonly string prefix;

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28803.156
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Analyzers", "Analyzers", "{598B603F-F081-440B-BD43-4813EC6E043C}"
 EndProject
@@ -69,6 +69,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Common.Tests", "test\Zilf.Common.Tests\Zilf.Common.Tests.csproj", "{337F098C-4DD4-420D-825C-4A40DF99AD89}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Zilf.Playground", "src\Zilf.Playground\Zilf.Playground.csproj", "{D38CAE84-836D-416D-83F6-DE2F2502658C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfSourceGenerators", "src\Analyzers\ZilfSourceGenerators\ZilfSourceGenerators.csproj", "{3A306179-F77C-4344-A475-4AB12299972F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -247,6 +249,18 @@ Global
 		{D38CAE84-836D-416D-83F6-DE2F2502658C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D38CAE84-836D-416D-83F6-DE2F2502658C}.Release|x86.ActiveCfg = Release|Any CPU
 		{D38CAE84-836D-416D-83F6-DE2F2502658C}.Release|x86.Build.0 = Release|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.CI|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.CI|Any CPU.Build.0 = Debug|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.CI|x86.ActiveCfg = Debug|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.CI|x86.Build.0 = Debug|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.Debug|x86.Build.0 = Debug|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.Release|x86.ActiveCfg = Release|Any CPU
+		{3A306179-F77C-4344-A475-4AB12299972F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -272,6 +286,7 @@ Global
 		{3E280263-C59C-4A3B-B9ED-466D22C25333} = {1E9A9589-73D4-466C-9A3D-D44D058B2359}
 		{337F098C-4DD4-420D-825C-4A40DF99AD89} = {65A2B38C-4851-42E5-900C-DAD903A288F8}
 		{D38CAE84-836D-416D-83F6-DE2F2502658C} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
+		{3A306179-F77C-4344-A475-4AB12299972F} = {598B603F-F081-440B-BD43-4813EC6E043C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {774D42F0-105F-4B51-BC60-F4661B610BAC}

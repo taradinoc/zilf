@@ -157,7 +157,7 @@ namespace Zilf.Language.Signatures
             return SignatureBuilder.Alternatives(alts, name);
         }
 
-        static SignaturePart ConvertStruct(Type structType, ZilStructuredParamAttribute attr, string name)
+        static SignaturePart ConvertStruct([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type structType, ZilStructuredParamAttribute attr, string name)
         {
             // TODO: cache the result
             var parts = ConvertFields(structType).ToList();
@@ -171,13 +171,13 @@ namespace Zilf.Language.Signatures
             };
         }
 
-        static SignaturePart ConvertSequence(Type seqType, string name)
+        static SignaturePart ConvertSequence([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type seqType, string name)
         {
             // TODO: cache the result?
             return SignatureBuilder.Sequence(ConvertFields(seqType), name);
         }
 
-        static IEnumerable<SignaturePart> ConvertFields(Type structOrSeqType)
+        static IEnumerable<SignaturePart> ConvertFields([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type structOrSeqType)
         {
             return structOrSeqType.GetFields()
                 .OrderBy(f => Marshal.OffsetOf(structOrSeqType, f.Name).ToInt64())

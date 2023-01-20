@@ -57,7 +57,7 @@ namespace Zilf.Interpreter
 
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = nameof(LocalEnvironment) + " is only disposable as syntactic sugar and doesn't need to be disposed")]
-    sealed class Context : IParserSite
+    sealed partial class Context : IParserSite
     {
         delegate ZilObject ChtypeDelegate(Context ctx, ZilObject original);
 
@@ -788,17 +788,31 @@ namespace Zilf.Interpreter
             return expr.Compile();
         }
 
-        static IReadOnlyDictionary<StdAtom, IStaticTypeMapEntry> StaticTypeMap => InitStaticTypeMap();
+        static IReadOnlyDictionary<StdAtom, IStaticTypeMapEntry> StaticTypeMap { get; } = InitStaticTypeMap();
+
+        private sealed record BuiltinTypeAttrPair(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [field: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)]
+            [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)]
+            Type Type,
+            BuiltinTypeAttribute Attr);
+
+        /// <summary>
+        /// Returns a <see cref="BuiltinTypeAttrPair"/> sequence containing all classes implementing built-in types
+        /// along with their corresponding <see cref="BuiltinTypeAttribute"/>.
+        /// </summary>
+        /// <remarks>
+        /// The implementation of this method is provided at compile time by a source generator.
+        /// </remarks>
+        /// <returns>The sequence.</returns>
+        private static partial IEnumerable<BuiltinTypeAttrPair> GetBuiltinTypeAttrPairs();
 
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "ChtypeMethod")]
         static Dictionary<StdAtom, IStaticTypeMapEntry> InitStaticTypeMap()
         {
             var result = new Dictionary<StdAtom, IStaticTypeMapEntry>();
 
-            var query = from t in typeof(ZilObject).Assembly.GetTypes()
-                        where typeof(ZilObject).IsAssignableFrom(t)
-                        from a in t.GetCustomAttributes<BuiltinTypeAttribute>(false)
-                        select new { Type = t, Attr = a };
+            var query = GetBuiltinTypeAttrPairs();
 
             foreach (var r in query)
             {
@@ -1062,7 +1076,7 @@ namespace Zilf.Interpreter
                     var innerArgs = new ZilObject[args.Length + 1];
                     innerArgs[0] = zo;
                     Array.Copy(args, 0, innerArgs, 1, args.Length);
-                    using (ctx.PushFrame(SourceLines.Unknown, $"<EVALTYPE for {t}>"))
+                    using (ctx.PushFrame(SourceLines.Unknown, $"<APPLYTYPE for {t}>"))
                     {
                         return applicable.ApplyNoEval(ctx, innerArgs);
                     }

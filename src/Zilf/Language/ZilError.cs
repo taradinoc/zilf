@@ -102,7 +102,7 @@ namespace Zilf.Language
 
     static class ZilErrorBaseExtensions
     {
-        public static T Combine<T>(this T mainError, T subError)
+        public static T Combine<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this T mainError, T subError)
             where T : ZilErrorBase
         {
             if (mainError.Diagnostic == null || subError.Diagnostic == null)
@@ -114,7 +114,7 @@ namespace Zilf.Language
     }
 
     [Serializable]
-    abstract class ZilError<TMessageSet> : ZilError
+    abstract class ZilError<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TMessageSet> : ZilError
         where TMessageSet : class
     {
         protected ZilError(string message)
@@ -202,7 +202,7 @@ namespace Zilf.Language
     }
 
     [Serializable]
-    abstract class ZilFatal<TMessageSet> : ZilFatal
+    abstract class ZilFatal<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TMessageSet> : ZilFatal
         where TMessageSet : class
     {
         protected ZilFatal(Diagnostic diag)
