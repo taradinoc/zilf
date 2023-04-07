@@ -9,9 +9,9 @@
     <Nullable>enable</Nullable>
 	<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
-  <PropertyGroup Condition="!($(PortableTarget))">
+  <!--<PropertyGroup Condition="!($(PortableTarget))">
     <PublishTrimmed>true</PublishTrimmed>
-  </PropertyGroup>
+  </PropertyGroup>-->
   <ItemGroup>
     <PackageReference Include="MSBuildTasks" Version="1.5.0.235" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
