@@ -78,6 +78,7 @@ namespace Zilf.Interpreter
         {
         }
     }
+
     abstract class CallSite
     {
         protected CallSite(string name)
@@ -472,7 +473,7 @@ namespace Zilf.Interpreter
 
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "LocalEnvironment")]
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "BuiltinTypeAttribute")]
-        static DecodingStepInfo PrepareOne(Context ctx, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type paramType,
+        static DecodingStepInfo PrepareOne(Context ctx, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type paramType,
             string name, object[] customAttributes,
             bool isOptional, object? defaultValueWhenOptional)
         {
@@ -1004,7 +1005,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result
-        static DecodingStepInfo PrepareOneStructured(Context ctx, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type structType)
+        static DecodingStepInfo PrepareOneStructured(Context ctx, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type structType)
         {
             var typeAtom = structType.GetCustomAttribute<ZilStructuredParamAttribute>()!.TypeAtom;
 
@@ -1196,7 +1197,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: cache the result?
-        static DecodingStepInfo PrepareOneSequence(Context ctx, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type seqType)
+        static DecodingStepInfo PrepareOneSequence(Context ctx, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicFields)] Type seqType)
         {
             var stepInfos = PrepareStepsFromStruct(ctx, seqType, out var fields, out var lowerBound, out var upperBound);
 

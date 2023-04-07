@@ -38,19 +38,19 @@ namespace Zilf.Interpreter
 
         [Subr]
         public static ZilObject PARSE(Context ctx, string text, [Decl("'10")] int radix = 10,
-            [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null!)
+            [Either(typeof(ObList), typeof(ZilList))] ZilObject? lookupObList = null)
         {
             return PerformParse(ctx, text, radix, lookupObList, "PARSE", true);
         }
 
         [Subr]
         public static ZilObject LPARSE(Context ctx, string text, [Decl("'10")] int radix = 10,
-            [Either(typeof(ObList), typeof(ZilList))] ZilObject lookupObList = null!)
+            [Either(typeof(ObList), typeof(ZilList))] ZilObject? lookupObList = null)
         {
             return PerformParse(ctx, text, radix, lookupObList, "LPARSE", false);
         }
 
-        static ZilObject PerformParse(Context ctx, string text, int radix, ZilObject lookupObList,
+        static ZilObject PerformParse(Context ctx, string text, int radix, ZilObject? lookupObList,
             string name, bool singleResult)
         {
             ArgumentOutOfRangeException.ThrowIfNotEqual(radix, 10);

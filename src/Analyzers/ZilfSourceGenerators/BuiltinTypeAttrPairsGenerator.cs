@@ -67,7 +67,7 @@ namespace Zilf.Interpreter
     {{
         private static partial IEnumerable<BuiltinTypeAttrPair> GetBuiltinTypeAttrPairs()
         {{
-            {string.Join("\n            ", lines)}
+            {string.Join("\r\n            ", lines)}
         }}
     }}
 }}
