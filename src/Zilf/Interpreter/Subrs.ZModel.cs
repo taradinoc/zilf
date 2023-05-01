@@ -443,7 +443,32 @@ namespace Zilf.Interpreter
             if (zr.ShouldPass())
                 return zr;
 
-            ctx.ZEnvironment.PropertyDefaults[atom] = (ZilObject)zr;
+            /* Adding the property to PropertyDefaults will cause it to be emitted, defining a
+             * constant and using up a property number, whether or not the property is ever
+             * referenced anywhere else.
+             *
+             * We must do this even when the default value is zero, because zillib calls PROPDEF
+             * for properties that are used by certain optional features, in order to ensure
+             * that a game that doesn't use those features will still compile:
+             *
+             *   <PROPDEF TEXT-HELD <>>
+             *
+             * However, games may use PROPDEF to define syntax for all direction properties by
+             * defining a complex property pattern for DIRECTIONS:
+             *
+             *   <PROPDEF DIRECTIONS <> (DIR TO R:ROOM = ...)>
+             *
+             * We must not emit a constant for DIRECTIONS, which isn't a real property.
+             * Therefore, we treat DIRECTIONS as a special case, and we only add atom to
+             * PropertyDefaults when:
+             * 
+             *   (1) atom is not DIRECTIONS,
+             *   (2) defaultValue is not false, or
+             *   (3) spec is empty.
+             */
+            var zo = (ZilObject)zr;
+            if (atom.StdAtom != StdAtom.DIRECTIONS || zo.IsTrue || spec.Length <= 0)
+                ctx.ZEnvironment.PropertyDefaults[atom] = zo;
 
             // complex property patterns
             if (spec.Length <= 0)

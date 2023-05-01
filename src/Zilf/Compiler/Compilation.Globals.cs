@@ -383,9 +383,6 @@ namespace Zilf.Compiler
 
             void SuppressImplicitlyUsedNames()
             {
-                // TODO(ZILF-239): this works around the bug where PROPDEF DIRECTIONS incorrectly defines a DIRECTIONS property
-                alreadyWarned.Add(Context.GetStdAtom(StdAtom.DIRECTIONS));
-
                 // direction properties are implicitly used (written into the vocab table)
                 foreach (var dir in Context.ZEnvironment.Directions)
                 {

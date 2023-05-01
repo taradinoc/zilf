@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -326,24 +327,24 @@ namespace Zilf.Tests.Integration
             CheckWarnings(result);
         }
 
-        public Task<CodeMatchingResult> GeneratesCodeMatchingAsync(string pattern)
+        public Task<CodeMatchingResult> GeneratesCodeMatchingAsync([StringSyntax(StringSyntaxAttribute.Regex)] string pattern)
         {
             return GeneratesCodeMatchingAsync(output => CheckOutputMatches(output, pattern));
         }
 
-        public static void CheckOutputMatches(string output, string pattern)
+        public static void CheckOutputMatches(string output, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern)
         {
             Assert.IsTrue(
                 Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
                 "Output did not match. Expected pattern: " + pattern);
         }
 
-        public Task<CodeMatchingResult> GeneratesCodeNotMatchingAsync(string pattern)
+        public Task<CodeMatchingResult> GeneratesCodeNotMatchingAsync([StringSyntax(StringSyntaxAttribute.Regex)] string pattern)
         {
             return GeneratesCodeMatchingAsync(output => CheckOutputDoesNotMatch(output, pattern));
         }
 
-        public static void CheckOutputDoesNotMatch(string output, string pattern)
+        public static void CheckOutputDoesNotMatch(string output, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern)
         {
             Assert.IsFalse(
                 Regex.IsMatch(output, pattern, RegexOptions.Singleline | RegexOptions.Multiline),
@@ -387,7 +388,7 @@ namespace Zilf.Tests.Integration
     public static class CodeMatchingResultTaskExtensions
     {
         public static async Task<AbstractAssertionHelperWithEntryPoint<T>.CodeMatchingResult> AndMatching<T>(
-            this Task<AbstractAssertionHelperWithEntryPoint<T>.CodeMatchingResult> task, string pattern)
+            this Task<AbstractAssertionHelperWithEntryPoint<T>.CodeMatchingResult> task, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern)
             where T : AbstractAssertionHelperWithEntryPoint<T>
         {
             var result = await task;
@@ -396,7 +397,7 @@ namespace Zilf.Tests.Integration
         }
 
         public static async Task<AbstractAssertionHelperWithEntryPoint<T>.CodeMatchingResult> AndNotMatching<T>(
-            this Task<AbstractAssertionHelperWithEntryPoint<T>.CodeMatchingResult> task, string pattern)
+            this Task<AbstractAssertionHelperWithEntryPoint<T>.CodeMatchingResult> task, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern)
             where T : AbstractAssertionHelperWithEntryPoint<T>
         {
             var result = await task;

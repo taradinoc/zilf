@@ -404,6 +404,27 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task PROPDEF_For_DIRECTIONS_Should_Not_Create_A_DIRECTIONS_Property()
+        {
+            await AssertGlobals(
+                "<PROPDEF DIRECTIONS <> " +
+                " (DIR GOES TO R:ROOM = (MY-UEXIT 3) <WORD 0> (MY-REXIT <ROOM .R>))>",
+                "<DIRECTIONS NORTH SOUTH>",
+                "<OBJECT HOUSE (SOUTH GOES TO WOODS)>",
+                "<OBJECT WOODS (NORTH GOES TO HOUSE)>",
+                "<ROUTINE FOO () ,P?DIRECTIONS>")
+                .DoesNotCompileAsync();
+
+            await AssertGlobals(
+                "<PROPDEF DIRECTIONS <> " +
+                " (DIR GOES TO R:ROOM = (MY-UEXIT 3) <WORD 0> (MY-REXIT <ROOM .R>))>",
+                "<DIRECTIONS NORTH SOUTH>",
+                "<OBJECT HOUSE (SOUTH GOES TO WOODS)>",
+                "<OBJECT WOODS (NORTH GOES TO HOUSE)>")
+                .GeneratesCodeNotMatchingAsync(@"P\?DIRECTIONS");
+        }
+
+        [TestMethod]
         public async Task Vocab_Created_By_PROPDEF_Should_Work_Correctly()
         {
             await AssertGlobals(
