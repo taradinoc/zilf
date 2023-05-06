@@ -360,7 +360,7 @@ namespace Zilf.Interpreter.Values
         }
 
         /// <summary>
-        /// Evaluates a sequence of expressions, expanding segment references (!.X) when encountered.
+        /// Evaluates a sequence of expressions, expanding segment references (!.X) and macro-returned SPLICEs when encountered.
         /// </summary>
         /// <param name="ctx">The current context.</param>
         /// <param name="sequence">The sequence to evaluate.</param>

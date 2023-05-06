@@ -164,6 +164,8 @@ namespace Zilf.Compiler.Builtins
 
             var result = new List<BuiltinArg>(args.Count);
 
+            static ZilObject UnwrapMacroResult(ZilObject obj) => obj is ZilMacroResult zmr ? zmr.Inner : obj;
+
             for (int i = 0, j = spec.Attr.Data == null ? 1 : 2; i < args.Count; i++, j++)
             {
                 var pi = builtinParamInfos[j];
@@ -175,7 +177,7 @@ namespace Zilf.Compiler.Builtins
 
                 if (ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType, out var handler))
                 {
-                    result.Add(handler.Process(cc, InnerError, args[i], pi));
+                    result.Add(handler.Process(cc, InnerError, UnwrapMacroResult(args[i]), pi));
                 }
                 else if (pi.ParameterType.IsArray &&
                          pi.ParameterType.GetElementType() is Type t &&
@@ -184,7 +186,7 @@ namespace Zilf.Compiler.Builtins
                     // consume all remaining arguments
                     while (i < args.Count)
                     {
-                        result.Add(handler.Process(cc, InnerError, args[i], pi));
+                        result.Add(handler.Process(cc, InnerError, UnwrapMacroResult(args[i]), pi));
                         i++;
                     }
 

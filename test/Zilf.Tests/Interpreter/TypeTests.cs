@@ -1028,16 +1028,35 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFMAC FOO () #SPLICE (4 5)>");
             TestHelpers.EvalAndAssert(ctx, "<+ <FOO>>", new ZilFix(9));
 
-            // should only be expanded when returned from a macro
+            // SPLICEs should only be expanded when returned from a macro and used in a structure-building context...
+
+            // should NOT be expanded when returned from a function
             TestHelpers.Evaluate(ctx, "<DEFINE BAR () #SPLICE (4 5)>");
             var vector = (ZilVector)TestHelpers.Evaluate(ctx, "<VECTOR <BAR>>");
             Assert.AreEqual(1, vector.GetLength());
-            var first = vector[0];
-            Assert.IsInstanceOfType(first, typeof(ZilSplice));
+            Assert.IsInstanceOfType(vector[0], typeof(ZilSplice));
 
-            TestHelpers.Evaluate(ctx, "<DEFINE BAZ (\"ARGS\" A) .A>");
-            var list = (ZilList)TestHelpers.Evaluate(ctx, "<BAZ #SPLICE (1 2) 3>");
-            Assert.AreEqual(2, ((IStructure)list).GetLength());
+            // should NOT be expanded when passed directly as a function argument
+            TestHelpers.Evaluate(ctx, "<DEFINE BAZ1 (\"TUPLE\" A) .A>");
+            var list = (ZilList)TestHelpers.Evaluate(ctx, "<BAZ1 #SPLICE (1 2) 3>");
+            Assert.AreEqual(2, list.GetLength());
+            Assert.IsInstanceOfType(list[0], typeof(ZilSplice));
+            Assert.IsInstanceOfType(list[1], typeof(ZilFix));
+
+            TestHelpers.Evaluate(ctx, "<DEFINE BAZ2 (A B \"OPT\" (C <>)) (.A .B .C)>");
+            list = (ZilList)TestHelpers.Evaluate(ctx, "<BAZ2 #SPLICE (1 2) 3>");
+            Assert.AreEqual(3, list.GetLength());
+            Assert.IsInstanceOfType(list[0], typeof(ZilSplice));
+            Assert.IsInstanceOfType(list[1], typeof(ZilFix));
+            Assert.IsInstanceOfType(list[2], typeof(ZilFalse));
+
+            // SHOULD be expanded when returned from a macro and passed as a function argument
+            TestHelpers.Evaluate(ctx, "<DEFMAC QUUX () #SPLICE (4 5)>");
+            list = (ZilList)TestHelpers.Evaluate(ctx, "<BAZ1 <QUUX> 3>");
+            Assert.AreEqual(3, list.GetLength());
+            Assert.IsInstanceOfType(list[0], typeof(ZilFix));
+            Assert.IsInstanceOfType(list[1], typeof(ZilFix));
+            Assert.IsInstanceOfType(list[2], typeof(ZilFix));
         }
 
         [TestMethod]

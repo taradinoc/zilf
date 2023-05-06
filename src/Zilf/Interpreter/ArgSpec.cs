@@ -461,6 +461,9 @@ namespace Zilf.Interpreter
             }
         }
 
+        /// <summary>
+        /// Evaluates the arguments to a function call.
+        /// </summary>
         sealed class ArgEvaluator : IDisposable
         {
             readonly Context ctx;
@@ -517,7 +520,7 @@ namespace Zilf.Interpreter
             }
 
             /// <exception cref="InterpreterError">The wrong number or types of arguments were provided.</exception>
-            [return: NotNullIfNotNull("src")]
+            [return: NotNullIfNotNull(nameof(src))]
             public ZilResult? GetOneOptional(bool eval, out IProvideSourceLine? src)
             {
                 while (true)
@@ -544,8 +547,8 @@ namespace Zilf.Interpreter
                                 return zr;
                             }
 
-                            src = (ZilObject)expansion.Current;
-                            return expansion.Current;
+                            src = (ZilObject)zr;
+                            return zr;
                         }
 
                         expansion.Dispose();
@@ -562,14 +565,29 @@ namespace Zilf.Interpreter
                             return result;
                         }
 
-                        if (result is IMayExpandBeforeEvaluation expandable && expandable.ShouldExpandBeforeEvaluation)
+                        if (result is IMayExpandBeforeEvaluation expandableBefore && expandableBefore.ShouldExpandBeforeEvaluation)
                         {
-                            expansion = expandable.ExpandBeforeEvaluation(ctx, env).GetEnumerator();
+                            expansion = expandableBefore.ExpandBeforeEvaluation(ctx, env).GetEnumerator();
+                            continue;
+                        }
+
+                        var zr = result.Eval(ctx, env);
+                        if (zr.ShouldPass())
+                        {
+                            src = null;
+                            return zr;
+                        }
+
+                        result = (ZilObject)zr;
+
+                        if (result is IMayExpandAfterEvaluation expandableAfter && expandableAfter.ShouldExpandAfterEvaluation)
+                        {
+                            expansion = expandableAfter.ExpandAfterEvaluation().AsResultSequence().GetEnumerator();
                             continue;
                         }
 
                         src = result;
-                        return result.Eval(ctx, env);
+                        return result;
                     }
 
                     enumerator.Dispose();

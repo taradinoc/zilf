@@ -36,6 +36,21 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("", "<VARIOUS-THINGS>")
                 .WithGlobal("<DEFMAC VARIOUS-THINGS () <CHTYPE '(123 456) SPLICE>>")
                 .GivesNumberAsync("456");
+
+            // as builtin arguments
+            await AssertRoutine("", "<+ <VARIOUS-THINGS>>")
+                .WithGlobal("<DEFMAC VARIOUS-THINGS () <CHTYPE '(123 456) SPLICE>>")
+                .GivesNumberAsync("579");
+
+            await AssertRoutine("", "<TELL <VARIOUS-THINGS>>")
+                .WithGlobal("<DEFMAC VARIOUS-THINGS () <CHTYPE '(N 12345) SPLICE>>")
+                .OutputsAsync("12345");
+
+            // as routine arguments
+            await AssertRoutine("", "<ADD-EM <VARIOUS-THINGS>>")
+                .WithGlobal("<DEFMAC VARIOUS-THINGS () <CHTYPE '(123 456) SPLICE>>")
+                .WithGlobal("<ROUTINE ADD-EM (X Y) <+ .X .Y>>")
+                .GivesNumberAsync("579");
         }
 
         [TestMethod]
@@ -62,6 +77,18 @@ namespace Zilf.Tests.Integration
                 .GivesNumberAsync("123");
         }
 
+        [TestMethod]
+        public async Task Macros_Returning_Constants_Can_Be_Used_As_Literal_Arguments()
+        {
+            await AssertExpr(@"<PRINTI <FOO>> <CRLF>")
+                .WithGlobal(@"<DEFMAC FOO () ""hello world"">")
+                .OutputsAsync("hello world\n");
+
+            await AssertRoutine("", @"<LOWCORE-TABLE ZVERSION <FOO> PRINTN>")
+                .WithGlobal(@"<DEFMAC FOO () 2>")
+                .CompilesAsync();
+        }
+
         [TestMethod, TestCategory("Reader Macros")]
         public async Task MAKE_PREFIX_MACRO_Should_Work()
         {
@@ -70,6 +97,5 @@ namespace Zilf.Tests.Integration
                 .WithGlobal(@"<MAKE-PREFIX-MACRO !\@ <FUNCTION (W:ATOM) <VOC <SPNAME .W> BUZZ>>>")
                 .OutputsAsync("hello world\n");
         }
-
     }
 }
