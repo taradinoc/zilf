@@ -477,12 +477,12 @@ namespace Zilf.ZModel.Values
 
             ZilAtom? outVariable;
             ZilFix? outFix;
-            if (form.StartsWith(out ZilAtom _, out ZilObject? zo) && zo.IsLVAL(out var atom))
+            if (form.StartsWith(out ZilAtom? _, out ZilObject? zo) && zo.IsLVAL(out var atom))
             {
                 outVariable = atom;
                 outFix = null;
             }
-            else if (form.StartsWith(out ZilAtom _, out ZilFix? fix))
+            else if (form.StartsWith(out ZilAtom? _, out ZilFix? fix))
             {
                 outVariable = null;
                 outFix = fix;

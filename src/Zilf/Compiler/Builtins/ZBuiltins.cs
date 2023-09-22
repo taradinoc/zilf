@@ -1636,7 +1636,7 @@ namespace Zilf.Compiler.Builtins
         public static IOperand InputOp(ValueCall c, IOperand dummy,
             IOperand? interval = null, [Routine] IOperand? routine = null)
         {
-            if (c.form.StartsWith(out ZilObject _, out ZilFix? fix) && fix.Value != 1)
+            if (c.form.StartsWith(out ZilObject? _, out ZilFix? fix) && fix.Value != 1)
             {
                 return c.HandleMessage(
                     CompilerMessages._0_Argument_1_2,

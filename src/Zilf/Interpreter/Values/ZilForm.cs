@@ -199,14 +199,14 @@ namespace Zilf.Interpreter.Values
                         : usedLocal ? ctx.ChangeType(First, ctx.GetStdAtom(StdAtom.LVAL))
                         : First;
 
-                    if (this.Matches(out ZilObject _, out ZilObject? structure, out ZilObject? item))
+                    if (this.Matches(out ZilObject? _, out ZilObject? structure, out ZilObject? item))
                     {
                         // <1 FOO BAR> => <PUT FOO 1 BAR>
                         First = ctx.GetStdAtom(StdAtom.PUT);
                         Rest = new ZilList(structure,
                             new ZilList(index, new ZilList(item, new ZilList(null, null))));
                     }
-                    else if (this.Matches(out ZilObject _, out structure))
+                    else if (this.Matches(out ZilObject? _, out structure))
                     {
                         // <1 FOO> => <GET FOO 1>
                         First = ctx.GetStdAtom(StdAtom.GET);
