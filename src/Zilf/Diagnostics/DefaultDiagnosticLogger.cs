@@ -38,8 +38,13 @@ namespace Zilf.Diagnostics
 
             Writer.WriteLine(Format(diagnostic));
 
+            const string SSubDiagnosticIndent = "    ";
+
             foreach (var sd in diagnostic.SubDiagnostics)
+            {
+                Writer.Write(SSubDiagnosticIndent);
                 Writer.WriteLine(Format(sd, diagnostic));
+            }
 
             if (diagnostic.StackTrace != null)
                 Writer.WriteLine(diagnostic.StackTrace);
