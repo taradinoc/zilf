@@ -94,14 +94,12 @@ debug:build:
   needs: []
   script:
     - 'dotnet msbuild -t:Build -p:Configuration=Debug Build.proj'
+  artifacts:
+    untracked: false
+    when: on_success
+    expire_in: 30 days
 
-release:build:
-  stage: build
-  needs: []
-  script:
-    - 'dotnet msbuild -t:Build -p:Configuration=Release Build.proj'
-
-tests:
+tests:fast:
   stage: test
   needs: ['debug:build']
   # ### Run the tests
@@ -113,7 +111,28 @@ tests:
   # You may want to define separate testing jobs for different types of testing
   # (e.g. integration tests, unit tests etc).
   script:
-    - 'dotnet test Zilf.sln --no-restore -c CI --test-adapter-path:. --logger:"junit;LogFilePath=..\artifacts\{assembly}-test-result.xml;MethodFormat=Class;FailureBodyFormat=Verbose" -maxcpucount:1'
+    - 'dotnet test Zilf.sln --filter TestCategory\!=Slow --no-restore -c CI --test-adapter-path:. --logger:"junit;LogFilePath=..\artifacts\{assembly}-test-result.xml;MethodFormat=Class;FailureBodyFormat=Verbose" -maxcpucount:1'
+  artifacts:
+    when: always
+    paths:
+      - 'test/artifacts/*.xml'
+    reports:
+      junit:
+        - 'test/artifacts/*.xml'
+
+tests:slow:
+  stage: test
+  needs: ['debug:build']
+  # ### Run the tests
+  #
+  # You can either run tests for all test projects that are defined in your solution
+  # with 'dotnet test' or run tests only for specific project by specifying
+  # a relative path to the directory where it is located (e.g. 'dotnet test ./test/UnitTests').
+  #
+  # You may want to define separate testing jobs for different types of testing
+  # (e.g. integration tests, unit tests etc).
+  script:
+    - 'dotnet test Zilf.sln --filter TestCategory=Slow --no-restore -c CI --test-adapter-path:. --logger:"junit;LogFilePath=..\artifacts\{assembly}-test-result.xml;MethodFormat=Class;FailureBodyFormat=Verbose" -maxcpucount:1'
   artifacts:
     when: always
     paths:
@@ -124,7 +143,7 @@ tests:
 
 package:
   stage: package
-  needs: ['release:build']
+  # needs: ['release:build']
   # ### Build all projects discovered from solution file.
   #
   # Note: this will fail if you have any projects in your solution that are not
