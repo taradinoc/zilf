@@ -79,6 +79,7 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        [TestCategory("Slow")]
         public async Task FUNNY_GLOBALS_Should_Work_With_IGRTR_P()
         {
             const int NumGlobals = 500;
