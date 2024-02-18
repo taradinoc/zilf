@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RuntimeIdentifiers>win-x86;win-x64;linux-arm;linux-x64;osx-x64</RuntimeIdentifiers>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
     <OutputType>Exe</OutputType>
@@ -28,16 +28,14 @@
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-all</AnalysisLevel>
     <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
-    <RunAnalyzersDuringLiveAnalysis>True</RunAnalyzersDuringLiveAnalysis>
+    <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
   </PropertyGroup>
   <ItemGroup>
     <Analyzer Condition="Exists('$(ZilfAnalyzersAssembly)')" Include="$(ZilfAnalyzersAssembly)" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Analyzers\ZilfSourceGenerators\ZilfSourceGenerators.csproj"
-	                  OutputItemType="Analyzer"
-					  ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Analyzers\ZilfSourceGenerators\ZilfSourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 	
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

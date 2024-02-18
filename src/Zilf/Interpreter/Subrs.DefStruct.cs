@@ -299,14 +299,11 @@ namespace Zilf.Interpreter
             return name;
         }
 
-        static ZilObject MakeDefstructDecl(Context ctx, ZilAtom baseType, List<DefStructField> fields)
+        static ZilSegment MakeDefstructDecl(Context ctx, ZilAtom baseType, List<DefStructField> fields)
         {
-            if (ctx == null)
-                throw new ArgumentNullException(nameof(ctx));
-            if (baseType == null)
-                throw new ArgumentNullException(nameof(baseType));
-            if (fields == null)
-                throw new ArgumentNullException(nameof(fields));
+            ArgumentNullException.ThrowIfNull(ctx);
+            ArgumentNullException.ThrowIfNull(baseType);
+            ArgumentNullException.ThrowIfNull(fields);
 
             var parts = new List<ZilObject>(1 + fields.Count)
             {

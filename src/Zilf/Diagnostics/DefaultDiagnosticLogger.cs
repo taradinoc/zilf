@@ -33,8 +33,7 @@ namespace Zilf.Diagnostics
 
         public void Log(Diagnostic diagnostic)
         {
-            if (diagnostic == null)
-                throw new ArgumentNullException(nameof(diagnostic));
+            ArgumentNullException.ThrowIfNull(diagnostic);
 
             Writer.WriteLine(Format(diagnostic));
 
@@ -61,8 +60,7 @@ namespace Zilf.Diagnostics
 
         protected static string Format(Diagnostic diagnostic, bool includeSourceInfo = true)
         {
-            if (diagnostic == null)
-                throw new ArgumentNullException(nameof(diagnostic));
+            ArgumentNullException.ThrowIfNull(diagnostic);
 
             const string SFormatWithSourceInfo = "[{0} {1}{2:0000}] {3}: {4}";
             const string SFormatWithoutSourceInfo = "[{0} {1}{2:0000}] {4}";
@@ -79,11 +77,9 @@ namespace Zilf.Diagnostics
 
         protected static string Format(Diagnostic diagnostic, Diagnostic parentDiagnostic)
         {
-            if (diagnostic == null)
-                throw new ArgumentNullException(nameof(diagnostic));
+            ArgumentNullException.ThrowIfNull(diagnostic);
 
-            if (parentDiagnostic == null)
-                throw new ArgumentNullException(nameof(parentDiagnostic));
+            ArgumentNullException.ThrowIfNull(parentDiagnostic);
 
             bool includeSourceInfo = !string.IsNullOrEmpty(diagnostic.Location.SourceInfo) &&
                 diagnostic.Location != parentDiagnostic.Location &&

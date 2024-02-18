@@ -38,7 +38,6 @@ namespace Zilf.Language
     /// <summary>
     /// Raised when a user-defined DECL check fails.
     /// </summary>
-    [Serializable]
     sealed class DeclCheckError : InterpreterError
     {
         const int DiagnosticCode = InterpreterMessages.Expected_0_To_Match_DECL_1_But_Got_2;

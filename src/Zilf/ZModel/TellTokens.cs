@@ -48,7 +48,7 @@ namespace Zilf.ZModel
 
         sealed class AtomToken : Token
         {
-            public IList<ZilAtom> Atoms { get; }
+            public List<ZilAtom> Atoms { get; }
 
             public AtomToken()
             {

@@ -44,8 +44,7 @@ namespace Zilf.Interpreter
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         static ZilResult PerformMap(Context ctx, ZilObject finalf, IApplicable loopf, IStructure[] structs, bool first)
         {
-            if (structs == null)
-                throw new ArgumentNullException(nameof(structs));
+            ArgumentNullException.ThrowIfNull(structs);
 
             int numStructs = structs.Length;
             var loopArgs = new ZilObject[numStructs];

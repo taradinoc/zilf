@@ -26,7 +26,6 @@ using Zilf.Interpreter;
 
 namespace Zilf.Language
 {
-    [Serializable]
     public abstract class ZilErrorBase : Exception
     {
         protected ZilErrorBase()
@@ -34,27 +33,10 @@ namespace Zilf.Language
         protected ZilErrorBase(string message) : base(message) { }
         protected ZilErrorBase(string message, Exception innerException) : base(message, innerException) { }
 
-        protected ZilErrorBase(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            Diagnostic = (Diagnostic?)info.GetValue("Diagnostic", typeof(Diagnostic)) ??
-                         throw new ArgumentException("Diagnostic is missing");
-            SourceLine = (ISourceLine?)info.GetValue("SourceLine", typeof(ISourceLine));
-        }
-
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-
-            info.AddValue("Diagnostic", Diagnostic);
-            info.AddValue("SourceLine", SourceLine);
-        }
-
         public Diagnostic? Diagnostic { get; protected set; }
         protected ISourceLine? SourceLine { get; set; }
     }
 
-    [Serializable]
     public abstract class ZilError : ZilErrorBase
     {
         protected ZilError(string message)
@@ -67,27 +49,16 @@ namespace Zilf.Language
         {
         }
 
-        protected ZilError(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
-
         protected ZilError()
         {
         }
     }
 
-    [Serializable]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public abstract class ZilFatal : ZilErrorBase
     {
         protected ZilFatal(string message)
             : base(message)
-        {
-        }
-
-        protected ZilFatal(SerializationInfo info, StreamingContext context)
-            : base(info, context)
         {
         }
 
@@ -113,7 +84,6 @@ namespace Zilf.Language
         }
     }
 
-    [Serializable]
     abstract class ZilError<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TMessageSet> : ZilError
         where TMessageSet : class
     {
@@ -143,11 +113,6 @@ namespace Zilf.Language
         {
             Diagnostic = diag;
             SourceLine = diag.Location;
-        }
-
-        protected ZilError(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
-        {
         }
 
         protected ZilError() : base()
@@ -201,7 +166,6 @@ namespace Zilf.Language
         }
     }
 
-    [Serializable]
     abstract class ZilFatal<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TMessageSet> : ZilFatal
         where TMessageSet : class
     {
@@ -210,11 +174,6 @@ namespace Zilf.Language
         {
             Diagnostic = diag;
             SourceLine = diag.Location;
-        }
-
-        protected ZilFatal(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
-        {
         }
 
         protected ZilFatal(string message) : base(message)

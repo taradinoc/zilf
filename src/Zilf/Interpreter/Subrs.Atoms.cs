@@ -53,8 +53,7 @@ namespace Zilf.Interpreter
         static ZilObject PerformParse(Context ctx, string text, int radix, ZilObject lookupObList,
             string name, bool singleResult)
         {
-            if (radix != 10)
-                throw new ArgumentOutOfRangeException(nameof(radix));
+            ArgumentOutOfRangeException.ThrowIfNotEqual(radix, 10);
 
             using var innerEnv = ctx.PushEnvironment();
 
@@ -361,10 +360,8 @@ namespace Zilf.Interpreter
         [Subr]
         public static ZilObject UNASSIGN(Context ctx, ZilAtom atom, LocalEnvironment env)
         {
-            if (atom == null)
-                throw new ArgumentNullException(nameof(atom));
-            if (env == null)
-                throw new ArgumentNullException(nameof(env));
+            ArgumentNullException.ThrowIfNull(atom);
+            ArgumentNullException.ThrowIfNull(env);
 
             env.SetLocalVal(atom, null);
             return atom;

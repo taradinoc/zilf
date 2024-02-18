@@ -33,16 +33,10 @@ using Zilf.Language.Signatures;
 
 namespace Zilf.Interpreter
 {
-    [Serializable]
     abstract class ArgumentDecodingError : InterpreterError
     {
         protected ArgumentDecodingError(Diagnostic diagnostic)
             : base(diagnostic) { }
-
-        protected ArgumentDecodingError(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
-        {
-        }
 
         protected ArgumentDecodingError()
         {
@@ -120,16 +114,10 @@ namespace Zilf.Interpreter
         public override string ChildName => "element";
     }
 
-    [Serializable]
     sealed class ArgumentCountError : ArgumentDecodingError
     {
         ArgumentCountError(Diagnostic diagnostic)
             : base(diagnostic)
-        {
-        }
-
-        ArgumentCountError(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
         {
         }
 
@@ -190,7 +178,6 @@ namespace Zilf.Interpreter
         }
     }
 
-    [Serializable]
     sealed class ArgumentTypeError : ArgumentDecodingError
     {
         public ArgumentTypeError(CallSite site, int index, string constraintDesc)
@@ -198,11 +185,6 @@ namespace Zilf.Interpreter
                 null,
                 InterpreterMessages._0_Expected_1,
                 new object[] { site.DescribeArgument(index), constraintDesc }))
-        {
-        }
-
-        ArgumentTypeError(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
         {
         }
 
@@ -1279,8 +1261,7 @@ namespace Zilf.Interpreter
         /// <exception cref="ArgumentNullException"><paramref name="methodInfo"/> is <see langword="null"/></exception>
         public static ArgDecoder FromMethodInfo(MethodInfo methodInfo, Context ctx)
         {
-            if (methodInfo == null)
-                throw new ArgumentNullException(nameof(methodInfo));
+            ArgumentNullException.ThrowIfNull(methodInfo);
 
             if (!typeof(ZilObject).IsAssignableFrom(methodInfo.ReturnType) &&
                 !typeof(ZilResult).IsAssignableFrom(methodInfo.ReturnType))
@@ -1352,8 +1333,7 @@ namespace Zilf.Interpreter
                 if (!alreadyDone.TryGetValue(targetMethodInfo, out var targetDel))
                 {
                     targetDel = WrapMethod(targetMethodInfo, ctx, alreadyDone);
-                    if (!alreadyDone.ContainsKey(targetMethodInfo))
-                        alreadyDone.Add(targetMethodInfo, targetDel);
+                    alreadyDone.TryAdd(targetMethodInfo, targetDel);
                 }
 
                 var prevDel = del;

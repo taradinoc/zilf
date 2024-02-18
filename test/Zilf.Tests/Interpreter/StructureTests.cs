@@ -46,12 +46,12 @@ namespace Zilf.Tests.Interpreter
         public void TestMEMQ()
         {
             TestHelpers.EvalAndAssert("<MEMQ 5 '(3 4 5 6 7)>",
-                new ZilList(new ZilObject[]
-                {
+                new ZilList(
+                [
                     new ZilFix(5),
                     new ZilFix(6),
                     new ZilFix(7)
-                }));
+                ]));
 
             TestHelpers.EvalAndAssert("<MEMQ 5 '[3 4 5 6 7]>",
                 new ZilVector(new ZilFix(5), new ZilFix(6), new ZilFix(7)));
@@ -69,14 +69,14 @@ namespace Zilf.Tests.Interpreter
         public void TestMEMBER()
         {
             TestHelpers.EvalAndAssert("<MEMBER '(5) '(3 4 (5) 6 7)>",
-                new ZilList(new ZilObject[] {
-                    new ZilList(new ZilObject[] { new ZilFix(5) }),
+                new ZilList([
+                    new ZilList([new ZilFix(5)]),
                     new ZilFix(6),
                     new ZilFix(7)
-                }));
+                ]));
 
             TestHelpers.EvalAndAssert("<MEMBER '(5) '[3 4 (5) 6 7]>",
-                new ZilVector(new ZilList(new ZilObject[] { new ZilFix(5) }), new ZilFix(6), new ZilFix(7)));
+                new ZilVector(new ZilList([new ZilFix(5)]), new ZilFix(6), new ZilFix(7)));
         }
 
         // https://vaporware.atlassian.net/browse/ZILF-198
@@ -110,11 +110,11 @@ namespace Zilf.Tests.Interpreter
         public void TestILIST()
         {
             TestHelpers.EvalAndAssert("<ILIST 3 123>",
-                new ZilList(new ZilObject[] {
+                new ZilList([
                     new ZilFix(123),
                     new ZilFix(123),
                     new ZilFix(123)
-                }));
+                ]));
         }
 
         [TestMethod]
@@ -307,12 +307,12 @@ namespace Zilf.Tests.Interpreter
                     PrimType.VECTOR,
                     new ZilVector(
                         new ZilFix(3),
-                        new ZilForm(new ZilObject[]
-                        {
+                        new ZilForm(
+                        [
                             ctx.GetStdAtom(StdAtom.Plus),
                             new ZilFix(3),
                             new ZilFix(4)
-                        }))));
+                        ]))));
         }
 
         [TestMethod]
@@ -399,9 +399,9 @@ namespace Zilf.Tests.Interpreter
         public void ILIST_Should_Evaluate_Initializer_Each_Time()
         {
             TestHelpers.EvalAndAssert("<SET X 0> <ILIST 3 '<SET X <+ .X 1>>>",
-                new ZilList(new ZilObject[] {
+                new ZilList([
                     new ZilFix(1), new ZilFix(2), new ZilFix(3)
-                }));
+                ]));
         }
 
         [TestMethod]
@@ -703,18 +703,18 @@ namespace Zilf.Tests.Interpreter
             var ctx = new Context();
 
             TestHelpers.EvalAndAssert(ctx, "<PUTREST '(1 2 3) '(A B)>",
-                new ZilList(new ZilObject[] {
+                new ZilList([
                     new ZilFix(1),
                     ZilAtom.Parse("A", ctx),
                     ZilAtom.Parse("B", ctx)
-                }));
+                ]));
 
             TestHelpers.EvalAndAssert(ctx, "<PUTREST '<1 2 3> '(A B)>",
-                new ZilForm(new ZilObject[] {
+                new ZilForm([
                     new ZilFix(1),
                     ZilAtom.Parse("A", ctx),
                     ZilAtom.Parse("B", ctx)
-                }));
+                ]));
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PUTREST <ASSOCIATIONS> '()>",
                 ex => ex is not ArgumentDecodingError);

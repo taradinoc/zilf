@@ -40,7 +40,7 @@ namespace Zilf.Interpreter
             return PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE20");
         }
 
-        static ZilObject PerformDefine(Context ctx, ZilAtom name,
+        static ZilAtom PerformDefine(Context ctx, ZilAtom name,
             ZilAtom? activationAtom,
             ZilList argList, ZilDecl? decl, ZilObject[] body, string subrName)
         {

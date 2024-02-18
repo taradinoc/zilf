@@ -102,11 +102,11 @@ namespace Zilf.Tests.Interpreter
 
             // multiple expressions -> multiple results
             TestHelpers.EvalAndAssert(ctx, "<LPARSE \"1 FOO [3]\">",
-                new ZilList(new ZilObject[] {
+                new ZilList([
                     new ZilFix(1),
                     ZilAtom.Parse("FOO", ctx),
                     new ZilVector(new ZilFix(3))
-                }));
+                ]));
 
             // must have 1-3 arguments
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<LPARSE>");
@@ -331,7 +331,7 @@ namespace Zilf.Tests.Interpreter
                 @"<DEFINE FOO (""AUX"" (X 123)) <BAR>>" +
                 @"<DEFINE BAR (""BIND"" ENV ""AUX"" X) (<ASSIGNED? X> <ASSIGNED? X .ENV>)>" +
                 @"<FOO>",
-                new ZilList(new[] { ctx.FALSE, ctx.TRUE }));
+                new ZilList([ctx.FALSE, ctx.TRUE]));
         }
 
         [TestMethod]
@@ -367,7 +367,7 @@ namespace Zilf.Tests.Interpreter
                 @"<DEFINE FOO (""AUX"" (X 123)) <BAR>>" +
                 @"<DEFINE BAR (""BIND"" ENV ""AUX"" (Y 456)) (<BOUND? X> <BOUND? X .ENV> <BOUND? Y> <BOUND? Y .ENV>)>" +
                 @"<FOO>",
-                new ZilList(new[] { ctx.TRUE, ctx.TRUE, ctx.TRUE, ctx.FALSE }));
+                new ZilList([ctx.TRUE, ctx.TRUE, ctx.TRUE, ctx.FALSE]));
         }
 
         [TestMethod]
@@ -591,11 +591,11 @@ namespace Zilf.Tests.Interpreter
 
             TestHelpers.EvalAndAssert(ctx, "BAR", new ZilFix(101));
             TestHelpers.EvalAndAssert(ctx, "'BAR",
-                new ZilForm(new ZilObject[] {
+                new ZilForm([
                     ctx.GetStdAtom(StdAtom.Plus),
                     new ZilFix(1),
                     new ZilForm(new[] { ctx.GetStdAtom(StdAtom.GVAL), ZilAtom.Parse("FOO", ctx) })
-                }));
+                ]));
 
             // can't replace existing link or atom
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<LINK 0 \"BAR\" <ROOT>>");

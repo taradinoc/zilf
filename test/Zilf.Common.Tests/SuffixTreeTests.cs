@@ -26,6 +26,7 @@ using Zilf.Common.StringEncoding.SuffixTrees;
 namespace Zilf.Common.Tests
 {
     [TestClass]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "Test methods are only called once")]
     public class SuffixTreeTests
     {
         static readonly IReadOnlyDictionary<char, int> ScrabbleValues = new Dictionary<char, int>
@@ -59,7 +60,7 @@ namespace Zilf.Common.Tests
         };
 
         static readonly string[] Pangrams =
-        {
+        [
             //                  11111111112222222222333333333344444444445555555555
             //        012345678901234567890123456789012345678901234567890123456789
             /*  0 */ "a quick fox jumps over the lazy brown dog",
@@ -80,7 +81,7 @@ namespace Zilf.Common.Tests
             /* 15 */ "the wizard quickly jinxed the gnomes before they vaporized",
             /* 16 */ "just keep examining every low bid quoted for zinc etchings",
             /* 17 */ "how razorback-jumping frogs can level six piqued gymnasts",
-        };
+        ];
 
         [TestMethod]
         public void TestSuffixTree1()
@@ -163,12 +164,12 @@ namespace Zilf.Common.Tests
             }, trimmed);
         }
 
-        static readonly string[] TwistyPassages = {
+        static readonly string[] TwistyPassages = [
             "You are in a maze of twisty little passages, all alike.",
             "You are in a little maze of twisty passages, all alike.",
             "You are in a twisty maze of little passages, all alike.",
             "You are in a twisty little maze of passages, all alike.",
-        };
+        ];
 
         [TestMethod]
         public void TestSearchableStringCollection()

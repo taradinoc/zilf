@@ -62,9 +62,9 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<SET L '(1 2 3)> <DEFINE FOO (\"TUPLE\" A) .A>", foo);
 
             TestHelpers.EvalAndAssert(ctx, "<LIST !<FOO !.L>>",
-                new ZilList(new ZilObject[] {
+                new ZilList([
                     new ZilFix(1), new ZilFix(2), new ZilFix(3)
-                }));
+                ]));
         }
 
         [TestMethod]
@@ -238,7 +238,7 @@ namespace Zilf.Tests.Interpreter
 
             var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<QUOTE <+>>",
-                new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.Plus) }));
+                new ZilForm([ctx.GetStdAtom(StdAtom.Plus)]));
 
             // must have 1 argument
             TestHelpers.EvalAndCatch<InterpreterError>("<QUOTE>");
@@ -257,26 +257,26 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<EVAL <>>", ctx.FALSE);
 
             // lists eval to new lists formed by evaluating each element
-            var list = new ZilList(new ZilObject[] {
+            var list = new ZilList([
                 new ZilFix(1),
-                new ZilForm(new ZilObject[] {
+                new ZilForm([
                     ctx.GetStdAtom(StdAtom.Plus),
                     new ZilFix(1),
                     new ZilFix(1)
-                }),
+                ]),
                 new ZilFix(3)
-            });
-            var expected = new ZilList(new ZilObject[] {
+            ]);
+            var expected = new ZilList([
                 new ZilFix(1),
                 new ZilFix(2),
                 new ZilFix(3)
-            });
+            ]);
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.T), list);
             var actual = TestHelpers.Evaluate(ctx, "<EVAL .T>");
             TestHelpers.AssertStructurallyEqual(expected, actual);
 
             // forms execute when evaluated
-            var form = new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2) });
+            var form = new ZilForm([ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2)]);
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.T), form);
             TestHelpers.EvalAndAssert(ctx, "<EVAL .T>", new ZilFix(3));
 
@@ -304,7 +304,7 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<EXPAND <>>", ctx.FALSE);
 
             // lists expand to copies of themselves
-            var list = new ZilList(new ZilObject[] { new ZilFix(1), new ZilFix(2), new ZilFix(3) });
+            var list = new ZilList([new ZilFix(1), new ZilFix(2), new ZilFix(3)]);
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.T), list);
             var actual = TestHelpers.Evaluate(ctx, "<EXPAND .T>");
             TestHelpers.AssertStructurallyEqual(list, actual);
@@ -312,7 +312,7 @@ namespace Zilf.Tests.Interpreter
 
             // forms execute when evaluated
             TestHelpers.Evaluate(ctx, "<DEFMAC FOO () <FORM BAR>>");
-            var expected = new ZilForm(new ZilObject[] { ZilAtom.Parse("BAR", ctx) });
+            var expected = new ZilForm([ZilAtom.Parse("BAR", ctx)]);
             TestHelpers.EvalAndAssert(ctx, "<EXPAND '<FOO>>", expected);
             TestHelpers.EvalAndAssert(ctx, "<EXPAND <FORM ,FOO>>", expected);
 
@@ -365,9 +365,9 @@ namespace Zilf.Tests.Interpreter
             var ctx = new Context();
 
             var atom = ZilAtom.Parse("FOO", ctx);
-            ctx.SetLocalVal(atom, new ZilList(new ZilObject[] { 
+            ctx.SetLocalVal(atom, new ZilList([ 
                 new ZilFix(1), new ZilFix(2), new ZilFix(3)
-            }));
+            ]));
 
             var expectedItems = new ZilObject[] {
                 new ZilFix(3), new ZilFix(6), new ZilFix(9)

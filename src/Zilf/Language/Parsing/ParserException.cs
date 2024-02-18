@@ -17,20 +17,13 @@
  */
 
 using System;
-using System.Runtime.Serialization;
 
 namespace Zilf.Language.Parsing
 {
-    [Serializable]
     public abstract class ParserException : Exception
     {
         protected ParserException(string message, Exception? innerException)
             : base(message, innerException) { }
-
-        protected ParserException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
 
         protected ParserException()
         {
@@ -41,7 +34,6 @@ namespace Zilf.Language.Parsing
         }
     }
 
-    [Serializable]
     sealed class ParsedNumberOverflowed : ParserException
     {
         const string DefaultRadix = "decimal";
@@ -52,11 +44,6 @@ namespace Zilf.Language.Parsing
         public ParsedNumberOverflowed(string number, Exception? innerException)
             : this(number, DefaultRadix, innerException) { }
 
-        ParsedNumberOverflowed(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
-
         public ParsedNumberOverflowed()
         {
         }
@@ -66,16 +53,10 @@ namespace Zilf.Language.Parsing
         }
     }
 
-    [Serializable]
     sealed class ExpectedButFound : ParserException
     {
         public ExpectedButFound(string expected, string actual, Exception? innerException = null)
             : base($"expected {expected} but found {actual}", innerException) { }
-
-        ExpectedButFound(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
 
         public ExpectedButFound()
         {

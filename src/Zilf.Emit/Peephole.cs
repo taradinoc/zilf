@@ -395,8 +395,8 @@ namespace Zilf.Emit
                 Console.Write(' ');
 
                 var targetLabel = line.TargetLabel;
-                if (targetLabel != null && aliases.ContainsKey(targetLabel))
-                    targetLabel = aliases[targetLabel];
+                if (targetLabel != null && aliases.TryGetValue(targetLabel, out ILabel? value))
+                    targetLabel = value;
 
                 switch (line.Type)
                 {

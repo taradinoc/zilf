@@ -1,12 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RuntimeIdentifiers>win-x86;win-x64;linux-arm;linux-x64;osx-x64</RuntimeIdentifiers>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
     <OutputType>Exe</OutputType>
     <Description>An assembler for Z-machine story files.</Description>
     <Deterministic>false</Deterministic>
     <Nullable>enable</Nullable>
+    <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
   </PropertyGroup>
   <!--<PropertyGroup Condition="!($(PortableTarget))">
     <PublishTrimmed>true</PublishTrimmed>

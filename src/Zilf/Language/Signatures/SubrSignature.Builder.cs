@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -38,8 +39,7 @@ namespace Zilf.Language.Signatures
         [SuppressMessage("Redundancy", "RCS1163:Unused parameter.")]
         public static ISignature FromMethodInfo(MethodInfo methodInfo, bool isFSubr)
         {
-            if (methodInfo == null)
-                throw new ArgumentNullException(nameof(methodInfo));
+            ArgumentNullException.ThrowIfNull(methodInfo);
 
             if (!typeof(ZilObject).IsAssignableFrom(methodInfo.ReturnType) &&
                 !typeof(ZilResult).IsAssignableFrom(methodInfo.ReturnType))
@@ -193,7 +193,7 @@ namespace Zilf.Language.Signatures
                 });
         }
 
-        static readonly IReadOnlyDictionary<Type, Constraint> StandardTypeConstraints = new Dictionary<Type, Constraint>
+        static readonly ReadOnlyDictionary<Type, Constraint> StandardTypeConstraints = new Dictionary<Type, Constraint>
         {
             { typeof(IApplicable), Constraint.Applicable },
             { typeof(IStructure), Constraint.Structured },
@@ -201,7 +201,7 @@ namespace Zilf.Language.Signatures
             { typeof(string), Constraint.OfType(StdAtom.STRING) },
             { typeof(char), Constraint.OfType(StdAtom.CHARACTER) },
             { typeof(bool), Constraint.Boolean }
-        };
+        }.AsReadOnly();
 
         static SignaturePart ConstrainByType(SignaturePart part, Type elementType)
         {

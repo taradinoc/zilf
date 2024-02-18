@@ -57,7 +57,7 @@ namespace Zilf.Tests.Integration
         public IReadOnlyCollection<Diagnostic> Diagnostics;
     }
 
-    sealed partial class ZlrHelper
+    sealed partial class ZlrHelper(string code, string? input)
     {
         public static async Task RunAndAssertAsync(string code, string? input, string expectedOutput,
             IEnumerable<(Predicate<ZlrHelperRunResult>, string message)>? warningChecks = null,
@@ -133,21 +133,12 @@ namespace Zilf.Tests.Integration
         const string SMainZapFileName = "Output.zap";
         const string SStoryFileName = "Output.zcode";
 
-        readonly string code;
-        readonly string? input;
-
         readonly InMemoryFileSystem fileSystem = new();
 
         public int ErrorCount { get; private set; }
         public int WarningCount { get; private set; }
         public int SuppressedWarningCount { get; private set; }
         public IReadOnlyCollection<Diagnostic>? Diagnostics { get; private set; }    // includes suppressed
-
-        public ZlrHelper(string code, string? input)
-        {
-            this.code = code;
-            this.input = input;
-        }
 
         private static readonly Regex _invalidXMLChars = GetInvalidXMLCharsRegex();
 
@@ -277,28 +268,11 @@ namespace Zilf.Tests.Integration
     }
 
     // TODO: merge this with ZlrHelper
-    class FileBasedZlrHelper
+    class FileBasedZlrHelper(string codeFile, string[] includeDirs, string? inputFile)
     {
         const string SStoryFileName = "Output.zcode";
-
-        readonly string codeFile;
-
-        readonly string zapFileName;
-
-        readonly string[] includeDirs;
-
-        readonly string? inputFile;
-
+        readonly string zapFileName = Path.ChangeExtension(Path.GetFileName(codeFile), ".zap");
         readonly InMemoryFileSystem fileSystem = new();
-
-        public FileBasedZlrHelper(string codeFile, string[] includeDirs, string? inputFile)
-        {
-            this.codeFile = codeFile;
-            this.includeDirs = includeDirs;
-            this.inputFile = inputFile;
-
-            zapFileName = Path.ChangeExtension(Path.GetFileName(codeFile), ".zap");
-        }
 
         public bool WantStatusLine { get; set; }
 

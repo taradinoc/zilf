@@ -39,14 +39,10 @@ namespace Zilf.ZModel.Values
     /// Thrown when attempting to read a byte from a location in a <see cref="ZilTable"/>
     /// that contains a word, or vice versa.
     /// </summary>
-    [Serializable]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class UnalignedTableReadException : Exception
     {
         public UnalignedTableReadException() { }
-
-        UnalignedTableReadException(SerializationInfo info, StreamingContext context)
-            : base(info, context) { }
 
         public UnalignedTableReadException(string message) : base(message)
         {

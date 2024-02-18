@@ -18,15 +18,5 @@
 
 namespace Zilf.Compiler.Builtins
 {
-    readonly struct BuiltinArg
-    {
-        public readonly BuiltinArgType Type;
-        public readonly object? Value;
-
-        public BuiltinArg(BuiltinArgType type, object? value)
-        {
-            Type = type;
-            Value = value;
-        }
-    }
+    readonly record struct BuiltinArg(BuiltinArgType Type, object? Value);
 }

@@ -282,7 +282,7 @@ namespace Zilf.Compiler
 
             if (uniquePropertyName != null)
             {
-                if (propertiesSoFar.Contains(uniquePropertyName))
+                if (!propertiesSoFar.Add(uniquePropertyName))
                 {
                     Context.HandleError(new CompilerError(
                         prop,
@@ -290,16 +290,13 @@ namespace Zilf.Compiler
                         phony ? "pseudo-property" : "property",
                         atom.ToStringContext(Context, false)));
                 }
-                else
-                {
-                    propertiesSoFar.Add(uniquePropertyName);
-                }
             }
 
             if (!phony)
             {
                 PropertyDefinitions.TryAdd(atom, prop.SourceLine);
 
+#pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method
                 if (!Properties.ContainsKey(atom))
                 {
                     if (isSynonym == null)
@@ -332,6 +329,7 @@ namespace Zilf.Compiler
                         DefineProperty(atom);
                     }
                 }
+#pragma warning restore CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method
             }
 
             // check for a PROPSPEC

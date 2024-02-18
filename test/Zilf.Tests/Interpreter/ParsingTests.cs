@@ -32,15 +32,15 @@ namespace Zilf.Tests.Interpreter
         {
             var ctx = new Context();
 
-            string[][] testCases = {
-                                       new[] { "FOO", "BAR" },
-                                       new[] { "(1 2 3)", "LIST" },
-                                       new[] { "BLAH", "<1 2 3>" },
-                                       new[] { "(1 2 3)", "<1 2 3>" },
-                                       new[] { ".FOO", "BAR" },
-                                       new[] { ",FOO", "BAR" },
-                                       new[] { "'FOO", "BAR" }
-                                   };
+            string[][] testCases = [
+                                       ["FOO", "BAR"],
+                                       ["(1 2 3)", "LIST"],
+                                       ["BLAH", "<1 2 3>"],
+                                       ["(1 2 3)", "<1 2 3>"],
+                                       [".FOO", "BAR"],
+                                       [",FOO", "BAR"],
+                                       ["'FOO", "BAR"]
+                                   ];
 
             foreach (var tc in testCases)
             {

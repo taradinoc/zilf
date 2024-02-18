@@ -29,97 +29,97 @@ namespace Zilf.Tests.Integration
         public void TestExactly()
         {
             Assert.AreEqual("exactly 1 argument",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(1, 1),
                     new ArgCountRange(1, 1)
-                }));
+                ]));
         }
 
         [TestMethod]
         public void TestAlternatives()
         {
             Assert.AreEqual("1 or 2 arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(1, 2)
-                }));
+                ]));
 
             Assert.AreEqual("1 or 2 arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(1, 1),
                     new ArgCountRange(2, 2)
-                }));
+                ]));
 
             Assert.AreEqual("2 or 4 arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(2, 2),
                     new ArgCountRange(4, 4)
-                }));
+                ]));
 
             Assert.AreEqual("0, 2, or 4 arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(0, 0),
                     new ArgCountRange(2, 2),
                     new ArgCountRange(4, 4)
-                }));
+                ]));
         }
 
         [TestMethod]
         public void TestRange()
         {
             Assert.AreEqual("1 to 3 arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(1, 3)
-                }));
+                ]));
 
             Assert.AreEqual("1 to 3 arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(1, 2),
                     new ArgCountRange(3, 3)
-                }));
+                ]));
 
             Assert.AreEqual("1 to 3 arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(1, 1),
                     new ArgCountRange(2, 2),
                     new ArgCountRange(3, 3)
-                }));
+                ]));
         }
 
         [TestMethod]
         public void TestUnlimited()
         {
             Assert.AreEqual("1 or more arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(1, null)
-                }));
+                ]));
 
             Assert.AreEqual("1 or more arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(1, 2),
                     new ArgCountRange(3, null)
-                }));
+                ]));
         }
 
         [TestMethod]
         public void TestDisjointRanges()
         {
             Assert.AreEqual("1, 2, or 4 arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(1, 2),
                     new ArgCountRange(4, 4)
-                }));
+                ]));
 
             Assert.AreEqual("0, 1, 3, or 4 arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(0, 1),
                     new ArgCountRange(3, 4)
-                }));
+                ]));
 
             Assert.AreEqual("0, 2, or more arguments",
-                ArgCountHelpers.FormatArgCount(new[] {
+                ArgCountHelpers.FormatArgCount([
                     new ArgCountRange(0, 0),
                     new ArgCountRange(2, null)
-                }));
+                ]));
         }
     }
 

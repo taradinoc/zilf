@@ -50,40 +50,40 @@ namespace Zilf.Tests.Interpreter
             ctx.SetLocalVal(ZilAtom.Parse("A-FIX", ctx), new ZilFix(123));
 
             // structured types
-            ctx.SetLocalVal(ZilAtom.Parse("A-LIST", ctx), new ZilList(new ZilObject[] {
+            ctx.SetLocalVal(ZilAtom.Parse("A-LIST", ctx), new ZilList([
                 new ZilFix(1),
                 new ZilFix(2),
                 new ZilFix(3)
-            }));
-            ctx.SetLocalVal(ZilAtom.Parse("A-FORM", ctx), new ZilForm(new ZilObject[] {
+            ]));
+            ctx.SetLocalVal(ZilAtom.Parse("A-FORM", ctx), new ZilForm([
                 ctx.GetStdAtom(StdAtom.Plus),
                 new ZilFix(1),
                 new ZilFix(2)
-            }));
+            ]));
             ctx.SetLocalVal(ZilAtom.Parse("A-STRING", ctx), ZilString.FromString("hello"));
             ctx.SetLocalVal(ZilAtom.Parse("A-SUBR", ctx), ZilSubr.FromString(ctx, "+"));
             ctx.SetLocalVal(ZilAtom.Parse("A-FSUBR", ctx), ZilFSubr.FromString(ctx, "QUOTE"));
             ctx.SetLocalVal(ZilAtom.Parse("A-FUNCTION", ctx), new ZilFunction(
                 ZilAtom.Parse("MYFUNC", ctx),
                 null,
-                Array.Empty<ZilObject>(),
+                [],
                 null,
-                new ZilObject[] { new ZilFix(3) }
+                [new ZilFix(3)]
             ));
             ctx.SetLocalVal(ZilAtom.Parse("A-MACRO", ctx), new ZilEvalMacro(
                 new ZilFunction(
                     ZilAtom.Parse("MYMAC", ctx),
                     null,
-                    Array.Empty<ZilObject>(),
+                    [],
                     null,
-                    new ZilObject[] {
-                        new ZilForm(new ZilObject[] {
+                    [
+                        new ZilForm([
                             ctx.GetStdAtom(StdAtom.FORM),
                             ctx.GetStdAtom(StdAtom.Plus),
                             new ZilFix(1),
                             new ZilFix(2)
-                        })
-                    }
+                        ])
+                    ]
                 )
             ));
             ctx.SetLocalVal(ZilAtom.Parse("A-VECTOR", ctx), new ZilVector(new ZilFix(4), new ZilFix(8), new ZilFix(15), new ZilFix(16), new ZilFix(23), new ZilFix(42)));
@@ -99,12 +99,12 @@ namespace Zilf.Tests.Interpreter
 
             // special types
             ctx.SetLocalVal(ZilAtom.Parse("A-SEGMENT", ctx), new ZilSegment(
-                new ZilForm(new ZilObject[]
-                {
+                new ZilForm(
+                [
                     ctx.GetStdAtom(StdAtom.LIST),
                     new ZilFix(1),
                     new ZilFix(2)
-                })));
+                ])));
             ctx.SetLocalVal(ZilAtom.Parse("A-WACKY", ctx),
                 new ZilHash(ZilAtom.Parse("WACKY", ctx), PrimType.LIST, new ZilList(null, null)));
 
@@ -243,10 +243,10 @@ namespace Zilf.Tests.Interpreter
         public void TestCHTYPE()
         {
             // everything can be coerced to its own type
-            string[] types = {
+            string[] types = [
                 "ADECL", "ATOM", "CHARACTER", "FALSE", "FIX", "LIST", "FORM", "STRING",
                 "SUBR", "FSUBR", "FUNCTION", "MACRO", "SEGMENT", "VECTOR", "OFFSET", "WACKY"
-            };
+            ];
 
             foreach (var t in types)
             {
@@ -314,37 +314,37 @@ namespace Zilf.Tests.Interpreter
         {
             // list-based types can be coerced to FALSE
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-LIST FALSE>",
-                new ZilFalse(new ZilList(new ZilObject[] {
+                new ZilFalse(new ZilList([
                     new ZilFix(1), new ZilFix(2), new ZilFix(3)
-                })));
+                ])));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FORM FALSE>",
-                new ZilFalse(new ZilList(new ZilObject[] {
+                new ZilFalse(new ZilList([
                     ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2)
-                })));
+                ])));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FUNCTION FALSE>",
-                new ZilFalse(new ZilList(new ZilObject[] {
+                new ZilFalse(new ZilList([
                     new ZilList(null, null),
                     new ZilFix(3)
-                })));
+                ])));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO FALSE>",
                 new ZilFalse(new ZilList(new ZilFunction(
                         null,
                         null,
-                        Array.Empty<ZilObject>(),
+                        [],
                         null,
-                        new ZilObject[] {
-                            new ZilForm(new ZilObject[] {
+                        [
+                            new ZilForm([
                                 ctx.GetStdAtom(StdAtom.FORM),
                                 ctx.GetStdAtom(StdAtom.Plus),
                                 new ZilFix(1),
                                 new ZilFix(2)
-                            })
-                        }),
+                            ])
+                        ]),
                     new ZilList(null, null))));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SEGMENT FALSE>",
-                new ZilFalse(new ZilList(new ZilObject[] {
+                new ZilFalse(new ZilList([
                     ctx.GetStdAtom(StdAtom.LIST), new ZilFix(1), new ZilFix(2)
-                })));
+                ])));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY FALSE>",
                 new ZilFalse(new ZilList(null, null)));
 
@@ -389,33 +389,33 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FALSE LIST>",
                 new ZilList(null, null));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FORM LIST>",
-                new ZilList(new ZilObject[] {
+                new ZilList([
                     ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2)
-                }));
+                ]));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FUNCTION LIST>",
-                new ZilList(new ZilObject[] {
+                new ZilList([
                     new ZilList(null, null),
                     new ZilFix(3)
-                }));
+                ]));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO LIST>",
                 new ZilList(new ZilFunction(
                         null,
                         null,
-                        Array.Empty<ZilObject>(),
+                        [],
                         null,
-                        new ZilObject[] {
-                            new ZilForm(new ZilObject[] {
+                        [
+                            new ZilForm([
                                 ctx.GetStdAtom(StdAtom.FORM),
                                 ctx.GetStdAtom(StdAtom.Plus),
                                 new ZilFix(1),
                                 new ZilFix(2)
-                            })
-                        }),
+                            ])
+                        ]),
                     new ZilList(null, null)));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SEGMENT LIST>",
-                new ZilList(new ZilObject[] {
+                new ZilList([
                     ctx.GetStdAtom(StdAtom.LIST), new ZilFix(1), new ZilFix(2)
-                }));
+                ]));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY LIST>",
                 new ZilList(null, null));
 
@@ -435,37 +435,37 @@ namespace Zilf.Tests.Interpreter
         {
             // list-based types can be coerced to FORM
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FALSE FORM>",
-                new ZilForm(Array.Empty<ZilObject>()));
+                new ZilForm([]));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-LIST FORM>",
-                new ZilForm(new ZilObject[] {
+                new ZilForm([
                     new ZilFix(1), new ZilFix(2), new ZilFix(3)
-                }));
+                ]));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FUNCTION FORM>",
-                new ZilForm(new ZilObject[] {
+                new ZilForm([
                     new ZilList(null, null),
                     new ZilFix(3)
-                }));
+                ]));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO FORM>",
-                new ZilForm(new ZilObject[] { new ZilFunction(
+                new ZilForm([ new ZilFunction(
                     null,
                     null,
-                    Array.Empty<ZilObject>(),
+                    [],
                     null,
-                    new ZilObject[] {
-                        new ZilForm(new ZilObject[] {
+                    [
+                        new ZilForm([
                             ctx.GetStdAtom(StdAtom.FORM),
                             ctx.GetStdAtom(StdAtom.Plus),
                             new ZilFix(1),
                             new ZilFix(2)
-                        })
-                    })
-                }));
+                        ])
+                    ])
+                ]));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-SEGMENT FORM>",
-                new ZilForm(new ZilObject[] {
+                new ZilForm([
                     ctx.GetStdAtom(StdAtom.LIST), new ZilFix(1), new ZilFix(2)
-                }));
+                ]));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY FORM>",
-                new ZilForm(Array.Empty<ZilObject>()));
+                new ZilForm([]));
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL FORM>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM FORM>");
@@ -568,14 +568,14 @@ namespace Zilf.Tests.Interpreter
                 new ZilFunction(
                     null,
                     null,
-                    new ZilObject[] { ZilAtom.Parse("X", ctx) },
+                    [ZilAtom.Parse("X", ctx)],
                     null,
-                    new ZilObject[] {
-                        new ZilForm(new ZilObject[] {
+                    [
+                        new ZilForm([
                             ZilAtom.Parse("TYPE", ctx),
                             ZilAtom.Parse("X", ctx)
-                        })
-                    }
+                        ])
+                    ]
                 ));
 
             // arbitrary lists and other values can't
@@ -604,9 +604,9 @@ namespace Zilf.Tests.Interpreter
                 new ZilEvalMacro(new ZilFunction(
                     ZilAtom.Parse("MYFUNC", ctx),
                     null,
-                    Array.Empty<ZilObject>(),
+                    [],
                     null,
-                    new ZilObject[] { new ZilFix(3) })));
+                    [new ZilFix(3)])));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE '<#SUBR \"+\"> MACRO>",
                 new ZilEvalMacro(ZilSubr.FromString(ctx, "+")));
 
@@ -633,37 +633,37 @@ namespace Zilf.Tests.Interpreter
         {
             // list-based types can be coerced to SEGMENT
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FALSE SEGMENT>",
-                new ZilSegment(new ZilForm(Array.Empty<ZilObject>())));
+                new ZilSegment(new ZilForm([])));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-LIST SEGMENT>",
-                new ZilSegment(new ZilForm(new ZilObject[] {
+                new ZilSegment(new ZilForm([
                     new ZilFix(1), new ZilFix(2), new ZilFix(3)
-                })));
+                ])));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FUNCTION SEGMENT>",
-                new ZilSegment(new ZilForm(new ZilObject[] {
+                new ZilSegment(new ZilForm([
                     new ZilList(null, null),
                     new ZilFix(3)
-                })));
+                ])));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-MACRO SEGMENT>",
-                new ZilSegment(new ZilForm(new ZilObject[] { new ZilFunction(
+                new ZilSegment(new ZilForm([ new ZilFunction(
                     null,
                     null,
-                    Array.Empty<ZilObject>(),
+                    [],
                     null,
-                    new ZilObject[] {
-                        new ZilForm(new ZilObject[] {
+                    [
+                        new ZilForm([
                             ctx.GetStdAtom(StdAtom.FORM),
                             ctx.GetStdAtom(StdAtom.Plus),
                             new ZilFix(1),
                             new ZilFix(2)
-                        })
-                    })
-                })));
+                        ])
+                    ])
+                ])));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-FORM SEGMENT>",
-                new ZilSegment(new ZilForm(new ZilObject[] {
+                new ZilSegment(new ZilForm([
                     ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2)
-                })));
+                ])));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-WACKY SEGMENT>",
-                new ZilSegment(new ZilForm(Array.Empty<ZilObject>())));
+                new ZilSegment(new ZilForm([])));
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ADECL SEGMENT>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM SEGMENT>");
@@ -829,11 +829,11 @@ namespace Zilf.Tests.Interpreter
         {
             TestHelpers.EvalAndAssert(ctx, "<FORM>", new ZilForm(null, null));
             TestHelpers.EvalAndAssert(ctx, "<FORM + 1 2>", new ZilForm(
-                new ZilObject[] {
+                [
                     ctx.GetStdAtom(StdAtom.Plus),
                     new ZilFix(1),
                     new ZilFix(2)
-                }
+                ]
             ));
         }
 
@@ -843,11 +843,11 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert("<LIST>", new ZilList(null, null));
             TestHelpers.EvalAndAssert("<LIST 1>", new ZilList(new ZilFix(1), new ZilList(null, null)));
             TestHelpers.EvalAndAssert("<LIST 1 2 3>", new ZilList(
-                new ZilObject[] {
+                [
                     new ZilFix(1),
                     new ZilFix(2),
                     new ZilFix(3)
-                }
+                ]
             ));
         }
 
@@ -900,9 +900,9 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert("<FUNCTION () 5>", new ZilFunction(
                 null,
                 null,
-                Array.Empty<ZilObject>(),
+                [],
                 null,
-                new ZilObject[] { new ZilFix(5) }
+                [new ZilFix(5)]
             ));
 
             // argument list must be valid
@@ -961,10 +961,10 @@ namespace Zilf.Tests.Interpreter
         {
             TestHelpers.EvalAndAssert(ctx, "<TYPE #DECL ((FOO) FIX)>", ZilAtom.Parse("DECL", ctx));
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE #DECL ((FOO) FIX) LIST>",
-                new ZilList(new ZilObject[] {
+                new ZilList([
                     new ZilList(ZilAtom.Parse("FOO", ctx), new ZilList(null, null)),
                     ctx.GetStdAtom(StdAtom.FIX)
-                }));
+                ]));
 
             TestHelpers.EvalAndCatch<InterpreterError>("#DECL BLAH");
 
@@ -1006,14 +1006,14 @@ namespace Zilf.Tests.Interpreter
         public void TestApplicableFIX()
         {
             TestHelpers.EvalAndAssert(ctx, "<SET O <LIST <FORM + 1 2>>> <1 .O>",
-                new ZilForm(new ZilObject[] { ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2) }));
+                new ZilForm([ctx.GetStdAtom(StdAtom.Plus), new ZilFix(1), new ZilFix(2)]));
         }
 
         [TestMethod]
         public void TestEvalStructures()
         {
             TestHelpers.EvalAndAssert(ctx, "(<+ 1 2> <+ 3 4>)",
-                new ZilList(new ZilObject[] { new ZilFix(3), new ZilFix(7) }));
+                new ZilList([new ZilFix(3), new ZilFix(7)]));
             TestHelpers.EvalAndAssert(ctx, "[<+ 1 2> <+ 3 4>]",
                 new ZilVector(new ZilFix(3), new ZilFix(7)));
 
@@ -1172,14 +1172,14 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<EVALTYPE GRITCH LIST>", gritch);
             TestHelpers.EvalAndAssert(ctx, "<EVALTYPE GRITCH>", ctx.GetStdAtom(StdAtom.LIST));
             TestHelpers.EvalAndAssert(ctx, "#GRITCH (A <+ 1 2 3> !<SET A \"ABC\">)",
-                new ZilStructuredHash(gritch, PrimType.LIST, new ZilList(new ZilObject[]
-                {
+                new ZilStructuredHash(gritch, PrimType.LIST, new ZilList(
+                [
                     ZilAtom.Parse("A", ctx),
                     new ZilFix(6),
                     new ZilChar('A'),
                     new ZilChar('B'),
                     new ZilChar('C')
-                })));
+                ])));
 
             TestHelpers.Evaluate(ctx, "<EVALTYPE LIST FORM>");
             TestHelpers.EvalAndAssert(ctx, "(+ 1 2)", new ZilFix(3));
@@ -1194,14 +1194,14 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<APPLYTYPE WINNER>", ctx.FALSE);
             TestHelpers.EvalAndAssert(ctx, "<APPLYTYPE WINNER <FUNCTION (W \"TUPLE\" T) (!.W !.T)>>", winner);
             TestHelpers.EvalAndAssert(ctx, "<#WINNER (A B C) <+ 1 2> q>",
-                new ZilList(new ZilObject[]
-                {
+                new ZilList(
+                [
                     ZilAtom.Parse("A", ctx),
                     ZilAtom.Parse("B", ctx),
                     ZilAtom.Parse("C", ctx),
                     new ZilFix(3),
                     ZilAtom.Parse("q", ctx)
-                }));
+                ]));
         }
 
         static IEnumerable<Type> GetConcreteZilObjectTypes()
@@ -1311,13 +1311,13 @@ namespace Zilf.Tests.Interpreter
         public void TestALLTYPES_And_VALID_TYPE_P()
         {
             string[] expectedTypes =
-            {
+            [
                 "FIX", "SUBR", "FSUBR", "FUNCTION", "MACRO", "ADECL", "ATOM", "CHARACTER",
                 "FALSE", "LIST", "FORM", "STRING", "SEGMENT", "VECTOR", "OFFSET", "WACKY",
 
                 "OBLIST", "ACTIVATION", "ENVIRONMENT", "CHANNEL", "ROUTINE", "CONSTANT",
                 "GLOBAL", "TABLE", "OBJECT"
-            };
+            ];
 
             const string unexpectedType = "NOT-A-TYPE";
 

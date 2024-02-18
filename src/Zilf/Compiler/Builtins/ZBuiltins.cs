@@ -156,7 +156,7 @@ namespace Zilf.Compiler.Builtins
 
         [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", MessageId = "System.String.Format(System.String,System.Object,System.Object,System.Object)")]
         [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        static IList<BuiltinArg> ValidateArguments(
+        static List<BuiltinArg> ValidateArguments(
             Compilation cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
             IReadOnlyList<ZilObject> args, InvalidArgumentDelegate error)
         {

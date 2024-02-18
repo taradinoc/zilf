@@ -27,7 +27,7 @@ namespace Zilf.Interpreter
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Redundancy", "RCS1163:Unused parameter.", Justification = "Context parameter is required by the arg decoder.")]
     static partial class Subrs
     {
-        static ZilObject PerformArithmetic(int init, Func<int, int, int> op, int[] args)
+        static ZilFix PerformArithmetic(int init, Func<int, int, int> op, int[] args)
         {
             switch (args.Length)
             {

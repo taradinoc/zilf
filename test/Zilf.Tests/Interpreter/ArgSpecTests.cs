@@ -32,14 +32,13 @@ namespace Zilf.Tests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), ZilAtom.Parse("ACT", ctx), System.Array.Empty<ZilObject>());
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), ZilAtom.Parse("ACT", ctx), []);
 
             TestHelpers.AssertStructurallyEqual(
-                new ZilObject[]
-                {
+                [
                     ZilString.FromString("NAME"),
                     ZilAtom.Parse("ACT", ctx)
-                },
+                ],
                 spec.AsZilListBody().ToArray());
         }
 
@@ -48,14 +47,13 @@ namespace Zilf.Tests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { ZilString.FromString("ARGS"), ZilAtom.Parse("A", ctx) });
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, [ZilString.FromString("ARGS"), ZilAtom.Parse("A", ctx)]);
 
             TestHelpers.AssertStructurallyEqual(
-                new ZilObject[]
-                {
+                [
                     ZilString.FromString("ARGS"),
                     ZilAtom.Parse("A", ctx)
-                },
+                ],
                 spec.AsZilListBody().ToArray());
         }
 
@@ -64,14 +62,13 @@ namespace Zilf.Tests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[] { ZilString.FromString("TUPLE"), ZilAtom.Parse("A", ctx) });
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, [ZilString.FromString("TUPLE"), ZilAtom.Parse("A", ctx)]);
 
             TestHelpers.AssertStructurallyEqual(
-                new ZilObject[]
-                {
+                [
                     ZilString.FromString("TUPLE"),
                     ZilAtom.Parse("A", ctx)
-                },
+                ],
                 spec.AsZilListBody().ToArray());
         }
 
@@ -80,21 +77,21 @@ namespace Zilf.Tests.Interpreter
         {
             var ctx = new Context();
 
-            ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
-            {
+            ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null,
+            [
                 ZilString.FromString("ARGS"),
                 new ZilAdecl(
                     ZilAtom.Parse("A", ctx),
                     ctx.GetStdAtom(StdAtom.LIST))
-            });
+            ]);
 
-            ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
-            {
+            ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null,
+            [
                 ZilString.FromString("TUPLE"),
                 new ZilAdecl(
                     ZilAtom.Parse("A", ctx),
                     ctx.GetStdAtom(StdAtom.LIST))
-            });
+            ]);
         }
 
         [TestMethod]
@@ -102,39 +99,39 @@ namespace Zilf.Tests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
-            {
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null,
+            [
                 new ZilAdecl(
                     ZilAtom.Parse("A1", ctx),
                     ctx.GetStdAtom(StdAtom.FIX)),
                 new ZilAdecl(
-                    new ZilForm(new ZilObject[] {
+                    new ZilForm([
                         ctx.GetStdAtom(StdAtom.QUOTE),
                         ZilAtom.Parse("A2", ctx)
-                    }),
+                    ]),
                     ctx.GetStdAtom(StdAtom.FORM)),
                 ZilString.FromString("TUPLE"),
                 new ZilAdecl(
                     ZilAtom.Parse("A3", ctx),
                     ctx.GetStdAtom(StdAtom.LIST))
-            });
+            ]);
 
             TestHelpers.AssertStructurallyEqual(
-                new ZilObject[] {
+                [
                     new ZilAdecl(
                         ZilAtom.Parse("A1", ctx),
                         ctx.GetStdAtom(StdAtom.FIX)),
                     new ZilAdecl(
-                        new ZilForm(new ZilObject[] {
+                        new ZilForm([
                             ctx.GetStdAtom(StdAtom.QUOTE),
                             ZilAtom.Parse("A2", ctx)
-                        }),
+                        ]),
                         ctx.GetStdAtom(StdAtom.FORM)),
                     ZilString.FromString("TUPLE"),
                     new ZilAdecl(
                         ZilAtom.Parse("A3", ctx),
                         ctx.GetStdAtom(StdAtom.LIST))
-                },
+                ],
                 spec.AsZilListBody().ToArray());
         }
 
@@ -144,36 +141,35 @@ namespace Zilf.Tests.Interpreter
         {
             var ctx = new Context();
 
-            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, new ZilObject[]
-            {
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null,
+            [
                 ZilString.FromString("AUX"),
                 ZilAtom.Parse("X", ctx),
                 ZilString.FromString("NAME"),
                 ZilAtom.Parse("N", ctx),
                 ZilString.FromString("VALUE"),
-                new ZilForm(new ZilObject[]
-                {
+                new ZilForm(
+                [
                     ctx.GetStdAtom(StdAtom.OR),
                     ctx.GetStdAtom(StdAtom.FIX),
                     ctx.GetStdAtom(StdAtom.FALSE)
-                })
-            });
+                ])
+            ]);
 
             TestHelpers.AssertStructurallyEqual(
-                new ZilObject[]
-                {
+                [
                     ZilString.FromString("AUX"),
                     ZilAtom.Parse("X", ctx),
                     ZilString.FromString("NAME"),
                     ZilAtom.Parse("N", ctx),
                     ZilString.FromString("VALUE"),
-                    new ZilForm(new ZilObject[]
-                    {
+                    new ZilForm(
+                    [
                         ctx.GetStdAtom(StdAtom.OR),
                         ctx.GetStdAtom(StdAtom.FIX),
                         ctx.GetStdAtom(StdAtom.FALSE)
-                    })
-                },
+                    ])
+                ],
                 spec.AsZilListBody().ToArray());
         }
 

@@ -342,7 +342,6 @@ namespace Zilf.Interpreter
         }
 #pragma warning restore CS0649
 
-        [Serializable]
         sealed class SortAbortedException : Exception
         {
             public ZilResult ZilResult { get; }
@@ -496,8 +495,7 @@ namespace Zilf.Interpreter
         {
             int length = vector.GetLength();
 
-            if (recordSize < 1)
-                throw new ArgumentOutOfRangeException(nameof(recordSize));
+            ArgumentOutOfRangeException.ThrowIfLessThan(recordSize, 1);
 
             var output = new List<ZilObject>(length);
 

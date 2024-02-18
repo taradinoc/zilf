@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <Product>ZILF</Product>
     <Version>0.8</Version>
@@ -9,6 +9,7 @@
     <Description>A ZAP disassembler.</Description>
     <Copyright>Copyright 2010-2018 Tara McGrew</Copyright>
     <NeutralLanguage></NeutralLanguage>
+    <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Zapf\Zapf.csproj" />

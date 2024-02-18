@@ -20,7 +20,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Common;
 using Zilf.Compiler;
@@ -33,7 +32,7 @@ namespace Zilf.Tests.Compiler
         class PathTestHelper
         {
             readonly InMemoryFileSystem fileSystem = new();
-            readonly HashSet<string> inputPaths = new();
+            readonly HashSet<string> inputPaths = [];
 
             public ICollection GetOutputFilePaths() => fileSystem.Paths.Except(inputPaths).ToList();
 

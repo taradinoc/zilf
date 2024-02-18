@@ -59,8 +59,7 @@ namespace Zilf.Interpreter
 
         public int GetHashCode(ZilObject obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
 
             return obj.ToString().GetHashCode(StringComparison.Ordinal);
         }

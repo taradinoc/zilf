@@ -435,7 +435,7 @@ namespace Zilf
             }
         }
 
-        static void AddImplicitIncludePaths(IList<string> includePaths, string? inFile, RunMode mode)
+        static void AddImplicitIncludePaths(List<string> includePaths, string? inFile, RunMode mode)
         {
             if (inFile != null && mode != RunMode.Expression && Path.GetDirectoryName(Path.GetFullPath(inFile)) is string dir)
             {

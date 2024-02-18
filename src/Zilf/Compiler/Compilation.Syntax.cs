@@ -45,7 +45,7 @@ namespace Zilf.Compiler
                 Constants.Add(Context.RootObList[pair.Key], pair.Value);
         }
 
-        void BuildOldFormatSyntaxTables(IDictionary<string, ITableBuilder> tables)
+        void BuildOldFormatSyntaxTables(Dictionary<string, ITableBuilder> tables)
         {
             // TODO: emit VTBL as the first impure table, followed by syntax lines, which is what ztools expects?
             var verbTable = Game.DefineTable("VTBL", true);
@@ -162,7 +162,7 @@ namespace Zilf.Compiler
             }
         }
 
-        void BuildNewFormatSyntaxTables(IDictionary<string, ITableBuilder> tables)
+        void BuildNewFormatSyntaxTables(Dictionary<string, ITableBuilder> tables)
         {
             var actionTable = Game.DefineTable("ATBL", true);
             var preactionTable = Game.DefineTable("PATBL", true);
@@ -355,6 +355,7 @@ namespace Zilf.Compiler
         {
             string rawWord = word.Atom.Text;
 
+#pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method
             if (!Vocabulary.ContainsKey(word))
             {
                 var wAtom = ZilAtom.Parse("W?" + rawWord, Context);
@@ -376,6 +377,7 @@ namespace Zilf.Compiler
                     }
                 }
             }
+#pragma warning restore CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method
 
             foreach (var pair in Context.ZEnvironment.VocabFormat.GetVocabConstants(word))
             {

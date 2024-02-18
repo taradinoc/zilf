@@ -34,7 +34,7 @@ namespace Zilf.Interpreter
     static partial class Subrs
     {
         /// <exception cref="InterpreterError">The file was not found or could not be loaded.</exception>
-        static ZilObject PerformLoadFile(Context ctx, string file, string name)
+        static ZilString PerformLoadFile(Context ctx, string file, string name)
         {
             try
             {

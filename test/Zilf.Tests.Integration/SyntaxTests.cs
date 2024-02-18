@@ -123,7 +123,7 @@ namespace Zilf.Tests.Integration
             var globals = new List<string>(258) { VocabTests.SNewParserBootstrap };
             globals.AddRange(Enumerable.Range(0, 257).Select(i => $"<SYNTAX VERB-{i} = V-VERB-{i}> <ROUTINE V-VERB-{i} () <>>"));
 
-            await AssertGlobals(globals.ToArray()).GeneratesCodeMatchingAsync(@"V\?VERB-256=256");
+            await AssertGlobals([.. globals]).GeneratesCodeMatchingAsync(@"V\?VERB-256=256");
         }
 
     }

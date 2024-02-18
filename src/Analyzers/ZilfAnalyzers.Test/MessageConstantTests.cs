@@ -97,28 +97,28 @@ namespace Zilf.Diagnostics {
                     Id = "ZILF0002",
                     Message = "The code \'1\' is used more than once in message set \'InterpreterMessages\'",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 27, 26) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 27, 26)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0003",
                     Message = "This format string is used more than once in message set \'InterpreterMessages\'",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 28, 18), new DiagnosticResultLocation("Test0.cs", 26, 18) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 28, 18), new DiagnosticResultLocation("Test0.cs", 26, 18)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0004",
                     Message = "This format string has the prefix \'QU-UX?\', which should be moved to the call site",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 30, 18) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 30, 18)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0002",
                     Message = "The code \'2\' is used more than once in message set \'InterpreterMessages\'",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 31, 26) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 31, 26)]
                 }
             };
 

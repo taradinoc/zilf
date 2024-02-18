@@ -37,7 +37,7 @@ namespace Zilf.Tests.Interpreter
     {
         class TestParserSite : IParserSite
         {
-            readonly Dictionary<string, ZilAtom> atoms = new();
+            readonly Dictionary<string, ZilAtom> atoms = [];
 
             public ParserMacros Macros { get; } = new ParserMacros(new Context());
 
@@ -217,12 +217,12 @@ namespace Zilf.Tests.Interpreter
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(
-                new ZilForm(new ZilObject[]
-                {
+                new ZilForm(
+                [
                     new ZilForm(null, null),
                     new ZilFix(1),
                     new ZilForm(null, null),
-                }),
+                ]),
                 result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
         }

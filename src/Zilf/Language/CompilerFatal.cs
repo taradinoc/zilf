@@ -22,7 +22,6 @@ using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
-    [Serializable]
     sealed class CompilerFatal : ZilFatal<CompilerMessages>
     {
         public CompilerFatal(int code)

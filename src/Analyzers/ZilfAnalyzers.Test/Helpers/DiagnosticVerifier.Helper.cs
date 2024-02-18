@@ -67,7 +67,7 @@ namespace ZilfAnalyzers.Test.Helpers
                         .Select(p => MetadataReference.CreateFromFile(p)));
             }
 
-            return result.ToImmutableArray();
+            return [.. result];
         }
 
         //static readonly MetadataReference NetStandard = MetadataReference.CreateFromFile(Assembly.Load("netstandard, Version=2.0.0.0").Location);
@@ -155,7 +155,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <returns>An IEnumerable containing the Diagnostics in order of Location</returns>
         static Diagnostic[] SortDiagnostics(IEnumerable<Diagnostic> diagnostics)
         {
-            return diagnostics.OrderBy(d => d.Location.SourceSpan.Start).ToArray();
+            return [.. diagnostics.OrderBy(d => d.Location.SourceSpan.Start)];
         }
 
         #endregion
@@ -193,7 +193,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <returns>A Document created from the source string</returns>
         protected static Document CreateDocument(string source, string language = LanguageNames.CSharp)
         {
-            return CreateProject(new[] { source }, language).Documents.First();
+            return CreateProject([source], language).Documents.First();
         }
 
         /// <summary>

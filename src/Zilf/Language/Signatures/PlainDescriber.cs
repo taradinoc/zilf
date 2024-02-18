@@ -42,7 +42,7 @@ namespace Zilf.Language.Signatures
             return sb.ToString();
         }
 
-        static string Describe(ISignaturePart part)
+        static string Describe(SignaturePart part)
         {
             var sb = new StringBuilder();
             var visitor = new PlainDescriber(sb);

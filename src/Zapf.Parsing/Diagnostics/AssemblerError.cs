@@ -21,7 +21,6 @@ using System.Runtime.Serialization;
 
 namespace Zapf.Parsing.Diagnostics
 {
-    [Serializable]
     public abstract class AssemblerError : Exception
     {
         protected AssemblerError(ISourceLine? node, string message)
@@ -30,22 +29,6 @@ namespace Zapf.Parsing.Diagnostics
             Node = node;
         }
 
-        protected AssemblerError(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            Node = (ISourceLine?)info.GetValue("node", typeof(ISourceLine));
-        }
-
         public ISourceLine? Node { get; }
-
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-
-            if (Node != null)
-            {
-                info.AddValue("node", Node);
-            }
-        }
     }
 }

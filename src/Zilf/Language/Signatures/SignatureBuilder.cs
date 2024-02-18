@@ -47,7 +47,7 @@ namespace Zilf.Language.Signatures
         {
             // TODO: this should parse the <OR...> instead of doing a hacky regex match
 
-            if (pattern.StartsWith("'", StringComparison.Ordinal))
+            if (pattern.StartsWith('\''))
             {
                 return LiteralPart.From(pattern[1..]);
             }

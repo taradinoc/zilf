@@ -33,6 +33,7 @@ using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
 using Zilf.Language.Parsing;
+using System.Collections.ObjectModel;
 
 namespace Zilf.Interpreter
 {
@@ -515,6 +516,8 @@ namespace Zilf.Interpreter
             while (rootEnvironment.Parent?.IsLocalBound(oblistAtom) == true)
                 rootEnvironment = rootEnvironment.Parent;
 
+#pragma warning disable CA2000 // Dispose objects before losing scope
+            // we don't call macroEnv.Dispose(), because ExecuteInEnvironment will restore the previous environment
             var macroEnv = new LocalEnvironment(this);
             macroEnv.SetLocalVal(oblistAtom, rootEnvironment.GetLocalVal(oblistAtom));
 
@@ -527,7 +530,9 @@ namespace Zilf.Interpreter
             finally
             {
                 AtTopLevel = wasTopLevel;
+                macroEnv = null;
             }
+#pragma warning restore CA2000 // Dispose objects before losing scope
         }
 
         public LocalEnvironment LocalEnvironment => localEnvironment;
@@ -788,7 +793,7 @@ namespace Zilf.Interpreter
             return expr.Compile();
         }
 
-        static IReadOnlyDictionary<StdAtom, IStaticTypeMapEntry> StaticTypeMap { get; } = InitStaticTypeMap();
+        static ReadOnlyDictionary<StdAtom, IStaticTypeMapEntry> StaticTypeMap { get; } = InitStaticTypeMap();
 
         private sealed record BuiltinTypeAttrPair(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -808,7 +813,7 @@ namespace Zilf.Interpreter
         private static partial IEnumerable<BuiltinTypeAttrPair> GetBuiltinTypeAttrPairs();
 
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "ChtypeMethod")]
-        static Dictionary<StdAtom, IStaticTypeMapEntry> InitStaticTypeMap()
+        static ReadOnlyDictionary<StdAtom, IStaticTypeMapEntry> InitStaticTypeMap()
         {
             var result = new Dictionary<StdAtom, IStaticTypeMapEntry>();
 
@@ -943,7 +948,7 @@ namespace Zilf.Interpreter
                 result.Add(r.Attr.Name, entry);
             }
 
-            return result;
+            return result.AsReadOnly();
         }
 
         void InitTypeMap()

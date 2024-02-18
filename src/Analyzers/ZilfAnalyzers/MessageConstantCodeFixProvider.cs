@@ -79,19 +79,7 @@ namespace ZilfAnalyzers
                 diagnostic);
         }
 
-        class PendingReplacement
-        {
-            public Document Document { get; }
-            public SyntaxNode Old { get; }
-            public SyntaxNode New { get; }
-
-            public PendingReplacement(Document document, SyntaxNode old, SyntaxNode @new)
-            {
-                Document = document;
-                Old = old;
-                New = @new;
-            }
-        }
+        record class PendingReplacement(Document Document, SyntaxNode Old, SyntaxNode New);
 
         static async Task<Solution> MoveMessagePrefixToCallSitesAsync(Document document,
             FieldDeclarationSyntax fieldDecl, CancellationToken cancellationToken)

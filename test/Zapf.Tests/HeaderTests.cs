@@ -71,7 +71,7 @@ START::
 
     .END";
 
-            Assert.IsTrue(TestHelper.Assemble(SCode, new[] { "-r", "222" }, out var mstr));
+            Assert.IsTrue(TestHelper.Assemble(SCode, ["-r", "222"], out var mstr));
             var buffer = mstr!.ToArray();
             AssertWordAtOffset(buffer, 2, 222);
         }
@@ -95,7 +95,7 @@ START::
 
     .END";
 
-            Assert.IsTrue(TestHelper.Assemble(SCode, new[] { "-r", "222" }, out var mstr));
+            Assert.IsTrue(TestHelper.Assemble(SCode, ["-r", "222"], out var mstr));
             var buffer = mstr!.ToArray();
             AssertWordAtOffset(buffer, 2, 222);
         }
@@ -114,7 +114,7 @@ START::
 
     .END";
 
-            Assert.IsTrue(TestHelper.Assemble(SCode, new[] { "-r", "222" }, out var mstr));
+            Assert.IsTrue(TestHelper.Assemble(SCode, ["-r", "222"], out var mstr));
             var buffer = mstr!.ToArray();
             AssertWordAtOffset(buffer, 2, 222);
         }

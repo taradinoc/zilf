@@ -101,7 +101,7 @@ namespace ZilfAnalyzers.Test.Helpers
         static async Task VerifyFixAsync(string language, DiagnosticAnalyzer analyzer, CodeFixProvider codeFixProvider, string oldSource, string newSource, int? codeFixIndex, bool allowNewCompilerDiagnostics)
         {
             var document = CreateDocument(oldSource, language);
-            var analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, new[] { document }).ConfigureAwait(false);
+            var analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, [document]).ConfigureAwait(false);
 
             // only test the diagnostics the code fixer claims are fixable
             var fixableIds = codeFixProvider.FixableDiagnosticIds;
@@ -128,7 +128,7 @@ namespace ZilfAnalyzers.Test.Helpers
                 }
 
                 document = await ApplyFixAsync(document, actions[0]).ConfigureAwait(false);
-                analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, new[] { document }).ConfigureAwait(false);
+                analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, [document]).ConfigureAwait(false);
                 analyzerDiagnostics = analyzerDiagnostics.Where(d => fixableIds.Contains(d.Id)).ToArray();
 
                 var newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, await GetCompilerDiagnosticsAsync(document).ConfigureAwait(false));

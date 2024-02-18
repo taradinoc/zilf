@@ -49,7 +49,7 @@ namespace ZilfAnalyzers
         }
 
         const string DefaultSeverity = "Error";
-        static readonly string[] Severities = { "Error", "Warning", "Info" };
+        static readonly string[] Severities = ["Error", "Warning", "Info"];
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -80,7 +80,7 @@ namespace ZilfAnalyzers
                     context.RegisterCodeFix(
                         CodeAction.Create(
                             title: string.Format(Title, sev),
-                            createChangedSolution: c => ConvertMessagesToConstantsAsync(context.Document, new[] { literalCreation }, sev, c),
+                            createChangedSolution: c => ConvertMessagesToConstantsAsync(context.Document, [literalCreation], sev, c),
                             equivalenceKey: string.Format(Title, sev)),
                         diagnostic);
                 }
@@ -135,7 +135,7 @@ namespace ZilfAnalyzers
                 ));
             }
 
-            return invocations.ToArray();
+            return [.. invocations];
         }
 
         static async Task<Solution> ApplyInvocationsAsync(

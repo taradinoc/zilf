@@ -411,7 +411,7 @@ namespace Zilf.Interpreter
             }
         }
 
-        static ZilObject PerformObject(Context ctx, ZilAtom atom, ZilList[] props, bool isRoom)
+        static ZilModelObject PerformObject(Context ctx, ZilAtom atom, ZilList[] props, bool isRoom)
         {
             string name = isRoom ? "ROOM" : "OBJECT";
 
@@ -1325,7 +1325,7 @@ namespace Zilf.Interpreter
             return syntax.Verb.Atom;
         }
 
-        static ZilObject PerformSynonym(Context ctx, ZilAtom original, ZilAtom[] synonyms, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type synonymType)
+        static ZilAtom PerformSynonym(Context ctx, ZilAtom original, ZilAtom[] synonyms, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type synonymType)
         {
             if (!ctx.ZEnvironment.Vocabulary.TryGetValue(original, out var oldWord))
             {

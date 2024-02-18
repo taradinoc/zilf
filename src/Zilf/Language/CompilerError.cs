@@ -23,7 +23,6 @@ using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
-    [Serializable]
     sealed class CompilerError : ZilError<CompilerMessages>
     {
         public CompilerError(int code)
@@ -58,11 +57,6 @@ namespace Zilf.Language
 
         public CompilerError(Diagnostic diagnostic)
             : base(diagnostic)
-        {
-        }
-
-        public CompilerError(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
         {
         }
 

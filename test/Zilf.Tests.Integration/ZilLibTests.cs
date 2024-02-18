@@ -85,7 +85,7 @@ namespace Zilf.Tests.Integration
 
             var mainZilFile = Path.Combine(testsDir, testCaseName + ".zil");
 
-            var helper = new FileBasedZlrHelper(mainZilFile, new[] { testsDir, libraryDir }, null);
+            var helper = new FileBasedZlrHelper(mainZilFile, [testsDir, libraryDir], null);
 
             Assert.IsTrue(helper.Compile(), "Failed to compile");
             Assert.IsTrue(helper.Assemble(), "Failed to assemble");

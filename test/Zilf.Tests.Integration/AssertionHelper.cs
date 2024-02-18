@@ -34,8 +34,7 @@ namespace Zilf.Tests.Integration
         protected string versionDirective = "<VERSION ZIP>";
         protected readonly StringBuilder miscGlobals = new();
         protected readonly StringBuilder input = new();
-        protected readonly List<(Predicate<ZlrHelperRunResult>, string message)> warningChecks =
-            new();
+        protected readonly List<(Predicate<ZlrHelperRunResult>, string message)> warningChecks = [];
         protected bool wantCompileOutput;
         protected bool wantDebugInfo;
 
@@ -176,16 +175,8 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    public sealed class EntryPointAssertionHelper : AbstractAssertionHelper<EntryPointAssertionHelper>
+    public sealed class EntryPointAssertionHelper(string argSpec, string body) : AbstractAssertionHelper<EntryPointAssertionHelper>
     {
-        readonly string argSpec, body;
-
-        public EntryPointAssertionHelper(string argSpec, string body)
-        {
-            this.argSpec = argSpec;
-            this.body = body;
-        }
-
         public async Task CompilesAsync()
         {
             var testCode = $"{GlobalCode()}\r\n" +
@@ -374,14 +365,9 @@ namespace Zilf.Tests.Integration
             return Task.FromResult(new CodeMatchingResult(output));
         }
 
-        public sealed class CodeMatchingResult
+        public sealed class CodeMatchingResult(string output)
         {
-            public string Output { get; }
-
-            public CodeMatchingResult(string output)
-            {
-                this.Output = output;
-            }
+            public string Output { get; } = output;
         }
     }
 
@@ -406,33 +392,16 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    public sealed class ExprAssertionHelper : AbstractAssertionHelperWithEntryPoint<ExprAssertionHelper>
+    public sealed class ExprAssertionHelper(string expression) : AbstractAssertionHelperWithEntryPoint<ExprAssertionHelper>
     {
-        readonly string expression;
-
-        public ExprAssertionHelper(string expression)
-        {
-            this.expression = expression;
-        }
-
-        protected override string Expression()
-        {
-            return expression;
-        }
+        protected override string Expression() => expression;
     }
 
-    public sealed class RoutineAssertionHelper : AbstractAssertionHelperWithEntryPoint<RoutineAssertionHelper>
+    public sealed class RoutineAssertionHelper(string argSpec, string body) : AbstractAssertionHelperWithEntryPoint<RoutineAssertionHelper>
     {
-        readonly string argSpec, body;
         string arguments = "";
 
         const string RoutineName = "TEST?ROUTINE";
-
-        public RoutineAssertionHelper(string argSpec, string body)
-        {
-            this.argSpec = argSpec;
-            this.body = body;
-        }
 
         public RoutineAssertionHelper WhenCalledWith(string testArguments)
         {
@@ -465,15 +434,8 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    public sealed class RawAssertionHelper
+    public sealed class RawAssertionHelper(string code)
     {
-        readonly string code;
-
-        public RawAssertionHelper(string code)
-        {
-            this.code = code;
-        }
-
         public Task OutputsAsync(string expectedValue)
         {
             return ZlrHelper.RunAndAssertAsync(code, null, expectedValue);

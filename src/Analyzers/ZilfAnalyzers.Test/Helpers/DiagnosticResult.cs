@@ -59,7 +59,7 @@ namespace ZilfAnalyzers.Test.Helpers
 
         public DiagnosticResultLocation[] Locations
         {
-            get => locations ??= Array.Empty<DiagnosticResultLocation>();
+            get => locations ??= [];
 
             set => locations = value;
         }

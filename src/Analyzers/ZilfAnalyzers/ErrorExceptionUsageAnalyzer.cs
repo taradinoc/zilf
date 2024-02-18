@@ -265,34 +265,26 @@ namespace ZilfAnalyzers
         }
     }
 
-    public class LiteralCreation
+    public class LiteralCreation(
+        string exceptionTypeName,
+        ExpressionSyntax expressionToReplace,
+        string newMessageFormat, IImmutableList<ExpressionSyntax> newMessageArgs)
     {
         /// <summary>
         /// The name of the exception being created, e.g. InterpreterError.
         /// </summary>
-        public string ExceptionTypeName { get; }
+        public string ExceptionTypeName { get; } = exceptionTypeName;
         /// <summary>
         /// The expression to replace in the constructor arguments. Usually a <see cref="LiteralExpressionSyntax"/>.
         /// </summary>
-        public ExpressionSyntax ExpressionToReplace { get; }
+        public ExpressionSyntax ExpressionToReplace { get; } = expressionToReplace;
         /// <summary>
         /// The format string to be used for the new message.
         /// </summary>
-        public string NewMessageFormat { get; }
+        public string NewMessageFormat { get; } = newMessageFormat;
         /// <summary>
         /// The initial arguments to be used at the call site when formatting the new message.
         /// </summary>
-        public IImmutableList<ExpressionSyntax> NewMessageArgs { get; }
-
-        public LiteralCreation(
-            string exceptionTypeName,
-            ExpressionSyntax expressionToReplace,
-            string newMessageFormat, IImmutableList<ExpressionSyntax> newMessageArgs)
-        {
-            ExceptionTypeName = exceptionTypeName;
-            ExpressionToReplace = expressionToReplace;
-            NewMessageFormat = newMessageFormat;
-            NewMessageArgs = newMessageArgs;
-        }
+        public IImmutableList<ExpressionSyntax> NewMessageArgs { get; } = newMessageArgs;
     }
 }

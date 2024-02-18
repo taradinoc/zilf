@@ -17,12 +17,10 @@
  */
 
 using System;
-using System.Runtime.Serialization;
 using Zilf.Diagnostics;
 
 namespace Zilf.Language
 {
-    [Serializable]
     class InterpreterError : ZilError<InterpreterMessages>
     {
         public InterpreterError(int code)
@@ -57,11 +55,6 @@ namespace Zilf.Language
 
         public InterpreterError(Diagnostic diagnostic)
             : base(diagnostic)
-        {
-        }
-
-        protected InterpreterError(SerializationInfo si, StreamingContext sc)
-            : base(si, sc)
         {
         }
 

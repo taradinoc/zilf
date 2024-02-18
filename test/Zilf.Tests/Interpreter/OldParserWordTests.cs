@@ -37,7 +37,7 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void TestCtor()
         {
-            var atom = new ZilAtom("FOO", new ObList(), StdAtom.None);
+            var atom = new ZilAtom("FOO", [], StdAtom.None);
 
             _ = new OldParserWord(atom);
         }
@@ -207,23 +207,13 @@ namespace Zilf.Tests.Interpreter
             Assert.AreNotEqual(0, ctx.WarningCount);
         }
 
-        struct WtwbTestCase
+        readonly record struct WtwbTestCase(int ZVersion, bool NewVoc,
+            PartOfSpeech FirstPart, byte FirstValue,
+            PartOfSpeech SecondPart, byte SecondValue,
+            PartOfSpeech ThirdPart, byte ThirdValue,
+            PartOfSpeech ExpectedPartOfSpeech, byte ExpectedValue1, byte ExpectedValue2)
         {
-            public readonly int ZVersion;
-            public readonly bool NewVoc;
-
-            public readonly PartOfSpeech FirstPart;
-            public readonly byte FirstValue;
-            public readonly PartOfSpeech SecondPart;
-            public readonly byte SecondValue;
-            public readonly PartOfSpeech ThirdPart;
-            public readonly byte ThirdValue;
-
-            public readonly PartOfSpeech ExpectedPartOfSpeech;
-            public readonly byte ExpectedValue1;
-            public readonly byte ExpectedValue2;
-
-            public bool Warn;
+            public bool Warn { get; init; } = false;
 
             public WtwbTestCase(int zversion, bool newVoc,
                 PartOfSpeech firstPart, byte firstValue,
@@ -248,30 +238,7 @@ namespace Zilf.Tests.Interpreter
             {
             }
 
-            public WtwbTestCase(int zversion, bool newVoc,
-                PartOfSpeech firstPart, byte firstValue,
-                PartOfSpeech secondPart, byte secondValue,
-                PartOfSpeech thirdPart, byte thirdValue,
-                PartOfSpeech expectedPartOfSpeech, byte expectedValue1, byte expectedValue2)
-            {
-                ZVersion = zversion;
-                NewVoc = newVoc;
-
-                FirstPart = firstPart;
-                FirstValue = firstValue;
-                SecondPart = secondPart;
-                SecondValue = secondValue;
-                ThirdPart = thirdPart;
-                ThirdValue = thirdValue;
-
-                ExpectedPartOfSpeech = expectedPartOfSpeech;
-                ExpectedValue1 = expectedValue1;
-                ExpectedValue2 = expectedValue2;
-
-                Warn = false;
-            }
-
-            public override string ToString()
+            public override readonly string ToString()
             {
                 return
                     $"(V{ZVersion}-{(NewVoc ? "New" : "Old")}, " +
@@ -281,22 +248,13 @@ namespace Zilf.Tests.Interpreter
             }
         }
 
-        struct CompactWtwbTestCase
+        readonly record struct CompactWtwbTestCase(int ZVersion, bool NewVoc,
+            PartOfSpeech FirstPart, byte FirstValue,
+            PartOfSpeech SecondPart, byte SecondValue,
+            PartOfSpeech ThirdPart, byte ThirdValue,
+            PartOfSpeech ExpectedPartOfSpeech, byte ExpectedValue1)
         {
-            public readonly int ZVersion;
-            public readonly bool NewVoc;
-
-            public readonly PartOfSpeech FirstPart;
-            public readonly byte FirstValue;
-            public readonly PartOfSpeech SecondPart;
-            public readonly byte SecondValue;
-            public readonly PartOfSpeech ThirdPart;
-            public readonly byte ThirdValue;
-
-            public readonly PartOfSpeech ExpectedPartOfSpeech;
-            public readonly byte ExpectedValue1;
-
-            public bool Warn;
+            public bool Warn { get; init; } = false;
 
             public CompactWtwbTestCase(int zversion, bool newVoc,
                 PartOfSpeech firstPart, byte firstValue,
@@ -321,29 +279,7 @@ namespace Zilf.Tests.Interpreter
             {
             }
 
-            public CompactWtwbTestCase(int zversion, bool newVoc,
-                PartOfSpeech firstPart, byte firstValue,
-                PartOfSpeech secondPart, byte secondValue,
-                PartOfSpeech thirdPart, byte thirdValue,
-                PartOfSpeech expectedPartOfSpeech, byte expectedValue1)
-            {
-                ZVersion = zversion;
-                NewVoc = newVoc;
-
-                FirstPart = firstPart;
-                FirstValue = firstValue;
-                SecondPart = secondPart;
-                SecondValue = secondValue;
-                ThirdPart = thirdPart;
-                ThirdValue = thirdValue;
-
-                ExpectedPartOfSpeech = expectedPartOfSpeech;
-                ExpectedValue1 = expectedValue1;
-
-                Warn = false;
-            }
-
-            public override string ToString()
+            public override readonly string ToString()
             {
                 return
                     $"(V{ZVersion}-{(NewVoc ? "New" : "Old")}-Compact, " +
@@ -397,111 +333,111 @@ namespace Zilf.Tests.Interpreter
         {
             const int OBJPRESENT = 1, ADJNUM = 2, BUZZNUM = 3, DIRNUM = 4, PREPNUM = 5, VERBNUM = 6;
 
-            WtwbTestCase[] testCases = {
-                new WtwbTestCase(3, false,
+            WtwbTestCase[] testCases = [
+                new(3, false,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Object, OBJPRESENT, 0),
-                new WtwbTestCase(3, true,
+                new(3, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Object, 0, 0),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Object | PartOfSpeech.Verb, OBJPRESENT, VERBNUM),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM, OBJPRESENT),
-                new WtwbTestCase(3, true,
+                new(3, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM, 0),
-                new WtwbTestCase(3, true,
+                new(3, true,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM, 0),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Preposition, PREPNUM, DIRNUM),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Preposition, PREPNUM, DIRNUM),
-                new WtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Preposition | PartOfSpeech.Adjective, PREPNUM, 0),
-                new WtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Preposition | PartOfSpeech.Adjective, PREPNUM, 0),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Preposition, PREPNUM, DIRNUM) { Warn = true },
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Verb | PartOfSpeech.DirectionFirst, DIRNUM, VERBNUM) { Warn = true },
-                new WtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Object | PartOfSpeech.Adjective, 0, 0),
-                new WtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Object | PartOfSpeech.Adjective, 0, 0),
-                new WtwbTestCase(3, true,
+                new(3, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.Adjective | PartOfSpeech.VerbFirst, VERBNUM, ADJNUM),
-                new WtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Preposition | PartOfSpeech.Verb | PartOfSpeech.Object, PREPNUM, VERBNUM),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.AdjectiveFirst | PartOfSpeech.Adjective | PartOfSpeech.Direction, ADJNUM, DIRNUM),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.DirectionFirst | PartOfSpeech.Adjective | PartOfSpeech.Direction, DIRNUM, ADJNUM),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Adjective | PartOfSpeech.Buzzword, BUZZNUM, ADJNUM),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Adjective | PartOfSpeech.Buzzword, BUZZNUM, ADJNUM),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Object | PartOfSpeech.Buzzword, BUZZNUM, OBJPRESENT),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Buzzword, BUZZNUM, DIRNUM),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Preposition | PartOfSpeech.Buzzword, PREPNUM, BUZZNUM),
-                new WtwbTestCase(3, false,
+                new(3, false,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Verb | PartOfSpeech.Buzzword, BUZZNUM, VERBNUM),
-                new WtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Object | PartOfSpeech.Adjective | PartOfSpeech.Buzzword, BUZZNUM, 0)
-            };
+            ];
 
             foreach (var tc in testCases)
             {
@@ -576,111 +512,111 @@ namespace Zilf.Tests.Interpreter
         {
             const int OBJPRESENT = 1, ADJNUM = 2, BUZZNUM = 3, DIRNUM = 4, PREPNUM = 5, VERBNUM = 6;
 
-            CompactWtwbTestCase[] testCases = {
-                new CompactWtwbTestCase(4, false,
+            CompactWtwbTestCase[] testCases = [
+                new(4, false,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Object, 0),
-                new CompactWtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Object, 0),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM),
-                new CompactWtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM),
-                new CompactWtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.VerbFirst, VERBNUM),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Preposition | PartOfSpeech.DirectionFirst, DIRNUM),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Preposition | PartOfSpeech.DirectionFirst, DIRNUM),
-                new CompactWtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Preposition | PartOfSpeech.Adjective, 0),
-                new CompactWtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Preposition | PartOfSpeech.Adjective, 0),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Preposition | PartOfSpeech.Adjective | PartOfSpeech.DirectionFirst, DIRNUM),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Adjective | PartOfSpeech.DirectionFirst, DIRNUM) { Warn = true },
-                new CompactWtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Object | PartOfSpeech.Adjective, 0),
-                new CompactWtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Object | PartOfSpeech.Adjective, 0),
-                new CompactWtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Object | PartOfSpeech.Verb | PartOfSpeech.Adjective | PartOfSpeech.VerbFirst, VERBNUM),
-                new CompactWtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Preposition | PartOfSpeech.Verb | PartOfSpeech.Object | PartOfSpeech.VerbFirst, VERBNUM),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.DirectionFirst | PartOfSpeech.Adjective | PartOfSpeech.Direction, DIRNUM),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.DirectionFirst | PartOfSpeech.Adjective | PartOfSpeech.Direction, DIRNUM),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Adjective | PartOfSpeech.Buzzword, 0),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Adjective | PartOfSpeech.Buzzword, 0),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Object | PartOfSpeech.Buzzword, 0),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Direction, DIRNUM,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Direction | PartOfSpeech.Buzzword | PartOfSpeech.DirectionFirst, DIRNUM),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Preposition, PREPNUM,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Preposition | PartOfSpeech.Buzzword, 0),
-                new CompactWtwbTestCase(4, false,
+                new(4, false,
                     PartOfSpeech.Verb, VERBNUM,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Verb | PartOfSpeech.Buzzword | PartOfSpeech.VerbFirst, VERBNUM),
-                new CompactWtwbTestCase(4, true,
+                new(4, true,
                     PartOfSpeech.Object, OBJPRESENT,
                     PartOfSpeech.Buzzword, BUZZNUM,
                     PartOfSpeech.Adjective, ADJNUM,
                     PartOfSpeech.Object | PartOfSpeech.Adjective | PartOfSpeech.Buzzword, 0)
-            };
+            ];
 
             foreach (var tc in testCases)
             {

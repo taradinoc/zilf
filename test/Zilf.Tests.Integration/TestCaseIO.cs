@@ -38,19 +38,9 @@ namespace Zilf.Tests.Integration
         }
     }
 
-    sealed class ReplayIO : TestCaseIO, IAsyncZMachineIO, IDisposable
+    sealed class ReplayIO(Stream prevInputStream, bool wantStatusLine = false) : TestCaseIO, IAsyncZMachineIO, IDisposable
     {
-        readonly Stream inputStream;
-
-        readonly bool wantStatusLine;
-
         MemoryStream? saveStream;
-
-        public ReplayIO(Stream prevInputStream, bool wantStatusLine = false)
-        {
-            inputStream = prevInputStream;
-            this.wantStatusLine = wantStatusLine;
-        }
 
         #region Z-machine I/O implementation
 
@@ -119,7 +109,7 @@ namespace Zilf.Tests.Integration
 
         Stream? IZMachineIO.OpenCommandFile(bool writing)
         {
-            return writing ? null : inputStream;
+            return writing ? null : prevInputStream;
         }
 
         void IZMachineIO.SetTextStyle(TextStyle style)
@@ -274,14 +264,14 @@ namespace Zilf.Tests.Integration
 
         Task<Stream?> IAsyncZMachineIO.OpenCommandFileAsync(bool writing, CancellationToken cancellationToken)
         {
-            return Task.FromResult(writing ? null : inputStream);
+            return Task.FromResult(writing ? null : prevInputStream);
         }
 
         #endregion
 
         public void Dispose()
         {
-            inputStream.Dispose();
+            prevInputStream.Dispose();
             saveStream?.Dispose();
         }
     }

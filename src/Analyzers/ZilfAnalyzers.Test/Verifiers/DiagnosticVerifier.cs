@@ -55,7 +55,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="expected"> DiagnosticResults that should appear after the analyzer is run on the source</param>
         protected Task VerifyCSharpDiagnosticAsync(string source, params DiagnosticResult[] expected)
         {
-            return VerifyDiagnosticsAsync(new[] { source }, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
+            return VerifyDiagnosticsAsync([source], LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace ZilfAnalyzers.Test.Helpers
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the source</param>
         protected Task VerifyBasicDiagnosticAsync(string source, params DiagnosticResult[] expected)
         {
-            return VerifyDiagnosticsAsync(new[] { source }, LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
+            return VerifyDiagnosticsAsync([source], LanguageNames.VisualBasic, GetBasicDiagnosticAnalyzer(), expected);
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace ZilfAnalyzers.Test.Helpers
 
             if (expectedCount != actualCount)
             {
-                string diagnosticsOutput = actualResultsArray.Any() ? FormatDiagnostics(analyzer, actualResultsArray.ToArray()) : "    NONE.";
+                string diagnosticsOutput = actualResultsArray.Any() ? FormatDiagnostics(analyzer, [.. actualResultsArray]) : "    NONE.";
 
                 Assert.Fail("Mismatch between number of diagnostics returned, expected \"{0}\" actual \"{1}\"\r\n\r\nDiagnostics:\r\n{2}\r\n", expectedCount, actualCount, diagnosticsOutput);
             }

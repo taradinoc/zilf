@@ -66,7 +66,7 @@ namespace Zilf.Tests.Integration
                 }
             }
 
-            return result.ToArray();
+            return [.. result];
         }
 
         protected static EntryPointAssertionHelper AssertEntryPoint(string argSpec, string body)

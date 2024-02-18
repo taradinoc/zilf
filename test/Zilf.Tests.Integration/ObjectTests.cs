@@ -23,6 +23,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler"), TestCategory("Objects")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "Test methods are only called once")]
     public class ObjectTests : IntegrationTestClass
     {
         #region Object Numbering & Tree Ordering
@@ -45,7 +46,7 @@ namespace Zilf.Tests.Integration
                 "<OBJECT GREEN (IN RAINBOW)>",
                 "<OBJECT BLUE (IN RAINBOW)>")
                 .ImpliesAsync(TreeImplications(
-                    new[] { "BLUE", "GREEN", "YELLOW", "RED", "RAINBOW" },
+                    ["BLUE", "GREEN", "YELLOW", "RED", "RAINBOW"],
                     new[] { "RAINBOW", "RED", "BLUE", "GREEN", "YELLOW" }));
         }
 
@@ -64,11 +65,11 @@ namespace Zilf.Tests.Integration
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
                 .ImpliesAsync(TreeImplications(
-                    new[] { "BED", "BEDROOM", "LOCAL-GLOBALS", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE" },
-                    new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
-                    new[] { "BEDROOM", "BED" },
-                    new[] { "ROOMS", "KITCHEN", "BEDROOM" },
-                    new[] { "LOCAL-GLOBALS", "FLOOR", "CEILING" }));
+                    ["BED", "BEDROOM", "LOCAL-GLOBALS", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE"],
+                    ["KITCHEN", "FRIDGE", "MICROWAVE", "SINK"],
+                    ["BEDROOM", "BED"],
+                    ["ROOMS", "KITCHEN", "BEDROOM"],
+                    ["LOCAL-GLOBALS", "FLOOR", "CEILING"]));
         }
 
         [TestMethod]
@@ -87,11 +88,11 @@ namespace Zilf.Tests.Integration
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
                 .ImpliesAsync(TreeImplications(
-                    new[] { "KITCHEN", "BEDROOM", "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "FLOOR", "CEILING", "LOCAL-GLOBALS", "BED" },
-                    new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
-                    new[] { "BEDROOM", "BED" },
-                    new[] { "ROOMS", "KITCHEN", "BEDROOM" },
-                    new[] { "LOCAL-GLOBALS", "FLOOR", "CEILING" }));
+                    ["KITCHEN", "BEDROOM", "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "FLOOR", "CEILING", "LOCAL-GLOBALS", "BED"],
+                    ["KITCHEN", "FRIDGE", "MICROWAVE", "SINK"],
+                    ["BEDROOM", "BED"],
+                    ["ROOMS", "KITCHEN", "BEDROOM"],
+                    ["LOCAL-GLOBALS", "FLOOR", "CEILING"]));
         }
 
         [TestMethod]
@@ -110,11 +111,11 @@ namespace Zilf.Tests.Integration
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
                 .ImpliesAsync(TreeImplications(
-                    new[] { "KITCHEN", "FLOOR", "CEILING", "BEDROOM", "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "LOCAL-GLOBALS", "BED" },
-                    new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
-                    new[] { "BEDROOM", "BED" },
-                    new[] { "ROOMS", "KITCHEN", "BEDROOM" },
-                    new[] { "LOCAL-GLOBALS", "FLOOR", "CEILING" }));
+                    ["KITCHEN", "FLOOR", "CEILING", "BEDROOM", "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "LOCAL-GLOBALS", "BED"],
+                    ["KITCHEN", "FRIDGE", "MICROWAVE", "SINK"],
+                    ["BEDROOM", "BED"],
+                    ["ROOMS", "KITCHEN", "BEDROOM"],
+                    ["LOCAL-GLOBALS", "FLOOR", "CEILING"]));
         }
 
         [TestMethod]
@@ -133,11 +134,11 @@ namespace Zilf.Tests.Integration
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
                 .ImpliesAsync(TreeImplications(
-                    new[] { "FRIDGE", "SINK", "MICROWAVE", "ROOMS", "FLOOR", "CEILING", "LOCAL-GLOBALS", "BED", "KITCHEN", "BEDROOM" },
-                    new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
-                    new[] { "BEDROOM", "BED" },
-                    new[] { "ROOMS", "KITCHEN", "BEDROOM" },
-                    new[] { "LOCAL-GLOBALS", "FLOOR", "CEILING" }));
+                    ["FRIDGE", "SINK", "MICROWAVE", "ROOMS", "FLOOR", "CEILING", "LOCAL-GLOBALS", "BED", "KITCHEN", "BEDROOM"],
+                    ["KITCHEN", "FRIDGE", "MICROWAVE", "SINK"],
+                    ["BEDROOM", "BED"],
+                    ["ROOMS", "KITCHEN", "BEDROOM"],
+                    ["LOCAL-GLOBALS", "FLOOR", "CEILING"]));
         }
 
         [TestMethod]
@@ -156,11 +157,11 @@ namespace Zilf.Tests.Integration
                 "<OBJECT LOCAL-GLOBALS>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
                 .ImpliesAsync(TreeImplications(
-                    new[] { "FRIDGE", "SINK", "MICROWAVE", "KITCHEN", "FLOOR", "BEDROOM", "BED", "ROOMS", "LOCAL-GLOBALS", "CEILING" },
-                    new[] { "KITCHEN", "FRIDGE", "MICROWAVE", "SINK" },
-                    new[] { "BEDROOM", "BED" },
-                    new[] { "ROOMS", "KITCHEN", "BEDROOM" },
-                    new[] { "LOCAL-GLOBALS", "FLOOR", "CEILING" }));
+                    ["FRIDGE", "SINK", "MICROWAVE", "KITCHEN", "FLOOR", "BEDROOM", "BED", "ROOMS", "LOCAL-GLOBALS", "CEILING"],
+                    ["KITCHEN", "FRIDGE", "MICROWAVE", "SINK"],
+                    ["BEDROOM", "BED"],
+                    ["ROOMS", "KITCHEN", "BEDROOM"],
+                    ["LOCAL-GLOBALS", "FLOOR", "CEILING"]));
         }
 
         // TODO: tests for other <ORDER-OBJECTS? ...>
@@ -183,7 +184,7 @@ namespace Zilf.Tests.Integration
                 "<OBJECT GREEN (IN RAINBOW)>",
                 "<OBJECT BLUE (IN RAINBOW)>")
                 .ImpliesAsync(TreeImplications(
-                    new[] { "BLUE", "GREEN", "YELLOW", "RED", "RAINBOW" },
+                    ["BLUE", "GREEN", "YELLOW", "RED", "RAINBOW"],
                     new[] { "RAINBOW", "BLUE", "GREEN", "YELLOW", "RED" }));
         }
 
@@ -203,11 +204,11 @@ namespace Zilf.Tests.Integration
                 "<OBJECT FLOOR (IN LOCAL-GLOBALS)>",
                 "<OBJECT CEILING (IN LOCAL-GLOBALS)>")
                 .ImpliesAsync(TreeImplications(
-                    new[] { "LOCAL-GLOBALS", "BED", "BEDROOM", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE" },
-                    new[] { "KITCHEN", "MICROWAVE", "SINK", "FRIDGE" },
-                    new[] { "BEDROOM", "BED" },
-                    new[] { "ROOMS", "BEDROOM", "KITCHEN" },
-                    new[] { "LOCAL-GLOBALS", "CEILING", "FLOOR" }));
+                    ["LOCAL-GLOBALS", "BED", "BEDROOM", "CEILING", "FLOOR", "ROOMS", "MICROWAVE", "SINK", "KITCHEN", "FRIDGE"],
+                    ["KITCHEN", "MICROWAVE", "SINK", "FRIDGE"],
+                    ["BEDROOM", "BED"],
+                    ["ROOMS", "BEDROOM", "KITCHEN"],
+                    ["LOCAL-GLOBALS", "CEILING", "FLOOR"]));
         }
 
         #endregion

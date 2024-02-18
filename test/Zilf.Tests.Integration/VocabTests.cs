@@ -82,7 +82,7 @@ namespace Zilf.Tests.Integration
                 result.Add(string.Format(testFormat, wordConstant, idConstant));
             }
 
-            return result.ToArray();
+            return [.. result];
         }
 
         [TestMethod]

@@ -77,7 +77,7 @@ namespace Zilf.Interpreter
 
         private class SyntaxReceiver : ISyntaxReceiver
         {
-            public List<(ClassDeclarationSyntax cls, AttributeSyntax attr)> Pairs { get; } = new();
+            public List<(ClassDeclarationSyntax cls, AttributeSyntax attr)> Pairs { get; } = [];
 
             public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
             {

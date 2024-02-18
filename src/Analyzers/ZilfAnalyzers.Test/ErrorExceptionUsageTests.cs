@@ -85,20 +85,20 @@ class Program {
                     Id = "ZILF0001",
                     Message = "This exception should use a diagnostic code instead",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 31, 15) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 31, 15)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0001",
                     Message = "This exception should use a diagnostic code instead",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 32, 15) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 32, 15)]
                 },                new DiagnosticResult
                 {
                     Id = "ZILF0001",
                     Message = "This exception should use a diagnostic code instead",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 33, 15) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 33, 15)]
                 }
             };
 

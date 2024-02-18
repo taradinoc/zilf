@@ -94,7 +94,7 @@ namespace Zilf.Tests.Integration
             bool testExecution = File.Exists(outputFile) && File.Exists(inputFile);
 
             var helper = new FileBasedZlrHelper(mainZilFile,
-                new[] { dir, libraryDir }, inputFile)
+                [dir, libraryDir], inputFile)
             {
                 WantStatusLine = true
             };
@@ -163,7 +163,7 @@ namespace Zilf.Tests.Integration
             var lines = text.Split('\n');
             for (int i = 0; i < lines.Length; i++)
             {
-                if (lines[i].EndsWith("\r"))
+                if (lines[i].EndsWith('\r'))
                     lines[i] = lines[i][0..^1];
             }
 

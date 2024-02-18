@@ -105,70 +105,70 @@ namespace Microsoft.VisualStudio.TestTools.UnitTesting {
                     Id = "ZILF0005",
                     Message = "'object.Equals(object?)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 20, 17) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 20, 17)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
                     Message = "'object.Equals(object?)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 23, 17) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 23, 17)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
                     Message = "'Assert.AreEqual(object, object, string)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 26, 13) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 26, 13)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
                     Message = "'Assert.AreNotEqual(object, object, string)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 27, 13) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 27, 13)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
                     Message = "'CollectionAssert.AreEqual(IEnumerable<object>, IEnumerable<object>)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 28, 13) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 28, 13)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
                     Message = "'Enumerable.SequenceEqual<TSource>(IEnumerable<TSource>, IEnumerable<TSource>)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 29, 13) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 29, 13)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
                     Message = "'object.Equals(object?, object?)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 30, 13) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 30, 13)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0005",
                     Message = "'object.Equals(object?, object?)' is for hash-safe comparisons: prefer methods with explicit MDL comparison behavior",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 31, 13) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 31, 13)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0006",
                     Message = "'FooList' overrides object.Equals(object?) but does not override ZilObject.ExactlyEquals(ZilObject)",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 36, 30) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 36, 30)]
                 },
                 new DiagnosticResult
                 {
                     Id = "ZILF0006",
                     Message = "'BarList' overrides ZilObject.ExactlyEquals(ZilObject) but does not override ZilObject.GetHashCode()",
                     Severity = DiagnosticSeverity.Warning,
-                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 40, 30) }
+                    Locations = [new DiagnosticResultLocation("Test0.cs", 40, 30)]
                 },
             };
 
