@@ -23,16 +23,45 @@ using Zilf.Interpreter.Values;
 namespace Zilf.Compiler.Builtins
 {
 #pragma warning disable IDE1006 // Naming Styles
+    /// <summary>
+    /// Contains information about a builtin value+predicate call that needs to be emitted.
+    /// </summary>
+    /// <remarks>
+    /// This must be the first parameter of the spec method.
+    /// </remarks>
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     readonly struct ValuePredCall
     {
+        /// <summary>
+        /// The compilation context.
+        /// </summary>
         public Compilation cc { get; }
+        /// <summary>
+        /// The routine builder.
+        /// </summary>
         public IRoutineBuilder rb { get; }
+        /// <summary>
+        /// The FORM being called.
+        /// </summary>
+        /// <remarks>
+        /// The FORM shouldn't be evaluated directly by the spec method. Its arguments may have gone
+        /// through macro expansion, leaving wrapped values that will throw an exception if used without
+        /// additional unwrapping, but unwrapping the arguments could potentially repeat side effects.
+        /// </remarks>
         public ZilForm form { get; }
 
+        /// <summary>
+        /// The variable in which to store the result of the call.
+        /// </summary>
         public IVariable resultStorage { get; }
+        /// <summary>
+        /// The label to jump to if the predicate is true (or false, if <see cref="polarity"/> is false).
+        /// </summary>
         public ILabel label { get; }
+        /// <summary>
+        /// Whether to emit code that jumps to <see cref="label"/> if the predicate is true (rather than false).
+        /// </summary>
         public bool polarity { get; }
 
         public ValuePredCall(Compilation cc, IRoutineBuilder rb, ZilForm form,

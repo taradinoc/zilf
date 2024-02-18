@@ -24,12 +24,35 @@ using Zilf.Language;
 namespace Zilf.Compiler.Builtins
 {
 #pragma warning disable IDE1006 // Naming Styles
+    /// <summary>
+    /// Contains information about a builtin value call that needs to be emitted.
+    /// </summary>
+    /// <remarks>
+    /// This must be the first parameter of the spec method.
+    /// </remarks>
     readonly struct ValueCall
     {
+        /// <summary>
+        /// The compilation context.
+        /// </summary>
         public Compilation cc { get; }
+        /// <summary>
+        /// The routine builder.
+        /// </summary>
         public IRoutineBuilder rb { get; }
+        /// <summary>
+        /// The FORM being called.
+        /// </summary>
+        /// <remarks>
+        /// The FORM shouldn't be evaluated directly by the spec method. Its arguments may have gone
+        /// through macro expansion, leaving wrapped values that will throw an exception if used without
+        /// additional unwrapping, but unwrapping the arguments could potentially repeat side effects.
+        /// </remarks>
         public ZilForm form { get; }
 
+        /// <summary>
+        /// The variable in which to store the result of the call.
+        /// </summary>
         public IVariable resultStorage { get; }
 
         public ValueCall(Compilation cc, IRoutineBuilder rb, ZilForm form, IVariable resultStorage)

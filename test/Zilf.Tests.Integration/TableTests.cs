@@ -266,5 +266,55 @@ namespace Zilf.Tests.Integration
                 .WithWarnings("MDL0430")
                 .CompilesAsync();
         }
+
+        [TestMethod]
+        public async Task Table_Defined_In_Routine_Cannot_Reference_Locals()
+        {
+            await AssertRoutine(
+                "\"AUX\" (X 123) Y",
+                "<SET Y <LTABLE .X <* .X 2>>>")
+                .DoesNotCompileAsync();
+        }
+
+        [TestMethod]
+        public async Task Table_Defined_In_Routine_Can_Be_Initialized_With_Macro()
+        {
+            await AssertRoutine(
+                "\"AUX\" (X 123) Y",
+                "<SET Y <LTABLE <MYMACRO 123>>>")
+                .WithGlobal("<DEFMAC MYMACRO (X) <FORM * .X 10>>")
+                .CompilesAsync();
+        }
+
+        [TestMethod]
+        public async Task Table_Defined_In_Routine_Can_Be_Initialized_With_Segment()
+        {
+            await AssertRoutine(
+                "\"AUX\" X",
+                "<SET X <LTABLE !,VALS>>")
+                .WithGlobal("<SETG VALS '(1 2 3)>")
+                .CompilesAsync();
+        }
+
+        [TestMethod]
+        public async Task Table_Defined_In_Routine_Can_Be_Initialized_With_Splice()
+        {
+            await AssertRoutine(
+                "\"AUX\" X",
+                "<SET X <LTABLE <MYMACRO>>>")
+                .WithGlobal("<DEFMAC MYMACRO () #SPLICE (1 2 3)>")
+                .CompilesAsync();
+        }
+
+        [TestMethod]
+        public async Task Table_Defined_At_Top_Level_Can_Be_Initialized_With_Macro()
+        {
+            await AssertRoutine(
+                "",
+                ",FOO")
+                .WithGlobal("<DEFMAC MYMACRO (X) <FORM * .X 10>>")
+                .WithGlobal("<GLOBAL FOO <LTABLE <MYMACRO 123>>>")
+                .CompilesAsync();
+        }
     }
 }

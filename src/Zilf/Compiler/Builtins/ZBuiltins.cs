@@ -23,6 +23,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -301,7 +302,7 @@ namespace Zilf.Compiler.Builtins
             // extract the arguments that need evaluation, and remember their original indexes
             var needEval =
                 validatedArgs
-                    .Select((a, oidx) => new { a, oidx })
+                    .Select((a, oidx) => (a, oidx))
                     .Where(p => p.a.Type == BuiltinArgType.NeedsEval)
                     .ToArray();
             var needEvalExprs = Array.ConvertAll(needEval, p => (ZilObject)p.a.Value!);
@@ -313,7 +314,6 @@ namespace Zilf.Compiler.Builtins
             // update validatedArgs with the evaluated operands
             for (int i = 0; i < operands.Count; i++)
             {
-                Debug.Assert(needEval[i] != null);
                 var oidx = needEval[i].oidx;
                 validatedArgs[oidx] = new BuiltinArg(BuiltinArgType.Operand, operands[i]);
             }
@@ -2080,7 +2080,15 @@ namespace Zilf.Compiler.Builtins
         [return: Table]
         public static IOperand TableOp(ValueCall c, params ZilObject[] args)
         {
-            var table = (ZilTable)c.form.Eval(c.cc.Context);
+            /* We can't evaluate c.form directly, because it may contain wrapped values from macro
+             * expansions; those values will have been unwrapped before passing them in as args.
+             * But the table SUBRs have complicated argument syntax, so instead of reimplementing
+             * it here, we'll just create a new FORM. */
+            var nameAtom = c.form.First;
+            Debug.Assert(nameAtom != null);
+            var formWithExpandedArgs = new ZilForm([nameAtom, ..args]) { SourceLine = c.form.SourceLine };
+
+            var table = (ZilTable)formWithExpandedArgs.Eval(c.cc.Context);
             var tableBuilder = c.cc.Game.DefineTable(table.Name, (table.Flags & TableFormat.Pure) != 0);
             c.cc.Tables.Add(table, tableBuilder);
             return tableBuilder;

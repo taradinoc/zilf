@@ -24,11 +24,31 @@ using Zilf.Language;
 namespace Zilf.Compiler.Builtins
 {
 #pragma warning disable IDE1006 // Naming Styles
+    /// <summary>
+    /// Contains information about a builtin void call that needs to be emitted.
+    /// </summary>
+    /// <remarks>
+    /// This must be the first parameter of the spec method.
+    /// </remarks>
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     readonly struct VoidCall
     {
+        /// <summary>
+        /// The compilation context.
+        /// </summary>
         public Compilation cc { get; }
+        /// <summary>
+        /// The routine builder.
+        /// </summary>
         public IRoutineBuilder rb { get; }
+        /// <summary>
+        /// The FORM being called.
+        /// </summary>
+        /// <remarks>
+        /// The FORM shouldn't be evaluated directly by the spec method. Its arguments may have gone
+        /// through macro expansion, leaving wrapped values that will throw an exception if used without
+        /// additional unwrapping, but unwrapping the arguments could potentially repeat side effects.
+        /// </remarks>
         public ZilForm form { get; }
 
         public VoidCall(Compilation cc, IRoutineBuilder rb, ZilForm form)
