@@ -9,6 +9,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <WarningLevel>7</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <WarningLevel>7</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FastHashSet" Version="0.1.0-alpha.2" />
