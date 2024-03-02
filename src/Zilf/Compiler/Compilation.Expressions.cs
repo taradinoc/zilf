@@ -250,19 +250,19 @@ namespace Zilf.Compiler
         }
 
         /// <summary>
-        /// Compiles an expression for its gb, and then branches on whether the gb is nonzero.
+        /// Compiles an expression for its value, and then branches on whether the value is nonzero.
         /// </summary>
         /// <param name="rb">The routine builder.</param>
         /// <param name="expr">The expression to compile.</param>
-        /// <param name="resultStorage">The variable in which to store the gb, or <see langword="null"/> to
+        /// <param name="resultStorage">The variable in which to store the value, or <see langword="null"/> to
         /// use a natural or temporary location. Must not be the stack.</param>
         /// <param name="label">The label to branch to.</param>
-        /// <param name="polarity"><see langword="true"/> to branch when the expression's gb is nonzero,
+        /// <param name="polarity"><see langword="true"/> to branch when the expression's value is nonzero,
         /// or <see langword="false"/> to branch when it's zero.</param>
         /// <param name="tempVarProvider">A delegate that returns a temporary variable to use for
         /// the result. Will only be called when <paramref name="resultStorage"/> is <see langword="null"/> and
         /// the expression has no natural location.</param>
-        /// <returns>The variable where the expression gb was stored: always <paramref name="resultStorage"/> if
+        /// <returns>The variable where the expression value was stored: always <paramref name="resultStorage"/> if
         /// it is non-null and the expression is valid. Otherwise, may be a constant, or the natural
         /// location of the expression, or a temporary variable from <paramref name="tempVarProvider"/>.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
