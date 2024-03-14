@@ -18,6 +18,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -76,12 +77,12 @@ namespace Zilf.Tests.Interpreter
             {
                 // expected exception type, predicate failed
                 throw new AssertFailedException(
-                    string.Format(SPredicateFailed, ex));
+                    string.Format(CultureInfo.CurrentCulture, SPredicateFailed, ex));
             }
             catch (Exception ex)
             {
                 // unexpected exception type
-                throw new AssertFailedException(string.Format(SWrongException,
+                throw new AssertFailedException(string.Format(CultureInfo.CurrentCulture, SWrongException,
                     typeof(TException).FullName,
                     ex.GetType().FullName,
                     expression,
@@ -90,7 +91,7 @@ namespace Zilf.Tests.Interpreter
             }
 
             // no exception was thrown
-            throw new AssertFailedException(string.Format(SNoException,
+            throw new AssertFailedException(string.Format(CultureInfo.CurrentCulture, SNoException,
                 typeof(TException).FullName,
                 result,
                 expression));
@@ -129,7 +130,7 @@ namespace Zilf.Tests.Interpreter
 
             if (!ok)
             {
-                var message = string.Format(format, args);
+                var message = string.Format(CultureInfo.CurrentCulture, format, args);
                 throw new AssertFailedException($"{message}. Expected:<{expected}>. Actual:<{actual}>.");
             }
         }

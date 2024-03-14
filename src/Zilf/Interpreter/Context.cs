@@ -62,14 +62,12 @@ namespace Zilf.Interpreter
     {
         delegate ZilObject ChtypeDelegate(Context ctx, ZilObject original);
 
-        // TODO: make TypeMapEntry a record type?
-        abstract class TypeMapEntry
+        record TypeMapEntry
         {
-            public Type? BuiltinType { get; set; }
+            public Type? BuiltinType { get; init; }
             public bool IsBuiltin => BuiltinType != null;
-            public PrimType PrimType { get; set; }
-            [System.Diagnostics.CodeAnalysis.NotNull]
-            public ChtypeDelegate? ChtypeMethod { get; set; }
+            public PrimType PrimType { get; init; }
+            public required ChtypeDelegate ChtypeMethod { get; init; }
 
             public ZilObject? PrintType { get; set; }
             public PrintTypeDelegate? PrintTypeDelegate { get; set; }
@@ -79,26 +77,6 @@ namespace Zilf.Interpreter
 
             public ZilObject? ApplyType { get; set; }
             public ApplyTypeDelegate? ApplyTypeDelegate { get; set; }
-        }
-
-        sealed class CustomTypeMapEntry : TypeMapEntry
-        {
-        }
-
-        sealed class StaticTypeMapEntry : TypeMapEntry, IStaticTypeMapEntry
-        {
-            public TypeMapEntry Clone()
-            {
-                return (TypeMapEntry)MemberwiseClone();
-            }
-        }
-
-        interface IStaticTypeMapEntry
-        {
-            Type? BuiltinType { get; }
-            PrimType PrimType { get; }
-
-            TypeMapEntry Clone();
         }
 
         public DiagnosticManager DiagnosticManager { get; }
@@ -793,7 +771,7 @@ namespace Zilf.Interpreter
             return expr.Compile();
         }
 
-        static ReadOnlyDictionary<StdAtom, IStaticTypeMapEntry> StaticTypeMap { get; } = InitStaticTypeMap();
+        static ReadOnlyDictionary<StdAtom, TypeMapEntry> StaticTypeMap { get; } = InitStaticTypeMap();
 
         private sealed record BuiltinTypeAttrPair(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -813,9 +791,9 @@ namespace Zilf.Interpreter
         private static partial IEnumerable<BuiltinTypeAttrPair> GetBuiltinTypeAttrPairs();
 
         [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "ChtypeMethod")]
-        static ReadOnlyDictionary<StdAtom, IStaticTypeMapEntry> InitStaticTypeMap()
+        static ReadOnlyDictionary<StdAtom, TypeMapEntry> InitStaticTypeMap()
         {
-            var result = new Dictionary<StdAtom, IStaticTypeMapEntry>();
+            var result = new Dictionary<StdAtom, TypeMapEntry>();
 
             var query = GetBuiltinTypeAttrPairs();
 
@@ -938,7 +916,7 @@ namespace Zilf.Interpreter
                     }
                 }
 
-                var entry = new StaticTypeMapEntry
+                var entry = new TypeMapEntry
                 {
                     BuiltinType = r.Type,
                     PrimType = r.Attr.PrimType,
@@ -955,7 +933,7 @@ namespace Zilf.Interpreter
         {
             foreach (var (atom, typeMapEntry) in StaticTypeMap)
             {
-                typeMap.Add(GetStdAtom(atom), typeMapEntry.Clone());
+                typeMap.Add(GetStdAtom(atom), typeMapEntry with { });
             }
 
             // default custom types
@@ -987,7 +965,7 @@ namespace Zilf.Interpreter
                 PrimType.LIST or PrimType.STRING or PrimType.VECTOR => (_, zo) => new ZilStructuredHash(atom, primType, (IStructure)zo),
                 _ => (_, zo) => new ZilHash(atom, primType, zo),
             };
-            var entry = new CustomTypeMapEntry
+            var entry = new TypeMapEntry
             {
                 PrimType = primType,
                 ChtypeMethod = chtypeDelegate

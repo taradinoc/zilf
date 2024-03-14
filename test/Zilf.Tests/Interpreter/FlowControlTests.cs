@@ -17,6 +17,7 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
@@ -30,14 +31,14 @@ namespace Zilf.Tests.Interpreter
         public void COND_Requires_At_Least_One_Clause()
         {
             TestHelpers.EvalAndCatch<InterpreterError>("<COND>",
-                ex => ex.Message.Contains("1 or more args"));
+                ex => ex.Message.Contains("1 or more args", StringComparison.Ordinal));
         }
 
         [TestMethod]
         public void COND_Should_Reject_Empty_Clauses()
         {
             TestHelpers.EvalAndCatch<InterpreterError>("<COND ()>",
-                ex => !ex.Message.Contains("1 or more args"));
+                ex => !ex.Message.Contains("1 or more args", StringComparison.Ordinal));
         }
 
         [TestMethod]
@@ -83,9 +84,9 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void PROG_Requires_A_Body()
         {
-            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ()>", ex => !ex.Message.Contains("???"));
-            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG A ()>", ex => !ex.Message.Contains("???"));
-            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (A) #DECL ((A) FIX)>", ex => !ex.Message.Contains("???"));
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG ()>", ex => !ex.Message.Contains("???", StringComparison.Ordinal));
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG A ()>", ex => !ex.Message.Contains("???", StringComparison.Ordinal));
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG (A) #DECL ((A) FIX)>", ex => !ex.Message.Contains("???", StringComparison.Ordinal));
         }
 
         [TestMethod]

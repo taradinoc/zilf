@@ -18,6 +18,7 @@
   <!-- only use the analyzer if it's been built for this target -->
   <PropertyGroup>
     <ZilfAnalyzersAssembly>$(SolutionDir)src\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
+    <AnalysisLevel>latest-all</AnalysisLevel>
   </PropertyGroup>
   <ItemGroup>
     <Analyzer Condition="Exists('$(ZilfAnalyzersAssembly)')" Include="$(ZilfAnalyzersAssembly)" />

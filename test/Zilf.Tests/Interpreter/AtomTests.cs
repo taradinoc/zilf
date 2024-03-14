@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
@@ -75,7 +76,7 @@ namespace Zilf.Tests.Interpreter
             // READ macros
             TestHelpers.EvalAndAssert(ctx, "<PARSE \"%<+ 12 34>\">", new ZilFix(46));
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PARSE \"%<ERROR XYZZY>\">",
-                ex => ex.Message.Contains("XYZZY"));
+                ex => ex.Message.Contains("XYZZY", StringComparison.Ordinal));
 
             // string must contain at least one expression
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<PARSE \" \">");
@@ -481,20 +482,20 @@ namespace Zilf.Tests.Interpreter
         public void TestREMOVE()
         {
             // must have 1-2 args
-            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE>", ex => ex.Message.Contains("1 or 2"));
-            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO BAR BAZ>", ex => ex.Message.Contains("1 or 2"));
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE>", ex => ex.Message.Contains("1 or 2", StringComparison.Ordinal));
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO BAR BAZ>", ex => ex.Message.Contains("1 or 2", StringComparison.Ordinal));
 
             // 1st arg must be atom or string
             TestHelpers.EvalAndCatch<ArgumentTypeError>("<REMOVE 1>");
 
             // 2nd arg must be oblist
-            TestHelpers.EvalAndCatch<ArgumentTypeError>("<REMOVE \"FOO\" 1>", ex => ex.Message.Contains("arg 2"));
+            TestHelpers.EvalAndCatch<ArgumentTypeError>("<REMOVE \"FOO\" 1>", ex => ex.Message.Contains("arg 2", StringComparison.Ordinal));
 
             // 2nd arg is required if 1st is a string
-            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE \"FOO\">", ex => ex.Message.Contains("1 additional"));
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE \"FOO\">", ex => ex.Message.Contains("1 additional", StringComparison.Ordinal));
 
             // 2nd arg not allowed if 1st is an atom
-            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO <1 .OBLIST>>", ex => ex.Message.Contains("too many"));
+            TestHelpers.EvalAndCatch<ArgumentCountError>("<REMOVE FOO <1 .OBLIST>>", ex => ex.Message.Contains("too many", StringComparison.Ordinal));
 
             // remove an atom from its oblist
             var ctx = new Context();

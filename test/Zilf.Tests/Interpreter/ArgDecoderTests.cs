@@ -331,7 +331,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 return;
             }
 
@@ -400,7 +400,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentCountError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 Assert.AreEqual(1, ex.Diagnostic!.SubDiagnostics.Count);
                 var sd = ex.Diagnostic.SubDiagnostics[0];
                 Assert.AreEqual(SExpectedSubMessage, sd.GetFormattedMessage());
@@ -458,7 +458,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 return;
             }
 
@@ -679,7 +679,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 return;
             }
 
@@ -761,7 +761,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 return;
             }
 
@@ -788,7 +788,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 return;
             }
 
@@ -914,7 +914,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 return;
             }
 
@@ -948,7 +948,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 return;
             }
 
@@ -1166,7 +1166,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 return;
             }
 
@@ -1203,7 +1203,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentCountError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 return;
             }
 
@@ -1227,7 +1227,7 @@ namespace Zilf.Tests.Interpreter
             }
             catch (ArgumentTypeError ex)
             {
-                StringAssert.EndsWith(ex.Message, SExpectedMessage);
+                StringAssert.EndsWith(ex.Message, SExpectedMessage, StringComparison.Ordinal);
                 return;
             }
 

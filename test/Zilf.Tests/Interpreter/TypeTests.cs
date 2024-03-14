@@ -252,7 +252,7 @@ namespace Zilf.Tests.Interpreter
             {
                 TestHelpers.EvalAndAssert(
                     ctx,
-                    string.Format("<CHTYPE .A-{0} {0}>", t),
+                    $"<CHTYPE .A-{t} {t}>",
                     ctx.GetLocalVal(ZilAtom.Parse("A-" + t, ctx)) ?? throw new InvalidOperationException());
             }
 

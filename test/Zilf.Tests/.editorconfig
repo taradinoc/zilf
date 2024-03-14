@@ -5,3 +5,9 @@ dotnet_diagnostic.RNUL.severity = silent
 
 # RCS1139: Add summary element to documentation comment.
 dotnet_diagnostic.RCS1139.severity = silent
+
+# CA1707: Identifiers should not contain underscores
+dotnet_diagnostic.CA1707.severity = silent
+
+# CA1852: Non-public type with no subtypes can be sealed
+dotnet_diagnostic.CA1852.severity = silent

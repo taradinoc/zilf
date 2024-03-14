@@ -16,7 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -34,7 +34,7 @@ namespace Zilf.Tests.Compiler
             readonly InMemoryFileSystem fileSystem = new();
             readonly HashSet<string> inputPaths = [];
 
-            public ICollection GetOutputFilePaths() => fileSystem.Paths.Except(inputPaths).ToList();
+            public List<string> GetOutputFilePaths() => fileSystem.Paths.Except(inputPaths).ToList();
 
             public void SetInputFile(string path, string content)
             {
@@ -107,7 +107,7 @@ namespace Zilf.Tests.Compiler
 
             CollectionAssert.AreEquivalent(expected, helper.GetOutputFilePaths());
 
-            Assert.IsTrue(helper.GetOutputContent("foo.zap")!.Contains(@"foofreq"));
+            Assert.IsTrue(helper.GetOutputContent("foo.zap")!.Contains(@"foofreq", StringComparison.Ordinal));
         }
     }
 }
