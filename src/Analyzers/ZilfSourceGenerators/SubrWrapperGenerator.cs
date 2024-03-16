@@ -42,7 +42,7 @@ namespace ZilfSourceGenerators
         /// return value and its attributes.</param>
         /// <param name="Targets">An array of <see cref="TargetAtom"/> detailing
         /// how the method should be exposed.</param>
-        record SubrMethodInfo(string MethodName, Param[] Params, Param ReturnParam, TargetAtom[] Targets);
+        record SubrMethodInfo(string MethodName, EquatableArray<Param> Params, Param ReturnParam, EquatableArray<TargetAtom> Targets);
 
         /// <summary>
         /// Records information about a particular exposure of a method as a SUBR (or FSUBR).
@@ -57,14 +57,18 @@ namespace ZilfSourceGenerators
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             // extract SubrMethodInfo from method declarations that look like SUBRs
-            var subrInfos = context.SyntaxProvider.CreateSyntaxProvider(
-                (n, _) => n is MethodDeclarationSyntax mds && IsPotentialSubrMethodSyntax(mds),
-                ExtractSubrMethodInfo);
+            //var subrInfos = context.SyntaxProvider.CreateSyntaxProvider(
+            //    (n, _) => n is MethodDeclarationSyntax mds && IsPotentialSubrMethodSyntax(mds),
+            //    ExtractSubrMethodInfo);
+            var subrInfos = context.SyntaxProvider.ForAttributeWithMetadataName(
+                "Zilf.Interpreter.SubrAttribute",
+                predicate: IsSubrMethodSyntax,
+                transform: ExtractSubrMethodInfo);
 
             // split out the SubrMethodInfo into individual (method name, target atom) pairs
             var subrInfosSplit = subrInfos.SelectMany((info, _) => info switch
                 {
-                    null => Enumerable.Empty<(string methodName, TargetAtom target)>(),
+                    null => [],
                     _ => info.Targets.Select(t => (methodName: info.MethodName, target: t)),
                 });
 
@@ -101,28 +105,32 @@ static partial class Subrs_Wrapper
             });
         }
 
-        private static bool IsPotentialSubrMethodSyntax(MethodDeclarationSyntax mds) =>
-            mds.Parent is ClassDeclarationSyntax cds &&
-            cds.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) &&
-            cds.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)) &&
-            mds.AttributeLists.Any(als => als.Attributes.Any(attr => IsPotentialSubrAttribute(attr)));
-
-        private static bool IsPotentialSubrAttribute(AttributeSyntax syntaxNode)
+        private static bool IsSubrMethodSyntax(SyntaxNode syntaxNode, CancellationToken cancellationToken)
         {
-            var name = syntaxNode.Name.ToString();
+            var methodDeclaration = syntaxNode.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+            if (methodDeclaration is null)
+                return false;
+
+            var classDeclaration = methodDeclaration.FirstAncestorOrSelf<ClassDeclarationSyntax>();
+            if (classDeclaration is null)
+                return false;
+
             return
-                name.EndsWith("Subr", StringComparison.Ordinal) ||
-                name.EndsWith("SubrAttribute", StringComparison.Ordinal);
+                classDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword)) &&
+                classDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
         }
 
-        private static SubrMethodInfo? ExtractSubrMethodInfo(GeneratorSyntaxContext gsc, CancellationToken cancellationToken)
+        private static SubrMethodInfo? ExtractSubrMethodInfo(GeneratorAttributeSyntaxContext gsc, CancellationToken cancellationToken)
         {
-            if (gsc.SemanticModel.GetDeclaredSymbol(gsc.Node) is not IMethodSymbol methodSymbol)
+            if (gsc.TargetSymbol is not IMethodSymbol methodSymbol)
                 return null;
 
             var methodName = $"{methodSymbol.ContainingType?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}.{methodSymbol.Name}";
             var targets = new List<TargetAtom>();
+            var parameters = new List<Param>();
+            Param returnValue;
 
+            // populate target atoms from method attributes
             foreach (var attr in methodSymbol.GetAttributes())
             {
                 bool isFSubr;
@@ -162,7 +170,11 @@ static partial class Subrs_Wrapper
                 targets.Add(new TargetAtom(isFSubr, atom, oblist));
             }
 
-            return new SubrMethodInfo(methodName, targets.ToArray());
+            // populate parameters from method parameters
+
+            // populate return value from method return type
+
+            return new SubrMethodInfo(methodName, parameters, returnValue, targets.ToArray());
         }
     }
 }

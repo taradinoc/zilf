@@ -25,24 +25,30 @@ namespace Zilf.Interpreter
 
             var site = new FunctionCallSite(name);
 
-            // arg0 ("atom"): ZilAtom
             ZilAtom arg0;
+
+            // arg0 ("atom"): ZilAtom
             if (i >= args.Length)
             {
+                // required argument is missing
                 throw ArgumentCountError.WrongCount(site, 1, 1);
             }
             else if (args[i] is ZilAtom arg0_cast_1)
             {
+                // expected type (ATOM)
                 arg0 = arg0_cast_1;
                 i++;
             }
             else
             {
+                // argument is wrong type
                 throw new ArgumentTypeError(site, i, "ATOM");
             }
 
+            // end of expected arguments
             if (i < args.Length)
             {
+                // too many arguments
                 throw ArgumentCountError.WrongCount(site, 1, 1);
             }
 
@@ -56,70 +62,111 @@ namespace Zilf.Interpreter
         public static ZilObject PARSE(string name, Context ctx, ZilObject[] args)
         {
             int i = 0;
+            int? recentSkippedArg = null;
+            int? lastUnderachievingArg = null;
 
             var site = new FunctionCallSite(name);
 
-            // arg0 ("text"): string
             string arg0;
+            int arg1;
+            ZilObject? arg2;
+
+            // arg0 ("text"): string
             if (i >= args.Length)
             {
+                // required argument is missing
                 throw ArgumentCountError.WrongCount(site, 1, 3);
             }
             else if (args[i] is ZilString { Text: string arg0_cast_1 })
             {
+                // expected type (STRING)
                 arg0 = arg0_cast_1;
+                recentSkippedArg = null;
                 i++;
             }
             else
             {
+                // argument is wrong type
                 throw new ArgumentTypeError(site, i, "STRING");
             }
 
             // arg1 ("radix"): [Decl("'10"), ZilOptional(Default = 10)] int
-            int arg1;
             if (i >= args.Length)
             {
+                // optional argument is missing, use default
                 arg1 = 10;
+                recentSkippedArg ??= i;
             }
             else if (args[i] is ZilFix { Value: int arg1_cast_1 } && Decl.Check(ctx, args[i], Program.Parse(ctx, "'10").Single()))
             {
+                // expected type (FIX) and matches Decl constraint
                 arg1 = arg1_cast_1;
                 i++;
             }
             else
             {
+                // assume optional parameter is missing, use default
+                recentSkippedArg ??= i;
+                lastUnderachievingArg = i;
                 arg1 = 10;
             }
 
             // arg2 ("lookupObList"): [Either(typeof(ObList), typeof(ZilList)), ZilOptional(Default = null)] ZilObject = null
-            ZilObject? arg2;
             if (i >= args.Length)
             {
+                // optional argument is missing, use default
                 arg2 = null;
+                recentSkippedArg ??= i;
             }
             else if (args[i] is ObList arg2_cast_1)
             {
+                // expected type (OBLIST)
                 arg2 = arg2_cast_1;
                 i++;
             }
             else if (args[i] is ZilList arg2_cast_2)
             {
+                // expected type (LIST)
                 arg2 = arg2_cast_2;
                 i++;
             }
             else
             {
+                // assume optional parameter is missing, use default
                 arg2 = null;
+                recentSkippedArg ??= i;
+                lastUnderachievingArg = i;
             }
 
+            // end of expected arguments
             if (i < args.Length)
             {
-                // TODO: this isn't necessarily a count error!
+                // too many arguments OR optional arguments had the wrong type
+
                 // for <PARSE "foo" BAR BAZ> we'll get here because arg1 and arg2 are both optional.
                 // ideally we'd throw an error like "PARSE: arg 2: expected '10 or OBLIST or LIST but found ATOM",
                 // where the "or" constraint is the union of constraints for all subsequent arguments up to the
                 // next required argument.
-                throw ArgumentCountError.WrongCount(site, 1, 3);
+                // ZILF 0.9 prints:
+                //     [error MDL0128] <stdin>:1: PARSE: arg 2: expected '10 and FIX, LIST, or OBLIST
+
+                if (i >= 3)
+                {
+                    throw ArgumentCountError.WrongCount(site, 1, 3);
+                }
+
+                switch (recentSkippedArg)
+                {
+                    case 1:
+                        // we skipped arg1 and arg2, so this extra argument could be a type mismatch for either
+                        throw new ArgumentTypeError(site, i, "'10, OBLIST, or LIST");
+                    case 2:
+                        // we skipped arg2, so this extra argument could be a type mismatch for it
+                        throw new ArgumentTypeError(site, i, "OBLIST or LIST");
+                    default:
+                        // there's no skipped argument that this extra one could be a type mismatch for
+                        throw ArgumentCountError.TooMany(site, i + 1, lastUnderachievingArg + 1);
+                }
             }
 
             return Subrs.PARSE(ctx, arg0, arg1, arg2);
@@ -137,21 +184,31 @@ namespace Zilf.Interpreter
             object arg0;
             if (i >= args.Length)
             {
+                // required argument is missing
                 throw ArgumentCountError.WrongCount(site, 1, 2);
             }
             else if (args[i] is ZilAtom arg0_cast_1)
             {
+                // expected type (ATOM)
                 arg0 = arg0_cast_1;
                 i++;
             }
             else if (Structure_Wrappers.Parse_PnameAndObList(site, args, i) is { Success: true, Value: var structure, NextIndex: var next })
             {
+                // expected type (parsed structure)
                 arg0 = structure;
                 i = next;
             }
             else
             {
+                // argument is wrong type
                 throw new ArgumentTypeError(site, i, "ATOM or STRING");
+            }
+
+            // end of expected arguments
+            if (i < args.Length)
+            {
+                // too many arguments OR structure
             }
 
             return Subrs.REMOVE(ctx, arg0);
@@ -273,9 +330,11 @@ namespace Zilf.Interpreter
         // Sequence: RemoveParams.PnameAndObList
         // elem0 ("Pname"): string
         // elem1 ("ObList"): ObList
-        public static ParseResult<Zilf.Interpreter.Subrs.RemoveParams.PnameAndObList> Parse_PnameAndObList(CallSite site, ZilObject[] args, int startIndex)
+        public static ParseResult<Zilf.Interpreter.Subrs.RemoveParams.PnameAndObList> Parse_PnameAndObList(CallSite parentSite, ZilObject[] args, int startIndex)
         {
             int i = startIndex;
+
+            var site = new StructuredArgumentCallSite(parentSite, startIndex);
 
             // elem0 ("Pname"): string
             string elem0;
@@ -313,9 +372,11 @@ namespace Zilf.Interpreter
         // Sequence: DeclParams.AtomsDeclSequence
         // elem0 ("Atoms"): AtomList
         // elem1 ("Decl"): ZilObject
-        public static ParseResult<Zilf.Interpreter.Subrs.DeclParams.AtomsDeclSequence> Parse_AtomsDeclSequence(CallSite site, ZilObject[] args, int startIndex)
+        public static ParseResult<Zilf.Interpreter.Subrs.DeclParams.AtomsDeclSequence> Parse_AtomsDeclSequence(CallSite parentSite, ZilObject[] args, int startIndex)
         {
             int i = startIndex;
+
+            var site = new StructuredArgumentCallSite(parentSite, startIndex);
 
             // elem0 ("Atoms"): AtomList
             Zilf.Interpreter.Subrs.DeclParams.AtomList elem0;
@@ -354,9 +415,11 @@ namespace Zilf.Interpreter
 
         // Structure (LIST): DeclParams.AtomList
         // elem0 ("Atoms"): ZilAtom[]
-        public static ParseResult<Zilf.Interpreter.Subrs.DeclParams.AtomList> Parse_AtomList(CallSite site, ZilObject[] args, int startIndex)
+        public static ParseResult<Zilf.Interpreter.Subrs.DeclParams.AtomList> Parse_AtomList(CallSite parentSite, ZilObject[] args, int startIndex)
         {
             int i = startIndex;
+
+            var site = new StructuredArgumentCallSite(parentSite, startIndex);
 
             // elem0 ("Atoms"): ZilAtom[]
             List<ZilAtom> elem0_list = new();
