@@ -1063,6 +1063,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [Builtin("LOC", Data = UnaryOp.GetParent)]
+        [return: Object]
         public static IOperand UnaryObjectValueOp(
             ValueCall c, [Data] UnaryOp op, [Object] IOperand obj)
         {
@@ -1072,6 +1073,7 @@ namespace Zilf.Compiler.Builtins
 
         [Builtin("FIRST?", Data = false)]
         [Builtin("NEXT?", Data = true)]
+        [return: Object]
         public static void UnaryObjectValuePredOp(
             ValuePredCall c, [Data] bool sibling, [Object] IOperand obj)
         {

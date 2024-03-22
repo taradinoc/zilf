@@ -16,14 +16,11 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace ZilfSourceGenerators
 {
@@ -45,6 +42,7 @@ namespace ZilfSourceGenerators
         public static implicit operator ImmutableArray<T>(EquatableArray<T> equatable) => equatable.array;
 
         public ref readonly T this[int index] => ref array.ItemRef(index);
+        public int Length => array.Length;
 
         public bool Equals(EquatableArray<T> other)
         {
@@ -91,6 +89,14 @@ namespace ZilfSourceGenerators
         IEnumerator IEnumerable.GetEnumerator()
         {
             return ((IEnumerable)array).GetEnumerator();
+        }
+    }
+
+    public static class EquatableArray
+    {
+        public static EquatableArray<T> ToEquatableArray<T>(this IEnumerable<T> items) where T : IEquatable<T>
+        {
+            return new EquatableArray<T>(items);
         }
     }
 }

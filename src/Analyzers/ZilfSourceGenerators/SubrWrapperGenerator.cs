@@ -44,6 +44,8 @@ namespace ZilfSourceGenerators
         /// how the method should be exposed.</param>
         record SubrMethodInfo(string MethodName, EquatableArray<Param> Params, Param ReturnParam, EquatableArray<TargetAtom> Targets);
 
+        record Param(string Name, string FormalType);
+
         /// <summary>
         /// Records information about a particular exposure of a method as a SUBR (or FSUBR).
         /// </summary>
@@ -173,6 +175,7 @@ static partial class Subrs_Wrapper
             // populate parameters from method parameters
 
             // populate return value from method return type
+            returnValue = new Param("return", methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat));//XXX
 
             return new SubrMethodInfo(methodName, parameters, returnValue, targets.ToArray());
         }
