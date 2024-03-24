@@ -39,7 +39,7 @@ namespace Zilf.Compiler.Builtins
     [SuppressMessage("Style", "IDE0060", Justification = "ZBuiltins parameters are needed for validation, even if the values aren't used.")]
     [SuppressMessage("Redundancy", "RCS1163:Unused parameter.", Justification = "ZBuiltins parameters are needed for validation, even if the values aren't used.")]
     [SuppressMessage("Performance", "CA1801", Justification = "ZBuiltins parameters are needed for validation, even if the values aren't used.")]
-    static class ZBuiltins
+    static partial class ZBuiltins
     {
         #region Infrastructure
 

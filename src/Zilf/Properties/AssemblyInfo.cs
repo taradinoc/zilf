@@ -22,6 +22,7 @@ using System.Runtime.CompilerServices;
 #if DEBUG
 [assembly: InternalsVisibleTo("Zilf.Tests")]
 [assembly: InternalsVisibleTo("Zilf.Tests.Integration")]
+[assembly: InternalsVisibleTo("ZilfSourceGenerators.Test")]
 #endif
 
 [assembly: CLSCompliant(false)]

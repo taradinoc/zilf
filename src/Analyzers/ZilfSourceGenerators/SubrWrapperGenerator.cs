@@ -90,15 +90,16 @@ namespace ZilfSourceGenerators
                             select $@"// {kind} ""{name}"" -> {si.methodName}";
 
                 var sourceText = SourceText.From($@"
+#nullable enable
 namespace Zilf.Interpreter;
 
 static partial class Subrs_Wrapper
 {{
     public static (string name, string? oblist, SubrDelegate del)[] GetSubrWrappers()
     {{
-        return new[] {{
+        return [
             {string.Join(",\r\n            ", lines)}
-        }};
+        ];
     }}
 }}
 ", Encoding.UTF8);

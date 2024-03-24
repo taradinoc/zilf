@@ -37,7 +37,7 @@ namespace ZilfSourceGenerators
         /// as a builtin Z-code operation under one or more names.
         /// </summary>
         /// <param name="CallType">The type of call the method should be exposed as.</param>
-        /// <param name="HasData">Whether the method has a Data parameter.</param>
+        /// <param name="ClassName">The name of the class where the method is defined.</param>
         /// <param name="MethodName">The name of the method.</param>
         /// <param name="Params">An array of <see cref="Param"/>
         /// describing the method's parameters and their attributes.</param>
@@ -47,6 +47,7 @@ namespace ZilfSourceGenerators
         /// how the method should be exposed.</param>
         record BuiltinMethodInfo(
             CallType CallType,
+            string ClassName,
             string MethodName,
             EquatableArray<Param> Params,
             ReturnValue ReturnValue,
@@ -142,22 +143,40 @@ namespace ZilfSourceGenerators
                     var byNamespace = argDecoders.Concat(dispatchers).GroupBy(static m => m.Namespace);
                     var sb = new StringBuilder();
 
+                    sb.AppendLine("#nullable enable")
+                        .AppendLine("#pragma warning disable CS0168 // Variable is declared but never used")
+                        .AppendLine("using System;")
+                        .AppendLine("using Zilf.Emit;")
+                        .AppendLine("using Zilf.Language;")
+                        .AppendLine("using Zilf.Interpreter.Values;");
+
                     foreach (var g in byNamespace)
                     {
-                        foreach (var m in g)
+                        sb.Append("namespace ")
+                            .AppendLine(g.Key)
+                            .AppendLine("{");
+
+                        var byClass = g.GroupBy(static m => m.ClassName);
+
+                        foreach (var g2 in byClass)
                         {
-                            var code = $$"""
-                            namespace {{g.Key}}
+                            sb.Append("    static partial class ")
+                                .AppendLine(g2.Key)
+                                .AppendLine("    {");
+
+                            foreach (var m in g2)
                             {
-                                static partial class {{m.ClassName}}
+                                foreach (var line in m.Lines)
                                 {
-                                    {{string.Join("\n        ", m.Lines)}}
+                                    sb.Append("        ")
+                                        .AppendLine(line);
                                 }
                             }
 
-                            """;
-                            sb.Append(code);
+                            sb.AppendLine("    }");
                         }
+
+                        sb.AppendLine("}");
                     }
 
                     var sourceText = SourceText.From(sb.ToString(), Encoding.UTF8);
@@ -165,19 +184,21 @@ namespace ZilfSourceGenerators
             });
         }
 
+        private int methodNum = 1;
+
         private GeneratedMethod EmitArgDecoder(BuiltinMethodInfo info, CancellationToken token)
         {
-            var decoderMethodName = $"Decode_{info.MethodName}";
+            var callType = info.CallType;
+            var decoderMethodName = $"Decode_{methodNum++}_{callType}_{info.MethodName}";
             var lines = new IndentedWriter();
 
             var returnType = info.ReturnValue.FormalType;
-            var callType = info.CallType;
             var dataParam = info.HasData ? $"{info.Params[0].FormalType} {info.Params[0].Name}, " : "";
 
-            using (lines.Block($"private static {returnType} {decoderMethodName}({callType} c, {dataParam}Span<ZilObject> args)"))
+            using (lines.Block($"private static {returnType} {decoderMethodName}({callType} c, {dataParam}Span<ZilObject> argsSpan)"))
             {
                 //XXX
-                lines.WriteLine($"// Decode parameters for {info.MethodName}");
+                lines.WriteLine($"// Decode parameters for {info.ClassName}.{info.MethodName}");
 
                 foreach (var p in info.Params)
                 {
@@ -258,7 +279,8 @@ namespace ZilfSourceGenerators
             if (gsc.TargetSymbol is not IMethodSymbol methodSymbol)
                 return null;
 
-            var methodName = $"{methodSymbol.ContainingType?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}.{methodSymbol.Name}";
+            var className = methodSymbol.ContainingType?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat) ?? "_";
+            var methodName = methodSymbol.Name;
             var targets = new List<Exposure>();
             var parameters = new List<Param>();
             ReturnValue returnValue;
@@ -300,6 +322,16 @@ namespace ZilfSourceGenerators
                     if (arg is { Kind: TypedConstantKind.Primitive, Type.SpecialType: SpecialType.System_String, Value: string name })
                     {
                         targets.Add(new Exposure(name, minVersion, maxVersion, hasSideEffect, priority, data));
+                    }
+                    else if (arg is { Kind: TypedConstantKind.Array } array)
+                    {
+                        foreach (var element in array.Values)
+                        {
+                            if (element is { Kind: TypedConstantKind.Primitive, Type.SpecialType: SpecialType.System_String, Value: string name2 })
+                            {
+                                targets.Add(new Exposure(name2, minVersion, maxVersion, hasSideEffect, priority, data));
+                            }
+                        }
                     }
                 }
             }
@@ -375,7 +407,7 @@ namespace ZilfSourceGenerators
                     }
                 }
 
-                parameters.Add(new Param(param.Name, param.Type.Name, flags));
+                parameters.Add(new Param(param.Name, param.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat), flags));
             }
 
             // populate returnValue from method return type
@@ -394,9 +426,15 @@ namespace ZilfSourceGenerators
                 }
             }
 
-            returnValue = new ReturnValue(methodSymbol.ReturnType.Name, returnFlags);
+            var returnType = methodSymbol.ReturnType.SpecialType switch
+            {
+                SpecialType.System_Void => "void",
+                _ => methodSymbol.ReturnType.Name,
+            };
 
-            return new BuiltinMethodInfo(callType, methodName, parameters.ToEquatableArray(), returnValue, targets.ToEquatableArray());
+            returnValue = new ReturnValue(returnType, returnFlags);
+
+            return new BuiltinMethodInfo(callType, className, methodName, parameters.ToEquatableArray(), returnValue, targets.ToEquatableArray());
         }
     }
 }
