@@ -22,7 +22,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -113,8 +112,27 @@ namespace ZilfSourceGenerators
                 transform: ExtractBuiltinMethodInfo)
                 .Where(static b => b is not null)!;
 
+            // generate unique names for decoder methods
+            var decoderNames = builtinInfos.Collect()
+                .Select((builtinInfos, _) =>
+                {
+                    var distinguisher = new Distinguisher<string, BuiltinMethodInfo>();
+                    foreach (var bi in builtinInfos)
+                    {
+                        var name = bi.MethodName;
+                        var props = bi.Params.Select(p => p.FormalType).ToArray();
+                        distinguisher.Add([name, .. props], bi);
+                    }
+                    return distinguisher.GetUniqueNames().ToDictionary(static p => p.item, static p => p.name);
+                });
+
             // generate one argument decoder method for each BuiltinMethodInfo
-            var argDecoders = builtinInfos.Select(EmitArgDecoder);
+            var argDecoders = builtinInfos.Combine(decoderNames)
+                .Select((pair, ct) =>
+                {
+                    var (bi, names) = pair;
+                    return EmitArgDecoder(bi, names[bi], ct);
+                });
 
             // generate one dispatch method for each distinct exposed name
             var dispatchers = builtinInfos
@@ -184,12 +202,10 @@ namespace ZilfSourceGenerators
             });
         }
 
-        private int methodNum = 1;
-
-        private GeneratedMethod EmitArgDecoder(BuiltinMethodInfo info, CancellationToken token)
+        private GeneratedMethod EmitArgDecoder(BuiltinMethodInfo info, string uniqueName, CancellationToken token)
         {
             var callType = info.CallType;
-            var decoderMethodName = $"Decode_{methodNum++}_{callType}_{info.MethodName}";
+            var decoderMethodName = $"Decode_{uniqueName}";
             var lines = new IndentedWriter();
 
             var returnType = info.ReturnValue.FormalType;
