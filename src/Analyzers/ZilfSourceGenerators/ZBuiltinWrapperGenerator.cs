@@ -23,6 +23,7 @@ using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
 
@@ -53,6 +54,10 @@ namespace ZilfSourceGenerators
             EquatableArray<Exposure> Targets)
         {
             public bool HasData => Params.Length > 0 && Params[0].Flags.HasFlag(ParamFlags.IsData);
+
+            public int MinArgs => Params.Sum(p => p.MinLength);
+
+            public int? MaxArgs => Params.Sum(p => p.MaxLength);
         }
 
         enum CallType
@@ -77,7 +82,12 @@ namespace ZilfSourceGenerators
             IsVariableQuirkGlobal = 128,    // VariableScopeQuirks.Global
         }
 
-        record Param(string Name, string FormalType, ParamFlags Flags);
+        record Param(string Name, string FormalType, ParamFlags Flags)
+        {
+            public int MinLength => (Flags & (ParamFlags.IsOptional | ParamFlags.IsVarArgs)) == 0 ? 1 : 0;
+
+            public int? MaxLength => Flags.HasFlag(ParamFlags.IsVarArgs) ? null : 1;
+        }
 
         [Flags]
         enum ReturnFlags
@@ -136,7 +146,7 @@ namespace ZilfSourceGenerators
 
             // generate one dispatch method for each distinct exposed name
             var dispatchers = builtinInfos
-                .SelectMany((bi, _) => bi.Targets.Select(t => (target: t, method: bi.MethodName, callType: bi.CallType)))
+                .SelectMany((bi, _) => bi.Targets.Select(t => (target: t, method: bi.MethodName, callType: bi.CallType, parameters: bi.Params)))
                 .Collect()
                 .SelectMany((rows, _) => from row in rows
                                          group row by (name: row.target.Name, row.callType) into g
@@ -146,7 +156,7 @@ namespace ZilfSourceGenerators
                                             targets: g.OrderBy(static r => r.target.Priority)
                                                 .ThenBy(static r => r.method)
                                                 .ThenByDescending(static r => r.target.MaxVersion)
-                                                .Select(static r => r.target)
+                                                .Select(static r => (r.target, r.method, r.parameters))
                                                 .ToEquatableArray()
                                          ))
                 .Select((r, ct) => EmitDispatchMethod(r.name, r.callType, r.targets, ct));
@@ -158,33 +168,61 @@ namespace ZilfSourceGenerators
                 (spc, inputs) =>
                 {
                     var (argDecoders, dispatchers) = inputs;
-                    var byNamespace = argDecoders.Concat(dispatchers).GroupBy(static m => m.Namespace);
+                    var methodsByNamespace = argDecoders.Concat(dispatchers).GroupBy(static m => m.Namespace);
                     var sb = new StringBuilder();
+
+                    sb.AppendLine("#if ZILF_BUILTIN_WRAPPERS"); //XXX
 
                     sb.AppendLine("#nullable enable")
                         .AppendLine("#pragma warning disable CS0168 // Variable is declared but never used")
+                        .AppendLine()
                         .AppendLine("using System;")
                         .AppendLine("using Zilf.Emit;")
+                        .AppendLine("using Zilf.Interpreter.Values;")
                         .AppendLine("using Zilf.Language;")
-                        .AppendLine("using Zilf.Interpreter.Values;");
+                        .AppendLine();
 
-                    foreach (var g in byNamespace)
+                    bool firstNamespace = true;
+
+                    foreach (var namespaceMethods in methodsByNamespace)
                     {
+                        if (!firstNamespace)
+                        {
+                            sb.AppendLine();
+                        }
+                        firstNamespace = false;
+
                         sb.Append("namespace ")
-                            .AppendLine(g.Key)
+                            .AppendLine(namespaceMethods.Key)
                             .AppendLine("{");
 
-                        var byClass = g.GroupBy(static m => m.ClassName);
+                        var methodsByClass = namespaceMethods.GroupBy(static m => m.ClassName);
 
-                        foreach (var g2 in byClass)
+                        bool firstClass = true;
+
+                        foreach (var classMethods in methodsByClass)
                         {
+                            if (!firstClass)
+                            {
+                                sb.AppendLine();
+                            }
+                            firstClass = false;
+
                             sb.Append("    static partial class ")
-                                .AppendLine(g2.Key)
+                                .AppendLine(classMethods.Key)
                                 .AppendLine("    {");
 
-                            foreach (var m in g2)
+                            bool firstMethod = true;
+
+                            foreach (var method in classMethods)
                             {
-                                foreach (var line in m.Lines)
+                                if (!firstMethod)
+                                {
+                                    sb.AppendLine();
+                                }
+                                firstMethod = false;
+
+                                foreach (var line in method.Lines)
                                 {
                                     sb.Append("        ")
                                         .AppendLine(line);
@@ -196,6 +234,8 @@ namespace ZilfSourceGenerators
 
                         sb.AppendLine("}");
                     }
+
+                    sb.AppendLine("#endif"); //XXX
 
                     var sourceText = SourceText.From(sb.ToString(), Encoding.UTF8);
                     spc.AddSource("ZBuiltins.g.cs", sourceText);
@@ -211,11 +251,15 @@ namespace ZilfSourceGenerators
             var returnType = info.ReturnValue.FormalType;
             var dataParam = info.HasData ? $"{info.Params[0].FormalType} {info.Params[0].Name}, " : "";
 
+            int indexIntoSpan = 0;
+
             using (lines.Block($"private static {returnType} {decoderMethodName}({callType} c, {dataParam}Span<ZilObject> argsSpan)"))
             {
-                //XXX
                 lines.WriteLine($"// Decode parameters for {info.ClassName}.{info.MethodName}");
 
+                // argument count has already been validated by the dispatch method
+
+                // declare local variables for each parameter
                 foreach (var p in info.Params)
                 {
                     if (p.Flags.HasFlag(ParamFlags.IsData))
@@ -224,17 +268,71 @@ namespace ZilfSourceGenerators
                     }
 
                     lines.WriteLine($"{p.FormalType} {p.Name};");
-
-                    token.ThrowIfCancellationRequested();
                 }
 
+                // validate, convert, and assign each parameter
+                foreach (var p in info.Params)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    // the data parameter, if present, isn't part of the argsSpan
+                    if (p.Flags.HasFlag(ParamFlags.IsData))
+                    {
+                        continue;
+                    }
+
+                    // the parameter may consume any number of arguments from the argsSpan:
+                    // - if it's a varargs parameter, it consumes all remaining arguments
+                    // - if it's an optional parameter, it consumes 1 argument if there are any left, or else 0
+                    // - otherwise, it consumes exactly 1 argument
+                    // this is independent of the parameter's type.
+
+                    bool isOptional = p.Flags.HasFlag(ParamFlags.IsOptional);
+                    bool isVarArgs = p.Flags.HasFlag(ParamFlags.IsVarArgs);
+
+                    if (isVarArgs)
+                    {
+                        // loop through the rest of the argsSpan converting values
+                        var elementType = p.FormalType.Substring(0, p.FormalType.Length - 2);
+
+                        lines.WriteLine($"{p.Name} = new {elementType}[argsSpan.Length - {indexIntoSpan}];");
+
+                        using (lines.Block($"for (int i = {indexIntoSpan}, j = 0; i < argsSpan.Length; i++, j++)"))
+                        {
+                            EmitConvertArg("argsSpan[i]", $"{p.Name}[j]", elementType, p.Flags);
+                        }
+
+                    }
+                    else if (isOptional)
+                    {
+                        // if there are no more arguments in the argsSpan, assign the default value.
+                        // otherwise, validate and convert the argument.
+                    }
+                    else
+                    {
+                        // validate and convert the argument.
+                    }
+                }
+
+                //XXX
                 lines.WriteLine("throw new NotImplementedException();");
             }
 
             return new GeneratedMethod("Zilf.Compiler.Builtins.Generated", "ZBuiltinDecoders", decoderMethodName, lines.GetLines());
+
+            void EmitConvertArg(string src, string dest, string formalType, ParamFlags flags)
+            {
+                //XXX
+                lines.WriteLine($"// Convert {src} -> {dest}")
+                    .WriteLine($"{dest} = default;");
+            }
         }
 
-        private GeneratedMethod EmitDispatchMethod(string name, CallType callType, EquatableArray<Exposure> targets, CancellationToken token)
+        private GeneratedMethod EmitDispatchMethod(
+            string name,
+            CallType callType,
+            EquatableArray<(Exposure exposure, string method, EquatableArray<Param> parameters)> targets,
+            CancellationToken token)
         {
             var dispatchMethodName = $"Dispatch_{SanitizeName(name)}";
             var lines = new IndentedWriter();
@@ -246,9 +344,10 @@ namespace ZilfSourceGenerators
                 //XXX
                 lines.WriteLine($"// Dispatch {name}");
 
-                foreach (var target in targets)
+                foreach (var (exposure, method, parameters) in targets)
                 {
-                    lines.WriteLine($"// {target}");
+                    lines.WriteLine($"// {exposure}")
+                        .WriteLine($"// -> {method}({string.Join(", ", parameters.Select(p => p.FormalType + " " + p.Name))})");
 
                     token.ThrowIfCancellationRequested();
                 }
@@ -387,15 +486,22 @@ namespace ZilfSourceGenerators
                 var flags = ParamFlags.None;
 
                 // check for special parameter attributes
+                if (param.IsOptional)
+                {
+                    flags |= ParamFlags.IsOptional;
+                }
+
+                if (param.IsParams)
+                {
+                    flags |= ParamFlags.IsVarArgs;
+                }
+
                 foreach (var attr in param.GetAttributes())
                 {
                     switch (attr.AttributeClass?.Name)
                     {
-                        case "OptionalAttribute":
-                            flags |= ParamFlags.IsOptional;
-                            break;
-                        case "VarArgsAttribute":
-                            flags |= ParamFlags.IsVarArgs;
+                        case "DataAttribute":
+                            flags |= ParamFlags.IsData;
                             break;
                         case "TableAttribute":
                             flags |= ParamFlags.IsTable;

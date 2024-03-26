@@ -78,7 +78,6 @@ namespace ZilfSourceGenerators
     /// </list>
     /// </remarks>
     public class Distinguisher<TProp, TItem>
-        where TProp : IEquatable<TProp>
         where TItem : notnull
     {
         /* The implementation of this class is based on a trie. Each node in the trie
@@ -90,15 +89,9 @@ namespace ZilfSourceGenerators
             public Dictionary<TProp, KeyedNode> Children { get; } = [];
         }
 
-        private sealed class KeyedNode(TProp key) : Node
+        private sealed class KeyedNode : Node
         {
-            public TProp Key { get; } = key;
             public TItem? Item { get; set; }
-
-            public KeyedNode(TProp key, TItem item) : this(key)
-            {
-                Item = item;
-            }
         }
 
         private readonly Node root = new();
@@ -111,7 +104,7 @@ namespace ZilfSourceGenerators
             {
                 if (!node.Children.TryGetValue(prop, out var child))
                 {
-                    child = new KeyedNode(prop);
+                    child = new KeyedNode();
                     node.Children.Add(prop, child);
                 }
 

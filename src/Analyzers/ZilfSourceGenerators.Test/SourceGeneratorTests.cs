@@ -97,6 +97,21 @@ namespace ZilfSourceGenerators.Test
                     {
                         throw new NotImplementedException();
                     }
+
+                    [Builtin("+", Data = "add")]
+                    [Builtin("-", Data = "sub")]
+                    public static IOperand AddOrSubtract(
+                        ValueCall c, [Data] string op, int arg1, int arg2)
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    [Builtin("OPTION")]
+                    public static IOperand Option(
+                        VoidCall c, IOperand arg1, IOperand arg2 = null)
+                    {
+                        throw new NotImplementedException();
+                    }
                 }
                 """;
 
