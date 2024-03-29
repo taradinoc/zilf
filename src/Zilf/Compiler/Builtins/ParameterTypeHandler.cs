@@ -51,7 +51,7 @@ namespace Zilf.Compiler.Builtins
                 { typeof(ZilObject), new ZilObjectHandler() },
             };
 
-        static VariableRef? GetVariable(Compilation cc, ZilObject expr, VariableScopeQuirks quirks = VariableScopeQuirks.None)
+        public static VariableRef? GetVariable(Compilation cc, ZilObject expr, VariableScopeQuirks quirks = VariableScopeQuirks.None)
         {
             if (expr is not ZilAtom atom &&
                 ((quirks & VariableScopeQuirks.Global) == 0 || !expr.IsGVAL(out atom!)) &&

@@ -33,6 +33,12 @@ namespace ZilfSourceGenerators
             return this;
         }
 
+        public IndentedWriter WriteLine()
+        {
+            lines.Add(string.Empty);
+            return this;
+        }
+
         public BlockCloser Block(string line)
         {
             if (!string.IsNullOrEmpty(line))

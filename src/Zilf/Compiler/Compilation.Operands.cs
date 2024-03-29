@@ -28,7 +28,7 @@ namespace Zilf.Compiler
     partial class Compilation
     {
         /// <exception cref="CompilerError">Local variables are not allowed here, or an error occurred while compiling a subexpression.</exception>
-        public IOperands CompileOperands(IRoutineBuilder rb, ISourceLine src, params ZilObject[] exprs)
+        public IOperands CompileOperands(IRoutineBuilder rb, ISourceLine src, Span<ZilObject> exprs)
         {
             int length = exprs.Length;
             var values = new IOperand[length];
@@ -117,7 +117,7 @@ namespace Zilf.Compiler
         }
 
         [System.Diagnostics.Contracts.Pure]
-        static bool LocalIsLaterModified(ZilObject[] exprs, int localIdx)
+        static bool LocalIsLaterModified(Span<ZilObject> exprs, int localIdx)
         {
             if (exprs[localIdx] is not ZilForm form)
                 throw new ArgumentException("not a FORM");
@@ -140,7 +140,7 @@ namespace Zilf.Compiler
             return false;
         }
 
-        bool GlobalCouldBeLaterModified(ZilObject[] exprs, int localIdx)
+        bool GlobalCouldBeLaterModified(Span<ZilObject> exprs, int localIdx)
         {
             if (exprs[localIdx] is not ZilForm form)
                 throw new ArgumentException("not a FORM");
@@ -192,6 +192,7 @@ namespace Zilf.Compiler
             IOperand this[int index] { get; }
         }
 
+        // TODO: convert Operands to struct and eliminate IOperands
         sealed class Operands : IOperands
         {
             readonly Compilation compilation;

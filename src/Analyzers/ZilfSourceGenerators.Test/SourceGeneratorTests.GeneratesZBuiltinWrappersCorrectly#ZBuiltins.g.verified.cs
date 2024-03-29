@@ -18,11 +18,15 @@ namespace Zilf.Compiler.Builtins.Generated
             IOperand arg1;
             IOperand arg2;
             IOperand[] restOfArgs;
-            restOfArgs = new IOperand[argsSpan.Length - 0];
-            for (int i = 0, j = 0; i < argsSpan.Length; i++, j++)
+            // Convert argsSpan[0] -> arg1 (IOperand)
+            throw new NotImplementedException("unimplemented conversion from IOperand");
+            // Convert argsSpan[1] -> arg2 (IOperand)
+            throw new NotImplementedException("unimplemented conversion from IOperand");
+            restOfArgs = new IOperand[argsSpan.Length - 2];
+            for (int i = 2, j = 0; i < argsSpan.Length; i++, j++)
             {
-                // Convert argsSpan[i] -> restOfArgs[j]
-                restOfArgs[j] = default;
+                // Convert argsSpan[i] -> restOfArgs[j] (IOperand)
+                throw new NotImplementedException("unimplemented conversion from IOperand");
             }
             throw new NotImplementedException();
         }
@@ -32,6 +36,18 @@ namespace Zilf.Compiler.Builtins.Generated
             // Decode parameters for ZBuiltins.AddOrSubtract
             int arg1;
             int arg2;
+            // Convert argsSpan[0] -> arg1 (int)
+            if (argsSpan[0].StdTypeAtom != StdAtom.FIX
+            {
+                throw new ArgumentException("argument must be a FIX");
+            }
+            arg1 = ((ZilFix)argsSpan[0]).Value;
+            // Convert argsSpan[1] -> arg2 (int)
+            if (argsSpan[1].StdTypeAtom != StdAtom.FIX
+            {
+                throw new ArgumentException("argument must be a FIX");
+            }
+            arg2 = ((ZilFix)argsSpan[1]).Value;
             throw new NotImplementedException();
         }
 
@@ -40,6 +56,17 @@ namespace Zilf.Compiler.Builtins.Generated
             // Decode parameters for ZBuiltins.Option
             IOperand arg1;
             IOperand arg2;
+            // Convert argsSpan[0] -> arg1 (IOperand)
+            throw new NotImplementedException("unimplemented conversion from IOperand");
+            if (argsSpan.Length > 1)
+            {
+                arg2 = null;
+            }
+            else
+            {
+                // Convert argsSpan[1] -> arg2 (IOperand)
+                throw new NotImplementedException("unimplemented conversion from IOperand");
+            }
             throw new NotImplementedException();
         }
 

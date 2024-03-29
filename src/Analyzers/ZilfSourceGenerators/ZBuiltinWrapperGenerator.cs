@@ -23,7 +23,6 @@ using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
 
@@ -82,9 +81,9 @@ namespace ZilfSourceGenerators
             IsVariableQuirkGlobal = 128,    // VariableScopeQuirks.Global
         }
 
-        record Param(string Name, string FormalType, ParamFlags Flags)
+        record Param(string Name, string FormalType, ParamFlags Flags, string? DefaultValue)
         {
-            public int MinLength => (Flags & (ParamFlags.IsOptional | ParamFlags.IsVarArgs)) == 0 ? 1 : 0;
+            public int MinLength => Flags.HasFlag(ParamFlags.IsOptional | ParamFlags.IsVarArgs) ? 0 : 1;
 
             public int? MaxLength => Flags.HasFlag(ParamFlags.IsVarArgs) ? null : 1;
         }
@@ -251,15 +250,13 @@ namespace ZilfSourceGenerators
             var returnType = info.ReturnValue.FormalType;
             var dataParam = info.HasData ? $"{info.Params[0].FormalType} {info.Params[0].Name}, " : "";
 
-            int indexIntoSpan = 0;
-
             using (lines.Block($"private static {returnType} {decoderMethodName}({callType} c, {dataParam}Span<ZilObject> argsSpan)"))
             {
                 lines.WriteLine($"// Decode parameters for {info.ClassName}.{info.MethodName}");
 
                 // argument count has already been validated by the dispatch method
 
-                // declare local variables for each parameter
+                // pass 1: declare local variables for each parameter
                 foreach (var p in info.Params)
                 {
                     if (p.Flags.HasFlag(ParamFlags.IsData))
@@ -271,6 +268,42 @@ namespace ZilfSourceGenerators
                 }
 
                 // validate, convert, and assign each parameter
+                int indexIntoSpan = 0;
+
+                // some arguments "need evaluation", i.e., we need to generate code for them.
+                // that code needs to preserve the apparent left-to-right order of evaluation,
+                // but as an optimization, we may evaluate them out of order when they don't have
+                // side effects (see compile-time logic in Compilation.CompileOperands).
+
+                // here, at generation time, we just need to keep track of which arguments need evaluation,
+                // call CompileOperands with them (using a collection expression), and then assign
+                // the results to the corresponding local variables.
+
+                // but... in some cases, we can't even know at generation time whether the argument in
+                // a given position will need evaluation, because that depends on the expression it's bound to!
+                // specifically, for a parameter that:
+                // - is of type IOperand,
+                // - is marked with [Variable], and
+                // - has VariableScopeQuirks other than None
+                // the argument needs evaluation if and only if the expression is *not* a variable
+                // reference that matches the quirks. in that case, the generated code calls
+                // ParameterTypeHandler.GetVariable, then either assigns directly to the local variable
+                // for that parameter (if GetVariable found a variable reference) or adds the result to
+                // the parameters to be passed to CompileOperands.
+
+                // so, during pass 2 below, we build up a list of arguments that may need evaluation,
+                // then generate the code to call CompileOperands with them, then generate the assignments.
+                // for arguments that definitely need evaluation, no code is generated in pass 2, and
+                // the tuple in needsEval looks like: ("argsSpan[0]", 0, "firstParam", false).
+                // for arguments that may or may not need evaluation, we generate code in pass 2 to call
+                // GetVariable, and based on its result, either assign directly to the local variable or
+                // store the expression in a span to be passed to CompileOperands; the tuple in needsEval
+                // looks like: (".. temp_span_secondParam", 1, "secondParam", true).
+                // a negative outputIndex indicates that the argument is a varargs parameter, starting at
+                // ~outputIndex and continuing to the end of the evaluation results.
+                List<(string inputExpression, int outputIndex, string destination, bool conditional)>? needsEval = null;
+
+                // pass 2: generate code for arguments that don't need evaluation, and collect info for arguments that do
                 foreach (var p in info.Params)
                 {
                     token.ThrowIfCancellationRequested();
@@ -290,41 +323,194 @@ namespace ZilfSourceGenerators
                     bool isOptional = p.Flags.HasFlag(ParamFlags.IsOptional);
                     bool isVarArgs = p.Flags.HasFlag(ParamFlags.IsVarArgs);
 
-                    if (isVarArgs)
+                    lines.WriteLine();
+
+                    if (MayNeedEvaluation(p))
                     {
-                        // loop through the rest of the argsSpan converting values
-                        var elementType = p.FormalType.Substring(0, p.FormalType.Length - 2);
+                        needsEval ??= [];
 
-                        lines.WriteLine($"{p.Name} = new {elementType}[argsSpan.Length - {indexIntoSpan}];");
-
-                        using (lines.Block($"for (int i = {indexIntoSpan}, j = 0; i < argsSpan.Length; i++, j++)"))
+                        if (isVarArgs)
                         {
-                            EmitConvertArg("argsSpan[i]", $"{p.Name}[j]", elementType, p.Flags);
+                            System.Diagnostics.Debug.Assert(p.FormalType == "IOperand[]");
+                            lines.WriteLine($"// Varargs parameter {p.Name} will be evaluated");
+                            needsEval.Add(($".. argsSpan.Slice({indexIntoSpan})", ~needsEval.Count, p.Name, false));
                         }
+                        else if (isOptional)
+                        {
+                            System.Diagnostics.Debug.Assert(!MayOrMayNotNeedEvaluation(p));
+                            lines.WriteLine($"// Stage optional parameter {p.Name} for evaluation, if present")
+                                .WriteLine($"{p.Name} = {p.DefaultValue};")
+                                .WriteLine($"Span<ZilObject> temp_span_{p.Name} = argsSpan.Length > {indexIntoSpan} ? argsSpan.Slice({indexIntoSpan}, 1) : [];");
+                            needsEval.Add(($".. temp_span_{p.Name}", needsEval.Count, p.Name, true));
+                        }
+                        else if (MayOrMayNotNeedEvaluation(p))
+                        {
+                            System.Diagnostics.Debug.Assert(p.FormalType == "IOperand" && p.Flags.HasFlag(ParamFlags.IsVariable));
 
-                    }
-                    else if (isOptional)
-                    {
-                        // if there are no more arguments in the argsSpan, assign the default value.
-                        // otherwise, validate and convert the argument.
+                            var quirks = (p.Flags & (ParamFlags.IsVariableQuirkLocal | ParamFlags.IsVariableQuirkGlobal)) switch
+                            {
+                                ParamFlags.IsVariableQuirkLocal | ParamFlags.IsVariableQuirkGlobal => "VariableScopeQuirks.Local | VariableScopeQuirks.Global",
+                                ParamFlags.IsVariableQuirkLocal => "VariableScopeQuirks.Local",
+                                ParamFlags.IsVariableQuirkGlobal => "VariableScopeQuirks.Global",
+                                _ => "VariableScopeQuirks.None",
+                            };
+
+                            lines.WriteLine($"// Stage variable parameter {p.Name} for evaluation, if necessary")
+                                .WriteLine($"VariableRef? temp_var_{p.Name} = ParameterTypeHandler.GetVariable(c.cc, argsSpan[{indexIntoSpan}], {quirks});");
+
+                            using (lines.Block($"if (temp_var_{p.Name} is null && argsSpan[{indexIntoSpan}] is ZilAtom)"))
+                            {
+                                lines.WriteLine($"throw new ArgumentException(\"bare atom argument must be a variable name\");");
+                            }
+
+                            using (lines.Block($"else if (temp_var_{p.Name}?.IsHard == false)"))
+                            {
+                                lines.WriteLine($"throw new ArgumentException(\"soft variable may not be used here\");");
+                            }
+                            lines.WriteLine($"{p.Name} = temp_var_{p.Name}?.Hard!.Indirect;")
+                                .WriteLine($"Span<ZilObject> temp_span_{p.Name} = temp_var_{p.Name} is not null ? argsSpan.Slice({indexIntoSpan}, 1) : [];");
+                            needsEval.Add(($".. temp_span_{p.Name}", needsEval.Count, p.Name, true));
+                        }
+                        else
+                        {
+                            lines.WriteLine($"// Operand parameter {p.Name} will be evaluated");
+                            needsEval.Add(($"argsSpan[{indexIntoSpan}]", needsEval.Count, p.Name, false));
+                        }
                     }
                     else
                     {
-                        // validate and convert the argument.
+                        if (isVarArgs)
+                        {
+                            System.Diagnostics.Debug.Assert(p.FormalType == "ZilObject[]");
+                            lines.WriteLine($"// Convert varargs parameter {p.Name}")
+                                .WriteLine($"{p.Name} = argsSpan.Slice({indexIntoSpan}).ToArray();");
+                        }
+                        else if (isOptional)
+                        {
+                            // if there are no more arguments in the argsSpan, assign the default value.
+                            // otherwise, validate and convert the argument.
+
+                            lines.WriteLine($"// Convert optional parameter {p.Name}, if present");
+
+                            using (lines.Block($"if (argsSpan.Length > {indexIntoSpan})"))
+                            {
+                                lines.WriteLine($"{p.Name} = {p.DefaultValue};");
+                            }
+
+                            using (lines.Block("else"))
+                            {
+                                EmitConvertArg($"argsSpan[{indexIntoSpan}]", p.Name, p.FormalType, p.Flags);
+                            }
+                        }
+                        else
+                        {
+                            lines.WriteLine($"// Convert parameter {p.Name}");
+                            EmitConvertArg($"argsSpan[{indexIntoSpan}]", p.Name, p.FormalType, p.Flags);
+                        }
+                    }
+
+                    indexIntoSpan++;
+                }
+
+                // pass 3: call CompileOperands and assign the results to the corresponding local variables
+                if (needsEval is not null)
+                {
+                    lines.WriteLine()
+                        .WriteLine("// Evaluate operands")
+                        .WriteLine($"var temp_operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, [{string.Join(", ", needsEval.Select(x => x.inputExpression))}]).AsArray();");
+                    foreach (var (_, outputIndex, destination, conditional) in needsEval)
+                    {
+                        if (outputIndex < 0)
+                        {
+                            System.Diagnostics.Debug.Assert(conditional == false);
+                            lines.WriteLine($"temp_operands.AsSpan({~outputIndex}).CopyTo({destination});");
+                        }
+                        else
+                        {
+                            lines.WriteLine($"{destination} {(conditional ? "??=" : "=")} temp_operands[{outputIndex}];");
+                        }
                     }
                 }
 
-                //XXX
-                lines.WriteLine("throw new NotImplementedException();");
+                // call the method with the parameters
+                lines.WriteLine()
+                    .WriteLine("// Call the implementation")
+                    .WriteLine(
+                        $"{(returnType == "void" ? "" : "return ")}{info.ClassName}.{info.MethodName}" +
+                        $"(c{(info.Params.Length == 0 ? "" : ", ")}{string.Join(", ", info.Params.Select(p => p.Name))});");
             }
 
             return new GeneratedMethod("Zilf.Compiler.Builtins.Generated", "ZBuiltinDecoders", decoderMethodName, lines.GetLines());
 
+            bool MayOrMayNotNeedEvaluation(Param p)
+            {
+                return p.FormalType == "IOperand" &&
+                    p.Flags.HasFlag(ParamFlags.IsVariable) &&
+                    (p.Flags & (ParamFlags.IsVariableQuirkLocal | ParamFlags.IsVariableQuirkGlobal)) != 0;
+            }
+            
+            bool MayNeedEvaluation(Param p)
+            {
+                return p.FormalType == "IOperand" || p.FormalType == "IOperand[]";
+            }
+
             void EmitConvertArg(string src, string dest, string formalType, ParamFlags flags)
             {
-                //XXX
-                lines.WriteLine($"// Convert {src} -> {dest}")
-                    .WriteLine($"{dest} = default;");
+                switch (formalType)
+                {
+                    case "int":
+                        using (lines.Block($"if ({src}.StdTypeAtom != StdAtom.FIX)"))
+                        {
+                            lines.WriteLine("throw new ArgumentException(\"argument must be a FIX\");");
+                        }
+                        lines.WriteLine($"{dest} = ((ZilFix){src}).Value;");
+                        break;
+
+                    case "string":
+                        using (lines.Block($"if ({src} is not ZilString temp_str_{dest})"))
+                        {
+                            lines.WriteLine("throw new ArgumentException(\"argument must be a literal string\");");
+                        }
+                        lines.WriteLine($"{dest} = Compilation.TranslateString(temp_str_{dest}, c.cc.Context);");
+                        break;
+
+                    case "ZilObject":
+                        lines.WriteLine($"{dest} = {src};");
+                        break;
+
+                    case "ZilAtom":
+                        using (lines.Block($"if ({src}.StdTypeAtom != StdAtom.ATOM)"))
+                        {
+                            lines.WriteLine("throw new ArgumentException(\"argument must be an atom\");");
+                        }
+                        lines.WriteLine($"{dest} = (ZilAtom){src};");
+                        break;
+
+                    case "Block":
+                        // arg must be an LVAL reference
+                        using (lines.Block($"if ({src}.IsLVAL(out var temp_atom_{dest}))"))
+                        {
+                            using (lines.Block($"if (c.cc.Blocks.FirstOrDefault(b => b.Name == temp_atom_{dest}) is Block temp_block_{dest})"))
+                            {
+                                lines.WriteLine($"{dest} = temp_block_{dest};");
+                            }
+
+                            using (lines.Block("else"))
+                            {
+                                lines.WriteLine("throw new ArgumentException(\"argument must be bound to a block\");");
+                            }
+                        }
+                        using (lines.Block("else"))
+                        {
+                            lines.WriteLine("throw new ArgumentException(\"argument must be a local variable reference\");");
+                        }
+                        break;
+
+                    default:
+                        //XXX
+                        lines.WriteLine($"throw new NotImplementedException(\"unimplemented conversion from {formalType}\");");
+                        break;
+                }
             }
         }
 
@@ -484,6 +670,7 @@ namespace ZilfSourceGenerators
             {
                 var param = methodSymbol.Parameters[i];
                 var flags = ParamFlags.None;
+                var defaultValue = param.HasExplicitDefaultValue ? QuoteValue(param.ExplicitDefaultValue) : null;
 
                 // check for special parameter attributes
                 if (param.IsOptional)
@@ -529,7 +716,7 @@ namespace ZilfSourceGenerators
                     }
                 }
 
-                parameters.Add(new Param(param.Name, param.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat), flags));
+                parameters.Add(new Param(param.Name, param.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat), flags, defaultValue));
             }
 
             // populate returnValue from method return type
@@ -558,5 +745,12 @@ namespace ZilfSourceGenerators
 
             return new BuiltinMethodInfo(callType, className, methodName, parameters.ToEquatableArray(), returnValue, targets.ToEquatableArray());
         }
+
+        private static string QuoteValue(object? value) => value switch
+        {
+            null => "null",
+            string s => $"\"{s.Replace("\"", "\\\"")}\"",
+            _ => value.ToString(),
+        };
     }
 }

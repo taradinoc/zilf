@@ -77,7 +77,7 @@ namespace Zilf.Compiler
 
                 if (wantResult)
                 {
-                    // prefer the gb version, then gb+predicate, predicate, void
+                    // prefer the value version, then value+predicate, predicate, void
                     if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
                     {
                         return ZBuiltins.CompileValueCall(head.Text, this, rb, form, resultStorage);
@@ -111,7 +111,7 @@ namespace Zilf.Compiler
                 }
                 else
                 {
-                    // prefer the void version, then predicate, gb, gb+predicate
+                    // prefer the void version, then predicate, value, value+predicate
                     // (predicate saves a cleanup instruction)
                     if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
                     {
@@ -384,7 +384,7 @@ namespace Zilf.Compiler
                         return result;
                     }
 
-                    // for anything more complicated, treat it as a gb
+                    // for anything more complicated, treat it as a value
                     result = CompileAsOperand(rb, form, form.SourceLine, resultStorage);
                     if (resultStorage != null && resultStorage != result)
                     {

@@ -1252,7 +1252,7 @@ namespace Zilf.Compiler.Builtins
             }
             else
             {
-                using var operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, value);
+                using var operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, [value]);
 
                 if (dest == c.rb.Stack && operands[0] == c.rb.Stack)
                 {
