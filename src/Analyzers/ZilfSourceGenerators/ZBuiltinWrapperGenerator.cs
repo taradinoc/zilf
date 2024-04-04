@@ -354,14 +354,7 @@ namespace ZilfSourceGenerators
                         else if (MayOrMayNotNeedEvaluation(p))
                         {
                             System.Diagnostics.Debug.Assert(p.FormalType is "IOperand" or "IOperand?" && p.Flags.HasFlag(ParamFlags.IsVariable));
-
-                            var quirks = (p.Flags & (ParamFlags.IsVariableQuirkLocal | ParamFlags.IsVariableQuirkGlobal)) switch
-                            {
-                                ParamFlags.IsVariableQuirkLocal | ParamFlags.IsVariableQuirkGlobal => "VariableScopeQuirks.Local | VariableScopeQuirks.Global",
-                                ParamFlags.IsVariableQuirkLocal => "VariableScopeQuirks.Local",
-                                ParamFlags.IsVariableQuirkGlobal => "VariableScopeQuirks.Global",
-                                _ => "VariableScopeQuirks.None",
-                            };
+                            string quirks = ParamFlagsToQuirks(p.Flags);
 
                             lines.WriteLine($"// Stage variable parameter {p.Name} for evaluation, if necessary")
                                 .WriteLine($"VariableRef? temp_var_{p.Name} = ParameterTypeHandler.GetVariable(c.cc, argsSpan[{indexIntoSpan}], {quirks});");
@@ -423,9 +416,19 @@ namespace ZilfSourceGenerators
                 // pass 3: call CompileOperands and assign the results to the corresponding local variables
                 if (needsEval is not null)
                 {
+                    string inputs = string.Join(", ", needsEval.Select(x => x.inputExpression));
                     lines.WriteLine()
                         .WriteLine("// Evaluate operands")
-                        .WriteLine($"using Operands temp_operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, [{string.Join(", ", needsEval.Select(x => x.inputExpression))}]);");
+                        .WriteLine($"using Operands temp_operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, [{inputs}]);");
+
+                    // "inputs" may contain spread expressions that expand to a variable number of arguments.
+                    // We still use fixed indices to access the results in "temp_operands", because
+                    // we know that the spread expressions only appear for optional and varargs parameters,
+                    // which must be at the end of the parameter list, and for variable parameters (i.e. those
+                    // that may or may not need evaluation), which in practice are not followed by any other
+                    // parameters that need evaluation. So we can safely use fixed indices with ??= to access
+                    // the results, because whenever {destination} is null, temp_operands[{outputIndex}] will
+                    // exist.
                     foreach (var (_, outputIndex, destination, conditional) in needsEval)
                     {
                         if (outputIndex < 0)
@@ -517,11 +520,55 @@ namespace ZilfSourceGenerators
                         }
                         break;
 
+                    case "IVariable":
+                    case "IVariable?":
+                    case "SoftGlobal":
+                    case "SoftGlobal?":
+                        // arg must be an atom, or <GVAL atom> or <LVAL atom> in quirks mode
+                        lines.WriteLine($"ZilAtom temp_atom_{dest} = {src} as ZilAtom;");
+                        var lvalCondition = flags.HasFlag(ParamFlags.IsVariableQuirkLocal) ? $" && !{src}.IsLVAL(out temp_atom_{dest})" : "";
+                        var gvalCondition = flags.HasFlag(ParamFlags.IsVariableQuirkGlobal) ? $" && !{src}.IsGVAL(out temp_atom_{dest})" : "";
+                        using (lines.Block($"if (temp_atom_{dest} is null{lvalCondition}{gvalCondition})"))
+                        {
+                            lines.WriteLine("throw new ArgumentException(\"argument must be a variable\");");
+                        }
+                        switch (formalType)
+                        {
+                            case "IVariable":
+                            case "IVariable?":
+                                using (lines.Block($"if (!c.cc.Locals.ContainsKey(temp_atom_{dest}) && !c.cc.Globals.ContainsKey(temp_atom_{dest}))"))
+                                {
+                                    lines.WriteLine($"throw new ArgumentException(\"no such variable: \" + temp_atom_{dest});");
+                                }
+                                lines.WriteLine($"{dest} = ParameterTypeHandler.GetVariable(c.cc, temp_atom_{dest}, {ParamFlagsToQuirks(flags)})!.Hard;");
+                                break;
+                            case "SoftGlobal":
+                            case "SoftGlobal?":
+                                using (lines.Block($"if (!c.cc.SoftGlobals.ContainsKey(temp_atom_{dest}))"))
+                                {
+                                    lines.WriteLine($"throw new ArgumentException(\"no such variable: \" + temp_atom_{dest});");
+                                }
+                                lines.WriteLine($"{dest} = ParameterTypeHandler.GetVariable(c.cc, temp_atom_{dest}, {ParamFlagsToQuirks(flags)})!.Soft;");
+                                break;
+                        }
+                        break;
+
                     default:
                         //XXX
                         lines.WriteLine($"throw new NotImplementedException(\"unimplemented conversion from {formalType}\");");
                         break;
                 }
+            }
+
+            static string ParamFlagsToQuirks(ParamFlags pf)
+            {
+                return (pf & (ParamFlags.IsVariableQuirkLocal | ParamFlags.IsVariableQuirkGlobal)) switch
+                {
+                    ParamFlags.IsVariableQuirkLocal | ParamFlags.IsVariableQuirkGlobal => "VariableScopeQuirks.Local | VariableScopeQuirks.Global",
+                    ParamFlags.IsVariableQuirkLocal => "VariableScopeQuirks.Local",
+                    ParamFlags.IsVariableQuirkGlobal => "VariableScopeQuirks.Global",
+                    _ => "VariableScopeQuirks.None",
+                };
             }
         }
 
