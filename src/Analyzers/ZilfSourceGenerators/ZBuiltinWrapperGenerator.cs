@@ -86,6 +86,14 @@ namespace ZilfSourceGenerators
             public int MinLength => Flags.HasFlag(ParamFlags.IsOptional | ParamFlags.IsVarArgs) ? 0 : 1;
 
             public int? MaxLength => Flags.HasFlag(ParamFlags.IsVarArgs) ? null : 1;
+
+            public string LocalType => FormalType switch
+            {
+                "IOperand" => "IOperand?",
+                "IVariable" => "IVariable?",
+                "ZilObject" => "ZilObject?",
+                _ => FormalType,
+            };
         }
 
         [Flags]
@@ -264,7 +272,7 @@ namespace ZilfSourceGenerators
                         continue;
                     }
 
-                    lines.WriteLine($"{p.FormalType} {p.Name};");
+                    lines.WriteLine($"{p.LocalType} {p.Name};");
                 }
 
                 // validate, convert, and assign each parameter
@@ -331,7 +339,7 @@ namespace ZilfSourceGenerators
 
                         if (isVarArgs)
                         {
-                            System.Diagnostics.Debug.Assert(p.FormalType == "IOperand[]");
+                            System.Diagnostics.Debug.Assert(p.FormalType is "IOperand[]" or "IOperand?[]");
                             lines.WriteLine($"// Varargs parameter {p.Name} will be evaluated");
                             needsEval.Add(($".. argsSpan.Slice({indexIntoSpan})", ~needsEval.Count, p.Name, false));
                         }
@@ -345,7 +353,7 @@ namespace ZilfSourceGenerators
                         }
                         else if (MayOrMayNotNeedEvaluation(p))
                         {
-                            System.Diagnostics.Debug.Assert(p.FormalType == "IOperand" && p.Flags.HasFlag(ParamFlags.IsVariable));
+                            System.Diagnostics.Debug.Assert(p.FormalType is "IOperand" or "IOperand?" && p.Flags.HasFlag(ParamFlags.IsVariable));
 
                             var quirks = (p.Flags & (ParamFlags.IsVariableQuirkLocal | ParamFlags.IsVariableQuirkGlobal)) switch
                             {
@@ -417,13 +425,13 @@ namespace ZilfSourceGenerators
                 {
                     lines.WriteLine()
                         .WriteLine("// Evaluate operands")
-                        .WriteLine($"var temp_operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, [{string.Join(", ", needsEval.Select(x => x.inputExpression))}]).AsArray();");
+                        .WriteLine($"using Operands temp_operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, [{string.Join(", ", needsEval.Select(x => x.inputExpression))}]);");
                     foreach (var (_, outputIndex, destination, conditional) in needsEval)
                     {
                         if (outputIndex < 0)
                         {
                             System.Diagnostics.Debug.Assert(conditional == false);
-                            lines.WriteLine($"temp_operands.AsSpan({~outputIndex}).CopyTo({destination});");
+                            lines.WriteLine($"{destination} = temp_operands.ToArray({~outputIndex});");
                         }
                         else
                         {
@@ -444,14 +452,14 @@ namespace ZilfSourceGenerators
 
             bool MayOrMayNotNeedEvaluation(Param p)
             {
-                return p.FormalType == "IOperand" &&
+                return p.FormalType is "IOperand" or "IOperand?" &&
                     p.Flags.HasFlag(ParamFlags.IsVariable) &&
                     (p.Flags & (ParamFlags.IsVariableQuirkLocal | ParamFlags.IsVariableQuirkGlobal)) != 0;
             }
             
             bool MayNeedEvaluation(Param p)
             {
-                return p.FormalType == "IOperand" || p.FormalType == "IOperand[]";
+                return p.FormalType is "IOperand" or "IOperand?" or "IOperand[]" or "IOperand?[]";
             }
 
             void EmitConvertArg(string src, string dest, string formalType, ParamFlags flags)
@@ -475,10 +483,12 @@ namespace ZilfSourceGenerators
                         break;
 
                     case "ZilObject":
+                    case "ZilObject?":
                         lines.WriteLine($"{dest} = {src};");
                         break;
 
                     case "ZilAtom":
+                    case "ZilAtom?":
                         using (lines.Block($"if ({src}.StdTypeAtom != StdAtom.ATOM)"))
                         {
                             lines.WriteLine("throw new ArgumentException(\"argument must be an atom\");");
@@ -487,6 +497,7 @@ namespace ZilfSourceGenerators
                         break;
 
                     case "Block":
+                    case "Block?":
                         // arg must be an LVAL reference
                         using (lines.Block($"if ({src}.IsLVAL(out var temp_atom_{dest}))"))
                         {

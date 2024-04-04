@@ -166,7 +166,7 @@ namespace Zilf.Emit
         void EmitTokenize(IOperand text, IOperand parse, IOperand? dictionary, IOperand? flag);
 
         // result may be null
-        void EmitCall(IOperand routine, IOperand[] args, IVariable? result);
+        void EmitCall(IOperand routine, ReadOnlySpan<IOperand> args, IVariable? result);
 
         void EmitStore(IVariable dest, IOperand src);
         void EmitPopStack();

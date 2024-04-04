@@ -167,7 +167,7 @@ namespace Zilf.Compiler
                         resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
                         using (var argOperands = CompileOperands(rb, form.SourceLine, args))
                         {
-                            rb.EmitCall(Routines[head], argOperands.AsArray(), resultStorage);
+                            rb.EmitCall(Routines[head], argOperands.ToArray(), resultStorage);
                         }
                         return resultStorage;
 
@@ -181,7 +181,7 @@ namespace Zilf.Compiler
                         resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
                         using (var argOperands = CompileOperands(rb, form.SourceLine, argsWithSideEffects))
                         {
-                            var operands = argOperands.AsArray();
+                            var operands = argOperands.ToArray();
                             if (operands.Any(o => o == rb.Stack))
                                 rb.EmitCall(Game.Zero, operands.Where(o => o == rb.Stack).ToArray(), resultStorage);
                         }

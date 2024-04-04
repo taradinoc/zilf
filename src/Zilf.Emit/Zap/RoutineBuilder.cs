@@ -729,7 +729,7 @@ namespace Zilf.Emit.Zap
         }
 
         /// <exception cref="ArgumentException">Too many arguments were supplied for the Z-machine version.</exception>
-        public void EmitCall(IOperand routine, IOperand[] args, IVariable? result)
+        public void EmitCall(IOperand routine, ReadOnlySpan<IOperand> args, IVariable? result)
         {
             /* V1-3: CALL (0-3, store)
              * V4: CALL1 (0, store), CALL2 (1, store), XCALL (0-7, store)

@@ -28,7 +28,7 @@ namespace Zilf.Compiler
     partial class Compilation
     {
         /// <exception cref="CompilerError">Local variables are not allowed here, or an error occurred while compiling a subexpression.</exception>
-        public IOperands CompileOperands(IRoutineBuilder rb, ISourceLine src, Span<ZilObject> exprs)
+        public Operands CompileOperands(IRoutineBuilder rb, ISourceLine src, Span<ZilObject> exprs)
         {
             int length = exprs.Length;
             var values = new IOperand[length];
@@ -185,22 +185,14 @@ namespace Zilf.Compiler
             return list.Any(zo => CouldModifyGlobal(zo, globalAtom));
         }
 
-        public interface IOperands : IDisposable
-        {
-            IOperand[] AsArray();
-            int Count { get; }
-            IOperand this[int index] { get; }
-        }
-
-        // TODO: convert Operands to struct and eliminate IOperands
-        sealed class Operands : IOperands
+        public readonly ref struct Operands
         {
             readonly Compilation compilation;
-            readonly IOperand[] values;
-            readonly bool[] temps;
+            readonly ReadOnlySpan<IOperand> values;
+            readonly ReadOnlySpan<bool> temps;
             readonly ZilAtom tempAtom;
 
-            public Operands(Compilation compilation, IOperand[] values, bool[] temps, ZilAtom tempAtom)
+            public Operands(Compilation compilation, ReadOnlySpan<IOperand> values, ReadOnlySpan<bool> temps, ZilAtom tempAtom)
             {
                 this.compilation = compilation;
                 this.values = values;
@@ -219,7 +211,13 @@ namespace Zilf.Compiler
 
             public IOperand this[int index] => values[index];
 
-            public IOperand[] AsArray() => values;
+            public IOperand[] ToArray() => values.ToArray();
+
+            public IOperand[] ToArray(int start) => values.Slice(start).ToArray();
+
+            public ReadOnlySpan<IOperand> AsSpan() => values;
+
+            public ReadOnlySpan<IOperand> AsSpan(int start) => values.Slice(start);
         }
     }
 }

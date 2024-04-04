@@ -15,20 +15,24 @@ namespace Zilf.Compiler.Builtins.Generated
         private static void Decode_NegatedVarargsEqualityOp(PredCall c, Span<ZilObject> argsSpan)
         {
             // Decode parameters for ZBuiltins.NegatedVarargsEqualityOp
-            IOperand arg1;
-            IOperand arg2;
+            IOperand? arg1;
+            IOperand? arg2;
             IOperand[] restOfArgs;
-            // Convert argsSpan[0] -> arg1 (IOperand)
-            throw new NotImplementedException("unimplemented conversion from IOperand");
-            // Convert argsSpan[1] -> arg2 (IOperand)
-            throw new NotImplementedException("unimplemented conversion from IOperand");
-            restOfArgs = new IOperand[argsSpan.Length - 2];
-            for (int i = 2, j = 0; i < argsSpan.Length; i++, j++)
-            {
-                // Convert argsSpan[i] -> restOfArgs[j] (IOperand)
-                throw new NotImplementedException("unimplemented conversion from IOperand");
-            }
-            throw new NotImplementedException();
+        
+            // Operand parameter arg1 will be evaluated
+        
+            // Operand parameter arg2 will be evaluated
+        
+            // Varargs parameter restOfArgs will be evaluated
+        
+            // Evaluate operands
+            using Operands temp_operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, [argsSpan[0], argsSpan[1], .. argsSpan.Slice(2)]);
+            arg1 = temp_operands[0];
+            arg2 = temp_operands[1];
+            restOfArgs = temp_operands.ToArray(2);
+        
+            // Call the implementation
+            ZBuiltins.NegatedVarargsEqualityOp(c, arg1, arg2, restOfArgs);
         }
 
         private static IOperand Decode_AddOrSubtract(ValueCall c, string op, Span<ZilObject> argsSpan)
@@ -36,38 +40,44 @@ namespace Zilf.Compiler.Builtins.Generated
             // Decode parameters for ZBuiltins.AddOrSubtract
             int arg1;
             int arg2;
-            // Convert argsSpan[0] -> arg1 (int)
-            if (argsSpan[0].StdTypeAtom != StdAtom.FIX
+        
+            // Convert parameter arg1
+            if (argsSpan[0].StdTypeAtom != StdAtom.FIX)
             {
                 throw new ArgumentException("argument must be a FIX");
             }
             arg1 = ((ZilFix)argsSpan[0]).Value;
-            // Convert argsSpan[1] -> arg2 (int)
-            if (argsSpan[1].StdTypeAtom != StdAtom.FIX
+        
+            // Convert parameter arg2
+            if (argsSpan[1].StdTypeAtom != StdAtom.FIX)
             {
                 throw new ArgumentException("argument must be a FIX");
             }
             arg2 = ((ZilFix)argsSpan[1]).Value;
-            throw new NotImplementedException();
+        
+            // Call the implementation
+            return ZBuiltins.AddOrSubtract(c, op, arg1, arg2);
         }
 
         private static IOperand Decode_Option(VoidCall c, Span<ZilObject> argsSpan)
         {
             // Decode parameters for ZBuiltins.Option
-            IOperand arg1;
-            IOperand arg2;
-            // Convert argsSpan[0] -> arg1 (IOperand)
-            throw new NotImplementedException("unimplemented conversion from IOperand");
-            if (argsSpan.Length > 1)
-            {
-                arg2 = null;
-            }
-            else
-            {
-                // Convert argsSpan[1] -> arg2 (IOperand)
-                throw new NotImplementedException("unimplemented conversion from IOperand");
-            }
-            throw new NotImplementedException();
+            IOperand? arg1;
+            IOperand? arg2;
+        
+            // Operand parameter arg1 will be evaluated
+        
+            // Stage optional parameter arg2 for evaluation, if present
+            arg2 = null;
+            Span<ZilObject> temp_span_arg2 = argsSpan.Length > 1 ? argsSpan.Slice(1, 1) : [];
+        
+            // Evaluate operands
+            using Operands temp_operands = c.cc.CompileOperands(c.rb, c.form.SourceLine, [argsSpan[0], .. temp_span_arg2]);
+            arg1 = temp_operands[0];
+            arg2 ??= temp_operands[1];
+        
+            // Call the implementation
+            return ZBuiltins.Option(c, arg1, arg2);
         }
 
         private static void Dispatch_NEq_P(PredCall c, Span<ZilObject> args)
