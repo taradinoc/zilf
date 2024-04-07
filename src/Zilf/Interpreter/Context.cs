@@ -62,7 +62,7 @@ namespace Zilf.Interpreter
     {
         delegate ZilObject ChtypeDelegate(Context ctx, ZilObject original);
 
-        record TypeMapEntry
+        sealed record TypeMapEntry
         {
             public Type? BuiltinType { get; init; }
             public bool IsBuiltin => BuiltinType != null;
