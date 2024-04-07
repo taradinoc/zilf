@@ -94,6 +94,15 @@ namespace ZilfSourceGenerators
                 "ZilObject" => "ZilObject?",
                 _ => FormalType,
             };
+
+            public int Specificity => FormalType switch
+            {
+                "Block" => 3,
+                "SoftGlobal" => 3,
+                "IVariable" => 2,
+                "ZilAtom" => 1,
+                _ => 0,
+            };
         }
 
         [Flags]
@@ -153,7 +162,12 @@ namespace ZilfSourceGenerators
 
             // generate one dispatch method for each distinct exposed name
             var dispatchers = builtinInfos
-                .SelectMany((bi, _) => bi.Targets.Select(t => (target: t, method: bi.MethodName, callType: bi.CallType, parameters: bi.Params)))
+                .Combine(decoderNames)
+                .SelectMany((pair, _) =>
+                {
+                    var (bi, names) = pair;
+                    return bi.Targets.Select(t => (target: t, method: $"Decode_{names[bi]}", callType: bi.CallType, parameters: bi.Params));
+                })
                 .Collect()
                 .SelectMany((rows, _) => from row in rows
                                          group row by (name: row.target.Name, row.callType) into g
@@ -585,18 +599,123 @@ namespace ZilfSourceGenerators
 
             using (lines.Block($"private static {returnType} {dispatchMethodName}({callType} c, Span<ZilObject> args)"))
             {
-                //XXX
                 lines.WriteLine($"// Dispatch {name}");
 
-                foreach (var (exposure, method, parameters) in targets)
+                List<string> patterns = [], conditions = [];
+                StringBuilder call = new();
+
+                // Write a switch statement that pattern-matches against args and calls the appropriate decoder.
+
+                using (lines.Block("switch (args)"))
                 {
-                    lines.WriteLine($"// {exposure}")
-                        .WriteLine($"// -> {method}({string.Join(", ", parameters.Select(p => p.FormalType + " " + p.Name))})");
+                    var sortedTargets = targets.OrderBy(static t => t.exposure.Priority)
+                        .ThenByDescending(static t => t.exposure.MinVersion)
+                        .ThenByDescending(static t => t.parameters.Length)
+                        .ThenByDescending(static t => t.parameters.Sum(p => p.Specificity));
 
-                    token.ThrowIfCancellationRequested();
+                    foreach (var (exposure, method, parameters) in sortedTargets)
+                    {
+                        patterns.Clear();
+                        conditions.Clear();
+                        call.Clear();
+
+                        foreach (var p in parameters)
+                        {
+                            if (p.Flags.HasFlag(ParamFlags.IsData))
+                            {
+                                continue;
+                            }
+
+                            if ((p.Flags & (ParamFlags.IsOptional | ParamFlags.IsVarArgs)) != 0)
+                            {
+                                // if everything matches up to the first optional/varargs parameter, accept it
+                                patterns.Add("..");
+                                break;
+                            }
+
+                            switch (p.FormalType)
+                            {
+                                case "Block":
+                                    patterns.Add($"ZilForm temp_form_{p.Name}");
+                                    conditions.Add($"temp_form_{p.Name}.IsLVAL(out _)");
+                                    break;
+
+                                case "int":
+                                    patterns.Add("ZilFix");
+                                    break;
+
+                                case "string":
+                                    patterns.Add("ZilString");
+                                    break;
+
+                                case "ZilAtom":
+                                    patterns.Add("ZilAtom");
+                                    break;
+
+                                case "IOperand":
+                                case "ZilObject":
+                                    patterns.Add("ZilObject");
+                                    break;
+
+                                case "IVariable":
+                                    patterns.Add($"ZilObject temp_zo_{p.Name}");
+                                    conditions.Add($"(temp_zo_{p.Name} is ZilAtom || temp_zo_{p.Name}.IsLVAL(out _) || temp_zo_{p.Name}.IsGVAL(out _))");
+                                    break;
+
+                                case "SoftGlobal":
+                                    patterns.Add($"ZilObject temp_zo_{p.Name}");
+                                    conditions.Add($"((temp_zo_{p.Name} is ZilAtom temp_atom_{p.Name} || temp_zo_{p.Name}.IsGVAL(out temp_atom_{p.Name})) && c.cc.SoftGlobals.ContainsKey(temp_atom_{p.Name}))");
+                                    break;
+
+                                default:
+                                    patterns.Add(p.FormalType);
+                                    break;
+                            }
+                        }
+
+                        if (exposure.MinVersion != 1 || exposure.MaxVersion != 6)
+                        {
+                            conditions.Add($"c.cc.Context.ZEnvironment.ZVersion is (>= {exposure.MinVersion} and <= {exposure.MaxVersion})");
+                        }
+
+                        string condition = conditions.Count == 0 ? "" : " when " + string.Join(" && ", conditions);
+
+                        lines.WriteLine($"case [{string.Join(", ", patterns)}]{condition}:");
+                        lines.Indent++;
+                        try
+                        {
+                            lines.WriteLine($"// {exposure}")
+                                .WriteLine($"// -> {method}({string.Join(", ", parameters.Select(p => p.FormalType + " " + p.Name))})");
+
+                            if (callType != CallType.VoidCall)
+                            {
+                                call.Append("return ");
+                            }
+
+                            call.Append("Zilf.Compiler.Builtins.Generated.ZBuiltinDecoders.").Append(method).Append("(c, ");
+
+                            if (exposure.Data is not null)
+                            {
+                                call.Append(exposure.Data).Append(", ");
+                            }
+
+                            call.Append("args);");
+
+                            lines.WriteLine(call.ToString());
+
+                            if (callType == CallType.VoidCall)
+                            {
+                                lines.WriteLine("return;");
+                            }
+                        }
+                        finally
+                        {
+                            lines.Indent--;
+                        }
+
+                        token.ThrowIfCancellationRequested();
+                    }
                 }
-
-                lines.WriteLine("throw new NotImplementedException();");
             }
 
             return new GeneratedMethod("Zilf.Compiler.Builtins.Generated", "ZBuiltinDecoders", dispatchMethodName, lines.GetLines());

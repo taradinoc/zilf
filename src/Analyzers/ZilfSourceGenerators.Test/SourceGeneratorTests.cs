@@ -90,8 +90,16 @@ namespace ZilfSourceGenerators.Test
 
                 static partial class ZBuiltins
                 {
-                    [Builtin("N=?", "N==?")]
-                    public static void NegatedVarargsEqualityOp(
+                    [Builtin("N=?", "N==?", MaxVersion = 2)]
+                    public static void NegatedVarargsEqualityOp_V1(
+                        PredCall c, IOperand arg1, IOperand arg2,
+                        params IOperand[] restOfArgs)
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    [Builtin("N=?", MinVersion = 3)]
+                    public static void NewNegatedVarargsEqualityOp_V3(
                         PredCall c, IOperand arg1, IOperand arg2,
                         params IOperand[] restOfArgs)
                     {
@@ -106,9 +114,29 @@ namespace ZilfSourceGenerators.Test
                         throw new NotImplementedException();
                     }
 
+                    [Builtin("+")]
+                    public static IOperand ConcatString(ValueCall c, string arg1, string arg2)
+                    {
+                        throw new NotImplementedException();
+                    }
+
                     [Builtin("OPTION")]
                     public static IOperand Option(
                         VoidCall c, IOperand arg1, IOperand arg2 = null)
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    [Builtin("SETG")]
+                    public static IOperand SetGlobal(
+                        VoidCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Global)] IVariable dest, ZilObject value)
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    [Builtin("SETG")]
+                    public static IOperand SetGlobal(
+                        VoidCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Global)] SoftGlobal dest, ZilObject value)
                     {
                         throw new NotImplementedException();
                     }
