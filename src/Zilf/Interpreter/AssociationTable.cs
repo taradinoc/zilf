@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2024 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,17 +18,32 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Zilf.Interpreter.Values;
 
 namespace Zilf.Interpreter
 {
+    /// <summary>
+    /// A table of three-way associations between ZilObjects.
+    /// </summary>
+    /// <remarks>
+    /// In order to avoid keeping objects alive indefinitely, the table uses weak references to the objects.
+    /// The table is implemented as a dictionary of dictionaries, with the outer dictionary keyed by the first object
+    /// and the inner dictionaries keyed by the second object.
+    /// The table also keeps track of the set of first and second objects that have associations in the table.
+    /// </remarks>
     sealed class AssociationTable : IEnumerable<AsocResult>
     {
-        readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, ZilObject>> associations =
+        private sealed record Entry(ZilObject Value, long Order);
+
+        readonly ConditionalWeakTable<ZilObject, ConditionalWeakTable<ZilObject, Entry>> associations =
             new();
         readonly WeakCountingSet<ZilObject> firsts = new();
         readonly WeakCountingSet<ZilObject> seconds = new();
+
+        long nextOrder;
 
         /// <summary>
         /// Gets the value associated with a pair of objects.
@@ -40,7 +55,7 @@ namespace Zilf.Interpreter
         public ZilObject? GetProp(ZilObject first, ZilObject second)
         {
             if (associations.TryGetValue(first, out var innerTable) && innerTable.TryGetValue(second, out var result))
-                return result;
+                return result.Value;
 
             return null;
         }
@@ -71,60 +86,48 @@ namespace Zilf.Interpreter
             {
                 if (!associations.TryGetValue(first, out var innerTable))
                 {
-                    innerTable = new ConditionalWeakTable<ZilObject, ZilObject>();
+                    innerTable = new();
                     associations.Add(first, innerTable);
                     firsts.Add(first);
-                    seconds.Add(second);
                 }
-                else if (innerTable.TryGetValue(second, out _))
+
+                if (!innerTable.TryGetValue(second, out var entry))
                 {
-                    innerTable.Remove(second);
+                    seconds.Add(second);
+                    innerTable.Add(second, new Entry(value, Interlocked.Increment(ref nextOrder)));
                 }
                 else
                 {
-                    seconds.Add(second);
-                }
-
-                innerTable.Add(second, value);
-            }
-        }
-
-        public AsocResult[] ToArray()
-        {
-            var result = new List<AsocResult>();
-
-            foreach (var first in firsts)
-            {
-                if (associations.TryGetValue(first, out var innerTable))
-                {
-                    foreach (var second in seconds)
-                    {
-                        if (innerTable.TryGetValue(second, out var value))
-                        {
-                            result.Add(new AsocResult { Item = first, Indicator = second, Value = value });
-                        }
-                    }
+                    innerTable.AddOrUpdate(second, entry with { Value = value });
                 }
             }
-
-            return result.ToArray();
         }
 
         public IEnumerator<AsocResult> GetEnumerator()
         {
-            foreach (var first in firsts)
-            {
-                if (associations.TryGetValue(first, out var innerTable))
-                {
-                    foreach (var second in seconds)
-                    {
-                        if (innerTable.TryGetValue(second, out var value))
-                        {
-                            yield return new AsocResult { Item = first, Indicator = second, Value = value };
-                        }
-                    }
-                }
-            }
+            //foreach (var first in firsts)
+            //{
+            //    if (associations.TryGetValue(first, out var innerTable))
+            //    {
+            //        foreach (var second in seconds)
+            //        {
+            //            if (innerTable.TryGetValue(second, out var value))
+            //            {
+            //                yield return new AsocResult { Item = first, Indicator = second, Value = value };
+            //            }
+            //        }
+            //    }
+            //}
+
+            var query = from pair in associations
+                        let item = pair.Key
+                        from innerPair in pair.Value
+                        let indicator = innerPair.Key
+                        let entry = innerPair.Value
+                        orderby entry.Order descending
+                        select new AsocResult { Item = item, Indicator = indicator, Value = entry.Value };
+
+            return query.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

@@ -135,5 +135,84 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<AVALUE .A>", ZilAtom.Parse("BAZ", ctx));
             TestHelpers.EvalAndAssert(ctx, "<NEXT .A>", ctx.FALSE);
         }
+
+        [TestMethod]
+        public void Associations_Should_Be_Enumerated_Newest_First()
+        {
+            var ctx = new Context();
+
+            // clear all associations
+            TestHelpers.Evaluate(ctx,
+                @"<REPEAT ((A <ASSOCIATIONS>) N)
+                    <OR .A <RETURN>>
+                    <SET N <NEXT .A>>
+                    <PUTPROP <ITEM .A> <INDICATOR .A>>
+                    <SET A .N>>");
+
+            // set a few associations
+            // note that the order of setting is important. we want to verify that the associations are
+            // returned in the order the associations were set, not e.g. the order that the items or
+            // indicators were first added to the association table. so our test data should have
+            // both non-contiguous items and indicators.
+            TestHelpers.Evaluate(ctx, "<PUTPROP ANTI-HERO ALBUM MIDNIGHTS>");
+            TestHelpers.Evaluate(ctx, "<PUTPROP SHAKE-IT-OFF ALBUM \\1989>");
+            TestHelpers.Evaluate(ctx, "<PUTPROP SHAKE-IT-OFF YEAR 2014>");
+            TestHelpers.Evaluate(ctx, "<PUTPROP YOU-BELONG-WITH-ME YEAR 2008>");
+            TestHelpers.Evaluate(ctx, "<PUTPROP YOU-BELONG-WITH-ME ALBUM FEARLESS>");
+            TestHelpers.Evaluate(ctx, "<PUTPROP ANTI-HERO YEAR 2022>");
+
+            // verify order - should be the reverse of the order they were set
+            EnumerateAssocs(ctx);
+
+            TestHelpers.EvalAndAssert(ctx, ".ALL-ITEMS", ZilString.FromString(
+                " ANTI-HERO YOU-BELONG-WITH-ME YOU-BELONG-WITH-ME SHAKE-IT-OFF SHAKE-IT-OFF ANTI-HERO"));
+            TestHelpers.EvalAndAssert(ctx, ".ALL-INDICATORS", ZilString.FromString(
+                " YEAR ALBUM YEAR YEAR ALBUM ALBUM"));
+        }
+
+        [TestMethod]
+        public void Associations_Should_Maintain_Order_When_Replacing_Existing_Value()
+        {
+            var ctx = new Context();
+
+            // clear all associations
+            TestHelpers.Evaluate(ctx,
+                @"<REPEAT ((A <ASSOCIATIONS>) N)
+                    <OR .A <RETURN>>
+                    <SET N <NEXT .A>>
+                    <PUTPROP <ITEM .A> <INDICATOR .A>>
+                    <SET A .N>>");
+
+            TestHelpers.Evaluate(ctx, "<PUTPROP ANTI-HERO ALBUM MIDNIGHTS>");
+            TestHelpers.Evaluate(ctx, "<PUTPROP SHAKE-IT-OFF ALBUM \\1989>");
+            TestHelpers.Evaluate(ctx, "<PUTPROP SHAKE-IT-OFF YEAR 2014>");
+            TestHelpers.Evaluate(ctx, "<PUTPROP YOU-BELONG-WITH-ME YEAR 2008>");
+            TestHelpers.Evaluate(ctx, "<PUTPROP YOU-BELONG-WITH-ME ALBUM FEARLESS>");
+            TestHelpers.Evaluate(ctx, "<PUTPROP ANTI-HERO YEAR 2022>");
+
+            // replace the value of an existing association
+            TestHelpers.Evaluate(ctx, "<PUTPROP SHAKE-IT-OFF ALBUM \\1989-TAYLOR\\'S-VERSION>");
+
+            // verify order - should reflect the original order, with both SHAKE-IT-OFF associations together
+            EnumerateAssocs(ctx);
+
+            TestHelpers.EvalAndAssert(ctx, ".ALL-ITEMS", ZilString.FromString(
+                " ANTI-HERO YOU-BELONG-WITH-ME YOU-BELONG-WITH-ME SHAKE-IT-OFF SHAKE-IT-OFF ANTI-HERO"));
+            TestHelpers.EvalAndAssert(ctx, ".ALL-INDICATORS", ZilString.FromString(
+                " YEAR ALBUM YEAR YEAR ALBUM ALBUM"));
+        }
+
+        private static void EnumerateAssocs(Context ctx)
+        {
+            TestHelpers.Evaluate(ctx, """
+                <SET ALL-ASSOCS <PROG ((A <ASSOCIATIONS>))
+                                    <COND (<NOT .A> '())
+                                        (T (.A !<MAPF ,LIST
+                                                    <FUNCTION () <COND (<SET A <NEXT .A>> .A)
+                                                                        (T <MAPSTOP>)>>>))>>>
+                <SET ALL-ITEMS <MAPF ,STRING <FUNCTION (A) <MAPRET " " <UNPARSE <ITEM .A>>>> .ALL-ASSOCS>>
+                <SET ALL-INDICATORS <MAPF ,STRING <FUNCTION (A) <MAPRET " " <UNPARSE <INDICATOR .A>>>> .ALL-ASSOCS>>
+                """);
+        }
     }
 }
