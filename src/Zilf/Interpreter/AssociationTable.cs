@@ -105,20 +105,6 @@ namespace Zilf.Interpreter
 
         public IEnumerator<AsocResult> GetEnumerator()
         {
-            //foreach (var first in firsts)
-            //{
-            //    if (associations.TryGetValue(first, out var innerTable))
-            //    {
-            //        foreach (var second in seconds)
-            //        {
-            //            if (innerTable.TryGetValue(second, out var value))
-            //            {
-            //                yield return new AsocResult { Item = first, Indicator = second, Value = value };
-            //            }
-            //        }
-            //    }
-            //}
-
             var query = from pair in associations
                         let item = pair.Key
                         from innerPair in pair.Value
