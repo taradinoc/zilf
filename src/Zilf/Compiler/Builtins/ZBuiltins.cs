@@ -159,15 +159,15 @@ namespace Zilf.Compiler.Builtins
         [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         static List<BuiltinArg> ValidateArguments(
             Compilation cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
-            IReadOnlyList<ZilObject> args, InvalidArgumentDelegate error)
+            ZilObject[] args, InvalidArgumentDelegate error)
         {
             // args may be short (for optional params)
 
-            var result = new List<BuiltinArg>(args.Count);
+            var result = new List<BuiltinArg>(args.Length);
 
             static ZilObject UnwrapMacroResult(ZilObject obj) => obj is ZilMacroResult zmr ? zmr.Inner : obj;
 
-            for (int i = 0, j = spec.Attr.Data == null ? 1 : 2; i < args.Count; i++, j++)
+            for (int i = 0, j = spec.Attr.Data == null ? 1 : 2; i < args.Length; i++, j++)
             {
                 var pi = builtinParamInfos[j];
 
@@ -185,7 +185,7 @@ namespace Zilf.Compiler.Builtins
                          ParameterTypeHandler.Handlers.TryGetValue(t, out handler))
                 {
                     // consume all remaining arguments
-                    while (i < args.Count)
+                    while (i < args.Length)
                     {
                         result.Add(handler.Process(cc, InnerError, UnwrapMacroResult(args[i]), pi));
                         i++;
@@ -206,7 +206,7 @@ namespace Zilf.Compiler.Builtins
 
         static List<object?> MakeBuiltinMethodParams(
             BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
-            object call, IList<BuiltinArg> args)
+            object call, List<BuiltinArg> args)
         {
             /* args.Length (plus call and data) may differ from builtinParamInfos.Length,
              * due to optional arguments and params arrays. */

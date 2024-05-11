@@ -37,7 +37,7 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<DEFINE FOO (BAR) <> <> <>>", expected);
 
             var stored = ctx.GetGlobalVal(expected);
-            Assert.IsInstanceOfType(stored, typeof(ZilFunction));
+            Assert.IsInstanceOfType<ZilFunction>(stored);
 
             // it's OK to redefine if .REDEFINE is true
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.REDEFINE), ctx.TRUE);
@@ -145,7 +145,7 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<DEFMAC FOO (BAR) <> <> <>>", expected);
 
             var stored = ctx.GetGlobalVal(expected);
-            Assert.IsInstanceOfType(stored, typeof(ZilEvalMacro));
+            Assert.IsInstanceOfType<ZilEvalMacro>(stored);
 
             // it's OK to redefine if .REDEFINE is true
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.REDEFINE), ctx.TRUE);
@@ -416,9 +416,9 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.Evaluate(ctx, "<SET X '(!.L)>");
             TestHelpers.EvalAndAssert(ctx, "<FOO !.X>",
                 new ZilSegment(
-                    new ZilForm(new[] {
+                    new ZilForm([
                         ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("L", ctx)
-                    })
+                    ])
                 ));
 
             // shouldn't expand a segment passed to a MAPF function from the input list
@@ -445,7 +445,7 @@ namespace Zilf.Tests.Interpreter
 
             TestHelpers.Evaluate(ctx, "<DEFINE PAIR (A B) <LIST .A .B>>");
             TestHelpers.Evaluate(ctx, "<SET A BAR>");
-            TestHelpers.EvalAndAssert(ctx, "<PAIR FOO .A>", new ZilList(new[] { foo, bar }));
+            TestHelpers.EvalAndAssert(ctx, "<PAIR FOO .A>", new ZilList([foo, bar]));
         }
 
         [TestMethod]
@@ -456,8 +456,8 @@ namespace Zilf.Tests.Interpreter
             var bar = ZilAtom.Parse("BAR", ctx);
 
             TestHelpers.Evaluate(ctx, "<DEFINE PAIR2 (A \"OPT\" (B .A) \"AUX\" (C .B)) <LIST .A .B .C>>");
-            TestHelpers.EvalAndAssert(ctx, "<PAIR2 FOO>", new ZilList(new[] { foo, foo, foo }));
-            TestHelpers.EvalAndAssert(ctx, "<PAIR2 FOO BAR>", new ZilList(new[] { foo, bar, bar }));
+            TestHelpers.EvalAndAssert(ctx, "<PAIR2 FOO>", new ZilList([foo, foo, foo]));
+            TestHelpers.EvalAndAssert(ctx, "<PAIR2 FOO BAR>", new ZilList([foo, bar, bar]));
         }
 
         [TestMethod]
@@ -516,7 +516,7 @@ namespace Zilf.Tests.Interpreter
 
             TestHelpers.Evaluate(ctx, "<DEFINE FOO (A:FIX B:FIX \"VALUE\" <LIST FIX FIX>) (.A .B)>");
             TestHelpers.EvalAndAssert(ctx, "<FOO 1 2>",
-                new ZilList(new[] { new ZilFix(1), new ZilFix(2) }));
+                new ZilList([new ZilFix(1), new ZilFix(2)]));
             TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<FOO 1 X>");
 
             // also applies to values returned via an activation
@@ -527,7 +527,7 @@ namespace Zilf.Tests.Interpreter
             // and #DECL syntax
             TestHelpers.Evaluate(ctx, "<DEFINE BAH (A B) #DECL ((A B) FIX (VALUE) <LIST FIX FIX>) (.A .B)>");
             TestHelpers.EvalAndAssert(ctx, "<BAH 1 2>",
-                new ZilList(new[] { new ZilFix(1), new ZilFix(2) }));
+                new ZilList([new ZilFix(1), new ZilFix(2)]));
             TestHelpers.EvalAndCatch<DeclCheckError>(ctx, "<BAH 1 X>");
         }
 

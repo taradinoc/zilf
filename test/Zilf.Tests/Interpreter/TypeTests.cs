@@ -93,7 +93,7 @@ namespace Zilf.Tests.Interpreter
             ));
             ctx.SetLocalVal(ZilAtom.Parse("A-OFFSET", ctx), new ZilOffset(
                 2,
-                new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX), ctx.GetStdAtom(StdAtom.ATOM) }),
+                new ZilForm([ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX), ctx.GetStdAtom(StdAtom.ATOM)]),
                 ctx.GetStdAtom(StdAtom.ATOM)
             ));
 
@@ -704,7 +704,7 @@ namespace Zilf.Tests.Interpreter
                 new ZilVector(ZilString.FromString("FIDO"), ZilAtom.Parse("DOG", ctx))
             );
             TestHelpers.EvalAndAssert(ctx, "<CHTYPE .A-OFFSET VECTOR>",
-                new ZilVector(new ZilFix(2), new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX), ctx.GetStdAtom(StdAtom.ATOM) }), ctx.GetStdAtom(StdAtom.ATOM))
+                new ZilVector(new ZilFix(2), new ZilForm([ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX), ctx.GetStdAtom(StdAtom.ATOM)]), ctx.GetStdAtom(StdAtom.ATOM))
             );
 
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<CHTYPE .A-ATOM VECTOR>");
@@ -1034,29 +1034,29 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFINE BAR () #SPLICE (4 5)>");
             var vector = (ZilVector)TestHelpers.Evaluate(ctx, "<VECTOR <BAR>>");
             Assert.AreEqual(1, vector.GetLength());
-            Assert.IsInstanceOfType(vector[0], typeof(ZilSplice));
+            Assert.IsInstanceOfType<ZilSplice>(vector[0]);
 
             // should NOT be expanded when passed directly as a function argument
             TestHelpers.Evaluate(ctx, "<DEFINE BAZ1 (\"TUPLE\" A) .A>");
             var list = (ZilList)TestHelpers.Evaluate(ctx, "<BAZ1 #SPLICE (1 2) 3>");
             Assert.AreEqual(2, list.GetLength());
-            Assert.IsInstanceOfType(list[0], typeof(ZilSplice));
-            Assert.IsInstanceOfType(list[1], typeof(ZilFix));
+            Assert.IsInstanceOfType<ZilSplice>(list[0]);
+            Assert.IsInstanceOfType<ZilFix>(list[1]);
 
             TestHelpers.Evaluate(ctx, "<DEFINE BAZ2 (A B \"OPT\" (C <>)) (.A .B .C)>");
             list = (ZilList)TestHelpers.Evaluate(ctx, "<BAZ2 #SPLICE (1 2) 3>");
             Assert.AreEqual(3, list.GetLength());
-            Assert.IsInstanceOfType(list[0], typeof(ZilSplice));
-            Assert.IsInstanceOfType(list[1], typeof(ZilFix));
-            Assert.IsInstanceOfType(list[2], typeof(ZilFalse));
+            Assert.IsInstanceOfType<ZilSplice>(list[0]);
+            Assert.IsInstanceOfType<ZilFix>(list[1]);
+            Assert.IsInstanceOfType<ZilFalse>(list[2]);
 
             // SHOULD be expanded when returned from a macro and passed as a function argument
             TestHelpers.Evaluate(ctx, "<DEFMAC QUUX () #SPLICE (4 5)>");
             list = (ZilList)TestHelpers.Evaluate(ctx, "<BAZ1 <QUUX> 3>");
             Assert.AreEqual(3, list.GetLength());
-            Assert.IsInstanceOfType(list[0], typeof(ZilFix));
-            Assert.IsInstanceOfType(list[1], typeof(ZilFix));
-            Assert.IsInstanceOfType(list[2], typeof(ZilFix));
+            Assert.IsInstanceOfType<ZilFix>(list[0]);
+            Assert.IsInstanceOfType<ZilFix>(list[1]);
+            Assert.IsInstanceOfType<ZilFix>(list[2]);
         }
 
         [TestMethod]
@@ -1323,14 +1323,14 @@ namespace Zilf.Tests.Interpreter
 
             var allTypes = TestHelpers.Evaluate(ctx, "<ALLTYPES>");
 
-            Assert.IsInstanceOfType(allTypes, typeof(ZilVector));
+            Assert.IsInstanceOfType<ZilVector>(allTypes);
 
             var allTypesVector = (ZilVector)allTypes;
             var returnedTypes = new HashSet<ZilAtom>();
 
             foreach (var item in allTypesVector)
             {
-                Assert.IsInstanceOfType(item, typeof(ZilAtom));
+                Assert.IsInstanceOfType<ZilAtom>(item);
                 returnedTypes.Add((ZilAtom)item);
             }
 

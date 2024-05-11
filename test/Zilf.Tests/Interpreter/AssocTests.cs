@@ -112,7 +112,7 @@ namespace Zilf.Tests.Interpreter
 
             // there should be some initial associations
             var zo = TestHelpers.Evaluate(ctx, "<ASSOCIATIONS>");
-            Assert.IsInstanceOfType(zo, typeof(ZilAsoc));
+            Assert.IsInstanceOfType<ZilAsoc>(zo);
 
             // clear all associations
             TestHelpers.Evaluate(ctx,

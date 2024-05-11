@@ -47,7 +47,7 @@ namespace Zilf.Tests.Integration
                 "<OBJECT BLUE (IN RAINBOW)>")
                 .ImpliesAsync(TreeImplications(
                     ["BLUE", "GREEN", "YELLOW", "RED", "RAINBOW"],
-                    new[] { "RAINBOW", "RED", "BLUE", "GREEN", "YELLOW" }));
+                    ["RAINBOW", "RED", "BLUE", "GREEN", "YELLOW"]));
         }
 
         [TestMethod]
@@ -185,7 +185,7 @@ namespace Zilf.Tests.Integration
                 "<OBJECT BLUE (IN RAINBOW)>")
                 .ImpliesAsync(TreeImplications(
                     ["BLUE", "GREEN", "YELLOW", "RED", "RAINBOW"],
-                    new[] { "RAINBOW", "BLUE", "GREEN", "YELLOW", "RED" }));
+                    ["RAINBOW", "BLUE", "GREEN", "YELLOW", "RED"]));
         }
 
         [TestMethod]

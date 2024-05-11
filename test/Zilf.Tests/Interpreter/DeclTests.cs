@@ -137,11 +137,11 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, "<GET-DECL BOOLEAN>", ctx.FALSE);
             TestHelpers.Evaluate(ctx, "<PUT-DECL BOOLEAN '<OR ATOM FALSE>>");
             TestHelpers.EvalAndAssert(ctx, "<GET-DECL BOOLEAN>",
-                new ZilForm(new[] {
+                new ZilForm([
                     ctx.GetStdAtom(StdAtom.OR),
                     ctx.GetStdAtom(StdAtom.ATOM),
                     ctx.GetStdAtom(StdAtom.FALSE)
-                }));
+                ]));
 
             // StructureTests.TestOFFSET tests GET-DECL for OFFSETs
         }

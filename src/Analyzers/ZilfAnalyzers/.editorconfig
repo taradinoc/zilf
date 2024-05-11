@@ -2,3 +2,6 @@
 
 # Default severity for analyzer diagnostics with category 'MicrosoftCodeAnalysisReleaseTracking'
 dotnet_analyzer_diagnostic.category-MicrosoftCodeAnalysisReleaseTracking.severity = silent
+
+# IDE0079: Remove unnecessary suppression
+dotnet_diagnostic.IDE0079.severity = silent

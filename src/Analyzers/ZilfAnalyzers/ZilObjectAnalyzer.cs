@@ -29,6 +29,8 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace ZilfAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1038:Compiler extensions should be implemented in assemblies with compiler-provided references", Justification = "<Pending>")]
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1041:Compiler extensions should be implemented in assemblies targeting netstandard2.0", Justification = "<Pending>")]
     public class ZilObjectAnalyzer : DiagnosticAnalyzer
     {
         static readonly DiagnosticDescriptor Rule_ComparingZilObjectsWithEquals = new(
@@ -48,9 +50,7 @@ namespace ZilfAnalyzers
             isEnabledByDefault: true);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
-            ImmutableArray.Create(
-                Rule_ComparingZilObjectsWithEquals,
-                Rule_PartiallyOverriddenZilObjectComparison);
+            [Rule_ComparingZilObjectsWithEquals, Rule_PartiallyOverriddenZilObjectComparison];
 
         public override void Initialize([NotNull] AnalysisContext context)
         {
@@ -62,9 +62,7 @@ namespace ZilfAnalyzers
         }
 
         static readonly ImmutableArray<(string ifThis, string thenThat)> MethodsToOverrideTogether =
-            ImmutableArray.Create(
-                ("Equals", "ExactlyEquals"),
-                ("ExactlyEquals", "GetHashCode"));
+            [("Equals", "ExactlyEquals"), ("ExactlyEquals", "GetHashCode")];
 
         static void AnalyzeClassSymbol(SymbolAnalysisContext context)
         {

@@ -105,7 +105,7 @@ namespace ZilfAnalyzers.Test.Helpers
 
             // only test the diagnostics the code fixer claims are fixable
             var fixableIds = codeFixProvider.FixableDiagnosticIds;
-            analyzerDiagnostics = analyzerDiagnostics.Where(d => fixableIds.Contains(d.Id)).ToArray();
+            analyzerDiagnostics = [.. analyzerDiagnostics.Where(d => fixableIds.Contains(d.Id))];
 
             var compilerDiagnostics = await GetCompilerDiagnosticsAsync(document).ConfigureAwait(false);
             var attempts = analyzerDiagnostics.Length;
@@ -129,7 +129,7 @@ namespace ZilfAnalyzers.Test.Helpers
 
                 document = await ApplyFixAsync(document, actions[0]).ConfigureAwait(false);
                 analyzerDiagnostics = await GetSortedDiagnosticsFromDocumentsAsync(analyzer, [document]).ConfigureAwait(false);
-                analyzerDiagnostics = analyzerDiagnostics.Where(d => fixableIds.Contains(d.Id)).ToArray();
+                analyzerDiagnostics = [.. analyzerDiagnostics.Where(d => fixableIds.Contains(d.Id))];
 
                 var newCompilerDiagnostics = GetNewDiagnostics(compilerDiagnostics, await GetCompilerDiagnosticsAsync(document).ConfigureAwait(false));
 

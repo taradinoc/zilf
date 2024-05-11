@@ -11,3 +11,6 @@ dotnet_diagnostic.CA1707.severity = silent
 
 # CA1852: Non-public type with no subtypes can be sealed
 dotnet_diagnostic.CA1852.severity = silent
+
+# CA1515: Consider making public types internal
+dotnet_diagnostic.CA1515.severity = silent

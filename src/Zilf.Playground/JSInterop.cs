@@ -36,10 +36,12 @@ namespace Zilf.Playground
             this.js = js;
         }
 
-        public void DownloadBytesAsFile(byte[] bytes, string filename, string contentType)
+        public async Task DownloadBytesAsFileAsync(byte[] bytes, string filename, string contentType)
         {
-            var jsu = (IJSUnmarshalledRuntime)js;
-            jsu.InvokeUnmarshalled<string, string, byte[], bool>("ZilfJsInterop.BlazorDownloadFileFast", filename, contentType, bytes);
+            //var jsu = (IJSUnmarshalledRuntime)js;
+            //jsu.InvokeUnmarshalled<string, string, byte[], bool>("ZilfJsInterop.BlazorDownloadFileFast", filename, contentType, bytes);
+
+            await js.InvokeVoidAsync("ZilfJsInterop.BlazorDownloadFileFast", filename, contentType, bytes);
         }
 
         public ValueTask ScrollToBottomAsync(ElementReference element)

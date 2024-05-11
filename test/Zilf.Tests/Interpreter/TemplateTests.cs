@@ -41,7 +41,7 @@ namespace Zilf.Tests.Interpreter
         {
             var result = Program.Parse(ctx, "<* 2 {0}>", new ZilFix(512)).Single();
 
-            Assert.IsInstanceOfType(result, typeof(ZilForm));
+            Assert.IsInstanceOfType<ZilForm>(result);
 
             var evald = result.Eval(ctx);
 
@@ -56,7 +56,7 @@ namespace Zilf.Tests.Interpreter
                 new ZilList(Program.Parse(ctx, @"<PRINT ""Hi!""> <CRLF> <SETG DONE T>"))
                 ).Single();
 
-            Assert.IsInstanceOfType(result, typeof(ZilForm));
+            Assert.IsInstanceOfType<ZilForm>(result);
 
             var evald = result.Eval(ctx);
 

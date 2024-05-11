@@ -171,16 +171,17 @@ namespace Zilf.Playground.Services.Builds
             // hand off to background build worker
             var worker = await workerFactory.CreateAsync();
             var service = await worker.CreateBackgroundServiceAsync<BackgroundBuildWorker>(
-                options => options
-                    .AddAssemblies(
-                        "ReadLine.dll",
-                        "Zapf.dll",
-                        "Zapf.Parsing.dll",
-                        "Zilf.dll",
-                        "Zilf.Common.dll",
-                        "Zilf.Emit.dll",
-                        "Zilf.Playground.dll"
-                        ));
+                //options => options
+                //    .AddAssemblies(
+                //        "ReadLine.dll",
+                //        "Zapf.dll",
+                //        "Zapf.Parsing.dll",
+                //        "Zilf.dll",
+                //        "Zilf.Common.dll",
+                //        "Zilf.Emit.dll",
+                //        "Zilf.Playground.dll"
+                //        )
+                    );
 
             var paths = new List<string>();
             var contents = new List<string>();
@@ -210,7 +211,7 @@ namespace Zilf.Playground.Services.Builds
                         var filename = p[(p.LastIndexOf('/') + 1)..];
                         const string contentType = "application/x-zmachine";
 
-                        jsInterop.DownloadBytesAsFile(Convert.FromBase64String(newContentsBase64[i]), filename, contentType);
+                        await jsInterop.DownloadBytesAsFileAsync(Convert.FromBase64String(newContentsBase64[i]), filename, contentType);
                         break;
                     }
                 }

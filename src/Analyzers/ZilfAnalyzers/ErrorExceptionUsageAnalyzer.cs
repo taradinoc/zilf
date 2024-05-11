@@ -30,6 +30,8 @@ namespace ZilfAnalyzers
 {
     // TODO: remove references to Workspaces types to resolve warning RS1022 (see https://github.com/dotnet/roslyn-sdk/issues/105)
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1038:Compiler extensions should be implemented in assemblies with compiler-provided references", Justification = "<Pending>")]
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1041:Compiler extensions should be implemented in assemblies targeting netstandard2.0", Justification = "<Pending>")]
     public class ErrorExceptionUsageAnalyzer : DiagnosticAnalyzer
     {
         const string Title = "Obsolete error format";
@@ -40,7 +42,7 @@ namespace ZilfAnalyzers
             DiagnosticIds.ExceptionShouldUseDiagnosticCode, Title, MessageFormat,
             Category, DiagnosticSeverity.Warning, isEnabledByDefault: true);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(Rule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = [Rule];
 
         public override void Initialize([NotNull] AnalysisContext context)
         {
@@ -137,7 +139,7 @@ namespace ZilfAnalyzers
             if (constantValue.HasValue && constantValue.Value != null)
             {
                 format = (string)constantValue.Value;
-                newArgs = ImmutableList<ExpressionSyntax>.Empty;
+                newArgs = [];
             }
             else if (!TryUnpackCallToStringFormat(expressionToReplace, semanticModel, out format, out newArgs) &&
                 !TryRewriteConcatAsFormatAndArgs(expressionToReplace, semanticModel, out format, out newArgs))
@@ -200,7 +202,7 @@ namespace ZilfAnalyzers
                 return false;
 
             formatStr = (string)formatConstValue.Value;
-            formatArgs = invocationExpr.ArgumentList.Arguments.Skip(1).Select(a => a.Expression).ToImmutableList();
+            formatArgs = [.. invocationExpr.ArgumentList.Arguments.Skip(1).Select(a => a.Expression)];
             return true;
         }
 
@@ -235,7 +237,7 @@ namespace ZilfAnalyzers
             }
 
             formatStr = sb.ToString();
-            formatArgs = argList.ToImmutableList();
+            formatArgs = [.. argList];
             return true;
         }
 

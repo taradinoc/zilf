@@ -110,25 +110,25 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.AssertStructurallyEqual(new ZilFix(123), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("-123").ToArray();
+            result = [.. parser.Parse("-123")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilFix(-123), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("+123").ToArray();
+            result = [.. parser.Parse("+123")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilFix(123), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("*377*").ToArray();
+            result = [.. parser.Parse("*377*")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilFix(255), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("#2 1010").ToArray();
+            result = [.. parser.Parse("#2 1010")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilFix(10), result[0].Object);
@@ -158,7 +158,7 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.AssertStructurallyEqual(ZilString.FromString("hello"), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse(@"""\""scare\"" quotes""").ToArray();
+            result = [.. parser.Parse(@"""\""scare\"" quotes""")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(ZilString.FromString("\"scare\" quotes"), result[0].Object);
@@ -176,7 +176,7 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.AssertStructurallyEqual(new ZilList(null, null), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("(1 2)").ToArray();
+            result = [.. parser.Parse("(1 2)")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilList(
@@ -185,7 +185,7 @@ namespace Zilf.Tests.Interpreter
                 result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("(() 1 ())").ToArray();
+            result = [.. parser.Parse("(() 1 ())")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilList(
@@ -207,13 +207,13 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.AssertStructurallyEqual(new ZilForm(null, null), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("<1 2>").ToArray();
+            result = [.. parser.Parse("<1 2>")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
-            TestHelpers.AssertStructurallyEqual(new ZilForm(new[] { new ZilFix(1), new ZilFix(2) }), result[0].Object);
+            TestHelpers.AssertStructurallyEqual(new ZilForm([new ZilFix(1), new ZilFix(2)]), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("<<> 1 <>>").ToArray();
+            result = [.. parser.Parse("<<> 1 <>>")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(
@@ -238,13 +238,13 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.AssertStructurallyEqual(new ZilVector(), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("[1 2]").ToArray();
+            result = [.. parser.Parse("[1 2]")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilVector(new ZilFix(1), new ZilFix(2)), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("[[] 1 []]").ToArray();
+            result = [.. parser.Parse("[[] 1 []]")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(
@@ -253,7 +253,7 @@ namespace Zilf.Tests.Interpreter
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
             // fake UVECTOR
-            result = parser.Parse("![![!] 1 ![]!]").ToArray();
+            result = [.. parser.Parse("![![!] 1 ![]!]")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(
@@ -273,7 +273,7 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.AssertStructurallyEqual(new ZilChar('A'), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("!\\ ").ToArray();
+            result = [.. parser.Parse("!\\ ")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilChar(' '), result[0].Object);
@@ -288,20 +288,20 @@ namespace Zilf.Tests.Interpreter
             var result = parser.Parse("!<1>").ToArray();
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
-            TestHelpers.AssertStructurallyEqual(new ZilSegment(new ZilForm(new[] { new ZilFix(1) })), result[0].Object);
+            TestHelpers.AssertStructurallyEqual(new ZilSegment(new ZilForm([new ZilFix(1)])), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("!<1!>").ToArray();
+            result = [.. parser.Parse("!<1!>")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
-            TestHelpers.AssertStructurallyEqual(new ZilSegment(new ZilForm(new[] { new ZilFix(1) })), result[0].Object);
+            TestHelpers.AssertStructurallyEqual(new ZilSegment(new ZilForm([new ZilFix(1)])), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("!.A").ToArray();
+            result = [.. parser.Parse("!.A")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(
-                new ZilSegment(new ZilForm(new[] { site.ParseAtom("LVAL"), site.ParseAtom("A") })),
+                new ZilSegment(new ZilForm([site.ParseAtom("LVAL"), site.ParseAtom("A")])),
                 result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
         }
@@ -334,7 +334,7 @@ namespace Zilf.Tests.Interpreter
                 result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse("(%%<+ 1 2>)").ToArray();
+            result = [.. parser.Parse("(%%<+ 1 2>)")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilList(null, null), result[0].Object);
@@ -342,7 +342,7 @@ namespace Zilf.Tests.Interpreter
 
             site.OnEvaluate = _ => new ZilSplice(
                 new ZilList(new ZilFix(1), new ZilList(new ZilFix(2), new ZilList(null, null))));
-            result = parser.Parse("(%<CHTYPE '(1 2) SPLICE>)").ToArray();
+            result = [.. parser.Parse("(%<CHTYPE '(1 2) SPLICE>)")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(
@@ -381,7 +381,7 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.AssertStructurallyEqual(new ZilAdecl(site.ParseAtom("A"), site.ParseAtom("B")), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
-            result = parser.Parse(";A:B").ToArray();
+            result = [.. parser.Parse(";A:B")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Comment, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilAdecl(site.ParseAtom("A"), site.ParseAtom("B")), result[0].Object);
@@ -408,7 +408,7 @@ namespace Zilf.Tests.Interpreter
                 result[1].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[2].Type);
 
-            result = parser.Parse("{0} {1:SPLICE}").ToArray();
+            result = [.. parser.Parse("{0} {1:SPLICE}")];
             Assert.AreEqual(4, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilFix(12345), result[0].Object);

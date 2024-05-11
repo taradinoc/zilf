@@ -71,7 +71,7 @@ namespace Zilf.Tests.Interpreter
             // other expressions
             TestHelpers.EvalAndAssert(ctx, "<PARSE \"23\">", new ZilFix(23));
             TestHelpers.EvalAndAssert(ctx, "<PARSE \"(1 2 3)\">",
-                new ZilList(new[] { new ZilFix(1), new ZilFix(2), new ZilFix(3) }));
+                new ZilList([new ZilFix(1), new ZilFix(2), new ZilFix(3)]));
 
             // READ macros
             TestHelpers.EvalAndAssert(ctx, "<PARSE \"%<+ 12 34>\">", new ZilFix(46));
@@ -595,7 +595,7 @@ namespace Zilf.Tests.Interpreter
                 new ZilForm([
                     ctx.GetStdAtom(StdAtom.Plus),
                     new ZilFix(1),
-                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.GVAL), ZilAtom.Parse("FOO", ctx) })
+                    new ZilForm([ctx.GetStdAtom(StdAtom.GVAL), ZilAtom.Parse("FOO", ctx)])
                 ]));
 
             // can't replace existing link or atom

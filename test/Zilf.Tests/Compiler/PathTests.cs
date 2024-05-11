@@ -34,7 +34,7 @@ namespace Zilf.Tests.Compiler
             readonly InMemoryFileSystem fileSystem = new();
             readonly HashSet<string> inputPaths = [];
 
-            public List<string> GetOutputFilePaths() => fileSystem.Paths.Except(inputPaths).ToList();
+            public List<string> GetOutputFilePaths() => [.. fileSystem.Paths.Except(inputPaths)];
 
             public void SetInputFile(string path, string content)
             {

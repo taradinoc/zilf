@@ -39,7 +39,7 @@ namespace Zilf.Tests.Interpreter
                     ZilString.FromString("NAME"),
                     ZilAtom.Parse("ACT", ctx)
                 ],
-                spec.AsZilListBody().ToArray());
+                [.. spec.AsZilListBody()]);
         }
 
         [TestMethod]
@@ -54,7 +54,7 @@ namespace Zilf.Tests.Interpreter
                     ZilString.FromString("ARGS"),
                     ZilAtom.Parse("A", ctx)
                 ],
-                spec.AsZilListBody().ToArray());
+                [.. spec.AsZilListBody()]);
         }
 
         [TestMethod]
@@ -69,7 +69,7 @@ namespace Zilf.Tests.Interpreter
                     ZilString.FromString("TUPLE"),
                     ZilAtom.Parse("A", ctx)
                 ],
-                spec.AsZilListBody().ToArray());
+                [.. spec.AsZilListBody()]);
         }
 
         [TestMethod]
@@ -132,7 +132,7 @@ namespace Zilf.Tests.Interpreter
                         ZilAtom.Parse("A3", ctx),
                         ctx.GetStdAtom(StdAtom.LIST))
                 ],
-                spec.AsZilListBody().ToArray());
+                [.. spec.AsZilListBody()]);
         }
 
 
@@ -170,7 +170,7 @@ namespace Zilf.Tests.Interpreter
                         ctx.GetStdAtom(StdAtom.FALSE)
                     ])
                 ],
-                spec.AsZilListBody().ToArray());
+                [.. spec.AsZilListBody()]);
         }
 
         [TestMethod]
@@ -182,7 +182,7 @@ namespace Zilf.Tests.Interpreter
 
             var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, args);
 
-            TestHelpers.AssertStructurallyEqual(args, spec.AsZilListBody().ToArray());
+            TestHelpers.AssertStructurallyEqual(args, [.. spec.AsZilListBody()]);
         }
     }
 }

@@ -40,8 +40,7 @@ namespace ZilfAnalyzers
     {
         const string Title = "Convert message to diagnostic constant ({0})";
 
-        public sealed override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(
-            DiagnosticIds.ExceptionShouldUseDiagnosticCode);
+        public sealed override ImmutableArray<string> FixableDiagnosticIds => [DiagnosticIds.ExceptionShouldUseDiagnosticCode];
 
         public sealed override FixAllProvider GetFixAllProvider()
         {
@@ -147,7 +146,7 @@ namespace ZilfAnalyzers
             var slnEditor = new SolutionEditor(solution);
 
             var invocationsByDocumentArray = invocationsByDocument as KeyValuePair<DocumentId, Invocation[]>[] ??
-                                             invocationsByDocument.ToArray();
+                                             [.. invocationsByDocument];
 
             foreach (var pair in invocationsByDocumentArray)
             {
@@ -263,7 +262,7 @@ namespace ZilfAnalyzers
             if (docEditor.OriginalRoot is not CompilationUnitSyntax compilationUnitSyntax)
                 return;
 
-            if (compilationUnitSyntax.Usings.All(u => u.Name.ToString() != "Zilf.Diagnostics"))
+            if (!compilationUnitSyntax.Usings.Any(u => u.Name?.ToString() == "Zilf.Diagnostics"))
             {
                 docEditor.InsertAfter(
                     compilationUnitSyntax.Usings.Last(),
@@ -296,13 +295,13 @@ namespace ZilfAnalyzers
             var messageArgumentList = SyntaxFactory.AttributeArgumentList(sepSyntaxList);
 
             return SyntaxFactory.FieldDeclaration(
-                attributeLists: SyntaxFactory.List(new[]
-                {
+                attributeLists: SyntaxFactory.List(
+                [
                     SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(
                         SyntaxFactory.Attribute(
                             name: SyntaxFactory.ParseName("Message"),
                             argumentList: messageArgumentList)))
-                }),
+                ]),
                 modifiers: SyntaxFactory.TokenList(
                     SyntaxFactory.Token(SyntaxKind.PublicKeyword),
                     SyntaxFactory.Token(SyntaxKind.ConstKeyword)),
@@ -426,7 +425,7 @@ namespace ZilfAnalyzers
                                                 let ancestors = root.FindToken(span.Start).Parent?.AncestorsAndSelf()
                                                 select ancestors.OfType<ObjectCreationExpressionSyntax>().First();
                             var literalCreations = MatchLiteralCreations(creationExprs, semanticModel);
-                            var invocations = PlanInvocations(literalCreations.ToArray(), severity);
+                            var invocations = PlanInvocations([.. literalCreations], severity);
                             return new KeyValuePair<DocumentId, Invocation[]>(doc.Id, invocations);
                         }
 

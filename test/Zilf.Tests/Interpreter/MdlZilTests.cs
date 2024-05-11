@@ -36,7 +36,7 @@ namespace Zilf.Tests.Interpreter
 
             var fooAtom = ZilAtom.Parse("FOO", ctx);
 
-            Assert.IsInstanceOfType(ctx.GetZVal(fooAtom), typeof(ZilGlobal));
+            Assert.IsInstanceOfType<ZilGlobal>(ctx.GetZVal(fooAtom));
             Assert.IsNull(ctx.GetGlobalVal(fooAtom));
         }
 
@@ -51,7 +51,7 @@ namespace Zilf.Tests.Interpreter
 
             var fooAtom = ZilAtom.Parse("FOO", ctx);
 
-            Assert.IsInstanceOfType(ctx.GetGlobalVal(fooAtom), typeof(ZilFix));
+            Assert.IsInstanceOfType<ZilFix>(ctx.GetGlobalVal(fooAtom));
             Assert.IsNull(ctx.GetZVal(fooAtom));
         }
     }

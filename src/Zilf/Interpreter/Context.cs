@@ -243,7 +243,7 @@ namespace Zilf.Interpreter
 
         ZilAtom[] InitStdAtoms()
         {
-            var ids = (StdAtom[])Enum.GetValues(typeof(StdAtom));
+            var ids = Enum.GetValues<StdAtom>();
 
             var max = ids[^1];
             var newStdAtoms = new ZilAtom[(int)max + 1];
@@ -253,7 +253,7 @@ namespace Zilf.Interpreter
                 if (sa == StdAtom.None)
                     continue;
 
-                var pname = Enum.GetName(typeof(StdAtom), sa);
+                var pname = Enum.GetName(sa);
                 Debug.Assert(pname != null, nameof(pname) + " != null");
 
                 var attrs = typeof(StdAtom).GetField(pname)!.GetCustomAttributes(

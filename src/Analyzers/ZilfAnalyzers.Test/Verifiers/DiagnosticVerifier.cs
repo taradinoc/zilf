@@ -118,12 +118,12 @@ namespace ZilfAnalyzers.Test.Helpers
         static void VerifyDiagnosticResults(IEnumerable<Diagnostic> actualResults, DiagnosticAnalyzer analyzer, params DiagnosticResult[] expectedResults)
         {
             var expectedCount = expectedResults.Length;
-            var actualResultsArray = actualResults as Diagnostic[] ?? actualResults.ToArray();
+            var actualResultsArray = actualResults as Diagnostic[] ?? [.. actualResults];
             var actualCount = actualResultsArray.Length;
 
             if (expectedCount != actualCount)
             {
-                string diagnosticsOutput = actualResultsArray.Any() ? FormatDiagnostics(analyzer, [.. actualResultsArray]) : "    NONE.";
+                string diagnosticsOutput = actualResultsArray.Length != 0 ? FormatDiagnostics(analyzer, [.. actualResultsArray]) : "    NONE.";
 
                 Assert.Fail("Mismatch between number of diagnostics returned, expected \"{0}\" actual \"{1}\"\r\n\r\nDiagnostics:\r\n{2}\r\n", expectedCount, actualCount, diagnosticsOutput);
             }

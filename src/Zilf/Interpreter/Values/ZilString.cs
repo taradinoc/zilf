@@ -149,7 +149,7 @@ namespace Zilf.Interpreter.Values
                         throw new ArgumentOutOfRangeException(nameof(index));
 
                     Text = Text[..index] + ch.Char +
-                           Text.Substring(index + 1, Text.Length - index - 1);
+                           Text.Substring(index + 1);
                 }
             }
 
@@ -224,7 +224,7 @@ namespace Zilf.Interpreter.Values
                         orig.Text =
                             orig.Text[..index] +
                             ch.Char +
-                            orig.Text.Substring(index + 1, orig.Text.Length - index - 1);
+                            orig.Text.Substring(index + 1);
                     }
                     else
                     {

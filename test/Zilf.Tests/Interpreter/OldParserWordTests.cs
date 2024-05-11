@@ -43,10 +43,9 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
         public void Ctor_Should_Reject_Null_Atom()
         {
-            _ = new OldParserWord(null!);
+            Assert.ThrowsExactly<ArgumentNullException>(() => _ = new OldParserWord(null!));
         }
 
         /// <summary>
@@ -305,8 +304,7 @@ namespace Zilf.Tests.Interpreter
 
             public void AddByte(IOperand value)
             {
-                Assert.IsInstanceOfType(value, typeof(MockOperand),
-                    "IWordBuilder.AddByte should be called with an operand we gave it");
+                Assert.IsInstanceOfType<MockOperand>(value, "IWordBuilder.AddByte should be called with an operand we gave it");
 
                 ActualBytes.Add(((MockOperand)value).Value);
             }

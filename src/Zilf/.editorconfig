@@ -18,6 +18,9 @@ dotnet_diagnostic.CA1307.severity = suggestion
 # IDE0079: Remove unnecessary suppression
 dotnet_diagnostic.IDE0079.severity = silent
 
+# CA1515: Make application types internal
+dotnet_diagnostic.CA1515.severity = silent
+
 csharp_using_directive_placement = outside_namespace:silent
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_prefer_braces = true:silent

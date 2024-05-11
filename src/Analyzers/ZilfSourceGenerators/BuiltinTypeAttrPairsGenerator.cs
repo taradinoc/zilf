@@ -25,40 +25,53 @@ using System.Text;
 namespace ZilfSourceGenerators
 {
     [Generator]
-    public class BuiltinTypeAttrPairsGenerator : ISourceGenerator
+    public class BuiltinTypeAttrPairsGenerator : IIncrementalGenerator
     {
-        public void Initialize(GeneratorInitializationContext context)
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
-        }
+            var classWithAttributes = context.SyntaxProvider
+                .CreateSyntaxProvider(
+                    predicate: static (node, _) => node is ClassDeclarationSyntax cds && cds.AttributeLists.Count > 0,
+                    transform: static (context, _) =>
+                    {
+                        var classDeclaration = (ClassDeclarationSyntax)context.Node;
+                        foreach (var attributeList in classDeclaration.AttributeLists)
+                        {
+                            foreach (var attribute in attributeList.Attributes)
+                            {
+                                if (attribute.Name.ToString() is "BuiltinType" or "BuiltinTypeAttribute")
+                                {
+                                    return (classDeclaration, attribute);
+                                }
+                            }
+                        }
+                        return default;
+                    })
+                .Where(pair => pair != default);
 
-        public void Execute(GeneratorExecutionContext context)
-        {
-            var syntaxReceiver = (SyntaxReceiver?)context.SyntaxReceiver;
+            var compilationAndClasses = context.CompilationProvider.Combine(classWithAttributes.Collect());
 
-            if (syntaxReceiver == null || syntaxReceiver.Pairs.Count == 0)
+            context.RegisterSourceOutput(compilationAndClasses, static (spc, source) =>
             {
-                // no builtin types found, nothing to do
-                return;
-            }
+                var (compilation, pairs) = source;
 
-            var lines = new List<string>();
-            foreach (var (cls, attr) in syntaxReceiver.Pairs)
-            {
-                var semanticModel = context.Compilation.GetSemanticModel(cls.SyntaxTree);
-
-                var classSymbol = semanticModel.GetDeclaredSymbol(cls);
-                var attrSymbol = ((IMethodSymbol?)semanticModel.GetSymbolInfo(attr).Symbol)?.ContainingType;
-
-                if (classSymbol is null || attrSymbol is null)
+                var lines = new List<string>();
+                foreach (var (cls, attr) in pairs)
                 {
-                    continue;
+                    var semanticModel = compilation.GetSemanticModel(cls.SyntaxTree);
+
+                    var classSymbol = semanticModel.GetDeclaredSymbol(cls);
+                    var attrSymbol = ((IMethodSymbol?)semanticModel.GetSymbolInfo(attr).Symbol)?.ContainingType;
+
+                    if (classSymbol is null || attrSymbol is null)
+                    {
+                        continue;
+                    }
+
+                    lines.Add($"yield return new BuiltinTypeAttrPair(typeof({classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), new {attrSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}{attr.ArgumentList});");
                 }
 
-                lines.Add($"yield return new BuiltinTypeAttrPair(typeof({classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), new {attrSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}{attr.ArgumentList});");
-            }
-
-            SourceText sourceText = SourceText.From($@"
+                SourceText sourceText = SourceText.From($@"
 using System.Collections.Generic;
 using Zilf.Language;
 namespace Zilf.Interpreter
@@ -72,29 +85,8 @@ namespace Zilf.Interpreter
     }}
 }}
 ", Encoding.UTF8);
-            context.AddSource("Context.g.cs", sourceText);
-        }
-
-        private class SyntaxReceiver : ISyntaxReceiver
-        {
-            public List<(ClassDeclarationSyntax cls, AttributeSyntax attr)> Pairs { get; } = [];
-
-            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
-            {
-                if (syntaxNode is ClassDeclarationSyntax cds)
-                {
-                    foreach (var al in cds.AttributeLists)
-                    {
-                        foreach (var a in al.Attributes)
-                        {
-                            if (a.Name.ToString() is "BuiltinType" or "BuiltinTypeAttribute")
-                            {
-                                Pairs.Add((cds, a));
-                            }
-                        }
-                    }
-                }
-            }
+                spc.AddSource("Context.g.cs", sourceText);
+            });
         }
     }
 }

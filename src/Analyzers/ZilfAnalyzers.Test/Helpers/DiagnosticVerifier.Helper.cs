@@ -110,7 +110,7 @@ namespace ZilfAnalyzers.Test.Helpers
             foreach (var project in projects)
             {
                 var compilationWithAnalyzers = (await project.GetCompilationAsync().ConfigureAwait(false))
-                    ?.WithAnalyzers(ImmutableArray.Create(analyzer));
+                    ?.WithAnalyzers([analyzer]);
 
                 if (compilationWithAnalyzers == null)
                     continue;

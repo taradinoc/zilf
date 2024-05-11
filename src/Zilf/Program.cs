@@ -227,7 +227,7 @@ namespace Zilf
 
             using (var s = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
-                s.Read(b);
+                s.ReadExactly(b);
             }
 
             var i = BitConverter.ToInt32(b.Slice(c_PeHeaderOffset, 4));

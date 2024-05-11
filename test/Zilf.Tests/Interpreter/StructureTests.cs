@@ -59,7 +59,7 @@ namespace Zilf.Tests.Interpreter
             // use value comparison for LVAL/GVAL, but not other structures
             var ctx = new Context();
             TestHelpers.EvalAndAssert(ctx, "<MEMQ '.C '[.A .B .C .D]>",
-                new ZilVector(new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("C", ctx) }), new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("D", ctx) })));
+                new ZilVector(new ZilForm([ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("C", ctx)]), new ZilForm([ctx.GetStdAtom(StdAtom.LVAL), ZilAtom.Parse("D", ctx)])));
 
             TestHelpers.EvalAndAssert(ctx, "<MEMQ '<FOO C> '[<FOO A> <FOO B> <FOO C> <FOO D>]>",
                 ctx.FALSE);
@@ -245,7 +245,7 @@ namespace Zilf.Tests.Interpreter
             var point = TestHelpers.Evaluate(ctx, "<MAKE-POINT 'POINT-X 123 'POINT-Y 456>");
 
             var table = point.GetPrimitive(ctx);
-            Assert.IsInstanceOfType(table, typeof(ZilTable));
+            Assert.IsInstanceOfType<ZilTable>(table);
             Assert.AreEqual(TableFormat.Pure, ((ZilTable)table).Flags);
         }
 
@@ -423,14 +423,14 @@ namespace Zilf.Tests.Interpreter
         {
             // this isn't usually visible to the user code, but it's needed because of all the "if (foo is ZilString)" validations
             var rested = TestHelpers.Evaluate("<REST \"hello\">");
-            Assert.IsInstanceOfType(rested, typeof(ZilString));
+            Assert.IsInstanceOfType<ZilString>(rested);
         }
 
         [TestMethod]
         public void ZREST_Of_Table_Should_Be_A_ZilTable_Instance()
         {
             var rested = TestHelpers.Evaluate("<ZREST <TABLE 1 2 3> 2>");
-            Assert.IsInstanceOfType(rested, typeof(ZilTable));
+            Assert.IsInstanceOfType<ZilTable>(rested);
         }
 
         [TestMethod]
@@ -439,10 +439,10 @@ namespace Zilf.Tests.Interpreter
             var ctx = new Context();
             TestHelpers.Evaluate(ctx, "<NEWTYPE FOO TABLE>");
             var rested = TestHelpers.Evaluate(ctx, "<ZREST <CHTYPE <TABLE 1 2 3> FOO> 2>");
-            Assert.IsInstanceOfType(rested, typeof(ZilTable));
+            Assert.IsInstanceOfType<ZilTable>(rested);
 
             rested = TestHelpers.Evaluate(ctx, "<ZREST <CHTYPE <ZREST <TABLE 1 2 3> 2> FOO> 2>");
-            Assert.IsInstanceOfType(rested, typeof(ZilTable));
+            Assert.IsInstanceOfType<ZilTable>(rested);
         }
 
         [TestMethod]
@@ -482,7 +482,7 @@ namespace Zilf.Tests.Interpreter
         public void SUBSTRUC_With_One_Argument_Returns_A_Primitive_Copy()
         {
             TestHelpers.EvalAndAssert("<SUBSTRUC '(1 2 3)>",
-                new ZilList(new[] { new ZilFix(1), new ZilFix(2), new ZilFix(3) }));
+                new ZilList([new ZilFix(1), new ZilFix(2), new ZilFix(3)]));
 
             TestHelpers.EvalAndAssert("<SUBSTRUC <QUOTE 10:20>>",
                 new ZilVector(new ZilFix(10), new ZilFix(20)));
@@ -495,7 +495,7 @@ namespace Zilf.Tests.Interpreter
         public void SUBSTRUC_With_Two_Arguments_Returns_A_RESTed_Primitive_Copy()
         {
             TestHelpers.EvalAndAssert("<SUBSTRUC '(1 2 3) 2>",
-                new ZilList(new[] { new ZilFix(3) }));
+                new ZilList([new ZilFix(3)]));
 
             TestHelpers.EvalAndAssert("<SUBSTRUC <QUOTE 10:20> 0>",
                 new ZilVector(new ZilFix(10), new ZilFix(20)));
@@ -521,7 +521,7 @@ namespace Zilf.Tests.Interpreter
         public void SUBSTRUC_With_Four_Arguments_Copies_Into_An_Existing_Structure()
         {
             TestHelpers.EvalAndAssert("<SUBSTRUC '(1 2 3) 2 0 '(4 5 6)>",
-                new ZilList(new[] { new ZilFix(4), new ZilFix(5), new ZilFix(6) }));
+                new ZilList([new ZilFix(4), new ZilFix(5), new ZilFix(6)]));
 
             TestHelpers.EvalAndAssert("<SUBSTRUC <QUOTE 10:20> 0 1 '[30 40]>",
                 new ZilVector(new ZilFix(10), new ZilFix(40)));
@@ -683,7 +683,7 @@ namespace Zilf.Tests.Interpreter
 
             // GET-DECL returns the DECL portion
             TestHelpers.EvalAndAssert(ctx, "<GET-DECL .FIRST-FIX>",
-                new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX) }));
+                new ZilForm([ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX)]));
 
             // PUT-DECL returns a new offset with a different DECL...
             TestHelpers.EvalAndAssert(ctx, "<PUT-DECL .FIRST-FIX ANY>",
@@ -693,7 +693,7 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndAssert(ctx, ".FIRST-FIX",
                 new ZilOffset(
                     1,
-                    new ZilForm(new[] { ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX) }),
+                    new ZilForm([ctx.GetStdAtom(StdAtom.LIST), ctx.GetStdAtom(StdAtom.FIX)]),
                     ctx.GetStdAtom(StdAtom.FIX)));
         }
 

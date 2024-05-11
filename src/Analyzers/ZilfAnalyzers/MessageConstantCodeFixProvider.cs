@@ -37,8 +37,7 @@ namespace ZilfAnalyzers
     {
         const string Title = "Move prefix to call sites";
 
-        public sealed override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(
-            DiagnosticIds.PrefixedMessageFormat);
+        public sealed override ImmutableArray<string> FixableDiagnosticIds => [DiagnosticIds.PrefixedMessageFormat];
 
         public sealed override FixAllProvider GetFixAllProvider()
         {
@@ -169,34 +168,40 @@ namespace ZilfAnalyzers
                     await ApplyPendingReplacementsAsync();
 
                     var newCompilation = await solution.GetDocument(messageDocId)!.Project.GetCompilationAsync(cancellationToken);
-                    fieldSymbol = SymbolFinder.FindSimilarSymbols(fieldSymbol, newCompilation, cancellationToken).First();
+                    if (newCompilation != null)
+                    {
+                        fieldSymbol = SymbolFinder.FindSimilarSymbols(fieldSymbol, newCompilation, cancellationToken).First();
 
-                    var newName = ErrorExceptionUsageCodeFixProvider.GetConstantNameFromMessageFormat(newFormatStr);
-                    solution = await Renamer.RenameSymbolAsync(solution, fieldSymbol, newName,
-                        solution.Workspace.Options, cancellationToken);
+                        var newName = ErrorExceptionUsageCodeFixProvider.GetConstantNameFromMessageFormat(newFormatStr);
+                        solution = await Renamer.RenameSymbolAsync(solution, fieldSymbol, new SymbolRenameOptions(),
+                            newName, cancellationToken);
 
-                    var newDocument = solution.GetDocument(messageDocId);
-                    var newRoot = await newDocument!.GetSyntaxRootAsync(cancellationToken);
-                    var newFieldDecl = FindFieldDecl(newRoot!);
-                    var newSemanticModel = await newDocument.GetSemanticModelAsync(cancellationToken);
-                    fieldSymbol = newSemanticModel.GetDeclaredSymbol(newFieldDecl.Declaration.Variables[0], cancellationToken);
+                        var newDocument = solution.GetDocument(messageDocId);
+                        var newRoot = await newDocument!.GetSyntaxRootAsync(cancellationToken);
+                        var newFieldDecl = FindFieldDecl(newRoot!);
+                        var newSemanticModel = await newDocument.GetSemanticModelAsync(cancellationToken);
+                        fieldSymbol = newSemanticModel.GetDeclaredSymbol(newFieldDecl.Declaration.Variables[0], cancellationToken);
+                    }
                 }
 
-                // update call sites
-                var prefixSyntax = SyntaxFactory.LiteralExpression(
-                    SyntaxKind.StringLiteralExpression,
-                    SyntaxFactory.Literal(prefix));
-
-                var references = await SymbolFinder.FindReferencesAsync(fieldSymbol, solution, cancellationToken);
-                var rs = references.SingleOrDefault();
-
-                if (rs != null)
+                if (fieldSymbol != null)
                 {
-                    foreach (var location in rs.Locations.Where(l => !l.IsCandidateLocation && !l.IsImplicit))
+                    // update call sites
+                    var prefixSyntax = SyntaxFactory.LiteralExpression(
+                        SyntaxKind.StringLiteralExpression,
+                        SyntaxFactory.Literal(prefix));
+
+                    var references = await SymbolFinder.FindReferencesAsync(fieldSymbol, solution, cancellationToken);
+                    var rs = references.SingleOrDefault();
+
+                    if (rs != null)
                     {
-                        var replacement = await ReplacementCallSiteWithPrefixInsertedAsync(location, prefixSyntax, cancellationToken);
-                        if (replacement != null)
-                            pendingReplacements = pendingReplacements.Add(replacement);
+                        foreach (var location in rs.Locations.Where(l => !l.IsCandidateLocation && !l.IsImplicit))
+                        {
+                            var replacement = await ReplacementCallSiteWithPrefixInsertedAsync(location, prefixSyntax, cancellationToken);
+                            if (replacement != null)
+                                pendingReplacements = pendingReplacements.Add(replacement);
+                        }
                     }
                 }
             }

@@ -16,18 +16,21 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace ZilfAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1038:Compiler extensions should be implemented in assemblies with compiler-provided references", Justification = "<Pending>")]
+    [SuppressMessage("MicrosoftCodeAnalysisCorrectness", "RS1041:Compiler extensions should be implemented in assemblies targeting netstandard2.0", Justification = "<Pending>")]
     public partial class MessageConstantAnalyzer : DiagnosticAnalyzer
     {
         static readonly DiagnosticDescriptor Rule_DuplicateMessageCode = new(
@@ -58,10 +61,7 @@ namespace ZilfAnalyzers
         public static readonly Regex FormatTokenRegex = GetFormatTokenRegex();
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
-            ImmutableArray.Create(
-                Rule_DuplicateMessageCode,
-                Rule_DuplicateMessageFormat,
-                Rule_PrefixedMessageFormat);
+            [Rule_DuplicateMessageCode, Rule_DuplicateMessageFormat, Rule_PrefixedMessageFormat];
 
         public override void Initialize(AnalysisContext context)
         {
@@ -100,7 +100,7 @@ namespace ZilfAnalyzers
                             diagnostic = Diagnostic.Create(
                                 Rule_DuplicateMessageFormat,
                                 formatExpr.GetLocation(),
-                                new[] { pastLocation },
+                                [pastLocation],
                                 classDecl.Identifier);
 
                             context.ReportDiagnostic(diagnostic);

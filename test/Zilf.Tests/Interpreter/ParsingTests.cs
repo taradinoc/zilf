@@ -52,7 +52,7 @@ namespace Zilf.Tests.Interpreter
                 var combined = Program.Evaluate(ctx, $"<QUOTE {first}:{second}>", true);
 
                 Assert.IsNotNull(combined);
-                Assert.IsInstanceOfType(combined, typeof(ZilAdecl));
+                Assert.IsInstanceOfType<ZilAdecl>(combined);
 
                 var adecl = (ZilAdecl)combined!;
 
