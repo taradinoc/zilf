@@ -54,18 +54,20 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
         public void FromMethodInfo_Requires_NonNull_Argument()
         {
             // ReSharper disable once AssignNullToNotNullAttribute
-            Assert.ThrowsExactly<ArgumentNullException>(() => ArgDecoder.FromMethodInfo(null!, ctx));
+            ArgDecoder.FromMethodInfo(null!, ctx);
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
         public void FromMethodInfo_Requires_ZilObject_Return()
         {
             var methodInfo = GetMethod(nameof(Dummy_WrongReturn));
 
-            Assert.ThrowsExactly<ArgumentException>(() => ArgDecoder.FromMethodInfo(methodInfo, ctx));
+            ArgDecoder.FromMethodInfo(methodInfo, ctx);
         }
 
         static void Dummy_WrongReturn(Context ctx)
@@ -149,6 +151,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
         public void Test_ZilObjectArrayArg_Required_Fail()
         {
             var methodInfo = GetMethod(nameof(Dummy_RequiredZilObjectArrayArg));
@@ -156,7 +159,7 @@ namespace Zilf.Tests.Interpreter
             ZilObject[] args = [];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentCountError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         static ZilObject Dummy_RequiredZilObjectArrayArg(Context ctx, [Required] ZilObject[] args)
@@ -179,6 +182,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
         public void Test_TooFewArgs()
         {
             var methodInfo = GetMethod(nameof(Dummy_IntArgs));
@@ -186,10 +190,11 @@ namespace Zilf.Tests.Interpreter
             ZilObject[] args = [new ZilFix(123)];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentCountError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
         public void Test_TooManyArgs()
         {
             var methodInfo = GetMethod(nameof(Dummy_IntArgs));
@@ -197,7 +202,7 @@ namespace Zilf.Tests.Interpreter
             ZilObject[] args = [new ZilFix(123), new ZilFix(456), new ZilFix(789)];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentCountError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         static ZilObject Dummy_IntArgs(Context ctx, int foo, int bar)
@@ -367,6 +372,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
         public void Test_OptionalArg_Fail_TooFewArgs()
         {
             var methodInfo = GetMethod(nameof(Dummy_OptionalIntThenStringArg));
@@ -374,7 +380,7 @@ namespace Zilf.Tests.Interpreter
             ZilObject[] args = [new ZilFix(42)];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentCountError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
@@ -411,6 +417,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
         public void Test_OptionalArg_TooManyArgs()
         {
             var methodInfo = GetMethod(nameof(Dummy_OptionalIntArg));
@@ -418,7 +425,7 @@ namespace Zilf.Tests.Interpreter
             ZilObject[] args = [new ZilFix(1), new ZilFix(2)];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentCountError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
@@ -505,6 +512,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentTypeError))]
         public void Test_DeclArg_VarArgs_Fail()
         {
             var methodInfo = GetMethod(nameof(Dummy_DeclVarArgs));
@@ -518,7 +526,7 @@ namespace Zilf.Tests.Interpreter
             ];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentTypeError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         static ZilObject Dummy_DeclVarArgs(Context ctx, [Decl("<LIST [REST FIX ATOM]>")] ZilObject[] args)
@@ -598,6 +606,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentTypeError))]
         public void Test_AtomArg_Fail()
         {
             var methodInfo = GetMethod(nameof(Dummy_AtomArg));
@@ -605,7 +614,7 @@ namespace Zilf.Tests.Interpreter
             ZilObject[] args = [new ZilFix(123)];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentTypeError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         static ZilObject Dummy_AtomArg(Context ctx, ZilAtom foo)
@@ -614,6 +623,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentTypeError))]
         public void Test_AtomArrayArg_Fail()
         {
             var methodInfo = GetMethod(nameof(Dummy_AtomArrayArg));
@@ -621,7 +631,7 @@ namespace Zilf.Tests.Interpreter
             ZilObject[] args = [new ZilFix(123)];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentTypeError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         static ZilObject Dummy_AtomArrayArg(Context ctx, ZilAtom[] foo)
@@ -697,6 +707,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
         public void Test_StructArg_Fail_TooFewArgs()
         {
             var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
@@ -707,10 +718,11 @@ namespace Zilf.Tests.Interpreter
             ];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentCountError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
         public void Test_StructArg_Fail_TooManyArgs()
         {
             var methodInfo = GetMethod(nameof(Dummy_IntStringStructArg));
@@ -726,7 +738,7 @@ namespace Zilf.Tests.Interpreter
             ];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentCountError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]
@@ -989,6 +1001,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentCountError))]
         public void Test_StructArg_Optional_Fail_TooFewArgs()
         {
             var methodInfo = GetMethod(nameof(Dummy_OptionalStructArrayArg));
@@ -1002,7 +1015,7 @@ namespace Zilf.Tests.Interpreter
             ];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentCountError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         [ZilStructuredParam(StdAtom.VECTOR)]
@@ -1104,6 +1117,7 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentTypeError))]
         public void Test_EitherArg_Optional_WrongType()
         {
             var methodInfo = GetMethod(nameof(Dummy_OptionalIntOrStringThenAtomArg));
@@ -1111,7 +1125,7 @@ namespace Zilf.Tests.Interpreter
             ZilObject[] args = [ctx.FALSE];
 
             var decoder = ArgDecoder.FromMethodInfo(methodInfo, ctx);
-            Assert.ThrowsExactly<ArgumentTypeError>(() => decoder.Decode("dummy", ctx, args));
+            decoder.Decode("dummy", ctx, args);
         }
 
         [TestMethod]

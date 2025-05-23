@@ -43,9 +43,10 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
         public void Ctor_Should_Reject_Null_Atom()
         {
-            Assert.ThrowsExactly<ArgumentNullException>(() => _ = new OldParserWord(null!));
+            _ = new OldParserWord(null!);
         }
 
         /// <summary>
