@@ -60,7 +60,7 @@ namespace Dezapf
         {
             stream.Seek(offset, SeekOrigin.Begin);
             byte[] data = new byte[length];
-            stream.Read(data, 0, length);
+            stream.ReadExactly(data, 0, length);
             return new DataChunk(offset, length, data);
         }
 
