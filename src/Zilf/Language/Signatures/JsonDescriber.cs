@@ -271,7 +271,7 @@ namespace Zilf.Language.Signatures
 
             public void VisitPrimTypeConstraint(PrimType primType)
             {
-                result = new JObject { ["constraint"] = "primtype", ["primype"] = primType.ToString() };
+                result = new JObject { ["constraint"] = "primtype", ["primtype"] = primType.ToString() };
             }
 
             public void VisitStructuredConstraint()

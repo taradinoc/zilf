@@ -16,6 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Text;
+
 namespace Zilf.Emit.Zap
 {
     class ConstantLiteralOperand : LiteralOperand, IConstantOperand

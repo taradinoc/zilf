@@ -1,17 +1,17 @@
 ﻿/* Copyright 2010-2023 Tara McGrew
- * 
+ *
  * This file is part of ZILF.
- * 
+ *
  * ZILF is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * ZILF is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -21,8 +21,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using Zilf.Common;
 using Zilf.Diagnostics;
@@ -41,109 +39,147 @@ namespace Zilf.Compiler.Builtins
     [SuppressMessage("Performance", "CA1801", Justification = "ZBuiltins parameters are needed for validation, even if the values aren't used.")]
     static class ZBuiltins
     {
-        #region Infrastructure
 
-        static readonly ILookup<string, BuiltinSpec> builtins =
-            (from mi in typeof(ZBuiltins).GetMethods(BindingFlags.Public | BindingFlags.Static)
-             from a in mi.GetCustomAttributes<BuiltinAttribute>()
-             from name in a.Names
-             select new { Name = name, Attr = a, Method = mi })
-            .ToLookup(r => r.Name, r => new BuiltinSpec(r.Attr, r.Method));
+        #region Generated Parser Infrastructure
+
+        static bool TryCallGeneratedParser<TCall>(string name, TCall call, ZilObject[] args, out IOperand? result)
+            where TCall : struct
+        {
+            // Use the appropriate typed dictionary based on call type - no casting needed!
+            switch (call)
+            {
+                case ValueCall vc when GeneratedBuiltinParsers.ValueCallParsers.TryGetValue(name, out var valueEntry):
+                    result = valueEntry.Parser(vc, args);
+                    return true;
+
+                case VoidCall vdc when GeneratedBuiltinParsers.VoidCallParsers.TryGetValue(name, out var voidEntry):
+                    voidEntry.Parser(vdc, args);
+                    result = null;
+                    return true;
+
+                case PredCall pc when GeneratedBuiltinParsers.PredCallParsers.TryGetValue(name, out var predEntry):
+                    predEntry.Parser(pc, args);
+                    result = null;
+                    return true;
+
+                case ValuePredCall vpc when GeneratedBuiltinParsers.ValuePredCallParsers.TryGetValue(name, out var valuePredEntry):
+                    result = valuePredEntry.Parser(vpc, args);
+                    return true;
+
+                default:
+                    result = null;
+                    return false;
+            }
+        }
+
+        #endregion
+
+        #region Infrastructure
 
         public static IEnumerable<string> GetBuiltinNames()
         {
-            return builtins.Select(g => g.Key);
+            // Return all builtin names from the generated parser tables
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            names.UnionWith(GeneratedBuiltinParsers.VoidCallParsers.Keys);
+            names.UnionWith(GeneratedBuiltinParsers.ValueCallParsers.Keys);
+            names.UnionWith(GeneratedBuiltinParsers.PredCallParsers.Keys);
+            names.UnionWith(GeneratedBuiltinParsers.ValuePredCallParsers.Keys);
+            return names;
         }
 
         public static IEnumerable<ISignature> GetBuiltinSignatures(string name)
         {
-            return builtins[name].Select(ZBuiltinSignature.FromBuiltinSpec);
+            if (GeneratedBuiltinParsers.GeneratedBuiltinMetadata.TryGetValue(name, out var sigs) && sigs != null && sigs.Length > 0)
+            {
+                return sigs;
+            }
+
+            return Array.Empty<ISignature>();
         }
 
         public static bool IsBuiltinValueCall(string name, int zversion, int argCount)
         {
-            return builtins[name].Any(s =>
-            {
-                Debug.Assert(s != null, nameof(s) + " != null");
-                return s.AppliesTo(zversion, argCount, typeof(ValueCall));
-            });
+            // Check generated parsers using capability checking
+            // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
+            int normalizedVersion = zversion > 6 ? 5 : zversion;
+            return GeneratedBuiltinParsers.ValueCallParsers.TryGetValue(name, out var valueEntry) &&
+                   valueEntry.SupportsCall(normalizedVersion, argCount);
         }
 
         public static bool IsBuiltinVoidCall(string name, int zversion, int argCount)
         {
-            return builtins[name].Any(s =>
-            {
-                Debug.Assert(s != null, nameof(s) + " != null");
-                return s.AppliesTo(zversion, argCount, typeof(VoidCall));
-            });
+            // Check generated parsers using capability checking
+            // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
+            int normalizedVersion = zversion > 6 ? 5 : zversion;
+            return GeneratedBuiltinParsers.VoidCallParsers.TryGetValue(name, out var voidEntry) &&
+                   voidEntry.SupportsCall(normalizedVersion, argCount);
         }
 
         public static bool IsBuiltinPredCall(string name, int zversion, int argCount)
         {
-            return builtins[name].Any(s =>
-            {
-                Debug.Assert(s != null, nameof(s) + " != null");
-                return s.AppliesTo(zversion, argCount, typeof(PredCall));
-            });
+            // Check generated parsers using capability checking
+            // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
+            int normalizedVersion = zversion > 6 ? 5 : zversion;
+            return GeneratedBuiltinParsers.PredCallParsers.TryGetValue(name, out var predEntry) &&
+                   predEntry.SupportsCall(normalizedVersion, argCount);
         }
 
         public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount)
         {
-            return builtins[name].Any(s =>
-            {
-                Debug.Assert(s != null, nameof(s) + " != null");
-                return s.AppliesTo(zversion, argCount, typeof(ValuePredCall));
-            });
+            // Check generated parsers using capability checking
+            // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
+            int normalizedVersion = zversion > 6 ? 5 : zversion;
+            return GeneratedBuiltinParsers.ValuePredCallParsers.TryGetValue(name, out var valuePredEntry) &&
+                   valuePredEntry.SupportsCall(normalizedVersion, argCount);
         }
 
         public static bool IsBuiltinWithSideEffects(string name, int zversion, int argCount)
         {
-            // true if there's a void, value, or predicate version with side effects
-            return builtins[name].Any(s =>
-            {
-                Debug.Assert(s != null, nameof(s) + " != null");
-                return s.AppliesTo(zversion, argCount) && s.Attr.HasSideEffect;
-            });
+            // Use the generated side effects method which is based on HasSideEffect = true
+            // attribute analysis from all [Builtin] declarations
+            // Note: Builtin name alone is sufficient - version and arg count don't affect side effects
+            return GeneratedBuiltinParsers.HasSideEffects(name);
         }
 
         public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, [NotNullWhen(true)] out CompilerError? error)
         {
-            // is there a match with this zversion but any arg count?
-            var wrongArgCount =
-                builtins[name]
-                    .Where(s =>
-                    {
-                        Debug.Assert(s != null, nameof(s) + " != null");
-                        return ZEnvironment.VersionMatches(
-                            zversion,
-                            s.Attr.MinVersion,
-                            s.Attr.MaxVersion);
-                    })
-                    .ToArray();
-            if (wrongArgCount.Length > 0)
+            // Check if the builtin name exists in any generated parser dictionary
+            bool hasVoidCall = GeneratedBuiltinParsers.VoidCallParsers.ContainsKey(name);
+            bool hasValueCall = GeneratedBuiltinParsers.ValueCallParsers.ContainsKey(name);
+            bool hasPredCall = GeneratedBuiltinParsers.PredCallParsers.ContainsKey(name);
+            bool hasValuePredCall = GeneratedBuiltinParsers.ValuePredCallParsers.ContainsKey(name);
+
+            if (hasVoidCall || hasValueCall || hasPredCall || hasValuePredCall)
             {
-                var counts = wrongArgCount.Select(s =>
+                // The builtin exists but doesn't support this version/argCount combination
+                // Check if it would work with the current version but different arg count
+                int normalizedVersion = zversion > 6 ? 5 : zversion;
+
+                // Try different argument counts to see if any would work with this version
+                for (int testArgCount = 0; testArgCount <= 10; testArgCount++) // reasonable upper bound
                 {
-                    Debug.Assert(s != null, nameof(s) + " != null");
-                    return new ArgCountRange(s.MinArgs, s.MaxArgs);
-                });
-
-                // be a little more helpful if this arg count would work in another zversion
-                var acceptableVersion = builtins[name]
-                    .FirstOrDefault(s =>
+                    if ((hasVoidCall && GeneratedBuiltinParsers.VoidCallParsers[name].SupportsCall(normalizedVersion, testArgCount)) ||
+                        (hasValueCall && GeneratedBuiltinParsers.ValueCallParsers[name].SupportsCall(normalizedVersion, testArgCount)) ||
+                        (hasPredCall && GeneratedBuiltinParsers.PredCallParsers[name].SupportsCall(normalizedVersion, testArgCount)) ||
+                        (hasValuePredCall && GeneratedBuiltinParsers.ValuePredCallParsers[name].SupportsCall(normalizedVersion, testArgCount)))
                     {
-                        Debug.Assert(s != null, nameof(s) + " != null");
-                        return argCount >= s.MinArgs && (s.MaxArgs == null || argCount <= s.MaxArgs);
-                    })
-                    ?.Attr.MinVersion;
+                        // Found a working arg count for this version - this is a wrong argument count error
+                        // Get the specific argument count ranges from the builtin metadata
+                        var ranges = GetArgumentCountRanges(name, normalizedVersion);
+                        if (ranges.Count > 0)
+                        {
+                            error = CompilerError.WrongArgCount(name, ranges);
+                        }
+                        else
+                        {
+                            // Fallback to generic message if we can't extract specific ranges
+                            error = new CompilerError(CompilerMessages._0_Requires_1_Argument1s, name, new CountableString("a different number of", true));
+                        }
+                        return true;
+                    }
+                }
 
-                error = CompilerError.WrongArgCount(name, counts, acceptableVersion);
-                return true;
-            }
-
-            // is there a match with any zversion?
-            if (builtins.Contains(name))
-            {
+                // No working arg count found for this version - version not supported
                 error = new CompilerError(CompilerMessages._0_Is_Not_Supported_In_This_Zmachine_Version, name);
                 return true;
             }
@@ -153,104 +189,27 @@ namespace Zilf.Compiler.Builtins
             return false;
         }
 
-        delegate void InvalidArgumentDelegate(int index, string message);
-
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", MessageId = "System.String.Format(System.String,System.Object,System.Object,System.Object)")]
-        [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        static List<BuiltinArg> ValidateArguments(
-            Compilation cc, BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
-            ZilObject[] args, InvalidArgumentDelegate error)
+        private static List<ArgCountRange> GetArgumentCountRanges(string name, int normalizedVersion)
         {
-            // args may be short (for optional params)
+            var ranges = new List<ArgCountRange>();
 
-            var result = new List<BuiltinArg>(args.Length);
-
-            static ZilObject UnwrapMacroResult(ZilObject obj) => obj is ZilMacroResult zmr ? zmr.Inner : obj;
-
-            for (int i = 0, j = spec.Attr.Data == null ? 1 : 2; i < args.Length; i++, j++)
+            // Check if the builtin exists in the metadata
+            if (GeneratedBuiltinParsers.GeneratedBuiltinMetadata.TryGetValue(name, out var signatures))
             {
-                var pi = builtinParamInfos[j];
-
-                void InnerError(string msg)
+                foreach (var signature in signatures)
                 {
-                    error(i, msg);
-                }
-
-                if (ParameterTypeHandler.Handlers.TryGetValue(pi.ParameterType, out var handler))
-                {
-                    result.Add(handler.Process(cc, InnerError, UnwrapMacroResult(args[i]), pi));
-                }
-                else if (pi.ParameterType.IsArray &&
-                         pi.ParameterType.GetElementType() is Type t &&
-                         ParameterTypeHandler.Handlers.TryGetValue(t, out handler))
-                {
-                    // consume all remaining arguments
-                    while (i < args.Length)
+                    // For Z-code builtins, check if this signature applies to the current version
+                    if (signature is ZBuiltinSignature zSignature)
                     {
-                        result.Add(handler.Process(cc, InnerError, UnwrapMacroResult(args[i]), pi));
-                        i++;
+                        if (normalizedVersion >= zSignature.MinVersion && normalizedVersion <= zSignature.MaxVersion)
+                        {
+                            ranges.Add(new ArgCountRange(signature.MinArgs, signature.MaxArgs));
+                        }
                     }
-
-                    break;
-                }
-                else
-                {
-                    throw new ArgumentException(
-                        $"Unsupported type {pi.ParameterType} for parameter {j} ({pi.Name})",
-                        nameof(builtinParamInfos));
                 }
             }
 
-            return result;
-        }
-
-        static List<object?> MakeBuiltinMethodParams(
-            BuiltinSpec spec, ParameterInfo[] builtinParamInfos,
-            object call, List<BuiltinArg> args)
-        {
-            /* args.Length (plus call and data) may differ from builtinParamInfos.Length,
-             * due to optional arguments and params arrays. */
-
-            var result = new List<object?>(builtinParamInfos.Length) { call };
-
-            // data (optional)
-            int i = 1;
-            if (spec.Attr.Data != null)
-            {
-                result.Add(spec.Attr.Data);
-                i++;
-            }
-
-            // operands
-            for (int j = 0; i < builtinParamInfos.Length; i++, j++)
-            {
-                var pi = builtinParamInfos[i];
-
-                if (pi.ParameterType == typeof(IOperand[]))
-                {
-                    // add all remaining operands as a param array
-                    result.Add(j >= args.Count
-                        ? Array.Empty<IOperand>()
-                        : args.Skip(j).Select(a => (IOperand?)a.Value).ToArray());
-                }
-                else if (pi.ParameterType == typeof(ZilObject[]))
-                {
-                    // add all remaining values as a param array
-                    result.Add(j >= args.Count
-                        ? Array.Empty<ZilObject>()
-                        : args.Skip(j).Select(a => (ZilObject?)a.Value).ToArray());
-                }
-                else if (j >= args.Count)
-                {
-                    result.Add(pi.DefaultValue);
-                }
-                else
-                {
-                    result.Add(args[j].Value);
-                }
-            }
-
-            return result;
+            return ranges;
         }
 
         static IOperand? CompileBuiltinCall<TCall>(string name, Compilation cc,
@@ -259,77 +218,15 @@ namespace Zilf.Compiler.Builtins
         {
             int zversion = cc.Context.ZEnvironment.ZVersion;
             var args = form.Skip(1).ToArray();
-            var candidateSpecs = builtins[name].Where(s =>
+
+            // All builtin operations are now handled by generated parsers
+            if (TryCallGeneratedParser(name, call, args, out var genResult))
             {
-                Debug.Assert(s != null, nameof(s) + " != null");
-                return s.AppliesTo(zversion, args.Length, typeof(TCall));
-            }).ToArray();
-
-            // find the best matching spec, if there's more than one
-            BuiltinSpec spec;
-            if (candidateSpecs.Length > 1)
-            {
-                // choose the one with the fewest validation errors
-                spec = candidateSpecs.OrderBy(s =>
-                {
-                    Debug.Assert(s != null, nameof(s) + " != null");
-                    int errors = 0;
-                    var pis = s.Method.GetParameters();
-                    ValidateArguments(cc, s, pis, args, delegate { errors++; });
-                    return errors;
-                }).ThenBy(s => s.Attr.Priority).First();
-            }
-            else
-            {
-                spec = candidateSpecs[0];
-            }
-            Debug.Assert(spec != null, nameof(spec) + " != null");
-            var builtinParamInfos = spec.Method.GetParameters();
-
-            // validate arguments
-            bool valid = true;
-            var validatedArgs = ValidateArguments(cc, spec, builtinParamInfos, args,
-                (i, msg) =>
-                {
-                    cc.Context.HandleError(new CompilerError(form, CompilerMessages._0_Argument_1_2,
-                        name, i + 1, msg));
-                    valid = false;
-                });
-
-            if (!valid)
-                return cc.Game.Zero;
-
-            // extract the arguments that need evaluation, and remember their original indexes
-            var needEval =
-                validatedArgs
-                    .Select((a, oidx) => (a, oidx))
-                    .Where(p => p.a.Type == BuiltinArgType.NeedsEval)
-                    .ToArray();
-            var needEvalExprs = Array.ConvertAll(needEval, p => (ZilObject)p.a.Value!);
-
-            // generate code for arguments
-            Debug.Assert(form.SourceLine != null, "form.SourceLine != null");
-            using var operands = cc.CompileOperands(rb, form.SourceLine, needEvalExprs);
-
-            // update validatedArgs with the evaluated operands
-            for (int i = 0; i < operands.Count; i++)
-            {
-                var oidx = needEval[i].oidx;
-                validatedArgs[oidx] = new BuiltinArg(BuiltinArgType.Operand, operands[i]);
+                return genResult;
             }
 
-            // call the spec method to generate code for the builtin
-            var builtinParams = MakeBuiltinMethodParams(spec, builtinParamInfos, call, validatedArgs);
-            try
-            {
-                return spec.Method.Invoke(null, builtinParams.ToArray()) as IOperand;
-            }
-            catch (TargetInvocationException ex) when (ex.InnerException is ZilErrorBase zex)
-            {
-                ExceptionDispatchInfo.Capture(zex).Throw();
-                // ReSharper disable once HeuristicUnreachableCode
-                throw new UnreachableCodeException();
-            }
+            // If we reach here, the builtin name is not recognized
+            throw new ArgumentException($"Unknown builtin: {name}");
         }
 
         public static IOperand CompileValueCall(string name, Compilation cc, IRoutineBuilder rb, ZilForm form,

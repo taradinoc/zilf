@@ -197,5 +197,7 @@ namespace Zilf.Diagnostics
         public const int Undeclared_Compilation_Flag_0 = 506;
         [Warning("{0}: condition is always {1}")]
         public const int _0_Condition_Is_Always_1 = 507;
+    [Error("argument must be a literal string")]
+    public const int Argument_Must_Be_Literal_String = 508;
     }
 }

@@ -45,87 +45,10 @@ namespace Zilf.Language.Signatures
             ReturnPart = returnPart;
         }
 
-        public static ISignature FromBuiltinSpec(BuiltinSpec spec)
+        public static ISignature FromGeneratedParts(ISignaturePart[] parts, ISignaturePart returnPart,
+            int minArgs, int? maxArgs, int minVersion, int maxVersion)
         {
-            var pis = spec.Method.GetParameters();
-
-            var parts = pis
-                .Skip(spec.Attr.Data == null ? 1 : 2)
-                .Select(ConvertBuiltinParam)
-                .ToArray();
-
-            var returnPart = ConvertBuiltinParam(
-                spec.Method.ReturnParameter ??
-                throw new InvalidOperationException($"Missing {nameof(spec.Method.ReturnParameter)}"));
-
-            return new ZBuiltinSignature(
-                spec.MinArgs, spec.MaxArgs,
-                spec.Attr.MinVersion, spec.Attr.MaxVersion,
-                parts,
-                returnPart);
-
-            // helper
-            SignaturePart ConvertBuiltinParam(ParameterInfo pi)
-            {
-                var type = pi.ParameterType;
-
-                if (type == typeof(void))
-                {
-                    if (spec.CallType == typeof(VoidCall))
-                    {
-                        return LiteralPart.From("T");
-                    }
-
-                    var part = SignatureBuilder.Constrained(
-                        SignatureBuilder.Identifier("$return"),
-                        spec.CallType == typeof(PredCall) ? Constraint.Boolean : Constraint.AnyObject);
-
-                    return ApplyParamAttributes(part, pi);
-                }
-
-                if (ParameterTypeHandler.Handlers.TryGetValue(type, out var handler))
-                {
-                    return ConvertWithHandler(handler, pi);
-                }
-
-                // ReSharper disable once PatternAlwaysOfType
-                if (type.IsArray && type.GetElementType() is Type t &&
-                    ParameterTypeHandler.Handlers.TryGetValue(t, out handler))
-                {
-                    var part = ConvertWithHandler(handler, pi);
-                    return SignatureBuilder.VarArgs(part, false);
-                }
-
-                throw new InvalidOperationException("Unexpected builtin param type");
-            }
-        }
-
-        static SignaturePart ConvertWithHandler(ParameterTypeHandler handler,
-             ParameterInfo pi)
-        {
-            return ApplyParamAttributes(handler.ToSignaturePart(pi), pi);
-        }
-
-        static SignaturePart ApplyParamAttributes(SignaturePart part, ParameterInfo pi)
-        {
-            // TODO: also handle VariableAttribute?
-
-            if (pi.IsDefined(typeof(TableAttribute), false))
-            {
-                part = SignatureBuilder.Constrained(part, Constraint.OfPrimType(PrimType.TABLE));
-            }
-
-            if (pi.IsDefined(typeof(ObjectAttribute), false))
-            {
-                part = SignatureBuilder.Constrained(part, Constraint.OfType(StdAtom.OBJECT));
-            }
-
-            if (pi.IsOptional)
-            {
-                part = SignatureBuilder.Optional(part);
-            }
-
-            return part;
+            return new ZBuiltinSignature(minArgs, maxArgs, minVersion, maxVersion, parts.ToArray(), returnPart);
         }
     }
 }
