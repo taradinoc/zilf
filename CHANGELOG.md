@@ -49,6 +49,8 @@ and this project may someday adhere to
   can be replaced with `REPLACE-LIBRARY-MESSAGES` without having to edit
   the library.
 
+- Added `dragon` and `mandelbrot` samples.
+
 ### Changed
 
 - Upgraded to .NET 9.
