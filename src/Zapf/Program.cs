@@ -422,6 +422,38 @@ General switches:
                 }
             }
 
+            // For Z-machine v5 and above the header is manually laid out by the
+            // source using data directives. Validate START/IMPURE (and similar
+            // header pointers) now that labels have been measured, so we can emit
+            // a clear error instead of allowing silent truncation later.
+            if (ctx.ZVersion >= 5 && ctx.ErrorCount == 0)
+            {
+                var start = ctx.GetHeaderValue("START", false);
+                var impure = ctx.GetHeaderValue("IMPURE", false);
+                var endlod = ctx.GetHeaderValue("ENDLOD", false);
+                var vocab = ctx.GetHeaderValue("VOCAB", false);
+                var obj = ctx.GetHeaderValue("OBJECT", false);
+                var globals = ctx.GetHeaderValue("GLOBAL", false);
+                var words = ctx.GetHeaderValue("WORDS", false);
+
+                void Check(string name, int val)
+                {
+                    if (val >= 65536)
+                        Errors.Serious(ctx, "{0} must be in the first 64k (currently {1})", name, val);
+                }
+
+                Check("START", start);
+                Check("IMPURE", impure);
+                Check("ENDLOD", endlod);
+                Check("VOCAB", vocab);
+                Check("OBJECT", obj);
+                Check("GLOBAL", globals);
+                Check("WORDS", words);
+
+                if (ctx.ErrorCount > 0)
+                    return;
+            }
+
             // verify packed address labels
             foreach (var sym in ctx.GlobalSymbols.Values)
             {
@@ -594,10 +626,10 @@ General switches:
             while (ctx.Position < 64)
                 ctx.WriteByte(0);
 
-            // validate header fields
-            if (start > 65536)
+            // validate header fields: must fit in a 16-bit word (0..0xFFFF)
+            if (start >= 65536)
                 Errors.ThrowSerious("START must be in the first 64k (currently {0})", start);
-            if (impure > 65536)
+            if (impure >= 65536)
                 Errors.ThrowSerious("IMPURE must be in the first 64k (currently {0})", impure);
             if (endlod < impure)
                 Errors.ThrowSerious("ENDLOD must be after IMPURE");
@@ -671,6 +703,20 @@ General switches:
             // write Z-code version into header
             ctx.Position = 0;
             ctx.WriteByte(ctx.ZVersion);
+
+            // For Z-machine v5 and above the header is manually laid out
+            // by the source. Validate header-related symbols that must fit in a
+            // 16-bit word so they don't get silently truncated when written.
+            if (ctx.ZVersion >= 5)
+            {
+                var start = ctx.GetHeaderValue("START", false);
+                var impure = ctx.GetHeaderValue("IMPURE", false);
+
+                if (start >= 65536)
+                    Errors.ThrowSerious("START must be in the first 64k (currently {0})", start);
+                if (impure >= 65536)
+                    Errors.ThrowSerious("IMPURE must be in the first 64k (currently {0})", impure);
+            }
 
             // write release number into header (overriding RELEASEID if set)
             if (ctx.Release != null)

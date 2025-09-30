@@ -118,5 +118,74 @@ START::
             var buffer = mstr!.ToArray();
             AssertWordAtOffset(buffer, 2, 222);
         }
+
+    [TestMethod]
+        public void START_Header_Should_Not_Be_Silently_Truncated_When_GO_Past_64k_In_V3()
+        {
+            // construct a large file with many .WORD entries to push the GO routine
+            // beyond 64k so START would not fit in a 16-bit word.
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("WORDS::");
+            sb.AppendLine("GLOBAL::");
+            sb.AppendLine("OBJECT::");
+            sb.AppendLine("VOCAB::");
+            sb.AppendLine("IMPURE::");
+            sb.AppendLine("ENDLOD::");
+
+            // emit enough words so that START ends up at or past 0x10000 (65536).
+            // Note: a `.FUNCT` inserts at least one byte for the local count, so the
+            // label may actually be at 65537 (one byte past 65536). We pick the
+            // word count to ensure START >= 0x10000 in either case.
+            int words = (65536 - 64) / 2; // 32736
+            for (int i = 0; i < words; i++)
+                sb.AppendLine("    .WORD 0");
+
+            sb.AppendLine();
+            sb.AppendLine("    .FUNCT GO");
+            sb.AppendLine("START::");
+            sb.AppendLine("    QUIT");
+            sb.AppendLine();
+            sb.AppendLine("    .END");
+
+            var code = sb.ToString();
+
+            // After the fix, assembly should fail because START does not fit in a
+            // 16-bit word. Assert that assembly reports an error (Assemble returns false).
+            Assert.IsFalse(TestHelper.Assemble(code, out var mstr));
+        }
+
+        [TestMethod]
+        public void START_Header_Should_Not_Be_Silently_Truncated_When_GO_Past_64k_In_V5()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine(".NEW 5");
+            sb.AppendLine();
+            sb.AppendLine("    ; 64 bytes for header");
+            // place START as the 4th word in the header (word index 3)
+            sb.AppendLine("    .WORD 0,RELEASEID,0,START,0,0,0,0,0,0,0,0,0,0,0,0");
+            sb.AppendLine("    .WORD 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
+
+            // emit enough words so that START ends up at or past 0x10000 (65536).
+            // Note: in V5 the header is manually laid out and `.FUNCT` still emits
+            // the routine prologue byte(s). The label may therefore be at 65537.
+            // We pick the word count to ensure START >= 0x10000 and trigger the
+            // overflow check.
+            int words = (65536 - 64) / 2; // 32736
+            for (int i = 0; i < words; i++)
+                sb.AppendLine("    .WORD 0");
+
+            sb.AppendLine();
+            sb.AppendLine("    .FUNCT GO");
+            sb.AppendLine("START::");
+            sb.AppendLine("    QUIT");
+            sb.AppendLine();
+            sb.AppendLine("    .END");
+
+            var code = sb.ToString();
+
+            // After the fix, assembly should fail because START/IMPURE do not fit
+            // in a 16-bit word when the header is manually laid out in V5+.
+            Assert.IsFalse(TestHelper.Assemble(code, out var mstr));
+        }
     }
 }
