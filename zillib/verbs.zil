@@ -357,7 +357,7 @@ Args:
             <COND
                 (<FSET? .I ,NDESCBIT>)
                 ;"objects with DESCFCNs"
-                (<SET P <GETP .I ,P?DESCFCN>>
+                (<AND <SET P <GETP .I ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>
                  <CRLF>
                  ;"The DESCFCN is responsible for listing the object's contents"
                  <APPLY .P ,M-OBJDESC>
