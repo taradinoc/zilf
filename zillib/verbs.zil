@@ -1045,10 +1045,9 @@ Returns:
                   <SET CCAP 5>
                   ;"set bottomless flag"
                   <SET B 1>)>
-           <SET CSIZE <GETP ,PRSI ,P?SIZE>>
-        <COND (<G? .S .CCAP>
-            <TELL "That won't fit on " T ,PRSI "." CR>
-            <RETURN>)>
+           <COND (<G? .S .CCAP>
+                  <TELL "That won't fit on " T ,PRSI "." CR>
+                  <RETURN>)>
            <COND (<0? .B>
                   ;"Determine weight of contents of IO"
                   <SET W <CONTENTS-WEIGHT ,PRSI>>
@@ -1093,22 +1092,22 @@ Returns:
                   ;"set bottomless flag"
                   <SET B 1>)>
            <SET CSIZE <GETP ,PRSI ,P?SIZE>>
-     <COND (<G? .S .CCAP>
-         <TELL "That won't fit in " T ,PRSI "." CR>
-         <RETURN>)>
-        <COND (<0? .B>
-               ;"Determine weight of contents of IO"
-               <SET W <CONTENTS-WEIGHT ,PRSI>>
-               ;<TELL "Back from Contents-weight loop" CR>
-               <SET X <+ .W .S>>
-               <COND (<G? .X .CCAP>
-                      <TELL "There's not enough room in " T ,PRSI "." CR>
-                      <RETURN>)>)>
-        <MOVE ,PRSO ,PRSI>
-        <FSET ,PRSO ,TOUCHBIT>
-        <FCLEAR ,PRSO ,WORNBIT>
-        <COND (<SHORT-REPORT?> <TELL "Done." CR>)
-              (ELSE <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>)>)>>
+           <COND (<G? .S .CCAP>
+                  <TELL "That won't fit in " T ,PRSI "." CR>
+                  <RETURN>)>
+           <COND (<0? .B>
+                  ;"Determine weight of contents of IO"
+                  <SET W <CONTENTS-WEIGHT ,PRSI>>
+                  ;<TELL "Back from Contents-weight loop" CR>
+                  <SET X <+ .W .S>>
+                  <COND (<G? .X .CCAP>
+                         <TELL "There's not enough room in " T ,PRSI "." CR>
+                         <RETURN>)>)>
+    <MOVE ,PRSO ,PRSI>
+    <FSET ,PRSO ,TOUCHBIT>
+    <FCLEAR ,PRSO ,WORNBIT>
+    <COND (<SHORT-REPORT?> <TELL "Done." CR>)
+          (ELSE <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>)>)>>
 
 ;"Calculates the weight of all objects in a container, non-recursively."
 <ROUTINE CONTENTS-WEIGHT (O "AUX" W)
