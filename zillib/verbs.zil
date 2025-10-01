@@ -1046,9 +1046,9 @@ Returns:
                   ;"set bottomless flag"
                   <SET B 1>)>
            <SET CSIZE <GETP ,PRSI ,P?SIZE>>
-           <COND (<OR <G? .S .CCAP> <G? .S .CSIZE>>
-                  <TELL "That won't fit on " T ,PRSI "." CR>
-                  <RETURN>)>
+        <COND (<G? .S .CCAP>
+            <TELL "That won't fit on " T ,PRSI "." CR>
+            <RETURN>)>
            <COND (<0? .B>
                   ;"Determine weight of contents of IO"
                   <SET W <CONTENTS-WEIGHT ,PRSI>>
@@ -1093,10 +1093,9 @@ Returns:
                   ;"set bottomless flag"
                   <SET B 1>)>
            <SET CSIZE <GETP ,PRSI ,P?SIZE>>
-        <COND (<OR <G? .S .CCAP>
-                   <G? .S .CSIZE>>
-               <TELL "That won't fit in " T ,PRSI "." CR>
-               <RETURN>)>
+     <COND (<G? .S .CCAP>
+         <TELL "That won't fit in " T ,PRSI "." CR>
+         <RETURN>)>
         <COND (<0? .B>
                ;"Determine weight of contents of IO"
                <SET W <CONTENTS-WEIGHT ,PRSI>>
