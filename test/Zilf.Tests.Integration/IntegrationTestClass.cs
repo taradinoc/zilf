@@ -22,7 +22,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Zilf.Tests.Integration
 {
     [TestClass]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MSTEST0016:Test class should have test method", Justification = "<Pending>")]
     public abstract class IntegrationTestClass
     {
         protected static GlobalsAssertionHelper AssertGlobals(params string[] globals)

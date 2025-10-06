@@ -24,6 +24,7 @@ namespace Zilf.Tests.Integration
 {
     [TestClass, TestCategory("Compiler"), TestCategory("Objects")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "Test methods are only called once")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "The suppression above is necessary")]
     public class ObjectTests : IntegrationTestClass
     {
         #region Object Numbering & Tree Ordering

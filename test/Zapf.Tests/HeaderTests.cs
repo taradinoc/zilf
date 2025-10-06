@@ -151,7 +151,7 @@ START::
 
             // After the fix, assembly should fail because START does not fit in a
             // 16-bit word. Assert that assembly reports an error (Assemble returns false).
-            Assert.IsFalse(TestHelper.Assemble(code, out var mstr));
+            Assert.IsFalse(TestHelper.Assemble(code, out _));
         }
 
         [TestMethod]
@@ -185,7 +185,7 @@ START::
 
             // After the fix, assembly should fail because START/IMPURE do not fit
             // in a 16-bit word when the header is manually laid out in V5+.
-            Assert.IsFalse(TestHelper.Assemble(code, out var mstr));
+            Assert.IsFalse(TestHelper.Assemble(code, out _));
         }
     }
 }

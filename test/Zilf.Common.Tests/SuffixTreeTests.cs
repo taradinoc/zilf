@@ -27,6 +27,7 @@ namespace Zilf.Common.Tests
 {
     [TestClass]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "Test methods are only called once")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0079:Remove unnecessary suppression", Justification = "The suppression above is necessary")]
     public class SuffixTreeTests
     {
         static readonly IReadOnlyDictionary<char, int> ScrabbleValues = new Dictionary<char, int>

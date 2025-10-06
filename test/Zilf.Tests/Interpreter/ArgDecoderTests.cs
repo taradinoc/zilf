@@ -119,8 +119,8 @@ namespace Zilf.Tests.Interpreter
             var structuredCallSiteType = typeof(Subrs).Assembly.GetType("Zilf.Interpreter.StructuredArgumentCallSite", throwOnError: true)!;
             var errorRankerType = typeof(Subrs).Assembly.GetType("Zilf.Interpreter.ErrorRanker", throwOnError: true)!;
 
-            var callSite = Activator.CreateInstance(functionCallSiteType, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, new object[] { "BIND" }, CultureInfo.InvariantCulture)!;
-            var bindingSite = Activator.CreateInstance(structuredCallSiteType, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, new object[] { callSite, 0 }, CultureInfo.InvariantCulture)!;
+            var callSite = Activator.CreateInstance(functionCallSiteType, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, ["BIND"], CultureInfo.InvariantCulture)!;
+            var bindingSite = Activator.CreateInstance(structuredCallSiteType, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, [callSite, 0], CultureInfo.InvariantCulture)!;
             var ranker = Activator.CreateInstance(errorRankerType);
 
             var bindArgs = elements.Skip(1).ToArray();

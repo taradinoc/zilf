@@ -49,7 +49,7 @@ namespace ZilfSourceGenerators
             context.RegisterSourceOutput(compilationAndBuiltins, static (spc, source) =>
             {
                 var nonNullMethods = source.Right.Where(m => m != null).ToImmutableArray();
-                GenerateBuiltinParsers(spc, source.Left, nonNullMethods!);
+                GenerateBuiltinParsers(spc, nonNullMethods!);
             });
         }
 
@@ -59,8 +59,7 @@ namespace ZilfSourceGenerators
             // var semanticModel = context.SemanticModel;
 
             // var methodSymbol = semanticModel.GetDeclaredSymbol(method);
-            var methodSymbol = context.TargetSymbol as IMethodSymbol;
-            if (methodSymbol == null) return null;
+            if (context.TargetSymbol is not IMethodSymbol methodSymbol) return null;
 
             // Extract Builtin attribute information
             var builtinAttrs = GetBuiltinAttributes(context.Attributes);
@@ -136,7 +135,7 @@ namespace ZilfSourceGenerators
                 }
             }
 
-            return builtins.ToArray();
+            return [.. builtins];
         }
 
         private static List<OverloadGroup> GroupOverloadsByBuiltinAndCallType(ImmutableArray<BuiltinMethodInfo> methods)
@@ -244,7 +243,7 @@ namespace ZilfSourceGenerators
 
         private static string GetEnumValueName(ITypeSymbol enumType, object? value)
         {
-            if (enumType.TypeKind != TypeKind.Enum || !(enumType is INamedTypeSymbol namedType) || value == null)
+            if (enumType.TypeKind != TypeKind.Enum || enumType is not INamedTypeSymbol namedType || value == null)
                 return value?.ToString() ?? "null";
 
             // Convert value to the underlying integer type for comparison
@@ -268,7 +267,7 @@ namespace ZilfSourceGenerators
             return $"({enumType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}){value}";
         }
 
-        private static void GenerateBuiltinParsers(SourceProductionContext context, Compilation compilation, ImmutableArray<BuiltinMethodInfo> methods)
+        private static void GenerateBuiltinParsers(SourceProductionContext context, ImmutableArray<BuiltinMethodInfo> methods)
         {
             if (methods.Length == 0)
                 return;
@@ -421,7 +420,7 @@ namespace ZilfSourceGenerators
 
             foreach (var info in group.Overloads)
             {
-                var versionCondition = "";
+                string? versionCondition;
                 if (info.Attribute.MinVersion.HasValue && info.Attribute.MaxVersion.HasValue)
                 {
                     versionCondition = $"(zversion >= {info.Attribute.MinVersion} && zversion <= {info.Attribute.MaxVersion})";
@@ -440,9 +439,8 @@ namespace ZilfSourceGenerators
                 }
 
                 // Calculate argument count constraints using the same logic as argument validation
-                var paramInfo = AnalyzeMethodParameters(info.Method.MethodSymbol.Parameters.ToArray());
-                var argCountCondition = "";
-
+                var paramInfo = AnalyzeMethodParameters([.. info.Method.MethodSymbol.Parameters]);
+                string? argCountCondition;
                 if (paramInfo.HasParamsArray)
                 {
                     // With params array, minimum is required count, no maximum
@@ -663,43 +661,30 @@ namespace ZilfSourceGenerators
                         var partExprs = new System.Collections.Generic.List<string>();
                         foreach (var p in argsParams)
                         {
-                                var pType = p.Type;
-                                // Use the actual parameter name from the method signature for the identifier
-                                var paramName = p.Name ?? "arg";
-                                string innerExpr;
+                            var pType = p.Type;
+                            // Use the actual parameter name from the method signature for the identifier
+                            var paramName = p.Name ?? "arg";
+                            string innerExpr;
 
-                                // If parameter is annotated with [Table], emit TABLE constraint
-                                var paramHasTable = p.GetAttributes().Any(a => a.AttributeClass?.Name == "TableAttribute" || a.AttributeClass?.Name == "Table");
-                                if (paramHasTable)
+                            // If parameter is annotated with [Table], emit TABLE constraint
+                            var paramHasTable = p.GetAttributes().Any(a => a.AttributeClass?.Name == "TableAttribute" || a.AttributeClass?.Name == "Table");
+                            if (paramHasTable)
+                            {
+                                innerExpr = $"SignatureBuilder.Constrained(SignatureBuilder.Identifier(\"{paramName}\"), Constraint.OfPrimType(PrimType.TABLE))";
+                            }
+                            else
+                            {
+                                var named = pType.Name;
+                                innerExpr = named switch
                                 {
-                                    innerExpr = $"SignatureBuilder.Constrained(SignatureBuilder.Identifier(\"{paramName}\"), Constraint.OfPrimType(PrimType.TABLE))";
-                                }
-                                else
-                                {
-                                    var named = pType.Name;
-                                    switch (named)
-                                    {
-                                        case "Int32":
-                                        case "Int16":
-                                        case "Int64":
-                                        case "Int":
-                                            innerExpr = $"SignatureBuilder.Constrained(SignatureBuilder.Identifier(\"{paramName}\"), Constraint.OfPrimType(PrimType.FIX))";
-                                            break;
-                                        case "String":
-                                        case "StringBuilder":
-                                            innerExpr = $"SignatureBuilder.Constrained(SignatureBuilder.Identifier(\"{paramName}\"), Constraint.OfPrimType(PrimType.STRING))";
-                                            break;
-                                        case "ZilAtom":
-                                        case "Atom":
-                                            innerExpr = $"SignatureBuilder.Constrained(SignatureBuilder.Identifier(\"{paramName}\"), Constraint.OfPrimType(PrimType.ATOM))";
-                                            break;
-                                        default:
-                                            innerExpr = $"SignatureBuilder.Identifier(\"{paramName}\")";
-                                            break;
-                                    }
-                                }
+                                    "Int32" or "Int16" or "Int64" or "Int" => $"SignatureBuilder.Constrained(SignatureBuilder.Identifier(\"{paramName}\"), Constraint.OfPrimType(PrimType.FIX))",
+                                    "String" or "StringBuilder" => $"SignatureBuilder.Constrained(SignatureBuilder.Identifier(\"{paramName}\"), Constraint.OfPrimType(PrimType.STRING))",
+                                    "ZilAtom" or "Atom" => $"SignatureBuilder.Constrained(SignatureBuilder.Identifier(\"{paramName}\"), Constraint.OfPrimType(PrimType.ATOM))",
+                                    _ => $"SignatureBuilder.Identifier(\"{paramName}\")",
+                                };
+                            }
 
-                                string paramExpr = innerExpr;
+                            string paramExpr = innerExpr;
                             if (p.IsParams)
                             {
                                 paramExpr = $"SignatureBuilder.VarArgs({innerExpr}, false)";
@@ -929,7 +914,7 @@ namespace ZilfSourceGenerators
                         else if (param.IsOptional)
                         {
                             sb.AppendLine($"var {paramName} = args.Length > {i} ? ");
-                            GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1, callType);
+                            GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1);
                             sb.AppendLine(" :");
                             sb.Indent();
                             sb.AppendLine($"{GetDefaultValueForType(param, paramType)};");
@@ -938,7 +923,7 @@ namespace ZilfSourceGenerators
                         else
                         {
                             sb.Append($"var {paramName} = ");
-                            GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1, callType);
+                            GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1);
                             sb.AppendLine(";");
                         }
                     }
@@ -1009,7 +994,7 @@ namespace ZilfSourceGenerators
                         else if (param.IsOptional)
                         {
                             sb.AppendLine($"var {paramName} = args.Length > {i} ? ");
-                            GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1, callType);
+                            GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1);
                             sb.AppendLine(" :");
                             sb.Indent();
                             sb.AppendLine($"{GetDefaultValueForType(param, paramType)};");
@@ -1018,7 +1003,7 @@ namespace ZilfSourceGenerators
                         else
                         {
                             sb.Append($"var {paramName} = ");
-                            GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1, callType);
+                            GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1);
                             sb.AppendLine(";");
                         }
                     }
@@ -1057,7 +1042,7 @@ namespace ZilfSourceGenerators
                     else if (param.IsOptional)
                     {
                         sb.AppendLine($"var {paramName} = args.Length > {i} ? ");
-                        GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1, callType);
+                        GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1);
                         sb.AppendLine(" :");
                         sb.Indent();
                         sb.AppendLine($"{GetDefaultValueForType(param, paramType)};");
@@ -1066,7 +1051,7 @@ namespace ZilfSourceGenerators
                     else
                     {
                         sb.Append($"var {paramName} = ");
-                        GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1, callType);
+                        GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), callType == "ValueCall", "", param, operationName, i + 1);
                         sb.AppendLine(";");
                     }
                 }
@@ -1422,70 +1407,6 @@ namespace ZilfSourceGenerators
             }
         }
 
-        private static void GenerateParameterConversion(IndentedStringBuilder sb, ParameterInfo paramInfo, string callType, string indent)
-        {
-            bool hasResultStorage = callType == "ValueCall";
-
-            for (int i = 0; i < paramInfo.ArgumentParameters.Count; i++)
-            {
-                var param = paramInfo.ArgumentParameters[i];
-                var paramType = param.Type;
-                var paramName = $"arg{i}_{param.Name}";
-
-                if (param.IsParams)
-                {
-                    // Handle params array
-                    var elementType = ((IArrayTypeSymbol)paramType).ElementType;
-
-                    if (IsIOperandType(elementType))
-                    {
-                        sb.AppendLine("// Convert remaining arguments to IOperand[]");
-                        sb.AppendLine($"var {paramName} = new IOperand[args.Length - {i}];");
-                        sb.AppendLine($"for (int j = 0; j < {paramName}.Length; j++)");
-                        if (hasResultStorage)
-                        {
-                            sb.Indent();
-                            sb.AppendLine($"var unwrappedArg = args[{i} + j] is ZilMacroResult zmr_loop ? zmr_loop.Inner : args[{i} + j];");
-                            sb.AppendLine($"{paramName}[j] = c.cc.CompileAsOperand(c.rb, unwrappedArg, c.form.SourceLine, c.resultStorage);");
-                            sb.Unindent();
-                        }
-                        else
-                        {
-                            sb.Indent();
-                            sb.AppendLine($"var unwrappedArg = args[{i} + j] is ZilMacroResult zmr_loop ? zmr_loop.Inner : args[{i} + j];");
-                            sb.AppendLine($"{paramName}[j] = c.cc.CompileAsOperand(c.rb, unwrappedArg, c.form.SourceLine);");
-                            sb.Unindent();
-                        }
-                    }
-                    else
-                    {
-                        sb.AppendLine("// Keep remaining ZilObject arguments as-is, unwrapping macro results");
-                        sb.AppendLine($"var {paramName} = args.Skip({i}).Select((arg, idx) => arg is ZilMacroResult zmr_select ? zmr_select.Inner : arg).ToArray();");
-                    }
-                }
-                else
-                {
-                    // Handle individual parameter
-                    if (param.IsOptional)
-                    {
-                        sb.AppendLine($"var {paramName} = args.Length > {i} ?");
-                        sb.Indent();
-                        sb.Append("");
-                        GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), hasResultStorage, "", param, "", i + 1, "");
-                        sb.AppendLine(" :");
-                        sb.AppendLine($"{GetDefaultValueForType(param, paramType)};");
-                        sb.Unindent();
-                    }
-                    else
-                    {
-                        sb.Append($"var {paramName} = ");
-                        GenerateParameterConversionExpression(sb, paramType, GetUnwrappedArgExpression(i), hasResultStorage, "", param, "", i + 1, "");
-                        sb.AppendLine(";");
-                    }
-                }
-            }
-        }
-
         private static void GenerateMethodCall(IndentedStringBuilder sb, IMethodSymbol method, ParameterInfo paramInfo, BuiltinAttributeInfo attr, string returnType)
         {
             var methodCall = new StringBuilder();
@@ -1572,7 +1493,7 @@ namespace ZilfSourceGenerators
             }
         }
 
-        private static void GenerateParameterConversionExpression(IndentedStringBuilder sb, ITypeSymbol paramType, string argExpression, bool hasResultStorage, string indent, IParameterSymbol? param = null, string operationName = "", int argIndex = 0, string callType = "")
+        private static void GenerateParameterConversionExpression(IndentedStringBuilder sb, ITypeSymbol paramType, string argExpression, bool hasResultStorage, string indent, IParameterSymbol? param = null, string operationName = "", int argIndex = 0)
         {
             string quirksArg = "Zilf.Compiler.Builtins.VariableScopeQuirks.None";
             if (param != null)

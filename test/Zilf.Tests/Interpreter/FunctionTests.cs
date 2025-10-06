@@ -25,8 +25,7 @@ using Zilf.Language;
 namespace Zilf.Tests.Interpreter
 {
     [TestClass, TestCategory("Interpreter")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("GeneratedRegex", "SYSLIB1045:Convert to 'GeneratedRegexAttribute'.", Justification = "These are one-off regex matches for unit tests.")]
-    public class FunctionTests
+    public partial class FunctionTests
     {
         [TestMethod]
         public void TestDEFINE()
@@ -433,8 +432,11 @@ namespace Zilf.Tests.Interpreter
             var ctx = new Context();
             TestHelpers.Evaluate(ctx, "<DEFINE SPLICE-ELEMS () <ERROR FOO>>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "[!<SPLICE-ELEMS>]",
-                ex => Regex.Match(ex.Diagnostic?.StackTrace ?? "", @"^\s*in SPLICE-ELEMS called at .*:\d+$").Success);
+                ex => SpliceElemsCalledRegex().Match(ex.Diagnostic?.StackTrace ?? "").Success);
         }
+
+        [GeneratedRegex(@"^\s*in SPLICE-ELEMS called at .*:\d+$")]
+        private static partial Regex SpliceElemsCalledRegex();
 
         [TestMethod]
         public void FUNCTION_Parameter_Atoms_Should_Not_Be_Bound_While_Arguments_Are_Being_Evaluated()

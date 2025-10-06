@@ -298,8 +298,7 @@ namespace ZilfSourceGenerators
         {
             var method = (MethodDeclarationSyntax)context.TargetNode;
 
-            var methodSymbol = context.TargetSymbol as IMethodSymbol;
-            if (methodSymbol == null) return null;
+            if (context.TargetSymbol is not IMethodSymbol methodSymbol) return null;
 
             // Extract Subr/FSubr attribute information
             var subrAttrs = GetSubrAttributes(methodSymbol);
@@ -319,7 +318,7 @@ namespace ZilfSourceGenerators
 
         private static SubrAttributeInfo[] GetSubrAttributes(IMethodSymbol methodSymbol)
         {
-            return methodSymbol.GetAttributes()
+            return [.. methodSymbol.GetAttributes()
                 .Where(attr => attr.AttributeClass?.Name is "SubrAttribute" or "FSubrAttribute")
                 .Select(attr =>
                 {
@@ -333,7 +332,7 @@ namespace ZilfSourceGenerators
                         IsFSubr = isFSubr,
                         ObList = obList
                     };
-                }).ToArray();
+                })];
         }
 
         private static MdlZilRedirectInfo? GetMdlZilRedirectAttribute(IMethodSymbol methodSymbol)
@@ -1252,7 +1251,6 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
 
                 // Generate simple type checking based on target type
                 var targetTypeName = GetPatternMatchTypeName(); // Use pattern match type (strips nullable)
-                var expectedTypeName = GetExpectedTypeName();
 
                 if (targetTypeName == "ZilObject")
                 {
@@ -1897,7 +1895,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             // consumed-argument count and allow the shared ErrorRanker to be
             // consulted by a top-level parser.
             public string? CallerArgIndexVar { get; set; } = null;
-            public ParameterNode[] PriorOptionalNodes { get; set; } = Array.Empty<ParameterNode>();
+            public ParameterNode[] PriorOptionalNodes { get; set; } = [];
             public bool TrackOptionalMismatch { get; set; }
 
             public string RankerParameter => $"ref ErrorRanker {RankerVar}";
@@ -2004,7 +2002,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     var bnf = $"<{subrName} {string.Join(" ", paramTokens)}>".Trim();
 
                     // Build method header-like text. Prefer to use original method syntax text when available.
-                    string BuildAttributeText(AttributeData a)
+                    static string BuildAttributeText(AttributeData a)
                     {
                         try
                         {
@@ -2199,19 +2197,16 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 sb.AppendLine();
 
                 // Only declare argIndex if we actually need to parse arguments
-                bool needsArgIndex = tree.Any(node => RequiresArgIndex(node));
-                if (needsArgIndex)
+                if (tree.Length > 0)
                 {
                     sb.AppendLine("int argIndex = 0;");
                     sb.AppendLine();
-                }
 
-                // ErrorRanker used by nested helpers to record best failures for either/alt choice
-                if (tree.Length > 0)
-                {
+                    // ErrorRanker used by nested helpers to record best failures for either/alt choice
                     sb.AppendLine("ErrorRanker ranker = default; // accumulate best failure reasons");
                     sb.AppendLine();
                 }
+
                 // Declare all result variables at the start - need to handle nested variables too
                 var allVariables = new HashSet<string>();
                 for (int i = 0; i < tree.Length; i++)
@@ -2276,7 +2271,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 {
                     sb.AppendLine($"// Extract parameter {index}: {node.GetDescription()}");
                     var nodeCtx = ctx.WithDepth(index);
-                    nodeCtx.PriorOptionalNodes = tree.Take(index).Where(n => optionalTrackedIds.Contains(n.ParameterId)).ToArray();
+                    nodeCtx.PriorOptionalNodes = [.. tree.Take(index).Where(n => optionalTrackedIds.Contains(n.ParameterId))];
                     nodeCtx.TrackOptionalMismatch = optionalTrackedIds.Contains(node.ParameterId);
                     node.GenerateInvokeStep(sb, nodeCtx);
                     sb.AppendLine();
@@ -2442,39 +2437,6 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                             }
                         }
 
-            /// <summary>
-            /// Determine if a parameter node requires the argIndex variable
-            /// </summary>
-            private bool RequiresArgIndex(ParameterNode node) => true;
-            //{
-            //    switch (node)
-            //    {
-            //        case LocalEnvironmentParameterNode _:
-            //            // LocalEnvironment parameters might check args but might not consume any
-            //            return true;
-
-            //        case SimpleParameterNode _:
-            //            // Simple parameters always consume arguments
-            //            return true;
-
-            //        case ArrayParameterNode _:
-            //            // Array parameters consume arguments
-            //            return true;
-
-            //        case EitherParameterNode either:
-            //            // Either parameters need argIndex if any alternative needs it
-            //            return either.Alternatives.Any(RequiresArgIndex);
-
-            //        case SequenceParameterNode sequence:
-            //            // Sequence parameters need argIndex if any child needs it
-            //            return sequence.Children.Any(RequiresArgIndex);
-
-            //        default:
-            //            // Unknown node type - assume it needs argIndex
-            //            return true;
-            //    }
-            //}
-
             private void CollectNestedVariables(ParameterNode node, int baseIndex, HashSet<string> variables)
             {
                 // TODO: this logic belongs in the nodes themselves
@@ -2577,19 +2539,18 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 }
 
                 // Add validation to ensure all arguments have been consumed
-                bool needsArgIndex = tree.Any(node => RequiresArgIndex(node));
-                if (needsArgIndex)
+                if (tree.Length > 0)
                 {
                     sb.AppendLine();
-                        sb.AppendLine("// Validate that all arguments have been consumed");
-                        sb.AppendLine("if (argIndex < args.Length)");
-                        sb.AppendLine("{");
-                        sb.Indent();
-                        // Prefer any recorded ranked error (type/count) before reporting TooMany.
-                        sb.AppendLine($"ranker.ThrowIfError();");
-                        sb.AppendLine("throw ArgumentCountError.TooMany(site, argIndex, null);");
-                        sb.Unindent();
-                        sb.AppendLine("}");
+                    sb.AppendLine("// Validate that all arguments have been consumed");
+                    sb.AppendLine("if (argIndex < args.Length)");
+                    sb.AppendLine("{");
+                    sb.Indent();
+                    // Prefer any recorded ranked error (type/count) before reporting TooMany.
+                    sb.AppendLine($"ranker.ThrowIfError();");
+                    sb.AppendLine("throw ArgumentCountError.TooMany(site, argIndex, null);");
+                    sb.Unindent();
+                    sb.AppendLine("}");
                 }
 
                 var methodCall = $"{method.ContainingType.Name}.{method.Name}({string.Join(", ", paramNames)})";
@@ -2626,7 +2587,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     if (_globalGeneratedHelpers.Contains(helperName))
                         continue; // Already generated
 
-                    GenerateHelperMethod(sb, structTypeName, helperName, typeSymbol, debugLog);
+                    GenerateHelperMethod(sb, structTypeName, helperName, typeSymbol);
                     _globalGeneratedHelpers.Add(helperName);
                     //debugLog.Add($"GenerateHelperMethods: added {helperName}");
                 }
@@ -2654,7 +2615,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     }
                     else if (node is EitherParameterNode eitherNode)
                     {
-                        CollectNodesNeedingHelpers(eitherNode.Alternatives.ToArray(), nodesSoFar, debugLog);
+                        CollectNodesNeedingHelpers([.. eitherNode.Alternatives], nodesSoFar, debugLog);
                     }
                 }
             }
@@ -2777,7 +2738,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             }
 
             // TODO: factor out common logic with GenerateParserMethod
-            private void GenerateHelperMethod(IndentedStringBuilder sb, string structTypeName, string helperName, ITypeSymbol structTypeSymbol, List<string> debugLog)
+            private void GenerateHelperMethod(IndentedStringBuilder sb, string structTypeName, string helperName, ITypeSymbol structTypeSymbol)
             {
                 // Emit a descriptive comment block for the helper method describing the custom type
                 try
@@ -2795,7 +2756,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                             var text = declTree.GetText().ToString(span);
                             // Escape comment terminators, normalize CRLF, and prefix each line with ' * '
                             var safe = text.Replace("*/", "*\\/").Replace("\r\n", "\n").Replace("\r", "\n");
-                            var lines = safe.Split(new[] { '\n' }, StringSplitOptions.None).Where(l => l != null).ToArray();
+                            var lines = safe.Split(['\n'], StringSplitOptions.None).Where(l => l != null).ToArray();
                             sb.AppendLine("/*");
                             foreach (var l in FilterOutCommentLines(string.Join("\n", lines)))
                             {
@@ -3657,7 +3618,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     nodes.Add(node);
                 }
 
-                return nodes.ToArray();
+                return [.. nodes];
             }
 
             private ParameterNode BuildNode(IParameterSymbol parameter, int index)
@@ -3955,7 +3916,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     nodes.Add(node);
                 }
 
-                return nodes.ToArray();
+                return [.. nodes];
             }
 
             // TODO: combine this with the IParameterSymbol version above
