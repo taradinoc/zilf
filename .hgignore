@@ -37,3 +37,4 @@ Package/Debug/**
 Package/Release/**
 .nuget
 *DO_NOT_COMMIT*
+temp

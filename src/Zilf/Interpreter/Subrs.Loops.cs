@@ -87,30 +87,30 @@ namespace Zilf.Interpreter
 
         [FSubr]
         public static ZilResult PROG(Context ctx,
-             [Optional] ZilAtom? activationAtom,
+            [Optional] ZilAtom? activationAtom,
             BindingParams.BindingList bindings,
-             [Optional] ZilDecl? bodyDecl,
-             [Required] ZilObject[] body)
+            [Optional] ZilDecl? bodyDecl,
+            [Required] ZilObject[] body)
         {
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "PROG", false, true);
         }
 
         [FSubr]
         public static ZilResult REPEAT(Context ctx,
-             [Optional] ZilAtom? activationAtom,
+            [Optional] ZilAtom? activationAtom,
             BindingParams.BindingList bindings,
-             [Optional] ZilDecl? bodyDecl,
-             [Required] ZilObject[] body)
+            [Optional] ZilDecl? bodyDecl,
+            [Required] ZilObject[] body)
         {
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "REPEAT", true, true);
         }
 
         [FSubr]
         public static ZilResult BIND(Context ctx,
-             [Optional] ZilAtom? activationAtom,
+            [Optional] ZilAtom? activationAtom,
             BindingParams.BindingList bindings,
-             [Optional] ZilDecl? bodyDecl,
-              [Required] ZilObject[] body)
+            [Optional] ZilDecl? bodyDecl,
+            [Required] ZilObject[] body)
         {
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "BIND", false, false);
         }

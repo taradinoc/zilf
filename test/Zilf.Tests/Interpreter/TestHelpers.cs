@@ -19,6 +19,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -49,18 +50,20 @@ namespace Zilf.Tests.Interpreter
                     $"TestHelpers.EvalAndAssert failed. Expected:<{expected}>. Actual:<{actual}>. Expression was: {expression}");
         }
 
-        internal static void EvalAndCatch<TException>(string expression, Predicate<TException>? predicate = null)
+        internal static void EvalAndCatch<TException>(string expression, Predicate<TException>? predicate = null,
+            [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
             where TException : Exception
         {
-            EvalAndCatch(null, expression, predicate);
+            EvalAndCatch(null, expression, predicate, predicateExpression);
         }
 
-        internal static void EvalAndCatch<TException>(Context? ctx, string expression, Predicate<TException>? predicate = null)
+        internal static void EvalAndCatch<TException>(Context? ctx, string expression, Predicate<TException>? predicate = null,
+            [CallerArgumentExpression(nameof(predicate))] string? predicateExpression = null)
             where TException : Exception
         {
             const string SWrongException = "TestHelpers.EvalAndCatch failed. Expected exception:<{0}>. Actual exception:<{1}> ({4}). Expression was: {2}.\nOriginal stack trace:\n{3}";
             const string SNoException = "TestHelpers.EvalAndCatch failed. Expected exception:<{0}>. Actual: no exception, returned <{1}>. Expression was: {2}";
-            const string SPredicateFailed = "TestHelpers.EvalAndCatch failed. Predicate returned false. Exception: {0}";
+            const string SPredicateFailed = "TestHelpers.EvalAndCatch failed. Predicate returned false:( {1} ). Exception: {0}";
 
             ZilObject result;
 
@@ -77,7 +80,7 @@ namespace Zilf.Tests.Interpreter
             {
                 // expected exception type, predicate failed
                 throw new AssertFailedException(
-                    string.Format(CultureInfo.CurrentCulture, SPredicateFailed, ex));
+                    string.Format(CultureInfo.CurrentCulture, SPredicateFailed, ex, predicateExpression));
             }
             catch (Exception ex)
             {

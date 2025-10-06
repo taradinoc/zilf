@@ -23,6 +23,7 @@ In the ZILF compiler, most argument parsers receive arguments as `ZilObject[]`, 
 - Always validate generated code by examining the actual output, not just compilation success. Test with all edge cases, especially for params arrays and mixed-parameter builtins.
 - **Side Effects**: Use `HasSideEffect = true` in `[Builtin]` attributes for builtins that modify state. The source generator automatically maintains the `HasSideEffects(string name)` method from these attributes.
 - **No Runtime Reflection**: Never use reflection at runtime to inspect method signatures or attributes; all such analysis must be done at compile time in source generators.
+- **No Special Cases**: NEVER hardcode the name of any custom sequence/structure parameter type, or the name of any SUBR/FSUBR/ZBuiltin, or any logic for parsing a specific custom type in the source generator. The generator MUST work generically, based on the definitions of those types.
 
 **Example:**
 ```csharp
@@ -82,11 +83,23 @@ Include path auto-augmentation: `Program.AddImplicitIncludePaths` heuristically 
 ## 5. Testing Strategy & Conventions
 
 - Framework: MSTest v3 (`Microsoft.NET.Test.Sdk`, `MSTest.TestFramework`); integration helpers in `test/Zilf.Tests.Integration/ZlrHelper.cs` show canonical compile→assemble→execute flow using in-memory FS.
-- **Important**: Always run tests through `dotnet test Zilf.sln`, not individual test projects. Individual test projects have dependency issues when run directly and require the full solution build.
 - Some of the integration tests take a long time to run, so long that the agent system will time out. Those tests are tagged with `[TestCategory("Slow")]`, so you should usually exclude them from running, especially while you're iterating on something. Only let the slow tests run when you're ready to do a full test pass.
 - Use `InMemoryFileSystem` / `OverlayFileSystem` for deterministic tests; don't write to the real filesystem unless staging packaging scenarios.
 - Analyzer and source generator behaviors are implicitly validated by normal builds (analyzers attached conditionally via `<Analyzer Condition="Exists(...)" ...>`). When adding new diagnostics, place IDs in `Analyzers/DiagnosticIds.cs` and create Analyzer + CodeFix pair following existing patterns.
-- To run unit tests, execute ` dotnet test Zilf.sln -c Debug --filter "TestCategory!=Slow"`. You may add additional parameters as needed (e.g., `--logger "console;verbosity=minimal"` or `--logger "trx;LogFileName=test_results.trx"`). Running an individual test project instead (e.g. `dotnet test test/Zilf.Tests/Zilf.Tests.csproj`) *will not work* unless you also add `--no-build`.
+- **Important**: Your solution to a problem must not break existing tests. Always run the fast test suite after making changes, and fix any failures before concluding that you're finished. It is unacceptable to fix one bug by creating another.
+
+### How to Run Tests
+
+- Start by running the fast tests only: in the workspace root, execute `dotnet test Zilf.sln -c Debug --filter "TestCategory!=Slow"`.
+	- If needed, you may add additional parameters as needed (e.g., `--logger "console;verbosity=minimal"` or `--logger "trx;LogFileName=test_results.trx"`).
+- **Optional**: If the fast tests pass, proceed to run the full test suite with `dotnet test Zilf.sln -c Debug`.
+	- Note: the full test suite includes some slow tests, which may take a minute or more to complete. Only run the full test suite when you've finished work on a task and need to validate it. Don't run the full test suite while actively iterating on code changes.
+- **Important**: Always run tests through `Zilf.sln`, not individual test projects. Individual test projects have dependency issues when run directly and require the full solution build. NEVER run an individual test project (e.g. `dotnet test test/Zilf.Tests/Zilf.Tests.csproj`) because it *will not work*.
+
+### How to Test Source Generators
+
+- Source generators are validated by normal builds and tests. If the regular test suite passes (see "How to Run Tests" above), the source generators are almost certainly functioning correctly.
+- While actively iterating, you may quickly validate source generator changes by running `dotnet build Zilf.sln` to ensure the generators execute without errors. You may then inspect the generated files to see if your intended changes were applied correctly.
 
 ## 6. FileSystem Abstraction
 
@@ -191,4 +204,14 @@ if (result.Success) new ZapfAssembler { FileSystem = fe.FileSystem }.Assemble("O
 - Use standard C# formatting, as seen in Visual Studio defaults.
 - Use a maximum line length of 120 characters.
 - Do not mix braces styles in an individual flow control statement; either use braces for all clauses or none.
-- Use XML documentation comments (`///`) with appropriate tagged sections (`<summary>`, `<param>`, `<returns>`, `<exception>`, etc.) on all public types and members.
+- Comments on types and members should use XML documentation comments with appropriate tagged sections (`<summary>`, `<param>`, `<returns>`, `<exception>`, etc.). All public types and members that you add should have an XML doc comment with at least a `<summary>`.
+
+## 20. The ZIL Language
+
+ZIL is essentially a domain-specific extension of MDL. ZILF consists of an interpreter for a fairly large subset of MDL, with some additional constructs built in, plus a compiler for an embedded language which is similar to, but distinct from, MDL. The interpreter is not a full MDL implementation; it only supports the constructs needed for ZIL. The ZIL constructs such as `ROUTINE` and `OBJECT` build structures in the interpreter's context that are then used during compilation to generate Z-machine code and data structures.
+
+MDL is not LISP, although it has some LISP-like syntax. It is a distinct language with its own semantics and constructs. MDL has a variety of data types besides lists, and notably, it distinguishes between lists and forms. Lists, written with parentheses, are merely data structures; forms, written with angle brackets, are code expressions that can be executed. Thus, evaluating `(+ 1 2)` will simply return the same list, but evaluating `<+ 1 2>` will perform the addition and return 3.
+
+The embedded language implemented by the compiler (i.e. available inside a `ROUTINE`), is similar to but not the same as the language implemented by the interpreter (i.e. available outside a `ROUTINE`). The features of the embedded language are implemented in ZILF as methods in `ZBuiltins.cs` marked with the `[Builtin]` attribute, which emit assembly code to perform the operations. The features of the interpreted language are implemented in `Subrs.*.cs` files marked with the `[Subr]` or `[FSubr]` attribute, which perform the operations directly in C# code.
+
+The interpreted language is dynamically typed, and all values which can be accessed by interpreted code are implemented as subclasses of `ZilObject`. The embedded language is untyped, and all values exist at runtime as 16-bit words; the compiler does some static typing to facilitate optimizations, but the Z-machine itself does not enforce types. The compiler represents values as `IOperand` instances, which translate directly to Z-machine instruction operands and can represent constants, local or global variables, or the stack.

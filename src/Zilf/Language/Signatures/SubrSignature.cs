@@ -27,7 +27,8 @@ namespace Zilf.Language.Signatures
         public int MinArgs { get; }
         public int? MaxArgs { get; }
 
-        SubrSignature(IReadOnlyList<ISignaturePart> parts)
+        // Internal constructor used by builders
+        internal SubrSignature(IReadOnlyList<ISignaturePart> parts)
         {
             Parts = parts;
 
@@ -35,6 +36,12 @@ namespace Zilf.Language.Signatures
 
             // can't use Sum here because it skips nulls
             MaxArgs = parts.Select(p => p.MaxArgs).Aggregate((int?)0, (a, b) => a + b);
+        }
+
+        // Factory used by generated source to construct signatures from parts
+        internal static ISignature FromGeneratedParts(ISignaturePart[] parts)
+        {
+            return new SubrSignature(parts);
         }
     }
 }

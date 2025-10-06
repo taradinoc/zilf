@@ -1,0 +1,13 @@
+.hg
+.hgignore
+.hgtags
+.nuget
+.vs
+.vscode
+bin
+TestResults
+TestResultArchive
+Package/Debug/**
+Package/Release/**
+_ReSharper.Caches
+temp

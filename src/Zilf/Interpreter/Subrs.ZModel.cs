@@ -62,7 +62,7 @@ namespace Zilf.Interpreter
         [FSubr]
         public static ZilObject ROUTINE(Context ctx, ZilAtom name,
              [Optional] ZilAtom? activationAtom, ZilList argList,
-              [Required] ZilObject[] body)
+             [Required] ZilObject[] body)
         {
             var oldAtom = ctx.ZEnvironment.InternGlobalName(name);
             if (ctx.GetZVal(oldAtom) != null)
@@ -290,10 +290,10 @@ namespace Zilf.Interpreter
                 public AtomParams.AdeclOrAtom Name;
 
                 [ZilOptional, Decl("<OR 'BYTE 'WORD>")]
-                public ZilAtom Size;
+                public ZilAtom? Size;
 
                 [ZilOptional]
-                public ZilObject Initializer;
+                public ZilObject? Initializer;
             }
         }
 #pragma warning restore CS0649
@@ -1079,7 +1079,7 @@ namespace Zilf.Interpreter
         [Subr("ORDER-FLAGS?")]
         public static ZilObject ORDER_FLAGS_P(Context ctx,
             [Decl("'LAST")] ZilAtom order,
-             [Required] ZilAtom[] objects)
+            [Required] ZilAtom[] objects)
         {
             foreach (var atom in objects)
             {

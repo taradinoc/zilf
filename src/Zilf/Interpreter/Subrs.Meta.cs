@@ -495,9 +495,10 @@ namespace Zilf.Interpreter
                 select (name, signature);
 
             var subrSignatures =
-                from def in ctx.GetSubrDefinitions()
-                let signature = SubrSignature.FromMethodInfo(def.methodInfo, def.isFSubr)
-                select (def.name, signature);
+                from pair in GeneratedSubrSignatureMetadata.SubrSignatures
+                let name = pair.Key
+                from signature in pair.Value
+                select (name, signature);
 
             return zcodeSignatures.Concat(subrSignatures);
         }

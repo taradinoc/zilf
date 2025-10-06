@@ -30,24 +30,13 @@ namespace ZilfSourceGenerators
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             var classWithAttributes = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    predicate: static (node, _) => node is ClassDeclarationSyntax cds && cds.AttributeLists.Count > 0,
+                .ForAttributeWithMetadataName("Zilf.Interpreter.BuiltinTypeAttribute",
+                    predicate: static (node, _) => node is ClassDeclarationSyntax cds,
                     transform: static (context, _) =>
                     {
-                        var classDeclaration = (ClassDeclarationSyntax)context.Node;
-                        foreach (var attributeList in classDeclaration.AttributeLists)
-                        {
-                            foreach (var attribute in attributeList.Attributes)
-                            {
-                                if (attribute.Name.ToString() is "BuiltinType" or "BuiltinTypeAttribute")
-                                {
-                                    return (classDeclaration, attribute);
-                                }
-                            }
-                        }
-                        return default;
-                    })
-                .Where(pair => pair != default);
+                        var classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
+                        return (context.TargetSymbol, context.Attributes[0]);
+                    });
 
             var compilationAndClasses = context.CompilationProvider.Combine(classWithAttributes.Collect());
 
@@ -58,17 +47,17 @@ namespace ZilfSourceGenerators
                 var lines = new List<string>();
                 foreach (var (cls, attr) in pairs)
                 {
-                    var semanticModel = compilation.GetSemanticModel(cls.SyntaxTree);
-
-                    var classSymbol = semanticModel.GetDeclaredSymbol(cls);
-                    var attrSymbol = ((IMethodSymbol?)semanticModel.GetSymbolInfo(attr).Symbol)?.ContainingType;
+                    var classSymbol = cls;
+                    var attrSymbol = attr.AttributeClass;
 
                     if (classSymbol is null || attrSymbol is null)
                     {
                         continue;
                     }
 
-                    lines.Add($"yield return new BuiltinTypeAttrPair(typeof({classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), new {attrSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}{attr.ArgumentList});");
+                    var ctorArgs = (attr.ApplicationSyntaxReference?.GetSyntax() as AttributeSyntax)?.ArgumentList?.ToString() ?? "";
+
+                    lines.Add($"yield return new BuiltinTypeAttrPair(typeof({classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}), new {attrSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}{ctorArgs});");
                 }
 
                 SourceText sourceText = SourceText.From($@"

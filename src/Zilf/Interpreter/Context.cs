@@ -89,7 +89,7 @@ namespace Zilf.Interpreter
         readonly Dictionary<ZilAtom, Binding> globalValues;
         readonly AssociationTable associations;
         readonly Dictionary<ZilAtom, TypeMapEntry> typeMap;
-        readonly Dictionary<string, (SubrDelegate del, MethodInfo mi, bool isFSubr)> subrDelegates;
+        readonly Dictionary<string, (SubrDelegate del, bool isFSubr)> subrDelegates;
 
         /// <summary>
         /// Gets a value representing truth (the atom T).
@@ -147,7 +147,7 @@ namespace Zilf.Interpreter
             localEnvironment = new LocalEnvironment(this);
             globalValues = new Dictionary<ZilAtom, Binding>();
             typeMap = new Dictionary<ZilAtom, TypeMapEntry>();
-            subrDelegates = new Dictionary<string, (SubrDelegate, MethodInfo, bool)>();
+            subrDelegates = new Dictionary<string, (SubrDelegate, bool)>();
 
             ZEnvironment = new ZEnvironment(this);
 
@@ -294,27 +294,22 @@ namespace Zilf.Interpreter
 
         void InitSubrs()
         {
-            var methods = typeof(Subrs).GetMethods(BindingFlags.Static | BindingFlags.Public);
-            foreach (var mi in methods)
+            var fsubrsQuery = from pair in GeneratedSubrParsers.FSubrParsers
+                              select (name: pair.Key, del: pair.Value, isFSubr: true);
+            var subrsQuery = from pair in GeneratedSubrParsers.SubrParsers
+                             select (name: pair.Key, del: pair.Value, isFSubr: false);
+            foreach (var (name, del, isFSubr) in fsubrsQuery.Concat(subrsQuery))
             {
-                var attrs = mi.GetCustomAttributes<Subrs.SubrAttributeBase>(false).ToArray();
-                if (attrs.Length == 0)
-                    continue;
-
-                var del = ArgDecoder.WrapMethod(mi, this);
-
-                foreach (var attr in attrs)
+                var baseName = name;
+                if (name.Contains("!-", StringComparison.Ordinal))
                 {
-                    var baseName = attr.Name ?? mi.Name;
-                    var name = string.IsNullOrEmpty(attr.ObList) ? baseName : $"{baseName}!-{attr.ObList}";
-
-                    var isFSubr = attr is Subrs.FSubrAttribute;
-                    subrDelegates.Add(name, (del, mi, isFSubr));
-
-                    // these atoms need to be on the root oblist
-                    var atom = ZilAtom.Parse(name + "!-", this);
-                    SetGlobalVal(atom, isFSubr ? new ZilFSubr(baseName, del) : new ZilSubr(baseName, del));
+                    baseName = name.Substring(0, name.IndexOf("!-", StringComparison.Ordinal));
                 }
+                subrDelegates.Add(baseName, (del, isFSubr));
+
+                // these atoms need to be on the root oblist
+                var atom = ZilAtom.Parse(name + "!-", this);
+                SetGlobalVal(atom, isFSubr ? new ZilFSubr(baseName, del) : new ZilSubr(baseName, del));
             }
         }
 
@@ -324,9 +319,9 @@ namespace Zilf.Interpreter
             return result.del;
         }
 
-        public IEnumerable<(string name, MethodInfo methodInfo, bool isFSubr)> GetSubrDefinitions()
+        public IEnumerable<(string name, bool isFSubr)> GetSubrDefinitions()
         {
-            return subrDelegates.Select(pair => (pair.Key, pair.Value.mi, pair.Value.isFSubr));
+            return subrDelegates.Select(pair => (pair.Key, pair.Value.isFSubr));
         }
 
         void InitConstants()

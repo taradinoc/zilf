@@ -1,4 +1,4 @@
-/* Copyright 2010-2023 Tara McGrew
+/* Copyright 2010-2025 Tara McGrew
  *
  * This file is part of ZILF.
  *
@@ -26,118 +26,23 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
-/// <summary>
-/// A StringBuilder wrapper that automatically handles indentation.
-/// </summary>
-/// <example>
-/// sb.Indent();
-/// sb.Append("if (");
-/// sb.Append(condition);
-/// sb.AppendLine(")");
-/// sb.AppendLine("{");
-/// sb.Indent();
-/// sb.AppendLine("return true;");
-/// sb.Unindent();
-/// sb.AppendLine("}");
-/// sb.Unindent();
-///
-/// /* This produces:
-///        if (condition)
-///        {
-///            return true;
-///        }
-/// */
-/// </example>
-public class IndentedStringBuilder
-{
-    private readonly StringBuilder _sb;
-    private int _indentLevel;
-    private readonly string _indentString;
-    private bool _atLineStart;
-
-    public IndentedStringBuilder(int indentSize = 4, string indentChar = " ")
-    {
-        _sb = new StringBuilder();
-        _indentLevel = 0;
-        _indentString = new string(indentChar[0], indentSize);
-        _atLineStart = true; // Start at the beginning of a line
-    }
-
-    public void Indent(int levels = 1)
-    {
-        _indentLevel += levels;
-    }
-
-    public void Unindent(int levels = 1)
-    {
-        _indentLevel = Math.Max(0, _indentLevel - levels);
-    }
-
-    public void AppendLine(string line = "")
-    {
-        if (string.IsNullOrEmpty(line))
-        {
-            _sb.AppendLine();
-        }
-        else
-        {
-            // If we're at the start of a line, add indentation
-            if (_atLineStart && _indentLevel > 0)
-            {
-                var indent = string.Concat(Enumerable.Repeat(_indentString, _indentLevel));
-                _sb.Append(indent);
-            }
-            _sb.AppendLine(line);
-        }
-        _atLineStart = true; // After AppendLine, we're at the start of a new line
-    }
-
-    public void Append(string text)
-    {
-        // If we're at the start of a line, add indentation
-        if (_atLineStart && _indentLevel > 0)
-        {
-            var indent = string.Concat(Enumerable.Repeat(_indentString, _indentLevel));
-            _sb.Append(indent);
-        }
-        _sb.Append(text);
-        _atLineStart = false; // After Append, we're no longer at the start of a line
-    }
-
-    public override string ToString()
-    {
-        return _sb.ToString();
-    }
-}
-
 namespace ZilfSourceGenerators
 {
+    /// <summary>
+    /// Source generator for ZBuiltin (compiler built-in) argument parsers.
+    /// Handles all complexity levels for compiler built-in routines.
+    /// </summary>
     [Generator]
-    public class ArgumentParserGenerator : IIncrementalGenerator
+    public class ZBuiltinParserGenerator : IIncrementalGenerator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // Find methods with Subr or FSubr attributes
-            var subrMethods = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    predicate: static (node, _) => IsMethodWithSubrAttribute(node),
-                    transform: static (context, _) => GetSubrMethodInfo(context))
-                .Where(method => method != null);
-
             // Find methods with Builtin attributes
             var builtinMethods = context.SyntaxProvider
-                .CreateSyntaxProvider(
-                    predicate: static (node, _) => IsMethodWithBuiltinAttribute(node),
+                .ForAttributeWithMetadataName("Zilf.Compiler.Builtins.BuiltinAttribute",
+                    predicate: static (node, _) => node is MethodDeclarationSyntax,
                     transform: static (context, _) => GetBuiltinMethodInfo(context))
                 .Where(method => method != null);
-
-            // Generate parsers for Subrs
-            var compilationAndSubrs = context.CompilationProvider.Combine(subrMethods.Collect());
-            context.RegisterSourceOutput(compilationAndSubrs, static (spc, source) =>
-            {
-                var nonNullMethods = source.Right.Where(m => m != null).ToImmutableArray();
-                GenerateSubrParsers(spc, source.Left, nonNullMethods!);
-            });
 
             // Generate parsers for Builtins
             var compilationAndBuiltins = context.CompilationProvider.Combine(builtinMethods.Collect());
@@ -148,56 +53,17 @@ namespace ZilfSourceGenerators
             });
         }
 
-        private static bool IsMethodWithSubrAttribute(SyntaxNode node)
+        private static BuiltinMethodInfo? GetBuiltinMethodInfo(GeneratorAttributeSyntaxContext context)
         {
-            if (node is not MethodDeclarationSyntax method || method.AttributeLists.Count == 0)
-                return false;
+            var method = (MethodDeclarationSyntax)context.TargetNode;
+            // var semanticModel = context.SemanticModel;
 
-            return method.AttributeLists
-                .SelectMany(list => list.Attributes)
-                .Any(attr => attr.Name.ToString() is "Subr" or "SubrAttribute" or "FSubr" or "FSubrAttribute");
-        }
-
-        private static bool IsMethodWithBuiltinAttribute(SyntaxNode node)
-        {
-            if (node is not MethodDeclarationSyntax method || method.AttributeLists.Count == 0)
-                return false;
-
-            return method.AttributeLists
-                .SelectMany(list => list.Attributes)
-                .Any(attr => attr.Name.ToString() is "Builtin" or "BuiltinAttribute");
-        }
-
-        private static SubrMethodInfo? GetSubrMethodInfo(GeneratorSyntaxContext context)
-        {
-            var method = (MethodDeclarationSyntax)context.Node;
-            var semanticModel = context.SemanticModel;
-
-            var methodSymbol = semanticModel.GetDeclaredSymbol(method);
-            if (methodSymbol == null) return null;
-
-            // Extract Subr/FSubr attribute information
-            var subrAttr = GetSubrAttribute(methodSymbol);
-            if (subrAttr == null) return null;
-
-            return new SubrMethodInfo
-            {
-                Method = method,
-                MethodSymbol = methodSymbol,
-                AttributeInfo = subrAttr
-            };
-        }
-
-        private static BuiltinMethodInfo? GetBuiltinMethodInfo(GeneratorSyntaxContext context)
-        {
-            var method = (MethodDeclarationSyntax)context.Node;
-            var semanticModel = context.SemanticModel;
-
-            var methodSymbol = semanticModel.GetDeclaredSymbol(method);
+            // var methodSymbol = semanticModel.GetDeclaredSymbol(method);
+            var methodSymbol = context.TargetSymbol as IMethodSymbol;
             if (methodSymbol == null) return null;
 
             // Extract Builtin attribute information
-            var builtinAttrs = GetBuiltinAttributes(methodSymbol);
+            var builtinAttrs = GetBuiltinAttributes(context.Attributes);
             if (builtinAttrs.Length == 0) return null;
 
             return new BuiltinMethodInfo
@@ -208,88 +74,65 @@ namespace ZilfSourceGenerators
             };
         }
 
-        private static SubrAttributeInfo? GetSubrAttribute(IMethodSymbol methodSymbol)
-        {
-            foreach (var attr in methodSymbol.GetAttributes())
-            {
-                var attrName = attr.AttributeClass?.Name;
-                if (attrName is "SubrAttribute" or "FSubrAttribute")
-                {
-                    var name = attr.ConstructorArguments.FirstOrDefault().Value?.ToString();
-                    var isFSubr = attrName == "FSubrAttribute";
-
-                    return new SubrAttributeInfo
-                    {
-                        Name = name ?? methodSymbol.Name,
-                        IsFSubr = isFSubr
-                    };
-                }
-            }
-            return null;
-        }
-
-        private static BuiltinAttributeInfo[] GetBuiltinAttributes(IMethodSymbol methodSymbol)
+        private static BuiltinAttributeInfo[] GetBuiltinAttributes(ImmutableArray<AttributeData> attributes)
         {
             var builtins = new List<BuiltinAttributeInfo>();
 
-            foreach (var attr in methodSymbol.GetAttributes())
+            foreach (var attr in attributes)
             {
-                if (attr.AttributeClass?.Name == "BuiltinAttribute")
+                // Extract all constructor arguments as names (e.g., "ADD", "+")
+                var names = new List<string>();
+                foreach (var arg in attr.ConstructorArguments)
                 {
-                    // Extract all constructor arguments as names (e.g., "ADD", "+")
-                    var names = new List<string>();
-                    foreach (var arg in attr.ConstructorArguments)
+                    if (arg.Kind == TypedConstantKind.Array)
                     {
-                        if (arg.Kind == TypedConstantKind.Array)
+                        // Handle array of strings (shouldn't happen for builtin names but be safe)
+                        foreach (var item in arg.Values)
                         {
-                            // Handle array of strings (shouldn't happen for builtin names but be safe)
-                            foreach (var item in arg.Values)
-                            {
-                                if (item.Value is string str)
-                                    names.Add(str);
-                            }
+                            if (item.Value is string str)
+                                names.Add(str);
                         }
-                        else if (arg.Value is string name)
+                    }
+                    else if (arg.Value is string name)
+                    {
+                        names.Add(name);
+                    }
+                }
+
+                foreach (var name in names)
+                {
+                    if (name == null) continue;
+
+                    // Create a separate BuiltinAttributeInfo for each name
+                    var info = new BuiltinAttributeInfo { Name = name };
+
+                    foreach (var namedArg in attr.NamedArguments)
+                    {
+                        switch (namedArg.Key)
                         {
-                            names.Add(name);
+                            case "Data":
+                                info.Data = namedArg.Value.Value?.ToString();
+                                break;
+                            case "MinVersion":
+                                if (namedArg.Value.Value is int minVer)
+                                    info.MinVersion = minVer;
+                                break;
+                            case "MaxVersion":
+                                if (namedArg.Value.Value is int maxVer)
+                                    info.MaxVersion = maxVer;
+                                break;
+                            case "HasSideEffect":
+                                if (namedArg.Value.Value is bool hasSideEffect)
+                                    info.HasSideEffect = hasSideEffect;
+                                break;
+                            case "Priority":
+                                if (namedArg.Value.Value is int priority)
+                                    info.Priority = priority;
+                                break;
                         }
                     }
 
-                    foreach (var name in names)
-                    {
-                        if (name == null) continue;
-
-                        // Create a separate BuiltinAttributeInfo for each name
-                        var info = new BuiltinAttributeInfo { Name = name };
-
-                        foreach (var namedArg in attr.NamedArguments)
-                        {
-                            switch (namedArg.Key)
-                            {
-                                case "Data":
-                                    info.Data = namedArg.Value.Value?.ToString();
-                                    break;
-                                case "MinVersion":
-                                    if (namedArg.Value.Value is int minVer)
-                                        info.MinVersion = minVer;
-                                    break;
-                                case "MaxVersion":
-                                    if (namedArg.Value.Value is int maxVer)
-                                        info.MaxVersion = maxVer;
-                                    break;
-                                case "HasSideEffect":
-                                    if (namedArg.Value.Value is bool hasSideEffect)
-                                        info.HasSideEffect = hasSideEffect;
-                                    break;
-                                case "Priority":
-                                    if (namedArg.Value.Value is int priority)
-                                        info.Priority = priority;
-                                    break;
-                            }
-                        }
-
-                        builtins.Add(info);
-                    }
+                    builtins.Add(info);
                 }
             }
 
@@ -314,7 +157,7 @@ namespace ZilfSourceGenerators
                         {
                             BuiltinName = attr.Name,
                             CallType = callType,
-                            Overloads = new List<OverloadInfo>()
+                            Overloads = []
                         };
                         groupsByKey[key] = group;
                         groups.Add(group);
@@ -329,69 +172,6 @@ namespace ZilfSourceGenerators
             }
 
             return groups;
-        }
-
-        private static void GenerateSubrParsers(SourceProductionContext context, Compilation compilation, ImmutableArray<SubrMethodInfo> methods)
-        {
-            if (methods.Length == 0) return;
-
-            var sb = new IndentedStringBuilder();
-            sb.AppendLine("/* Copyright 2010-2023 Tara McGrew");
-            sb.AppendLine(" * This file is part of ZILF. Generated code - do not edit. */");
-            sb.AppendLine();
-            sb.AppendLine("#nullable disable");
-            sb.AppendLine();
-            sb.AppendLine("using System;");
-            sb.AppendLine("using System.Collections.Generic;");
-            sb.AppendLine("using System.Linq;");
-            sb.AppendLine("using Zilf.Interpreter;");
-            sb.AppendLine("using Zilf.Interpreter.Values;");
-            sb.AppendLine("using Zilf.Language;");
-            sb.AppendLine("using Zilf.Common;");
-            sb.AppendLine("using Zilf.Diagnostics;");
-            sb.AppendLine();
-            sb.AppendLine("namespace Zilf.Interpreter");
-            sb.AppendLine("{");
-            sb.Indent();
-            sb.AppendLine("internal static partial class GeneratedSubrParsers");
-            sb.AppendLine("{");
-            sb.Indent();
-
-            // Use a HashSet to track generated parsers and avoid duplicates
-            var generatedParsers = new HashSet<string>();
-
-            foreach (var method in methods.Where(m => !string.IsNullOrWhiteSpace(m.AttributeInfo.Name)))
-            {
-                var cleanName = method.AttributeInfo.Name?.Trim() ?? "";
-                var sanitizedName = SanitizeName(cleanName);
-                var parserName = $"Generated_{sanitizedName}_Parser";
-                if (generatedParsers.Contains(parserName) || string.IsNullOrWhiteSpace(cleanName) || cleanName.Length == 0 || cleanName == "_" || sanitizedName.Length == 0)
-                    continue;
-                generatedParsers.Add(parserName);
-
-                var methodName = method.MethodSymbol.Name;
-                var returnType = GetReturnTypeName(method.MethodSymbol.ReturnType);
-                // Remove nullable reference type annotation if present
-                if (returnType.EndsWith("?"))
-                    returnType = returnType.TrimEnd('?');
-
-                // All subr parsers take (string name, Context ctx, ZilObject[] args)
-                sb.AppendLine($"internal static {returnType} {parserName}(string name, Context ctx, ZilObject[] args)");
-                sb.AppendLine("{");
-                sb.Indent();
-                sb.AppendLine("// TODO: Implement argument validation and call logic for subr");
-                sb.AppendLine("throw new NotImplementedException();");
-                sb.Unindent();
-                sb.AppendLine("}");
-                sb.AppendLine();
-            }
-
-            sb.Unindent();
-            sb.AppendLine("}");
-            sb.Unindent();
-            sb.AppendLine("}");
-
-            context.AddSource("GeneratedSubrParsers.g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
         }
 
         private static string GetParameterTypeName(ITypeSymbol type)
@@ -494,8 +274,7 @@ namespace ZilfSourceGenerators
                 return;
 
             var sb = new IndentedStringBuilder();
-            sb.AppendLine($"/* Copyright 2010-{DateTime.Now.Year} Tara McGrew");
-            sb.AppendLine(" * This file is part of ZILF. Generated code - do not edit. */");
+            sb.AppendLine("/* This file is part of ZILF. Generated code - do not edit. */");
             sb.AppendLine();
             sb.AppendLine("#nullable disable");
             sb.AppendLine();
@@ -837,7 +616,7 @@ namespace ZilfSourceGenerators
 
                     if (!initByName.TryGetValue(cleanName, out var list))
                     {
-                        list = new System.Collections.Generic.List<string>();
+                        list = [];
                         initByName[cleanName] = list;
                     }
                     list.Add(entry);
@@ -1359,7 +1138,7 @@ namespace ZilfSourceGenerators
                 {
                     if (!argumentCountToOverloads.ContainsKey(count))
                     {
-                        argumentCountToOverloads[count] = new List<OverloadInfo>();
+                        argumentCountToOverloads[count] = [];
                     }
                     argumentCountToOverloads[count].Add(overload);
                 }
@@ -2667,24 +2446,11 @@ namespace ZilfSourceGenerators
     }
 
     // Data structures for method information
-    public class SubrMethodInfo
-    {
-        public MethodDeclarationSyntax Method { get; set; } = null!;
-        public IMethodSymbol MethodSymbol { get; set; } = null!;
-        public SubrAttributeInfo AttributeInfo { get; set; } = null!;
-    }
-
     public class BuiltinMethodInfo
     {
         public MethodDeclarationSyntax Method { get; set; } = null!;
         public IMethodSymbol MethodSymbol { get; set; } = null!;
         public BuiltinAttributeInfo[] AttributeInfos { get; set; } = null!;
-    }
-
-    public class SubrAttributeInfo
-    {
-        public string Name { get; set; } = "";
-        public bool IsFSubr { get; set; }
     }
 
     public class BuiltinAttributeInfo
@@ -2699,8 +2465,8 @@ namespace ZilfSourceGenerators
 
     public class ParameterInfo
     {
-        public List<IParameterSymbol> DataParameters { get; set; } = new List<IParameterSymbol>();
-        public List<IParameterSymbol> ArgumentParameters { get; set; } = new List<IParameterSymbol>();
+        public List<IParameterSymbol> DataParameters { get; set; } = [];
+        public List<IParameterSymbol> ArgumentParameters { get; set; } = [];
         public int RequiredArgumentCount { get; set; } = 0;
         public int OptionalArgumentCount { get; set; } = 0;
         public bool HasParamsArray { get; set; } = false;
@@ -2709,14 +2475,14 @@ namespace ZilfSourceGenerators
     public class ArgumentCountGroup
     {
         public int Key { get; set; }
-        public List<OverloadInfo> Overloads { get; set; } = new List<OverloadInfo>();
+        public List<OverloadInfo> Overloads { get; set; } = [];
     }
 
     public class OverloadGroup
     {
         public string BuiltinName { get; set; } = "";
         public string CallType { get; set; } = "";
-        public List<OverloadInfo> Overloads { get; set; } = new List<OverloadInfo>();
+        public List<OverloadInfo> Overloads { get; set; } = [];
     }
 
     public class OverloadInfo
