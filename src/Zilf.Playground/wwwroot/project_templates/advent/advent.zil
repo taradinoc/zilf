@@ -133,7 +133,7 @@ Adapted once more by Tara McGrew (2015)">>
 ;"This is used by the debugging verbs.
   Note: TREASUREBIT isn't listed because it's a bit synonym."
 <SETG EXTRA-FLAGS
-    '(SACREDBIT MULTITUDEBIT SPRINGBIT LIQUIDBIT SPONGEBIT)>
+    '(SACREDBIT SPRINGBIT LIQUIDBIT SPONGEBIT)>
 
 ;"Override the HAVE check to allow PUT, HAVE, and DROP in a few special situations."
 <REPLACE-DEFINITION FAILS-HAVE-CHECK?
@@ -400,7 +400,7 @@ There is quite a bit of undergrowth, largely birch and ash saplings plus
 nondescript bushes of various sorts.
 This time of year visibility is quite restricted by all the leaves, but travel
 is quite easy if you detour around all the spruce and berry bushes.")
-    (FLAGS MULTITUDEBIT)>
+    (FLAGS)>
 
 ;----------------------------------------------------------------------
 
@@ -859,7 +859,7 @@ A low crawl over cobbles leads inward to the west.")
         %<VERSION? (ZIP #SPLICE ())
                    (ELSE #SPLICE (COBBLES COBBLESTONES))>)
     (TEXT "They're just ordinary cobbles.")
-    (FLAGS PLURALBIT MULTITUDEBIT)>
+    (FLAGS PLURALBIT)>
 
 ;----------------------------------------------------------------------
 
@@ -1141,7 +1141,7 @@ There is a passage at the top of a dome behind you.">
              STEP STEPS)
     (ADJECTIVE ROUGH STONE)
     (ACTION ROUGH-STONE-STEPS-F)
-    (FLAGS NDESCBIT PLURALBIT MULTITUDEBIT)>
+    (FLAGS NDESCBIT PLURALBIT)>
 
 <ROUTINE ROUGH-STONE-STEPS-F ()
     <COND (<HELD? ,LARGE-GOLD-NUGGET>
@@ -1240,7 +1240,7 @@ parallel to and north of the hall of mists." CR CR>
     (ADJECTIVE SEVERAL HIGH QUALITY)
     (FDESC "There are diamonds here!")
     (TEXT "They look to be of the highest quality!")
-    (FLAGS TAKEBIT TREASUREBIT PLURALBIT MULTITUDEBIT)>
+    (FLAGS TAKEBIT TREASUREBIT PLURALBIT)>
 
 <OBJECT CRYSTAL-BRIDGE
     (DESC "crystal bridge")
@@ -1446,7 +1446,7 @@ A passage continues west and up here.")
     (ARTICLE "many")
     (FDESC "There are many coins here!")
     (TEXT "They're a numismatist's dream!")
-    (FLAGS TAKEBIT PLURALBIT TREASUREBIT MULTITUDEBIT)>
+    (FLAGS TAKEBIT PLURALBIT TREASUREBIT)>
 
 
 ;----------------------------------------------------------------------
@@ -1542,7 +1542,7 @@ A shadowy figure can be seen there peering back at you." CR>)>>
     (IN LOCAL-GLOBALS)
     (SYNONYM MARKS DUST)
     (LDESC "Evidently you're not alone here.")
-    (FLAGS PLURALBIT MULTITUDEBIT)>
+    (FLAGS PLURALBIT)>
 
 <OBJECT SHADOWY-FIGURE
     (DESC "shadowy figure")
@@ -1607,7 +1607,7 @@ which enters and exits through tiny slits.")
     (SYNONYM SLIT SLITS)
     (ADJECTIVE TINY)
     (TEXT "The slits form a complex pattern in the rock.")
-    (FLAGS NDESCBIT MULTITUDEBIT PLURALBIT)>
+    (FLAGS NDESCBIT PLURALBIT)>
 
 ;----------------------------------------------------------------------
 
@@ -1625,7 +1625,7 @@ There are cracks everywhere, and a passage leading east.")
     (IN IN-DUSTY-ROCK-ROOM)
     (TEXT "They're just rocks. (Dusty ones, that is.)")
     (ACTION DUSTY-ROCKS-F)
-    (FLAGS NDESCBIT MULTITUDEBIT PLURALBIT)>
+    (FLAGS NDESCBIT PLURALBIT)>
 
 <ROUTINE DUSTY-ROCKS-F ()
     <COND (<VERB? LOOK-UNDER PUSH PULL>
@@ -2060,7 +2060,7 @@ where you can't get to it.")
     (ADJECTIVE THIN ROCK)
     (TEXT "They almost form natural stairs down into the pit.")
     (ACTION THIN-ROCK-SLABS-F)
-    (FLAGS NDESCBIT PLURALBIT MULTITUDEBIT)>
+    (FLAGS NDESCBIT PLURALBIT)>
 
 <ROUTINE THIN-ROCK-SLABS-F ()
     <COND (<VERB? LOOK-UNDER PUSH PULL TAKE>
@@ -3947,7 +3947,7 @@ whereupon it shatters into a myriad tiny fragments." CR CR>
     (ADJECTIVE ADVENTURE MASSIVE SUNDRY)
     (TEXT "You've seen everything in here already, albeit in somewhat different contexts.")
     (ACTION GAME-MATERIALS-F)
-    (FLAGS NDESCBIT MULTITUDEBIT)>
+    (FLAGS NDESCBIT)>
 
 <ROUTINE GAME-MATERIALS-F ()
     <COND (<VERB? TAKE>
@@ -3962,7 +3962,7 @@ you leave the \"Adventure\" materials where they are." CR>)>>
     (ARTICLE "hundreds of angry")
     (TEXT "I wouldn't bother the dwarves if I were you.")
     (ACTION SLEEPING-DWARVES-F)
-    (FLAGS NDESCBIT PERSONBIT PLURALBIT MULTITUDEBIT)>
+    (FLAGS NDESCBIT PERSONBIT PLURALBIT)>
 
 <ROUTINE SLEEPING-DWARVES-F (ARG)
     <COND (<=? .ARG ,M-WINNER>
@@ -4033,7 +4033,7 @@ At your feet is a large steel grate, next to which is a sign which reads,
     (ADJECTIVE ADVENTURE MASSIVE SUNDRY FIERCE GREEN)
     (TEXT "You've seen everything in here already, albeit in somewhat different contexts.")
     (ACTION GAME-MATERIALS-F)
-    (FLAGS NDESCBIT MULTITUDEBIT)>
+    (FLAGS NDESCBIT)>
 
 <OBJECT BLACK-MARK-ROD
     (DESC "black rod with a rusty mark on the end")
@@ -4381,15 +4381,16 @@ appears out of nowhere!" CR>)>)>)
 
 <SYNTAX USE OBJECT = V-USE>
 
-;"TODO: Eliminate MULTITUDEBIT since it's almost identical to PLURALBIT.
-  Just list the special cases here."
+;"MULTITUDEBIT was removed; use PLURALBIT and list any singular exceptions here."
 <ROUTINE V-COUNT ()
-    <COND (<FSET? ,PRSO ,MULTITUDEBIT>
-           <TELL "There are a multitude." CR>)
-          (<PRSO? ,PSEUDO-OBJECT>
-           <TELL "I see one (1) of those." CR>)
-          (ELSE
-           <TELL "I see one (1) " D ,PRSO "." CR>)>>
+        <COND (<==? ,PRSO FOREST>
+                     <TELL "I see one (1) forest." CR>)
+                    (<FSET? ,PRSO ,PLURALBIT>
+                     <TELL "There are a multitude." CR>)
+                    (<PRSO? ,PSEUDO-OBJECT>
+                     <TELL "I see one (1) of those." CR>)
+                    (ELSE
+                     <TELL "I see one (1) " D ,PRSO "." CR>)>>
 
 <ROUTINE V-KICK ()
     <PERFORM ,V?ATTACK ,PRSO>

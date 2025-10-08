@@ -24,12 +24,22 @@
 <VERB-SYNONYM LOOK L>
 
 <SYNTAX WALK OBJECT = V-WALK>
-<SYNTAX WALK IN OBJECT (FIND DOORBIT) (IN-ROOM) = V-ENTER>
+<SYNTAX WALK IN OBJECT (FIND KLUDGEBIT) (IN-ROOM) = V-ENTER>
+<SYNTAX WALK OUT OBJECT (FIND KLUDGEBIT) (IN-ROOM) = V-EXIT>
 <SYNTAX WALK THROUGH OBJECT (FIND DOORBIT) (IN-ROOM) = V-ENTER>
 <VERB-SYNONYM WALK GO>
 
-<SYNTAX ENTER OBJECT (FIND DOORBIT) (IN-ROOM) = V-ENTER>
-<SYNTAX GET IN OBJECT (FIND DOORBIT) (IN-ROOM) = V-ENTER>
+<SYNTAX ENTER = V-ENTER>
+<SYNTAX ENTER OBJECT (IN-ROOM) = V-ENTER>
+<SYNTAX GET IN OBJECT (FIND KLUDGEBIT) (IN-ROOM) = V-ENTER>
+<SYNTAX GET ON OBJECT (FIND KLUDGEBIT) (IN-ROOM) = V-ENTER>
+<VERB-SYNONYM ENTER BOARD>
+
+<SYNTAX EXIT = V-EXIT>
+<SYNTAX EXIT OBJECT (IN-ROOM) = V-EXIT>
+<SYNTAX GET OUT OBJECT (FIND KLUDGEBIT) (IN-ROOM) = V-EXIT>
+<SYNTAX GET OFF OBJECT (FIND KLUDGEBIT) (IN-ROOM) = V-EXIT>
+<VERB-SYNONYM EXIT LEAVE>
 
 <SYNTAX QUIT = V-QUIT>
 
@@ -293,13 +303,19 @@ Args:
 Returns:
   True if the objects in the room should also be described, otherwise
   false."
-<ROUTINE DESCRIBE-ROOM (RM "OPT" LONG "AUX" P)
+<ROUTINE DESCRIBE-ROOM (RM "OPT" LONG "AUX" P V)
     <COND (<AND <==? .RM ,HERE> <NOT ,HERE-LIT>>
            <DARKNESS-F ,M-LOOK>
            <RFALSE>)>
-    ;"Print the room's real name."
+    ;"Print the room's real name. If the player is in a vehicle in the room,
+        print a combined header like: 'Room, on the couch'."
     <VERSION? (ZIP) (ELSE <HLIGHT ,H-BOLD>)>
-    <TELL D .RM CR>
+    <COND (<AND <SET V <LOC ,WINNER>> <NOT <IN? .V ,ROOMS>> <FSET? .V ,VEHBIT>>
+           <TELL D .RM ", ">
+           <COND (<FSET? .V ,SURFACEBIT> <TELL "on ">)
+                   (ELSE <TELL "in ">)>
+           <TELL T .V CR>)
+          (ELSE <TELL D .RM CR>)>
     <VERSION? (ZIP) (ELSE <HLIGHT ,H-NORMAL>)>
     ;"If this is an implicit LOOK, check briefness."
     <COND (<NOT .LONG>
@@ -341,9 +357,9 @@ Returns:
 ;"Describes the objects in a room.
 
 Objects are described in four passes:
-1. All non-person objects with DESCFCNs, FDESCS, and LDESCs.
-2. All non-person objects not covered by #1.
-3. The visible contents of containers and surfaces.
+1. All non-person objects with DESCFCNs, FDESCS, and LDESCs, except vehicles containing WINNER.
+2. All non-person objects not covered by #1, except vehicles containing WINNER.
+3. The visible contents of containers and surfaces, excluding WINNER.
 4. All objects with PERSONBIT other than WINNER.
 
 Uses:
@@ -355,7 +371,10 @@ Args:
     <ROUTINE DESCRIBE-OBJECTS (RM "AUX" P N)
         <MAP-CONTENTS (I .RM)
             <COND
+                ;"skip objects with NDESCBIT"
                 (<FSET? .I ,NDESCBIT>)
+                ;"skip vehicles containing WINNER"
+                (<AND <FSET? .I ,VEHBIT> <HELD? ,WINNER .I>>)
                 ;"objects with DESCFCNs"
                 (<AND <SET P <GETP .I ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>
                  <CRLF>
@@ -385,8 +404,7 @@ Args:
         ;"describe visible contents of generic-desc containers and surfaces"
         <MAP-CONTENTS (I .RM)
             <COND (<AND <SEE-INSIDE? .I>
-                        <GENERIC-DESC? .I>
-                        <FIRST? .I>>
+                        <CONTENTS-DESC? .I>>
                    <DESCRIBE-CONTENTS .I>)>>
         ;"See if there are any NPCs"
         <SET N <>>
@@ -407,6 +425,8 @@ Args:
                      <FSET? .OBJ ,PERSONBIT>
                      <AND <NOT <FSET? .OBJ ,TOUCHBIT>>
                           <GETP .OBJ ,P?FDESC>>
+                     <AND <FSET? .OBJ ,VEHBIT>
+                          <HELD? ,WINNER .OBJ>>
                      <GETP .OBJ ,P?LDESC>
                      <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>
 
@@ -419,6 +439,17 @@ Args:
                           <GETP .OBJ ,P?LDESC>
                           <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>>
 
+    ;"Only describe contents if it contains something besides WINNER.
+      Unlike GENERIC-DESC?, we might still describe the contents of a vehicle the player is in."
+    <ROUTINE CONTENTS-DESC? (OBJ "AUX" P)
+        <T? <AND <SET P <FIRST? .OBJ>>
+                 <OR <N==? .P ,WINNER> <NEXT? .P>>
+                 <NOT <OR <FSET? .OBJ ,NDESCBIT>
+                          <FSET? .OBJ ,PERSONBIT>
+                          <AND <NOT <FSET? .OBJ ,TOUCHBIT>>
+                               <GETP .OBJ ,P?FDESC>>
+                          <GETP .OBJ ,P?LDESC>
+                          <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>>
 >
 
 <DEFMAC UPPERCASE-CHAR ('C)
@@ -490,9 +521,12 @@ Args:
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL "On">)
           (ELSE <TELL "In">)>
     <TELL " " T .OBJ " ">
-    <LIST-OBJECTS .OBJ <> ,L-ISARE>
+    <LIST-OBJECTS .OBJ NOT-WINNER? ,L-ISARE>
     <TELL "." CR>
-    <CONTENTS-ARE-IT .OBJ>>
+    <CONTENTS-ARE-IT .OBJ NOT-WINNER?>>
+
+;"A filter routine to exclude WINNER from contents listings."
+<ROUTINE NOT-WINNER? (OBJ) <N==? .OBJ ,WINNER>>
 
 ;"Prints a space followed by a parenthetical describing the contents of a
 surface or container, for use in inventory listings."
@@ -762,12 +796,50 @@ Returns:
            <RTRUE>)>
     <GOTO .RM>>
 
-<ROUTINE V-ENTER ()
-    <COND (<FSET? ,PRSO ,DOORBIT>
+<ROUTINE V-ENTER ("AUX" O)
+    <COND (<==? ,PRSO ,ROOMS <>>
+           ;"ENTER with no object: look for an IN exit, a door, or a vehicle"
+           <COND (<GETPT ,HERE ,P?IN>
+                  <DO-WALK ,P?IN>)
+                 (<OR <SET O <GWIM ,DOORBIT ,SF-IN-ROOM <>>>
+                      <SET O <GWIM ,VEHBIT ,SF-IN-ROOM <>>>>
+                  <PERFORM ,V?ENTER .O>)
+                 (ELSE <BE-SPECIFIC>)>)
+          (<FSET? ,PRSO ,DOORBIT>
            <DO-WALK <DOOR-DIR ,PRSO>>
            <RTRUE>)
-          (ELSE
-           <NOT-POSSIBLE "get inside"> <RTRUE>)>>
+          (<FSET? ,PRSO ,VEHBIT>
+           <MOVE ,WINNER ,PRSO>
+           <TELL "You get ">
+           <COND (<FSET? ,PRSO ,SURFACEBIT> <TELL "onto ">) (ELSE <TELL "into ">)>
+           <TELL T ,PRSO "." CR>
+           <RTRUE>)
+          (ELSE <NOT-POSSIBLE "enter">)>>
+
+<ROUTINE V-EXIT ("AUX" O)
+    <COND (<==? ,PRSO ,ROOMS <>>
+           ;"EXIT with no object: look for a vehicle, a door, or an OUT exit"
+           <COND (<FSET? <LOC ,WINNER> ,VEHBIT>
+                  <PERFORM ,V?EXIT <LOC ,WINNER>>)
+                 (<SET O <GWIM ,DOORBIT ,SF-IN-ROOM <>>>
+                  <PERFORM ,V?EXIT .O>)
+                 (<GETPT ,HERE ,P?OUT>
+                  <DO-WALK ,P?OUT>)
+                 (ELSE <BE-SPECIFIC>)>)
+          (<FSET? ,PRSO ,DOORBIT>
+           <DO-WALK <DOOR-DIR ,PRSO>>
+           <RTRUE>)
+          (<FSET? ,PRSO ,VEHBIT>
+           <COND (<NOT <IN? ,WINNER ,PRSO>>
+                  <TELL "You're not ">
+                  <COND (<FSET? ,PRSO ,SURFACEBIT> <TELL "on ">) (ELSE <TELL "in ">)>
+                  <TELL T ,PRSO "." CR>)
+                 (ELSE
+                  <MOVE ,WINNER ,HERE>
+                  <TELL "You get ">
+                  <COND (<FSET? ,PRSO ,SURFACEBIT> <TELL "off">) (ELSE <TELL "out">)>
+                  <TELL " of " T ,PRSO "." CR>)>)
+          (ELSE <NOT-POSSIBLE "exit">)>>
 
 ;"Performs the WALK action with a direction."
 <ROUTINE DO-WALK (DIR)
@@ -884,7 +956,13 @@ Returns:
            <RFALSE>)
           (<IN? .OBJ ,WINNER>
            <OR .SILENT <TELL "You already have that." CR>>
-           <RFALSE>)>
+           <RFALSE>)
+          (<HELD? ,WINNER .OBJ>
+           <COND (<NOT .SILENT>
+                  <TELL "You can't pick up " T ,PRSO " while you're ">
+                  <COND (<FSET? .OBJ ,SURFACEBIT> <TELL "on ">) (ELSE <TELL "in ">)>
+                  <TELL "it." CR>)>
+                  <RFALSE>)>
     ;"See if picked up object is being taken from a container"
     <COND (<SET HOLDER <TAKE-HOLDER .OBJ ,WINNER>>
            <COND (<FSET? .HOLDER ,PERSONBIT>
@@ -1016,8 +1094,12 @@ Returns:
            <SETG P-CONT 0>
            <PRINTR "You don't have that.">)>>
 
-<ROUTINE V-DROP ()
-    <MOVE ,PRSO ,HERE>
+<ROUTINE V-DROP ("AUX" L)
+    <COND (<AND <FSET? <SET L <LOC ,WINNER>> ,VEHBIT>
+                <NOT <FSET? .L ,SURFACEBIT>>>
+           ;"Items dropped inside a non-surface vehicle stay in the vehicle"
+           <MOVE ,PRSO .L>)
+          (ELSE <MOVE ,PRSO ,HERE>)>
     <FSET ,PRSO ,TOUCHBIT>
     <FCLEAR ,PRSO ,WORNBIT>
     <COND (<SHORT-REPORT?> <TELL "Dropped." CR>)

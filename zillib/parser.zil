@@ -111,11 +111,11 @@ other versions. These macros let us write the same code for all versions."
 ;"TODO: Eliminate some standard flags or make them optional.
   27 flags in the library only leaves 5 for V3 games."
 <SETG KNOWN-FLAGS
-    (ATTACKBIT CONTBIT DEVICEBIT DOORBIT EDIBLEBIT FEMALEBIT INVISIBLE KLUDGEBIT
-     LIGHTBIT LOCKEDBIT NARTICLEBIT NDESCBIT ONBIT OPENABLEBIT OPENBIT PERSONBIT
-     PLURALBIT READBIT SURFACEBIT TAKEBIT TOOLBIT TOUCHBIT TRANSBIT TRYTAKEBIT
-     VOWELBIT WEARBIT WORNBIT
-     !,EXTRA-FLAGS)>
+  (ATTACKBIT CONTBIT DEVICEBIT DOORBIT EDIBLEBIT FEMALEBIT INVISIBLE KLUDGEBIT
+   LIGHTBIT LOCKEDBIT NARTICLEBIT NDESCBIT ONBIT OPENABLEBIT OPENBIT PERSONBIT
+   PLURALBIT READBIT SURFACEBIT TAKEBIT TOOLBIT TOUCHBIT TRANSBIT TRYTAKEBIT
+   VOWELBIT WEARBIT WORNBIT VEHBIT
+   !,EXTRA-FLAGS)>
 
 ;"Default property values. Even properties with uninteresting defaults are
   listed here in case no game objects define them."
@@ -555,7 +555,7 @@ Args:
            <SETG PRSI <GET/B ,P-PRSIS 1>>)
           (ELSE <SETG PRSI ,MANY-OBJECTS>)>
     <COND (<N=? ,WINNER .OW <>>
-           <SETG HERE <LOC ,WINNER>>
+           <SETG HERE <META-LOC ,WINNER>>
            <SETG HERE-LIT <SEARCH-FOR-LIGHT>>)>>
 
 "Orphaning"
@@ -641,7 +641,7 @@ These extensions will be respected by other code that simulates the main loop, e
 <DEFAULT-DEFINITION MAIN-LOOP-END-OF-COMMAND
     <DEFMAC MAIN-LOOP-END-OF-COMMAND ()
         '<BIND ()
-            <SETG HERE <LOC ,WINNER>>
+            <SETG HERE <META-LOC ,WINNER>>
             <HOOK-END-OF-COMMAND>>>>
 
 <DEFAULT-DEFINITION MAIN-LOOP-END-OF-ITERATION
@@ -726,7 +726,7 @@ Sets:
           (ELSE
            <TRACE 1 "[PARSER: fresh input]" CR>
            <RESET-WINNER>
-           <SETG HERE <LOC ,WINNER>>
+           <SETG HERE <META-LOC ,WINNER>>
            <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
            <READLINE T>)>
 
@@ -2565,6 +2565,7 @@ until one returns true to indicate that it has handled the action.
 The search order is as follows:
   ACTION property of WINNER (with M-WINNER parameter)
   ACTION property of WINNER's location (with M-BEG parameter)
+  ACTION property of HERE, if different from location (with M-BEG)
   Verb preaction
   CONTFCN property of PRSI's location
   ACTION property of PRSI
@@ -2592,6 +2593,11 @@ Returns:
           (<AND <SET RM <LOC ,WINNER>>
                 <SET AC <GETP .RM ,P?ACTION>>
                 <TRACE 4 "[calling LOC (" D .RM ") ACTION]" CR>
+                <APPLY .AC ,M-BEG>>
+           <RTRUE>)
+          (<AND <N==? <LOC ,WINNER> ,HERE>
+                <SET AC <GETP ,HERE ,P?ACTION>>
+                <TRACE 4 "[calling HERE (" D .RM ") ACTION]" CR>
                 <APPLY .AC ,M-BEG>>
            <RTRUE>)
           (<AND .PRTN
@@ -2646,7 +2652,8 @@ Args:
            <RESET-WINNER>)>
     <SET WAS-LIT ,HERE-LIT>
     <SETG HERE .RM>
-    <MOVE ,WINNER ,HERE>
+    <COND (<FSET? <LOC ,WINNER> ,VEHBIT> <MOVE <LOC ,WINNER> ,HERE>)
+          (ELSE <MOVE ,WINNER ,HERE>)>
     <APPLY <GETP .RM ,P?ACTION> ,M-ENTER>
     ;"Call SEARCH-FOR-LIGHT down here in case M-ENTER adjusts the light."
     <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
@@ -3055,10 +3062,10 @@ Returns:
   The room that encloses the object, or false if it isn't in a room."
 <ROUTINE META-LOC (OBJ)
     <REPEAT ()
-        <SET OBJ <LOC .OBJ>>
         <COND (<0? .OBJ> <RFALSE>)
               (<IN? .OBJ ,ROOMS>
-               <RETURN .OBJ>)>>>
+               <RETURN .OBJ>)>
+        <SET OBJ <LOC .OBJ>>>>
 
 ;"Checks whether the player has entered darkness, printing a message if so.
 
