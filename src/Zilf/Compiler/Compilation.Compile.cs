@@ -50,6 +50,7 @@ namespace Zilf.Compiler
             PreparePropertyBuilders();
             PrepareHighestFlagBuilders();
             PrepareObjectBuilders(out var lastObject);
+            EnforcePropertyLimit();
             PrepareTableBuilders();
 
             PrepareSelfInsertingBreaks();
@@ -421,11 +422,45 @@ namespace Zilf.Compiler
             // enforce limit on number of flags
             if (UniqueFlags > Game.MaxFlags)
             {
-                Context.HandleError(new CompilerError(
+                var err = new CompilerError(
                     CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
                     "flags",
                     UniqueFlags,
-                    Game.MaxFlags));
+                    Game.MaxFlags);
+
+                // If the number of flags would be legal in V4+, attach an informational
+                // subdiagnostic indicating that it's legal in other Z-machine versions
+                // (V4+ supports up to 48 flags).
+                if (UniqueFlags <= 48)
+                {
+                    var info = new CompilerError(CompilerMessages.This_Would_Be_Legal_In_Other_Zmachine_Versions_Eg_V0, 4);
+                    err = err.Combine(info);
+                }
+
+                Context.HandleError(err);
+            }
+        }
+
+        void EnforcePropertyLimit()
+        {
+            // enforce limit on number of properties
+            if (Properties.Count > Game.MaxProperties)
+            {
+                var count = Properties.Count;
+                var err = new CompilerError(
+                    CompilerMessages.Too_Many_0_1_Defined_Only_2_Allowed,
+                    "properties",
+                    count,
+                    Game.MaxProperties);
+
+                // If the number of properties would be legal in V4+ (63 or less), attach info
+                if (count <= 63)
+                {
+                    var info = new CompilerError(CompilerMessages.This_Would_Be_Legal_In_Other_Zmachine_Versions_Eg_V0, 4);
+                    err = err.Combine(info);
+                }
+
+                Context.HandleError(err);
             }
         }
 

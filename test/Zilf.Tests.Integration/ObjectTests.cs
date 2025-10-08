@@ -17,6 +17,7 @@
  */
 
 using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -280,7 +281,8 @@ namespace Zilf.Tests.Integration
             await AssertGlobals(
                 $"<OBJECT FOO (FLAGS {tooManyBits})>")
                 .InV3()
-                .DoesNotCompileAsync();
+                .DoesNotCompileAsync("ZIL0404",
+                    diag => diag.SubDiagnostics.Any(sd => sd.Code == "ZIL0403"));
 
             // V4+ limit: 48 flags
             for (int i = 32; i < 49; i++)
@@ -292,6 +294,33 @@ namespace Zilf.Tests.Integration
                 $"<OBJECT FOO (FLAGS {tooManyBits})>")
                 .InV4()
                 .DoesNotCompileAsync();
+        }
+
+        [TestMethod]
+        public async Task Too_Many_Properties_Should_Spoil_The_Build()
+        {
+            var tooManyProps = new StringBuilder();
+
+            // create 32 property definitions (one more than V3 likely allows)
+            for (int i = 0; i < 32; i++)
+            {
+                tooManyProps.AppendFormat("<PROPDEF P{0} <>>\r\n", i);
+            }
+
+            await AssertGlobals(tooManyProps.ToString())
+                .InV3()
+                .DoesNotCompileAsync("ZIL0404",
+                    diag => diag.SubDiagnostics.Any(sd => sd.Code == "ZIL0403"));
+
+            // create 64 property definitions (exceeds V4+ limit of 63)
+            for (int i = 32; i < 64; i++)
+            {
+                tooManyProps.AppendFormat("<PROPDEF P{0} <>>\r\n", i);
+            }
+
+            await AssertGlobals(tooManyProps.ToString())
+                .InV4()
+                .DoesNotCompileAsync("ZIL0404");
         }
 
         #endregion

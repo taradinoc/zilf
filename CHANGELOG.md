@@ -86,6 +86,9 @@ and this project may someday adhere to
   have been redesigned, which should be mostly invisible to users, but may
   have inadvertently introduced bugs by changing error messages in rare cases.
 
+- Error ZIL0404 (sometimes with info ZIL0403) is now issued when too many
+  properties are defined.
+
 ### Fixed
 
 - Fixed a couple bugs related to using `OBLIST`s as structured values.
