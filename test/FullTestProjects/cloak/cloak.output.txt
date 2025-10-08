@@ -50,7 +50,7 @@ There seems to be some sort of message scrawled in the sawdust on the floor.
 
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 13                                                                               The message simply reads: "You win."
 Are you sure you want to quit? (y/n) > Foyer Bar                                                 Score: 0                                                                 Moves: 13                                                                               
-OK - not quitting.
+OK, not quitting.
 
 >  Foyer Bar                                                 Score: 0                                                                 Moves: 14                                                                               Are you sure you want to restart? (y/n) > Foyer Bar                                                 Score: 0                                                                 Moves: 14                                                                               
 

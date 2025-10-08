@@ -238,7 +238,7 @@
 ;"Helper routines for action handlers"
 
 <ROUTINE YOU-MASHER ("OPT" WHOM)
-    <TELL "I don't think " T <OR .WHOM ,PRSO> " would appreciate that." CR>>
+    <TELL <LIBRARY-MESSAGE VERBS YOU-MASHER ((WHOM <OR .WHOM ,PRSO>))> CR>>
 
 <ROUTINE POINTLESS (VING "OPT" PREP REV? "AUX" F S)
     <COND (.REV? <SET F ,PRSI> <SET S ,PRSO>)
@@ -249,26 +249,26 @@
            <COND (.PREP
                   <TELL !\  .PREP>
                   <COND (.S <TELL !\  T .S>)>)>)>
-    <TELL " doesn't seem like it will help." CR>>
+    <TELL <LIBRARY-MESSAGE VERBS POINTLESS> CR>>
 
 <ROUTINE NOT-POSSIBLE (V)
     <SETG P-CONT 0>
-    <TELL "That's not something you can " .V "." CR>>
+    <TELL <LIBRARY-MESSAGE VERBS NOT-POSSIBLE ((V .V))> CR>>
 
 <ROUTINE RHETORICAL ()
-    <TELL "That was a rhetorical question." CR>>
+    <TELL <LIBRARY-MESSAGE VERBS RHETORICAL> CR>>
 
 <ROUTINE BE-SPECIFIC ()
     <SETG P-CONT 0>
-    <TELL "You'll have to be more specific." CR>>
+    <TELL <LIBRARY-MESSAGE VERBS BE-SPECIFIC> CR>>
 
 <ROUTINE SILLY ()
     <SETG P-CONT 0>
-    <TELL "You must be joking." CR>>
+    <TELL <LIBRARY-MESSAGE VERBS SILLY> CR>>
 
 <ROUTINE TSD ()
     <SETG P-CONT 0>
-    <TELL "Not here, not now." CR>>
+    <TELL <LIBRARY-MESSAGE VERBS TSD> CR>>
 
 <DEFMAC IF-PLURAL ('O 'IF-PL 'IF-SG)
     `<COND (<FSET? ~.O ,PLURALBIT> ~.IF-PL) (ELSE ~.IF-SG)>>
@@ -276,7 +276,7 @@
 <ROUTINE PRE-REQUIRES-LIGHT ()
     <COND (<NOT ,HERE-LIT>
            <SETG P-CONT 0>
-           <TELL "It's too dark to see anything here." CR>)>>
+           <TELL <LIBRARY-MESSAGE DARKNESS TOO-DARK-TO-SEE> CR>)>>
 
 ;"Action handler routines"
 
@@ -341,13 +341,13 @@ Returns:
 
     <ROUTINE DARKNESS-F (ARG)
         <COND (<=? .ARG ,M-LOOK>
-               <TELL "It is pitch black. You can't see a thing." CR>)
+               <TELL <LIBRARY-MESSAGE DARKNESS LOOK> CR>)
               (<=? .ARG ,M-SCOPE?>
                <T? <SCOPE-STAGE? GENERIC INVENTORY GLOBALS>>)
               (<=? .ARG ,M-NOW-DARK>
-               <TELL "You are plunged into darkness." CR>)
+               <TELL <LIBRARY-MESSAGE DARKNESS NOW-DARK> CR>)
               (<=? .ARG ,M-NOW-LIT>
-               <TELL "You can see your surroundings now." CR CR>
+               <TELL <LIBRARY-MESSAGE DARKNESS NOW-LIT> CR CR>
                <RFALSE>)
               (ELSE <RFALSE>)>>
 >
@@ -531,11 +531,11 @@ Args:
 ;"Prints a space followed by a parenthetical describing the contents of a
 surface or container, for use in inventory listings."
 <ROUTINE INV-DESCRIBE-CONTENTS (OBJ "AUX" N F)
-    <COND (<FSET? .OBJ ,SURFACEBIT> <TELL " (holding ">)
-          (ELSE <TELL " (containing ">)>
+    <COND (<FSET? .OBJ ,SURFACEBIT> <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-1-SURFACE>>)
+          (ELSE <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-1-CONTAINER>>)>
     <SET F <FIRST? .OBJ>>
     <COND (<NOT .F>
-           <TELL "nothing)">
+           <TELL <LIBRARY-MESSAGE INVENTORY NOTHING> <LIBRARY-MESSAGE INVENTORY CONTENTS-2>>
            <RETURN>)>
     <MAP-CONTENTS (I .OBJ)
         <SET N <+ .N 1>>>
@@ -550,7 +550,7 @@ surface or container, for use in inventory listings."
                <COND (<0? .N>)
                      (<==? .N 1> <TELL ", and ">)
                      (ELSE <TELL ", ">)>>)>
-    <TELL ")">>
+    <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-2>>>
 
 ;"Prints a list describing a set of objects, usually the contents of a
 surface or container.
@@ -745,11 +745,11 @@ Returns:
 
 <COND (<NOT <GASSIGNED? EXTRA-GAME-VERBS>> <SETG EXTRA-GAME-VERBS '()>)>
 
-<CONSTANT CANT-GO-THAT-WAY "You can't go that way.">
+<CONSTANT CANT-GO-THAT-WAY <LIBRARY-MESSAGE WALK CANT-GO-THAT-WAY>>
 
 <ROUTINE V-WALK ("AUX" PT PTS RM D)
     <COND (<NOT ,PRSO-DIR>
-           <PRINTR "You must give a direction to walk in.">)
+           <TELL <LIBRARY-MESSAGE WALK NO-DIRECTION>>)
           (<0? <SET PT <GETPT ,HERE ,PRSO>>>
            <COND (<OR ,HERE-LIT <NOT <DARKNESS-F ,M-DARK-CANT-GO>>>
                   <TELL ,CANT-GO-THAT-WAY CR>)>
@@ -786,8 +786,7 @@ Returns:
                   <RTRUE>)
                  (ELSE
                   <THIS-IS-IT .D>
-                  <TELL "You'll have to open " T .D
-                        " first." CR>
+                  <TELL <LIBRARY-MESSAGE WALK BLOCKED-BY-DOOR ((DOOR .D))> CR>
                   <SETG P-CONT 0>
                   <RTRUE>)>)
           (ELSE
@@ -866,12 +865,12 @@ Returns:
           (ELSE <>)>>
 
 <ROUTINE V-QUIT ()
-    <TELL "Are you sure you want to quit?">
+    <TELL <LIBRARY-MESSAGE QUIT PROMPT>>
     <COND (<YES?>
-           <TELL CR "Thanks for playing." CR>
+           <TELL CR <LIBRARY-MESSAGE QUIT GOODBYE> CR>
            <QUIT>)
           (ELSE
-           <TELL CR "OK - not quitting." CR>)>>
+           <TELL CR <LIBRARY-MESSAGE QUIT ABORTED> CR>)>>
 
 <ROUTINE V-EXAMINE ("AUX" P (N <>))
     <COND (<OR <SET P <GETP ,PRSO ,P?TEXT>>
@@ -879,53 +878,50 @@ Returns:
            <TELL .P CR>
            <SET N T>)>
     <COND (<FSET? ,PRSO ,OPENABLEBIT>
-           <TELL CT ,PRSO " is ">
-           <COND (<FSET? ,PRSO ,OPENBIT> <TELL "open.">)
-                 (ELSE <TELL "closed.">)>
-           <CRLF>
+           <TELL <LIBRARY-MESSAGE EXAMINE OPENABLE ((OBJ ,PRSO) (OPEN? <FSET? ,PRSO ,OPENBIT>))> CR>
            <SET N T>)>
     <COND (<AND <FIRST? ,PRSO> <SEE-INSIDE? ,PRSO>>
            <DESCRIBE-CONTENTS ,PRSO>
            <SET N T>)>
     <COND (<NOT .N>
-           <TELL "You see nothing special about " T ,PRSO "." CR>)>>
+           <TELL <LIBRARY-MESSAGE EXAMINE DEFAULT ((OBJ ,PRSO))> CR>)>>
 
 <ROUTINE V-LOOK-UNDER ()
     <COND (<AND <N=? ,PRSO ,WINNER> <FSET? ,PRSO ,PERSONBIT>>
            <YOU-MASHER>
            <RTRUE>)
-          (<NOT ,HERE-LIT> <TELL "It's too dark." CR>)
-          (ELSE <TELL "You can't see anything of interest." CR>)>>
+          (<NOT ,HERE-LIT> <TELL <LIBRARY-MESSAGE DARKNESS TOO-DARK> CR>)
+          (ELSE <TELL <LIBRARY-MESSAGE LOOK-UNDER DEFAULT> CR>)>>
 
 <ROUTINE V-SEARCH ()
     <COND (<PRSO? ,WINNER> <PERFORM ,V?INVENTORY>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
           (<NOT <FSET? ,PRSO ,CONTBIT>> <NOT-POSSIBLE "look inside">)
           (<AND <FSET? ,PRSO ,OPENABLEBIT> <NOT <SEE-INSIDE? ,PRSO>>>
-           <TELL CT ,PRSO <IF-PLURAL ,PRSO " are" " is"> " closed." CR>)
+           <TELL <LIBRARY-MESSAGE SEARCH CLOSED ((OBJ ,PRSO) (PLURAL? <FSET? ,PRSO PLURALBIT>))> CR>)
           (<NOT <FIRST? ,PRSO>>
-           <TELL CT ,PRSO <IF-PLURAL ,PRSO " are" " is"> " empty." CR>)
+           <TELL <LIBRARY-MESSAGE SEARCH EMPTY ((OBJ ,PRSO) (PLURAL? <FSET? ,PRSO PLURALBIT>))> CR>)
           (ELSE <DESCRIBE-CONTENTS ,PRSO>)>>
 
 <ROUTINE V-INVENTORY ()
     ;"check for light first"
     <COND (,HERE-LIT
            <COND (<FIRST? ,WINNER>
-                  <TELL "You are carrying:" CR>
+                  <TELL <LIBRARY-MESSAGE INVENTORY HEADER> CR>
                   <MAP-CONTENTS (I ,WINNER)
                       <TELL "   " A .I>
-                      <AND <FSET? .I ,WORNBIT> <TELL " (worn)">>
-                      <AND <FSET? .I ,LIGHTBIT> <TELL " (providing light)">>
+                      <AND <FSET? .I ,WORNBIT> <TELL <LIBRARY-MESSAGE INVENTORY WORN>>>
+                      <AND <FSET? .I ,LIGHTBIT> <TELL <LIBRARY-MESSAGE INVENTORY LIGHTING>>>
                       <COND (<FSET? .I ,CONTBIT>
                              <COND (<FSET? .I ,OPENABLEBIT>
-                                    <COND (<FSET? .I ,OPENBIT> <TELL " (open)">)
-                                          (ELSE <TELL " (closed)">)>)>
+                                    <COND (<FSET? .I ,OPENBIT> <TELL <LIBRARY-MESSAGE INVENTORY OPEN>>)
+                                          (ELSE <TELL <LIBRARY-MESSAGE INVENTORY CLOSED>>)>)>
                              <COND (<SEE-INSIDE? .I> <INV-DESCRIBE-CONTENTS .I>)>)>
                       <CRLF>>)
                  (ELSE
-                  <TELL "You are empty-handed." CR>)>)
+                  <TELL <LIBRARY-MESSAGE INVENTORY EMPTY-HANDED> CR>)>)
           (ELSE
-           <TELL "It's too dark to see what you're carrying." CR>)>>
+           <TELL <LIBRARY-MESSAGE INVENTORY TOO-DARK> CR>)>>
 
 <ROUTINE V-TAKE ()
     <TRY-TAKE ,PRSO>
@@ -943,9 +939,9 @@ Returns:
 <ROUTINE TRY-TAKE (OBJ "OPT" SILENT "AUX" HOLDER)
     <COND (<=? .OBJ ,WINNER>
            <COND (.SILENT)
-                 (<=? ,P-V-WORD ,W?GET> <TELL "Not quite." CR>)
+                 (<=? ,P-V-WORD ,W?GET> <TELL <LIBRARY-MESSAGE TAKE GET-ME> CR>)
                  (<=? ,P-V-WORD ,W?TAKE ,W?GRAB> <TSD>)
-                 (<=? ,P-V-WORD ,W?PICK> <TELL "You aren't my type." CR>)
+                 (<=? ,P-V-WORD ,W?PICK> <TELL <LIBRARY-MESSAGE TAKE PICK-ME-UP> CR>)
                  (ELSE <SILLY>)>
            <RFALSE>)
           (<FSET? .OBJ ,PERSONBIT>
@@ -955,22 +951,20 @@ Returns:
            <OR .SILENT <NOT-POSSIBLE "pick up">>
            <RFALSE>)
           (<IN? .OBJ ,WINNER>
-           <OR .SILENT <TELL "You already have that." CR>>
+           <OR .SILENT <TELL <LIBRARY-MESSAGE TAKE ALREADY-HELD> CR>>
            <RFALSE>)
           (<HELD? ,WINNER .OBJ>
            <COND (<NOT .SILENT>
-                  <TELL "You can't pick up " T ,PRSO " while you're ">
-                  <COND (<FSET? .OBJ ,SURFACEBIT> <TELL "on ">) (ELSE <TELL "in ">)>
-                  <TELL "it." CR>)>
-                  <RFALSE>)>
+                  <TELL <LIBRARY-MESSAGE TAKE TAKE-FROM-INSIDE ((OBJ ,PRSO) (SURFACE? <FSET? .OBJ ,SURFACEBIT>))> CR>
+                  <RFALSE>)>)>
     ;"See if picked up object is being taken from a container"
     <COND (<SET HOLDER <TAKE-HOLDER .OBJ ,WINNER>>
            <COND (<FSET? .HOLDER ,PERSONBIT>
-                  <OR .SILENT <TELL "That seems to belong to " T .HOLDER "." CR>>
+                  <OR .SILENT <TELL <LIBRARY-MESSAGE TAKE BLOCKED-BY-PERSON ((HOLDER .HOLDER))> CR>>
                   <RFALSE>)
                  (<BLOCKS-TAKE? .HOLDER>
                   <THIS-IS-IT .HOLDER>
-                  <OR .SILENT <TELL CT .HOLDER " is in the way." CR>>
+                  <OR .SILENT <TELL <LIBRARY-MESSAGE TAKE BLOCKED-BY-OBJECT ((HOLDER .HOLDER))> CR>>
                   <RFALSE>)
                  (<NOT <TAKE-CAPACITY-CHECK .OBJ .SILENT>>)
                  (<AND <FSET? .HOLDER ,CONTBIT>
@@ -979,24 +973,18 @@ Returns:
                   <FSET .OBJ ,TOUCHBIT>
                   <MOVE .OBJ ,WINNER>
                   <COND (.SILENT)
-                        (<SHORT-REPORT?> <TELL "Taken." CR>)
-                    (ELSE
-                     <TELL "You reach ">
-                     <COND (<HELD? ,WINNER .HOLDER>
-                            <TELL "out of ">)
-                           (ELSE <TELL "in ">)>
-                     <TELL T .HOLDER " and ">
-                     <TELL "take ">
-                     <TELL T .OBJ "." CR>)>
-                 <RTRUE>)>)>
+                        (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE TAKE SUCCESS-SHORT> CR>)
+                        (ELSE
+                         <TELL <LIBRARY-MESSAGE TAKE SUCCESS-CONTAINER ((HOLDER .HOLDER) (OBJ .OBJ))> CR>)>
+                  <RTRUE>)>)>
     <COND (<NOT <TAKE-CAPACITY-CHECK .OBJ .SILENT>>
            <RFALSE>)
           (ELSE
            <FSET .OBJ ,TOUCHBIT>
            <MOVE .OBJ ,WINNER>
            <COND (.SILENT)
-                 (<SHORT-REPORT?> <TELL "Taken." CR>)
-                 (ELSE <TELL "You pick up " T .OBJ "." CR>)>
+                 (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE TAKE SUCCESS-SHORT> CR>)
+                 (ELSE <TELL <LIBRARY-MESSAGE TAKE SUCCESS ((OBJ .OBJ))> CR>)>
            <RTRUE>)>>
 
 ;"Locates the container, person, or room that restricts the ability to take a
@@ -1082,9 +1070,9 @@ Returns:
         <COND (<G? <+ .CWT .NWT> .CAP>
                <COND (.SILENT)
                      (<SHORT-REPORT?>
-                      <TELL "You're carrying too much." CR>)
+                      <TELL <LIBRARY-MESSAGE TAKE TOO-HEAVY-SHORT> CR>)
                      (ELSE
-                      <TELL "You're carrying too much to pick up " T .O "." CR>)>
+                      <TELL <LIBRARY-MESSAGE TAKE TOO-HEAVY ((OBJ .O))> CR>)>
                <RFALSE>)>
         <RTRUE>>
 >
@@ -1092,7 +1080,7 @@ Returns:
 <ROUTINE PRE-DROP ()
     <COND (<NOT <IN? ,PRSO ,WINNER>>
            <SETG P-CONT 0>
-           <PRINTR "You don't have that.">)>>
+           <TELL <LIBRARY-MESSAGE DROP NOT-HELD> CR>)>>
 
 <ROUTINE V-DROP ("AUX" L)
     <COND (<AND <FSET? <SET L <LOC ,WINNER>> ,VEHBIT>
@@ -1102,8 +1090,8 @@ Returns:
           (ELSE <MOVE ,PRSO ,HERE>)>
     <FSET ,PRSO ,TOUCHBIT>
     <FCLEAR ,PRSO ,WORNBIT>
-    <COND (<SHORT-REPORT?> <TELL "Dropped." CR>)
-          (ELSE <TELL "You drop " T ,PRSO "." CR>)>>
+    <COND (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE DROP SUCCESS-SHORT> CR>)
+          (ELSE <TELL <LIBRARY-MESSAGE DROP SUCCESS ((OBJ ,PRSO))> CR>)>>
 
 <ROUTINE PRE-PUT-ON ()
     <COND (<PRSI? ,WINNER> <PERFORM ,V?WEAR ,PRSO> <RTRUE>)
@@ -1117,9 +1105,9 @@ Returns:
            <NOT-POSSIBLE "put things on">
            <RTRUE>)
           (<NOT <IN? ,PRSO ,WINNER>>
-           <PRINTR "You don't have that.">)
+           <TELL <LIBRARY-MESSAGE PUT-ON NOT-HELD> CR>)
           (<OR <EQUAL? ,PRSO ,PRSI> <HELD? ,PRSI ,PRSO>>
-           <PRINTR "You can't put something on itself.">)
+           <TELL <LIBRARY-MESSAGE PUT-ON PUT-ON-ITSELF> CR>)
           (ELSE
            <SET S <GETP ,PRSO ,P?SIZE>>
            <COND (<G=? <SET CCAP <GETP ,PRSI ,P?CAPACITY>> 0>)
@@ -1128,21 +1116,21 @@ Returns:
                   ;"set bottomless flag"
                   <SET B 1>)>
            <COND (<G? .S .CCAP>
-                  <TELL "That won't fit on " T ,PRSI "." CR>
+                  <TELL <LIBRARY-MESSAGE PUT-ON TOO-BIG ((HOLDER ,PRSI))> CR>
                   <RETURN>)>
            <COND (<0? .B>
                   ;"Determine weight of contents of IO"
                   <SET W <CONTENTS-WEIGHT ,PRSI>>
                   <SET X <+ .W .S>>
                   <COND (<G? .X .CCAP>
-                         <TELL "There's not enough room on " T ,PRSI "." CR>
+                         <TELL <LIBRARY-MESSAGE PUT-ON NO-ROOM ((HOLDER ,PRSI))> CR>
                          <RETURN>)>
                   )>
            <MOVE ,PRSO ,PRSI>
            <FSET ,PRSO ,TOUCHBIT>
            <FCLEAR ,PRSO ,WORNBIT>
-           <COND (<SHORT-REPORT?> <TELL "Done." CR>)
-                 (ELSE <TELL "You put " T ,PRSO " on " T ,PRSI "." CR>)>)>>
+           <COND (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE PUT-ON SUCCESS-SHORT> CR>)
+                 (ELSE <TELL <LIBRARY-MESSAGE PUT-ON SUCCESS ((OBJ ,PRSO) (HOLDER ,PRSI))> CR>)>)>>
 
 <ROUTINE PRE-PUT-IN ()
     <COND (<PRSI? ,WINNER> <TSD> <RTRUE>)
@@ -1157,15 +1145,15 @@ Returns:
            <RTRUE>)
           (<AND <NOT <FSET? ,PRSI ,OPENBIT>>
                 <FSET? ,PRSI ,OPENABLEBIT>>
-           <TELL CT ,PRSI " is closed." CR>)
+           <TELL <LIBRARY-MESSAGE PUT-IN CLOSED ((HOLDER ,PRSI))> CR>)
           ;"always closed case"
           (<AND <NOT <FSET? ,PRSI ,OPENBIT>>
                 <FSET? ,PRSI ,CONTBIT>>
-           <TELL "You see no way to put things into " T ,PRSI  "." CR>)
+           <TELL <LIBRARY-MESSAGE PUT-IN NOT-OPENABLE ((HOLDER ,PRSI))> CR>)
           (<NOT <IN? ,PRSO ,WINNER>>
-           <PRINTR "You aren't holding that.">)
+           <TELL <LIBRARY-MESSAGE PUT-IN NOT-HELD> CR>)
           (<OR <EQUAL? ,PRSO ,PRSI> <HELD? ,PRSI ,PRSO>>
-           <PRINTR "You can't put something in itself.">)
+           <TELL <LIBRARY-MESSAGE PUT-IN PUT-IN-ITSELF> CR>)
           (ELSE
            <SET S <GETP ,PRSO ,P?SIZE>>
            <COND (<G=? <SET CCAP <GETP ,PRSI ,P?CAPACITY>> 0>)
@@ -1175,7 +1163,7 @@ Returns:
                   <SET B 1>)>
            <SET CSIZE <GETP ,PRSI ,P?SIZE>>
            <COND (<G? .S .CCAP>
-                  <TELL "That won't fit in " T ,PRSI "." CR>
+                  <TELL <LIBRARY-MESSAGE PUT-IN TOO-BIG ((HOLDER ,PRSI))> CR>
                   <RETURN>)>
            <COND (<0? .B>
                   ;"Determine weight of contents of IO"
@@ -1183,13 +1171,13 @@ Returns:
                   ;<TELL "Back from Contents-weight loop" CR>
                   <SET X <+ .W .S>>
                   <COND (<G? .X .CCAP>
-                         <TELL "There's not enough room in " T ,PRSI "." CR>
+                         <TELL <LIBRARY-MESSAGE PUT-IN NO-ROOM ((HOLDER ,PRSI))> CR>
                          <RETURN>)>)>
     <MOVE ,PRSO ,PRSI>
     <FSET ,PRSO ,TOUCHBIT>
     <FCLEAR ,PRSO ,WORNBIT>
-    <COND (<SHORT-REPORT?> <TELL "Done." CR>)
-          (ELSE <TELL "You put " T ,PRSO " in " T ,PRSI "." CR>)>)>>
+    <COND (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE PUT-IN SUCCESS-SHORT> CR>)
+          (ELSE <TELL <LIBRARY-MESSAGE PUT-IN SUCCESS ((OBJ ,PRSO) (HOLDER ,PRSI))> CR>)>)>>
 
 ;"Calculates the weight of all objects in a container, non-recursively."
 <ROUTINE CONTENTS-WEIGHT (O "AUX" W)
@@ -1233,9 +1221,9 @@ Returns:
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER> <RTRUE>)
           (<FSET? ,PRSO ,EDIBLEBIT>
            <REMOVE ,PRSO>
-           <COND (<SHORT-REPORT?> <TELL "Eaten." CR>)
-                 (ELSE <TELL "You devour " T ,PRSO "." CR>)>)
-          (ELSE <TELL "That's hardly edible." CR>)>>
+           <COND (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE EAT SUCCESS-SHORT> CR>)
+                 (ELSE <TELL <LIBRARY-MESSAGE EAT SUCCESS ((OBJ ,PRSO))> CR>)>)
+          (ELSE <TELL <LIBRARY-MESSAGE EAT NOT-EDIBLE> CR>)>>
 
 <DEFMAC PRINT-GAME-BANNER ()
     <COND (<GASSIGNED? GAME-TITLE>
@@ -1247,32 +1235,30 @@ Returns:
 
 <ROUTINE V-VERSION ()
     <PRINT-GAME-BANNER>
-    <TELL "Release ">
-    <PRINTN <BAND <LOWCORE RELEASEID> *3777*>>
-    <TELL " / Serial number ">
+    <TELL <LIBRARY-MESSAGE VERSION RELEASE-AND-SERIAL ((RELEASE <BAND <LOWCORE RELEASEID> *3777*>))>>
     <LOWCORE-TABLE SERIAL 6 PRINTC>
     <TELL %<STRING " / " ,ZIL-VERSION " lib " ,ZILLIB-VERSION>>
     <CRLF>>
 
 <ROUTINE V-THINK-ABOUT ()
     <COND (<PRSO? ,WINNER>
-           <TELL "Yes, yes, you're very important." CR>)
+           <TELL <LIBRARY-MESSAGE THINK-ABOUT THINK-ABOUT-ME> CR>)
           (ELSE
-           <TELL "You contemplate " T ,PRSO " for a bit, but nothing fruitful comes to mind." CR>)>>
+           <TELL <LIBRARY-MESSAGE THINK-ABOUT DEFAULT ((OBJ ,PRSO))> CR>)>>
 
 <ROUTINE V-OPEN ()
     <COND (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER> <RTRUE>)
           (<NOT <FSET? ,PRSO ,OPENABLEBIT>> <NOT-POSSIBLE "open"> <RTRUE>)
           (<FSET? ,PRSO ,OPENBIT>
-           <PRINTR "It's already open.">)
+           <TELL <LIBRARY-MESSAGE OPEN ALREADY-OPEN> CR>)
           (<FSET? ,PRSO ,LOCKEDBIT>
-           <TELL "You'll have to unlock it first." CR>)
+           <TELL <LIBRARY-MESSAGE OPEN LOCKED> CR>)
           (ELSE
            <FSET ,PRSO ,TOUCHBIT>
            <FSET ,PRSO ,OPENBIT>
-           <COND (<SHORT-REPORT?> <TELL "Opened." CR>)
+           <COND (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE OPEN SUCCESS-SHORT> CR>)
                  (ELSE
-                  <TELL "You open " T ,PRSO "." CR>
+                  <TELL <LIBRARY-MESSAGE OPEN SUCCESS ((OBJ ,PRSO))> CR>
                   <COND (<AND ,HERE-LIT
                               <FSET? ,PRSO ,CONTBIT>
                               <NOT <FSET? ,PRSO ,TRANSBIT>>>
@@ -1284,12 +1270,12 @@ Returns:
           (<NOT <FSET? ,PRSO ,OPENABLEBIT>> <NOT-POSSIBLE "close"> <RTRUE>)
           ;(<FSET? ,PRSO ,SURFACEBIT> <NOT-POSSIBLE "close"> <RTRUE>)
           (<NOT <FSET? ,PRSO ,OPENBIT>>
-           <PRINTR "It's already closed.">)
+           <TELL <LIBRARY-MESSAGE CLOSE ALREADY-CLOSED> CR>)
           (ELSE
            <FSET ,PRSO ,TOUCHBIT>
            <FCLEAR ,PRSO ,OPENBIT>
-           <COND (<SHORT-REPORT?> <TELL "Closed." CR>)
-                 (ELSE <TELL "You close " T ,PRSO "." CR>)>
+           <COND (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE CLOSE SUCCESS-SHORT> CR>)
+                 (ELSE <TELL <LIBRARY-MESSAGE CLOSE SUCCESS ((OBJ ,PRSO))> CR>)>
            <NOW-DARK?>)>>
 
 <ROUTINE V-LOCK ()
@@ -1302,7 +1288,7 @@ Returns:
 
 <ROUTINE V-WAIT ("AUX" T INTERRUPT ENDACT)
     <SET T 1>
-    <TELL "Time passes." CR>
+    <TELL <LIBRARY-MESSAGE WAIT SUCCESS> CR>
     <REPEAT ()
         <HOOK-BEFORE-M-END>
         <SET ENDACT <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
@@ -1318,7 +1304,7 @@ Returns:
 
 <ROUTINE V-AGAIN ()
     <COND (<NOT <PST-PRSA ,AGAIN-STORAGE>>
-           <TELL "Nothing to repeat." CR>
+           <TELL <LIBRARY-MESSAGE AGAIN NO-COMMAND> CR>
            <RTRUE>)>
     <SAVE-PARSER-RESULT ,TEMP-PARSER-RESULT>
     <RESTORE-PARSER-RESULT ,AGAIN-STORAGE>
@@ -1346,7 +1332,7 @@ Returns:
            <COND (<IN? ,PRSO ,WINNER>
                   <TELL .T CR>)
                  (ELSE
-                  <TELL "You must be holding that to be able to read it." CR>)>)
+                  <TELL <LIBRARY-MESSAGE READ NOT-HELD> CR>)>)
           (ELSE
            <PERFORM ,V?EXAMINE ,PRSO>)>>
 
@@ -1354,28 +1340,28 @@ Returns:
     <COND (<PRSO? ,WINNER> <TSD> <RTRUE>)
           (<NOT <FSET? ,PRSO ,DEVICEBIT>> <NOT-POSSIBLE "switch on and off"> <RTRUE>)
           (<FSET? ,PRSO ,ONBIT>
-           <TELL "It's already on." CR>)
+           <TELL <LIBRARY-MESSAGE TURN-ON ALREADY-ON> CR>)
           (ELSE
            <FSET ,PRSO ,ONBIT>
-           <COND (<SHORT-REPORT?> <TELL "Switched on." CR>)
-                 (ELSE <TELL "You switch on " T ,PRSO "." CR>)>)>>
+           <COND (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE TURN-ON SUCCESS-SHORT> CR>)
+                 (ELSE <TELL <LIBRARY-MESSAGE TURN-ON SUCCESS ((OBJ ,PRSO))> CR>)>)>>
 
 <ROUTINE V-TURN-OFF ()
     <COND (<PRSO? ,WINNER>
-           <TELL <PICK-ONE-R <PLTABLE "Baseball." "Cold showers.">> CR>)
+           <TELL <LIBRARY-MESSAGE TURN-OFF TURN-ME-OFF> CR>)
           (<NOT <FSET? ,PRSO ,DEVICEBIT>>
            <NOT-POSSIBLE "switch on and off"> <RTRUE>)
           (<NOT <FSET? ,PRSO ,ONBIT>>
-           <TELL "It's already off." CR>)
+           <TELL <LIBRARY-MESSAGE TURN-OFF NOT-ON> CR>)
           (ELSE
            <FCLEAR ,PRSO ,ONBIT>
-           <COND (<SHORT-REPORT?> <TELL "Switched off." CR>)
-                 (ELSE <TELL "You switch off " T ,PRSO "." CR>)>)>>
+           <COND (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE TURN-OFF SUCCESS-SHORT> CR>)
+                 (ELSE <TELL <LIBRARY-MESSAGE TURN-OFF SUCCESS ((OBJ ,PRSO))> CR>)>)>>
 
 <ROUTINE V-FLIP ()
     <COND (<NOT <FSET? ,PRSO ,DEVICEBIT>>
            <COND (<FSET? ,PRSO ,SURFACEBIT>
-                  <POINTLESS "Taking your frustration out on">)
+                  <POINTLESS <LIBRARY-MESSAGE FLIP POINTLESS-WHAT>>)
                  (ELSE <NOT-POSSIBLE "switch on and off">)>)
           (<FSET? ,PRSO ,ONBIT>
            <PERFORM ,V?TURN-OFF ,PRSO>)
@@ -1384,13 +1370,13 @@ Returns:
     <RTRUE>>
 
 <ROUTINE V-PUSH ()
-    <COND (<PRSO? ,WINNER> <TELL "No, you seem close to the edge." CR>)
+    <COND (<PRSO? ,WINNER> <TELL <LIBRARY-MESSAGE PUSH PUSH-ME> CR>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
           (ELSE <POINTLESS "Pushing">)>
     <RTRUE>>
 
 <ROUTINE V-PULL ()
-    <COND (<PRSO? ,WINNER> <TELL "That would demean both of us." CR>)
+    <COND (<PRSO? ,WINNER> <TELL <LIBRARY-MESSAGE PULL PULL-ME> CR>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
           (ELSE <POINTLESS "Pulling">)>
     <RTRUE>>
@@ -1404,9 +1390,7 @@ Returns:
     <RTRUE>>
 
 <ROUTINE V-DRINK ()
-    <TELL "You aren't ">
-    <ITALICIZE "that">
-    <TELL " thirsty." CR>>
+    <TELL <LIBRARY-MESSAGE DRINK DEFAULT> CR>>
 
 <ROUTINE V-FILL ()
     <BE-SPECIFIC>
@@ -1417,29 +1401,28 @@ Returns:
     <RTRUE>>
 
 <ROUTINE V-SMELL ()
-    <TELL "You smell nothing unexpected." CR>>
+    <TELL <LIBRARY-MESSAGE SMELL DEFAULT> CR>>
 
 <ROUTINE V-ATTACK ()
-    <COND (<PRSO? ,WINNER> <TELL "Let's hope it doesn't come to that." CR>)
+    <COND (<PRSO? ,WINNER> <TELL <LIBRARY-MESSAGE ATTACK ATTACK-ME> CR>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
-          (ELSE <POINTLESS "Taking your frustration out on">)>
+          (ELSE <POINTLESS <LIBRARY-MESSAGE ATTACK POINTLESS-WHAT>>)>
     <RTRUE>>
 
 <ROUTINE V-THROW-AT ()
-    <COND (<PRSO? ,WINNER> <TELL "Get " <IF-PLURAL ,PRSO "them" "it"> " yourself." CR> ;"FIXME: impossible?")
+    <COND (<PRSO? ,WINNER> <TELL <LIBRARY-MESSAGE THROW-AT THROW-AT-ME ((PLURAL? <FSET? ,PRSO PLURALBIT>))> CR>)
           (<FSET? ,PRSI ,PERSONBIT> <YOU-MASHER ,PRSI>)
-          (ELSE <POINTLESS "Taking your frustration out on" <> T>)>
+          (ELSE <POINTLESS <LIBRARY-MESSAGE THROW-AT POINTLESS-WHAT> <> T>)>
     <RTRUE>>
 
 <ROUTINE V-GIVE ()
     <COND (<PRSI? ,WINNER>
-           <COND (<HELD? ,PRSO> <TELL "You already have that." CR>)
-                 (ELSE <TELL "Get " <IF-PLURAL ,PRSO "them" "it"> " yourself." CR> ;"FIXME: impossible?")>)
+           <COND (<HELD? ,PRSO> <TELL <LIBRARY-MESSAGE GIVE GIVE-ME-ALREADY-HELD> CR>)
+                 (ELSE <TELL <LIBRARY-MESSAGE GIVE GIVE-ME ((PLURAL? <FSET? ,PRSO ,PLURALBIT>))> CR> ;"FIXME: impossible?")>)
           (<PRSO? ,WINNER> <SILLY>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
           (<NOT <FSET? ,PRSI ,PERSONBIT>> <NOT-POSSIBLE "give things to">)
-          (ELSE <TELL CT ,PRSI <IF-PLURAL ,PRSI " don't" " doesn't">
-                      " take " T ,PRSO "." CR>)>>
+          (ELSE <TELL <LIBRARY-MESSAGE GIVE DEFAULT ((OBJ ,PRSO) (WHOM ,PRSI) (PLURAL? <FSET ,PRSI ,PLURALBIT>))> CR>)>>
 
 <ROUTINE V-SGIVE ()
     <PERFORM ,V?GIVE ,PRSI ,PRSO>
@@ -1448,10 +1431,10 @@ Returns:
 <ROUTINE PRE-TELL ()
     <COND (<OR <PRSO? ,WINNER> <NOT <FSET? ,PRSO ,PERSONBIT>>>
            <SETG P-CONT 0>
-           <TELL "Talking to ">
-           <COND (<PRSO? ,WINNER> <TELL "yourself">)
-                 (ELSE <TELL A ,PRSO>)>
-           <TELL ", huh?" CR>)>>
+           <TELL <LIBRARY-MESSAGE TELL DEFAULT-1>>
+           <COND (<PRSO? ,WINNER> <TELL <LIBRARY-MESSAGE TELL DEFAULT-2-YOURSELF>>)
+                 (ELSE <TELL <LIBRARY-MESSAGE TELL DEFAULT-2-OBJECT ((OBJ ,PRSO))>>)>
+           <TELL <LIBRARY-MESSAGE TELL DEFAULT-3> CR>)>>
 
 <ROUTINE V-TELL-ABOUT ()
     <TELL CT ,PRSO " doesn't seem interested." CR>>
@@ -1483,13 +1466,13 @@ Returns:
     <RTRUE>>
 
 <ROUTINE V-SING ()
-    <TELL "You give a stirring performance of \"MacArthur Park\". Bravo!" CR>>
+    <TELL <LIBRARY-MESSAGE SING DEFAULT> CR>>
 
 <ROUTINE V-DANCE ()
-    <TELL "Dancing is forbidden." CR>>
+    <TELL <LIBRARY-MESSAGE DANCE DEFAULT> CR>>
 
 <ROUTINE V-WAKE ()
-    <COND (<PRSO? ,WINNER> <TELL "If only this were a dream." CR>)
+    <COND (<PRSO? ,WINNER> <TELL <LIBRARY-MESSAGE WAKE WAKE-ME> CR>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
           (ELSE <NOT-POSSIBLE "wake">)>>
 
@@ -1499,9 +1482,9 @@ Returns:
           (ELSE <POINTLESS "Rubbing">)>>
 
 <ROUTINE V-BURN ()
-    <COND (<PRSO? ,WINNER> <TELL "What is this, the Friars Club?" CR>)
+    <COND (<PRSO? ,WINNER> <TELL <LIBRARY-MESSAGE BURN BURN-ME> CR>)
           (<FSET? ,PRSO ,PERSONBIT> <YOU-MASHER>)
-          (ELSE <POINTLESS "Recklessly incinerating">)>>
+          (ELSE <POINTLESS <LIBRARY-MESSAGE BURN POINTLESS-WHAT>>)>>
 
 ;"Action handlers for game verbs"
 
@@ -1509,58 +1492,58 @@ Returns:
     <IFFLAG
         (UNDO
          <COND (<NOT ,USAVE>
-                <TELL "Cannot undo any further." CR>
+                <TELL <LIBRARY-MESSAGE UNDO NO-UNDO-STATE> CR>
                 <RETURN>)
                (<NOT <IRESTORE>>
-                <TELL "Undo failed." CR>)>)
-        (ELSE <TELL "Undo is not available in this version." CR>)>>
+                <TELL <LIBRARY-MESSAGE UNDO FAILED> CR>)>)
+        (ELSE <TELL <LIBRARY-MESSAGE UNDO NOT-SUPPORTED> CR>)>>
 
 <ROUTINE V-SAVE ()
-    <TELL "Saving..." CR CR>
+    <TELL <LIBRARY-MESSAGE SAVE SAVING> CR CR>
     <COND (<SAVE> <V-LOOK>)
-          (ELSE <TELL "Save failed." CR>)>>
+          (ELSE <TELL <LIBRARY-MESSAGE SAVE FAILED> CR>)>>
 
 <ROUTINE V-RESTORE ()
     <COND (<NOT <RESTORE>>
-           <TELL "Restore failed." CR>)>>
+           <TELL <LIBRARY-MESSAGE RESTORE FAILED> CR>)>>
 
 <ROUTINE V-RESTART ()
-    <TELL "Are you sure you want to restart?">
+    <TELL <LIBRARY-MESSAGE RESTART PROMPT>>
     <COND (<YES?>
            <RESTART>)
           (ELSE
-           <TELL "Restart aborted." CR>)>>
+           <TELL <LIBRARY-MESSAGE RESTART ABORTED> CR>)>>
 
 <ROUTINE V-BRIEF ()
-    <TELL "Brief descriptions." CR>
+    <TELL <LIBRARY-MESSAGE BRIEF SUCCESS> CR>
     <SETG MODE ,BRIEF>>
 
 <ROUTINE V-VERBOSE ()
-    <TELL "Verbose descriptions." CR CR>
+    <TELL <LIBRARY-MESSAGE VERBOSE SUCCESS> CR CR>
     <SETG MODE ,VERBOSE>
     <V-LOOK>>
 
 <ROUTINE V-SUPERBRIEF ()
-    <TELL "Superbrief descriptions." CR>
+    <TELL <LIBRARY-MESSAGE SUPERBRIEF SUCCESS> CR>
     <SETG MODE ,SUPERBRIEF>>
 
 <ROUTINE V-SCRIPT ()
     <COND (<BTST <LOWCORE FLAGS> 1>
-           <TELL "Transcript already on." CR>)
+           <TELL <LIBRARY-MESSAGE SCRIPT ALREADY-ON> CR>)
           (<AND <DIROUT 2>
                 <BTST <LOWCORE FLAGS> 1>>
-           <TELL "This begins a transcript of ">
+           <TELL <LIBRARY-MESSAGE SCRIPT SUCCESS>>
            <V-VERSION>
            <RTRUE>)
-          (ELSE <TELL "Failed." CR>)>>
+          (ELSE <TELL <LIBRARY-MESSAGE SCRIPT FAILED> CR>)>>
 
 <ROUTINE V-UNSCRIPT ()
     <COND (<NOT <BTST <LOWCORE FLAGS> 1>>
-           <TELL "Transcript already off." CR>)
-          (<AND <TELL CR "End of transcript." CR>
+           <TELL <LIBRARY-MESSAGE UNSCRIPT ALREADY-OFF> CR>)
+          (<AND <TELL CR <LIBRARY-MESSAGE UNSCRIPT SUCCESS> CR>
                 <DIROUT -2>
                 <BTST <LOWCORE FLAGS> 1>>
-           <TELL "Failed." CR>)>>
+           <TELL <LIBRARY-MESSAGE UNSCRIPT FAILED> CR>)>>
 
 ;"Debugging verbs"
 <IF-DEBUG

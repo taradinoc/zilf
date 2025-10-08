@@ -2,17 +2,17 @@
 
 "This provides a way to populate games with scenery without creating separate objects for each noun
  mentioned in a room description.
- 
+
  When the parser can't find a match for an OBJSPEC, it checks the location's THINGS property, which
  (if present) defines a set of pseudo-objects, each with a list of adjectives, a list of nouns, and
  an action routine. If one of them matches, the singleton PSEUDO-OBJECT is returned, after setting
  its ACTION property to the routine and setting the global PSEUDO-LOC to the location.
- 
+
  The format of the THINGS property is:
- 
+
      .PROP 2,P?THINGS
      .WORD T?THINGS-TABLE
-     
+
    T?THINGS-TABLE::
      .WORD 1                          ; Number of pseudo-objects
      .BYTE 1                          ; Number of adjectives
@@ -21,11 +21,11 @@
                                       ; otherwise this would point to a byte/word table)
      .WORD T?GINGERBREAD-HOUSE-NOUNS  ; Noun table (since # adjectives > 1)
      .WORD GINGERBREAD-HOUSE-F        ; Action routine
-   
+
    T?GINGERBREAD-HOUSE-NOUNS::
      .WORD W?HOUSE
      .WORD W?MANSION
-   
+
  The property definition syntax is implemented by THINGS-PROPSPEC below."
 
 "Constants and macros to access pseudo entries"

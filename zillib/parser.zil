@@ -1,6 +1,8 @@
 "Library header"
 
 <USE "QQ">
+<USE "LIBMSG">
+<USE "LIBMSG-DEFAULTS">
 
 <SETG ZILLIB-VERSION "T1">
 
@@ -86,7 +88,11 @@
     OBJSPEC *            <PRINT-OBJSPEC .X>
     SYNTAX-LINE *        <PRINT-SYNTAX-LINE .X>
     WORD *               <PRINT-WORD .X>
-    MATCHING-WORD * * *  <PRINT-MATCHING-WORD .X .Y .Z>>
+    MATCHING-WORD * * *  <PRINT-MATCHING-WORD .X .Y .Z>
+    VERB-WORD            <PRINT-VERB>
+    IF * *               <PRINT-IF .X .Y>
+    IFELSE * * *         <PRINT-IF-ELSE .X .Y .Z>
+    ITALIC *             <ITALICIZE .X>>
 
 "Version considerations: certain values are bytes on V3 but words on all
 other versions. These macros let us write the same code for all versions."
@@ -750,7 +756,7 @@ Sets:
                <TRACE 4 "[saving for UNDO]" CR>
                <BIND ((RES <ISAVE>))
                    <COND (<=? .RES 2>
-                          <TELL "Previous turn undone." CR CR>
+                          <TELL <LIBRARY-MESSAGE UNDO SUCCESS> CR CR>
                           <SETG WINNER .OW>
                           <SETG HERE .OH>
                           <SETG HERE-LIT .OHL>
@@ -770,13 +776,13 @@ Sets:
                                 <SETG P-LEN <GETB ,LEXBUF 1>>
                                 <TRACE-DO 1 <DUMPLINE>>)
                                (ELSE
-                                <TELL "Nothing to correct." CR>
+                                <TELL <LIBRARY-MESSAGE OOPS NO-MISTAKE> CR>
                                 <RFALSE>)>)
                         (<=? ,P-LEN 1>
-                         <TELL "It's OK." CR>
+                         <TELL <LIBRARY-MESSAGE OOPS NO-WORD> CR>
                          <RFALSE>)
                         (ELSE
-                         <TELL "You can only correct one word at a time." CR>
+                         <TELL <LIBRARY-MESSAGE OOPS TOO-MANY-WORDS> CR>
                          <RFALSE>)>)>)>
 
     <SET KEEP 0>
@@ -847,7 +853,7 @@ Sets:
                       ;"Word not in vocabulary"
                       <STORE-OOPS .I>
                       <SETG P-CONT 0>
-                      <TELL "I don't know the word \"" WORD .I "\"." CR>
+                      <TELL <LIBRARY-MESSAGE PARSER UNKNOWN-WORD ((WN .I))> CR>
                       <RFALSE>)
                      (<=? .W ,W?THEN ,W?\.>
                       ;"End of command, maybe start of a new one"
@@ -903,7 +909,7 @@ Sets:
                              <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-IOBJ>>)
                             (ELSE
                              <SETG P-CONT 0>
-                             <TELL "That sentence has too many objects." CR>
+                             <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-OBJECTS> CR>
                              <RFALSE>)>
                       <TRACE 3 "[PARSE-NOUN-PHRASE returned " N .VAL "]" CR>
                       <TRACE-OUT>
@@ -917,7 +923,7 @@ Sets:
                       ;"Unexpected word type"
                       <STORE-OOPS .I>
                       <SETG P-CONT 0>
-                      <TELL "I didn't expect the word \"" WORD .I "\" there." CR>
+                      <TELL <LIBRARY-MESSAGE PARSER UNEXPECTED-WORD ((WN .I))> CR>
                       <TRACE-OUT>
                       <RFALSE>)>
                <SET I <+ .I 1>>>
@@ -951,13 +957,13 @@ Sets:
            ;"Otherwise, a verb is required and a direction is forbidden."
            <COND (<NOT ,P-V>
                   <SETG P-CONT 0>
-                  <TELL "That sentence has no verb." CR>
+                  <TELL <LIBRARY-MESSAGE PARSER NO-VERB> CR>
                   <TRACE-OUT>
                   <RFALSE>)
                  (.DIR
                   <STORE-OOPS .DIR-WN>
                   <SETG P-CONT 0>
-                  <TELL "I don't understand what \"" WORD .DIR-WN "\" is doing in that sentence." CR>
+                  <TELL <LIBRARY-MESSAGE PARSER UNEXPECTED-DIRECTION ((WN .DIR-WN))> CR>
                   <TRACE-OUT>
                   <RFALSE>)>
            <SETG PRSO-DIR <>>)>
@@ -1188,6 +1194,13 @@ Returns:
     (ACTION NUMBER-F)>
 
 <ROUTINE NUMBER-F ()
+    <COND (<VERB? EXAMINE> <NOT-POSSIBLE "look at">)
+          (<AND <=? ,P-V-WORD ,W?TAKE> <=? ,P-NUMBER 5 10>>
+           <PERFORM ,V?WAIT>)>>
+
+;"The commitment to the bit was admirable, if I do say so myself,
+  but this was a lot of bytes for one middling joke."
+;<ROUTINE NUMBER-F ()
     <COND (<VERB? EXAMINE>
            <TELL N ,P-NUMBER " is ">
            <COND (<=? ,P-NUMBER 0>
@@ -1386,7 +1399,7 @@ Returns:
              <TRACE 4 "[stop at unrecognized word: " WORD .WN "]" CR>
              <COND (<NOT .SILENT?>
                     <STORE-OOPS .WN>
-                    <TELL "I don't know the word \"" WORD .WN "\"." CR>)>
+                    <TELL <LIBRARY-MESSAGE PARSER UNKNOWN-WORD ((WN .WN))> CR>)>
              <TRACE-OUT>
              <RFALSE>)
             ;"exit loop if THEN or period"
@@ -1411,7 +1424,7 @@ Returns:
              <COND (<OR .MODE .ADJ .NOUN>
                     <TRACE 4 "[too late for mode change at word " N .WN "]" CR>
                     <COND (<NOT .SILENT?>
-                           <TELL "You can't use \"" B .W "\" there." CR>)>
+                           <TELL <LIBRARY-MESSAGE PARSER UNEXPECTED-MODE ((W .W))> CR>)>
                     <TRACE-OUT>
                     <RFALSE>)>
              <SET MODE
@@ -1444,7 +1457,7 @@ Returns:
                  (<==? .CNT ,P-MAX-OBJSPECS>
                   <TRACE 4 "[already have " N .CNT " specs]" CR>
                   <COND (<NOT .SILENT?>
-                         <TELL "That phrase mentions too many objects." CR>)>
+                         <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-SPECS> CR>)>
                   <TRACE-OUT>
                   <RFALSE>)
                  (<NOT .ADJ>
@@ -1460,7 +1473,7 @@ Returns:
                    (<==? .CNT ,P-MAX-OBJSPECS>
                     <TRACE 4 "[already have " N .CNT " specs]" CR>
                     <COND (<NOT .SILENT?>
-                           <TELL "That phrase mentions too many objects." CR>)>
+                           <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-SPECS> CR>)>
                     <TRACE-OUT>
                     <RFALSE>)
                    (ELSE
@@ -1565,7 +1578,7 @@ Returns:
                     ", PRSA=" N ,PRSA "]" CR>
            <RTRUE>)
           (ELSE
-           <TELL "I don't understand that sentence." CR>
+           <TELL <LIBRARY-MESSAGE PARSER NO-MATCHING-SYNTAX> CR>
            <RFALSE>)>>
 
 <IF-DEBUG
@@ -1770,12 +1783,12 @@ Returns:
         <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
                <SET F <GETB ,P-SYNTAX ,SYN-FIND2>>)
               (ELSE <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>)>
-        <COND (<AND <VERB? WALK> <NOT ,PRSO>> <TELL "Which way">)
-              (<=? .F ,PERSONBIT> <TELL "Whom">)
-              (ELSE <TELL "What">)>
-        <TELL " do you want">
+        <COND (<AND <VERB? WALK> <NOT ,PRSO>> <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-1-DIRECTION>>)
+              (<=? .F ,PERSONBIT> <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-1-PERSON>>)
+              (ELSE <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-1-OBJECT>>)>
+        <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-2>>
         <COND (<ORDERING?> <TELL " " T ,WINNER>)>
-        <TELL " to ">
+        <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-3>>
         <PRINT-VERB>
         <COND (.SP1
                <TELL " " B <GET-PREP-WORD .SP1>>)>
@@ -1783,11 +1796,17 @@ Returns:
                <TELL " " T ,PRSO>
                <COND (.SP2
                       <TELL " " B <GET-PREP-WORD .SP2>>)>)>
-        <TELL "?" CR>>>
+        <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-4> CR>>>
 
 <ROUTINE PRINT-VERB ()
     <COND (,P-V-WORDN <PRINT-WORD ,P-V-WORDN>)
           (ELSE <PRINTB ,P-V-WORD>)>>
+
+<DEFMAC PRINT-IF ('CONDITION 'MSG)
+    `<COND (~.CONDITION <TELL ~.MSG>)>>
+
+<DEFMAC PRINT-IF-ELSE ('CONDITION 'MSG1 'MSG2)
+    `<COND (~.CONDITION <TELL ~.MSG1>) (ELSE <TELL ~.MSG2>)>>
 
 ;"Applies the rules for the MANY syntax flag to PRSO or PRSI, printing a
 failure message if appropriate.
@@ -1807,13 +1826,9 @@ Returns:
     <COND (<AND <=? .OBJ ,MANY-OBJECTS>
                 <NOT <BTST .OPTS ,SF-MANY>>>
            <COND (<VERB? TELL>
-                  <TELL "You can only address one person at a time.">)
+                  <TELL <LIBRARY-MESSAGE PARSER MANY-WINNERS-NOT-ALLOWED>>)
                  (ELSE
-                  <TELL "You can't use multiple ">
-                  <COND (.INDIRECT? <TELL "in">)>
-                  <TELL "direct objects with \"">
-                  <PRINT-VERB>
-                  <TELL "\".">)>
+                  <TELL <LIBRARY-MESSAGE PARSER MANY-OBJECTS-NOT-ALLOWED ((INDIRECT? .INDIRECT?))>>)>
            <CRLF>
            <SETG P-CONT 0>
            <RFALSE>)>
@@ -1837,9 +1852,9 @@ Returns:
     <COND (<BTST .OPTS ,SF-TAKE>
            <DO (I 1 .MAX)
                <COND (<SHOULD-IMPLICIT-TAKE? <GET/B .TBL .I>>
-                      <TELL "[taking ">
+                      <TELL <LIBRARY-MESSAGE PARSER IMPLICIT-TAKE-MANY-1>>
                       <SET N <LIST-OBJECTS .TBL ,SHOULD-IMPLICIT-TAKE? <+ ,L-PRSTABLE ,L-THE>>>
-                      <TELL "]" CR>
+                      <TELL <LIBRARY-MESSAGE PARSER IMPLICIT-TAKE-MANY-2> CR>
                       <REPEAT ()
                           <COND (<SHOULD-IMPLICIT-TAKE? <SET O <GET/B .TBL .I>>>
                                  <COND (<NOT <TRY-TAKE .O T>>
@@ -1858,9 +1873,9 @@ Returns:
     <COND (<BTST .OPTS ,SF-HAVE>
            <DO (I 1 .MAX)
                <COND (<FAILS-HAVE-CHECK? <GET/B .TBL .I>>
-                      <TELL "You aren't holding ">
+                      <TELL <LIBRARY-MESSAGE PARSER FAILED-HAVE-CHECK-MANY-1>>
                       <LIST-OBJECTS .TBL ,FAILS-HAVE-CHECK? <+ ,L-PRSTABLE ,L-THE ,L-OR>>
-                      <TELL "." CR>
+                      <TELL <LIBRARY-MESSAGE PARSER FAILED-HAVE-CHECK-MANY-2> CR>
                       <SETG P-CONT 0>
                       <RFALSE>)>>)>
     <RTRUE>>
@@ -1880,14 +1895,14 @@ Returns:
     ;"Attempt implicit take if WINNER isn't directly holding the object"
     <COND (<BTST .OPTS ,SF-TAKE>
            <COND (<SHOULD-IMPLICIT-TAKE? .OBJ>
-                  <TELL "[taking " T .OBJ "]" CR>
+                  <TELL <LIBRARY-MESSAGE PARSER IMPLICIT-TAKE-SINGLE ((OBJ .OBJ))> CR>
                   <COND (<NOT <TRY-TAKE .OBJ T>>
                          <TRY-TAKE .OBJ>
                          <RFALSE>)>)>)>
     ;"WINNER must (indirectly) hold the object if SF-HAVE is set"
     <COND (<BTST .OPTS ,SF-HAVE>
            <COND (<FAILS-HAVE-CHECK? .OBJ>
-                  <TELL "You aren't holding " T .OBJ "." CR>
+                  <TELL <LIBRARY-MESSAGE PARSER FAILED-HAVE-CHECK-SINGLE ((OBJ .OBJ))> CR>
                   <SETG P-CONT 0>
                   <RFALSE>)>)>
     <RTRUE>>
@@ -1920,7 +1935,7 @@ Returns:
         <TRACE 4 "[considering " D <GET/B .TBL .I> "]" CR>
         <COND (<NOT <VISIBLE? <GET/B .TBL .I>>>
                <LIST-OBJECTS .TBL ,NOT-VISIBLE? <+ ,L-PRSTABLE ,L-THE ,L-CAP ,L-SUFFIX>>
-               <TELL " no longer here." CR>
+               <TELL <LIBRARY-MESSAGE PARSER NOT-STILL-VISIBLE> CR>
                <TRACE-OUT>
                <SETG P-CONT 0>
                <RFALSE>)>>
@@ -1967,11 +1982,11 @@ Returns:
     <TRACE-OUT>
     ;"Print inference message"
     <COND (.O
-           <TELL "[">
+           <TELL <LIBRARY-MESSAGE PARSER GWIM-1>>
            ;"TODO: use LONG-WORDS table for preposition word"
            <COND (<SET PW <GET-PREP-WORD .PREP>>
                   <TELL B .PW " ">)>
-           <TELL T .O "]" CR>
+           <TELL T .O <LIBRARY-MESSAGE PARSER GWIM-2> CR>
            <RETURN .O>)
           (ELSE <RFALSE>)>>
 
@@ -2124,9 +2139,9 @@ Returns:
                                  <SET OBITS -1>    ;"Avoid bouncing between <1 and >1 matches"
                                  <AGAIN .BITS-SET>)>
                           <COND (<=? ,MAP-SCOPE-STATUS ,MS-NO-LIGHT>
-                                 <TELL "It's too dark to see anything here." CR>)
+                                 <TELL <LIBRARY-MESSAGE DARKNESS TOO-DARK-TO-SEE> CR>)
                                 (ELSE
-                                 <TELL "You don't see that here." CR>)>
+                                 <TELL <LIBRARY-MESSAGE PARSER DONT-SEE-THAT-HERE> CR>)>
                           <TRACE-OUT>
                           <RFALSE>)
                          (<G=? .NOUT ,P-MAX-OBJECTS>
@@ -2139,7 +2154,7 @@ Returns:
                  Try expanding the search if we can."
                <SET F <ORB .BITS ;"<ORB" ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM ;">" >>
                <COND (<=? .BITS .F>
-                      <TELL "There are none at all available!" CR>
+                      <TELL <LIBRARY-MESSAGE PARSER NONE-AVAILABLE> CR>
                       <TRACE-OUT>
                       <RFALSE>)>
                <TRACE 4 "[expanding to reasonable scope]" CR>
@@ -2156,7 +2171,7 @@ Returns:
                ;"Pick a random object"
                <PUT/B .OUT 1 <SET F <GET/B .OUT <RANDOM .NOUT>>>>
                <PUTB .OUT 0 1>
-               <TELL "[" T .F "]" CR>
+               <TELL <LIBRARY-MESSAGE PARSER INFERRED-RANDOM-OBJECT ((OBJ .F))> CR>
                <TRACE-OUT>
                <RETURN .F>)
               (ELSE
@@ -2193,9 +2208,9 @@ Returns:
                <RETURN .R>)>>>
 
 <ROUTINE WHICH-DO-YOU-MEAN (TBL)
-    <TELL "Which do you mean, ">
+    <TELL <LIBRARY-MESSAGE ORPHANING WHICH-DO-YOU-MEAN-1>>
     <LIST-OBJECTS .TBL <> <+ ,L-PRSTABLE ,L-THE ,L-OR>>
-    <TELL "?" CR>>
+    <TELL <LIBRARY-MESSAGE ORPHANING WHICH-DO-YOU-MEAN-2> CR>>
 
 ;"Determines whether an object is included by a NOUN-PHRASE's YTBL.
   Note: NP may be evaluated twice."
@@ -2515,11 +2530,11 @@ Sets (temporarily):
     <TRACE-IN>
     ;"Warn about improper number use, and handle multiple objects"
     <COND (<G? <COUNT-PRS-APPEARANCES ,NUMBER> 1>
-           <TELL "You can't use more than one number in a command." CR>
+           <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-NUMBERS> CR>
            <SET WON <>>)
           (<AND <NOT ,PRSO-DIR> <PRSO? ,MANY-OBJECTS>>
            <COND (<PRSI? ,MANY-OBJECTS>
-                  <TELL "You can't use multiple direct and indirect objects together." CR>
+                  <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-MANY> CR>
                   <SET WON <>>)
                  (ELSE
                   <SETG REPORT-MODE ,SHORT-REPORT>
@@ -2830,10 +2845,10 @@ Returns:
                       (ELSE <TELL %,DARKNESS-STATUS-TEXT>)>
                 <SET WIDTH <LOWCORE SCRH>>
                 <CURSET 1 <- .WIDTH 22>>
-                <TELL "Score: ">
+                <TELL <LIBRARY-MESSAGE PARSER STATUS-LINE-SCORE>>
                 <PRINTN ,SCORE>
                 <CURSET 1 <- .WIDTH 10>>
-                <TELL "Moves: ">
+                <TELL <LIBRARY-MESSAGE PARSER STATUS-LINE-MOVES>>
                 <PRINTN ,MOVES>
                 <SCREEN 0>
                 <HLIGHT ,H-NORMAL>>
@@ -2862,9 +2877,9 @@ Returns:
     <COND (<RESURRECT?> <RTRUE>)>
     <REPEAT PROMPT ()
         <IFFLAG (UNDO
-                 <PRINTI "Would you like to RESTART, UNDO, RESTORE, or QUIT? > ">)
+                 <PRINTI <LIBRARY-MESSAGE JIGS-UP PROMPT-WITH-UNDO>>)
                 (ELSE
-                 <PRINTI "Would you like to RESTART, RESTORE or QUIT? > ">)>
+                 <PRINTI <LIBRARY-MESSAGE JIGS-UP PROMPT-WITHOUT-UNDO>>)>
         <REPEAT ()
             <READLINE>
             <SET W <AND <GETB ,LEXBUF 1> <GET ,LEXBUF 1>>>
@@ -2872,20 +2887,20 @@ Returns:
                    <RESTART>)
                   (<EQUAL? .W ,W?RESTORE>
                    <RESTORE>  ;"only returns on failure"
-                   <TELL "Restore failed." CR>
+                   <TELL <LIBRARY-MESSAGE RESTORE FAILED> CR>
                    <AGAIN .PROMPT>)
                   (<EQUAL? .W ,W?QUIT>
-                   <TELL CR "Thanks for playing." CR>
+                   <TELL CR <LIBRARY-MESSAGE QUIT GOODBYE> CR>
                    <QUIT>)
                   (<EQUAL? .W ,W?UNDO>
                    <V-UNDO>   ;"only returns on failure"
-                   <TELL "Undo failed." CR>
+                   <TELL <LIBRARY-MESSAGE UNDO FAILED> CR>
                    <AGAIN .PROMPT>)
                   (T
                    <IFFLAG (UNDO
-                            <TELL CR "(Please type RESTART, UNDO, RESTORE or QUIT) >">)
+                            <TELL CR <LIBRARY-MESSAGE JIGS-UP REPROMPT-WITH-UNDO>>)
                            (ELSE
-                            <TELL CR "(Please type RESTART, RESTORE or QUIT) > ">)>)>>>>
+                            <TELL CR <LIBRARY-MESSAGE JIGS-UP REPROMPT-WITHOUT-UNDO>>)>)>>>>
 
 <DEFAULT-DEFINITION PRINT-GAME-OVER
     ;"Prints a message explaining that the game is over or the player has died.
@@ -2893,7 +2908,7 @@ Returns:
       describe the specific circumstances, so usually this should print a generic
       message appropriate for the game's theme."
     <ROUTINE PRINT-GAME-OVER ()
-        <TELL "    ****  The game is over  ****" CR>>
+        <TELL <LIBRARY-MESSAGE JIGS-UP GAME-OVER> CR>>
 >
 
 <DEFAULT-DEFINITION RESURRECT?
@@ -2931,7 +2946,7 @@ The question should be printed before calling this routine.
 Returns:
   True if the user pressed 'y', false if they pressed 'n'."
 <ROUTINE YES? ("AUX" RESP)
-     <PRINTI " (y/n) >">
+     <PRINTI <LIBRARY-MESSAGE YES? PROMPT>>
      <REPEAT ()
          <READLINE>
          <VERSION?
@@ -2948,7 +2963,7 @@ Returns:
                 <RFALSE>)
                (T
                 ;<CRLF>
-                <TELL "(Please type y or n) >" >)>>>
+                <TELL <LIBRARY-MESSAGE YES? REPROMPT> >)>>>
 
 <VERSION?
     (ZIP
@@ -3120,4 +3135,4 @@ or reveal a light source."
     <COND (<N==? ,PLAYER ,PRSO>
            <RFALSE>)
           (<VERB? EXAMINE>
-           <PRINTR "You look like you're up for an adventure.">)>>
+           <TELL <LIBRARY-MESSAGE EXAMINE PLAYER> CR>)>>

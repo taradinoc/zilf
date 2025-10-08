@@ -97,7 +97,7 @@
 <TEST-CASE ("Take object from open container")
     <MOVE ,APPLE ,BUCKET>
     <COMMAND [TAKE APPLE]>
-    <EXPECT "You reach in the bucket and take the apple.|">
+    <EXPECT "You reach into the bucket and take the apple.|">
     <CHECK <IN? ,APPLE ,WINNER>>>
 
 <TEST-CASE ("Take object from closed container")

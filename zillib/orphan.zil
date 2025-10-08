@@ -81,7 +81,7 @@ Sets:
 
 Returns:
   One of the O-RES-* codes above to indicate what action was taken, if any."
-<CONSTANT TRY-REPHRASING-CMD " Try rephrasing the command.">
+<CONSTANT TRY-REPHRASING-CMD <LIBRARY-MESSAGE ORPHANING TRY-REPHRASING>>
 <ROUTINE HANDLE-ORPHAN-RESPONSE ("AUX" CNT MAX TBL O OUT NY)
     ;"Confirm that the command looks like a noun phrase, and parse it into P-NP-XOBJ."
     <COND (<OR <L? ,P-LEN 1>
@@ -155,16 +155,16 @@ Returns:
     <SETG P-XOBJS .TBL>
     ;"See if we solved the problem."
     <COND (<0? .CNT>
-           <TELL "That wasn't an option." ,TRY-REPHRASING-CMD CR>
+           <TELL <LIBRARY-MESSAGE ORPHANING NOT-AN-OPTION> ,TRY-REPHRASING-CMD CR>
            <SETG P-CONT 0>
            <RETURN ,O-RES-FAILED>)
           (<OR <1? .CNT> <=? <NP-MODE ,P-NP-XOBJ> ,MCM-ALL>>
            <RETURN ,O-RES-SET-PRSTBL>)
           (<L? .CNT .MAX>
-           <TELL "That narrowed it down a little. ">
+           <TELL <LIBRARY-MESSAGE ORPHANING SUCCESS-PARTIAL>>
            <WHICH-DO-YOU-MEAN .OUT>
            <RETURN ,O-RES-REORPHANED>)
           (ELSE
-           <TELL "That didn't narrow it down at all." ,TRY-REPHRASING-CMD CR>
+           <TELL <LIBRARY-MESSAGE ORPHANING FAILED> ,TRY-REPHRASING-CMD CR>
            <SETG P-CONT 0>
            <RETURN ,O-RES-FAILED>)>>
