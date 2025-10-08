@@ -4,6 +4,131 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project may someday adhere to
 ~~[Semantic Versioning](http://semver.org/spec/v2.0.0.html)~~.
 
+## [0.10] (October 8, 2025)
+
+### Added
+
+- Added warning MDL0428 for `LEXV` tables initialized with the wrong number
+  of elements.
+
+- Added limited support for "reader macros": `MAKE-PREFIX-MACRO` from the
+  `READER-MACROS` package can be used to define new prefix syntaxes.
+
+- Added the `QQ` package for quasiquoting. This is similar to regular
+  quoting with `QUOTE` (the `'` prefix), but `QUASIQUOTE` uses the `` ` `` prefix
+  and allows inserting evaluated expressions with `TILDE` (the `~` prefix),
+  making macro implementations more readable. For example,
+  `<FORM + '.A '.B .FOO !.BAR>` can be written as `` `<+ .A .B ~.FOO ~!.BAR> ``.
+
+- The frequent words file ZILF generates now has actual abbreviations rather
+  than placeholders. This will result in smaller story files without having
+  to run `zapf -ab` to generate abbreviations separately. If the text of the
+  game changes significantly, the frequent words file should be regenerated
+  (e.g. by deleting the existing file).
+
+- Added warnings ZIL0211 and ZIL0212 for unused object flags and unused
+  properties, respectively.
+
+- Added warning ZIL0310 (suppressed by default) when vocab words are merged
+  because of the vocab resolution limit. Info ZIL0311 is added when the merge
+  can be avoided by targeting a different Z-machine version.
+
+- Added warning ZIL0429 for suspiciously quoted atoms in `SYNONYM` and
+  `ADJECTIVE` lists. For example, `PIRATE'S` should probably be `PIRATE\'S`.
+
+- Added warning ZIL0430 for tables defined with a length prefix that's
+  too narrow to actually hold the table's length.
+
+- ZAPF now reports an error when the values of `START` or some other header
+  fields are too large for a 16-bit word.
+
+- The library now implements `VEHBIT` and vehicles, as described in
+  _Learning ZIL_.
+
+- Library messages have been centralized in `libmsg-defaults.zil`, and they
+  can be replaced with `REPLACE-LIBRARY-MESSAGES` without having to edit
+  the library.
+
+### Changed
+
+- Upgraded to .NET 9.
+
+- Changed the primitive representation of `OBLIST` to be compatible with MDL.
+
+- Two empty `FORM`s are now considered identical (`==?`), as in MDL.
+
+- `MIN` and `MAX` now allow zero arguments, as in MDL.
+
+- `ASSOCIATIONS` and `NEXT` now enumerate associations in the same order as MDL
+  (the reverse of the order in which the item/indicator pairs were added).
+
+- Error ZIL0400 is now issued (sometimes with info ZIL0403) for arguments
+  defined on the `GO` routine in Z-machine versions other than V6.
+
+- Wearable objects can now be held without wearing them, and taken off without
+  dropping them.
+
+- Improved the algorithms for finding and applying abbreviations, using an
+  approach described by Matthew Russotto.
+
+- On case-sensitive file systems, when a file included with `INSERT-FILE` or
+  `USE` isn't found, ZILF will now try lowercasing the filename and/or
+  uppercasing the extension before giving up.
+
+- `COND` clauses in Z-code routines must now be either `<>` or non-empty
+  `LIST`s (or macro invocations expanding to such); error ZIL0100 is
+  issued otherwise.
+
+- Subdiagnostics (i.e., info messages attached to warnings or errors) are now
+  indented in the output.
+
+- The internal mechanisms for parsing the arguments to built-in functions
+  have been redesigned, which should be mostly invisible to users, but may
+  have inadvertently introduced bugs by changing error messages in rare cases.
+
+### Fixed
+
+- Fixed a couple bugs related to using `OBLIST`s as structured values.
+
+- Fixed some header fields being left blank in V7 builds.
+
+- Fixed compiler hanging when `WORD-FLAGS-LIST` contains duplicate entries.
+
+- Fixed the AGAIN command not working after `KLUDGEBIT` actions.
+
+- Fixed inconsistent ordering of lists in some error messages across platforms.
+
+- Fixed newlines being retained in the `DESC` pseudo-property.
+
+- Improved handling of some syntax errors.
+
+- Fixed the `FORM` inside a `SEGMENT` missing source line information.
+
+- Fixed debug files missing source line information for local variable
+  initializers.
+
+- Fixed `=` showing up as "Eq" when printing a `PROPDEF`.
+
+- Fixed return value when an assignment to a soft global is used in value
+  context.
+
+- Fixed issue where two words that were both used as prepositions couldn't
+  be made synonyms of each other.
+
+- Fixed `PROPDEF` `DIRECTIONS` incorrectly defining a property called
+  `DIRECTIONS`.
+
+- Macros that return `SPLICE` to expand into multiple values now work in
+  calls to Z-code builtins and routines.
+
+- Fixed an unhandled exception when the arguments to `TABLE` inside a routine
+  include a macro call.
+
+- Fixed `DESCFCN` not being called with `M-OBJDESC?` in some cases.
+
+- Fixed `PUT IN` and `PUT ON` incorrectly checking the object's
+  `SIZE` against the container's `SIZE` (in addition to its `CAPACITY`).
+
 ## [0.9] (August 11, 2019)
 
 ### Added
@@ -37,7 +162,7 @@ and this project may someday adhere to
   by calling `GLOBAL`, which will be available in every routine.
 
 - Added a way to control the behavior of `RETURN` without an activation
-  argument inside a `PROG` (or similar) in a routine. Previously, 
+  argument inside a `PROG` (or similar) in a routine.
 
 - ZAPF now allows `%`, `!`, `'`, and `/` in symbol names.
 
@@ -209,4 +334,5 @@ and this project may someday adhere to
   Z-machine version, and retargeting assembly code from one version to
   another is a mistake.
 
-[0.9]: https://bitbucket.org/jmcgrew/zilf/branches/compare/0.9..0.8
+[0.9]: https://foss.heptapod.net/zilf/zilf/-/compare/0.8...0.9
+[0.10]: https://foss.heptapod.net/zilf/zilf/-/compare/0.9...0.10
