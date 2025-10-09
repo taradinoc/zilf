@@ -143,18 +143,8 @@ tests:slow:
 
 package:
   stage: package
-  # needs: ['release:build']
-  # ### Build all projects discovered from solution file.
-  #
-  # Note: this will fail if you have any projects in your solution that are not
-  # .NET Core-based projects (e.g. WCF service), which is based on .NET Framework,
-  # not .NET Core. In this scenario, you will need to build every .NET Core-based
-  # project by explicitly specifying a relative path to the directory
-  # where it is located (e.g. 'dotnet build ./src/ConsoleApp').
-  # Only one project path can be passed as a parameter to 'dotnet build' command.
   script:
-    - 'apt-get update'
-    - 'apt-get install -y zip'
+    - 'apt-get update && apt-get install -y zip'
     - 'dotnet msbuild -t:PackageAllRids -p:Configuration=Release Build.proj'
   artifacts:
     paths:

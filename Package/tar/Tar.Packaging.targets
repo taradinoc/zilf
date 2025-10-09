@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <Target Name="TarPackage"
-          DependsOnTargets="Stage"
+          DependsOnTargets="Publish"
           AfterTargets="Package"
           Outputs="$(TarOutputFile)"
           Condition="$(UnixTarget) AND '$(OS)' == 'Unix'">
@@ -15,17 +15,13 @@
     <MakeDir Directories="$(TarStageDir)" Condition="!Exists('$(TarStageDir)')" />
 
     <ItemGroup>
-      <TarFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\*.Tests.*;$(StageDir)\**\*.pdb" />
+      <!-- Include all files from the publish directory, but exclude test artifacts, pdbs, and apphost -->
+      <TarFiles Include="$(StageDir)\bin\**\*" Exclude="$(StageDir)\bin\**\*.Tests.*;$(StageDir)\bin\**\*.pdb;$(StageDir)\bin\**\apphost*" />
     </ItemGroup>
 
-    <!--
-    We rename the executable wrappers to lowercase for convenience on case-sensitive filesystems.
-    Luckily, the wrappers are the only files with no extensions.
-    -->
-
     <Copy SourceFiles="@(TarFiles)"
-          DestinationFolder="$(TarStageDir)\$(PackageName)\%(RecursiveDir)">
-      <Output TaskParameter="CopiedFiles" ItemName="CopiedTarFiles" />
+          DestinationFiles="@(TarFiles->'$(TarStageDir)\$(PackageName)\%(RecursiveDir)%(Filename)%(Extension)')">
+      <Output TaskParameter="DestinationFiles" ItemName="CopiedTarFiles" />
     </Copy>
 
     <ItemGroup>

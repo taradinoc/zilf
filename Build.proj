@@ -2,7 +2,14 @@
 
 <!--
 To build for distribution:
-dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release
+dotnet msbuild Build.proj -t:PackageAllRids -p:Configurati  <Target Name="_PlatformStage" DependsOnTargets="RestoreReferences;_MakeStageDir">
+    <Message Text="Publishing for RID: $(RuntimeIdentifier)" Importance="high" />
+    <MSBuild Projects="@(StageProjects)"
+             Targets="Publish"
+             Properties="RuntimeIdentifier=$(RuntimeIdentifier);
+                         Configuration=$(Configuration);
+                         PublishDir=$(StageDir)\bin\" />
+  </Target>ease
 -->
 
 <!-- Copied from IronPython and modified. See Build/IronPython-License.txt. -->
@@ -132,11 +139,11 @@ dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release
     <MakeDir Directories="$(StageDir)" Condition="!Exists('$(StageDir)')" />
   </Target>
 
-  <Target Name="_PlatformStage" DependsOnTargets="RestoreReferences;_MakeStageDir">
+  <Target Name="Publish" DependsOnTargets="RestoreReferences;_MakeStageDir">
     <MSBuild
       Projects="@(StageProjects)"
-      Targets="Stage"
-      Properties="$(BuildProperties);Configuration=$(Configuration);Staging=true" />
+      Targets="Publish"
+      Properties="$(BuildProperties);Configuration=$(Configuration);PublishDir=$(StageDir)\bin\" />
   </Target>
 
   <Target Name="_CopyMainStageFiles" DependsOnTargets="_MakeStageDir">
@@ -156,16 +163,16 @@ dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release
   </Target>
 
   <PropertyGroup>
-    <StageDependsOn>
+    <PublishDependsOn>
       _MakeStageDir;
-      _PlatformStage;
+      Publish;
       _CopyMainStageFiles;
       _CopySamples;
       _CopyZilLib
-    </StageDependsOn>
+    </PublishDependsOn>
   </PropertyGroup>
 
-  <Target Name="Stage" DependsOnTargets="$(StageDependsOn)" />
+  <Target Name="Stage" DependsOnTargets="$(PublishDependsOn)" />
 
   <!-- This looks like an empty target, but the targets files use it as an AfterTargets -->
   <Target Name="Package" DependsOnTargets="Stage" />

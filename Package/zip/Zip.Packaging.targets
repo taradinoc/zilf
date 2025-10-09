@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <Target Name="ZipPackage"
-          DependsOnTargets="Stage"
+          DependsOnTargets="Publish"
           AfterTargets="Package"
           Outputs="$(ZipOutputFile)"
           Condition="$(WindowsTarget) OR $(PortableTarget)">
@@ -17,10 +17,13 @@
     <MakeDir Directories="$(ZipStageDir)" Condition="!Exists('$(ZipStageDir)')" />
 
     <ItemGroup>
-      <ZipFiles Include="$(StageDir)\**\*.*" Exclude="$(StageDir)\**\*.Tests.*;$(StageDir)\**\*.pdb" />
+      <!-- Include all files from the publish directory, but exclude test artifacts, pdbs, and apphost -->
+      <ZipFiles Include="$(StageDir)\bin\**\*" Exclude="$(StageDir)\bin\**\*.Tests.*;$(StageDir)\bin\**\*.pdb;$(StageDir)\bin\**\apphost*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(ZipFiles)" DestinationFolder="$(ZipStageDir)\%(RecursiveDir)" />
+    <!-- Copy files into the temporary zip staging directory while preserving relative paths -->
+    <Copy SourceFiles="@(ZipFiles)"
+      DestinationFiles="@(ZipFiles->'$(ZipStageDir)\%(RecursiveDir)%(Filename)%(Extension)')" />
 
     <!--
     The ZipDirectory task doesn't set file permissions. Linux's unzip command checks the OS the ZIP was
