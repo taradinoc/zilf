@@ -88,6 +88,7 @@ dotnet msbuild Build.proj -t:PackageAllRids -p:Configurati  <Target Name="_Platf
 
   <ItemGroup>
     <MainStageFiles Include="$(RootDir)README.md" />
+    <MainStageFiles Include="$(RootDir)CHANGELOG.md" />
     <MainStageFiles Include="$(RootDir)COPYING.txt" />
   </ItemGroup>
 

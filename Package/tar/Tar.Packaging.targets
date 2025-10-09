@@ -15,8 +15,8 @@
     <MakeDir Directories="$(TarStageDir)" Condition="!Exists('$(TarStageDir)')" />
 
     <ItemGroup>
-      <!-- Include all files from the publish directory, but exclude test artifacts, pdbs, and apphost -->
-      <TarFiles Include="$(StageDir)\bin\**\*" Exclude="$(StageDir)\bin\**\*.Tests.*;$(StageDir)\bin\**\*.pdb;$(StageDir)\bin\**\apphost*" />
+      <!-- Include all files from the stage directory, but exclude test artifacts, pdbs, and apphost -->
+      <TarFiles Include="$(StageDir)\**\*" Exclude="$(StageDir)\**\*.Tests.*;$(StageDir)\**\*.pdb;$(StageDir)\**\apphost*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(TarFiles)"
