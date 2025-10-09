@@ -6,7 +6,7 @@
     <MinorVersion>10</MinorVersion>
     <MicroVersion>0</MicroVersion>
     <!-- Allowed: alpha,beta,candidate,final -->
-    <ReleaseLevel>alpha</ReleaseLevel>
+    <ReleaseLevel>candidate</ReleaseLevel>
     <ReleaseSerial>1</ReleaseSerial>
 
     <AssemblyRevision>0</AssemblyRevision>
