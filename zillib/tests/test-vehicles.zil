@@ -116,4 +116,12 @@
     <COMMAND [TAKE WAGON]>
     <EXPECT "You can't pick up the wagon while you're in it.|">>
 
+<TEST-CASE ("Can't get in a vehicle while you're holding it")
+    <MOVE ,COUCH ,WINNER>
+    <COMMAND [GET ON COUCH]>
+    <EXPECT "You can't get on the couch while you're holding it.|">
+    <MOVE ,WAGON ,WINNER>
+    <COMMAND [GET ON WAGON]>
+    <EXPECT "You can't get in the wagon while you're holding it.|">>
+
 <TEST-GO ,STARTROOM>

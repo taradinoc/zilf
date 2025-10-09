@@ -168,6 +168,14 @@
     (SUCCESS "You drop " T .OBJ ".")
     (SUCCESS-SHORT "Dropped.")>
 
+<DEFAULT-LIBRARY-MESSAGES ENTER
+    (HELD "You can't get " IFELSE .SURFACE? "on " "in " T .OBJ " while you're holding it.")
+    (SUCCESS "You get " IFELSE .SURFACE? "onto " "into " T .OBJ ".")>
+
+<DEFAULT-LIBRARY-MESSAGES EXIT
+    (NOT-IN "You're not " IFELSE .SURFACE? "on " "in " T .OBJ ".")
+    (SUCCESS "You get " IFELSE .SURFACE? "off" "out" " of " T .OBJ ".")>
+
 <DEFAULT-LIBRARY-MESSAGES PUT-ON
     (NOT-HELD "You don't have that.")
     (PUT-ON-ITSELF "You can't put something on itself.")

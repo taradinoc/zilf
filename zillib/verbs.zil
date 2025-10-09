@@ -808,11 +808,14 @@ Returns:
            <DO-WALK <DOOR-DIR ,PRSO>>
            <RTRUE>)
           (<FSET? ,PRSO ,VEHBIT>
-           <MOVE ,WINNER ,PRSO>
-           <TELL "You get ">
-           <COND (<FSET? ,PRSO ,SURFACEBIT> <TELL "onto ">) (ELSE <TELL "into ">)>
-           <TELL T ,PRSO "." CR>
-           <RTRUE>)
+           <COND (<HELD? ,PRSO>
+                  <TELL <LIBRARY-MESSAGE ENTER HELD ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>
+                  <SETG P-CONT 0>
+                  <RTRUE>)
+                 (ELSE
+                  <MOVE ,WINNER ,PRSO>
+                  <TELL <LIBRARY-MESSAGE ENTER SUCCESS ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>
+                  <RTRUE>)>)
           (ELSE <NOT-POSSIBLE "enter">)>>
 
 <ROUTINE V-EXIT ("AUX" O)
@@ -830,14 +833,12 @@ Returns:
            <RTRUE>)
           (<FSET? ,PRSO ,VEHBIT>
            <COND (<NOT <IN? ,WINNER ,PRSO>>
-                  <TELL "You're not ">
-                  <COND (<FSET? ,PRSO ,SURFACEBIT> <TELL "on ">) (ELSE <TELL "in ">)>
-                  <TELL T ,PRSO "." CR>)
+                  <TELL <LIBRARY-MESSAGE EXIT NOT-IN ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>
+                  <SETG P-CONT 0>
+                  <RTRUE>)
                  (ELSE
                   <MOVE ,WINNER ,HERE>
-                  <TELL "You get ">
-                  <COND (<FSET? ,PRSO ,SURFACEBIT> <TELL "off">) (ELSE <TELL "out">)>
-                  <TELL " of " T ,PRSO "." CR>)>)
+                  <TELL <LIBRARY-MESSAGE EXIT SUCCESS ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>)>)
           (ELSE <NOT-POSSIBLE "exit">)>>
 
 ;"Performs the WALK action with a direction."
