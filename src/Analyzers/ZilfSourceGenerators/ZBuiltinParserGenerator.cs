@@ -805,7 +805,7 @@ namespace ZilfSourceGenerators
             var attr = overload.Attribute;
             var parameters = method.MethodSymbol.Parameters;
 
-            if (emitVersionGuard)
+            if (emitVersionGuard && (attr.MinVersion.HasValue || attr.MaxVersion.HasValue))
             {
                 // Emit a runtime guard for Z-machine version applicability. If this overload
                 // does not apply to the current Z-machine version, report a helpful error
@@ -1508,13 +1508,14 @@ namespace ZilfSourceGenerators
             }
             if (IsSpecialType(paramType, "ZilAtom"))
             {
-                sb.Append($"{indent}({argExpression} as ZilAtom ?? throw new ArgumentException($\"Expected ZilAtom, got {{({argExpression})?.GetType().Name}}\"))");
+                // Emit a CompilerError (ZIL0113) when an argument expected to be an atom is not an atom.
+                sb.Append($"{indent}({argExpression} as ZilAtom ?? throw new CompilerError(c.form, CompilerMessages._0_Argument_1_2, \"{operationName}\", {argIndex}, \"must be an atom\"))");
             }
             else if (paramType.Name == "Block")
             {
                 // Resolve an activation atom (LVAL) to a Block instance, mirroring ParameterTypeHandler.BlockHandler
                 // Generated code will evaluate the argument expression, check IsLVAL and lookup in c.cc.Blocks
-                sb.Append($"{indent}({argExpression} is ZilObject _blockArg && _blockArg.IsLVAL(out var __act) ? (c.cc.Blocks.FirstOrDefault(b => b.Name == __act) ?? throw new CompilerError(c.form, CompilerMessages._0_Argument_1_2, \"{operationName}\", {argIndex}, \"argument must be bound to a block\")) : throw new CompilerError(c.form, CompilerMessages._0_Argument_1_2, \"{operationName}\", {argIndex}, \"argument must be a local variable reference\"))");
+                sb.Append($"{indent}({argExpression} is ZilObject _blockArg && _blockArg.IsLVAL(out var __act) ? (c.cc.Blocks.FirstOrDefault(b => b.Name == __act) ?? throw new CompilerError(c.form, CompilerMessages._0_Argument_1_2, \"{operationName}\", {argIndex}, \"must be bound to a block\")) : throw new CompilerError(c.form, CompilerMessages._0_Argument_1_2, \"{operationName}\", {argIndex}, \"must be a local variable reference\"))");
             }
             else if (IsIVariableType(paramType))
             {
@@ -1545,7 +1546,7 @@ namespace ZilfSourceGenerators
             else if (paramType.SpecialType == SpecialType.System_String)
             {
                 // If the argument is a ZilString, extract its raw Text to avoid double-quoting
-                sb.Append($"{indent}({argExpression} is ZilString _zs ? _zs.Text : {argExpression}.ToString())");
+                sb.Append($"{indent}({argExpression} is ZilString _zs ? _zs.Text : throw new CompilerError(c.form, CompilerMessages._0_Argument_1_2, \"{operationName}\", {argIndex}, \"must be a string\")");
             }
             else if (paramType.SpecialType == SpecialType.System_Boolean)
             {
@@ -1553,7 +1554,8 @@ namespace ZilfSourceGenerators
             }
             else if (paramType.SpecialType == SpecialType.System_Int32)
             {
-                sb.Append($"{indent}({argExpression} is ZilFix fix ? fix.Value : 0)");
+                // Require a ZilFix for integer parameters; emit a CompilerError if not provided.
+                sb.Append($"{indent}({argExpression} is ZilFix fix ? fix.Value : throw new CompilerError(c.form, CompilerMessages._0_Argument_1_2, \"{operationName}\", {argIndex}, \"must be a number\"))");
             }
             else if (IsZilObjectType(paramType))
             {
