@@ -144,15 +144,22 @@
     (DEFAULT "You see nothing special about " T .OBJ ".")>
 
 <DEFAULT-LIBRARY-MESSAGES LOOK-UNDER
+    (PERSON YOU-MASHER .WHOM)
     (DEFAULT "You can't see anything of interest.")>
 
 <DEFAULT-LIBRARY-MESSAGES SEARCH
+    (PERSON YOU-MASHER .WHOM)
+    (NOT-CONTAINER NOT-POSSIBLE "look inside")
     (CLOSED CT .OBJ IFELSE .PLURAL? " are" " is" " closed.")
     (EMPTY CT .OBJ IFELSE .PLURAL? " are" " is" " empty.")>
 
 <DEFAULT-LIBRARY-MESSAGES TAKE
     (GET-ME "Not quite.")
     (PICK-ME-UP "You aren't my type.")
+    (TAKE-ME TSD)
+    (TAKE-ME-OTHER SILLY)
+    (NOT-TAKEABLE NOT-POSSIBLE "pick up")
+    (PERSON YOU-MASHER .WHOM)
     (ALREADY-HELD "You already have that.")
     (BLOCKED-BY-PERSON "That seems to belong to " T .HOLDER ".")
     (BLOCKED-BY-OBJECT CT .HOLDER " is in the way.")
@@ -170,13 +177,19 @@
 
 <DEFAULT-LIBRARY-MESSAGES ENTER
     (HELD "You can't get " IFELSE .SURFACE? "on " "in " T .OBJ " while you're holding it.")
+    (NO-OBJECT BE-SPECIFIC)
+    (NOT-ENTERABLE NOT-POSSIBLE "enter")
     (SUCCESS "You get " IFELSE .SURFACE? "onto " "into " T .OBJ ".")>
 
 <DEFAULT-LIBRARY-MESSAGES EXIT
     (NOT-IN "You're not " IFELSE .SURFACE? "on " "in " T .OBJ ".")
+    (NO-OBJECT BE-SPECIFIC)
+    (NOT-EXITABLE NOT-POSSIBLE "exit")
     (SUCCESS "You get " IFELSE .SURFACE? "off" "out" " of " T .OBJ ".")>
 
 <DEFAULT-LIBRARY-MESSAGES PUT-ON
+    (PERSON YOU-MASHER .WHOM)
+    (NOT-SURFACE NOT-POSSIBLE "put things on")
     (NOT-HELD "You don't have that.")
     (PUT-ON-ITSELF "You can't put something on itself.")
     ;"The object's weight is greater than the container's capacity"
@@ -187,6 +200,8 @@
     (SUCCESS-SHORT "Done.")>
 
 <DEFAULT-LIBRARY-MESSAGES PUT-IN
+    (PUT-IN-ME TSD)
+    (PERSON YOU-MASHER .WHOM)
     (CLOSED CT .HOLDER " is closed.")
     (NOT-OPENABLE "You see no way to put things into " T .HOLDER ".")
     (NOT-HELD "You don't have that.")
@@ -200,6 +215,7 @@
 
 <DEFAULT-LIBRARY-MESSAGES WEAR
     (SUCCESS "You wear " T .OBJ ".")
+    (NOT-WEARABLE NOT-POSSIBLE "wear")
     (ALREADY-WORN "You're already wearing that.")>
 
 <DEFAULT-LIBRARY-MESSAGES UNWEAR
@@ -207,6 +223,8 @@
     (SUCCESS "You take off " T .OBJ ".")>
 
 <DEFAULT-LIBRARY-MESSAGES EAT
+    (EAT-ME TSD)
+    (PERSON YOU-MASHER .WHOM)
     (NOT-EDIBLE "That's hardly edible.")
     (SUCCESS "You devour " T .OBJ ".")
     (SUCCESS-SHORT "Eaten.")>
@@ -219,15 +237,25 @@
     (DEFAULT "You contemplate " T .OBJ " for a bit, but nothing fruitful comes to mind.")>
 
 <DEFAULT-LIBRARY-MESSAGES OPEN
+    (PERSON YOU-MASHER .WHOM)
+    (NOT-OPENABLE NOT-POSSIBLE "open")
     (ALREADY-OPEN "It's already open.")
     (LOCKED "You'll have to unlock it first.")
     (SUCCESS "You open " T .OBJ ".")
     (SUCCESS-SHORT "Opened.")>
 
 <DEFAULT-LIBRARY-MESSAGES CLOSE
+    (PERSON YOU-MASHER .WHOM)
+    (NOT-CLOSEABLE NOT-POSSIBLE "close")
     (ALREADY-CLOSED "It's already closed.")
     (SUCCESS "You close " T .OBJ ".")
     (SUCCESS-SHORT "Closed.")>
+
+<DEFAULT-LIBRARY-MESSAGES LOCK
+    (DEFAULT NOT-POSSIBLE "lock")>
+
+<DEFAULT-LIBRARY-MESSAGES UNLOCK
+    (DEFAULT NOT-POSSIBLE "unlock")>
 
 <DEFAULT-LIBRARY-MESSAGES WAIT
     (SUCCESS "Time passes.")>
@@ -236,27 +264,36 @@
     (NO-COMMAND "Nothing to repeat.")>
 
 <DEFAULT-LIBRARY-MESSAGES READ
+    (NOT-READABLE NOT-POSSIBLE "read")
     (NOT-HELD "You must be holding that to read it.")>
 
 <DEFAULT-LIBRARY-MESSAGES TURN-ON
+    (TURN-ME-ON TSD)
+    (NOT-SWITCHABLE NOT-POSSIBLE "switch on and off")
     (ALREADY-ON "It's already on.")
     (SUCCESS "You switch on " T .OBJ ".")
     (SUCCESS-SHORT "Switched on.")>
 
 <DEFAULT-LIBRARY-MESSAGES TURN-OFF
     (TURN-ME-OFF <PICK-ONE-R <PLTABLE "Baseball." "Cold showers.">>)
+    (NOT-SWITCHABLE NOT-POSSIBLE "switch on and off")
     (NOT-ON "It's already off.")
     (SUCCESS "You switch off " T .OBJ)
     (SUCCESS-SHORT "Switched off.")>
 
 <DEFAULT-LIBRARY-MESSAGES FLIP
-    (POINTLESS-WHAT "Taking your frustration out on")>
+    (DEFAULT POINTLESS1 "Taking your frustration out on")
+    (NOT-SWITCHABLE NOT-POSSIBLE "switch on and off")>
 
 <DEFAULT-LIBRARY-MESSAGES PUSH
-    (PUSH-ME "No, you seem close to the edge.")>
+    (PUSH-ME "No, you seem close to the edge.")
+    (PERSON YOU-MASHER .WHOM)
+    (DEFAULT POINTLESS1 "Pushing")>
 
 <DEFAULT-LIBRARY-MESSAGES PULL
-    (PULL-ME "That would demean both of us.")>
+    (PULL-ME "That would demean both of us.")
+    (PERSON YOU-MASHER .WHOM)
+    (DEFAULT POINTLESS1 "Pulling")>
 
 <DEFAULT-LIBRARY-MESSAGES DRINK
     (DEFAULT "You aren't " ITALIC "that" " thirsty.")>
@@ -266,15 +303,20 @@
 
 <DEFAULT-LIBRARY-MESSAGES ATTACK
     (ATTACK-ME "Let's hope it doesn't come to that.")
-    (POINTLESS-WHAT "Taking your frustration out on")>
+    (PERSON YOU-MASHER .WHOM)
+    (DEFAULT POINTLESS1 "Taking your frustration out on")>
 
 <DEFAULT-LIBRARY-MESSAGES THROW-AT
     (THROW-AT-ME "Get " IFELSE .PLURAL? "them" "it" " yourself.")
-    (POINTLESS-WHAT "Taking your frustration out on")>
+    (PERSON YOU-MASHER .WHOM)
+    (DEFAULT POINTLESS3 "Taking your frustration out on" <> T)>
 
 <DEFAULT-LIBRARY-MESSAGES GIVE
     (GIVE-ME-ALREADY-HELD = TAKE ALREADY-HELD)
     (GIVE-ME = THROW-AT THROW-AT-ME)
+    (GIVE-YOURSELF SILLY)
+    (PERSON YOU-MASHER .WHOM)
+    (NOT-PERSON NOT-POSSIBLE "give things to")
     (DEFAULT CT .WHOM IFELSE .PLURAL? " don't" " doesn't" " take " T .OBJ ".")>
 
 <DEFAULT-LIBRARY-MESSAGES TELL
@@ -290,11 +332,46 @@
     (DEFAULT "Dancing is forbidden.")>
 
 <DEFAULT-LIBRARY-MESSAGES WAKE
-    (WAKE-ME "If only this were a dream.")>
+    (WAKE-ME "If only this were a dream.")
+    (PERSON YOU-MASHER .WHOM)
+    (NOT-WAKEABLE NOT-POSSIBLE "wake")>
 
 <DEFAULT-LIBRARY-MESSAGES BURN
     (BURN-ME "What is this, the Friars Club?")
-    (POINTLESS-WHAT "Recklessly incinerating")>
+    (PERSON YOU-MASHER .WHOM)
+    (DEFAULT POINTLESS1 "Recklessly incinerating")>
+
+<DEFAULT-LIBRARY-MESSAGES RUB
+    (RUB-ME TSD)
+    (PERSON YOU-MASHER .WHOM)
+    (DEFAULT POINTLESS1 "Rubbing")>
+
+<DEFAULT-LIBRARY-MESSAGES YES
+    (DEFAULT RHETORICAL)>
+
+<DEFAULT-LIBRARY-MESSAGES NO
+    (DEFAULT RHETORICAL)>
+
+<DEFAULT-LIBRARY-MESSAGES FILL
+    (DEFAULT BE-SPECIFIC)>
+
+<DEFAULT-LIBRARY-MESSAGES EMPTY
+    (DEFAULT BE-SPECIFIC)>
+
+<DEFAULT-LIBRARY-MESSAGES WAVE-HANDS
+    (DEFAULT POINTLESS1 "Waving your hands")>
+
+<DEFAULT-LIBRARY-MESSAGES WAVE
+    (DEFAULT SILLY)>
+
+<DEFAULT-LIBRARY-MESSAGES CLIMB
+    (DEFAULT "There's nowhere to climb here.")>
+
+<DEFAULT-LIBRARY-MESSAGES SWIM
+    (DEFAULT SILLY)>
+
+<DEFAULT-LIBRARY-MESSAGES JUMP
+    (DEFAULT POINTLESS1 "Jumping in place")>
 
 <DEFAULT-LIBRARY-MESSAGES UNDO
     (SUCCESS "Previous turn undone.")

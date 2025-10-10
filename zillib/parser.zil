@@ -92,7 +92,16 @@
     VERB-WORD            <PRINT-VERB>
     IF * *               <PRINT-IF .X .Y>
     IFELSE * * *         <PRINT-IF-ELSE .X .Y .Z>
-    ITALIC *             <ITALICIZE .X>>
+    ITALIC *             <ITALICIZE .X>
+    SILLY                <SILLY T>
+    TSD                  <TSD T>
+    YOU-MASHER *         <YOU-MASHER .X T>
+    POINTLESS1 *         <POINTLESS .X <> <> T>
+    POINTLESS2 * *       <POINTLESS .X .Y <> T>
+    POINTLESS3 * * *     <POINTLESS .X .Y .Z T>
+    NOT-POSSIBLE *       <NOT-POSSIBLE .X T>
+    RHETORICAL           <RHETORICAL T>
+    BE-SPECIFIC          <BE-SPECIFIC T>>
 
 "Version considerations: certain values are bytes on V3 but words on all
 other versions. These macros let us write the same code for all versions."
