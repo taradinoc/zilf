@@ -455,7 +455,14 @@ namespace Zilf.Compiler
                         : Vocabulary[word];
                 },
 
-                GetGlobalNumber = atom => Globals[atom],
+                GetGlobalNumber = atom =>
+                {
+                    if (Globals.TryGetValue(atom, out var num))
+                        return num;
+
+                    Context.HandleError(new CompilerError(atom, CompilerMessages.Undefined_0_1, "global", atom));
+                    return Game.Zero;
+                },
 
                 GetVocabWord = (atom, partOfSpeech, src) =>
                 {

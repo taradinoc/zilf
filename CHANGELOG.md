@@ -134,6 +134,9 @@ and this project may someday adhere to
 - Fixed `PUT IN` and `PUT ON` incorrectly checking the object's
   `SIZE` against the container's `SIZE` (in addition to its `CAPACITY`).
 
+- Fixed unhandled exception from `(NORTH TO X IF Y)` when global Y isn't
+  defined.
+
 ## [0.9] (August 11, 2019)
 
 ### Added

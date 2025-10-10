@@ -517,6 +517,16 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Nonexistent_Global_In_Direction_Property_Should_Be_Rejected()
+        {
+            await AssertGlobals(
+                "<DIRECTIONS NORTH>",
+                "<OBJECT FOO>",
+                "<OBJECT BAR (NORTH TO FOO IF NO-SUCH-GLOBAL)>")
+                .DoesNotCompileAsync("ZIL0207");
+        }
+
+        [TestMethod]
         public async Task Direction_Synonyms_Should_Work_Identically()
         {
             await AssertGlobals(
