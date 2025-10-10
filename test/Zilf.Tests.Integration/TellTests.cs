@@ -82,6 +82,35 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Tell_Token_Resulting_In_Bad_Call_Should_Not_Compile()
+        {
+            // too many args for the routine
+            await AssertRoutine("", @"<TELL FOO>")
+                .WithGlobal("<TELL-TOKENS FOO <FOO 1 2 3>>")
+                .WithGlobal("<ROUTINE FOO (A B) <PRINTN <+ .A .B>>>")
+                .DoesNotCompileAsync("ZIL0112");
+
+            await AssertRoutine("", @"<TELL FOO 1 2 3>")
+                .WithGlobal("<TELL-TOKENS FOO * * * <FOO .X. .Y .Z>>")
+                .WithGlobal("<ROUTINE FOO (A B) <PRINTN <+ .A .B>>>")
+                .DoesNotCompileAsync("ZIL0112");
+
+            // too many args for the Z-machine version
+            await AssertRoutine("", @"<TELL FOO>")
+                .InV3()
+                .WithGlobal("<TELL-TOKENS FOO <FOO 1 2 3 4>>")
+                .WithGlobal(@"<ROUTINE FOO (""OPT"" A B C D) <PRINTN <+ .A .B>>>")
+                .DoesNotCompileAsync("ZIL0402");
+
+            await AssertRoutine("", @"<TELL FOO 1 2 3 4>")
+                .InV3()
+                .WithGlobal("<TELL-TOKENS FOO * * * * <FOO .X. .Y .Z .W>>")
+                .WithGlobal(@"<ROUTINE FOO (""OPT"" A B C D) <PRINTN <+ .A .B>>>")
+                .DoesNotCompileAsync("ZIL0402");
+
+        }
+
+        [TestMethod]
         public async Task Tell_Builtin_Should_Reject_Complex_Outputs()
         {
             await AssertRoutine("", "<>")

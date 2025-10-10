@@ -137,6 +137,9 @@ and this project may someday adhere to
 - Fixed unhandled exception from `(NORTH TO X IF Y)` when global Y isn't
   defined.
 
+- Fixed unhandled exception when calling a routine with too many
+  arguments for the targeted Z-machine version.
+
 ## [0.9] (August 11, 2019)
 
 ### Added

@@ -163,6 +163,16 @@ namespace Zilf.Compiler
                             return wantResult ? Game.Zero : null;
                         }
 
+                        if (args.Length > Game.MaxCallArguments)
+                        {
+                            Context.HandleError(new CompilerError(
+                                form,
+                                CompilerMessages.Too_Many_Call_Arguments_Only_0_Allowed_In_V1,
+                                Game.MaxCallArguments,
+                                Context.ZEnvironment.ZVersion));
+                            return wantResult ? Game.Zero : null;
+                        }
+
                         // compile routine call
                         resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
                         using (var argOperands = CompileOperands(rb, form.SourceLine, args))
