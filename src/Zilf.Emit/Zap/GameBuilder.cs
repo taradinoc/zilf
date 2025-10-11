@@ -572,7 +572,7 @@ namespace Zilf.Emit.Zap
                 writer.WriteLine("WORDS::");
                 for (int i = 1; i < num; i++)
                     writer.WriteLine(INDENT + "FSTR?{0}", i);
-                for (int i = num; i < maxAbbrevs; i++)
+                for (int i = num; i <= maxAbbrevs; i++)
                     writer.WriteLine(INDENT + "FSTR?DUMMY");
 
                 writer.WriteLine();

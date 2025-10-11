@@ -140,6 +140,8 @@ and this project may someday adhere to
 - Fixed unhandled exception when calling a routine with too many
   arguments for the targeted Z-machine version.
 
+- Fixed off-by-one error when generating placeholders for frequent words files.
+
 ## [0.9] (August 11, 2019)
 
 ### Added

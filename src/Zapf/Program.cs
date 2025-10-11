@@ -139,7 +139,7 @@ namespace Zapf
                 Console.WriteLine("WORDS::");
                 for (int i = 1; i < num; i++)
                     Console.WriteLine("        FSTR?{0}", i);
-                for (int i = num; i < maxAbbrevs; i++)
+                for (int i = num; i <= maxAbbrevs; i++)
                     Console.WriteLine("        FSTR?DUMMY");
 
                 Console.WriteLine();
