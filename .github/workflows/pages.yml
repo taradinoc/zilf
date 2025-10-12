@@ -1,0 +1,49 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]   # or your default branch
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore Zilf.sln
+
+      - name: Publish site
+        run: dotnet publish src/Zilf.Playground -c Release -o public --nologo
+
+      - name: Prepare Pages artifact
+        run: |
+          touch public/.nojekyll
+          # echo "your.custom.domain" > public/CNAME   # if using a custom domain
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public/wwwroot
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
