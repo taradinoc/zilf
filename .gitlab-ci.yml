@@ -32,6 +32,7 @@ stages:
   - build
   - test
   - package
+  - deploy
 
 # ### Define global cache rule
 #
@@ -149,3 +150,14 @@ package:
   artifacts:
     paths:
       - 'Package/*/Packages/*'
+
+create-pages:
+  stage: deploy
+  needs: ['tests:fast', 'tests:slow']   # publish only after tests pass
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH'
+  script:
+    # Publish the site directly into ./public (required by Pages)
+    - 'dotnet publish src/Zilf.Playground -c Release -o public --no-restore'
+  pages:
+    publish: public
