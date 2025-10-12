@@ -99,6 +99,7 @@ debug:build:
     untracked: false
     when: on_success
     expire_in: 30 days
+  interruptible: true
 
 tests:fast:
   stage: test
@@ -120,6 +121,7 @@ tests:fast:
     reports:
       junit:
         - 'test/artifacts/*.xml'
+  interruptible: true
 
 tests:slow:
   stage: test
@@ -141,6 +143,7 @@ tests:slow:
     reports:
       junit:
         - 'test/artifacts/*.xml'
+  interruptible: true
 
 package:
   stage: package
@@ -150,14 +153,15 @@ package:
   artifacts:
     paths:
       - 'Package/*/Packages/*'
+  interruptible: true
 
-create-pages:
-  stage: deploy
-  needs: ['tests:fast', 'tests:slow']   # publish only after tests pass
-  rules:
-    - if: '$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH'
-  script:
-    # Publish the site directly into ./public (required by Pages)
-    - 'dotnet publish src/Zilf.Playground -c Release -o public --no-restore'
-  pages:
-    publish: public/wwwroot
+# create-pages:
+#   stage: deploy
+#   needs: ['tests:fast', 'tests:slow']   # publish only after tests pass
+#   rules:
+#     - if: '$CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH'
+#   script:
+#     # Publish the site directly into ./public (required by Pages)
+#     - 'dotnet publish src/Zilf.Playground -c Release -o public --no-restore'
+#   pages:
+#     publish: public/wwwroot
