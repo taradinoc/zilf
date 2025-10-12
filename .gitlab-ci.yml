@@ -160,4 +160,4 @@ create-pages:
     # Publish the site directly into ./public (required by Pages)
     - 'dotnet publish src/Zilf.Playground -c Release -o public --no-restore'
   pages:
-    publish: public
+    publish: public/wwwroot
