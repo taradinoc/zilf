@@ -159,6 +159,11 @@ namespace ZilfAnalyzers.Test.Helpers
             //after applying all of the code fixes, compare the resulting string to the inputted one
             var actual = await GetStringFromDocumentAsync(document).ConfigureAwait(false);
             //Assert.AreEqual(newSource, actual);
+
+            // normalize line endings
+            actual = actual.Replace("\r\n", "\n");
+            newSource = newSource.Replace("\r\n", "\n");
+
             actual.ShouldEqualWithDiff(newSource);
         }
     }
