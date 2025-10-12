@@ -29,6 +29,29 @@
     <ProjectReference Include="..\Zilf\Zilf.csproj" />
   </ItemGroup>
 
+  <!--
+    Publish-time assets wiring for project templates:
+    - Copy all folders/files from repo-level /sample/** into the publish output under wwwroot/project_templates
+    - Keep existing SVGs and other non-ZIL assets already in wwwroot/project_templates
+    - Exclude .zil files physically under this project's wwwroot so they don't duplicate the ones from /sample
+  -->
+  <ItemGroup>
+    <!-- Exclude any .zil files that live under the project's wwwroot/project_templates from being published -->
+    <Content Update="wwwroot\project_templates\**\*.zil">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Bring in all repo samples at publish-time under wwwroot/project_templates -->
+    <Content Include="..\..\sample\**\*">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>wwwroot\project_templates\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </Content>
+  </ItemGroup>
+
   <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 
 </Project>
