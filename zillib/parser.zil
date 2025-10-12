@@ -2034,12 +2034,10 @@ Returns:
     ;"The T? should be unnecessary, but ZILF generates ugly code without it"
     <T? <OR ;"We can always see the contents of surfaces"
             <FSET? .OBJ ,SURFACEBIT>
-            ;"We can see inside containers if they're open, transparent, or
-              unopenable (= always-open)"
+            ;"We can see inside containers if they're open or transparent"
             <AND <FSET? .OBJ ,CONTBIT>
                  <OR <FSET? .OBJ ,OPENBIT>
-                     <FSET? .OBJ ,TRANSBIT>
-                     <NOT <FSET? .OBJ ,OPENABLEBIT>>>>>>>
+                     <FSET? .OBJ ,TRANSBIT>>>>>>
 
 ;"Attempts to find one or more objects in scope, given a noun phrase that
 describes them and a set of search options.
