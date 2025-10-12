@@ -43,6 +43,7 @@
     <DisplayVersion Condition="'$(ReleaseLevel)' != 'final' and '$(MicroVersion)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)$(ShortReleaseLevel)$(ReleaseSerial)</DisplayVersion>
 
     <InformationalVersion>$(DisplayVersion)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <!-- Signing -->
