@@ -179,12 +179,16 @@
     (HELD "You can't get " IFELSE .SURFACE? "on " "in " T .OBJ " while you're holding it.")
     (NO-OBJECT BE-SPECIFIC)
     (NOT-ENTERABLE NOT-POSSIBLE "enter")
+    (CLOSED "You'll have to open " T .OBJ " first.")
+    (IMPLICIT-OPEN "[opening " T .OBJ "]")
     (SUCCESS "You get " IFELSE .SURFACE? "onto " "into " T .OBJ ".")>
 
 <DEFAULT-LIBRARY-MESSAGES EXIT
     (NOT-IN "You're not " IFELSE .SURFACE? "on " "in " T .OBJ ".")
     (NO-OBJECT BE-SPECIFIC)
     (NOT-EXITABLE NOT-POSSIBLE "exit")
+    (CLOSED = ENTER CLOSED)
+    (IMPLICIT-OPEN = ENTER IMPLICIT-OPEN)
     (SUCCESS "You get " IFELSE .SURFACE? "off" "out" " of " T .OBJ ".")>
 
 <DEFAULT-LIBRARY-MESSAGES PUT-ON

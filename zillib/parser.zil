@@ -2016,8 +2016,11 @@ Returns:
 
 Returns:
   An object providing light, or false if no light source was found."
-<ROUTINE SEARCH-FOR-LIGHT SFL ()
-    <COND (<FSET? ,HERE ,LIGHTBIT> <RTRUE>)>
+<ROUTINE SEARCH-FOR-LIGHT SFL ("AUX" (L <LOC ,WINNER>))
+    <COND (<AND <FSET? ,HERE ,LIGHTBIT>
+                <OR <AND <=? ,HERE .L>>
+                    <AND <SEE-INSIDE? .L>>>>
+           <RTRUE>)>
     <MAP-SCOPE (I [STAGES (LOCATION INVENTORY GLOBALS LOCAL-GLOBALS)] [NO-LIGHT])
         <COND (<FSET? .I ,LIGHTBIT> <RETURN .I .SFL>)>>
     <RFALSE>>
@@ -2995,6 +2998,9 @@ Returns:
 
 ;"Determines whether an object can be seen by the player.
 
+Visibility here is determined based on the object's location in relation to the
+player, and the opacity of any containers in between.
+
 Uses:
   HERE
   WINNER
@@ -3005,24 +3011,29 @@ Args:
 
 Returns:
   True if the object is visible, otherwise false."
-<ROUTINE VISIBLE? (OBJ "AUX" P M)
+<ROUTINE VISIBLE? (OBJ "AUX" P (CEIL <VIS-CEILING>))
     <COND (<=? .OBJ ,PSEUDO-OBJECT>
-           <RETURN <=? ,HERE ,PSEUDO-LOC>>)>
+           <RETURN <=? .CEIL ,PSEUDO-LOC>>)>
     <SET P <LOC .OBJ>>
     <COND (<0? .P> <RFALSE>)>
-    <SET M <META-LOC .OBJ>>
-    <COND (<NOT <=? .M ,HERE>>
+    <COND (<NOT <HELD? .OBJ .CEIL>>
            <COND (<OR <AND <=? .P ,LOCAL-GLOBALS>
                            <GLOBAL-IN? .OBJ ,HERE>>
                       <=? .P ,GLOBAL-OBJECTS ,GENERIC-OBJECTS>>
                   <RTRUE>)
                  (ELSE <RFALSE>)>)>
     <REPEAT ()
-        <COND (<EQUAL? .P ,HERE ,WINNER>
+        <COND (<EQUAL? .P .CEIL ,WINNER>
                <RTRUE>)
               (<NOT <SEE-INSIDE? .P>>
                <RFALSE>)
               (ELSE <SET P <LOC .P>>)>>>
+
+<ROUTINE VIS-CEILING ("AUX" (L <LOC ,WINNER>))
+    ;"the visibility ceiling is <LOC ,WINNER> if they're inside an opaque container,
+      or HERE otherwise"
+    <COND (<AND <N=? .L ,HERE> <NOT <SEE-INSIDE? .L>>> .L)
+          (ELSE ,HERE)>>
 
 ;"Determines whether an object can be touched by the player.
 

@@ -38,9 +38,20 @@
      <PUT SCOPE-STATE 1 ,WINNER>)
     (<SCOPE-CRAWL>)>
 
+;"LOCATION also includes the vehicle if the player is in one, but this
+  separate scope stage exists so it can be used in darkness."
+<SCOPE-STAGE VEHICLE 1
+    (<COND (<FSET? <LOC ,WINNER> VEHBIT>
+            <PUT SCOPE-STATE 0 <LOC ,WINNER>>)
+           (ELSE <PUT SCOPE-STATE 0 <>>)>)
+    (<BIND ((O <GET SCOPE-STATE 0>))
+         <PUT SCOPE-STATE 0 <>>
+         .O>)>
+
 <SCOPE-STAGE LOCATION 2
-    (<PUT SCOPE-STATE 0 <FIRST? ,HERE>>
-     <PUT SCOPE-STATE 1 ,HERE>)
+    (<BIND ((C <VIS-CEILING>))
+         <PUT SCOPE-STATE 0 <FIRST? .C>>
+         <PUT SCOPE-STATE 1 .C>>)
     (<SCOPE-CRAWL>)>
 
 ;"TODO: Just step through the GLOBAL property instead of checking everything

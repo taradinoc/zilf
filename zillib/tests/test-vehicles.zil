@@ -26,6 +26,11 @@
     (SYNONYM WAGON)
     (ACTION VEHICLE-F)>
 
+<OBJECT BOX
+    (DESC "box")
+    (FLAGS CONTBIT VEHBIT)
+    (SYNONYM BOX LOCKEDBIT)>
+
 <ROUTINE VEHICLE-F (ARG)
     ;"block movement between STARTROOM and THIRDROOM"
     <COND (<==? .ARG ,M-BEG>
@@ -53,7 +58,17 @@
     (FLAGS TAKEBIT)
     (SYNONYM COIN)>
 
+<OBJECT LAMP
+    (DESC "lamp")
+    (FLAGS LIGHTBIT TAKEBIT)
+    (SYNONYM LAMP)>
+
 <TEST-SETUP ()
+    <REMOVE ,BOX>
+    <REMOVE ,LAMP>
+    <FSET ,BOX ,LOCKEDBIT>
+    <FCLEAR ,BOX ,OPENABLEBIT>
+    <FCLEAR ,BOX ,OPENBIT>
     <MOVE ,GOLD-COIN ,STARTROOM>
     <MOVE ,COUCH ,STARTROOM>
     <MOVE ,WAGON ,STARTROOM>
@@ -123,5 +138,90 @@
     <MOVE ,WAGON ,WINNER>
     <COMMAND [GET ON WAGON]>
     <EXPECT "You can't get in the wagon while you're holding it.|">>
+
+<TEST-CASE ("Can't see inside a closed opaque vehicle")
+    <MOVE ,BOX ,STARTROOM>
+    <MOVE ,WINNER ,BOX>
+    <FCLEAR ,BOX ,OPENBIT>
+    <SETG HERE ,STARTROOM>
+    <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
+    <CHECK <NOT ,HERE-LIT>>
+    <COMMAND [LOOK]>
+    <EXPECT "It is pitch black. You can't see a thing.|">>
+
+<TEST-CASE ("Closing an opaque vehicle around you leads to darkness")
+    <MOVE ,BOX ,STARTROOM>
+    <MOVE ,WINNER ,BOX>
+    <FCLEAR ,BOX ,LOCKEDBIT>
+    <FSET ,BOX ,OPENABLEBIT>
+    <FSET ,BOX ,OPENBIT>
+    <MOVE ,LAMP ,STARTROOM>
+    <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
+    <COMMAND [CLOSE BOX]>
+    <EXPECT "You close the box.|You are plunged into darkness.|">
+    <CHECK <NOT <SEARCH-FOR-LIGHT>>>
+    <COMMAND [LOOK]>
+    <EXPECT "It is pitch black. You can't see a thing.|">>
+
+<TEST-CASE ("An opaque vehicle can be opened from inside")
+    <MOVE ,BOX ,STARTROOM>
+    <MOVE ,WINNER ,BOX>
+    <FCLEAR ,BOX ,LOCKEDBIT>
+    <FSET ,BOX ,OPENABLEBIT>
+    <FCLEAR ,BOX ,OPENBIT>
+    <COMMAND [EXIT BOX]>
+    <EXPECT "[opening the box]|You get out of the box.|You can see your surroundings now.||Start Room|Home sweet home.||There is a box, a wagon, a couch, and a gold coin here.|">
+    <CHECK <SEARCH-FOR-LIGHT>>>
+
+<TEST-CASE ("Can't enter a locked vehicle")
+    <FSET ,BOX ,OPENABLEBIT>
+    <FCLEAR ,BOX ,OPENBIT>
+    <FSET ,BOX ,LOCKEDBIT>
+    <MOVE ,BOX ,STARTROOM>
+    <COMMAND [ENTER BOX]>
+    <EXPECT "You'll have to open the box first.|">>
+
+<TEST-CASE ("Can't enter a closed, unopenable vehicle")
+    <FCLEAR ,BOX ,OPENABLEBIT>
+    <FCLEAR ,BOX ,OPENBIT>
+    <FCLEAR ,BOX ,LOCKEDBIT>
+    <MOVE ,BOX ,STARTROOM>
+    <COMMAND [ENTER BOX]>
+    <EXPECT "You'll have to open the box first.|">>
+
+<TEST-CASE ("Can't exit a locked vehicle")
+    <FSET ,BOX ,OPENABLEBIT>
+    <FCLEAR ,BOX ,OPENBIT>
+    <FSET ,BOX ,LOCKEDBIT>
+    <MOVE ,BOX ,STARTROOM>
+    <MOVE ,WINNER ,BOX>
+    <COMMAND [EXIT]>
+    <EXPECT "You'll have to open the box first.|">>
+
+<TEST-CASE ("Can't exit a closed, unopenable vehicle")
+    <FCLEAR ,BOX ,OPENABLEBIT>
+    <FCLEAR ,BOX ,OPENBIT>
+    <FCLEAR ,BOX ,LOCKEDBIT>
+    <MOVE ,BOX ,STARTROOM>
+    <MOVE ,WINNER ,BOX>
+    <COMMAND [EXIT]>
+    <EXPECT "You'll have to open the box first.|">>
+
+<TEST-CASE ("Implicitly open a closed vehicle when entering")
+    <MOVE ,BOX ,STARTROOM>
+    <FSET ,BOX ,OPENABLEBIT>
+    <FCLEAR ,BOX ,LOCKEDBIT>
+    <COMMAND [ENTER BOX]>
+    <EXPECT "[opening the box]|You get into the box.|">
+    <CHECK <FSET? ,BOX ,OPENBIT>>>
+
+<TEST-CASE ("Implicitly open a closed vehicle when exiting")
+    <MOVE ,BOX ,STARTROOM>
+    <FSET ,BOX ,OPENABLEBIT>
+    <FCLEAR ,BOX ,LOCKEDBIT>
+    <MOVE ,WINNER ,BOX>
+    <COMMAND [EXIT]>
+    <EXPECT "[opening the box]|You get out of the box.|You can see your surroundings now.||Start Room|Home sweet home.||There is a box, a wagon, a couch, and a gold coin here.|">
+    <CHECK <FSET? ,BOX ,OPENBIT>>>
 
 <TEST-GO ,STARTROOM>

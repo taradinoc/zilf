@@ -214,7 +214,7 @@
 ;"Constants"
 
 ;"TODO: these belong in parser.zil?"
-;"Object action handlers may get: M-WINNER, or no arg"
+;"Object action handlers may get: M-WINNER, M-ENTER, M-TRYOPEN?, or no arg"
 ;"Room action handlers may get: M-BEG, M-END, M-ENTER, M-LOOK, M-FLASH"
 ;"Object DESCFCNs may get: M-OBJDESC?, M-OBJDESC"
 ;"DARKNESS-F may get: M-LOOK, M-SCOPE?, M-LIT-TO-DARK, M-DARK-TO-LIT,
@@ -234,6 +234,7 @@
 <CONSTANT M-NOW-DARK 13>          ;"Light source is gone"
 <CONSTANT M-NOW-LIT 14>           ;"Light source is back"
 <CONSTANT M-WINNER 15>            ;"Object is the one performing this action"
+<CONSTANT M-TRYOPEN? 16>          ;"Choose whether to block implicit open"
 
 ;"Helper routines for action handlers"
 
@@ -365,7 +366,7 @@ Returns:
         <COND (<=? .ARG ,M-LOOK>
                <TELL <LIBRARY-MESSAGE DARKNESS LOOK> CR>)
               (<=? .ARG ,M-SCOPE?>
-               <T? <SCOPE-STAGE? GENERIC INVENTORY GLOBALS>>)
+               <T? <SCOPE-STAGE? VEHICLE GENERIC INVENTORY GLOBALS>>)
               (<=? .ARG ,M-NOW-DARK>
                <TELL <LIBRARY-MESSAGE DARKNESS NOW-DARK> CR>)
               (<=? .ARG ,M-NOW-LIT>
@@ -834,11 +835,31 @@ Returns:
                   <TELL <LIBRARY-MESSAGE ENTER HELD ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>
                   <SETG P-CONT 0>
                   <RTRUE>)
+                 (<IMPLICIT-OPEN? ,PRSO>
+                  <TELL <LIBRARY-MESSAGE ENTER IMPLICIT-OPEN ((OBJ ,PRSO))> CR>
+                  <FSET ,PRSO ,OPENBIT>
+                  <MOVE ,WINNER ,PRSO>
+                  <APPLY <GETP ,PRSO ,P?ACTION> ,M-ENTER>
+                  <TELL <LIBRARY-MESSAGE ENTER SUCCESS ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>
+                  <NOW-LIT?>   ;"because opening the vehicle may have revealed a light source"
+                  <RTRUE>)
+                 (<NOT <OR <FSET? ,PRSO ,SURFACEBIT>
+                           <FSET? ,PRSO ,OPENBIT>>>
+                  <TELL <LIBRARY-MESSAGE ENTER CLOSED ((OBJ ,PRSO))> CR>
+                  <RTRUE>)
                  (ELSE
                   <MOVE ,WINNER ,PRSO>
+                  <APPLY <GETP ,PRSO ,P?ACTION> ,M-ENTER>
                   <TELL <LIBRARY-MESSAGE ENTER SUCCESS ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>
                   <RTRUE>)>)
           (ELSE <TELL <LIBRARY-MESSAGE ENTER NOT-ENTERABLE> CR>)>>
+
+<DEFMAC IMPLICIT-OPEN? ('OBJ)
+    `<AND <FSET? ~.OBJ ,OPENABLEBIT>
+          <NOT <FSET? ~.OBJ SURFACEBIT>>
+          <NOT <FSET? ~.OBJ ,OPENBIT>>
+          <NOT <FSET? ~.OBJ ,LOCKEDBIT>>
+          <NOT <APPLY <GETP ~.OBJ ,P?ACTION> ,M-TRYOPEN?>>>>
 
 <ROUTINE V-EXIT ("AUX" O)
     <COND (<==? ,PRSO ,ROOMS <>>
@@ -858,9 +879,21 @@ Returns:
                   <TELL <LIBRARY-MESSAGE EXIT NOT-IN ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>
                   <SETG P-CONT 0>
                   <RTRUE>)
+                 (<IMPLICIT-OPEN? ,PRSO>
+                  <TELL <LIBRARY-MESSAGE EXIT IMPLICIT-OPEN ((OBJ ,PRSO))> CR>
+                  <FSET ,PRSO ,OPENBIT>
+                  <MOVE ,WINNER ,HERE>
+                  <TELL <LIBRARY-MESSAGE EXIT SUCCESS ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>
+                  <NOW-LIT?>   ;"because opening the vehicle may have revealed a light source"
+                  <RTRUE>)
+                 (<NOT <OR <FSET? ,PRSO ,SURFACEBIT>
+                           <FSET? ,PRSO ,OPENBIT>>>
+                  <TELL <LIBRARY-MESSAGE EXIT CLOSED ((OBJ ,PRSO))> CR>
+                  <RTRUE>)
                  (ELSE
                   <MOVE ,WINNER ,HERE>
-                  <TELL <LIBRARY-MESSAGE EXIT SUCCESS ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>)>)
+                  <TELL <LIBRARY-MESSAGE EXIT SUCCESS ((OBJ ,PRSO) (SURFACE? <FSET? ,PRSO ,SURFACEBIT>))> CR>
+                  <RTRUE>)>)
           (ELSE <TELL <LIBRARY-MESSAGE EXIT NOT-EXITABLE> CR>)>>
 
 ;"Performs the WALK action with a direction."
@@ -1064,6 +1097,8 @@ Returns:
                  <FSET? .OBJ ,OPENABLEBIT>
                  <NOT <FSET? .OBJ ,OPENBIT>>>>>>
 
+;"Returns the closest object to A and B that contains both of them, or <> if there is none.
+This assumes that if the objects have a common parent, it's within HERE."
 <DEFMAC COMMON-PARENT? ('A 'B)
     `<COMMON-PARENT-R ~.A ~.B ,HERE>>
 
@@ -1285,7 +1320,8 @@ Returns:
                   <TELL <LIBRARY-MESSAGE OPEN SUCCESS ((OBJ ,PRSO))> CR>
                   <COND (<AND ,HERE-LIT
                               <FSET? ,PRSO ,CONTBIT>
-                              <NOT <FSET? ,PRSO ,TRANSBIT>>>
+                              <NOT <FSET? ,PRSO ,TRANSBIT>>
+                              <NOT <HELD? ,WINNER ,PRSO>>>
                          <DESCRIBE-CONTENTS ,PRSO>)>)>
            <NOW-LIT?>)>>
 
