@@ -1,0 +1,35 @@
+.editor-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.file-tab {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 10px 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file-tab .oi {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.file-name {
+    font-weight: 500;
+    color: #212529;
+}
+
+.editor-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+::deep #code-editor {
+    height: 100% !important;
+}

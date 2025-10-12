@@ -16,19 +16,39 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#nullable enable
+
+using System;
+
 namespace Zilf.Playground.Services.Workspaces
 {
     public sealed class ProjectFile
     {
+        private string content;
+
         public string Path { get; }
-        public string Content { get; set; }
+        
+        public string Content
+        {
+            get => content;
+            set
+            {
+                if (content != value)
+                {
+                    content = value;
+                    ContentChanged?.Invoke();
+                }
+            }
+        }
+
+        public event Action? ContentChanged;
 
         public ProjectFile(string path) : this(path, "") { }
 
         public ProjectFile(string path, string content)
         {
             this.Path = path;
-            this.Content = content;
+            this.content = content;
         }
     }
 }

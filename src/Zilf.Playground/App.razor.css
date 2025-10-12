@@ -1,0 +1,29 @@
+/* Persistent story iframe that floats over the page */
+.parchment-iframe {
+    position: fixed;
+    top: 60px;
+    right: 20px;
+    width: 800px;
+    height: calc(100vh - 80px);
+    border: 2px solid #333;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    background-color: white;
+    z-index: 1000;
+}
+
+@media (max-width: 1200px) {
+    .parchment-iframe {
+        width: 600px;
+    }
+}
+
+@media (max-width: 768px) {
+    .parchment-iframe {
+        top: 60px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        height: calc(100vh - 80px);
+    }
+}

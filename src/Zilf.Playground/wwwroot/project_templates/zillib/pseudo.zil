@@ -2,17 +2,17 @@
 
 "This provides a way to populate games with scenery without creating separate objects for each noun
  mentioned in a room description.
- 
+
  When the parser can't find a match for an OBJSPEC, it checks the location's THINGS property, which
  (if present) defines a set of pseudo-objects, each with a list of adjectives, a list of nouns, and
  an action routine. If one of them matches, the singleton PSEUDO-OBJECT is returned, after setting
  its ACTION property to the routine and setting the global PSEUDO-LOC to the location.
- 
+
  The format of the THINGS property is:
- 
+
      .PROP 2,P?THINGS
      .WORD T?THINGS-TABLE
-     
+
    T?THINGS-TABLE::
      .WORD 1                          ; Number of pseudo-objects
      .BYTE 1                          ; Number of adjectives
@@ -21,30 +21,30 @@
                                       ; otherwise this would point to a byte/word table)
      .WORD T?GINGERBREAD-HOUSE-NOUNS  ; Noun table (since # adjectives > 1)
      .WORD GINGERBREAD-HOUSE-F        ; Action routine
-   
+
    T?GINGERBREAD-HOUSE-NOUNS::
      .WORD W?HOUSE
      .WORD W?MANSION
-   
+
  The property definition syntax is implemented by THINGS-PROPSPEC below."
 
 "Constants and macros to access pseudo entries"
 <CONSTANT PDO-SIZE 8>
 
 <DEFMAC PDO-NADJ ('PDO)
-    <FORM GETB .PDO 0>>
+    `<GETB ~.PDO 0>>
 
 <DEFMAC PDO-NNOUN ('PDO)
-    <FORM GETB .PDO 1>>
+    `<GETB ~.PDO 1>>
 
 <DEFMAC PDO-ADJ/TBL ('PDO)
-    <FORM GET .PDO 1>>
+    `<GET ~.PDO 1>>
 
 <DEFMAC PDO-NOUN/TBL ('PDO)
-    <FORM GET .PDO 2>>
+    `<GET ~.PDO 2>>
 
 <DEFMAC PDO-ACTION ('PDO)
-    <FORM GET .PDO 3>>
+    `<GET ~.PDO 3>>
 
 ;"Like REFERS? but for pseudo entries.
 
@@ -213,9 +213,8 @@ Returns:
                                     <SETG NEXT-PSEUDO-AUTO-ACTION <+ .NUM 1>>
                                     <SET NAME <PARSE <STRING "PSEUDO-AUTO-ACTION-"
                                                              <UNPARSE .NUM>>>>
-                                    <EVAL <FORM ROUTINE .NAME '()
-                                                <FORM COND <LIST <FORM VERB? !.VERBS>
-                                                                 <FORM PRINTR .F>>>>>
+                                    <EVAL `<ROUTINE ~.NAME ()
+                                                <COND (<VERB? ~!.VERBS> <PRINTR ~.F>)>>>
                                     .NAME>)
                                (<TYPE? .F ATOM FALSE> .F)
                                (ELSE <ERROR BAD-PSEUDO-ACTION .F>)>>>>>

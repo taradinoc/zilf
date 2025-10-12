@@ -78,9 +78,9 @@ object (whether or not they're overridden!):
           (ELSE .DEF)>>
 
 <DEFINE HANDLE-DEF (NAME TYPE PROPS "AUX" F)
-    <SET F <FORM DEFINE .NAME '(NAME "TUPLE" PROPS "AUX" PS)
-                 <FORM SET PS <FORM MERGE-PROPS .PROPS '.PROPS>>
-                 <FORM .TYPE '.NAME '!.PS>>>
+    <SET F `<DEFINE ~.NAME (NAME "TUPLE" PROPS "AUX" PS)
+                 <SET PS <MERGE-PROPS ~.PROPS .PROPS>>
+                 <~.TYPE .NAME !.PS>>>
     <EVAL .F>>
 
 <DEFINE MERGE-PROPS (OLD NEW "AUX" RES A)

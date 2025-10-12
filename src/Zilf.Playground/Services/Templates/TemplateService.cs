@@ -92,7 +92,10 @@ namespace Zilf.Playground.Services.Templates
 
             await Task.WhenAll(files.Select(path => CacheFileAsync(path))).ConfigureAwait(false);
 
-            var project = new Project();
+            var project = new Project
+            {
+                Name = template.Title ?? templateName
+            };
 
             foreach (var path in files)
                 project.AddFile(path).Content = await content[path].ConfigureAwait(false);
@@ -102,6 +105,28 @@ namespace Zilf.Playground.Services.Templates
                 foreach (var lib in template.Include)
                     project.Includes.Add(lib);
             }
+
+            return project;
+        }
+
+        public async Task<Project> CopyLibraryToNewProjectAsync(string libraryName)
+        {
+            var m = await metadata.ConfigureAwait(false);
+            
+            if (m.Libraries == null || !m.Libraries.TryGetValue(libraryName, out var library))
+                throw new InvalidOperationException($"Library '{libraryName}' not found");
+
+            await Task.WhenAll(library.Files.Select(path => CacheFileAsync(path))).ConfigureAwait(false);
+
+            var project = new Project
+            {
+                Name = libraryName
+            };
+
+            foreach (var path in library.Files)
+                project.AddFile(path).Content = await content[path].ConfigureAwait(false);
+
+            project.Includes.Add(libraryName);
 
             return project;
         }

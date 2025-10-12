@@ -1,0 +1,13 @@
+.project-layout-container {
+    display: flex;
+    height: calc(100vh - 60px); /* Account for navbar height (approximately 56-60px for Bootstrap navbar) */
+    overflow: hidden;
+}
+
+.project-main-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+}

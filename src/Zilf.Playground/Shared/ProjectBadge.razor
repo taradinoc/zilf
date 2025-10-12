@@ -1,7 +1,7 @@
 ﻿@inject WorkspaceService Workspace
 @implements IDisposable
 
-<span class="badge badge-pill badge-light">@Workspace.StatusText</span>
+<span class="badge rounded-pill text-bg-light">@Workspace.StatusText</span>
 
 @code {
     protected override void OnInitialized()

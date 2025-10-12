@@ -1,0 +1,626 @@
+@page "/project/{ProjectId:guid}/settings"
+@using Zilf.Playground.Services
+@using Zilf.Playground.Services.Workspaces
+@using Zilf.Playground.Services.Templates
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Text.Json
+@using System.IO
+@using System.IO.Compression
+@implements IDisposable
+@inject ProjectStorageService ProjectStorage
+@inject WorkspaceService Workspace
+@inject TemplateService Templates
+@inject NavigationManager Nav
+@inject JSInterop JS
+@layout ProjectLayout
+
+<div class="container-fluid mt-4">
+    <h3>Project Settings</h3>
+    
+    @if (project == null)
+    {
+        <p><em>Loading project...</em></p>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>Project Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Project Name</label>
+                            <input type="text" class="form-control" @bind="project.Name" @bind:event="oninput" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Project Directory</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="@GetProjectDirectory()" readonly />
+                                <button class="btn btn-outline-secondary" @onclick="RenameProjectDirectory">
+                                    <span class="oi oi-pencil"></span> Rename
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">All project files will be moved to the new directory.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Main File</label>
+                            <select class="form-select" @bind="selectedMainFile">
+                                @foreach (var file in ProjectFiles)
+                                {
+                                    <option value="@file.Path">@file.Path</option>
+                                }
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" @onclick="SaveProjectInfo">
+                            <span class="oi oi-check"></span> Save Changes
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>Library Management</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (HasLibrary)
+                        {
+                            <p>This project includes the ZIL library (@libraryFiles.Count() files).</p>
+                            <button class="btn btn-warning" @onclick="RefreshLibrary">
+                                <span class="oi oi-reload"></span> Refresh Library
+                            </button>
+                            <button class="btn btn-danger" @onclick="RemoveLibrary">
+                                <span class="oi oi-trash"></span> Remove Library
+                            </button>
+                        }
+                        else
+                        {
+                            <p>This project does not include the ZIL library.</p>
+                            <button class="btn btn-success" @onclick="AddLibrary">
+                                <span class="oi oi-plus"></span> Add Library
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>Import / Export</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <button class="btn btn-primary w-100 mb-2" @onclick="ExportProject">
+                                <span class="oi oi-data-transfer-download"></span> Export as ZIP
+                            </button>
+                            <p class="text-muted small">Download all project files as a ZIP archive.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="btn btn-success w-100 mb-2">
+                                <span class="oi oi-data-transfer-upload"></span> Import from ZIP
+                                <InputFile OnChange="ImportFromZip" accept=".zip" style="display:none;" />
+                            </label>
+                            <p class="text-muted small">Replace project with files from a ZIP archive.</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="btn btn-secondary w-100 mb-2">
+                                <span class="oi oi-document"></span> Import .ZIL File
+                                <InputFile OnChange="ImportZilFile" accept=".zil" style="display:none;" />
+                            </label>
+                            <p class="text-muted small">Add a single .ZIL file to this project.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">File Management</h5>
+                        <button class="btn btn-sm btn-primary" @onclick="CreateNewFile">
+                            <span class="oi oi-plus"></span> New File
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>File</th>
+                                        <th>Type</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var file in project.Files.OrderBy(f => f.Path))
+                                    {
+                                        var isLibrary = project.Includes.Any(inc => file.Path.StartsWith(inc + "/"));
+                                        <tr>
+                                            <td>
+                                                <small>@file.Path</small>
+                                            </td>
+                                            <td>
+                                                @if (file == project.MainFile)
+                                                {
+                                                    <span class="badge bg-primary">Main</span>
+                                                }
+                                                @if (isLibrary)
+                                                {
+                                                    <span class="badge bg-secondary">Library</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!isLibrary)
+                                                {
+                                                    <button class="btn btn-sm btn-info me-1" @onclick="() => RenameFile(file.Path)" title="Rename file">
+                                                        <span class="oi oi-pencil"></span>
+                                                    </button>
+                                                    @if (file != project.MainFile)
+                                                    {
+                                                        <button class="btn btn-sm btn-success me-1" @onclick="() => SetMainFile(file.Path)" title="Set as main file">
+                                                            <span class="oi oi-star"></span>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-danger" @onclick="() => RemoveFile(file.Path)" title="Remove file">
+                                                            <span class="oi oi-trash"></span>
+                                                        </button>
+                                                    }
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+#nullable enable
+    [Parameter]
+    public Guid ProjectId { get; set; }
+
+    [CascadingParameter]
+    public ProjectLayout ProjectLayout { get; set; } = default!;
+
+    private Project? project;
+    private string selectedMainFile = "";
+    private IEnumerable<ProjectFile> libraryFiles = Enumerable.Empty<ProjectFile>();
+    
+    private bool HasLibrary => project?.Includes.Contains("zillib") == true;
+
+    private IEnumerable<ProjectFile> ProjectFiles =>
+        project?.Files.Where(f => !project.Includes.Any(inc => f.Path.StartsWith(inc + "/"))) ?? Enumerable.Empty<ProjectFile>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Workspace.Project == null || Workspace.Project.Guid != ProjectId)
+        {
+            var loaded = await ProjectStorage.LoadProjectAsync(ProjectId);
+            if (loaded != null)
+            {
+                Workspace.Project = loaded;
+            }
+            else
+            {
+                Nav.NavigateTo("/project/manage");
+                return;
+            }
+        }
+
+        project = Workspace.Project;
+        selectedMainFile = project.MainFile?.Path ?? "";
+        libraryFiles = project.Files.Where(f => project.Includes.Any(inc => f.Path.StartsWith(inc + "/")));
+    }
+
+    protected override void OnInitialized()
+    {
+        Workspace.StatusChanged += OnWorkspaceStatusChanged;
+    }
+
+    private void OnWorkspaceStatusChanged()
+    {
+        InvokeAsync(() =>
+        {
+            project = Workspace.Project;
+            selectedMainFile = project.MainFile?.Path ?? "";
+            libraryFiles = project.Files.Where(f => project.Includes.Any(inc => f.Path.StartsWith(inc + "/")));
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        Workspace.StatusChanged -= OnWorkspaceStatusChanged;
+    }
+
+    private async Task SaveProjectInfo()
+    {
+        if (project == null) return;
+
+        // Update main file if changed
+        var newMainFile = project.Files.FirstOrDefault(f => f.Path == selectedMainFile);
+        if (newMainFile != null && newMainFile != project.MainFile)
+        {
+            project.MainFile = newMainFile;
+        }
+
+        // Project name changes don't trigger FilesChanged, so manually save
+        await ProjectStorage.SaveProjectAsync(project);
+    }
+
+    private async Task ExportProject()
+    {
+        if (project == null) return;
+
+        using var memoryStream = new MemoryStream();
+        
+        // Create ZIP archive
+        using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+        {
+            // Add all project files to the archive
+            foreach (var file in project.Files)
+            {
+                var entry = archive.CreateEntry(file.Path);
+                using var entryStream = entry.Open();
+                using var writer = new StreamWriter(entryStream);
+                await writer.WriteAsync(file.Content);
+            }
+
+            // Add project metadata file
+            var metadataEntry = archive.CreateEntry("project.json");
+            using var metadataStream = metadataEntry.Open();
+            using var metadataWriter = new StreamWriter(metadataStream);
+            var metadata = JsonSerializer.Serialize(new
+            {
+                ProjectName = project.Name,
+                MainFile = project.MainFile?.Path,
+                Includes = project.Includes
+            });
+            await metadataWriter.WriteAsync(metadata);
+        }
+
+        memoryStream.Position = 0;
+        var bytes = memoryStream.ToArray();
+        await JS.DownloadBytesAsFileAsync(bytes, $"{project.Name}.zip", "application/zip");
+    }
+
+    private async Task ImportFromZip(InputFileChangeEventArgs e)
+    {
+        if (project == null) return;
+
+        var file = e.File;
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB limit
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
+            
+            // First, try to read project metadata
+            var metadataEntry = archive.GetEntry("project.json");
+            string? mainFilePath = null;
+            List<string> includes = new();
+
+            if (metadataEntry != null)
+            {
+                using var metadataStream = metadataEntry.Open();
+                using var reader = new StreamReader(metadataStream);
+                var metadataJson = await reader.ReadToEndAsync();
+                var metadata = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(metadataJson);
+                
+                if (metadata != null)
+                {
+                    if (metadata.TryGetValue("MainFile", out var mainFileElement))
+                        mainFilePath = mainFileElement.GetString();
+                    
+                    if (metadata.TryGetValue("Includes", out var includesElement))
+                    {
+                        includes = JsonSerializer.Deserialize<List<string>>(includesElement.GetRawText()) ?? new();
+                    }
+                }
+            }
+
+            // Clear existing project files (except library files)
+            var filesToRemove = project.Files
+                .Where(f => !project.Includes.Any(inc => f.Path.StartsWith(inc + "/")))
+                .ToList();
+            foreach (var oldFile in filesToRemove)
+            {
+                project.RemoveFile(oldFile.Path);
+            }
+
+            // Import all files from ZIP
+            foreach (var entry in archive.Entries)
+            {
+                if (entry.FullName == "project.json")
+                    continue;
+
+                using var entryStream = entry.Open();
+                using var reader = new StreamReader(entryStream);
+                var content = await reader.ReadToEndAsync();
+
+                project.AddFile(entry.FullName).Content = content;
+            }
+
+            // Restore includes from metadata
+            foreach (var include in includes)
+            {
+                if (!project.Includes.Contains(include))
+                    project.Includes.Add(include);
+            }
+
+            // Set main file if specified
+            if (!string.IsNullOrEmpty(mainFilePath))
+            {
+                var mainFile = project.Files.FirstOrDefault(f => f.Path == mainFilePath);
+                if (mainFile != null)
+                {
+                    project.MainFile = mainFile;
+                    selectedMainFile = mainFilePath;
+                }
+            }
+            else if (project.Files.Count > 0)
+            {
+                // If no main file specified, use first non-library file
+                var nonLibraryFiles = project.Files
+                    .Where(f => !project.Includes.Any(inc => f.Path.StartsWith(inc + "/")))
+                    .OrderBy(f => f.Path)
+                    .ToList();
+                
+                if (nonLibraryFiles.Count > 0)
+                {
+                    project.MainFile = nonLibraryFiles.First();
+                    selectedMainFile = project.MainFile.Path;
+                }
+                else
+                {
+                    // Fallback to any file if all are library files
+                    project.MainFile = project.Files.First();
+                    selectedMainFile = project.MainFile.Path;
+                }
+            }
+
+            // Manually save to ensure everything is persisted
+            await ProjectStorage.SaveProjectAsync(project);
+        }
+    }
+
+    private async Task ImportZilFile(InputFileChangeEventArgs e)
+    {
+        if (project == null) return;
+
+        var file = e.File;
+        if (file != null)
+        {
+            using var stream = file.OpenReadStream(maxAllowedSize: 1024 * 1024); // 1MB limit
+            using var reader = new System.IO.StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+
+            var fileName = file.Name;
+            var projectDir = GetProjectDirectory();
+            var fullPath = string.IsNullOrEmpty(projectDir) ? fileName : $"{projectDir}/{fileName}";
+
+            // Add or update the file - workspace will auto-save
+            var existingFile = project.Files.FirstOrDefault(f => f.Path == fullPath);
+            if (existingFile != null)
+            {
+                existingFile.Content = content;
+            }
+            else
+            {
+                project.AddFile(fullPath).Content = content;
+            }
+        }
+    }
+
+    private async Task AddLibrary()
+    {
+        if (project == null) return;
+
+        // Load library using CopyLibraryToNewProjectAsync to get the files
+        var tempProject = await Templates.CopyLibraryToNewProjectAsync("zillib");
+        
+        // Copy library files to current project
+        foreach (var libFile in tempProject.Files)
+        {
+            if (!project.Files.Any(f => f.Path == libFile.Path))
+            {
+                project.AddFile(libFile.Path).Content = libFile.Content;
+            }
+        }
+
+        if (!project.Includes.Contains("zillib"))
+        {
+            project.Includes.Add("zillib");
+            // Manually trigger FilesChanged since Includes collection doesn't automatically notify
+            project.NotifyChanged();
+        }
+
+        // Workspace will auto-save
+        libraryFiles = project.Files.Where(f => project.Includes.Any(inc => f.Path.StartsWith(inc + "/")));
+    }
+
+    private async Task RefreshLibrary()
+    {
+        if (project == null) return;
+
+        if (await JS.ConfirmAsync("This will replace all library files with fresh copies. Any edits you made to library files will be lost. Continue?"))
+        {
+            // Remove existing library files
+            var libFiles = project.Files.Where(f => project.Includes.Any(inc => f.Path.StartsWith(inc + "/"))).ToList();
+            foreach (var file in libFiles)
+            {
+                project.RemoveFile(file.Path);
+            }
+
+            // Add fresh library files
+            await AddLibrary();
+        }
+    }
+
+    private async Task RemoveLibrary()
+    {
+        if (project == null) return;
+
+        if (await JS.ConfirmAsync("This will remove all library files from the project. Continue?"))
+        {
+            var libFiles = project.Files.Where(f => project.Includes.Any(inc => f.Path.StartsWith(inc + "/"))).ToList();
+            foreach (var file in libFiles)
+            {
+                project.RemoveFile(file.Path);
+            }
+
+            project.Includes.Remove("zillib");
+            // Manually trigger FilesChanged since Includes collection doesn't automatically notify
+            project.NotifyChanged();
+            libraryFiles = Enumerable.Empty<Zilf.Playground.Services.Workspaces.ProjectFile>();
+        }
+    }
+
+    private async Task RemoveFile(string path)
+    {
+        if (project == null) return;
+
+        if (await JS.ConfirmAsync($"Are you sure you want to remove {path}?"))
+        {
+            project.RemoveFile(path);
+            // Workspace will auto-save
+        }
+    }
+
+    private Task SetMainFile(string path)
+    {
+        if (project == null) return Task.CompletedTask;
+
+        var file = project.Files.FirstOrDefault(f => f.Path == path);
+        if (file != null)
+        {
+            project.MainFile = file;
+            selectedMainFile = path;
+            // MainFile setter now triggers FilesChanged, which will auto-save
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task RenameFile(string oldPath)
+    {
+        if (project == null || ProjectLayout == null) return;
+
+        var fileName = oldPath.Substring(oldPath.LastIndexOf('/') + 1);
+        
+        // Show rename modal with current filename as default
+        var newName = await ProjectLayout.ShowRenameFileModalAsync(fileName);
+        
+        if (string.IsNullOrWhiteSpace(newName) || newName == fileName)
+            return;
+
+        // Add .zil extension if not present
+        if (System.IO.Path.GetExtension(newName) == null)
+            newName += ".zil";
+
+        var directory = oldPath[..oldPath.LastIndexOf('/')];
+        var newPath = $"{directory}/{newName}";
+
+        // Check if new name already exists
+        if (project.Files.Any(f => f.Path == newPath))
+        {
+            // Could show error message, but for now just return
+            return;
+        }
+
+        // Get the file and its content
+        var oldFile = project.Files.FirstOrDefault(f => f.Path == oldPath);
+        if (oldFile != null)
+        {
+            var content = oldFile.Content;
+            var wasMainFile = oldFile == project.MainFile;
+
+            // Remove old file and add new one
+            project.RemoveFile(oldPath);
+            var newFile = project.AddFile(newPath);
+            newFile.Content = content;
+
+            // Restore main file status if it was the main file
+            if (wasMainFile)
+            {
+                project.MainFile = newFile;
+                selectedMainFile = newPath;
+                // MainFile setter now triggers FilesChanged, which will auto-save
+            }
+        }
+    }
+
+    private async Task RenameProjectDirectory()
+    {
+        if (project == null || ProjectLayout == null) return;
+
+        var currentDir = GetProjectDirectory();
+        var newDir = await JS.PromptAsync("Enter new project directory name:", currentDir);
+        
+        if (string.IsNullOrWhiteSpace(newDir) || newDir == currentDir)
+            return;
+
+        // Rename all project files (not library files)
+        var filesToRename = project.Files
+            .Where(f => !project.Includes.Any(inc => f.Path.StartsWith(inc + "/")))
+            .ToList();
+
+        foreach (var file in filesToRename)
+        {
+            var fileName = file.Path.Substring(file.Path.LastIndexOf('/') + 1);
+            var newPath = $"{newDir}/{fileName}";
+            var content = file.Content;
+            var wasMainFile = file == project.MainFile;
+
+            project.RemoveFile(file.Path);
+            var newFile = project.AddFile(newPath);
+            newFile.Content = content;
+
+            if (wasMainFile)
+            {
+                project.MainFile = newFile;
+                selectedMainFile = newPath;
+                // MainFile setter now triggers FilesChanged, which will auto-save
+            }
+        }
+    }
+
+    private async Task CreateNewFile()
+    {
+        if (project == null || ProjectLayout == null) return;
+
+        var fileName = await ProjectLayout.ShowAddFileModalAsync();
+        if (string.IsNullOrWhiteSpace(fileName))
+            return;
+
+        // Add .zil extension if not present
+        if (System.IO.Path.GetExtension(fileName) == null)
+            fileName += ".zil";
+
+        var projectDir = GetProjectDirectory();
+        var fullPath = string.IsNullOrEmpty(projectDir) ? fileName : $"{projectDir}/{fileName}";
+
+        // Check if file already exists - don't create duplicate
+        if (!project.Files.Any(f => f.Path == fullPath))
+        {
+            // Create new file - workspace event will trigger UI update
+            project.AddFile(fullPath).Content = "";
+        }
+    }
+
+    private string GetProjectDirectory()
+    {
+        if (project == null || project.Files.Count == 0) return "";
+        var firstFile = project.MainFile?.Path ?? project.Files.First().Path;
+        var lastSlash = firstFile.LastIndexOf('/');
+        return lastSlash > 0 ? firstFile[..lastSlash] : "";
+    }
+#nullable restore
+}

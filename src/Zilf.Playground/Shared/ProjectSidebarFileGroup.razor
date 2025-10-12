@@ -1,4 +1,4 @@
-﻿<h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+﻿<h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-3 mb-1 text-muted">
     <span>@Title</span>
 
     @if (Editable)
@@ -12,7 +12,7 @@
         </a>
     }
 </h6>
-<ul class="nav navbar-nav mb-2">
+<ul class="nav flex-column file-list">
     @foreach (var file in Files)
     {
         <ProjectSidebarFileLink @key="@file" File="@file" AllowEntryPoint="@Editable" />

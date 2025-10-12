@@ -1,3 +1,8 @@
+@using Zilf.Playground.Services
+@inject StoryPlayerService StoryPlayer
+@inject BuildService Build
+@implements IDisposable
+
 <Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
@@ -8,3 +13,31 @@
         </LayoutView>
     </NotFound>
 </Router>
+
+@* Persistent story iframe that stays loaded across ALL navigation *@
+@if (StoryPlayer.IsGameLoaded)
+{
+    <iframe id="parchment-frame" 
+            src="parchment.html" 
+            class="parchment-iframe" 
+            style="display: @(StoryPlayer.IsStoryVisible ? "block" : "none")"></iframe>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        StoryPlayer.StateChanged += OnStoryPlayerStateChanged;
+    }
+    
+#nullable enable
+    private void OnStoryPlayerStateChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+#nullable restore
+    
+    public void Dispose()
+    {
+        StoryPlayer.StateChanged -= OnStoryPlayerStateChanged;
+    }
+}

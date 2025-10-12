@@ -1,0 +1,12 @@
+﻿<a @attributes="LinkAttributes" href="@href" target="_blank" rel="noopener noreferrer">@childContent</a>
+
+@code {
+    [Parameter]
+    public string href { get; set; }
+
+    [Parameter]
+    public RenderFragment childContent { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object> LinkAttributes { get; set; }
+}

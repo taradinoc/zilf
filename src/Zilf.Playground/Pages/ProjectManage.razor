@@ -1,0 +1,163 @@
+@page "/project/manage"
+@using Zilf.Playground.Services
+@using Zilf.Playground.Services.Workspaces
+@inject ProjectStorageService ProjectStorage
+@inject WorkspaceService Workspace
+@inject NavigationManager Nav
+@inject JSInterop JS
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>Manage Projects</h3>
+        @if (Workspace.Project.Files.Count > 0)
+        {
+            <a href="@GetCurrentProjectLink()" class="btn btn-outline-secondary">
+                <span class="oi oi-arrow-left"></span> Back to Current Project
+            </a>
+        }
+    </div>
+
+@if (projects == null)
+{
+    <p><em>Loading projects...</em></p>
+}
+else if (projects.Count == 0)
+{
+    <div class="alert alert-info">
+        <p>You don't have any saved projects yet.</p>
+        <button class="btn btn-primary" @onclick="CreateNewProject">Create New Project</button>
+    </div>
+}
+else
+{
+    <div class="mb-3">
+        <button class="btn btn-primary" @onclick="CreateNewProject">
+            <span class="oi oi-plus"></span> Create New Project
+        </button>
+    </div>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Created</th>
+                <th>Last Modified</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var project in projects.OrderByDescending(p => p.LastModified))
+            {
+                <tr>
+                    <td>
+                        @if (editingProject == project.Id)
+                        {
+                            <input type="text" class="form-control form-control-sm" @bind="editingName" @bind:event="oninput" />
+                        }
+                        else
+                        {
+                            <strong>@project.Name</strong>
+                        }
+                    </td>
+                    <td>@project.Created.ToLocalTime().ToString("g")</td>
+                    <td>@project.LastModified.ToLocalTime().ToString("g")</td>
+                    <td>
+                        @if (editingProject == project.Id)
+                        {
+                            <button class="btn btn-sm btn-success" @onclick="() => SaveRename(project.Id)">
+                                <span class="oi oi-check"></span> Save
+                            </button>
+                            <button class="btn btn-sm btn-secondary" @onclick="CancelRename">
+                                <span class="oi oi-x"></span> Cancel
+                            </button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-primary" @onclick="() => LoadProject(project.Id)">
+                                <span class="oi oi-folder-open"></span> Open
+                            </button>
+                            <button class="btn btn-sm btn-secondary" @onclick="() => StartRename(project)">
+                                <span class="oi oi-pencil"></span> Rename
+                            </button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteProject(project.Id)">
+                                <span class="oi oi-trash"></span> Delete
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+</div>
+
+@code {
+#nullable enable
+    private List<ProjectMetadata>? projects;
+    private Guid? editingProject;
+    private string editingName = "";
+#nullable restore
+
+    protected override async Task OnInitializedAsync()
+    {
+        projects = await ProjectStorage.GetProjectListAsync();
+    }
+
+    private string GetCurrentProjectLink()
+    {
+        if (Workspace.Project.Files.Count > 0)
+        {
+            return $"/project/{Workspace.Project.Guid}/edit?file={Workspace.Project.MainFile?.Path ?? ""}";
+        }
+        return "/project/new";
+    }
+
+    private void CreateNewProject()
+    {
+        Nav.NavigateTo("/project/new");
+    }
+
+    private async Task LoadProject(Guid projectId)
+    {
+        var project = await ProjectStorage.LoadProjectAsync(projectId);
+        if (project != null)
+        {
+            Workspace.Project = project;
+            Nav.NavigateTo($"/project/{projectId}/edit?file={project.MainFile?.Path ?? ""}");
+        }
+    }
+
+    private void StartRename(ProjectMetadata project)
+    {
+        editingProject = project.Id;
+        editingName = project.Name;
+    }
+
+    private async Task SaveRename(Guid projectId)
+    {
+        if (!string.IsNullOrWhiteSpace(editingName))
+        {
+            await ProjectStorage.RenameProjectAsync(projectId, editingName);
+            var project = projects?.FirstOrDefault(p => p.Id == projectId);
+            if (project != null)
+            {
+                project.Name = editingName;
+            }
+        }
+        editingProject = null;
+    }
+
+    private void CancelRename()
+    {
+        editingProject = null;
+    }
+
+    private async Task DeleteProject(Guid projectId)
+    {
+        if (await JS.ConfirmAsync($"Are you sure you want to delete this project? This cannot be undone."))
+        {
+            await ProjectStorage.DeleteProjectAsync(projectId);
+            projects?.RemoveAll(p => p.Id == projectId);
+        }
+    }
+}

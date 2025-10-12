@@ -20,15 +20,21 @@
 
 using System;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Zilf.Playground.Services.Workspaces
 {
     public sealed class WorkspaceService
     {
         private Project _project;
+        private readonly ProjectStorageService _storageService;
+        private CancellationTokenSource? _autoSaveCts;
+        private bool _isSaving;
 
-        public WorkspaceService()
+        public WorkspaceService(ProjectStorageService storageService)
         {
+            _storageService = storageService;
             _project = new();
             _project.FilesChanged += ProjectFilesChanged;
         }
@@ -57,6 +63,44 @@ namespace Zilf.Playground.Services.Workspaces
         private void ProjectFilesChanged()
         {
             StatusChanged?.Invoke();
+            
+            // Trigger auto-save with debounce
+            _ = AutoSaveAsync();
+        }
+
+        private async Task AutoSaveAsync()
+        {
+            // Cancel any pending auto-save
+            _autoSaveCts?.Cancel();
+            _autoSaveCts = new CancellationTokenSource();
+            var token = _autoSaveCts.Token;
+
+            try
+            {
+                // Wait 2 seconds before saving (debounce)
+                await Task.Delay(2000, token);
+                
+                // Don't save if already saving
+                if (_isSaving)
+                    return;
+
+                _isSaving = true;
+                SavingChanged?.Invoke();
+
+                try
+                {
+                    await _storageService.SaveProjectAsync(Project);
+                }
+                finally
+                {
+                    _isSaving = false;
+                    SavingChanged?.Invoke();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // Debounce was cancelled, that's fine
+            }
         }
 
         public string? StatusText
@@ -68,6 +112,9 @@ namespace Zilf.Playground.Services.Workspaces
             }
         }
 
+        public bool IsSaving => _isSaving;
+
         public event Action? StatusChanged;
+        public event Action? SavingChanged;
     }
 }

@@ -1,13 +1,13 @@
-﻿<li class="nav-item d-flex text-nowrap">
-    <a class="nav-link @ActiveCssClass" href="@LinkHref">
-        <span class="oi oi-document" aria-hidden="true"></span>
-        @File.Path
-    </a>
+﻿<li class="nav-item file-link-item">
+    <NavLink class="nav-link file-link" href="@LinkHref">
+        <span class="oi oi-document file-icon" aria-hidden="true"></span>
+        <span class="file-path">@File.Path</span>
+    </NavLink>
     @if (File.Path == EntryPointPath)
     {
-        <a class="d-flex align-items-center text-muted" href="#" aria-label="Entry point">
-            <span class="oi oi-check" aria-hidden="true"></span>
-        </a>
+        <span class="entry-point-indicator" aria-label="Main file">
+            <span class="oi oi-star" aria-hidden="true"></span>
+        </span>
     }
 </li>
 
@@ -27,7 +27,7 @@
     [CascadingParameter(Name = "ProjectId")]
     public string ProjectId { get; set; }
 
-    private string ActiveCssClass => File.Path == ActivePath ? "active" : null;
+    // private string ActiveCssClass => File.Path == ActivePath ? "active" : null;
 
     private string LinkHref => Pages.ProjectEdit.GetLink(ProjectId, File.Path);
 }

@@ -1,0 +1,75 @@
+﻿::deep .nav-link.active {
+    font-weight: bold;
+    background-color: #e9ecef;
+}
+
+.file-link-item {
+    display: flex;
+    align-items: stretch;
+    position: relative;
+}
+
+::deep .file-link {
+    flex: 1;
+    padding: 8px 16px;
+    color: #212529;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    border: none;
+}
+
+::deep .file-link:hover {
+    background-color: #e9ecef;
+    color: #212529;
+}
+
+::deep .file-link.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+::deep .file-link.active .file-icon {
+    color: white;
+}
+
+.file-icon {
+    font-size: 12px;
+    color: #6c757d;
+    flex-shrink: 0;
+}
+
+.file-path {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.entry-point-indicator {
+    padding: 8px 8px;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.entry-point-indicator:hover {
+    color: #212529;
+}
+
+/* Make the star highlight when the file link is hovered */
+::deep .file-link:hover + .entry-point-indicator {
+    background-color: #e9ecef;
+    color: #212529;
+}
+
+/* Make the star highlight when the file link is active */
+::deep .file-link.active + .entry-point-indicator {
+    background-color: #0d6efd;
+    color: white;
+}

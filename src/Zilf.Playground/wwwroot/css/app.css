@@ -95,10 +95,11 @@ a, .btn-link {
     }
 }*/
 
-/*.monaco-editor-container {
-    height: 200px;
+.monaco-editor-container {
+    height: 500px;
     border: 1px solid gray;
-}*/
+    position: relative;
+}
 
 .decorationGlyphMarginClass {
     background: red;

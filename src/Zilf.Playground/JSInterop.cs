@@ -27,7 +27,7 @@ using System.Threading.Tasks;
 
 namespace Zilf.Playground
 {
-    internal sealed class JSInterop
+    public sealed class JSInterop
     {
         private readonly IJSRuntime js;
 
@@ -38,10 +38,12 @@ namespace Zilf.Playground
 
         public async Task DownloadBytesAsFileAsync(byte[] bytes, string filename, string contentType)
         {
-            //var jsu = (IJSUnmarshalledRuntime)js;
-            //jsu.InvokeUnmarshalled<string, string, byte[], bool>("ZilfJsInterop.BlazorDownloadFileFast", filename, contentType, bytes);
-
             await js.InvokeVoidAsync("ZilfJsInterop.BlazorDownloadFileFast", filename, contentType, bytes);
+        }
+
+        public async Task<string> LoadGameInParchmentAsync(byte[] gameData)
+        {
+            return await js.InvokeAsync<string>("ZilfJsInterop.loadGameInParchment", gameData);
         }
 
         public ValueTask ScrollToBottomAsync(ElementReference element)
@@ -54,9 +56,29 @@ namespace Zilf.Playground
             return js.InvokeAsync<string>("prompt", prompt, value);
         }
 
+        public ValueTask<bool> ConfirmAsync(string message)
+        {
+            return js.InvokeAsync<bool>("confirm", message);
+        }
+
         public ValueTask AddEventListenerAsync(ElementReference element, string eventName, string jsHandler, params object[] extraHandlerArgs)
         {
             return js.InvokeVoidAsync("ZilfJsInterop.addEventListener", element, eventName, jsHandler, extraHandlerArgs);
+        }
+
+        public async Task<string?> GetLocalStorageAsync(string key)
+        {
+            return await js.InvokeAsync<string?>("localStorage.getItem", key);
+        }
+
+        public async Task SetLocalStorageAsync(string key, string value)
+        {
+            await js.InvokeVoidAsync("localStorage.setItem", key, value);
+        }
+
+        public async Task RemoveLocalStorageAsync(string key)
+        {
+            await js.InvokeVoidAsync("localStorage.removeItem", key);
         }
     }
 }

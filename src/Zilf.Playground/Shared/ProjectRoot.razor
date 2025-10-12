@@ -1,16 +1,30 @@
 ﻿@page "/project"
+@using Zilf.Playground.Services
 @inject NavigationManager Nav
 @inject WorkspaceService Workspace
+@inject ProjectStorageService ProjectStorage
+
 @code {
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        if (Workspace.Project.Files.Count == 0)
+        // Check if there's a current project loaded
+        if (Workspace.Project.Files.Count > 0)
         {
-            Nav.NavigateTo("/project/new");
+            Nav.NavigateTo(Pages.ProjectEdit.GetLink(Workspace.Project, Workspace.Project.MainFile.Path));
+            return;
+        }
+        
+        // Check if there are any saved projects
+        var savedProjects = await ProjectStorage.GetProjectListAsync();
+        if (savedProjects.Count > 0)
+        {
+            // User has saved projects, show the management page
+            Nav.NavigateTo("/project/manage");
         }
         else
         {
-            Nav.NavigateTo(Pages.ProjectEdit.GetLink(Workspace.Project, Workspace.Project.MainFile.Path));
+            // No saved projects, create a new one
+            Nav.NavigateTo("/project/new");
         }
     }
 }

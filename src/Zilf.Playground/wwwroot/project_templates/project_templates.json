@@ -76,10 +76,13 @@
     "zillib": {
       "files": [
         "zillib/events.zil",
+        "zillib/libmsg.zil",
+        "zillib/libmsg-defaults.zil",
         "zillib/orphan.zil",
         "zillib/parser.zil",
         "zillib/pronouns.zil",
         "zillib/pseudo.zil",
+        "zillib/qq.mud",
         "zillib/scope.zil",
         "zillib/template.zil",
         "zillib/verbs.zil"

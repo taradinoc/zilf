@@ -1,19 +1,52 @@
 ﻿@inherits LayoutComponentBase
+@using Zilf.Playground.Services
+@inject BuildService Build
+@inject StoryPlayerService StoryPlayer
 
-<div class="page">
-    <header>
-        <NavMenu />
-    </header>
+<CascadingValue Value="this" IsFixed="true">
+    <div class="page">
+        <header>
+            <NavMenu />
+        </header>
 
-    @Body
+        @Body
 
-    <footer class="container">
-        <p>&copy;&nbsp;2010&ndash;2021 Tara McGrew</p>
-        <p>
-            <small>
-                ZILF is not affiliated with or endorsed by Infocom.
-                &ldquo;Zork&rdquo; and other product names are used for illustrative purposes only.
-            </small>
-        </p>
-    </footer>
-</div>
+        <footer class="container">
+            <p>
+                <small>
+                    &copy;&nbsp;2010&ndash;2025 Tara McGrew
+                </small>
+            </p>
+            <p>
+                <small>
+                    ZILF is not affiliated with or endorsed by Infocom.
+                    &ldquo;Zork&rdquo; and other product names are used for illustrative purposes only.
+                </small>
+            </p>
+        </footer>
+    </div>
+</CascadingValue>
+
+@code {
+    public async Task LoadGameInStoryIframe()
+    {
+        StoryPlayer.SetGameLoaded(true);
+        StoryPlayer.SetStoryVisible(true);
+        
+        // Give the iframe time to load completely
+        await Task.Delay(1000);
+        
+        // Now load the game
+        await Build.PlayLastCompiledGameAsync();
+    }
+    
+    public void ShowStoryIframe(bool show)
+    {
+        StoryPlayer.SetStoryVisible(show);
+    }
+    
+    public void ResetStoryIframe()
+    {
+        StoryPlayer.Reset();
+    }
+}

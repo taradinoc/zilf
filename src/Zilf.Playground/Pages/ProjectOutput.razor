@@ -1,0 +1,163 @@
+@page "/project/{ProjectId:guid}/output"
+@using Zilf.Playground.Services.Builds
+@using Zilf.Playground.Shared
+@inject BuildService Build
+@inject WorkspaceService Workspace
+@layout ProjectLayout
+@implements IDisposable
+
+<div class="output-container">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link @(activeTab == "compiler" ? "active" : "")" 
+               @onclick="@(() => SetActiveTab("compiler"))" 
+               href="javascript:void(0)" 
+               role="tab">
+                Compiler Output
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(activeTab == "story" ? "active" : "")" 
+               @onclick="@(() => SetActiveTab("story"))" 
+               href="javascript:void(0)" 
+               role="tab">
+                Story
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="compiler-output" style="display: @(activeTab == "compiler" ? "flex" : "none")">
+            <div class="output-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        @if (Build.LastCompiledGame != null)
+                        {
+                            <button class="btn btn-sm btn-success me-2" @onclick="DownloadStoryFile">
+                                <span class="oi oi-data-transfer-download"></span> Download Story File
+                            </button>
+                        }
+                    </div>
+                    <button class="btn btn-sm btn-secondary" @onclick="ClearOutput">Clear</button>
+                </div>
+            </div>
+            <div class="output-content" @ref="outputElement">
+                @foreach (var line in Build.BuildOutput)
+                {
+                    <div class="output-line">@line</div>
+                }
+                @if (Build.BuildOutput.Count == 0)
+                {
+                    <div class="text-muted">No output yet. Click Build to compile your game.</div>
+                }
+            </div>
+        </div>
+        
+        <div class="story-container" style="display: @(activeTab == "story" ? "block" : "none")">
+            @if (Build.LastCompiledGame != null)
+            {
+                @if (!gameLoaded)
+                {
+                    <div class="text-center p-5">
+                        <p>Game compiled and ready to play!</p>
+                        <button class="btn btn-primary btn-lg" @onclick="PlayGame">
+                            <i class="oi oi-media-play"></i> Play Game
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted p-5">
+                        <p>Story is playing in a floating window.</p>
+                        <p>You can navigate to other pages and the game will continue running.</p>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center text-muted p-5">
+                    <p>No game available.</p>
+                    <p>Build your project first, then switch to this tab to play it.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Guid ProjectId { get; set; }
+    
+    [CascadingParameter]
+    public ContainerlessLayout Layout { get; set; }
+
+    private string activeTab = "compiler";
+    private ElementReference outputElement;
+    private bool gameLoaded = false;
+
+    protected override void OnInitialized()
+    {
+        Build.BuildOutputChanged += OnBuildOutputChanged;
+        Build.StatusChanged += OnStatusChanged;
+    }
+    
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Show iframe if we're on story tab and game is loaded
+            Layout?.ShowStoryIframe(activeTab == "story" && gameLoaded);
+        }
+    }
+
+    private void OnBuildOutputChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnStatusChanged()
+    {
+        // Switch to compiler tab when a new build starts
+        if (Build.Status == BuildStatus.Compiling)
+        {
+            activeTab = "compiler";
+            gameLoaded = false;
+            Layout?.ResetStoryIframe();
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Build.BuildOutputChanged -= OnBuildOutputChanged;
+        Build.StatusChanged -= OnStatusChanged;
+        Layout?.ShowStoryIframe(false);
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        // Update iframe visibility based on active tab
+        Layout?.ShowStoryIframe(tab == "story" && gameLoaded);
+    }
+
+    private void ClearOutput()
+    {
+        Build.ClearBuildOutput();
+    }
+
+    private async Task DownloadStoryFile()
+    {
+        await Build.DownloadStoryFileAsync();
+    }
+
+    private async Task PlayGame()
+    {
+        if (Build.LastCompiledGame != null && Layout != null)
+        {
+            gameLoaded = true;
+            await Layout.LoadGameInStoryIframe();
+            StateHasChanged();
+        }
+    }
+}

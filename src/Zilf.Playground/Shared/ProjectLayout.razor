@@ -1,17 +1,25 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @using System.Linq
+@using Microsoft.AspNetCore.Components.Web
 @inject JSInterop Interop
 @inject BuildService Build
 @inject WorkspaceService Workspace
+@inject NavigationManager Nav
 
 <Modal @ref="AddProjectFileModal" Title="Add project file" TResult="string">
     <Body>
         <label for="newProjectFileName">Enter a name for the new file.</label>
         <div class="input-group mb-3">
-            <div class="input-group-prepend">
-                <span class="input-group-text" id="newProjectFileDir">@ProjectDir/</span>
-            </div>
-            <input @bind="NewProjectFileName" @bind:event="oninput" id="newProjectFileName" class="form-control" type="text" placeholder="qwerty.zil" aria-describedby="newProjectFileDir" />
+            <span class="input-group-text" id="newProjectFileDir">@ProjectDir/</span>
+            <input value="@NewProjectFileName" 
+                   @oninput="@((e) => NewProjectFileName = e.Value?.ToString() ?? "")"
+                   @onkeydown="HandleAddFileKeyDown"
+                   id="newProjectFileName" 
+                   class="form-control" 
+                   type="text" 
+                   placeholder="qwerty.zil" 
+                   aria-describedby="newProjectFileDir" />
         </div>
     </Body>
     <Footer>
@@ -20,28 +28,49 @@
                 @onclick="() => AddProjectFileModal.Close(NewProjectFileName)">
             Add
         </button>
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    </Footer>
+</Modal>
+
+<Modal @ref="RenameFileModal" Title="Rename file" TResult="string">
+    <Body>
+        <label for="renameFileName">Enter a new name for the file.</label>
+        <div class="input-group mb-3">
+            <span class="input-group-text" id="renameFileDir">@ProjectDir/</span>
+            <input value="@RenameFileName" 
+                   @oninput="@((e) => RenameFileName = e.Value?.ToString() ?? "")"
+                   @onkeydown="HandleRenameFileKeyDown"
+                   id="renameFileName" 
+                   class="form-control" 
+                   type="text" 
+                   placeholder="Enter new filename"
+                   aria-describedby="renameFileDir" />
+        </div>
+    </Body>
+    <Footer>
+        <button type="button" class="btn btn-primary"
+                disabled="@(string.IsNullOrWhiteSpace(RenameFileName))"
+                @onclick="() => RenameFileModal.Close(RenameFileName)">
+            Rename
+        </button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
     </Footer>
 </Modal>
 
 <CascadingValue Value="this" IsFixed="true">
     <ContainerlessLayout>
         <Body>
-            <div class="container-fluid">
-                <div class="row">
-                    <ProjectSidebar OnAddProjectFile="@AddProjectFile"
-                                    OnCompile="@Compile"
-                                    ProjectId="@Workspace.Project.Guid.ToString()"
-                                    Files="@Workspace.Project.Files"
-                                    LibraryDirs="@Workspace.Project.Includes"
-                                    ActivePath="@ActivePath"
-                                    EntryPointPath="@Workspace.Project.MainFile.Path" />
+            <div class="project-layout-container">
+                <ProjectSidebar OnAddProjectFile="@AddProjectFile"
+                                OnCompile="@Compile"
+                                ProjectId="@Workspace.Project.Guid.ToString()"
+                                Files="@Workspace.Project.Files"
+                                LibraryDirs="@Workspace.Project.Includes"
+                                ActivePath="@ActivePath"
+                                EntryPointPath="@EntryPointPath" />
 
-                    <div class="col-md-9 ml-sm-auto col-lg-10 px-md-4 main">
-                        @*<div class="content px-4">*@
-                        @Body
-                        @*</div>*@
-                    </div>
+                <div class="project-main-content">
+                    @Body
                 </div>
             </div>
         </Body>
@@ -49,9 +78,37 @@
 </CascadingValue>
 
 @code {
-    private string NewProjectFileName { get; set; }
+#nullable enable
+    public string NewProjectFileName { get; set; } = "";
+    public string RenameFileName { get; set; } = "";
 
-    private string activePath;
+    private string activePath = "";
+    private string entryPointPath = "";
+
+    protected override void OnInitialized()
+    {
+        Workspace.StatusChanged += OnWorkspaceChanged;
+        UpdateEntryPointPath();
+    }
+
+    private void OnWorkspaceChanged()
+    {
+        UpdateEntryPointPath();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateEntryPointPath()
+    {
+        if (Workspace.Project.Files.Count > 0)
+            entryPointPath = Workspace.Project.MainFile.Path;
+        else
+            entryPointPath = "";
+    }
+
+    public void Dispose()
+    {
+        Workspace.StatusChanged -= OnWorkspaceChanged;
+    }
 
     public string ActivePath
     {
@@ -67,21 +124,42 @@
         }
     }
 
-    private Modal<string> AddProjectFileModal { get; set; }
+    public string EntryPointPath => entryPointPath;
+
+    public Modal<string> AddProjectFileModal { get; set; } = default!;
+    public Modal<string> RenameFileModal { get; set; } = default!;
+
+    public async Task<string?> ShowAddFileModalAsync()
+    {
+        NewProjectFileName = "";
+        await InvokeAsync(StateHasChanged); // Force UI update before modal opens
+        return await AddProjectFileModal.ShowAsync();
+    }
+
+    public async Task<string?> ShowRenameFileModalAsync(string currentName)
+    {
+        RenameFileName = currentName;
+        await InvokeAsync(StateHasChanged); // Force UI update before modal opens
+        return await RenameFileModal.ShowAsync();
+    }
 
     [System.Diagnostics.CodeAnalysis.MaybeNull]
     private string ProjectDir
     {
         get
         {
-            var path = Workspace.Project.MainFile?.Path;
-            return path?[..path.LastIndexOf('/')];
+            if (Workspace.Project.Files.Count > 0)
+            {
+                var path = Workspace.Project.MainFile?.Path;
+                return path?[..path.LastIndexOf('/')];
+            }
+            return null;
         }
     }
 
     private async Task AddProjectFile()
     {
-        NewProjectFileName = null;
+        NewProjectFileName = "";
 
         var name = await AddProjectFileModal.ShowAsync();
 
@@ -106,6 +184,24 @@
     private async Task Compile()
     {
         await Build.CompileWorkspaceAsync();
+        // Navigate to output page after build starts
+        Nav.NavigateTo($"/project/{Workspace.Project.Guid}/output");
+    }
+
+    private void HandleAddFileKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(NewProjectFileName))
+        {
+            AddProjectFileModal.Close(NewProjectFileName);
+        }
+    }
+
+    private void HandleRenameFileKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(RenameFileName))
+        {
+            RenameFileModal.Close(RenameFileName);
+        }
     }
 
     private string GetUnusedFileName()
@@ -120,4 +216,5 @@
 
         return result;
     }
+#nullable restore
 }

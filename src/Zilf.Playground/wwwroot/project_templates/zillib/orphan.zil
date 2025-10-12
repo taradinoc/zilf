@@ -31,6 +31,8 @@ In the future, we may also need to store something about which part of the noun 
 we're trying to improve (e.g. which YSPEC is ambiguous). So we use the top bits of a word
 to recall whether we're orphaning and why, and reserve the rest for future use."
 
+<USE "QQ">
+
 <CONSTANT P-OF-ORPHANING 32768>
 <CONSTANT P-OF-MISSING 16384>
 <CONSTANT P-OF-PRSI 8192>
@@ -57,10 +59,10 @@ to recall whether we're orphaning and why, and reserve the rest for future use."
                   <SET V <ORB .V ,P-OF-PRSI>>)
                  (<N==? .WHICH PRSO>
                   <ERROR BAD-ARGUMENT WHICH .WHICH>)>)>
-    <FORM PROG '()
-          <FORM SETG P-O-REASON .V>
-          '<SETG P-V-WORDN 0>
-          '<SETG P-O-CONT ,P-CONT>>>
+    `<PROG ()
+          <SETG P-O-REASON ~.V>
+          <SETG P-V-WORDN 0>
+          <SETG P-O-CONT ,P-CONT>>>
 
 <CONSTANT O-RES-NOT-HANDLED 0>   ;"Not an orphaning response; parse as usual"
 <CONSTANT O-RES-REORPHANED 1>    ;"We asked another question; abort parse"
@@ -79,7 +81,7 @@ Sets:
 
 Returns:
   One of the O-RES-* codes above to indicate what action was taken, if any."
-<CONSTANT TRY-REPHRASING-CMD " Try rephrasing the command.">
+<CONSTANT TRY-REPHRASING-CMD <LIBRARY-MESSAGE ORPHANING TRY-REPHRASING>>
 <ROUTINE HANDLE-ORPHAN-RESPONSE ("AUX" CNT MAX TBL O OUT NY)
     ;"Confirm that the command looks like a noun phrase, and parse it into P-NP-XOBJ."
     <COND (<OR <L? ,P-LEN 1>
@@ -153,16 +155,16 @@ Returns:
     <SETG P-XOBJS .TBL>
     ;"See if we solved the problem."
     <COND (<0? .CNT>
-           <TELL "That wasn't an option." ,TRY-REPHRASING-CMD CR>
+           <TELL <LIBRARY-MESSAGE ORPHANING NOT-AN-OPTION> ,TRY-REPHRASING-CMD CR>
            <SETG P-CONT 0>
            <RETURN ,O-RES-FAILED>)
           (<OR <1? .CNT> <=? <NP-MODE ,P-NP-XOBJ> ,MCM-ALL>>
            <RETURN ,O-RES-SET-PRSTBL>)
           (<L? .CNT .MAX>
-           <TELL "That narrowed it down a little. ">
+           <TELL <LIBRARY-MESSAGE ORPHANING SUCCESS-PARTIAL>>
            <WHICH-DO-YOU-MEAN .OUT>
            <RETURN ,O-RES-REORPHANED>)
           (ELSE
-           <TELL "That didn't narrow it down at all." ,TRY-REPHRASING-CMD CR>
+           <TELL <LIBRARY-MESSAGE ORPHANING FAILED> ,TRY-REPHRASING-CMD CR>
            <SETG P-CONT 0>
            <RETURN ,O-RES-FAILED>)>>

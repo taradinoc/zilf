@@ -1,11 +1,64 @@
-﻿<CascadingValue Name="ActivePath" Value="@ActivePath">
+﻿@using Zilf.Playground.Services.Builds
+@inject BuildService Build
+
+<CascadingValue Name="ActivePath" Value="@ActivePath">
     <CascadingValue Name="EntryPointPath" Value="@EntryPointPath">
         <CascadingValue Name="ProjectId" Value="@ProjectId">
-            <nav id="projectSidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse navbarToggledContent">
-                <div class="sidebar-sticky pt-3">
-                    <div class="d-flex">
-                        <button class="btn btn-primary" @onclick="@OnCompile">Build</button>
-                        <BuildBadge />
+            <nav id="projectSidebarMenu" class="project-sidebar">
+                <div class="sidebar-content">
+                    <div class="sidebar-actions">
+                        <button class="btn btn-primary w-100 @GetBuildButtonClass()" 
+                                disabled="@IsBuilding" 
+                                @onclick="OnBuildClicked">
+                            @if (IsBuilding)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                @GetBuildingText()
+                            }
+                            else
+                            {
+                                <span class="oi oi-cog me-2"></span>
+                                <text>Build</text>
+                            }
+                        </button>
+                        @if (Build.Status != BuildStatus.NotBuilt && Build.Status != BuildStatus.Compiling && Build.Status != BuildStatus.Assembling)
+                        {
+                            <div class="build-status-indicator mt-2">
+                                @if (Build.Status == BuildStatus.Built)
+                                {
+                                    <small class="text-success">
+                                        <span class="oi oi-check"></span> Build successful
+                                    </small>
+                                }
+                                else if (Build.Status == BuildStatus.CompilerError)
+                                {
+                                    <small class="text-danger">
+                                        <span class="oi oi-warning"></span> Compiler error
+                                    </small>
+                                }
+                                else if (Build.Status == BuildStatus.AssemblerError)
+                                {
+                                    <small class="text-danger">
+                                        <span class="oi oi-warning"></span> Assembler error
+                                    </small>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="sidebar-nav-tabs">
+                        <a href="@GetOutputLink()" class="sidebar-nav-link">
+                            <span class="oi oi-terminal"></span>
+                            Output & Play
+                        </a>
+                        <a href="@GetSettingsLink()" class="sidebar-nav-link">
+                            <span class="oi oi-cog"></span>
+                            Project Settings
+                        </a>
+                        <a href="/project/manage" class="sidebar-nav-link">
+                            <span class="oi oi-folder"></span>
+                            Manage Projects
+                        </a>
                     </div>
 
                     <ProjectSidebarFileGroup Title="Project Files" Editable="true" Files="@ProjectFiles" OnAddProjectFile="@OnAddProjectFile" />
@@ -42,6 +95,59 @@
     [Parameter]
     public EventCallback<MouseEventArgs> OnCompile { get; set; }
 
+    private bool IsBuilding => Build.Status == BuildStatus.CompilePending || Build.Status == BuildStatus.Compiling || Build.Status == BuildStatus.Assembling;
+
+
+    [Inject]
+    private NavigationManager Nav { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Build.StatusChanged += OnBuildStatusChanged;
+    }
+
+    private void OnBuildStatusChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnBuildClicked()
+    {
+    // No local state needed
+        // Always switch to output page
+        Nav.NavigateTo($"/project/{ProjectId}/output");
+        if (OnCompile.HasDelegate)
+        {
+            await OnCompile.InvokeAsync(null);
+        }
+    }
+
+    public void Dispose()
+    {
+        Build.StatusChanged -= OnBuildStatusChanged;
+    }
+
+    private string GetBuildButtonClass()
+    {
+        return Build.Status switch
+        {
+            BuildStatus.Built => "btn-success",
+            BuildStatus.CompilerError or BuildStatus.AssemblerError => "btn-danger",
+            _ => "btn-primary"
+        };
+    }
+
+    private string GetBuildingText()
+    {
+        return Build.Status switch
+        {
+            BuildStatus.CompilePending => "Waiting...",
+            BuildStatus.Compiling => "Compiling...",
+            BuildStatus.Assembling => "Assembling...",
+            _ => "Building..."
+        };
+    }
+
     IEnumerable<IGrouping<string, ProjectFile>> FileGroups =>
         from f in Files
         let p = f.Path
@@ -59,4 +165,7 @@
         where LibraryDirs.Contains(g.Key) == false
         from p in g
         select p;
+
+    private string GetOutputLink() => $"/project/{ProjectId}/output";
+    private string GetSettingsLink() => $"/project/{ProjectId}/settings";
 }

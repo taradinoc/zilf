@@ -1,6 +1,10 @@
 "Library header"
 
-<SETG ZILLIB-VERSION "J5">
+<USE "QQ">
+<USE "LIBMSG">
+<USE "LIBMSG-DEFAULTS">
+
+<SETG ZILLIB-VERSION "T1">
 
 <VERSION?
     (ZIP)
@@ -23,14 +27,14 @@
      <GLOBAL TRACE-INDENT 0>
 
      <DEFMAC TRACE ('N "ARGS" A)
-         <FORM COND <LIST <FORM G=? ',TRACE-LEVEL .N>
-                          '<PRINT-TRACE-INDENT>
-                          <FORM TELL !.A>>
-                    '(ELSE T)>>
+         `<COND (<G=? ,TRACE-LEVEL ~.N>
+                 <PRINT-TRACE-INDENT>
+                 <TELL ~!.A>)
+                (ELSE T)>>
 
      <DEFMAC TRACE-DO ('N "ARGS" A)
-         <FORM COND <LIST <FORM G=? ',TRACE-LEVEL .N> !.A>
-                    '(ELSE T)>>
+         `<COND (<G=? ,TRACE-LEVEL ~.N> ~!.A)
+                (ELSE T)>>
 
      <ROUTINE PRINT-TRACE-INDENT ()
          <OR ,TRACE-INDENT <RETURN>>
@@ -84,22 +88,35 @@
     OBJSPEC *            <PRINT-OBJSPEC .X>
     SYNTAX-LINE *        <PRINT-SYNTAX-LINE .X>
     WORD *               <PRINT-WORD .X>
-    MATCHING-WORD * * *  <PRINT-MATCHING-WORD .X .Y .Z>>
+    MATCHING-WORD * * *  <PRINT-MATCHING-WORD .X .Y .Z>
+    VERB-WORD            <PRINT-VERB>
+    IF * *               <PRINT-IF .X .Y>
+    IFELSE * * *         <PRINT-IF-ELSE .X .Y .Z>
+    ITALIC *             <ITALICIZE .X>
+    SILLY                <SILLY T>
+    TSD                  <TSD T>
+    YOU-MASHER *         <YOU-MASHER .X T>
+    POINTLESS1 *         <POINTLESS .X <> <> T>
+    POINTLESS2 * *       <POINTLESS .X .Y <> T>
+    POINTLESS3 * * *     <POINTLESS .X .Y .Z T>
+    NOT-POSSIBLE *       <NOT-POSSIBLE .X T>
+    RHETORICAL           <RHETORICAL T>
+    BE-SPECIFIC          <BE-SPECIFIC T>>
 
 "Version considerations: certain values are bytes on V3 but words on all
 other versions. These macros let us write the same code for all versions."
 
 <VERSION?
     (ZIP
-        <DEFMAC GET/B ('T 'O) <FORM GETB .T .O>>
-        <DEFMAC PUT/B ('T 'O 'V) <FORM PUTB .T .O .V>>
-        <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PBTBL? .O .P .V>>
-        <DEFMAC IN-B/WTBL? ('T 'C 'V) <FORM IN-BTBL? .T .C .V>>)
+        <DEFMAC GET/B ('T 'O) `<GETB ~.T ~.O>>
+        <DEFMAC PUT/B ('T 'O 'V) `<PUTB ~.T ~.O ~.V>>
+        <DEFMAC IN-PB/WTBL? ('O 'P 'V) `<IN-PBTBL? ~.O ~.P ~.V>>
+        <DEFMAC IN-B/WTBL? ('T 'C 'V) `<IN-BTBL? ~.T ~.C ~.V>>)
     (ELSE
-        <DEFMAC GET/B ('T 'O) <FORM GET .T .O>>
-        <DEFMAC PUT/B ('T 'O 'V) <FORM PUT .T .O .V>>
-        <DEFMAC IN-PB/WTBL? ('O 'P 'V) <FORM IN-PWTBL? .O .P .V>>
-        <DEFMAC IN-B/WTBL? ('T 'C 'V) <FORM IN-WTBL? .T .C .V>>)>
+        <DEFMAC GET/B ('T 'O) `<GET ~.T ~.O>>
+        <DEFMAC PUT/B ('T 'O 'V) `<PUT ~.T ~.O ~.V>>
+        <DEFMAC IN-PB/WTBL? ('O 'P 'V) `<IN-PWTBL? ~.O ~.P ~.V>>
+        <DEFMAC IN-B/WTBL? ('T 'C 'V) `<IN-WTBL? ~.T ~.C ~.V>>)>
 
 "Property and flag defaults"
 
@@ -109,11 +126,11 @@ other versions. These macros let us write the same code for all versions."
 ;"TODO: Eliminate some standard flags or make them optional.
   27 flags in the library only leaves 5 for V3 games."
 <SETG KNOWN-FLAGS
-    (ATTACKBIT CONTBIT DEVICEBIT DOORBIT EDIBLEBIT FEMALEBIT INVISIBLE KLUDGEBIT
-     LIGHTBIT LOCKEDBIT NARTICLEBIT NDESCBIT ONBIT OPENABLEBIT OPENBIT PERSONBIT
-     PLURALBIT READBIT SURFACEBIT TAKEBIT TOOLBIT TOUCHBIT TRANSBIT TRYTAKEBIT
-     VOWELBIT WEARBIT WORNBIT
-     !,EXTRA-FLAGS)>
+  (ATTACKBIT CONTBIT DEVICEBIT DOORBIT EDIBLEBIT FEMALEBIT INVISIBLE KLUDGEBIT
+   LIGHTBIT LOCKEDBIT NARTICLEBIT NDESCBIT ONBIT OPENABLEBIT OPENBIT PERSONBIT
+   PLURALBIT READBIT SURFACEBIT TAKEBIT TOOLBIT TOUCHBIT TRANSBIT TRYTAKEBIT
+   VOWELBIT WEARBIT WORNBIT VEHBIT
+   !,EXTRA-FLAGS)>
 
 ;"Default property values. Even properties with uninteresting defaults are
   listed here in case no game objects define them."
@@ -183,14 +200,14 @@ other versions. These macros let us write the same code for all versions."
 <GLOBAL LEXBUF KBD-LEXBUF>
 
 <DEFMAC ACTIVATE-BUFS (PREFIX)
-    <FORM BIND '()
-        <FORM SETG READBUF <FORM GVAL <PARSE <STRING .PREFIX "-READBUF">>>>
-        <FORM SETG LEXBUF <FORM GVAL <PARSE <STRING .PREFIX "-LEXBUF">>>>>>
+    `<BIND ()
+        <SETG READBUF ,~<PARSE <STRING .PREFIX "-READBUF">>>
+        <SETG LEXBUF ,~<PARSE <STRING .PREFIX "-LEXBUF">>>>>
 
 <DEFMAC COPY-TO-BUFS (PREFIX)
-    <FORM BIND '()
-        <FORM COPY-READBUF ',READBUF <FORM GVAL <PARSE <STRING .PREFIX "-READBUF">>>>
-        <FORM COPY-LEXBUF ',LEXBUF <FORM GVAL <PARSE <STRING .PREFIX "-LEXBUF">>>>>>
+    `<BIND ()
+        <COPY-READBUF ,READBUF ,~<PARSE <STRING .PREFIX "-READBUF">>>
+        <COPY-LEXBUF ,LEXBUF ,~<PARSE <STRING .PREFIX "-LEXBUF">>>>>
 
 <CONSTANT P1MASK 3>
 
@@ -203,21 +220,20 @@ other versions. These macros let us write the same code for all versions."
 
 <DEFMAC VERB? ("ARGS" A "AUX" O)
     <SET O <MAPF ,LIST
-        <FUNCTION (I)
-            <FORM GVAL <PARSE <STRING "V?" <SPNAME .I>>>>>
+        <FUNCTION (I) `,~<PARSE <STRING "V?" <SPNAME .I>>>>
         .A>>
-    <FORM EQUAL? ',PRSA !.O>>
+    `<EQUAL? ,PRSA ~!.O>>
 
 <DEFMAC PRSO? ("ARGS" A)
-    <FORM EQUAL? ',PRSO !.A>>
+    `<EQUAL? ,PRSO ~!.A>>
 
 <DEFMAC PRSI? ("ARGS" A)
-    <FORM EQUAL? ',PRSI !.A>>
+    `<EQUAL? ,PRSI ~!.A>>
 
 <DEFMAC WORD? ('W 'T)
-    <FORM CHKWORD? .W
-        <FORM GVAL <PARSE <STRING "PS?" <SPNAME .T>>>>
-        <FORM GVAL <PARSE <STRING "P1?" <SPNAME .T>>>>>>
+    `<CHKWORD? ~.W
+        ,~<PARSE <STRING "PS?" <SPNAME .T>>>
+        ,~<PARSE <STRING "P1?" <SPNAME .T>>>>>
 
 <VERSION?
     (ZIP
@@ -315,8 +331,8 @@ Args:
 
 <MAPF <>
     <FUNCTION (FIELD)
-        <EVAL <FORM DEFMAC <PARSE <STRING "P-" <SPNAME .FIELD>>> '("ARGS" A)
-                    <FORM FORM .FIELD '',P-OOPS-DATA '!.A>>>>
+        <EVAL `<DEFMAC ~<PARSE <STRING "P-" <SPNAME .FIELD>>> ("ARGS" A)
+                    `<~.FIELD ,P-OOPS-DATA ~'~!.A>>>>
     '(OOPS-WN OOPS-CONT OOPS-O-REASON OOPS-WINNER)>
 
 "Structured types for storing noun phrases.
@@ -350,19 +366,19 @@ Args:
 
 <DEFMAC NP-YSPEC ('NP 'I)
     <COND (<==? .I 1>
-           <FORM NP-YTBL .NP>)
+           `<NP-YTBL ~.NP>)
           (<TYPE? .I FIX>
-           <FORM REST <FORM NP-YTBL .NP> <* ,P-OBJSPEC-SIZE <- .I 1>>>)
+           `<REST <NP-YTBL ~.NP> <* ,P-OBJSPEC-SIZE ~<- .I 1>>>)
           (ELSE
-           <FORM REST <FORM NP-YTBL .NP> <FORM * ,P-OBJSPEC-SIZE <FORM - .I 1>>>)>>
+           `<REST <NP-YTBL ~.NP> <* ,P-OBJSPEC-SIZE <- ~.I 1>>>)>>
 
 <DEFMAC NP-NSPEC ('NP 'I)
     <COND (<==? .I 1>
-           <FORM NP-NTBL .NP>)
+           `<NP-NTBL ~.NP>)
           (<TYPE? .I FIX>
-           <FORM REST <FORM NP-NTBL .NP> <* ,P-OBJSPEC-SIZE <- .I 1>>>)
+           `<REST <NP-NTBL ~.NP> <* ,P-OBJSPEC-SIZE ~<- .I 1>>>)
           (ELSE
-           <FORM REST <FORM NP-NTBL .NP> <FORM * ,P-OBJSPEC-SIZE <FORM - .I 1>>>)>>
+           `<REST <NP-NTBL ~.NP> <* ,P-OBJSPEC-SIZE <- ~.I 1>>>)>>
 
 <DEFSTRUCT OBJSPEC (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
     (OBJSPEC-ADJ VOC)
@@ -425,10 +441,10 @@ Args:
          <VERSION?
              (ZIP
                  <DEFMAC PRINT-ADJ ('A)
-                     <FORM PRINT-MATCHING-WORD .A ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
+                     `<PRINT-MATCHING-WORD ~.A ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
              (ELSE
                  <DEFMAC PRINT-ADJ ('A)
-                     <FORM TELL B .A>>)>
+                     `<TELL B ~.A>>)>
 )>
 
 <IFFLAG (<OR DEBUG DEBUGGING-VERBS>
@@ -470,7 +486,7 @@ Args:
 <GLOBAL P-XOBJS <PRSTBL>>
 
 <DEFMAC COPY-PRSTBL ('SRC 'DEST)
-    <FORM <VERSION? (ZIP COPY-TABLE-B) (ELSE COPY-TABLE)> .SRC .DEST <+ 1 ,P-MAX-OBJECTS>>>
+    `<~<VERSION? (ZIP COPY-TABLE-B) (ELSE COPY-TABLE)> ~.SRC ~.DEST <+ 1 ,P-MAX-OBJECTS>>>
 
 "Structured type for backing up a complete parsed command"
 <DEFSTRUCT PARSER-RESULT (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
@@ -554,7 +570,7 @@ Args:
            <SETG PRSI <GET/B ,P-PRSIS 1>>)
           (ELSE <SETG PRSI ,MANY-OBJECTS>)>
     <COND (<N=? ,WINNER .OW <>>
-           <SETG HERE <LOC ,WINNER>>
+           <SETG HERE <META-LOC ,WINNER>>
            <SETG HERE-LIT <SEARCH-FOR-LIGHT>>)>>
 
 "Orphaning"
@@ -610,11 +626,11 @@ These extensions will be respected by other code that simulates the main loop, e
         <MAIN-LOOP-END-OF-ITERATION>>>
 
 <DEFMAC WITH-HOOK (NAME:ATOM 'EXPR "AUX" (RA ?RESULT))
-    <FORM BIND (.RA)
-        <FORM <PARSE <STRING "HOOK-BEFORE-" <SPNAME .NAME>>>>
-        <FORM SET .RA .EXPR>
-        <FORM <PARSE <STRING "HOOK-AFTER-" <SPNAME .NAME>>> .RA>
-        <FORM LVAL .RA>>>
+    `<BIND (~.RA)
+        <~<PARSE <STRING "HOOK-BEFORE-" <SPNAME .NAME>>>>
+        <SET ~.RA ~.EXPR>
+        <~<PARSE <STRING "HOOK-AFTER-" <SPNAME .NAME>>> ~.RA>
+        .~.RA>>
 
 <DEFAULT-DEFINITION MAIN-LOOP-PARSER
     <DEFMAC MAIN-LOOP-PARSER ()
@@ -640,7 +656,7 @@ These extensions will be respected by other code that simulates the main loop, e
 <DEFAULT-DEFINITION MAIN-LOOP-END-OF-COMMAND
     <DEFMAC MAIN-LOOP-END-OF-COMMAND ()
         '<BIND ()
-            <SETG HERE <LOC ,WINNER>>
+            <SETG HERE <META-LOC ,WINNER>>
             <HOOK-END-OF-COMMAND>>>>
 
 <DEFAULT-DEFINITION MAIN-LOOP-END-OF-ITERATION
@@ -725,7 +741,7 @@ Sets:
           (ELSE
            <TRACE 1 "[PARSER: fresh input]" CR>
            <RESET-WINNER>
-           <SETG HERE <LOC ,WINNER>>
+           <SETG HERE <META-LOC ,WINNER>>
            <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
            <READLINE T>)>
 
@@ -749,7 +765,7 @@ Sets:
                <TRACE 4 "[saving for UNDO]" CR>
                <BIND ((RES <ISAVE>))
                    <COND (<=? .RES 2>
-                          <TELL "Previous turn undone." CR CR>
+                          <TELL <LIBRARY-MESSAGE UNDO SUCCESS> CR CR>
                           <SETG WINNER .OW>
                           <SETG HERE .OH>
                           <SETG HERE-LIT .OHL>
@@ -769,13 +785,13 @@ Sets:
                                 <SETG P-LEN <GETB ,LEXBUF 1>>
                                 <TRACE-DO 1 <DUMPLINE>>)
                                (ELSE
-                                <TELL "Nothing to correct." CR>
+                                <TELL <LIBRARY-MESSAGE OOPS NO-MISTAKE> CR>
                                 <RFALSE>)>)
                         (<=? ,P-LEN 1>
-                         <TELL "It's OK." CR>
+                         <TELL <LIBRARY-MESSAGE OOPS NO-WORD> CR>
                          <RFALSE>)
                         (ELSE
-                         <TELL "You can only correct one word at a time." CR>
+                         <TELL <LIBRARY-MESSAGE OOPS TOO-MANY-WORDS> CR>
                          <RFALSE>)>)>)>
 
     <SET KEEP 0>
@@ -846,7 +862,7 @@ Sets:
                       ;"Word not in vocabulary"
                       <STORE-OOPS .I>
                       <SETG P-CONT 0>
-                      <TELL "I don't know the word \"" WORD .I "\"." CR>
+                      <TELL <LIBRARY-MESSAGE PARSER UNKNOWN-WORD ((WN .I))> CR>
                       <RFALSE>)
                      (<=? .W ,W?THEN ,W?\.>
                       ;"End of command, maybe start of a new one"
@@ -902,7 +918,7 @@ Sets:
                              <SET VAL <PARSE-NOUN-PHRASE .I ,P-NP-IOBJ>>)
                             (ELSE
                              <SETG P-CONT 0>
-                             <TELL "That sentence has too many objects." CR>
+                             <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-OBJECTS> CR>
                              <RFALSE>)>
                       <TRACE 3 "[PARSE-NOUN-PHRASE returned " N .VAL "]" CR>
                       <TRACE-OUT>
@@ -916,7 +932,7 @@ Sets:
                       ;"Unexpected word type"
                       <STORE-OOPS .I>
                       <SETG P-CONT 0>
-                      <TELL "I didn't expect the word \"" WORD .I "\" there." CR>
+                      <TELL <LIBRARY-MESSAGE PARSER UNEXPECTED-WORD ((WN .I))> CR>
                       <TRACE-OUT>
                       <RFALSE>)>
                <SET I <+ .I 1>>>
@@ -950,13 +966,13 @@ Sets:
            ;"Otherwise, a verb is required and a direction is forbidden."
            <COND (<NOT ,P-V>
                   <SETG P-CONT 0>
-                  <TELL "That sentence has no verb." CR>
+                  <TELL <LIBRARY-MESSAGE PARSER NO-VERB> CR>
                   <TRACE-OUT>
                   <RFALSE>)
                  (.DIR
                   <STORE-OOPS .DIR-WN>
                   <SETG P-CONT 0>
-                  <TELL "I don't understand what \"" WORD .DIR-WN "\" is doing in that sentence." CR>
+                  <TELL <LIBRARY-MESSAGE PARSER UNEXPECTED-DIRECTION ((WN .DIR-WN))> CR>
                   <TRACE-OUT>
                   <RFALSE>)>
            <SETG PRSO-DIR <>>)>
@@ -1187,6 +1203,13 @@ Returns:
     (ACTION NUMBER-F)>
 
 <ROUTINE NUMBER-F ()
+    <COND (<VERB? EXAMINE> <NOT-POSSIBLE "look at">)
+          (<AND <=? ,P-V-WORD ,W?TAKE> <=? ,P-NUMBER 5 10>>
+           <PERFORM ,V?WAIT>)>>
+
+;"The commitment to the bit was admirable, if I do say so myself,
+  but this was a lot of bytes for one middling joke."
+;<ROUTINE NUMBER-F ()
     <COND (<VERB? EXAMINE>
            <TELL N ,P-NUMBER " is ">
            <COND (<=? ,P-NUMBER 0>
@@ -1318,12 +1341,12 @@ Returns:
     (ELSE
         <DEFMAC COPY-TABLE ('SRC 'DEST 'LEN "AUX" BYTES)
             ;"someday the compiler should do this optimization on its own..."
-            <COND (<TYPE? .LEN FIX> <SET BYTES <* .LEN 2>>)
-                  (ELSE <SET BYTES <FORM * .LEN 2>>)>
-            <FORM COPYT .SRC .DEST .BYTES>>
+            <SET BYTES <COND (<TYPE? .LEN FIX> <* .LEN 2>)
+                             (ELSE `<* ~.LEN 2>)>>
+            `<COPYT ~.SRC ~.DEST ~.BYTES>>
 
         <DEFMAC COPY-TABLE-B ('SRC 'DEST 'LEN)
-            <FORM COPYT .SRC .DEST .LEN>>)>
+            `<COPYT ~.SRC ~.DEST ~.LEN>>)>
 
 ;"Determines whether a given word can start a noun phrase.
 
@@ -1385,7 +1408,7 @@ Returns:
              <TRACE 4 "[stop at unrecognized word: " WORD .WN "]" CR>
              <COND (<NOT .SILENT?>
                     <STORE-OOPS .WN>
-                    <TELL "I don't know the word \"" WORD .WN "\"." CR>)>
+                    <TELL <LIBRARY-MESSAGE PARSER UNKNOWN-WORD ((WN .WN))> CR>)>
              <TRACE-OUT>
              <RFALSE>)
             ;"exit loop if THEN or period"
@@ -1410,7 +1433,7 @@ Returns:
              <COND (<OR .MODE .ADJ .NOUN>
                     <TRACE 4 "[too late for mode change at word " N .WN "]" CR>
                     <COND (<NOT .SILENT?>
-                           <TELL "You can't use \"" B .W "\" there." CR>)>
+                           <TELL <LIBRARY-MESSAGE PARSER UNEXPECTED-MODE ((W .W))> CR>)>
                     <TRACE-OUT>
                     <RFALSE>)>
              <SET MODE
@@ -1443,7 +1466,7 @@ Returns:
                  (<==? .CNT ,P-MAX-OBJSPECS>
                   <TRACE 4 "[already have " N .CNT " specs]" CR>
                   <COND (<NOT .SILENT?>
-                         <TELL "That phrase mentions too many objects." CR>)>
+                         <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-SPECS> CR>)>
                   <TRACE-OUT>
                   <RFALSE>)
                  (<NOT .ADJ>
@@ -1459,7 +1482,7 @@ Returns:
                    (<==? .CNT ,P-MAX-OBJSPECS>
                     <TRACE 4 "[already have " N .CNT " specs]" CR>
                     <COND (<NOT .SILENT?>
-                           <TELL "That phrase mentions too many objects." CR>)>
+                           <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-SPECS> CR>)>
                     <TRACE-OUT>
                     <RFALSE>)
                    (ELSE
@@ -1564,7 +1587,7 @@ Returns:
                     ", PRSA=" N ,PRSA "]" CR>
            <RTRUE>)
           (ELSE
-           <TELL "I don't understand that sentence." CR>
+           <TELL <LIBRARY-MESSAGE PARSER NO-MATCHING-SYNTAX> CR>
            <RFALSE>)>>
 
 <IF-DEBUG
@@ -1769,12 +1792,12 @@ Returns:
         <COND (<AND ,PRSO <NOT ,PRSO-DIR>>
                <SET F <GETB ,P-SYNTAX ,SYN-FIND2>>)
               (ELSE <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>)>
-        <COND (<AND <VERB? WALK> <NOT ,PRSO>> <TELL "Which way">)
-              (<=? .F ,PERSONBIT> <TELL "Whom">)
-              (ELSE <TELL "What">)>
-        <TELL " do you want">
+        <COND (<AND <VERB? WALK> <NOT ,PRSO>> <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-1-DIRECTION>>)
+              (<=? .F ,PERSONBIT> <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-1-PERSON>>)
+              (ELSE <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-1-OBJECT>>)>
+        <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-2>>
         <COND (<ORDERING?> <TELL " " T ,WINNER>)>
-        <TELL " to ">
+        <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-3>>
         <PRINT-VERB>
         <COND (.SP1
                <TELL " " B <GET-PREP-WORD .SP1>>)>
@@ -1782,11 +1805,17 @@ Returns:
                <TELL " " T ,PRSO>
                <COND (.SP2
                       <TELL " " B <GET-PREP-WORD .SP2>>)>)>
-        <TELL "?" CR>>>
+        <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-4> CR>>>
 
 <ROUTINE PRINT-VERB ()
     <COND (,P-V-WORDN <PRINT-WORD ,P-V-WORDN>)
           (ELSE <PRINTB ,P-V-WORD>)>>
+
+<DEFMAC PRINT-IF ('CONDITION 'MSG)
+    `<COND (~.CONDITION <TELL ~.MSG>)>>
+
+<DEFMAC PRINT-IF-ELSE ('CONDITION 'MSG1 'MSG2)
+    `<COND (~.CONDITION <TELL ~.MSG1>) (ELSE <TELL ~.MSG2>)>>
 
 ;"Applies the rules for the MANY syntax flag to PRSO or PRSI, printing a
 failure message if appropriate.
@@ -1806,13 +1835,9 @@ Returns:
     <COND (<AND <=? .OBJ ,MANY-OBJECTS>
                 <NOT <BTST .OPTS ,SF-MANY>>>
            <COND (<VERB? TELL>
-                  <TELL "You can only address one person at a time.">)
+                  <TELL <LIBRARY-MESSAGE PARSER MANY-WINNERS-NOT-ALLOWED>>)
                  (ELSE
-                  <TELL "You can't use multiple ">
-                  <COND (.INDIRECT? <TELL "in">)>
-                  <TELL "direct objects with \"">
-                  <PRINT-VERB>
-                  <TELL "\".">)>
+                  <TELL <LIBRARY-MESSAGE PARSER MANY-OBJECTS-NOT-ALLOWED ((INDIRECT? .INDIRECT?))>>)>
            <CRLF>
            <SETG P-CONT 0>
            <RFALSE>)>
@@ -1836,9 +1861,9 @@ Returns:
     <COND (<BTST .OPTS ,SF-TAKE>
            <DO (I 1 .MAX)
                <COND (<SHOULD-IMPLICIT-TAKE? <GET/B .TBL .I>>
-                      <TELL "[taking ">
+                      <TELL <LIBRARY-MESSAGE PARSER IMPLICIT-TAKE-MANY-1>>
                       <SET N <LIST-OBJECTS .TBL ,SHOULD-IMPLICIT-TAKE? <+ ,L-PRSTABLE ,L-THE>>>
-                      <TELL "]" CR>
+                      <TELL <LIBRARY-MESSAGE PARSER IMPLICIT-TAKE-MANY-2> CR>
                       <REPEAT ()
                           <COND (<SHOULD-IMPLICIT-TAKE? <SET O <GET/B .TBL .I>>>
                                  <COND (<NOT <TRY-TAKE .O T>>
@@ -1857,9 +1882,9 @@ Returns:
     <COND (<BTST .OPTS ,SF-HAVE>
            <DO (I 1 .MAX)
                <COND (<FAILS-HAVE-CHECK? <GET/B .TBL .I>>
-                      <TELL "You aren't holding ">
+                      <TELL <LIBRARY-MESSAGE PARSER FAILED-HAVE-CHECK-MANY-1>>
                       <LIST-OBJECTS .TBL ,FAILS-HAVE-CHECK? <+ ,L-PRSTABLE ,L-THE ,L-OR>>
-                      <TELL "." CR>
+                      <TELL <LIBRARY-MESSAGE PARSER FAILED-HAVE-CHECK-MANY-2> CR>
                       <SETG P-CONT 0>
                       <RFALSE>)>>)>
     <RTRUE>>
@@ -1879,14 +1904,14 @@ Returns:
     ;"Attempt implicit take if WINNER isn't directly holding the object"
     <COND (<BTST .OPTS ,SF-TAKE>
            <COND (<SHOULD-IMPLICIT-TAKE? .OBJ>
-                  <TELL "[taking " T .OBJ "]" CR>
+                  <TELL <LIBRARY-MESSAGE PARSER IMPLICIT-TAKE-SINGLE ((OBJ .OBJ))> CR>
                   <COND (<NOT <TRY-TAKE .OBJ T>>
                          <TRY-TAKE .OBJ>
                          <RFALSE>)>)>)>
     ;"WINNER must (indirectly) hold the object if SF-HAVE is set"
     <COND (<BTST .OPTS ,SF-HAVE>
            <COND (<FAILS-HAVE-CHECK? .OBJ>
-                  <TELL "You aren't holding " T .OBJ "." CR>
+                  <TELL <LIBRARY-MESSAGE PARSER FAILED-HAVE-CHECK-SINGLE ((OBJ .OBJ))> CR>
                   <SETG P-CONT 0>
                   <RFALSE>)>)>
     <RTRUE>>
@@ -1919,7 +1944,7 @@ Returns:
         <TRACE 4 "[considering " D <GET/B .TBL .I> "]" CR>
         <COND (<NOT <VISIBLE? <GET/B .TBL .I>>>
                <LIST-OBJECTS .TBL ,NOT-VISIBLE? <+ ,L-PRSTABLE ,L-THE ,L-CAP ,L-SUFFIX>>
-               <TELL " no longer here." CR>
+               <TELL <LIBRARY-MESSAGE PARSER NOT-STILL-VISIBLE> CR>
                <TRACE-OUT>
                <SETG P-CONT 0>
                <RFALSE>)>>
@@ -1966,11 +1991,11 @@ Returns:
     <TRACE-OUT>
     ;"Print inference message"
     <COND (.O
-           <TELL "[">
+           <TELL <LIBRARY-MESSAGE PARSER GWIM-1>>
            ;"TODO: use LONG-WORDS table for preposition word"
            <COND (<SET PW <GET-PREP-WORD .PREP>>
                   <TELL B .PW " ">)>
-           <TELL T .O "]" CR>
+           <TELL T .O <LIBRARY-MESSAGE PARSER GWIM-2> CR>
            <RETURN .O>)
           (ELSE <RFALSE>)>>
 
@@ -1982,10 +2007,10 @@ Returns:
     <RFALSE>>
 
 <DEFMAC ENCODE-NOUN-BITS ('F 'O)
-    <FORM BOR <FORM * .F 256> .O>>
+    `<BOR <* ~.F 256> ~.O>>
 
 <DEFMAC DECODE-FINDBIT ('E)
-    <FORM BAND <FORM / .E 256> 255>>
+    `<BAND </ ~.E 256> 255>>
 
 ;"Searches scope for a usable light source.
 
@@ -2123,9 +2148,9 @@ Returns:
                                  <SET OBITS -1>    ;"Avoid bouncing between <1 and >1 matches"
                                  <AGAIN .BITS-SET>)>
                           <COND (<=? ,MAP-SCOPE-STATUS ,MS-NO-LIGHT>
-                                 <TELL "It's too dark to see anything here." CR>)
+                                 <TELL <LIBRARY-MESSAGE DARKNESS TOO-DARK-TO-SEE> CR>)
                                 (ELSE
-                                 <TELL "You don't see that here." CR>)>
+                                 <TELL <LIBRARY-MESSAGE PARSER DONT-SEE-THAT-HERE> CR>)>
                           <TRACE-OUT>
                           <RFALSE>)
                          (<G=? .NOUT ,P-MAX-OBJECTS>
@@ -2138,7 +2163,7 @@ Returns:
                  Try expanding the search if we can."
                <SET F <ORB .BITS ;"<ORB" ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM ;">" >>
                <COND (<=? .BITS .F>
-                      <TELL "There are none at all available!" CR>
+                      <TELL <LIBRARY-MESSAGE PARSER NONE-AVAILABLE> CR>
                       <TRACE-OUT>
                       <RFALSE>)>
                <TRACE 4 "[expanding to reasonable scope]" CR>
@@ -2155,7 +2180,7 @@ Returns:
                ;"Pick a random object"
                <PUT/B .OUT 1 <SET F <GET/B .OUT <RANDOM .NOUT>>>>
                <PUTB .OUT 0 1>
-               <TELL "[" T .F "]" CR>
+               <TELL <LIBRARY-MESSAGE PARSER INFERRED-RANDOM-OBJECT ((OBJ .F))> CR>
                <TRACE-OUT>
                <RETURN .F>)
               (ELSE
@@ -2192,17 +2217,17 @@ Returns:
                <RETURN .R>)>>>
 
 <ROUTINE WHICH-DO-YOU-MEAN (TBL)
-    <TELL "Which do you mean, ">
+    <TELL <LIBRARY-MESSAGE ORPHANING WHICH-DO-YOU-MEAN-1>>
     <LIST-OBJECTS .TBL <> <+ ,L-PRSTABLE ,L-THE ,L-OR>>
-    <TELL "?" CR>>
+    <TELL <LIBRARY-MESSAGE ORPHANING WHICH-DO-YOU-MEAN-2> CR>>
 
-;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL.
+;"Determines whether an object is included by a NOUN-PHRASE's YTBL.
   Note: NP may be evaluated twice."
 <DEFMAC NP-INCLUDES? ('NP 'O)
-    <FORM ANY-SPEC-REFERS? <FORM NP-YTBL .NP> <FORM NP-YCNT .NP> .O>>
+    `<ANY-SPEC-REFERS? <NP-YTBL ~.NP> <NP-YCNT ~.NP> ~.O>>
 
 <DEFMAC NP-INCLUDES-PSEUDO? ('NP 'PDO)
-    <FORM ANY-SPEC-REFERS-PSEUDO? <FORM NP-YTBL .NP> <FORM NP-YCNT .NP> .PDO>>
+    `<ANY-SPEC-REFERS-PSEUDO? <NP-YTBL ~.NP> <NP-YCNT ~.NP> ~.PDO>>
 
 <ROUTINE ANY-SPEC-REFERS? (TBL N O)
     <COND (<0? .N> <RFALSE>)>
@@ -2221,10 +2246,10 @@ Returns:
 ;"Determines whether an object is excluded by a NOUN-PHRASE's NTBL.
   Note: NP may be evaluated twice."
 <DEFMAC NP-EXCLUDES? ('NP 'O)
-    <FORM ANY-SPEC-REFERS? <FORM NP-NTBL .NP> <FORM NP-NCNT .NP> .O>>
+    `<ANY-SPEC-REFERS? <NP-NTBL ~.NP> <NP-NCNT ~.NP> ~.O>>
 
 <DEFMAC NP-EXCLUDES-PSEUDO? ('NP 'PDO)
-    <FORM ANY-SPEC-REFERS-PSEUDO? <FORM NP-NTBL .NP> <FORM NP-NCNT .NP> .PDO>>
+    `<ANY-SPEC-REFERS-PSEUDO? <NP-NTBL ~.NP> <NP-NCNT ~.NP> ~.PDO>>
 
 ;"Determines whether a local-global object is present in a given room.
 
@@ -2449,38 +2474,38 @@ Example:
                          .GATOMS>>
     <SET NEWVALUES <MAPF ,LIST 2 .TEMPS>>
     <SET BINDINGS <MAPF ,LIST
-                        <FUNCTION (T G) <LIST .T <CHTYPE .G GVAL>>>
+                        <FUNCTION (T G) `(~.T ,~.G)>
                         .TEMPATOMS
                         .GATOMS>>
     <SET SETGS <MAPF ,LIST
-                     <FUNCTION (G V) <FORM SETG .G .V>>
+                     <FUNCTION (G V) `<SETG ~.G ~.V>>
                      .GATOMS
                      .NEWVALUES>>
     <SET RESTORES <MAPF ,LIST
-                        <FUNCTION (G T) <FORM SETG .G <CHTYPE .T LVAL>>>
+                        <FUNCTION (G T) `<SETG ~.G .~.T>>
                         .GATOMS
                         .TEMPATOMS>>
     ;"And finally..."
-    <FORM BIND (!.BINDINGS ?RESULT)
-          !.SETGS
-          <FORM SET ?RESULT <FORM PROG '() !.BODY>>
-          !.RESTORES
-          '.?RESULT>>
+    `<BIND (~!.BINDINGS ?RESULT)
+          ~!.SETGS
+          <SET ?RESULT <PROG () ~!.BODY>>
+          ~!.RESTORES
+          .?RESULT>>
 
 <VERSION?
     (ZIP
      ;"If unlit, change HERE to 'Darkness' temporarily."
      <DEFMAC DO-READ ('RB 'LB)
-         <EXPAND <FORM WRAP-FOR-DARK-STATUS <FORM READ .RB .LB>>>>
+         <EXPAND `<WRAP-FOR-DARK-STATUS <READ ~.RB ~.LB>>>>
 
      <DEFMAC WRAP-FOR-DARK-STATUS ('F)
-         <FORM BIND '((OHERE ,HERE))
-             '<COND (<NOT ,HERE-LIT> <SETG HERE ,ROOMS>)>
-             .F
-             '<SETG HERE .OHERE>>>)
+         `<BIND ((OHERE ,HERE))
+             <COND (<NOT ,HERE-LIT> <SETG HERE ,ROOMS>)>
+             ~.F
+             <SETG HERE .OHERE>>>)
     (ELSE
      <DEFMAC DO-READ ('RB 'LB)
-         <FORM READ .RB .LB>>)>
+         `<READ ~.RB ~.LB>>)>
 
 "Action framework"
 
@@ -2514,11 +2539,11 @@ Sets (temporarily):
     <TRACE-IN>
     ;"Warn about improper number use, and handle multiple objects"
     <COND (<G? <COUNT-PRS-APPEARANCES ,NUMBER> 1>
-           <TELL "You can't use more than one number in a command." CR>
+           <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-NUMBERS> CR>
            <SET WON <>>)
           (<AND <NOT ,PRSO-DIR> <PRSO? ,MANY-OBJECTS>>
            <COND (<PRSI? ,MANY-OBJECTS>
-                  <TELL "You can't use multiple direct and indirect objects together." CR>
+                  <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-MANY> CR>
                   <SET WON <>>)
                  (ELSE
                   <SETG REPORT-MODE ,SHORT-REPORT>
@@ -2564,6 +2589,7 @@ until one returns true to indicate that it has handled the action.
 The search order is as follows:
   ACTION property of WINNER (with M-WINNER parameter)
   ACTION property of WINNER's location (with M-BEG parameter)
+  ACTION property of HERE, if different from location (with M-BEG)
   Verb preaction
   CONTFCN property of PRSI's location
   ACTION property of PRSI
@@ -2591,6 +2617,11 @@ Returns:
           (<AND <SET RM <LOC ,WINNER>>
                 <SET AC <GETP .RM ,P?ACTION>>
                 <TRACE 4 "[calling LOC (" D .RM ") ACTION]" CR>
+                <APPLY .AC ,M-BEG>>
+           <RTRUE>)
+          (<AND <N==? <LOC ,WINNER> ,HERE>
+                <SET AC <GETP ,HERE ,P?ACTION>>
+                <TRACE 4 "[calling HERE (" D .RM ") ACTION]" CR>
                 <APPLY .AC ,M-BEG>>
            <RTRUE>)
           (<AND .PRTN
@@ -2645,7 +2676,8 @@ Args:
            <RESET-WINNER>)>
     <SET WAS-LIT ,HERE-LIT>
     <SETG HERE .RM>
-    <MOVE ,WINNER ,HERE>
+    <COND (<FSET? <LOC ,WINNER> ,VEHBIT> <MOVE <LOC ,WINNER> ,HERE>)
+          (ELSE <MOVE ,WINNER ,HERE>)>
     <APPLY <GETP .RM ,P?ACTION> ,M-ENTER>
     ;"Call SEARCH-FOR-LIGHT down here in case M-ENTER adjusts the light."
     <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
@@ -2771,10 +2803,10 @@ Returns:
 <DEFAULT-DEFINITION RANDOM-IN-RANGE
   <DEFMAC RANDOM-IN-RANGE ('LO 'HI)
     <COND (<TYPE? .LO LVAL GVAL FIX FALSE CONSTANT>
-           <FORM - <FORM + .LO <FORM RANDOM <FORM + <FORM - .HI .LO> 1>>> 1>)
+           `<- <+ ~.LO <RANDOM <+ <- ~.HI ~.LO> 1>>> 1>)
           (ELSE
-           <FORM BIND ((?LO .LO))
-               <FORM - <FORM + '.?LO <FORM RANDOM <FORM + <FORM - .HI '.?LO> 1>>> 1>>)>>>
+           `<BIND ((?LO ~.LO))
+               <- <+ .?LO <RANDOM <+ <- ~.HI .?LO> 1>>> 1>>)>>>
 
 ;"Returns a random element from a table, possibly repeating.
 
@@ -2822,10 +2854,10 @@ Returns:
                       (ELSE <TELL %,DARKNESS-STATUS-TEXT>)>
                 <SET WIDTH <LOWCORE SCRH>>
                 <CURSET 1 <- .WIDTH 22>>
-                <TELL "Score: ">
+                <TELL <LIBRARY-MESSAGE PARSER STATUS-LINE-SCORE>>
                 <PRINTN ,SCORE>
                 <CURSET 1 <- .WIDTH 10>>
-                <TELL "Moves: ">
+                <TELL <LIBRARY-MESSAGE PARSER STATUS-LINE-MOVES>>
                 <PRINTN ,MOVES>
                 <SCREEN 0>
                 <HLIGHT ,H-NORMAL>>
@@ -2854,9 +2886,9 @@ Returns:
     <COND (<RESURRECT?> <RTRUE>)>
     <REPEAT PROMPT ()
         <IFFLAG (UNDO
-                 <PRINTI "Would you like to RESTART, UNDO, RESTORE, or QUIT? > ">)
+                 <PRINTI <LIBRARY-MESSAGE JIGS-UP PROMPT-WITH-UNDO>>)
                 (ELSE
-                 <PRINTI "Would you like to RESTART, RESTORE or QUIT? > ">)>
+                 <PRINTI <LIBRARY-MESSAGE JIGS-UP PROMPT-WITHOUT-UNDO>>)>
         <REPEAT ()
             <READLINE>
             <SET W <AND <GETB ,LEXBUF 1> <GET ,LEXBUF 1>>>
@@ -2864,20 +2896,20 @@ Returns:
                    <RESTART>)
                   (<EQUAL? .W ,W?RESTORE>
                    <RESTORE>  ;"only returns on failure"
-                   <TELL "Restore failed." CR>
+                   <TELL <LIBRARY-MESSAGE RESTORE FAILED> CR>
                    <AGAIN .PROMPT>)
                   (<EQUAL? .W ,W?QUIT>
-                   <TELL CR "Thanks for playing." CR>
+                   <TELL CR <LIBRARY-MESSAGE QUIT GOODBYE> CR>
                    <QUIT>)
                   (<EQUAL? .W ,W?UNDO>
                    <V-UNDO>   ;"only returns on failure"
-                   <TELL "Undo failed." CR>
+                   <TELL <LIBRARY-MESSAGE UNDO FAILED> CR>
                    <AGAIN .PROMPT>)
                   (T
                    <IFFLAG (UNDO
-                            <TELL CR "(Please type RESTART, UNDO, RESTORE or QUIT) >">)
+                            <TELL CR <LIBRARY-MESSAGE JIGS-UP REPROMPT-WITH-UNDO>>)
                            (ELSE
-                            <TELL CR "(Please type RESTART, RESTORE or QUIT) > ">)>)>>>>
+                            <TELL CR <LIBRARY-MESSAGE JIGS-UP REPROMPT-WITHOUT-UNDO>>)>)>>>>
 
 <DEFAULT-DEFINITION PRINT-GAME-OVER
     ;"Prints a message explaining that the game is over or the player has died.
@@ -2885,7 +2917,7 @@ Returns:
       describe the specific circumstances, so usually this should print a generic
       message appropriate for the game's theme."
     <ROUTINE PRINT-GAME-OVER ()
-        <TELL "    ****  The game is over  ****" CR>>
+        <TELL <LIBRARY-MESSAGE JIGS-UP GAME-OVER> CR>>
 >
 
 <DEFAULT-DEFINITION RESURRECT?
@@ -2923,7 +2955,7 @@ The question should be printed before calling this routine.
 Returns:
   True if the user pressed 'y', false if they pressed 'n'."
 <ROUTINE YES? ("AUX" RESP)
-     <PRINTI " (y/n) >">
+     <PRINTI <LIBRARY-MESSAGE YES? PROMPT>>
      <REPEAT ()
          <READLINE>
          <VERSION?
@@ -2940,7 +2972,7 @@ Returns:
                 <RFALSE>)
                (T
                 ;<CRLF>
-                <TELL "(Please type y or n) >" >)>>>
+                <TELL <LIBRARY-MESSAGE YES? REPROMPT> >)>>>
 
 <VERSION?
     (ZIP
@@ -3054,10 +3086,10 @@ Returns:
   The room that encloses the object, or false if it isn't in a room."
 <ROUTINE META-LOC (OBJ)
     <REPEAT ()
-        <SET OBJ <LOC .OBJ>>
         <COND (<0? .OBJ> <RFALSE>)
               (<IN? .OBJ ,ROOMS>
-               <RETURN .OBJ>)>>>
+               <RETURN .OBJ>)>
+        <SET OBJ <LOC .OBJ>>>>
 
 ;"Checks whether the player has entered darkness, printing a message if so.
 
@@ -3112,4 +3144,4 @@ or reveal a light source."
     <COND (<N==? ,PLAYER ,PRSO>
            <RFALSE>)
           (<VERB? EXAMINE>
-           <PRINTR "You look like you're up for an adventure.">)>>
+           <TELL <LIBRARY-MESSAGE EXAMINE PLAYER> CR>)>>

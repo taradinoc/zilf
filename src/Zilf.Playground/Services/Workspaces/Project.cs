@@ -33,22 +33,35 @@ namespace Zilf.Playground.Services.Workspaces
         private ProjectFile? mainFile;
 
         public Guid Guid { get; set; } = Guid.NewGuid();
+        public string Name { get; set; } = "Untitled Project";
         public IReadOnlyCollection<ProjectFile> Files => files;
         public ICollection<string> Includes => includes;
 
         public event Action? FilesChanged;
 
-        [DisallowNull]
-        public ProjectFile? MainFile
+        public ProjectFile MainFile
         {
-            get => mainFile;
+            get
+            {
+                if (mainFile != null)
+                    return mainFile;
+
+                if (files.Count > 0)
+                    return files[0];
+
+                throw new InvalidOperationException("Project has no main file");
+            }
 
             set
             {
                 if (!files.Contains(value))
                     throw new ArgumentException("File is not part of project", nameof(value));
 
-                mainFile = value;
+                if (mainFile != value)
+                {
+                    mainFile = value;
+                    FilesChanged?.Invoke();
+                }
             }
         }
 
@@ -58,6 +71,7 @@ namespace Zilf.Playground.Services.Workspaces
                 throw new ArgumentException("Path is already in use", nameof(path));
 
             var result = new ProjectFile(path);
+            result.ContentChanged += OnFileContentChanged;
             files.Add(result);
 
             mainFile ??= result;
@@ -74,6 +88,7 @@ namespace Zilf.Playground.Services.Workspaces
             if (file == null)
                 return false;
 
+            file.ContentChanged -= OnFileContentChanged;
             files.Remove(file);
 
             if (mainFile == file)
@@ -82,6 +97,16 @@ namespace Zilf.Playground.Services.Workspaces
             FilesChanged?.Invoke();
 
             return true;
+        }
+
+        private void OnFileContentChanged()
+        {
+            FilesChanged?.Invoke();
+        }
+
+        public void NotifyChanged()
+        {
+            FilesChanged?.Invoke();
         }
 
         public IEnumerable<string> GetIncludePaths()

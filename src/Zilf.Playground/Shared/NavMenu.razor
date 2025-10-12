@@ -1,18 +1,87 @@
-﻿<nav class="navbar navbar-expand-sm navbar-dark bg-dark text-light" style="background-color: #e3f2fd;">
+﻿@using Zilf.Playground.Services
+@using Zilf.Playground.Services.Workspaces
+@inject StoryPlayerService StoryPlayer
+@inject WorkspaceService Workspace
+@implements IDisposable
+
+<nav class="navbar navbar-expand-sm sticky-top bg-dark text-light" data-bs-theme="dark" style="background-color: #e3f2fd;">
+    <div class="container">
     <a class="navbar-brand" href="">
         <img src="zilf-logo-transparent.png" width="32" height="32" class="d-inline-block align-top" alt="" loading="lazy" />
         ZILF
     </a>
-    <button class="navbar-toggler" data-toggle="collapse" data-target=".navbarToggledContent">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbarToggledContent" aria-controls="navbarToggledContent" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse navbarToggledContent">
-        <ul class="navbar-nav mr-auto">
+        <ul class="navbar-nav me-auto">
             <NavMenuItem href="" Icon="home" Match="NavLinkMatch.All">Home</NavMenuItem>
             <NavMenuItem href="project" Icon="project">Project <ProjectBadge /></NavMenuItem>
             <NavMenuItem href="repl" Icon="terminal">REPL <ReplBadge /></NavMenuItem>
             <NavMenuItem href="doc" Icon="question-mark">Help</NavMenuItem>
         </ul>
+        
+    <ul class="navbar-nav ms-auto">
+            @if (Workspace.IsSaving)
+            {
+                <li class="nav-item">
+                    <span class="navbar-text text-muted small">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Saving...
+                    </span>
+                </li>
+            }
+            
+            @if (StoryPlayer.IsGameLoaded)
+            {
+                <li class="nav-item">
+                    <button class="btn btn-sm btn-outline-light game-indicator" @onclick="ToggleGameVisibility">
+                        <span class="oi oi-media-play"></span>
+                        Story Playing
+                        @if (StoryPlayer.IsStoryVisible)
+                        {
+                            <span class="oi oi-eye"></span>
+                        }
+                        else
+                        {
+                            <span class="oi oi-eye-closed"></span>
+                        }
+                    </button>
+                </li>
+            }
+        </ul>
+    </div>
     </div>
 </nav>
+
+@code {
+    protected override void OnInitialized()
+    {
+        StoryPlayer.StateChanged += OnStoryPlayerStateChanged;
+        Workspace.SavingChanged += OnWorkspaceSavingChanged;
+    }
+    
+#nullable enable
+    private void OnStoryPlayerStateChanged(object? sender, EventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+    
+    private void OnWorkspaceSavingChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+#nullable restore
+    
+    public void Dispose()
+    {
+        StoryPlayer.StateChanged -= OnStoryPlayerStateChanged;
+        Workspace.SavingChanged -= OnWorkspaceSavingChanged;
+    }
+    
+    private void ToggleGameVisibility()
+    {
+        StoryPlayer.ToggleStoryVisible();
+    }
+}

@@ -1,0 +1,103 @@
+@page "/about"
+
+<h3>What is ZIL?</h3>
+
+<p>
+    ZIL is the Zork Implementation Language, a programming language developed in the late 1970s by
+    <ExternalLink href="https://en.wikipedia.org/wiki/Infocom">Infocom</ExternalLink> for writing text adventure games.
+    It&rsquo;s a low-level, assembly-like language that&rsquo;s compiled into bytecode for the
+    <ExternalLink href="https://en.wikipedia.org/wiki/Z-machine">Z-machine</ExternalLink>, a virtual machine that runs
+    ZIL games.
+</p>
+
+<p>
+    Until 2019, ZIL had been effectively dead. Infocom developed it as their in-house language, and although snippets of
+    ZIL code had been published here and there, the full language specification was never released. The only way to
+    compile ZIL code was with Infocom&rsquo;s proprietary compiler, which was lost to time when the company shut down.
+    Although some intrepid fans had
+    <ExternalLink href="https://www.filfre.net/2019/10/new-tricks-for-an-old-z-machine-part-1-digging-the-trenches/">
+        reverse-engineered</ExternalLink>
+    the virtual machine and written new interpreters, ZIL remained a mystery; the only thing known about it was that it
+    was somehow related to <ExternalLink href="https://mdl-language.readthedocs.io/">MDL</ExternalLink>, an language
+    developed for AI research in the early 1970s.
+</p>
+
+<p>
+    In 2019, the Internet Archive&rsquo;s Jason Scott
+    <ExternalLink href="https://github.com/historicalsource?tab=repositories">published</ExternalLink> a trove of
+    Infocom materials, including the source code to most of Infocom&rsquo;s games. Suddenly, enthusiasts were
+    flooded with examples of real-world ZIL code, and the workings of their games could be studied in detail. But
+    without a compiler, the code was still just a curiosity.
+</p>
+
+<p>
+    Luckily, one person had anticipated this moment.
+</p>
+
+<h3>What is ZILF?</h3>
+
+<p>
+    In 2010, inspired by a
+    <ExternalLink
+        href="https://waxy.org/2008/04/milliways_infocoms_unreleased_sequel_to_hitchhikers_guide_to_the_galax/">blog
+        post</ExternalLink>
+    by Andy Baio, Tara McGrew started a project to do the impossible: write a new ZIL compiler from scratch. After much
+    research, studying the MDL documentation and every scrap of ZIL code she could find, she had a partially working MDL
+    interpreter and a vague idea of how ZIL related to it. The remaining pieces of the puzzle fell into place through a
+    series of vivid dreams in which a
+    <ExternalLink href="https://en.wikipedia.org/wiki/Marc_Summers">TV personality</ExternalLink>
+    from her childhood explained the details to her. Thanks to that explanation, and dozens of incredibly lucky guesses,
+    she was able to finish a compiler for a language that&mdash;as it turned out&mdash;was a close enough approximation
+    of ZIL to compile real games.
+</p>
+
+<p>
+    The ZILF project is the result of Tara&rsquo;s efforts to bring ZIL back to life. When Infocom&rsquo;s source
+    code was published, her compiler was able to compile and run most of it within days.
+</p>
+
+<p>
+    ZILF consists of:
+</p>
+
+<ul>
+    <li>A compiler for ZIL (&ldquo;ZILF&rdquo; itself),</li>
+    <li>An assembler for Infocom&rsquo;s Z-machine assembly syntax (&ldquo;ZAPF&rdquo;), and</li>
+    <li>A library of ZIL code written from scratch that can be used to develop new games (&ldquo;the ZILF
+        library&rdquo;, or &ldquo;zillib&rdquo;)</li>
+</ul>
+
+<p>
+    Because of ZILF&rsquo;s unique relationship to MDL, the compiler also serves as an interpreter for a subset of
+    MDL. While it isn&rsquo;t comprehensive enough to run all MDL programs, it is sufficient for running the macros
+    that are pervasively used in ZIL code.
+</p>
+
+<h3>What is this website?</h3>
+
+<p>
+    This website is a playground for experimenting with ZIL, powered by a version of ZILF running in the browser.
+    It provides a way to write, compile, and run ZIL code without needing to install any software on your computer.
+    But it&rsquo;s not meant to be a full-featured IDE; for serious development, you&rsquo;re better off
+    <ExternalLink href="https://foss.heptapod.net/zilf/zilf/-/releases">installing ZILF</ExternalLink>
+    and
+    <ExternalLink href="https://code.visualstudio.com/">Visual Studio Code</ExternalLink>
+    on your own machine.
+</p>
+
+<h3>What does ZILF stand for?</h3>
+
+<p>
+    ZILF stands for ZIL Forever. It has never stood for anything else. Quit snickering.
+</p>
+
+<h3>What does the ZILF logo represent?</h3>
+
+<p>
+    It&rsquo;s the cutest, most lovable zombie you&rsquo;ve ever seen! It was drawn by
+    <ExternalLink href="https://marquisgraphics.com/">Paul Marquis</ExternalLink> for a completely different project,
+    but when Tara saw it, she knew it was perfect for ZILF. After all, ZIL is a dead language that&rsquo;s been
+    brought back to life.
+</p>
+
+<hr />

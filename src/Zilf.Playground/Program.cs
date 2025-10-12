@@ -30,6 +30,7 @@ using Zilf.Playground.Services.Builds;
 using Zilf.Playground.Services.Workspaces;
 using Zilf.Playground.Services.Repl;
 using Zilf.Playground.Services.Templates;
+using Zilf.Playground.Services;
 using BlazorWorker.Core;
 
 namespace Zilf.Playground
@@ -46,8 +47,11 @@ namespace Zilf.Playground
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
             builder.Services.AddSingleton<JSInterop>();
+            builder.Services.AddSingleton<StoryPlayerService>();
+            builder.Services.AddSingleton<ProjectStorageService>();
             builder.Services.AddScoped<TemplateService>();
-            builder.Services.AddScoped<WorkspaceService>();
+            builder.Services.AddScoped<WorkspaceService>(sp => 
+                new WorkspaceService(sp.GetRequiredService<ProjectStorageService>()));
             builder.Services.AddScoped<ReplService>();
             builder.Services.AddScoped<BuildService>();
 

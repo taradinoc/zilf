@@ -1,17 +1,37 @@
-﻿@page "/project/{ProjectId:guid}/edit"
+﻿@page "/project/{ProjectId:guid}/edit/{*Path}"
 @inject WorkspaceService Workspace
+@inject Zilf.Playground.Services.Builds.BuildService Build
+@using Zilf.Playground.Services
+@inject ProjectStorageService ProjectStorage
 @inject NavigationManager Nav
 @layout ProjectLayout
+@using BlazorMonaco.Editor
+@using Microsoft.AspNetCore.Components
 
-<h3>Editing @Path</h3>
-
-<textarea @bind="FileContent" class="w-100 h-75" ></textarea>
+<div class="editor-container">
+    <div class="file-tab">
+        <span class="oi oi-document"></span>
+        <span class="file-name">@(Path ?? "No file selected")</span>
+    </div>
+    <div class="editor-wrapper">
+        <StandaloneCodeEditor
+            @ref="_editor"
+            Id="code-editor"
+            ConstructionOptions="EditorConstructionOptions"
+            OnDidChangeModelContent="OnContentChanged"
+            />
+    </div>
+</div>
 
 @code {
+    private StandaloneCodeEditor _editor;
+    private bool _rendered = false;
+    private bool _needsContentUpdate = false;
+
     public static string GetLink(Project project, string path) => GetLink(project.Guid.ToString(), path);
 
     public static string GetLink(string projectId, string path) =>
-        $"/project/{projectId}/edit?file={path}";
+        $"/project/{projectId}/edit/{path}";
 
     [Parameter]
     public Guid ProjectId { get; set; }
@@ -22,6 +42,7 @@
     [System.Diagnostics.CodeAnalysis.MaybeNull]
     private ProjectFile File => Workspace.Project.Files.SingleOrDefault(f => f.Path == Path);
 
+    [System.Diagnostics.CodeAnalysis.MaybeNull]
     public string FileContent
     {
         get => File?.Content;
@@ -33,21 +54,160 @@
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Console.WriteLine($"[ProjectEdit] OnAfterRenderAsync - First render");
+            _rendered = true;
+        }
+        
+        Console.WriteLine($"[ProjectEdit] OnAfterRenderAsync - Rendered: {_rendered}, Editor: {_editor != null}, NeedsUpdate: {_needsContentUpdate}, File: {File != null}");
+        
+        // Set editor content if needed and editor is ready
+        if (_rendered && _editor != null && _needsContentUpdate && File != null)
+        {
+            // Clear the flag immediately to prevent infinite loops
+            _needsContentUpdate = false;
+            
+            Console.WriteLine($"[ProjectEdit] Attempting to set editor content for: {File.Path}, Length: {File.Content?.Length ?? 0}");
+            
+            // Retry setting content with delays to allow Monaco to fully initialize
+            bool success = false;
+            for (int i = 0; i < 5 && !success; i++)
+            {
+                try
+                {
+                    if (i > 0)
+                    {
+                        await Task.Delay(100 * i); // Progressive delay: 100ms, 200ms, 300ms, etc.
+                        Console.WriteLine($"[ProjectEdit] Retry {i} to set editor content");
+                    }
+                    await _editor.SetValue(File.Content);
+                    success = true;
+                    Console.WriteLine($"[ProjectEdit] Editor content set successfully");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ProjectEdit] Attempt {i + 1} failed to set editor content: {ex.Message}");
+                    if (i == 4)
+                    {
+                        // Final retry failed, give up
+                        Console.WriteLine($"[ProjectEdit] All retries failed, giving up");
+                    }
+                }
+            }
+        }
+        
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     if (FileContent != null)
+    //     {
+    //         while (_editor == null || !_rendered)
+    //         {
+    //             await Task.Delay(100);
+    //         }
+    //         await _editor.SetValue(FileContent);
+    //     }
+    // }
+
+    private Task OnContentChanged(ModelContentChangedEvent args)
+    {
+        if (_editor == null)
+        {
+            return Task.CompletedTask;
+        }
+        _ = Task.Run(async () =>
+        {
+            FileContent = await _editor.GetValue();
+        });
+        return Task.CompletedTask;
+    }
+
+    private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor) => new()
+    {
+        Language = "zil",
+        Theme = "zil-theme",
+        AutomaticLayout = true,
+        // Minimap = new EditorMinimapOptions
+        // {
+        //     Enabled = false
+        // },
+        FontSize = 14,
+        Scrollbar = new EditorScrollbarOptions
+        {
+            // Vertical = ScrollbarVisibility.Auto,
+            // Horizontal = ScrollbarVisibility.Auto
+            Vertical = "auto",
+            Horizontal = "auto"
+        }
+    };
+
     [CascadingParameter]
     public ProjectLayout ProjectLayout { get; set; }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        var uri = new Uri(Nav.Uri);
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        Path = query.GetValueOrDefault("file");
+        Console.WriteLine($"[ProjectEdit] OnParametersSetAsync - ProjectId: {ProjectId}, Path: {Path}");
+        
+        // If the loaded project does not match the requested ProjectId, load it
+        if (Workspace.Project == null || Workspace.Project.Guid != ProjectId)
+        {
+            Console.WriteLine($"[ProjectEdit] Loading project {ProjectId}...");
+            var loaded = await ProjectStorage.LoadProjectAsync(ProjectId);
+            if (loaded != null)
+            {
+                Workspace.Project = loaded;
+                Console.WriteLine($"[ProjectEdit] Project loaded: {loaded.Name}, Files: {loaded.Files.Count}");
+                // Reset build status for new project
+                Build.ResetStatus();
+            }
+            else
+            {
+                Console.WriteLine($"[ProjectEdit] Project not found, redirecting to manager");
+                // Project not found, redirect to project manager
+                Nav.NavigateTo("/project/manage");
+                return;
+            }
+        }
+        else
+        {
+            Console.WriteLine($"[ProjectEdit] Project already loaded: {Workspace.Project.Name}, Files: {Workspace.Project.Files.Count}");
+        }
 
+        // If no path specified, redirect to main file
         if (Path == null && Workspace.Project.Files.Count > 0)
         {
+            Console.WriteLine($"[ProjectEdit] No path specified, redirecting to main file: {Workspace.Project.MainFile.Path}");
             Nav.NavigateTo(GetLink(Workspace.Project, Workspace.Project.MainFile.Path));
             return;
         }
 
-        ProjectLayout.ActivePath = Path;
+        // Set active path for sidebar highlighting
+        ProjectLayout.ActivePath = Path ?? "";
+        Console.WriteLine($"[ProjectEdit] Active path set to: {Path}");
+
+        // If a file is requested but not found, redirect to 404
+        if (Path != null && File == null)
+        {
+            Console.WriteLine($"[ProjectEdit] File not found for path: {Path}, redirecting to 404");
+            Nav.NavigateTo("/404");
+            return;
+        }
+
+        // Request editor content update on next render
+        if (File != null)
+        {
+            Console.WriteLine($"[ProjectEdit] File found: {File.Path}, requesting content update");
+            _needsContentUpdate = true;
+            StateHasChanged();
+        }
+        else
+        {
+            Console.WriteLine($"[ProjectEdit] No file to display");
+        }
     }
 }

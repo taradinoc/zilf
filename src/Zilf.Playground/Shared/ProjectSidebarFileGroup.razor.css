@@ -1,0 +1,10 @@
+.sidebar-heading {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.file-list {
+    margin-bottom: 0;
+}
