@@ -133,16 +133,31 @@ namespace Zilf.Playground.Services
                 // Replace the old version in baseUrl with the new tag if present
                 if (!string.IsNullOrEmpty(info.Version) && baseUrl.Contains(info.Version))
                     baseUrl = baseUrl.Replace(info.Version, tag);
+                // Build filenames per new pattern using parsed version info
+                var v = latest.Version!;
                 foreach (var kvp in info.PlatformPackages)
                 {
                     var rid = kvp.Key;
                     var template = kvp.Value;
-                    // Replace the old version in the filename with the new tag if present
-                    string filename = template;
-                    if (!string.IsNullOrEmpty(info.PackageVersion) && filename.Contains(info.PackageVersion))
-                        filename = filename.Replace(info.PackageVersion, tag);
-                    else if (!string.IsNullOrEmpty(info.Version) && filename.Contains(info.Version))
-                        filename = filename.Replace(info.Version, tag);
+                    // Determine extension per RID using the template if possible
+                    string ext = ".tar.gz";
+                    if (template.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                        ext = ".zip";
+                    else if (template.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
+                        ext = ".tar.gz";
+                    else if (rid.StartsWith("win-", StringComparison.OrdinalIgnoreCase))
+                        ext = ".zip";
+
+                    // Compose filename: zilf-{major}.{minor}.{micro}[-alpha|beta|candidateN]-{rid}{ext}
+                    string pre = v.PreType switch
+                    {
+                        null => string.Empty,
+                        "a" => $"-alpha{v.PreNum}",
+                        "b" => $"-beta{v.PreNum}",
+                        "rc" => $"-candidate{v.PreNum}",
+                        _ => string.Empty
+                    };
+                    string filename = $"zilf-{v.Major}.{v.Minor}.{v.Micro}{pre}-{rid}{ext}";
                     assets.Add(new ReleaseAssetLink
                     {
                         Id = assetId++,
@@ -161,7 +176,9 @@ namespace Zilf.Playground.Services
                 ReleasedAt = null,
                 UpcomingRelease = false,
                 Assets = new ReleaseAssets { Links = assets },
-                Links = new ReleaseLinks { Self = $"https://github.com/taradinoc/zilf/releases/tag/{latest.Tag.Name}" }
+                // If this is a prerelease version, it might not have its own release page to link to
+                // Links = new ReleaseLinks { Self = $"https://foss.heptapod.net/zilf/zilf/-/releases/{latest.Tag.Name}" }
+                Links = new ReleaseLinks { Self = $"https://foss.heptapod.net/zilf/zilf/-/releases" }
             };
         }
 
