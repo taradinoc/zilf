@@ -170,7 +170,7 @@ Adapted once more by Tara McGrew (2015)">>
 
 ;"Utility macro for randomness"
 <DEFMAC PROB ('N)
-    <FORM L=? '<RANDOM 100> .N>>
+    `<L=? <RANDOM 100> ~.N>>
 
 ;"Properties"
 <PROPDEF DEPOSIT-POINTS 10>

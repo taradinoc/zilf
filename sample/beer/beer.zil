@@ -1,5 +1,7 @@
 "99 Bottles of Beer sample for ZILF"
 
+<USE "QQ">
+
 <ROUTINE GO () <SING 99>>
 
 <ROUTINE SING (N)
@@ -14,10 +16,10 @@
 
 ;"Macro version"
 <DEFMAC BOTTLES ('N)
-    <FORM PROG '()
-        <FORM PRINTN .N>
-        <FORM PRINTI " bottle">
-        <FORM COND <LIST <FORM N==? .N 1> '<PRINTC !\s>>>>>
+    `<PROG ()
+        <PRINTN ~.N>
+        <PRINTI " bottle">
+        <COND (<N==? ~.N 1> <PRINTC !\s>)>>>
 
 ;"Routine version"
 ;<ROUTINE BOTTLES (N)
