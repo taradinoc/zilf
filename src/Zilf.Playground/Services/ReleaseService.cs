@@ -26,6 +26,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.JSInterop;
+using Microsoft.Extensions.Configuration;
 
 namespace Zilf.Playground.Services
 {
@@ -36,13 +37,31 @@ namespace Zilf.Playground.Services
     {
         private readonly IJSRuntime jsRuntime;
         
+
         private List<Release>? cachedReleases;
         private DateTime? cacheTime;
         private readonly TimeSpan cacheExpiry = TimeSpan.FromMinutes(30);
+        private static readonly string HeptapodApiLatestUrl = "https://foss.heptapod.net/api/v4/projects/zilf%2Fzilf/releases/permalink/latest";
+        private static readonly string HeptapodProxyLatestUrl = "http://localhost:5080/api/proxy/releases/latest";
+            private static readonly string ReleaseInfoUrl = "release-info.json";
+        private static readonly Dictionary<string, string> PlatformNames = new()
+        {
+            { "win-x86", "Windows (x86)" },
+            { "win-x64", "Windows (x64)" },
+            { "linux-arm", "Linux (ARM)" },
+            { "linux-arm64", "Linux (ARM64)" },
+            { "linux-x64", "Linux (x64)" },
+            { "osx-x64", "macOS (Intel)" },
+            { "osx-arm64", "macOS (Apple Silicon)" }
+        };
+    private readonly HttpClient httpClient;
+            private readonly string? accessToken;
 
-        public ReleaseService(IJSRuntime jsRuntime)
+        public ReleaseService(IJSRuntime jsRuntime, HttpClient httpClient, IConfiguration? configuration = null)
         {
             this.jsRuntime = jsRuntime;
+            this.httpClient = httpClient; // BaseAddress is configured in Program.cs
+            this.accessToken = configuration?.GetValue<string>("HeptapodAccessToken");
         }
 
         /// <summary>
@@ -50,52 +69,137 @@ namespace Zilf.Playground.Services
         /// </summary>
         public async Task<List<Release>> GetReleasesAsync()
         {
-            if (cachedReleases != null && cacheTime.HasValue && 
+            if (cachedReleases != null && cacheTime.HasValue &&
                 DateTime.UtcNow - cacheTime.Value < cacheExpiry)
             {
                 return cachedReleases;
             }
 
-            await Task.Delay(1); // Make this async for consistency
+                // First try to fetch from Heptapod API (with token if available)
+                try
+                {
+                    var apiReleases = await FetchFromHeptapodApiAsync();
+                    if (apiReleases?.Count > 0)
+                    {
+                        cachedReleases = apiReleases;
+                        cacheTime = DateTime.UtcNow;
+                        return cachedReleases;
+                    }
+                }
+                catch
+                {
+                    // Fall through to JSON fallback
+                }
 
-            // Create release info from generated build data
-            var assets = new List<ReleaseAssetLink>();
+                // Fallback to local JSON file
+                return await GetReleasesFromJsonAsync();
+            }
+
+            private async Task<List<Release>?> FetchFromHeptapodApiAsync()
+            {
+                var token = accessToken;
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    token = await TryGetTokenFromJsAsync();
+                }
+
+                var apiUrl = await IsLocalhostAsync() ? HeptapodProxyLatestUrl : HeptapodApiLatestUrl;
+                using var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    // Prefer GitLab/Heptapod PAT header
+                    request.Headers.Add("PRIVATE-TOKEN", token);
+                    // Also set Authorization header for OAuth tokens (no harm if ignored)
+                    request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {token}");
+                }
+                request.Headers.Add("User-Agent", "ZILF-Playground/1.0");
+                request.Headers.Add("Accept", "application/json");
+                request.Headers.Add("Cache-Control", "no-cache");
+
+                var response = await httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+                var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             
-            // Map runtime identifiers to platform-friendly names
-            var platformNames = new Dictionary<string, string>
-            {
-                { "win-x86", "Windows (x86)" },
-                { "win-x64", "Windows (x64)" },
-                { "linux-arm", "Linux (ARM)" },
-                { "linux-arm64", "Linux (ARM64)" },
-                { "linux-x64", "Linux (x64)" },
-                { "osx-x64", "macOS (Intel)" },
-                { "osx-arm64", "macOS (Apple Silicon)" }
-            };
+                // The permalink returns a single release object
+                try
+                {
+                    var latest = JsonSerializer.Deserialize<Release>(json, opts);
+                    if (latest != null)
+                    {
+                        return [latest];
+                    }
+                }
+                catch
+                {
+                    // Fall through and try list format
+                }
+            
+                // As a fallback, try deserializing as a list (older code paths)
+                try
+                {
+                    var list = JsonSerializer.Deserialize<List<Release>>(json, opts);
+                    return list;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
 
-            int assetId = 1;
-            foreach (var package in GeneratedReleaseInfo.PlatformPackages)
+            private async Task<List<Release>> GetReleasesFromJsonAsync()
             {
-                var rid = package.Key;
-                var packageName = package.Value;
-                var platformName = platformNames.GetValueOrDefault(rid, rid);
-                
+                ReleaseInfoJson? info = null;
+            try
+            {
+                // Fetch release-info.json from wwwroot
+                var json = await httpClient.GetStringAsync(ReleaseInfoUrl);
+                info = JsonSerializer.Deserialize<ReleaseInfoJson>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+            catch
+            {
+                // Swallow and use fallback below
+            }
+            
+            if (info == null)
+            {
+                // Fallback to a minimal default that points to the releases page
+                    return [new Release
+                {
+                    TagName = null,
+                    Name = "ZILF",
+                    Description = "Release information is currently unavailable. Please check the releases page.",
+                    ReleasedAt = null,
+                    UpcomingRelease = false,
+                    Assets = new ReleaseAssets { Links = new List<ReleaseAssetLink>() },
+                    Links = new ReleaseLinks { Self = "https://foss.heptapod.net/zilf/zilf/-/releases" }
+                }];
+            }
+
+            var assets = new List<ReleaseAssetLink>();
+            int assetId = 1;
+            foreach (var kvp in info.PlatformPackages)
+            {
+                var rid = kvp.Key;
+                var packageName = kvp.Value;
+                var platformName = PlatformNames.GetValueOrDefault(rid, rid);
                 assets.Add(new ReleaseAssetLink
                 {
                     Id = assetId++,
                     Name = $"{platformName} binaries",
-                    Url = GeneratedReleaseInfo.BaseUrl + packageName,
-                    DirectAssetUrl = GeneratedReleaseInfo.BaseUrl + packageName,
+                    Url = info.BaseUrl + packageName,
+                    DirectAssetUrl = info.BaseUrl + packageName,
                     LinkType = "package"
                 });
             }
 
             var release = new Release
             {
-                TagName = GeneratedReleaseInfo.Version,
-                Name = $"ZILF {GeneratedReleaseInfo.Version}",
+                TagName = info.Version,
+                Name = $"ZILF {info.Version}",
                 Description = "Current build version",
-                ReleasedAt = DateTime.UtcNow, // Current build time
+                ReleasedAt = DateTime.UtcNow, // Could parse from info if available
                 UpcomingRelease = false,
                 Assets = new ReleaseAssets
                 {
@@ -103,15 +207,30 @@ namespace Zilf.Playground.Services
                 },
                 Links = new ReleaseLinks
                 {
-                    Self = GeneratedReleaseInfo.ReleasesPageUrl
+                    Self = info.ReleasesPageUrl
                 }
             };
 
-            cachedReleases = [release];
-            cacheTime = DateTime.UtcNow;
-            
-            return cachedReleases;
+                return [release];
         }
+    // Helper class for deserializing release-info.json
+    public class ReleaseInfoJson
+    {
+        [JsonPropertyName("version")]
+        public string? Version { get; set; }
+
+        [JsonPropertyName("packageVersion")]
+        public string? PackageVersion { get; set; }
+
+        [JsonPropertyName("baseUrl")]
+        public string? BaseUrl { get; set; }
+
+        [JsonPropertyName("releasesPageUrl")]
+        public string? ReleasesPageUrl { get; set; }
+
+        [JsonPropertyName("platformPackages")]
+        public Dictionary<string, string> PlatformPackages { get; set; } = new();
+    }
 
         /// <summary>
         /// Gets the latest release.
@@ -159,9 +278,38 @@ namespace Zilf.Playground.Services
             {
                 return Platform.Unknown;
             }
-        }
-
-        /// <summary>
+         }
+ 
+         private async Task<bool> IsLocalhostAsync()
+         {
+             try
+             {
+                 var host = await jsRuntime.InvokeAsync<string>("eval", "location.hostname");
+                 return host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || host.Equals("127.0.0.1");
+             }
+             catch
+             {
+                 return false;
+             }
+         }
+ 
+         private async Task<string?> TryGetTokenFromJsAsync()
+         {
+             try
+             {
+                 // Try query string first: ?hp_token=...
+                 var qsToken = await jsRuntime.InvokeAsync<string?>("eval", "new URLSearchParams(location.search).get('hp_token')");
+                 if (!string.IsNullOrWhiteSpace(qsToken)) return qsToken;
+ 
+                 // Then localStorage: hpToken
+                 var lsToken = await jsRuntime.InvokeAsync<string?>("eval", "localStorage.getItem('hpToken')");
+                 return string.IsNullOrWhiteSpace(lsToken) ? null : lsToken;
+             }
+             catch
+             {
+                 return null;
+             }
+         }        /// <summary>
         /// Finds the best matching download asset for the given platform.
         /// </summary>
         public ReleaseAssetLink? FindAssetForPlatform(Release release, Platform platform)

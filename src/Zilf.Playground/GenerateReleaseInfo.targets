@@ -29,40 +29,37 @@
       <UnixRid Include="@(RuntimeId)" Condition="!$([System.String]::Copy('%(RuntimeId.Identity)').StartsWith('win'))" />
     </ItemGroup>
 
-    <!-- Generate the release info C# code -->
+    <!-- Generate the release info JSON -->
     <PropertyGroup>
-      <GeneratedReleaseInfoCode>using System.Collections.Generic%3B
-
-namespace Zilf.Playground.Services
-{
-    internal static class GeneratedReleaseInfo
-    {
-        public const string Version = "$(DisplayVersion)"%3B
-        public const string PackageVersion = "$(GeneratedPackageVersion)"%3B
-        public const string BaseUrl = "https://storage.googleapis.com/zilf-releases/$(DisplayVersion)/"%3B
-        public const string ReleasesPageUrl = "https://foss.heptapod.net/zilf/zilf/-/releases"%3B
-        
-        public static readonly Dictionary&lt;string, string&gt; PlatformPackages = new()
-        {
-@(WindowsRid->'            { "%(Identity)", "zilf-$(GeneratedPackageVersion)-%(Identity).zip" }', ',
+      <GeneratedReleaseInfoJson>{
+  "version": "$(DisplayVersion)",
+  "packageVersion": "$(GeneratedPackageVersion)",
+  "baseUrl": "https://storage.googleapis.com/zilf-releases/$(DisplayVersion)/",
+  "releasesPageUrl": "https://foss.heptapod.net/zilf/zilf/-/releases",
+  "platformPackages": {
+@(WindowsRid->'    "%(Identity)": "zilf-$(GeneratedPackageVersion)-%(Identity).zip"', ',
 ')@(UnixRid->',
-            { "%(Identity)", "zilf-$(GeneratedPackageVersion)-%(Identity).tar.gz" }', '')
-        }%3B
-    }
+    "%(Identity)": "zilf-$(GeneratedPackageVersion)-%(Identity).tar.gz"', '')
+  }
 }
-      </GeneratedReleaseInfoCode>
+      </GeneratedReleaseInfoJson>
     </PropertyGroup>
 
-    <!-- Write the generated code to a file -->
+    <!-- Write the generated JSON to wwwroot -->
     <WriteLinesToFile
-      File="$(IntermediateOutputPath)GeneratedReleaseInfo.cs"
-      Lines="$(GeneratedReleaseInfoCode)"
+      File="$(MSBuildProjectDirectory)\wwwroot\release-info.json"
+      Lines="$(GeneratedReleaseInfoJson)"
       Overwrite="true" />
 
-    <!-- Include the generated file in compilation -->
+    <!-- Ensure the generated JSON is included as content -->
     <ItemGroup>
-      <Compile Include="$(IntermediateOutputPath)GeneratedReleaseInfo.cs" />
+      <Content Include="$(MSBuildProjectDirectory)\wwwroot\release-info.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
     </ItemGroup>
+
+
 
   </Target>
 

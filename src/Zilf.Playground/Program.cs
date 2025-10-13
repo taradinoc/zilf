@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -54,7 +55,11 @@ namespace Zilf.Playground
                 new WorkspaceService(sp.GetRequiredService<ProjectStorageService>()));
             builder.Services.AddScoped<ReplService>();
             builder.Services.AddScoped<BuildService>();
-            builder.Services.AddScoped<ReleaseService>();
+                builder.Services.AddScoped<ReleaseService>(sp => 
+                    new ReleaseService(
+                        sp.GetRequiredService<IJSRuntime>(),
+                        sp.GetRequiredService<HttpClient>(),
+                        sp.GetRequiredService<IConfiguration>()));
 
             builder.Services.AddWorkerFactory();
 

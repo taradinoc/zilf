@@ -45,6 +45,15 @@ jobs:
       - name: Publish site
         run: dotnet publish src/Zilf.Playground -c Release -o public --nologo
 
+      - name: Inject Heptapod token
+        run: |
+          if [ -n "${{ secrets.HEPTAPOD_ACCESS_TOKEN }}" ]; then
+            sed -i 's/"HeptapodAccessToken": ""/"HeptapodAccessToken": "${{ secrets.HEPTAPOD_ACCESS_TOKEN }}"/' public/wwwroot/appsettings.json
+            echo "✓ Injected Heptapod access token"
+          else
+            echo "⚠ No HEPTAPOD_ACCESS_TOKEN secret found, using fallback JSON"
+          fi
+
       - name: Prepare Pages artifact
         run: |
           touch public/.nojekyll

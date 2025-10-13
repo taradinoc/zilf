@@ -38,3 +38,4 @@ Package/Release/**
 .nuget
 *DO_NOT_COMMIT*
 temp
+**/wwwroot/release-info.json
