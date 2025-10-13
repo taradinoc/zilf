@@ -54,6 +54,7 @@ namespace Zilf.Playground
                 new WorkspaceService(sp.GetRequiredService<ProjectStorageService>()));
             builder.Services.AddScoped<ReplService>();
             builder.Services.AddScoped<BuildService>();
+            builder.Services.AddScoped<ReleaseService>();
 
             builder.Services.AddWorkerFactory();
 

@@ -59,6 +59,8 @@
     </Content>
   </ItemGroup>
 
+  <Import Project="GenerateReleaseInfo.targets" />
+
   <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 
 </Project>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="GenerateReleaseInfo" BeforeTargets="CoreCompile">
+    
+    <!-- Import the RuntimeIdentifiers from Build.proj -->
+    <PropertyGroup>
+      <RuntimeIdentifiers Condition="'$(RuntimeIdentifiers)' == ''">win-x86;win-x64;linux-arm;linux-x64;osx-x64</RuntimeIdentifiers>
+    </PropertyGroup>
+    
+    <!-- Calculate package version based on release level -->
+    <PropertyGroup>
+      <GeneratedPackageVersion Condition="'$(ReleaseLevel)' == 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</GeneratedPackageVersion>
+      <GeneratedPackageVersion Condition="'$(ReleaseLevel)' != 'final' or '$(ReleaseSerial)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)-$(ReleaseLevel)$(ReleaseSerial)</GeneratedPackageVersion>
+    </PropertyGroup>
+
+    <!-- Split RuntimeIdentifiers and build package entries -->
+    <ItemGroup>
+      <RuntimeId Include="$(RuntimeIdentifiers)" />
+    </ItemGroup>
+    
+    <!-- Build package entries for each runtime identifier -->
+    <PropertyGroup>
+      <PackageEntries></PackageEntries>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <WindowsRid Include="@(RuntimeId)" Condition="$([System.String]::Copy('%(RuntimeId.Identity)').StartsWith('win'))" />
+      <UnixRid Include="@(RuntimeId)" Condition="!$([System.String]::Copy('%(RuntimeId.Identity)').StartsWith('win'))" />
+    </ItemGroup>
+
+    <!-- Generate the release info C# code -->
+    <PropertyGroup>
+      <GeneratedReleaseInfoCode>using System.Collections.Generic%3B
+
+namespace Zilf.Playground.Services
+{
+    internal static class GeneratedReleaseInfo
+    {
+        public const string Version = "$(DisplayVersion)"%3B
+        public const string PackageVersion = "$(GeneratedPackageVersion)"%3B
+        public const string BaseUrl = "https://storage.googleapis.com/zilf-releases/$(DisplayVersion)/"%3B
+        public const string ReleasesPageUrl = "https://foss.heptapod.net/zilf/zilf/-/releases"%3B
+        
+        public static readonly Dictionary&lt;string, string&gt; PlatformPackages = new()
+        {
+@(WindowsRid->'            { "%(Identity)", "zilf-$(GeneratedPackageVersion)-%(Identity).zip" }', ',
+')@(UnixRid->',
+            { "%(Identity)", "zilf-$(GeneratedPackageVersion)-%(Identity).tar.gz" }', '')
+        }%3B
+    }
+}
+      </GeneratedReleaseInfoCode>
+    </PropertyGroup>
+
+    <!-- Write the generated code to a file -->
+    <WriteLinesToFile
+      File="$(IntermediateOutputPath)GeneratedReleaseInfo.cs"
+      Lines="$(GeneratedReleaseInfoCode)"
+      Overwrite="true" />
+
+    <!-- Include the generated file in compilation -->
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)GeneratedReleaseInfo.cs" />
+    </ItemGroup>
+
+  </Target>
+
+</Project>

@@ -1,0 +1,123 @@
+@using Zilf.Playground.Services
+@inject ReleaseService ReleaseService
+
+@if (isLoading)
+{
+    <div class="d-inline-flex flex-column align-items-start">
+        <button class="btn btn-outline-secondary btn-lg" disabled>
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Loading...
+        </button>
+    </div>
+}
+else if (downloadInfo != null)
+{
+    <div class="d-inline-flex flex-column align-items-start">
+        <a class="btn btn-success btn-lg" href="@downloadInfo.DownloadUrl" target="_blank" rel="noopener noreferrer">
+            <i class="@GetPlatformIcon(downloadInfo.Platform) me-2"></i>
+            Download ZILF @downloadInfo.Version for @GetPlatformName(downloadInfo.Platform)
+        </a>
+        @if (!string.IsNullOrEmpty(downloadInfo.ReleasesPageUrl))
+        {
+            <small class="text-muted mt-2">
+                <a href="@downloadInfo.ReleasesPageUrl" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                    Other download options
+                </a>
+            </small>
+        }
+    </div>
+}
+else if (!string.IsNullOrEmpty(fallbackUrl))
+{
+    <div class="d-inline-flex flex-column align-items-start">
+        <a class="btn btn-outline-primary btn-lg" href="@fallbackUrl" target="_blank" rel="noopener noreferrer">
+            <i class="bi bi-download me-2"></i>
+            Download ZILF
+        </a>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private DownloadInfo downloadInfo;
+    private string fallbackUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var latestRelease = await ReleaseService.GetLatestReleaseAsync();
+            if (latestRelease != null)
+            {
+                var platform = await ReleaseService.DetectPlatformAsync();
+                var asset = ReleaseService.FindAssetForPlatform(latestRelease, platform);
+                
+                if (asset?.DirectAssetUrl != null || asset?.Url != null)
+                {
+                    downloadInfo = new DownloadInfo
+                    {
+                        DownloadUrl = asset.DirectAssetUrl ?? asset.Url,
+                        Version = ExtractVersionFromTag(latestRelease.TagName),
+                        Platform = platform,
+                        ReleasesPageUrl = latestRelease.Links?.Self
+                    };
+                }
+                else
+                {
+                    // No matching asset, use fallback to releases page
+                    fallbackUrl = latestRelease.Links?.Self ?? "https://foss.heptapod.net/zilf/zilf/-/releases";
+                }
+            }
+            else
+            {
+                // No release info, use fallback
+                fallbackUrl = "https://foss.heptapod.net/zilf/zilf/-/releases";
+            }
+        }
+        catch
+        {
+            // Error loading, use fallback
+            fallbackUrl = "https://foss.heptapod.net/zilf/zilf/-/releases";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string ExtractVersionFromTag(string tagName)
+    {
+        if (string.IsNullOrEmpty(tagName))
+            return "Latest";
+            
+        // Remove 'v' prefix if present
+        if (tagName.StartsWith('v'))
+            return tagName[1..];
+            
+        return tagName;
+    }
+
+    private static string GetPlatformIcon(Platform platform) => platform switch
+    {
+        Platform.Windows => "bi bi-windows",
+        Platform.MacOS => "bi bi-apple",
+        Platform.Linux => "bi bi-ubuntu", // Using Ubuntu as generic Linux icon
+        _ => "bi bi-download"
+    };
+
+    private static string GetPlatformName(Platform platform) => platform switch
+    {
+        Platform.Windows => "Windows",
+        Platform.MacOS => "macOS",
+        Platform.Linux => "Linux",
+        _ => "your platform"
+    };
+
+    private record DownloadInfo
+    {
+        public required string DownloadUrl { get; init; }
+        public required string Version { get; init; }
+        public required Platform Platform { get; init; }
+        public string ReleasesPageUrl { get; init; }
+    }
+}
