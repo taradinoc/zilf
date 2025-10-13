@@ -50,32 +50,35 @@ stages:
 #
 # With global cache rule, cached dependencies will be downloaded before every job
 # and then unpacked to the paths as specified below.
-cache:
-  # Per-stage and per-branch caching.
-  key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
-  paths:
-    # Specify three paths that should be cached:
-    #
-    # 1) Main JSON file holding information about package dependency tree, packages versions,
-    # frameworks etc. It also holds information where to the dependencies were restored.
-    - '$SOURCE_CODE_PATH$OBJECTS_DIRECTORY/project.assets.json'
-    # 2) Other NuGet and MSBuild related files. Also needed.
-    - '$SOURCE_CODE_PATH$OBJECTS_DIRECTORY/*.csproj.nuget.*'
-    # 3) Path to the directory where restored dependencies are kept.
-    - '$NUGET_PACKAGES_DIRECTORY'
-  #
-  # 'pull-push' policy means that latest cache will be downloaded (if it exists)
-  # before executing the job, and a newer version will be uploaded afterwards.
-  # Such a setting saves time when there are no changes in referenced third-party
-  # packages.
-  #
-  # For example, if you run a pipeline with changes in your code,
-  # but with no changes within third-party packages which your project is using,
-  # then project restore will happen quickly as all required dependencies
-  # will already be there — unzipped from cache.
 
-  # 'pull-push' policy is the default cache policy, you do not have to specify it explicitly.
-  policy: pull-push
+# Disbled because this seems to be doing more harm than good. -TM
+
+#cache:
+#  # Per-stage and per-branch caching.
+#  key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
+#  paths:
+#    # Specify three paths that should be cached:
+#    #
+#    # 1) Main JSON file holding information about package dependency tree, packages versions,
+#    # frameworks etc. It also holds information where to the dependencies were restored.
+#    - '$SOURCE_CODE_PATH$OBJECTS_DIRECTORY/project.assets.json'
+#    # 2) Other NuGet and MSBuild related files. Also needed.
+#    - '$SOURCE_CODE_PATH$OBJECTS_DIRECTORY/*.csproj.nuget.*'
+#    # 3) Path to the directory where restored dependencies are kept.
+#    - '$NUGET_PACKAGES_DIRECTORY'
+#  #
+#  # 'pull-push' policy means that latest cache will be downloaded (if it exists)
+#  # before executing the job, and a newer version will be uploaded afterwards.
+#  # Such a setting saves time when there are no changes in referenced third-party
+#  # packages.
+#  #
+#  # For example, if you run a pipeline with changes in your code,
+#  # but with no changes within third-party packages which your project is using,
+#  # then project restore will happen quickly as all required dependencies
+#  # will already be there — unzipped from cache.
+#
+#  # 'pull-push' policy is the default cache policy, you do not have to specify it explicitly.
+#  policy: pull-push
 
 # ### Restore project dependencies
 #
