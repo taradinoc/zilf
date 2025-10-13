@@ -51,15 +51,14 @@ namespace Zilf.Playground
             builder.Services.AddSingleton<StoryPlayerService>();
             builder.Services.AddSingleton<ProjectStorageService>();
             builder.Services.AddScoped<TemplateService>();
-            builder.Services.AddScoped<WorkspaceService>(sp => 
+            builder.Services.AddScoped(sp =>
                 new WorkspaceService(sp.GetRequiredService<ProjectStorageService>()));
             builder.Services.AddScoped<ReplService>();
             builder.Services.AddScoped<BuildService>();
-                builder.Services.AddScoped<ReleaseService>(sp => 
-                    new ReleaseService(
-                        sp.GetRequiredService<IJSRuntime>(),
-                        sp.GetRequiredService<HttpClient>(),
-                        sp.GetRequiredService<IConfiguration>()));
+            builder.Services.AddScoped(sp =>
+                new ReleaseService(
+                    sp.GetRequiredService<IJSRuntime>(),
+                    sp.GetRequiredService<HttpClient>()));
 
             builder.Services.AddWorkerFactory();
 
