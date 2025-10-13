@@ -50,6 +50,13 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <TargetPath>wwwroot\project_templates\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </Content>
+
+    <!-- Bring in zillib also -->
+    <Content Include="..\..\zillib\**\*">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>wwwroot\project_templates\zillib\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </Content>
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
