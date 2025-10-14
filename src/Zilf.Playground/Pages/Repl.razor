@@ -1,17 +1,28 @@
 ﻿@page "/repl"
 @implements IDisposable
 @inject JSInterop Interop
-@inject ReplService Session 
+@inject ReplService Session
 
-<div class="d-flex">
-    <h3>REPL</h3>
+<h1 class="display-4">REPL</h1>
+<p class="lead">
+    Read. Evaluate. Print. Loop.
+</p>
+
+<p>
+    ZIL is based on MDL, a Lisp-like language developed for AI research in the 1970s.
+    As such, one of the ways to interact with it is through a REPL (Read-Eval-Print Loop),
+    where you can enter expressions like <kbd>&lt;+ 1 2&gt;</kbd> or
+    <kbd>&lt;STRING "Hello " "world"&gt;</kbd> and see their results immediately.
+</p>
+
+@* <div class="d-flex"> *@
     <button type="button"
-        class="btn btn-sm btn-outline-primary ms-3 @RestartSessionVisibility"
+        class="btn btn-sm btn-outline-primary mb-3 @RestartSessionVisibility"
             @onclick="() => Session.RestartSession()">Restart Session</button>
-</div>
+@* </div> *@
 
 <div id="replLog" @ref="ReplLog" style="max-height: 60vh; overflow: auto">
-    <p class="font-italic">Enter a ZIL or MDL expression below to evaluate it. The evaluation result will be shown here.</p>
+    <p class="fst-italic">Enter a ZIL or MDL expression below to evaluate it. The evaluation result will be shown here.</p>
     @foreach (var exchange in Session.Exchanges)
     {
         var responseColor = exchange.IsError ? "text-danger" : "text-secondary";

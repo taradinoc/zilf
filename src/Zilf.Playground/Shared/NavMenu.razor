@@ -17,11 +17,12 @@
     <div class="collapse navbar-collapse navbarToggledContent">
         <ul class="navbar-nav me-auto">
             <NavMenuItem href="" Icon="home" Match="NavLinkMatch.All">Home</NavMenuItem>
+            <NavMenuItem href="about" Icon="info">About</NavMenuItem>
             <NavMenuItem href="project" Icon="project">Project <ProjectBadge /></NavMenuItem>
             <NavMenuItem href="repl" Icon="terminal">REPL <ReplBadge /></NavMenuItem>
             <NavMenuItem href="doc" Icon="question-mark">Help</NavMenuItem>
         </ul>
-        
+
     <ul class="navbar-nav ms-auto">
             @if (Workspace.IsSaving)
             {
@@ -32,7 +33,7 @@
                     </span>
                 </li>
             }
-            
+
             @if (StoryPlayer.IsGameLoaded)
             {
                 <li class="nav-item">
