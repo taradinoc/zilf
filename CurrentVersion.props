@@ -7,7 +7,8 @@
     <MicroVersion>0</MicroVersion>
     <!-- Allowed: alpha,beta,candidate,final -->
     <ReleaseLevel>final</ReleaseLevel>
-    <ReleaseSerial>1</ReleaseSerial>
+    <!-- If ReleaseLevel is "final", ReleaseSerial should be 0 -->
+    <ReleaseSerial>0</ReleaseSerial>
 
     <AssemblyRevision>0</AssemblyRevision>
   </PropertyGroup>
