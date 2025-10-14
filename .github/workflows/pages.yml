@@ -49,6 +49,7 @@ jobs:
         run: |
           touch public/.nojekyll
           # echo "your.custom.domain" > public/CNAME   # if using a custom domain
+          cp public/wwwroot/index.html public/wwwroot/404.html   # all URLs should serve the SPA
 
       - uses: actions/upload-pages-artifact@v3
         with:
