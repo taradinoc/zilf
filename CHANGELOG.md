@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project may someday adhere to
 ~~[Semantic Versioning](http://semver.org/spec/v2.0.0.html)~~.
 
-## [0.10] (October 8, 2025)
+## [0.10] (October 14, 2025)
 
 ### Added
 
