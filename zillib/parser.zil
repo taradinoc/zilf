@@ -3012,7 +3012,8 @@ Args:
 Returns:
   True if the object is visible, otherwise false."
 <ROUTINE VISIBLE? (OBJ "AUX" P (CEIL <VIS-CEILING>))
-    <COND (<=? .OBJ ,PSEUDO-OBJECT>
+    <COND (<=? .OBJ .CEIL> <RTRUE>)
+          (<=? .OBJ ,PSEUDO-OBJECT>
            <RETURN <=? .CEIL ,PSEUDO-LOC>>)>
     <SET P <LOC .OBJ>>
     <COND (<0? .P> <RFALSE>)>

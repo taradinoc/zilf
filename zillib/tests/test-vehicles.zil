@@ -224,4 +224,16 @@
     <EXPECT "[opening the box]|You get out of the box.|You can see your surroundings now.||Start Room|Home sweet home.||There is a box, a wagon, a couch, and a gold coin here.|">
     <CHECK <FSET? ,BOX ,OPENBIT>>>
 
+<TEST-CASE ("Use a pronoun to refer to a closed vehicle while inside")
+    <MOVE ,BOX ,STARTROOM>
+    <FSET ,BOX ,OPENABLEBIT>
+    <FCLEAR ,BOX ,LOCKEDBIT>
+    <FSET ,BOX ,OPENBIT>
+    <COMMAND [ENTER BOX]>
+    <EXPECT "You get into the box.|">
+    <COMMAND [CLOSE IT]>
+    <EXPECT "You close the box.|You are plunged into darkness.|">
+    <COMMAND [OPEN IT]>
+    <EXPECT "You open the box.|You can see your surroundings now.||Start Room, in the box|Home sweet home.||There is a wagon, a couch, and a gold coin here.|">>
+
 <TEST-GO ,STARTROOM>
