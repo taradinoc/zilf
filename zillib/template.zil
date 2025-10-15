@@ -1,5 +1,7 @@
 <PACKAGE "TEMPLATE">
 
+<USE "QQ">
+
 <ENTRY OBJECT-TEMPLATE ADDITIVE-PROPERTIES>
 
 "Usage:
@@ -36,8 +38,7 @@ object (whether or not they're overridden!):
 <SETG CHAPTER-NUMBER 0>
 <OBJECT-TEMPLATE
     CHAPTER = OBJECT (NUMBER <SETG CHAPTER-NUMBER <+ ,CHAPTER-NUMBER 1>>)>
-
->"
+"
 
 <SETG ADDITIVE-PROPERTIES '(SYNONYM ADJECTIVE GLOBAL FLAGS)>
 
@@ -62,10 +63,11 @@ object (whether or not they're overridden!):
                      <SET PROPS (!.PROPS <1 .X> <REST .X>)>)
                     (<AND .TYPE <TYPE? .X ATOM>>
                      <SET SIDE LEFT>
-                     <MAPRET (.NAME .TYPE .PROPS)>
-                     <SET NAME .X>
-                     <SET TYPE <>>
-                     <SET PROPS '()>)
+                     <BIND ((NM .NAME) (TP .TYPE) (PS .PROPS))
+                        <SET NAME .X>
+                        <SET TYPE <>>
+                        <SET PROPS '()>
+                        <MAPRET (.NM .TP .PS)>>)
                     (ELSE <ERROR UNEXPECTED-TOKEN .X>)>
               <MAPRET>>
           (!.L $END)>>
