@@ -13,6 +13,7 @@
 	  <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
     <!-- <PublishSingleFile>true</PublishSingleFile> -->
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MSBuildTasks" Version="1.5.0.235" />

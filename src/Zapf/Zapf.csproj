@@ -13,6 +13,7 @@
 	  <SelfContained>true</SelfContained>
 	  <PublishTrimmed>true</PublishTrimmed>
     <!-- <PublishSingleFile>true</PublishSingleFile> -->
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>full</DebugType>
