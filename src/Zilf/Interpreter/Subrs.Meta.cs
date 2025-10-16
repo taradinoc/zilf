@@ -22,7 +22,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using Newtonsoft.Json.Linq;
+using System.Text.Json.Nodes;
 using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
@@ -426,16 +426,16 @@ namespace Zilf.Interpreter
         [Subr("DESC-BUILTINS", ObList = "YOMIN")]
         public static ZilObject DESCRIBE_BUILTINS(Context ctx)
         {
-            var result = new JObject();
+            var result = new JsonObject();
 
             foreach (var (name, signature) in GetBuiltinSignatures(ctx))
             {
                 var desc = JsonDescriber.Describe(signature);
 
-                var array = (JArray?)result[name];
+                var array = result[name] as JsonArray;
                 if (array == null)
                 {
-                    result[name] = new JArray(desc);
+                    result[name] = new JsonArray(desc);
                 }
                 else
                 {
@@ -443,24 +443,24 @@ namespace Zilf.Interpreter
                 }
             }
 
-            return ZilString.FromString(result.ToString());
+            return ZilString.FromString(result.ToJsonString());
         }
 
         [Subr("SUMMARIZE-BUILTINS", ObList = "YOMIN")]
         public static ZilObject SUMMARIZE_BUILTINS(Context ctx)
         {
-            var result = new JObject();
+            var result = new JsonObject();
 
             var sigs = from pair in GetBuiltinSignatures(ctx)
                        group pair.signature by pair.name;
 
             foreach (var g in sigs.OrderBy(g => g.Key))
             {
-                var groupItem = new JArray();
+                var groupItem = new JsonArray();
 
                 foreach (var signature in g)
                 {
-                    var sigItem = new JObject()
+                    var sigItem = new JsonObject()
                     {
                         ["params"] = PlainDescriber.Describe(signature)
                     };
@@ -484,7 +484,7 @@ namespace Zilf.Interpreter
                 result.Add(g.Key, groupItem);
             }
 
-            return ZilString.FromString(result.ToString());
+            return ZilString.FromString(result.ToJsonString());
         }
 
         private static IEnumerable<(string name, ISignature signature)> GetBuiltinSignatures(Context ctx)

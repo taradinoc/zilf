@@ -20,7 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using Newtonsoft.Json.Linq;
+using System.Text.Json.Nodes;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 
@@ -84,7 +84,7 @@ namespace Zilf.Language.Signatures
         #endregion
     }
 
-    sealed class JsonDescriber : SignatureVisitorWithValue<JObject>
+    sealed class JsonDescriber : SignatureVisitorWithValue<JsonObject>
     {
         static readonly JsonDescriber Instance = new();
 
@@ -92,12 +92,12 @@ namespace Zilf.Language.Signatures
         {
         }
 
-        public static JObject Describe(ISignature signature)
+        public static JsonObject Describe(ISignature signature)
         {
             var parts = signature.Parts.Select(p => p.AcceptForValue(Instance));
-            var result = new JObject
+            var result = new JsonObject
             {
-                ["args"] = new JArray(parts),
+                ["args"] = new JsonArray(parts.ToArray()),
                 ["minArgs"] = signature.MinArgs,
             };
             if (signature.MaxArgs != null)
@@ -132,7 +132,7 @@ namespace Zilf.Language.Signatures
             return result;
         }
 
-        protected override void PostProcess(ISignaturePart part, ref JObject? pendingResult)
+        protected override void PostProcess(ISignaturePart part, ref JsonObject? pendingResult)
         {
             if (pendingResult != null && part.Name != null)
             {
@@ -140,9 +140,9 @@ namespace Zilf.Language.Signatures
             }
         }
 
-        protected override JObject Visit(VarArgsPart part)
+        protected override JsonObject Visit(VarArgsPart part)
         {
-            var result = new JObject { ["$rest"] = part.Inner.AcceptForValue(this) };
+            var result = new JsonObject { ["$rest"] = part.Inner.AcceptForValue(this) };
             if (part.Required)
             {
                 result["required"] = true;
@@ -150,88 +150,88 @@ namespace Zilf.Language.Signatures
             return result;
         }
 
-        protected override JObject Visit(AdeclPart part)
+        protected override JsonObject Visit(AdeclPart part)
         {
-            return new JObject
+            return new JsonObject
             {
                 ["type"] = "ADECL",
-                ["elements"] = new JArray(part.Left.AcceptForValue(this), part.Right.AcceptForValue(this))
+                ["elements"] = new JsonArray(part.Left.AcceptForValue(this), part.Right.AcceptForValue(this))
             };
         }
 
-        protected override JObject Visit(AlternativesPart part)
+        protected override JsonObject Visit(AlternativesPart part)
         {
-            return new JObject
+            return new JsonObject
             {
-                ["$or"] = new JArray(part.Alternatives.Select(a => a.AcceptForValue(this)))
+                ["$or"] = new JsonArray(part.Alternatives.Select(a => a.AcceptForValue(this)).ToArray())
             };
         }
 
-        protected override JObject Visit(AnyPart part)
+        protected override JsonObject Visit(AnyPart part)
         {
-            return new JObject();
+            return new JsonObject();
         }
 
-        protected override JObject Visit(ConstrainedPart part)
+        protected override JsonObject Visit(ConstrainedPart part)
         {
             var result = part.Inner.AcceptForValue(this);
             result["constraint"] = ConstraintDescriber.Describe(part.Constraint);
             return result;
         }
 
-        protected override JObject Visit(FormPart part)
+        protected override JsonObject Visit(FormPart part)
         {
-            return new JObject
+            return new JsonObject
             {
                 ["type"] = "FORM",
-                ["elements"] = new JArray(part.Parts.Select(p => p.AcceptForValue(this)))
+                ["elements"] = new JsonArray(part.Parts.Select(p => p.AcceptForValue(this)).ToArray())
             };
         }
 
-        protected override JObject Visit(ListPart part)
+        protected override JsonObject Visit(ListPart part)
         {
-            return new JObject
+            return new JsonObject
             {
                 ["type"] = "LIST",
-                ["elements"] = new JArray(part.Parts.Select(p => p.AcceptForValue(this)))
+                ["elements"] = new JsonArray(part.Parts.Select(p => p.AcceptForValue(this)).ToArray())
             };
         }
 
-        protected override JObject Visit(LiteralPart part)
+        protected override JsonObject Visit(LiteralPart part)
         {
-            return new JObject { ["$literal"] = part.Text };
+            return new JsonObject { ["$literal"] = part.Text };
         }
 
-        protected override JObject Visit(OptionalPart part)
+        protected override JsonObject Visit(OptionalPart part)
         {
-            return new JObject { ["$opt"] = part.Inner.AcceptForValue(this) };
+            return new JsonObject { ["$opt"] = part.Inner.AcceptForValue(this) };
         }
 
-        protected override JObject Visit(QuotedPart part)
+        protected override JsonObject Visit(QuotedPart part)
         {
             var result = part.Inner.AcceptForValue(this);
             result["eval"] = false;
             return result;
         }
 
-        protected override JObject Visit(SequencePart part)
+        protected override JsonObject Visit(SequencePart part)
         {
-            return new JObject
+            return new JsonObject
             {
-                ["$seq"] = new JArray(part.Parts.Select(p => p.AcceptForValue(this)))
+                ["$seq"] = new JsonArray(part.Parts.Select(p => p.AcceptForValue(this)).ToArray())
             };
         }
 
         sealed class ConstraintDescriber : IConstraintVisitor
         {
-            public static JObject? Describe(Constraint constraint)
+            public static JsonObject? Describe(Constraint constraint)
             {
                 var describer = new ConstraintDescriber();
                 constraint.Accept(describer);
                 return describer.result;
             }
 
-            JObject? result;
+            JsonObject? result;
 
             public void VisitAnyObjectConstraint()
             {
@@ -240,27 +240,27 @@ namespace Zilf.Language.Signatures
 
             public void VisitApplicableConstraint()
             {
-                result = new JObject { ["constraint"] = "applicable" };
+                result = new JsonObject { ["constraint"] = "applicable" };
             }
 
             public void VisitBooleanConstraint()
             {
-                result = new JObject { ["constraint"] = "boolean" };
+                result = new JsonObject { ["constraint"] = "boolean" };
             }
 
             public void VisitConjunctionConstraint(IEnumerable<Constraint> parts)
             {
-                result = new JObject { ["$and"] = new JArray(parts.Select(Describe)) };
+                result = new JsonObject { ["$and"] = new JsonArray(parts.Select(Describe).ToArray()) };
             }
 
             public void VisitDeclConstraint(ZilObject pattern)
             {
-                result = new JObject { ["constraint"] = "decl", ["decl"] = pattern.ToString() };
+                result = new JsonObject { ["constraint"] = "decl", ["decl"] = pattern.ToString() };
             }
 
             public void VisitDisjunctionConstraint(IEnumerable<Constraint> alts)
             {
-                result = new JObject { ["$or"] = new JArray(alts.Select(Describe)) };
+                result = new JsonObject { ["$or"] = new JsonArray(alts.Select(Describe).ToArray()) };
             }
 
             public void VisitForbiddenConstraint()
@@ -271,17 +271,17 @@ namespace Zilf.Language.Signatures
 
             public void VisitPrimTypeConstraint(PrimType primType)
             {
-                result = new JObject { ["constraint"] = "primtype", ["primtype"] = primType.ToString() };
+                result = new JsonObject { ["constraint"] = "primtype", ["primtype"] = primType.ToString() };
             }
 
             public void VisitStructuredConstraint()
             {
-                result = new JObject { ["constraint"] = "structured" };
+                result = new JsonObject { ["constraint"] = "structured" };
             }
 
             public void VisitTypeConstraint(StdAtom type)
             {
-                result = new JObject { ["constraint"] = "type", ["type"] = type.ToString() };
+                result = new JsonObject { ["constraint"] = "type", ["type"] = type.ToString() };
             }
         }
     }
