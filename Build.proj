@@ -36,7 +36,7 @@ dotnet msbuild Build.proj -t:PackageAllRids -p:Configurati  <Target Name="_Platf
     <BinDir>$(RootDir)bin</BinDir>
     <BuildSysDir>$(RootDir)Build</BuildSysDir>
     <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">netcoreapp2.2</TargetFrameworks>
-    <RuntimeIdentifiers Condition="'$(RuntimeIdentifiers)' == ''">win-x86;win-x64;linux-arm;linux-x64;osx-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(RuntimeIdentifiers)' == ''">win-x86;win-x64;linux-arm;linux-arm64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
 
     <!-- Allows one restore to apply to multiple builds -->
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
