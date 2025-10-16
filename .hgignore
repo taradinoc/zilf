@@ -39,3 +39,4 @@ Package/Release/**
 *DO_NOT_COMMIT*
 temp
 **/wwwroot/release-info.json
+*.g.cs
