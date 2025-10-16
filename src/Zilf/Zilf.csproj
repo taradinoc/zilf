@@ -12,6 +12,7 @@
   <PropertyGroup Condition="!($(PortableTarget))">
 	  <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
+    <!-- <PublishSingleFile>true</PublishSingleFile> -->
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MSBuildTasks" Version="1.5.0.235" />
@@ -43,6 +44,28 @@
   <ItemGroup>
     <ProjectReference Include="..\Analyzers\ZilfSourceGenerators\ZilfSourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <!-- Ensure no stray generated file at project root is compiled -->
+  <ItemGroup>
+    <Compile Remove="BuildInfo.g.cs" />
+  </ItemGroup>
+
+  <!-- Generate a build timestamp source file before compilation (works with single-file publish) -->
+  <PropertyGroup>
+    <GeneratedBuildInfo>$(IntermediateOutputPath)BuildInfo.g.cs</GeneratedBuildInfo>
+  </PropertyGroup>
+  <Target Name="GenerateBuildInfo" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <!-- Use reproducible UTC time if provided by CI; otherwise current UTC -->
+      <_BuildTimeUtc>$([System.DateTime]::UtcNow.ToString("o"))</_BuildTimeUtc>
+      <_GeneratedBuildInfoText>namespace Zilf { internal static partial class BuildInfo { static BuildInfo() { BuildTimestampUtc = System.DateTime.Parse("$(_BuildTimeUtc)", null, System.Globalization.DateTimeStyles.RoundtripKind)%3B } } }</_GeneratedBuildInfoText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(GeneratedBuildInfo)" Overwrite="true" Lines="$(_GeneratedBuildInfoText)" />
+    <ItemGroup>
+      <!-- Ensure we only include once; keep at project root for IDE visibility -->
+      <Compile Include="$(GeneratedBuildInfo)" Visible="false" />
+    </ItemGroup>
+  </Target>
 	
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

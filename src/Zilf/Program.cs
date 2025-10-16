@@ -53,7 +53,7 @@ namespace Zilf
             {
                 Console.Write(GetBanner());
                 Console.Write(" built ");
-                Console.WriteLine(RetrieveLinkerTimestamp());
+                Console.WriteLine(GetBuildTimestamp());
             }
 
             switch (ctx.RunMode)
@@ -129,6 +129,12 @@ namespace Zilf
 
                 return 0;
             }
+        }
+
+        private static DateTime GetBuildTimestamp()
+        {
+            var ts = BuildInfo.BuildTimestampUtc;
+            return ts.ToLocalTime();
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
@@ -217,29 +223,8 @@ namespace Zilf
             }
         }
 
-        static DateTime RetrieveLinkerTimestamp()
-        {
-            // http://stackoverflow.com/questions/1600962/displaying-the-build-date
-            string filePath = Assembly.GetCallingAssembly().Location;
-            const int c_PeHeaderOffset = 60;
-            const int c_LinkerTimestampOffset = 8;
-            Span<byte> b = stackalloc byte[2048];
-
-            using (var s = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-            {
-                s.ReadExactly(b);
-            }
-
-            var i = BitConverter.ToInt32(b.Slice(c_PeHeaderOffset, 4));
-            var secondsSince1970 = BitConverter.ToInt32(b.Slice(i + c_LinkerTimestampOffset, 4));
-            var dt = new DateTime(1970, 1, 1, 0, 0, 0);
-            dt = dt.AddSeconds(secondsSince1970);
-            dt = dt.ToLocalTime();
-            return dt;
-        }
-
         [return: NotNullIfNotNull("inFile")]
-        static Context? BuildContext(string[] args, [NotNullIfNotNull("outFile")] out string? inFile, out string? outFile)
+        static Context? BuildContext(string[] args, [NotNullIfNotNull(nameof(outFile))] out string? inFile, out string? outFile)
         {
             string? newInFile = inFile = null;
             string? newOutFile = outFile = null;
@@ -451,7 +436,7 @@ namespace Zilf
             var strippables = new HashSet<string> { "bin", "debug", "release", "zilf", "src" };
             string[] libraryDirNames = { "Library", "library", "lib", "zillib" };
 
-            var zilfDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var zilfDir = Path.GetDirectoryName(System.AppContext.BaseDirectory);
             Debug.Assert(zilfDir != null);
 
             while (true)

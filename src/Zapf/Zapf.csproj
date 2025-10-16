@@ -12,6 +12,7 @@
   <PropertyGroup Condition="!($(PortableTarget))">
 	  <SelfContained>true</SelfContained>
 	  <PublishTrimmed>true</PublishTrimmed>
+    <!-- <PublishSingleFile>true</PublishSingleFile> -->
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>full</DebugType>
