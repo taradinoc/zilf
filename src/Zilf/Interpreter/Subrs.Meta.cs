@@ -432,14 +432,13 @@ namespace Zilf.Interpreter
             {
                 var desc = JsonDescriber.Describe(signature);
 
-                var array = result[name] as JsonArray;
-                if (array == null)
+                if (result[name] is not JsonArray array)
                 {
                     result[name] = new JsonArray(desc);
                 }
                 else
                 {
-                    array.Add(desc);
+                    array.Add((JsonNode?)desc);
                 }
             }
 
@@ -478,7 +477,7 @@ namespace Zilf.Interpreter
                             break;
                     }
 
-                    groupItem.Add(sigItem);
+                    groupItem.Add((JsonNode?)sigItem);
                 }
 
                 result.Add(g.Key, groupItem);

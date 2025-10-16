@@ -115,7 +115,9 @@ namespace Zilf.Emit.Zap
             stream?.Dispose();
         }
 
-        static void GetOptionsTypeForZVersion(int zversion, out Type requiredOptionsType, out Type concreteOptionsType)
+        static void GetOptionsTypeForZVersion(int zversion, out Type requiredOptionsType,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            out Type concreteOptionsType)
         {
             switch (zversion)
             {

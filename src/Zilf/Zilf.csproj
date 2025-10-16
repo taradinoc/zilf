@@ -9,9 +9,10 @@
     <Nullable>enable</Nullable>
 	<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
-  <!--<PropertyGroup Condition="!($(PortableTarget))">
+  <PropertyGroup Condition="!($(PortableTarget))">
+	  <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
-  </PropertyGroup>-->
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MSBuildTasks" Version="1.5.0.235" />
     <PackageReference Include="ReadLine" Version="2.0.1" />

@@ -9,9 +9,10 @@
     <Nullable>enable</Nullable>
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
   </PropertyGroup>
-  <!--<PropertyGroup Condition="!($(PortableTarget))">
-    <PublishTrimmed>true</PublishTrimmed>
-  </PropertyGroup>-->
+  <PropertyGroup Condition="!($(PortableTarget))">
+	  <SelfContained>true</SelfContained>
+	  <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
