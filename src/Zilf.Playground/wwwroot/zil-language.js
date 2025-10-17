@@ -121,6 +121,9 @@
                     [/\./, { token: 'punctuation.definition.variable.local.prefix.zil', next: '@lval' }],
                     [/,/, { token: 'punctuation.definition.variable.global.prefix.zil', next: '@gval' }],
                     [/'/, { token: 'punctuation.definition.quote.prefix.zil', next: '@quote' }],
+                    [/`/, { token: 'punctuation.definition.quasiquote.prefix.zil', next: '@quasiquote' }],
+                    // [/~/, { token: 'punctuation.definition.unquote.prefix.zil', next: '@unquote' }],
+                    [/~/, { token: 'invalid.illegal.zil', next: '@unquote' }],
                     [/!(?=[.,<])/, { token: 'punctuation.definition.segment.prefix.zil', next: '@segment' }],
 
                     [/!\(/, { token: 'punctuation.definition.list.begin.zil', bracket: '@open', next: '@bangList' }],
@@ -389,6 +392,147 @@
                     [/\]/, { token: 'meta.quoted-expression.zil', next: '@pop' }]
                 ],
 
+                quasiquote: [
+                    [/\s+/, 'meta.quasiquoted-expression.zil'],
+                    [/"/, { token: 'meta.quasiquoted-expression.zil', switchTo: '@quasiquoteString' }],
+                    [char, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }],
+                    [decimal, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }],
+                    [octal, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }],
+                    [binary, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }],
+                    [/~/, { token: 'punctuation.definition.unquote.prefix.zil', next: '@quasiunquote' }],
+                    [/</, { token: 'meta.quasiquoted-expression.zil', switchTo: '@quasiquoteForm' }],
+                    [/!\(/, { token: 'meta.quasiquoted-expression.zil', switchTo: '@quasiquoteList' }],
+                    [/\(/, { token: 'meta.quasiquoted-expression.zil', switchTo: '@quasiquoteList' }],
+                    [/!\[/, { token: 'meta.quasiquoted-expression.zil', switchTo: '@quasiquoteVector' }],
+                    [/\[/, { token: 'meta.quasiquoted-expression.zil', switchTo: '@quasiquoteVector' }],
+                    [atom, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }],
+                    [/\\\./, 'meta.quasiquoted-expression.zil']
+                ],
+
+                quasiquoteString: [
+                    [/[^\"\\]+/, 'meta.quasiquoted-expression.zil'],
+                    [/\\./, 'meta.quasiquoted-expression.zil'],
+                    [/"/, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }]
+                ],
+
+                quasiquoteForm: [
+                    [/\s+/, 'meta.quasiquoted-expression.zil'],
+                    [/~/, { token: 'punctuation.definition.unquote.prefix.zil', next: '@quasiunquote' }],
+                    [/[^<> \t]+/, 'meta.quasiquoted-expression.zil'],
+                    [/</, { token: 'meta.quasiquoted-expression.zil', next: '@quasiquoteForm' }],
+                    [/!?>/, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }]
+                ],
+
+                quasiquoteList: [
+                    [/\s+/, 'meta.quasiquoted-expression.zil'],
+                    [/~/, { token: 'punctuation.definition.unquote.prefix.zil', next: '@quasiunquote' }],
+                    [/[^() \t]+/, 'meta.quasiquoted-expression.zil'],
+                    [/!\(/, { token: 'meta.quasiquoted-expression.zil', next: '@quasiquoteList' }],
+                    [/\(/, { token: 'meta.quasiquoted-expression.zil', next: '@quasiquoteList' }],
+                    [/!\)/, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }],
+                    [/\)/, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }]
+                ],
+
+                quasiquoteVector: [
+                    [/\s+/, 'meta.quasiquoted-expression.zil'],
+                    [/~/, { token: 'punctuation.definition.unquote.prefix.zil', next: '@quasiunquote' }],
+                    [/[^[\] \t]+/, 'meta.quasiquoted-expression.zil'],
+                    [/!\[/, { token: 'meta.quasiquoted-expression.zil', next: '@quasiquoteVector' }],
+                    [/\[/, { token: 'meta.quasiquoted-expression.zil', next: '@quasiquoteVector' }],
+                    [/!\]/, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }],
+                    [/\]/, { token: 'meta.quasiquoted-expression.zil', next: '@pop' }]
+                ],
+
+                // was: meta.unquoted-expression.zil
+                // but it's basically invalid except inside quasiquote
+                unquote: [
+                    [/\s+/, 'invalid.illegal.zil'],
+                    [/"/, { token: 'invalid.illegal.zil', switchTo: '@unquoteString' }],
+                    [char, { token: 'invalid.illegal.zil', next: '@pop' }],
+                    [decimal, { token: 'invalid.illegal.zil', next: '@pop' }],
+                    [octal, { token: 'invalid.illegal.zil', next: '@pop' }],
+                    [binary, { token: 'invalid.illegal.zil', next: '@pop' }],
+                    [/</, { token: 'invalid.illegal.zil', switchTo: '@unquoteForm' }],
+                    [/!\(/, { token: 'invalid.illegal.zil', switchTo: '@unquoteList' }],
+                    [/\(/, { token: 'invalid.illegal.zil', switchTo: '@unquoteList' }],
+                    [/!\[/, { token: 'invalid.illegal.zil', switchTo: '@unquoteVector' }],
+                    [/\[/, { token: 'invalid.illegal.zil', switchTo: '@unquoteVector' }],
+                    [atom, { token: 'invalid.illegal.zil', next: '@pop' }],
+                    [/\\\./, 'invalid.illegal.zil']
+                ],
+
+                unquoteString: [
+                    [/[^\"\\]+/, 'invalid.illegal.zil'],
+                    [/\\./, 'invalid.illegal.zil'],
+                    [/"/, { token: 'invalid.illegal.zil', next: '@pop' }]
+                ],
+
+                unquoteForm: [
+                    [/[^<>]+/, 'invalid.illegal.zil'],
+                    [/</, { token: 'invalid.illegal.zil', next: '@unquoteForm' }],
+                    [/!?>/, { token: 'invalid.illegal.zil', next: '@pop' }]
+                ],
+
+                unquoteList: [
+                    [/[^()]+/, 'invalid.illegal.zil'],
+                    [/!\(/, { token: 'invalid.illegal.zil', next: '@unquoteList' }],
+                    [/\(/, { token: 'invalid.illegal.zil', next: '@unquoteList' }],
+                    [/!\)/, { token: 'invalid.illegal.zil', next: '@pop' }],
+                    [/\)/, { token: 'invalid.illegal.zil', next: '@pop' }]
+                ],
+
+                unquoteVector: [
+                    [/[^[\]]+/, 'invalid.illegal.zil'],
+                    [/!\[/, { token: 'invalid.illegal.zil', next: '@unquoteVector' }],
+                    [/\[/, { token: 'invalid.illegal.zil', next: '@unquoteVector' }],
+                    [/!\]/, { token: 'invalid.illegal.zil', next: '@pop' }],
+                    [/\]/, { token: 'invalid.illegal.zil', next: '@pop' }]
+                ],
+
+                quasiunquote: [
+                    [/\s+/, 'meta.unquoted-expression.zil'],
+                    [/"/, { token: 'meta.unquoted-expression.zil', switchTo: '@quasiunquoteString' }],
+                    [char, { token: 'meta.unquoted-expression.zil', next: '@pop' }],
+                    [decimal, { token: 'meta.unquoted-expression.zil', next: '@pop' }],
+                    [octal, { token: 'meta.unquoted-expression.zil', next: '@pop' }],
+                    [binary, { token: 'meta.unquoted-expression.zil', next: '@pop' }],
+                    [/</, { token: 'meta.unquoted-expression.zil', switchTo: '@quasiunquoteForm' }],
+                    [/!\(/, { token: 'meta.unquoted-expression.zil', switchTo: '@quasiunquoteList' }],
+                    [/\(/, { token: 'meta.unquoted-expression.zil', switchTo: '@quasiunquoteList' }],
+                    [/!\[/, { token: 'meta.unquoted-expression.zil', switchTo: '@quasiunquoteVector' }],
+                    [/\[/, { token: 'meta.unquoted-expression.zil', switchTo: '@quasiunquoteVector' }],
+                    [atom, { token: 'meta.unquoted-expression.zil', next: '@pop' }],
+                    [/\\\./, 'meta.unquoted-expression.zil']
+                ],
+
+                quasiunquoteString: [
+                    [/[^\"\\]+/, 'meta.unquoted-expression.zil'],
+                    [/\\./, 'meta.unquoted-expression.zil'],
+                    [/"/, { token: 'meta.unquoted-expression.zil', next: '@pop' }]
+                ],
+
+                quasiunquoteForm: [
+                    [/[^<>]+/, 'meta.unquoted-expression.zil'],
+                    [/</, { token: 'meta.unquoted-expression.zil', next: '@quasiunquoteForm' }],
+                    [/!?>/, { token: 'meta.unquoted-expression.zil', next: '@pop' }]
+                ],
+
+                quasiunquoteList: [
+                    [/[^()]+/, 'meta.unquoted-expression.zil'],
+                    [/!\(/, { token: 'meta.unquoted-expression.zil', next: '@quasiunquoteList' }],
+                    [/\(/, { token: 'meta.unquoted-expression.zil', next: '@quasiunquoteList' }],
+                    [/!\)/, { token: 'meta.unquoted-expression.zil', next: '@pop' }],
+                    [/\)/, { token: 'meta.unquoted-expression.zil', next: '@pop' }]
+                ],
+
+                quasiunquoteVector: [
+                    [/[^[\]]+/, 'meta.unquoted-expression.zil'],
+                    [/!\[/, { token: 'meta.unquoted-expression.zil', next: '@quasiunquoteVector' }],
+                    [/\[/, { token: 'meta.unquoted-expression.zil', next: '@quasiunquoteVector' }],
+                    [/!\]/, { token: 'meta.unquoted-expression.zil', next: '@pop' }],
+                    [/\]/, { token: 'meta.unquoted-expression.zil', next: '@pop' }]
+                ],
+
                 segment: [
                     [/\s+/, 'meta.structure.segment.zil'],
                     [/"/, { token: 'meta.structure.segment.zil', switchTo: '@segmentString' }],
@@ -511,6 +655,8 @@
                 { token: 'variable.other.local.zil', foreground: '9CDCFE' },
                 { token: 'variable.other.global.zil', foreground: '4FC1FF' },
                 { token: 'meta.quoted-expression.zil', foreground: 'C586C0' },
+                { token: 'meta.quasiquoted-expression.zil', foreground: 'A566A0' },
+                { token: 'meta.unquoted-expression.zil', foreground: 'E5A6E0' },
                 { token: 'meta.structure.segment.zil', foreground: 'C586C0' },
                 { token: 'string.quoted.double.zil', foreground: 'CE9178' },
                 { token: 'constant.numeric.decimal.zil', foreground: 'B5CEA8' },
