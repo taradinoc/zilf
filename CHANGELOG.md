@@ -6,6 +6,10 @@ and this project may someday adhere to
 
 ## [0.11] (Unreleased)
 
+### Changed
+
+- Source file paths in the debug information are now absolute paths.
+
 ### Fixed
 
 - Fixed OBJECT-TEMPLATE breaking when defining more than one template at a time

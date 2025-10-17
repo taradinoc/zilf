@@ -520,7 +520,7 @@ namespace Zilf.Emit.Zap
                     writer.WriteLine(INDENT + ".DEBUG-FILE {0},\"{1}\",\"{2}\"",
                         pair.Value,
                         Path.GetFileNameWithoutExtension(pair.Key),
-                        pair.Key);
+                        Path.GetFullPath(pair.Key));
                 }
 
                 foreach (string name in from f in flags.Keys orderby f select f)
