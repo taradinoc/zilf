@@ -10,10 +10,17 @@ and this project may someday adhere to
 
 - Source file paths in the debug information are now absolute paths.
 
+- Changed ADVENT-PLAYER-F to be a slightly better role model. A few things
+  that were handled by the player's ACTION routine are now handled by
+  overriding verb routines or default messages, or moved into a room's
+  ACTION routine.
+
 ### Fixed
 
 - Fixed OBJECT-TEMPLATE breaking when defining more than one template at a time
   (which the documentation in templates.zil suggests ought to work).
+
+- Restored separate default messages for CLIMB X vs. CLIMB.
 
 ## [0.10] (October 14, 2025)
 

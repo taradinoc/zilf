@@ -75,13 +75,7 @@ Adapted once more by Tara McGrew (2015)">>
 
 <ROUTINE ADVENT-PLAYER-F (ARG "AUX" F)
     <COND (<=? .ARG ,M-WINNER>
-           <COND (<VERB? SWIM>
-                  ;"Change the default response, but give the location a chance to override it."
-                  <COND (<NOT <AND <SET F <GETP ,HERE ,P?ACTION>>
-                                   <APPLY .F ,M-BEG>>>
-                         <TELL "You don't know how." CR>)>
-                  <RTRUE>)
-                 (<AND <VERB? CLIMB> <NOT ,PRSO>>
+           <COND (<AND <VERB? CLIMB> <NOT ,PRSO>>
                   <COND (<OR <VISIBLE? <SET F ,PLANT>>
                              <VISIBLE? <SET F ,PLANT-STICKING-UP>>
                              <VISIBLE? <SET F ,SMALL-CLIMBABLE-PIT>>
@@ -89,23 +83,6 @@ Adapted once more by Tara McGrew (2015)">>
                              <VISIBLE? <SET F ,PIT>>>
                          <SETG PRSO .F>
                          <RFALSE>)>)
-                 (<AND <VERB? DROP>
-                       <=? ,HERE ,INSIDE-BUILDING>
-                       <FSET? ,PRSO ,TREASUREBIT>>
-                  <COND (<PRE-DROP>)
-                        (<AND <SET F <GETP ,PRSO ,P?ACTION>> <APPLY .F>>)
-                        (ELSE
-                         <MOVE ,PRSO ,HERE>
-                         <FSET ,PRSO ,TOUCHBIT>
-                         <FCLEAR ,PRSO ,WORNBIT>
-                         <COND (<SHORT-REPORT?> <TELL "Safely deposited." CR>)
-                               (ELSE <TELL "You safely deposit " T ,PRSO "." CR>)>)>
-                  <RTRUE>)
-                 (<VERB? QUIT>
-                  <V-SCORE T>
-                  <CRLF>
-                  <V-QUIT>
-                  <RTRUE>)
                  (<AND <VERB? DROP>
                        <OR <AND <PRSO? ,LITTLE-BIRD>
                                 <IN? ,LITTLE-BIRD ,WICKER-CAGE>
@@ -115,9 +92,6 @@ Adapted once more by Tara McGrew (2015)">>
                   ;"DROP BIRD/BEAR is normally blocked by PRE-DROP, so we intercept it here
                     and redirect to RELEASE BIRD/BEAR."
                   <PERFORM ,V?RELEASE ,PRSO>
-                  <RTRUE>)
-                 (<AND <VERB? THINK-ABOUT>
-                       <RESPOND-TO-HINT-REQUEST?>>
                   <RTRUE>)>)>
     ;"Fall back to the library's handler."
     <PLAYER-F>>
@@ -445,6 +419,16 @@ There is a building in the distance.")
                   <RTRUE>)
                  (<VERB? PLUGH>
                   <GOTO ,AT-Y2>
+                  <RTRUE>)
+                 (<AND <VERB? DROP> <FSET? ,PRSO ,TREASUREBIT>>
+                  <COND (<PRE-DROP>)
+                        (<AND <SET RARG <GETP ,PRSO ,P?ACTION>> <APPLY .RARG>>)
+                        (ELSE
+                         <MOVE ,PRSO ,HERE>
+                         <FSET ,PRSO ,TOUCHBIT>
+                         <FCLEAR ,PRSO ,WORNBIT>
+                         <COND (<SHORT-REPORT?> <TELL "Safely deposited." CR>)
+                               (ELSE <TELL "You safely deposit " T ,PRSO "." CR>)>)>
                   <RTRUE>)>)>>
 
 <OBJECT SPRING
@@ -4161,6 +4145,34 @@ Everything disappears in a dense cloud of orange smoke."
     <CRLF>
     <V-SCORE T>
     <QUIT>>
+
+;----------------------------------------------------------------------
+"Replacing defaults"
+;----------------------------------------------------------------------
+
+<REPLACE-LIBRARY-MESSAGES SWIM
+    (DEFAULT "You don't know how.")>
+
+<BIND ((REDEFINE T))
+    ;"Print the player's score before prompting"
+    <ROUTINE V-QUIT ()
+        <V-SCORE T>
+        <CRLF>
+        <TELL <LIBRARY-MESSAGE QUIT PROMPT>>
+        <COND (<YES?>
+            <TELL CR <LIBRARY-MESSAGE QUIT GOODBYE> CR>
+            <QUIT>)
+            (ELSE
+            <TELL CR <LIBRARY-MESSAGE QUIT ABORTED> CR>)>>
+
+    ;"Prompt for hints before showing default message"
+    <ROUTINE V-THINK-ABOUT ()
+        <COND (<RESPOND-TO-HINT-REQUEST?>)
+            (<PRSO? ,WINNER>
+            <TELL <LIBRARY-MESSAGE THINK-ABOUT THINK-ABOUT-ME> CR>)
+            (ELSE
+            <TELL <LIBRARY-MESSAGE THINK-ABOUT DEFAULT ((OBJ ,PRSO))> CR>)>>>
+
 
 ;----------------------------------------------------------------------
 "Grammar extensions"
