@@ -30,34 +30,35 @@
   </ItemGroup>
 
   <!--
-    Publish-time assets wiring for project templates:
-    - Copy all folders/files from repo-level /sample/** into the publish output under wwwroot/project_templates
-    - Keep existing SVGs and other non-ZIL assets already in wwwroot/project_templates
-    - Exclude .zil files physically under this project's wwwroot so they don't duplicate the ones from /sample
+    Build-time assets wiring for project templates:
+    - Copy all folders/files from repo-level /sample/** and /zillib/** into wwwroot/project_templates
+    - Register them as Content after copying so they appear in the static asset manifest
   -->
   <ItemGroup>
-    <!-- Exclude any .zil files that live under the project's wwwroot/project_templates from being published -->
-    <Content Update="wwwroot\project_templates\**\*.zil">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-    </Content>
+    <!-- Exclude all files from wwwroot/project_templates to avoid duplicates during initial evaluation -->
+    <Content Remove="wwwroot\project_templates\**\*" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Bring in all repo samples at publish-time under wwwroot/project_templates -->
-    <Content Include="..\..\sample\**\*">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <TargetPath>wwwroot\project_templates\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
-    </Content>
+  <!-- Copy samples and zillib into wwwroot, then register as Content for static asset manifest -->
+  <Target Name="CopyProjectTemplates" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <SampleFiles Include="..\..\sample\**\*" />
+      <ZilibFiles Include="..\..\zillib\**\*" />
+    </ItemGroup>
 
-    <!-- Bring in zillib also -->
-    <Content Include="..\..\zillib\**\*">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <TargetPath>wwwroot\project_templates\zillib\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
-    </Content>
-  </ItemGroup>
+    <Copy SourceFiles="@(SampleFiles)"
+          DestinationFolder="wwwroot\project_templates\%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(ZilibFiles)"
+          DestinationFolder="wwwroot\project_templates\zillib\%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
+
+    <!-- Now register the copied files as Content so they're included in the static asset manifest -->
+    <ItemGroup>
+      <Content Include="wwwroot\project_templates\**\*" />
+    </ItemGroup>
+  </Target>
 
   <Import Project="GenerateReleaseInfo.targets" />
 

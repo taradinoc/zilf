@@ -40,3 +40,4 @@ Package/Release/**
 temp
 **/wwwroot/release-info.json
 *.g.cs
+**/wwwroot/project_templates
