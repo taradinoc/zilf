@@ -1,21 +1,22 @@
 ﻿/* Copyright 2010-2023 Tara McGrew
- * 
+ *
  * This file is part of ZILF.
- * 
+ *
  * ZILF is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * ZILF is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -30,7 +31,7 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("", "<TELL 21>")
                 .WithGlobal("<DEFMAC TELL ('X) <FORM PRINTN <* .X 2>>>")
                 .OutputsAsync("42");
-            
+
         }
 
         [TestMethod]
@@ -116,6 +117,18 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("", "<>")
                 .WithGlobal("<TELL-TOKENS DBL * <PRINTN <* 2 .X>>>")
                 .DoesNotCompileAsync();
+        }
+
+        [TestMethod]
+        public async Task Tell_Builtin_Should_Reject_Bare_Atoms_Correctly()
+        {
+            await AssertRoutine("", "<TELL SPACE-TEXT CR>")
+                .WithGlobal(@"<CONSTANT SPACE-TEXT ""Space. The final frontier."">")
+                .DoesNotCompileAsync(result =>
+                    result.Diagnostics.Any(d =>
+                        d.GetFormattedMessage().Contains("bare atom 'SPACE-TEXT'") &&
+                        d.Location.SourceInfo == "Input.zil:2"),
+                    "Expected diagnostic about bare atom SPACE-TEXT on line 2");
         }
 
         [TestMethod]
@@ -218,10 +231,10 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public async Task CHRSET_Should_Affect_Text_Decoding()
         {
-            /*     1         2         3 
+            /*     1         2         3
              * 67890123456789012345678901
              * zyxwvutsrqponmlkjihgfedcba
-             * 
+             *
              *   z=6   i=23  l=20
              * 1 00110 10111 10100
              */

@@ -96,6 +96,8 @@ namespace Zilf.Diagnostics
         public const int Expressions_Of_Type_0_Cannot_Be_Compiled = 123;
         [Info("misplaced bracket in COND or loop?")]
         public const int Misplaced_Bracket_In_COND_Or_Loop = 124;
+        [Error("bare atom '{0}' is not a TELL token or property")]
+        public const int Bare_Atom_0_Is_Not_A_TELL_Token_Or_Property = 125;
 
         // Definitions - 0200
 

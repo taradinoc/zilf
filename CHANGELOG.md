@@ -6,6 +6,11 @@ and this project may someday adhere to
 
 ## [0.11] (Unreleased)
 
+### Added
+
+- Error ZIL0125 is issued when a bare atom that isn't an existing TELL token
+  or a property constant is used in TELL.
+
 ### Changed
 
 - Source file paths in the debug information are now absolute paths.

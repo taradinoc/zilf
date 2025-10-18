@@ -488,11 +488,20 @@ namespace Zilf.Compiler
                         continue;
 
                     // P?foo expr -> <PRINT <GETP expr ,P?foo>>
-                    case ZilAtom prop when index + 1 < args.Length:
-                        var newForm = (ZilForm)Program.Parse(Context, src,
-                                "<PRINT <GETP {0} ,{1}>>", args[index + 1], prop)
-                            .Single();
-                        CompileForm(rb, newForm, false, null);
+                    case ZilAtom propAtom when index + 1 < args.Length:
+                        if (!propAtom.Text.StartsWith("P?", StringComparison.Ordinal))
+                        {
+                            Context.HandleError(new CompilerError(
+                                CompilerMessages.Bare_Atom_0_Is_Not_A_TELL_Token_Or_Property,
+                                propAtom));
+                            // only advance by one, because they probably meant these as two separate arguments
+                            index++;
+                            break;
+                        }
+                        var prop = CompileAsOperand(rb, propAtom, src);
+                        var expr = CompileAsOperand(rb, args[index + 1], args[index + 1].SourceLine ?? src);
+                        rb.EmitBinary(BinaryOp.GetProperty, expr, prop, rb.Stack);
+                        rb.EmitPrint(PrintOp.PackedAddr, rb.Stack);
                         index += 2;
                         continue;
 
