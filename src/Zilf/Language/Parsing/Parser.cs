@@ -146,7 +146,7 @@ namespace Zilf.Language.Parsing
             }
             catch (ParserException ex)
             {
-                sourceLine = new FileSourceLine(site.CurrentFilePath, Line);
+                sourceLine = srcOverride ?? new FileSourceLine(site.CurrentFilePath, Line);
                 return ParserOutput.FromException(ex);
             }
         }
@@ -158,11 +158,11 @@ namespace Zilf.Language.Parsing
                 // handle whitespace
                 if (!SkipWhitespace(chars))
                 {
-                    sourceLine = new FileSourceLine(site.CurrentFilePath, Line);
+                    sourceLine = srcOverride ?? new FileSourceLine(site.CurrentFilePath, Line);
                     return ParserOutput.EndOfInput;
                 }
 
-                sourceLine = new FileSourceLine(site.CurrentFilePath, Line);
+                sourceLine = srcOverride ?? new FileSourceLine(site.CurrentFilePath, Line);
                 var c = chars.Current;
 
                 // '!' adds 128 to the next character (assuming it's below 128)
@@ -395,7 +395,7 @@ namespace Zilf.Language.Parsing
             }
             catch (ParserException ex)
             {
-                sourceLine = new FileSourceLine(site.CurrentFilePath, Line);
+                sourceLine = srcOverride ?? new FileSourceLine(site.CurrentFilePath, Line);
                 return ParserOutput.FromException(ex);
             }
         }

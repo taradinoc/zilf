@@ -16,9 +16,11 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
+using Zilf.Language;
 
 // ReSharper disable InconsistentNaming
 
@@ -85,6 +87,35 @@ XYZZY!-MY-OBLIST
                 ctx.FALSE);
 
             TestHelpers.EvalAndAssert(ctx, "<=? ,SECOND!- FOO!-MY-OBLIST>", ctx.TRUE);
+        }
+
+        [TestMethod]
+        public void TestSourceLineOverride()
+        {
+            var ctx = new Context();
+            var src = new StringSourceLine("<test>");
+
+            var result = Program.Parse(ctx, src, "<PRINT <GETP CR ,SPACE-TEXT>>").ToArray();
+
+            Assert.AreEqual(1, result.Length);
+            Assert.IsInstanceOfType<StringSourceLine>(result[0].SourceLine);
+            Assert.AreEqual("<test>", result[0].SourceLine!.ToString());
+
+            Assert.IsInstanceOfType<ZilForm>(result[0]);
+            var form = (ZilForm)result[0];
+            Assert.IsTrue(form.HasLength(2), "Expected form to have two elements");
+            Assert.IsNotNull(form.First);
+            Assert.IsInstanceOfType<StringSourceLine>(form.First.SourceLine);
+            Assert.AreEqual("<test>", form.First.SourceLine!.ToString());
+
+            Assert.IsNotNull(form.Rest);
+            Assert.IsInstanceOfType<ZilForm>(form.Rest.First);
+            var innerForm = (ZilForm)form.Rest.First;
+            Assert.IsTrue(innerForm.HasLength(3), "Expected inner form to have three elements");
+            Assert.IsNotNull(innerForm.Rest);
+            Assert.IsNotNull(innerForm.Rest.First);
+            Assert.IsInstanceOfType<StringSourceLine>(innerForm.Rest.First.SourceLine);
+            Assert.AreEqual("<test>", innerForm.Rest.First.SourceLine!.ToString());
         }
     }
 }
