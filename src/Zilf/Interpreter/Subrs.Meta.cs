@@ -292,6 +292,12 @@ namespace Zilf.Interpreter
         [Subr("QUIT")]
         public static ZilObject QUIT(Context ctx, ZilObject? exitCode = null)
         {
+            // quitting the playground REPL breaks the site, so QUIT can be disabled
+            if (!ctx.Quittable)
+            {
+                return ctx.FALSE;
+            }
+
             var code = exitCode switch
             {
                 null => 0,

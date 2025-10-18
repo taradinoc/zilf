@@ -241,6 +241,8 @@ namespace Zilf.Interpreter
 
         public IFileSystem FileSystem { get; set; } = PhysicalFileSystem.Instance;
 
+        public bool Quittable { get; set; } = true;
+
         ZilAtom[] InitStdAtoms()
         {
             var ids = Enum.GetValues<StdAtom>();

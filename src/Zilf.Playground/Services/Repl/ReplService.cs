@@ -34,7 +34,13 @@ namespace Zilf.Playground.Services.Repl
 
         public event Action ExchangesChanged;
 
-        private static IReplSession CreateSession() => new FrontEnd { FileSystem = NullFileSystem.Instance }.StartRepl();
+        private static IReplSession CreateSession()
+        {
+            var frontEnd = new FrontEnd { FileSystem = NullFileSystem.Instance };
+            var session = frontEnd.StartRepl();
+            session.Quittable = false;
+            return session;
+        }
 
         public void RestartSession()
         {
