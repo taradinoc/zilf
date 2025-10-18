@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)src\Analyzers\ZilfAnalyzers\ZilfAnalyzers.csproj" />
+    <ProjectReference Include="$(RootDir)src\Analyzers\ZilfAnalyzers\ZilfAnalyzers.csproj" />
   </ItemGroup>
 
 </Project>

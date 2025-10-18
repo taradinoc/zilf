@@ -13,8 +13,8 @@
     <PackageReference Include="NSubstitute" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)src\Zapf\Zapf.csproj" />
-    <ProjectReference Include="$(SolutionDir)src\Zilf.Common\Zilf.Common.csproj" />
+    <ProjectReference Include="$(RootDir)src\Zapf\Zapf.csproj" />
+    <ProjectReference Include="$(RootDir)src\Zilf.Common\Zilf.Common.csproj" />
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

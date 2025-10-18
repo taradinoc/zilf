@@ -14,13 +14,13 @@
     <PackageReference Include="ZLR.VM" Version="0.9.0-*" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)src\Zapf\Zapf.csproj" />
-    <ProjectReference Include="$(SolutionDir)src\Zilf\Zilf.csproj" />
+    <ProjectReference Include="$(RootDir)src\Zapf\Zapf.csproj" />
+    <ProjectReference Include="$(RootDir)src\Zilf\Zilf.csproj" />
   </ItemGroup>
 
   <!-- only use the analyzer if it's been built for this target -->
   <PropertyGroup>
-    <ZilfAnalyzersAssembly>$(SolutionDir)src\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
+    <ZilfAnalyzersAssembly>$(RootDir)src\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Analyzer Condition="Exists('$(ZilfAnalyzersAssembly)')" Include="$(ZilfAnalyzersAssembly)" />

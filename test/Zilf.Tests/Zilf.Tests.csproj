@@ -12,12 +12,12 @@
     <PackageReference Include="MSTest.TestFramework" Version="3.3.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)src\Zilf\Zilf.csproj" />
+    <ProjectReference Include="$(RootDir)src\Zilf\Zilf.csproj" />
   </ItemGroup>
 
   <!-- only use the analyzer if it's been built for this target -->
   <PropertyGroup>
-    <ZilfAnalyzersAssembly>$(SolutionDir)src\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
+    <ZilfAnalyzersAssembly>$(RootDir)src\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\Debug\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
     <AnalysisLevel>latest-all</AnalysisLevel>
   </PropertyGroup>
   <ItemGroup>
