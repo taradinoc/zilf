@@ -225,7 +225,7 @@ jobs:
               $baseName = $baseName.Substring(0, $baseName.LastIndexOf('.'))
             }
 
-            $match = [regex]::Match($baseName, '^zilf-(?<version>.+)-(?<os>[^-]+)(?<arch>-[^-]+)$')
+            $match = [regex]::Match($baseName, '^zilf-(?<version>.+)-(?<os>[^-]+)-(?<arch>[^-]+)$')
             if ($match.Success) {
               $entry = [ordered]@{
                 os   = $match.Groups['os'].Value

@@ -42,6 +42,8 @@ namespace Zilf.Playground.Services
         private DateTime? cacheTime;
         private readonly TimeSpan cacheExpiry = TimeSpan.FromMinutes(30);
         private static readonly string ReleaseInfoUrl = "release-info.json";
+        private const string ReleaseManifestBaseUrl = "https://storage.googleapis.com/zilf-releases/";
+        private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
         private static readonly Dictionary<string, string> PlatformNames = new()
         {
             { "win-x86", "Windows (x86)" },
@@ -52,6 +54,20 @@ namespace Zilf.Playground.Services
             { "osx-x64", "macOS (Intel)" },
             { "osx-arm64", "macOS (Apple Silicon)" }
         };
+        private static readonly Dictionary<string, string> ManifestOsDisplayNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "win", "Windows" },
+            { "windows", "Windows" },
+            { "linux", "Linux" },
+            { "osx", "macOS" },
+            { "macos", "macOS" }
+        };
+        private static readonly string[] WindowsArchPreference = ["x64", "arm64", "x86"];
+        private static readonly string[] MacArchPreference = ["arm64", "x64"];
+        private static readonly string[] LinuxArchPreference = ["x64", "arm64", "arm", "x86"];
+        private static readonly string[] WindowsTypePreference = ["msi", "zip", "tar.gz"];
+        private static readonly string[] MacTypePreference = ["zip", "tar.gz"];
+        private static readonly string[] LinuxTypePreference = ["tar.gz", "zip"];
         private readonly HttpClient httpClient;
 
         public ReleaseService(IJSRuntime jsRuntime, HttpClient httpClient)
@@ -100,7 +116,7 @@ namespace Zilf.Playground.Services
             var resp = await httpClient.SendAsync(req);
             resp.EnsureSuccessStatusCode();
             var json = await resp.Content.ReadAsStringAsync();
-            var tags = JsonSerializer.Deserialize<List<GitHubTag>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var tags = JsonSerializer.Deserialize<List<GitHubTag>>(json, JsonOptions);
             if (tags == null || tags.Count == 0)
                 return null;
 
@@ -114,71 +130,23 @@ namespace Zilf.Playground.Services
                 return null;
 
             var latest = parsed[0];
-            // Load release-info.json for RIDs and package templates
-            ReleaseInfoJson? info = null;
-            try
-            {
-                var infoJson = await httpClient.GetStringAsync(ReleaseInfoUrl);
-                info = JsonSerializer.Deserialize<ReleaseInfoJson>(infoJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            }
-            catch { }
+            var manifest = await TryFetchManifestAsync(latest.Tag.Name);
+            if (manifest is null)
+                return null;
 
-            var assets = new List<ReleaseAssetLink>();
-            int assetId = 1;
-            if (info != null && !string.IsNullOrEmpty(info.BaseUrl))
-            {
-                // Replace version in baseUrl and filenames
-                string tag = latest.Tag.Name;
-                string baseUrl = info.BaseUrl!;
-                // Replace the old version in baseUrl with the new tag if present
-                if (!string.IsNullOrEmpty(info.Version) && baseUrl.Contains(info.Version))
-                    baseUrl = baseUrl.Replace(info.Version, tag);
-                // Build filenames per new pattern using parsed version info
-                var v = latest.Version!;
-                foreach (var kvp in info.PlatformPackages)
-                {
-                    var rid = kvp.Key;
-                    var template = kvp.Value;
-                    // Determine extension per RID using the template if possible
-                    string ext = ".tar.gz";
-                    if (template.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-                        ext = ".zip";
-                    else if (template.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
-                        ext = ".tar.gz";
-                    else if (rid.StartsWith("win-", StringComparison.OrdinalIgnoreCase))
-                        ext = ".zip";
+            var assets = BuildAssetsFromManifest(latest.Tag.Name, manifest);
+            var shortVersion = manifest.Versions?.Short ?? latest.Tag.Name;
+            var longVersion = manifest.Versions?.Long ?? latest.Tag.Name;
 
-                    // Compose filename: zilf-{major}.{minor}.{micro}[-alpha|beta|candidateN]-{rid}{ext}
-                    string pre = v.PreType switch
-                    {
-                        null => string.Empty,
-                        "a" => $"-alpha{v.PreNum}",
-                        "b" => $"-beta{v.PreNum}",
-                        "rc" => $"-candidate{v.PreNum}",
-                        _ => string.Empty
-                    };
-                    string filename = $"zilf-{v.Major}.{v.Minor}.{v.Micro}{pre}-{rid}{ext}";
-                    assets.Add(new ReleaseAssetLink
-                    {
-                        Id = assetId++,
-                        Name = PlatformNames.GetValueOrDefault(rid, rid) + " binaries",
-                        Url = baseUrl + filename,
-                        DirectAssetUrl = baseUrl + filename,
-                        LinkType = "package"
-                    });
-                }
-            }
             return new Release
             {
                 TagName = latest.Tag.Name,
-                Name = $"ZILF {latest.Tag.Name}",
-                Description = "Latest release from GitHub tags.",
+                Name = $"ZILF {shortVersion}",
+                Description = $"Latest release packages for ZILF {longVersion}.",
                 ReleasedAt = null,
                 UpcomingRelease = false,
                 Assets = new ReleaseAssets { Links = assets },
-                // If this is a prerelease version, it might not have its own release page to link to
-                // Links = new ReleaseLinks { Self = $"https://foss.heptapod.net/zilf/zilf/-/releases/{latest.Tag.Name}" }
-                Links = new ReleaseLinks { Self = $"https://foss.heptapod.net/zilf/zilf/-/releases" }
+                Links = new ReleaseLinks { Self = $"https://foss.heptapod.net/zilf/zilf/-/releases/{latest.Tag.Name}" }
             };
         }
 
@@ -186,6 +154,72 @@ namespace Zilf.Playground.Services
         {
             [JsonPropertyName("name")]
             public string Name { get; set; } = "";
+        }
+
+        private async Task<ReleaseManifest?> TryFetchManifestAsync(string tagName)
+        {
+            try
+            {
+                var manifestUrl = $"{ReleaseManifestBaseUrl}{tagName}/manifest.json";
+                var manifestJson = await httpClient.GetStringAsync(manifestUrl);
+                return JsonSerializer.Deserialize<ReleaseManifest>(manifestJson, JsonOptions);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static List<ReleaseAssetLink> BuildAssetsFromManifest(string tagName, ReleaseManifest manifest)
+        {
+            var assets = new List<ReleaseAssetLink>();
+            if (manifest.Packages == null || manifest.Packages.Count == 0)
+                return assets;
+
+            var baseUrl = $"{ReleaseManifestBaseUrl}{tagName}/";
+            var id = 1;
+            foreach (var pkg in manifest.Packages)
+            {
+                if (pkg == null || string.IsNullOrWhiteSpace(pkg.Path))
+                    continue;
+
+                var relativePath = pkg.Path.TrimStart('/');
+                var assetUrl = baseUrl + relativePath;
+                assets.Add(new ReleaseAssetLink
+                {
+                    Id = id++,
+                    Name = BuildManifestAssetName(pkg),
+                    Url = assetUrl,
+                    DirectAssetUrl = assetUrl,
+                    LinkType = DetermineLinkType(pkg),
+                    Os = pkg.Os,
+                    Arch = pkg.Arch,
+                    PackageType = pkg.Type
+                });
+            }
+
+            return assets;
+        }
+
+        private static string BuildManifestAssetName(ManifestPackage pkg)
+        {
+            var osKey = pkg.Os ?? string.Empty;
+            var friendlyOs = ManifestOsDisplayNames.GetValueOrDefault(osKey, string.IsNullOrEmpty(pkg.Os) ? "Unknown" : pkg.Os);
+            var archPart = string.IsNullOrEmpty(pkg.Arch) ? string.Empty : $" ({pkg.Arch})";
+            var typePart = pkg.Type switch
+            {
+                null or "" => " package",
+                var t when string.Equals(t, "msi", StringComparison.OrdinalIgnoreCase) => " installer",
+                var t => $" {t}"
+            };
+            return friendlyOs + archPart + typePart;
+        }
+
+        private static string DetermineLinkType(ManifestPackage pkg)
+        {
+            if (string.Equals(pkg.Type, "msi", StringComparison.OrdinalIgnoreCase))
+                return "installer";
+            return "package";
         }
 
         private partial class VersionInfo
@@ -253,7 +287,7 @@ namespace Zilf.Playground.Services
             {
                 // Fetch release-info.json from wwwroot
                 var json = await httpClient.GetStringAsync(ReleaseInfoUrl);
-                info = JsonSerializer.Deserialize<ReleaseInfoJson>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                info = JsonSerializer.Deserialize<ReleaseInfoJson>(json, JsonOptions);
             }
             catch
             {
@@ -328,6 +362,39 @@ namespace Zilf.Playground.Services
 
             [JsonPropertyName("platformPackages")]
             public Dictionary<string, string> PlatformPackages { get; set; } = new();
+        }
+
+        private sealed class ReleaseManifest
+        {
+            [JsonPropertyName("versions")]
+            public ManifestVersions? Versions { get; set; }
+
+            [JsonPropertyName("packages")]
+            public List<ManifestPackage>? Packages { get; set; }
+        }
+
+        private sealed class ManifestVersions
+        {
+            [JsonPropertyName("short")]
+            public string? Short { get; set; }
+
+            [JsonPropertyName("long")]
+            public string? Long { get; set; }
+        }
+
+        private sealed class ManifestPackage
+        {
+            [JsonPropertyName("os")]
+            public string? Os { get; set; }
+
+            [JsonPropertyName("arch")]
+            public string? Arch { get; set; }
+
+            [JsonPropertyName("path")]
+            public string Path { get; set; } = string.Empty;
+
+            [JsonPropertyName("type")]
+            public string? Type { get; set; }
         }
 
         /// <summary>
@@ -419,6 +486,10 @@ namespace Zilf.Playground.Services
 
             var links = release.Assets.Links;
 
+            var metadataMatch = FindByMetadata(links, platform);
+            if (metadataMatch != null)
+                return metadataMatch;
+
             return platform switch
             {
                 Platform.Windows => links.FirstOrDefault(l =>
@@ -443,6 +514,72 @@ namespace Zilf.Playground.Services
                 _ => null
             };
         }
+
+        private static ReleaseAssetLink? FindByMetadata(IEnumerable<ReleaseAssetLink> links, Platform platform)
+        {
+            var aliases = GetOsAliases(platform);
+            if (aliases.Length == 0)
+                return null;
+
+            var candidates = links
+                .Where(l => l.Os != null && aliases.Any(a => string.Equals(l.Os, a, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+            if (candidates.Count == 0)
+                return null;
+
+            candidates.Sort((a, b) => GetLinkScore(b, platform).CompareTo(GetLinkScore(a, platform)));
+            return candidates.FirstOrDefault();
+        }
+
+        private static int GetLinkScore(ReleaseAssetLink link, Platform platform)
+        {
+            var prefs = GetArchPreference(platform);
+            var score = 0;
+            if (!string.IsNullOrEmpty(link.Arch))
+            {
+                var idx = Array.IndexOf(prefs, link.Arch.ToLowerInvariant());
+                if (idx >= 0)
+                    score += 100 - idx;
+            }
+
+            var typePrefs = GetTypePreference(platform);
+            if (!string.IsNullOrEmpty(link.PackageType))
+            {
+                var idx = Array.IndexOf(typePrefs, link.PackageType.ToLowerInvariant());
+                if (idx >= 0)
+                    score += 20 - idx;
+            }
+
+            if (platform == Platform.Windows && string.Equals(link.PackageType, "msi", StringComparison.OrdinalIgnoreCase))
+                score += 5;
+
+            return score;
+        }
+
+        private static string[] GetArchPreference(Platform platform) => platform switch
+        {
+            Platform.Windows => WindowsArchPreference,
+            Platform.MacOS => MacArchPreference,
+            Platform.Linux => LinuxArchPreference,
+            _ => Array.Empty<string>()
+        };
+
+        private static string[] GetTypePreference(Platform platform) => platform switch
+        {
+            Platform.Windows => WindowsTypePreference,
+            Platform.MacOS => MacTypePreference,
+            Platform.Linux => LinuxTypePreference,
+            _ => Array.Empty<string>()
+        };
+
+        private static string[] GetOsAliases(Platform platform) => platform switch
+        {
+            Platform.Windows => ["win", "windows"],
+            Platform.MacOS => ["osx", "macos"],
+            Platform.Linux => ["linux"],
+            _ => Array.Empty<string>()
+        };
     }
 
     public enum Platform
@@ -511,6 +648,15 @@ namespace Zilf.Playground.Services
 
         [JsonPropertyName("link_type")]
         public string? LinkType { get; init; }
+
+        [JsonPropertyName("os")]
+        public string? Os { get; init; }
+
+        [JsonPropertyName("arch")]
+        public string? Arch { get; init; }
+
+        [JsonPropertyName("package_type")]
+        public string? PackageType { get; init; }
     }
 
     public record ReleaseLinks
