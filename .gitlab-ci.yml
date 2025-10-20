@@ -52,6 +52,7 @@ stages:
 # and then unpacked to the paths as specified below.
 
 # Disbled because this seems to be doing more harm than good. -TM
+# ...and it sure was. Builds in ~6 minutes with no cache, 30-60 minutes with cache. -TM
 
 #cache:
 #  # Per-stage and per-branch caching.
@@ -97,7 +98,7 @@ debug:build:
   stage: build
   needs: []
   script:
-    - 'dotnet msbuild -t:Build -p:Configuration=Debug Build.proj'
+    - 'dotnet build Zilf.sln -c Debug'
   artifacts:
     untracked: false
     when: on_success
@@ -148,15 +149,16 @@ tests:slow:
         - 'test/artifacts/*.xml'
   interruptible: true
 
-package:
-  stage: package
-  script:
-    - 'apt-get update && apt-get install -y zip'
-    - 'dotnet msbuild -t:PackageAllRids -p:Configuration=Release Build.proj'
-  artifacts:
-    paths:
-      - 'Package/*/Packages/*'
-  interruptible: true
+### This now runs on GitHub Actions where we can use Windows/OSX runners
+# package:
+#   stage: package
+#   script:
+#     - 'apt-get update && apt-get install -y zip'
+#     - 'dotnet msbuild -t:PackageAllRids -p:Configuration=Release Build.proj'
+#   artifacts:
+#     paths:
+#       - 'Package/*/Packages/*'
+#   interruptible: true
 
 # create-pages:
 #   stage: deploy

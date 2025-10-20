@@ -58,7 +58,7 @@ Data / Control Flow (compile path): `FrontEnd.Compile` => evaluate ZIL (parsing 
 ## 2. Build & Packaging Workflows
 
 Fast local build (solution-wide): `dotnet build Zilf.sln`.
-Core distribution packaging (multi-RID): `dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release` (targets only staged projects `Zilf` and `Zapf`; analyzers & dezapf excluded).
+Core distribution packaging (multi-RID): `tools\package-all.ps1` (targets only staged projects `Zilf` and `Zapf`; analyzers & dezapf excluded).
 Stage only (no packaging): `dotnet msbuild Build.proj -t:Stage -p:Configuration=Release` → outputs under `Package/<Config>/Stage/<packageName>/` with executables + library + samples + zillib.
 CI-specific properties are centralized in `Directory.Build.props` (version stamping, signing, warnings as errors, language version). Avoid duplicating these settings in individual `.csproj` files.
 
@@ -163,7 +163,7 @@ REPL integration contract: start via `FrontEnd.StartRepl()` (returns `IReplSessi
 dotnet restore Zilf.sln
 dotnet build Zilf.sln -c Debug
 dotnet test Zilf.sln -c Debug --logger "trx;LogFileName=test_results.trx"
-dotnet msbuild Build.proj -t:PackageAllRids -p:Configuration=Release
+tools\package-all.ps1
 ```
 **Note**: Projects now target .NET 9 with C# 13. Ensure .NET 9 SDK is installed.
 

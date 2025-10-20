@@ -9,7 +9,7 @@
     <Nullable>enable</Nullable>
 	<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
-  <PropertyGroup Condition="!($(PortableTarget))">
+  <PropertyGroup Condition="'$(PortableTarget)' != 'true'">
 	  <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
     <!-- <PublishSingleFile>true</PublishSingleFile> -->
@@ -43,7 +43,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Analyzers\ZilfSourceGenerators\ZilfSourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Analyzers\ZilfSourceGenerators\ZilfSourceGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false">
+      <GlobalPropertiesToRemove>PublishAot;SelfContained;PublishTrimmed</GlobalPropertiesToRemove>
+    </ProjectReference>
   </ItemGroup>
 
   <!-- Ensure no stray generated file at project root is compiled -->
@@ -67,7 +71,7 @@
       <Compile Include="$(GeneratedBuildInfo)" Visible="false" />
     </ItemGroup>
   </Target>
-	
+
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

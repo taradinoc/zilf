@@ -9,9 +9,9 @@
     <Nullable>enable</Nullable>
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
   </PropertyGroup>
-  <PropertyGroup Condition="!($(PortableTarget))">
-	  <SelfContained>true</SelfContained>
-	  <PublishTrimmed>true</PublishTrimmed>
+  <PropertyGroup Condition="'$(PortableTarget)' != 'true'">
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
     <!-- <PublishSingleFile>true</PublishSingleFile> -->
     <PublishAot>true</PublishAot>
   </PropertyGroup>
@@ -27,6 +27,7 @@
     <ProjectReference Include="..\Zapf.Parsing\Zapf.Parsing.csproj" />
     <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj" />
   </ItemGroup>
+
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

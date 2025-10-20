@@ -1,0 +1,259 @@
+name: Build Packages
+
+on:
+  push:
+    branches:
+      - branch/default
+      - topic/default/build
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    outputs:
+      shortVersion: ${{ steps.determine_version.outputs.shortVersion }}
+      longVersion: ${{ steps.determine_version.outputs.longVersion }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute version variables
+        id: determine_version
+        shell: pwsh
+        run: |
+          [xml]$versionInfo = Get-Content -Path CurrentVersion.props
+          $props = $versionInfo.Project.PropertyGroup | Where-Object { $_.MajorVersion } | Select-Object -First 1
+
+          $major = [int]$props.MajorVersion
+          $minor = [int]$props.MinorVersion
+          $micro = [int]$props.MicroVersion
+          $releaseLevel = $props.ReleaseLevel.ToString()
+          $releaseSerial = [int]$props.ReleaseSerial
+
+          $suffixMap = @{ alpha = 'a'; beta = 'b'; candidate = 'rc' }
+
+          if ($releaseLevel -eq 'final') {
+            if ($micro -eq 0) {
+              $displayVersion = "{0}.{1}" -f $major, $minor
+            }
+            else {
+              $displayVersion = "{0}.{1}.{2}" -f $major, $minor, $micro
+            }
+          }
+          else {
+            $shortSuffix = $suffixMap[$releaseLevel]
+            if (-not $shortSuffix) {
+              throw "Unknown release level '$releaseLevel'"
+            }
+
+            if ($micro -eq 0) {
+              $displayVersion = "{0}.{1}{2}{3}" -f $major, $minor, $shortSuffix, $releaseSerial
+            }
+            else {
+              $displayVersion = "{0}.{1}.{2}{3}{4}" -f $major, $minor, $micro, $shortSuffix, $releaseSerial
+            }
+          }
+
+          if ($releaseLevel -eq 'final' -and $releaseSerial -eq 0) {
+            $packageVersion = "{0}.{1}.{2}" -f $major, $minor, $micro
+          }
+          else {
+            $packageVersion = "{0}.{1}.{2}-{3}{4}" -f $major, $minor, $micro, $releaseLevel, $releaseSerial
+          }
+
+          "ZILF_SHORT_VERSION=$displayVersion" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          "ZILF_LONG_VERSION=$packageVersion" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+
+          "shortVersion=$displayVersion" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "longVersion=$packageVersion" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+          Write-Host "Short version: $displayVersion"
+          Write-Host "Long version:  $packageVersion"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Restore
+        run: dotnet restore Zilf.sln
+      - name: Run tests
+        run: dotnet test Zilf.sln --no-restore --logger "console;verbosity=minimal"
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    env:
+      ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+      ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Set Windows installer variables
+        shell: pwsh
+        run: |
+          "ZILF_ARCH=win-x64" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Arch: win-x64"
+      - name: Package win-x64 artifacts
+        run: ./tools/package-all.ps1 -RuntimeIdentifiers win-x64 -Configuration Release
+        shell: pwsh
+      - name: Build MSI installer
+        run: |
+          Push-Location src\WindowsInstaller
+          try {
+            dotnet tool install --global wix
+            dotnet run
+          }
+          finally {
+            Pop-Location
+          }
+          Move-Item src\WindowsInstaller\*.msi Package\Release\Packages
+        shell: pwsh
+        env:
+          ZILF_SHORT_VERSION: ${{ env.ZILF_SHORT_VERSION }}
+          ZILF_LONG_VERSION: ${{ env.ZILF_LONG_VERSION }}
+          ZILF_ARCH: ${{ env.ZILF_ARCH }}
+      - name: Upload windows packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-windows
+          path: |
+            Package/Release/Packages/*
+
+  linux-x64:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+      ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Package linux-x64 artifacts
+        run: ./tools/package-all.ps1 -RuntimeIdentifiers linux-x64 -Configuration Release
+        shell: pwsh
+        env:
+          ZILF_SHORT_VERSION: ${{ env.ZILF_SHORT_VERSION }}
+          ZILF_LONG_VERSION: ${{ env.ZILF_LONG_VERSION }}
+      - name: Upload linux-x64 packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-linux-x64
+          path: Package/Release/Packages/*
+
+  linux-arm64:
+    needs: test
+    runs-on: ubuntu-24.04-arm
+    env:
+      ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+      ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Package linux-arm64 artifacts
+        run: ./tools/package-all.ps1 -RuntimeIdentifiers linux-arm64 -Configuration Release
+        shell: pwsh
+        env:
+          ZILF_SHORT_VERSION: ${{ env.ZILF_SHORT_VERSION }}
+          ZILF_LONG_VERSION: ${{ env.ZILF_LONG_VERSION }}
+      - name: Upload linux-arm64 packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-linux-arm64
+          path: Package/Release/Packages/*
+
+  macos:
+    needs: test
+    runs-on: macos-latest
+    env:
+      ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+      ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Package osx-arm64 artifacts
+        run: ./tools/package-all.ps1 -RuntimeIdentifiers osx-arm64 -Configuration Release
+        shell: pwsh
+        env:
+          ZILF_SHORT_VERSION: ${{ env.ZILF_SHORT_VERSION }}
+          ZILF_LONG_VERSION: ${{ env.ZILF_LONG_VERSION }}
+      - name: Upload mac packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-macos
+          path: Package/Release/Packages/*
+
+  collect:
+    needs:
+      - test
+      - windows
+      - linux-x64
+      - linux-arm64
+      - macos
+    runs-on: ubuntu-latest
+    env:
+      ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+      ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: collected
+          merge-multiple: true
+      - name: Assemble distribution bundle
+        shell: pwsh
+        run: |
+          $distDir = Join-Path $PWD 'dist'
+          $pkgDir = Join-Path $distDir 'packages'
+          New-Item -ItemType Directory -Path $distDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $pkgDir -Force | Out-Null
+
+          Get-ChildItem -Path (Join-Path $PWD 'collected') -Recurse -File | ForEach-Object {
+            Copy-Item $_.FullName -Destination (Join-Path $pkgDir $_.Name) -Force
+          }
+
+          $entries = @()
+          Get-ChildItem -Path $pkgDir -File | ForEach-Object {
+            $name = $_.Name
+            $type = if ($name -like '*.msi') { 'msi' } elseif ($name -like '*.zip') { 'zip' } elseif ($name -like '*.tar.gz') { 'tar.gz' } else { 'unknown' }
+
+            $baseName = $_.BaseName
+            if ($name -like '*.tar.gz') {
+              $baseName = $baseName.Substring(0, $baseName.LastIndexOf('.'))
+            }
+
+            $match = [regex]::Match($baseName, '^zilf-(?<version>.+)-(?<os>[^-]+)(?<arch>-[^-]+)$')
+            if ($match.Success) {
+              $entry = [ordered]@{
+                os   = $match.Groups['os'].Value
+                arch = $match.Groups['arch'].Value
+                path = "packages/$name"
+                type = $type
+              }
+              $entries += [pscustomobject]$entry
+            }
+            else {
+              Write-Warning "Unable to parse package name '$name'"
+            }
+          }
+
+          $manifest = [ordered]@{
+            versions  = [ordered]@{
+              short = $Env:ZILF_SHORT_VERSION
+              long  = $Env:ZILF_LONG_VERSION
+            }
+            packages  = $entries
+          }
+
+          $manifestPath = Join-Path $distDir 'manifest.json'
+          $manifest | ConvertTo-Json -Depth 4 | Out-File -FilePath $manifestPath -Encoding utf8NoBOM
+
+          Write-Host "Wrote manifest to $manifestPath"
+      - name: Upload aggregated packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-aggregate
+          path: dist/**

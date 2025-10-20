@@ -1,226 +1,99 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-
-<!--
-To build for distribution:
-dotnet msbuild Build.proj -t:PackageAllRids -p:Configurati  <Target Name="_PlatformStage" DependsOnTargets="RestoreReferences;_MakeStageDir">
-    <Message Text="Publishing for RID: $(RuntimeIdentifier)" Importance="high" />
-    <MSBuild Projects="@(StageProjects)"
-             Targets="Publish"
-             Properties="RuntimeIdentifier=$(RuntimeIdentifier);
-                         Configuration=$(Configuration);
-                         PublishDir=$(StageDir)\bin\" />
-  </Target>ease
--->
-
-<!-- Copied from IronPython and modified. See Build/IronPython-License.txt. -->
-<!--EXTERNAL_PROPERTIES: MSBuildThisFileDirectory;ReleaseLevel;MajorVersion;MinorVersion;MicroVersion;AssemblyRevision;ReleaseSerial;TargetFramework;Features-->
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="16.0">
-<!--<Project DefaultTargets="Build" Sdk="Microsoft.NET.Sdk">-->
+<Project DefaultTargets="PackageAllRids" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <MainBuildPrefix Condition=" '$(MainBuildPrefix)' == '' "></MainBuildPrefix>
-    <Mono Condition="'$(OS)' != 'Windows_NT' AND !$(TargetFramework.StartsWith('netcore'))">true</Mono>
-    <MacOS Condition="'$(OS)' == 'Unix' AND Exists('/Applications') AND Exists('/Library') AND Exists('/System') AND Exists('/Volumes')">true</MacOS>
-    <WindowsTarget>false</WindowsTarget>
-    <WindowsTarget Condition="$(RuntimeIdentifier.StartsWith('win'))">true</WindowsTarget>
-    <PortableTarget>false</PortableTarget>
-    <PortableTarget Condition="'$(RuntimeIdentifier)' == ''">true</PortableTarget>
-    <UnixTarget>false</UnixTarget>
-    <UnixTarget Condition="!($(WindowsTarget) OR $(PortableTarget))">true</UnixTarget>
-
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
     <RootDir>$(MSBuildThisFileDirectory)</RootDir>
     <Solution>$(RootDir)Zilf.sln</Solution>
-    <!--<UtilDir>$(RootDir)Util</UtilDir>-->
-    <!--<ReferenceDir>$(RootDir)Util\References</ReferenceDir>-->
-    <BinDir>$(RootDir)bin</BinDir>
-    <BuildSysDir>$(RootDir)Build</BuildSysDir>
-    <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">netcoreapp2.2</TargetFrameworks>
-    <RuntimeIdentifiers Condition="'$(RuntimeIdentifiers)' == ''">win-x86;win-x64;linux-arm;linux-arm64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
-
-    <!-- Allows one restore to apply to multiple builds -->
-    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
-
-    <!--<BuildInParallel Condition=" '$(BuildInParallel)' == '' ">false</BuildInParallel>-->
+  <RuntimeIdentifiers Condition="'$(RuntimeIdentifiers)' == ''">win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    <PackageBaseDir>$(RootDir)Package/$(Configuration)</PackageBaseDir>
+    <StageBaseDir>$(PackageBaseDir)/Stage</StageBaseDir>
+    <PackagesDir>$(PackageBaseDir)/Packages</PackagesDir>
   </PropertyGroup>
 
-  <Import Project="$(BuildSysDir)\Tasks.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)\CurrentVersion.props" Condition="'$(ReleaseLevel)' == ''" />
+  <UsingTask TaskName="ZipDirectory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll" />
+
+  <Import Project="$(RootDir)CurrentVersion.props" Condition="'$(ReleaseLevel)' == ''" />
 
   <PropertyGroup>
     <PackageVersion Condition="'$(ReleaseLevel)' == 'final'">$(MajorVersion).$(MinorVersion).$(MicroVersion)</PackageVersion>
     <PackageVersion Condition="'$(ReleaseLevel)' != 'final' or '$(ReleaseSerial)' != '0'">$(MajorVersion).$(MinorVersion).$(MicroVersion)-$(ReleaseLevel)$(ReleaseSerial)</PackageVersion>
-    <PackageName Condition=" '$(RuntimeIdentifier)' != '' ">zilf-$(PackageVersion)-$(RuntimeIdentifier)</PackageName>
-    <PackageName Condition=" '$(RuntimeIdentifier)' == '' ">zilf-$(PackageVersion)-netcore</PackageName>
-    <StageDir>$(RootDir)Package\$(Configuration)\Stage\$(PackageName)</StageDir>
-    <PackageDir>$(RootDir)Package\$(Configuration)\Packages</PackageDir>
+    <PackageName Condition="'$(RuntimeIdentifier)' != ''">zilf-$(PackageVersion)-$(RuntimeIdentifier)</PackageName>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <BuildProperties>
-      RootDir=$(RootDir);
-      Solution=$(Solution);
-      Configuration=$(Configuration);
-      BinDir=$(BinDir);
-      StageDir=$(StageDir);
-      BuildSysDir=$(BuildSysDir);
-      WindowsTarget=$(WindowsTarget);
-      UnixTarget=$(UnixTarget)
-    </BuildProperties>
-  </PropertyGroup>
+  <Target Name="RestoreSolution" Condition="'$(AlreadyRestored)' != 'true'">
+    <MSBuild Projects="$(Solution)" Targets="Restore" />
+  </Target>
 
-  <!--<PropertyGroup>
-    <NuGet>$(UtilDir)\NuGet\nuget.exe</NuGet>
-    <NuGet Condition=" '$(Mono)' != '' ">mono $(NuGet)</NuGet>
-  </PropertyGroup>-->
+  <Target Name="_StageRid" DependsOnTargets="RestoreSolution">
+    <Error Condition="'$(RuntimeIdentifier)' == ''" Text="RuntimeIdentifier must be specified when staging." />
 
-  <PropertyGroup>
-    <ExcludedProjects>
-      $(RootDir)src\Analyzers\**\*;
-      $(RootDir)src\Dezapf\**\*
-    </ExcludedProjects>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <StageProjects Include="src\Zilf\Zilf.csproj" />
-    <StageProjects Include="src\Zapf\Zapf.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <MainStageFiles Include="$(RootDir)README.md" />
-    <MainStageFiles Include="$(RootDir)CHANGELOG.md" />
-    <MainStageFiles Include="$(RootDir)COPYING.txt" />
-  </ItemGroup>
-
-  <Target Name="FindStageProjects">
-    <!--<GetProjectsFromSolution Solution="$(Solution)">
-      <Output TaskParameter="Projects" ItemName="StageProjects" />
-    </GetProjectsFromSolution>-->
-
-    <!--<ItemGroup>
-      <StageProjects Include="$(RootDir)src\**\*.csproj" />
-    </ItemGroup>
+    <PropertyGroup>
+      <StageDir>$(StageBaseDir)/$(PackageName)</StageDir>
+      <StageBinDir>$(StageDir)/bin</StageBinDir>
+      <ZilfPublishDir>$(StageDir)/_publish/Zilf/</ZilfPublishDir>
+      <ZapfPublishDir>$(StageDir)/_publish/Zapf/</ZapfPublishDir>
+    </PropertyGroup>
 
     <ItemGroup>
-      <StageProjects Remove="$(RootDir)src\Analyzers\**\*" />
-    </ItemGroup>-->
+      <_RootDocs Include="$(RootDir)README.md;$(RootDir)CHANGELOG.md;$(RootDir)COPYING.txt" />
+      <_SampleFiles Include="$(RootDir)sample/**/*" Exclude="$(RootDir)sample/**/;$(RootDir)sample/**/bin/**;$(RootDir)sample/**/obj/**;$(RootDir)sample/**/.git/**;$(RootDir)sample/**/.hg/**" />
+      <_ZilLibFiles Include="$(RootDir)zillib/**/*" Exclude="$(RootDir)zillib/**/;$(RootDir)zillib/**/bin/**;$(RootDir)zillib/**/obj/**;$(RootDir)zillib/tests/**;$(RootDir)zillib/**/.git/**;$(RootDir)zillib/**/.hg/**" />
+    </ItemGroup>
 
-    <Message Importance="high" Text="Stage projects:@(StageProjects->'%0d%0a    %(Identity)','')" />
+    <RemoveDir Directories="$(StageDir)" Condition="Exists('$(StageDir)')" />
+    <MakeDir Directories="$(StageBinDir)" />
+
+    <MSBuild Projects="$(RootDir)src/Zilf/Zilf.csproj"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishAot=true;PublishSingleFile=true;PublishTrimmed=true;StripSymbols=true;DebuggerSupport=false;IncludeNativeLibrariesForSelfExtract=true;PublishDir=$(ZilfPublishDir)" />
+
+    <MSBuild Projects="$(RootDir)src/Zapf/Zapf.csproj"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishAot=true;PublishSingleFile=true;PublishTrimmed=true;StripSymbols=true;DebuggerSupport=false;IncludeNativeLibrariesForSelfExtract=true;PublishDir=$(ZapfPublishDir)" />
+
+    <Copy SourceFiles="@(_RootDocs)" DestinationFolder="$(StageDir)" />
+
+    <MakeDir Directories="$(StageDir)/sample" Condition="!Exists('$(StageDir)/sample')" />
+    <MakeDir Directories="$(StageDir)/zillib" Condition="!Exists('$(StageDir)/zillib')" />
+
+    <Copy SourceFiles="@(_SampleFiles)" DestinationFiles="@(_SampleFiles->'$(StageDir)/sample/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(_ZilLibFiles)" DestinationFiles="@(_ZilLibFiles->'$(StageDir)/zillib/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+
+    <ItemGroup>
+      <_PublishOutputs Include="$(ZilfPublishDir)Zilf*;$(ZapfPublishDir)Zapf*;$(ZilfPublishDir)createdump*;$(ZapfPublishDir)createdump*"
+                        Exclude="$(ZilfPublishDir)Zilf.Common*;$(ZapfPublishDir)Zilf.Common*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_PublishOutputs)" DestinationFiles="@(_PublishOutputs->'$(StageBinDir)/%(Filename)%(Extension)')" />
+
+    <RemoveDir Directories="$(StageDir)/_publish" Condition="Exists('$(StageDir)/_publish')" />
   </Target>
 
-  <Target Name="RestoreReferences" DependsOnTargets="FindStageProjects">
-    <MSBuild
-      Projects="@(StageProjects)"
-      Targets="Restore"
-      Condition=" '$(AlreadyRestored)' != 'true' " />
+  <Target Name="Stage" DependsOnTargets="_StageRid" />
+
+  <Target Name="Package" DependsOnTargets="Stage">
+    <PropertyGroup>
+      <ZipOutputFile>$(PackagesDir)/$(PackageName).zip</ZipOutputFile>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(PackagesDir)" Condition="!Exists('$(PackagesDir)')" />
+
+    <ZipDirectory SourceDirectory="$(StageDir)" DestinationFile="$(ZipOutputFile)" Overwrite="true" />
   </Target>
-
-  <Target Name="Build" DependsOnTargets="RestoreReferences">
-    <MSBuild
-      Projects="@(StageProjects)"
-      Targets="Build"
-      Properties="$(BuildProperties);Configuration=$(Configuration)" />
-  </Target>
-
-  <Target Name="Rebuild" DependsOnTargets="RestoreReferences">
-    <MSBuild
-      Projects="@(StageProjects)"
-      Targets="Rebuild"
-      Properties="$(BuildProperties);Configuration=$(Configuration)" />
-  </Target>
-
-  <Target Name="Clean">
-    <MSBuild
-      Projects="@(StageProjects)"
-      Targets="Clean"
-      Properties="$(BuildProperties);Configuration=$(Configuration)" />
-  </Target>
-
-  <Target Name="_MakeStageDir">
-    <MakeDir Directories="$(StageDir)" Condition="!Exists('$(StageDir)')" />
-  </Target>
-
-  <Target Name="Publish" DependsOnTargets="RestoreReferences;_MakeStageDir">
-    <MSBuild
-      Projects="@(StageProjects)"
-      Targets="Publish"
-      Properties="$(BuildProperties);Configuration=$(Configuration);PublishDir=$(StageDir)\bin\" />
-  </Target>
-
-  <Target Name="_CopyMainStageFiles" DependsOnTargets="_MakeStageDir">
-    <Copy SourceFiles="@(MainStageFiles)" DestinationFolder="$(StageDir)" />
-  </Target>
-
-  <Target Name="_CopySamples" DependsOnTargets="_MakeStageDir">
-    <MSBuild Projects="$(RootDir)\sample\Samples.proj"
-             Properties="OutputPath=$(StageDir)"
-             Targets="Stage" />
-  </Target>
-
-  <Target Name="_CopyZilLib" DependsOnTargets="_MakeStageDir">
-    <MSBuild Projects="$(RootDir)\zillib\ZilLib.proj"
-             Properties="OutputPath=$(StageDir)"
-             Targets="Stage" />
-  </Target>
-
-  <PropertyGroup>
-    <PublishDependsOn>
-      _MakeStageDir;
-      Publish;
-      _CopyMainStageFiles;
-      _CopySamples;
-      _CopyZilLib
-    </PublishDependsOn>
-  </PropertyGroup>
-
-  <Target Name="Stage" DependsOnTargets="$(PublishDependsOn)" />
-
-  <!-- This looks like an empty target, but the targets files use it as an AfterTargets -->
-  <Target Name="Package" DependsOnTargets="Stage" />
 
   <Target Name="PackageAllRids">
-    <MSBuild Projects="$(MSBuildProjectFullPath)"
-             Targets="RestoreReferences" />
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="RestoreSolution" />
 
     <ItemGroup>
-      <RuntimeIdentifierForPackage Include="$(RuntimeIdentifiers)" />
-
-      <ProjectToPackage Include="@(RuntimeIdentifierForPackage->'$(MSBuildProjectFullPath)')">
-        <AdditionalProperties>
-          RuntimeIdentifier=%(RuntimeIdentifierForPackage.Identity);
-          AlreadyRestored=true
-        </AdditionalProperties>
-      </ProjectToPackage>
+      <RidToPackage Include="$(RuntimeIdentifiers)" />
+      <RidInvocation Include="@(RidToPackage->'$(MSBuildProjectFullPath)')">
+        <AdditionalProperties>RuntimeIdentifier=%(RidToPackage.Identity);AlreadyRestored=true;Configuration=$(Configuration)</AdditionalProperties>
+      </RidInvocation>
     </ItemGroup>
 
-    <MSBuild Projects="@(ProjectToPackage)"
-             Targets="Package" />
-             <!--BuildInParallel="$(BuildInParallel)" />-->
-
-    <MSBuild Projects="$(MSBuildProjectFullPath)"
-             Targets="Package"
-             Properties="RuntimeIdentifier=;RuntimeIdentifiers=;AlreadyRestored=true" />
+    <MSBuild Projects="@(RidInvocation)" Targets="Package" />
   </Target>
 
-  <Target Name="PackagePortable">
-    <MSBuild Projects="$(MSBuildProjectFullPath)"
-             Targets="Package"
-             Properties="RuntimeIdentifier=;RuntimeIdentifiers=" />
-  </Target>
-
-  <Target Name="CleanAllRids">
-    <ItemGroup>
-      <RuntimeIdentifierForPackage Include="$(RuntimeIdentifiers)" />
-
-      <ProjectToClean Include="@(RuntimeIdentifierForPackage->'$(MSBuildProjectFullPath)')">
-        <AdditionalProperties>RuntimeIdentifier=%(RuntimeIdentifierForPackage.Identity)</AdditionalProperties>
-      </ProjectToClean>
-    </ItemGroup>
-
-    <MSBuild Projects="@(ProjectToClean)"
-             Targets="Clean" />
-             <!--BuildInParallel="$(BuildInParallel)" />-->
-  </Target>
-
-  <Import Project="$(RootDir)\Package\**\*.Packaging.targets" />
 </Project>
