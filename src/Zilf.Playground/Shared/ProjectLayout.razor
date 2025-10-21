@@ -61,16 +61,49 @@
     <ContainerlessLayout>
         <Body>
             <div class="project-layout-container">
-                <ProjectSidebar OnAddProjectFile="@AddProjectFile"
-                                OnCompile="@Compile"
-                                ProjectId="@Workspace.Project.Guid.ToString()"
-                                Files="@Workspace.Project.Files"
-                                LibraryDirs="@Workspace.Project.Includes"
-                                ActivePath="@ActivePath"
-                                EntryPointPath="@EntryPointPath" />
+                <!-- Desktop/Tablet (md and up): fixed sidebar -->
+                <div class="d-none d-md-block">
+                    <ProjectSidebar OnAddProjectFile="@AddProjectFile"
+                                    OnCompile="@Compile"
+                                    ProjectId="@Workspace.Project.Guid.ToString()"
+                                    Files="@Workspace.Project.Files"
+                                    LibraryDirs="@Workspace.Project.Includes"
+                                    ActivePath="@ActivePath"
+                                    EntryPointPath="@EntryPointPath" />
+                </div>
 
                 <div class="project-main-content">
+                    <!-- Mobile (sm and down): toggle button to open offcanvas sidebar -->
+                    <div class="d-md-none p-2">
+                        <button class="btn btn-outline-secondary"
+                                type="button"
+                                data-bs-toggle="offcanvas"
+                                data-bs-target="#projectSidebarOffcanvas"
+                                aria-controls="projectSidebarOffcanvas">
+                            <span class="oi oi-menu me-1"></span>
+                            Project Menu
+                        </button>
+                    </div>
+
                     @Body
+                </div>
+            </div>
+            
+            <!-- Mobile (sm and down): offcanvas sidebar -->
+            <div class="offcanvas offcanvas-start d-md-none" tabindex="-1" id="projectSidebarOffcanvas" aria-labelledby="projectSidebarOffcanvasLabel">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="projectSidebarOffcanvasLabel">Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body p-0">
+                    <ProjectSidebar OnAddProjectFile="@AddProjectFile"
+                                    OnCompile="@Compile"
+                                    ProjectId="@Workspace.Project.Guid.ToString()"
+                                    Files="@Workspace.Project.Files"
+                                    LibraryDirs="@Workspace.Project.Includes"
+                                    ActivePath="@ActivePath"
+                                    EntryPointPath="@EntryPointPath"
+                                    FullWidth="true" />
                 </div>
             </div>
         </Body>

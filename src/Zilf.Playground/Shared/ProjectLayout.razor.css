@@ -6,8 +6,17 @@
 
 .project-main-content {
     flex: 1;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto; /* Allow page content (e.g., Project Settings) to scroll */
     display: flex;
     flex-direction: column;
     background-color: white;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Ensure project main content stretches full width on small screens */
+@media (max-width: 767.98px) {
+    .project-main-content {
+        width: 100%;
+    }
 }

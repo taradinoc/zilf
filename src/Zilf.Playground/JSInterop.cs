@@ -80,5 +80,10 @@ namespace Zilf.Playground
         {
             await js.InvokeVoidAsync("localStorage.removeItem", key);
         }
+
+        public ValueTask HideOffcanvasByIdAsync(string id)
+        {
+            return js.InvokeVoidAsync("ZilfJsInterop.hideOffcanvasById", id);
+        }
     }
 }

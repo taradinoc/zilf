@@ -4,12 +4,12 @@
 <CascadingValue Name="ActivePath" Value="@ActivePath">
     <CascadingValue Name="EntryPointPath" Value="@EntryPointPath">
         <CascadingValue Name="ProjectId" Value="@ProjectId">
-            <nav id="projectSidebarMenu" class="project-sidebar">
+            <nav id="projectSidebarMenu" class="project-sidebar @(FullWidth ? "full-width" : null)">
                 <div class="sidebar-content">
                     <div class="sidebar-actions">
-                        <button class="btn btn-primary w-100 @GetBuildButtonClass()" 
-                                disabled="@IsBuilding" 
-                                @onclick="OnBuildClicked">
+            <button class="btn btn-primary w-100 @GetBuildButtonClass()" 
+                disabled="@IsBuilding" 
+                @onclick="OnBuildClicked">
                             @if (IsBuilding)
                             {
                                 <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -47,11 +47,11 @@
                     </div>
 
                     <div class="sidebar-nav-tabs">
-                        <a href="@GetOutputLink()" class="sidebar-nav-link">
+                        <a href="@GetOutputLink()" class="sidebar-nav-link" @onclick="OnOutputClick">
                             <span class="oi oi-terminal"></span>
                             Output & Play
                         </a>
-                        <a href="@GetSettingsLink()" class="sidebar-nav-link">
+                        <a href="@GetSettingsLink()" class="sidebar-nav-link" @onclick="OnSettingsClick">
                             <span class="oi oi-cog"></span>
                             Project Settings
                         </a>
@@ -96,6 +96,9 @@
     public EventCallback<MouseEventArgs> OnCompile { get; set; }
 
     private bool IsBuilding => Build.Status == BuildStatus.CompilePending || Build.Status == BuildStatus.Compiling || Build.Status == BuildStatus.Assembling;
+
+    [Parameter]
+    public bool FullWidth { get; set; } = false;
 
 
     [Inject]
@@ -168,4 +171,22 @@
 
     private string GetOutputLink() => $"/project/{ProjectId}/output";
     private string GetSettingsLink() => $"/project/{ProjectId}/settings";
+
+    [Inject]
+    private JSInterop JS { get; set; } = default!;
+
+    private async Task HandleOffcanvasNavAsync(string url)
+    {
+        if (FullWidth)
+        {
+            // Only present when rendered inside the offcanvas in mobile layout
+            await JS.HideOffcanvasByIdAsync("projectSidebarOffcanvas");
+            // small delay to allow hide animation to start; navigation will proceed immediately after
+            // (Bootstrap handles pointer events during the transition)
+        }
+        Nav.NavigateTo(url);
+    }
+
+    private Task OnOutputClick() => HandleOffcanvasNavAsync(GetOutputLink());
+    private Task OnSettingsClick() => HandleOffcanvasNavAsync(GetSettingsLink());
 }

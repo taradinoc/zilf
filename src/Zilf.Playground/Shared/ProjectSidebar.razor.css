@@ -7,6 +7,11 @@
     overflow-y: auto;
 }
 
+.project-sidebar.full-width {
+    width: 100%;
+    border-right: none;
+}
+
 .sidebar-content {
     padding: 16px 0;
 }

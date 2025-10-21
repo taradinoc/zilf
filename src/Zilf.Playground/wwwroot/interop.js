@@ -67,6 +67,14 @@ ZilfJsInterop.hideModal = function (element) {
     modal.hide();
 }
 
+// Hide an offcanvas by element id (e.g., 'projectSidebarOffcanvas')
+ZilfJsInterop.hideOffcanvasById = function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var oc = bootstrap.Offcanvas.getInstance(el) || bootstrap.Offcanvas.getOrCreateInstance(el);
+    oc.hide();
+}
+
 ZilfJsInterop.loadGameInParchment = function (gameData) {
     // Get the iframe
     const iframe = document.getElementById('parchment-frame');
