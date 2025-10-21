@@ -298,7 +298,7 @@ namespace Zilf.Interpreter
         }
 
         [Subr]
-        public static ZilObject CONS(Context ctx, ZilObject first, ZilListBase rest)
+        public static ZilObject CONS(Context ctx, ZilObject first, ZilList rest)
         {
             return new ZilList(
                 first,

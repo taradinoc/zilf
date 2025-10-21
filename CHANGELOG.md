@@ -20,6 +20,8 @@ and this project may someday adhere to
   overriding verb routines or default messages, or moved into a room's
   ACTION routine.
 
+- `CONS` now requires its second argument to be a LIST.
+
 ### Fixed
 
 - Fixed OBJECT-TEMPLATE breaking when defining more than one template at a time
