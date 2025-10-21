@@ -1120,6 +1120,9 @@ namespace Zilf.Compiler.Builtins
             // slightly tricky because dest and value might both be Stack,
             // and we need them in the other order for the StoreIndirect.
             // the temp variable will also go out of scope immediately.
+
+            // TODO: recognize when the evaluation order doesn't matter and swap them to emit simpler code
+
             var tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
             c.cc.PushInnerLocal(c.rb, tempAtom, LocalBindingType.CompilerTemporary, c.form.SourceLine);
             try
@@ -1132,18 +1135,6 @@ namespace Zilf.Compiler.Builtins
                 // push temp back onto stack as result
                 c.rb.EmitStore(c.rb.Stack, tempLocal);
                 return c.rb.Stack;
-
-                /* TODO: generate better code for this. currently we get:
-                        .FUNCT FANCY,A,B,C,?TMP
-                        ADD A,1 >STACK
-                        ADD A,123 >?TMP
-                        SET STACK,?TMP
-                        PUSH ?TMP
-                        ADD STACK,B >STACK
-                        RSTACK
-                 * ...but we should collapse PUSH ?TMP and ADD STACK,B >STACK
-                 * into ADD ?TMP,B >STACK
-                 */
             }
             finally
             {

@@ -53,5 +53,7 @@ namespace Zilf.Emit.Zap
             inner = null;
             return false;
         }
+
+        public static bool IsQuoteStack(this AsmExpr asmExpr) => asmExpr.IsQuote(out var inner) && inner.IsStack();
     }
 }

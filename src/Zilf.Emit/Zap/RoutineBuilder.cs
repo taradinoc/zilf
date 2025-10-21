@@ -1285,6 +1285,29 @@ namespace Zilf.Emit.Zap
                             matches![0].Code.Instruction.Operands[0]));
                     }
 
+                    if (Match(a => a.Code.Instruction.Name == "PUSH" && !a.Code.Instruction.Operands[0].IsStack(),
+                        b => b.Code.Instruction.Operands.Any(o => o.IsStack())))
+                    {
+                        // PUSH v + ANY *,STACK,* => ANY v
+                        // v can be substituted for the leftmost appearance of STACK
+                        var newOperands = matches![1].Code.Instruction.Operands.ToArray();
+                        for (int i = 0; i < newOperands.Length; i++)
+                        {
+                            if (newOperands[i].IsStack())
+                            {
+                                newOperands[i] = matches[0].Code.Instruction.Operands[0];
+                                return Combine2To1(new Instruction(
+                                    matches[1].Code.Instruction.Name,
+                                    newOperands)
+                                {
+                                    StoreTarget = matches[1].Code.Instruction.StoreTarget,
+                                    BranchPolarity = matches[1].Code.Instruction.BranchPolarity,
+                                    BranchTarget = matches[1].Code.Instruction.BranchTarget,
+                                });
+                            }
+                        }
+                    }
+
                     if (Match(
                         a => a.Code.Instruction.Name == "INC" && a.Code.Instruction.Operands[0].IsQuote(out expr1) &&
                              !expr1.IsStack(),
