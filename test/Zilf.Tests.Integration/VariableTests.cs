@@ -270,5 +270,12 @@ namespace Zilf.Tests.Integration
                 .CompilesAsync();
         }
 
+        [TestMethod]
+        public async Task SET_With_Complex_Destination_Should_Work_In_Value_Context()
+        {
+            await AssertRoutine("", "<PRINTN <FANCY 1>>")
+                .WithGlobal(@"<ROUTINE FANCY (A ""AUX"" B C) <+ <SET <+ .A 1> <+ .A 123>> .B>>")
+                .OutputsAsync("248");
+        }
     }
 }

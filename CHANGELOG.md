@@ -22,6 +22,9 @@ and this project may someday adhere to
 
 - `CONS` now requires its second argument to be a LIST.
 
+- `SET`/`SETG` now allow a complex expression as the first argument (to compute
+  the variable number) even in value context.
+
 ### Fixed
 
 - Fixed OBJECT-TEMPLATE breaking when defining more than one template at a time

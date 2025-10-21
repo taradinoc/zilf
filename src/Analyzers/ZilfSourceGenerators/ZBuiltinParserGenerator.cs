@@ -1828,22 +1828,25 @@ namespace ZilfSourceGenerators
                 o.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p))
                     .Any(p => p.Type.Name == "SoftGlobal"));
 
-            // Look for plain IOperand overload (without [Variable])
+            // Look for plain IOperand overload (where the FIRST operand/variable-like parameter is plain IOperand without [Variable])
+            // This is to distinguish fallback overloads like SET(IOperand, IOperand) from variable-specific ones like SET(IVariable, ZilObject)
             var plainOperandOverload = group.Overloads.FirstOrDefault(o =>
-                o.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p))
-                    .Any(p => IsIOperandType(p.Type) && !HasVariableAttribute(p)));
+            {
+                var params_ = o.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+                // Find first parameter that could be a variable or operand
+                var firstVarOrOpParam = params_.FirstOrDefault(p =>
+                    IsIVariableType(p.Type) || p.Type.Name == "SoftGlobal" || IsIOperandType(p.Type));
+                // It's a plain operand overload if the first such parameter is IOperand without [Variable]
+                return firstVarOrOpParam != null && IsIOperandType(firstVarOrOpParam.Type) && !HasVariableAttribute(firstVarOrOpParam);
+            });
 
             // Determine what kind of dispatch we need
-            if (iVariableOverload != null && iOperandVariableOverload != null)
+            // Check for plain operand fallback first - this takes lower priority than variable-specific overloads
+            if (iVariableOverload != null && softGlobalOverload != null && plainOperandOverload != null)
             {
-                // IVariable vs IOperand with [Variable] - both are hard variables, dispatch based on variable type
-                GenerateIVariableVsIOperandDispatch(sb, group, iVariableOverload, iOperandVariableOverload);
-            }
-            else if ((iVariableOverload != null || iOperandVariableOverload != null) && softGlobalOverload != null)
-            {
-                // Variable vs SoftGlobal - dispatch based on IsHard vs Soft
-                var variableOverload = iVariableOverload ?? iOperandVariableOverload;
-                GenerateVariableVsSoftGlobalDispatch(sb, group, variableOverload!, softGlobalOverload);
+                // Three-way dispatch: IVariable vs SoftGlobal vs Plain Operand
+                // This handles cases like SET where we have all three overloads
+                GenerateThreeWayVariableDispatch(sb, group, iVariableOverload, softGlobalOverload, plainOperandOverload);
             }
             else if ((iVariableOverload != null || iOperandVariableOverload != null || softGlobalOverload != null) && plainOperandOverload != null)
             {
@@ -1851,11 +1854,100 @@ namespace ZilfSourceGenerators
                 var variableOverload = iVariableOverload ?? iOperandVariableOverload ?? softGlobalOverload;
                 GenerateVariableVsOperandDispatch(sb, group, variableOverload!, plainOperandOverload);
             }
+            else if (iVariableOverload != null && iOperandVariableOverload != null)
+            {
+                // IVariable vs IOperand with [Variable] - both are hard variables, dispatch based on variable type
+                GenerateIVariableVsIOperandDispatch(sb, group, iVariableOverload, iOperandVariableOverload);
+            }
+            else if ((iVariableOverload != null || iOperandVariableOverload != null) && softGlobalOverload != null)
+            {
+                // Variable vs SoftGlobal - dispatch based on IsHard vs Soft (no plain operand fallback)
+                var variableOverload = iVariableOverload ?? iOperandVariableOverload;
+                GenerateVariableVsSoftGlobalDispatch(sb, group, variableOverload!, softGlobalOverload);
+            }
             else
             {
                 // Fallback to simple dispatch if we can't identify the overloads properly
                 GenerateSingleOverloadBody(sb, group.Overloads[0], group.CallType, group.BuiltinName ?? "");
             }
+        }
+
+        private static void GenerateThreeWayVariableDispatch(IndentedStringBuilder sb, OverloadGroup group, OverloadInfo iVariableOverload, OverloadInfo softGlobalOverload, OverloadInfo plainOperandOverload)
+        {
+            // Three-way dispatch for cases like SET: IVariable + SoftGlobal + IOperand fallback
+            // Find the variable parameter index
+            var varParams = iVariableOverload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var variableParamIndex = -1;
+            string? variableParamQuirks = null;
+
+            for (int i = 0; i < varParams.Length; i++)
+            {
+                if (IsIVariableType(varParams[i].Type))
+                {
+                    variableParamIndex = i;
+
+                    // Extract VariableScopeQuirks
+                    var variableAttr = varParams[i].GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "VariableAttribute");
+                    if (variableAttr != null)
+                    {
+                        var named = variableAttr.NamedArguments.FirstOrDefault(kv => kv.Key == "VariableScopeQuirks");
+                        if (named.Value.Value != null && named.Value.Type != null)
+                            variableParamQuirks = GetEnumValueName(named.Value.Type, named.Value.Value);
+                    }
+                    break;
+                }
+            }
+
+            if (variableParamIndex == -1)
+            {
+                GenerateSingleOverloadBody(sb, group.Overloads[0], group.CallType, group.BuiltinName ?? "");
+                return;
+            }
+
+            variableParamQuirks ??= "Zilf.Compiler.Builtins.VariableScopeQuirks.None";
+
+            // Generate runtime dispatch: check if it's a variable, and if so, dispatch based on Hard vs Soft
+            // If not a variable, check if it's a bare atom (error) or expression (compile as operand fallback)
+            sb.AppendLine($"var variableRef = GetVariable(c.cc, args[{variableParamIndex}], {variableParamQuirks});");
+            sb.AppendLine("if (variableRef != null)");
+            sb.AppendLine("{");
+            sb.Indent();
+            sb.AppendLine("if (variableRef.Value.IsHard)");
+            sb.AppendLine("{");
+            sb.Indent();
+            // Call IVariable overload
+            GenerateOverloadCall(sb, iVariableOverload, group.CallType, "variableRef.Value.Hard", variableParamIndex);
+            sb.Unindent();
+            sb.AppendLine("}");
+            sb.AppendLine("else");
+            sb.AppendLine("{");
+            sb.Indent();
+            // Call SoftGlobal overload
+            GenerateOverloadCall(sb, softGlobalOverload, group.CallType, "variableRef.Value.Soft", variableParamIndex);
+            sb.Unindent();
+            sb.AppendLine("}");
+            sb.Unindent();
+            sb.AppendLine("}");
+            sb.AppendLine("else");
+            sb.AppendLine("{");
+            sb.Indent();
+            // Not a variable reference — if the argument is a bare atom, this is an error; otherwise compile as operand expression
+            sb.AppendLine($"if (args[{variableParamIndex}] is ZilAtom || (args[{variableParamIndex}] is ZilMacroResult zmr_check3 && zmr_check3.Inner is ZilAtom))");
+            sb.AppendLine("{");
+            sb.Indent();
+            GenerateErrorThrow(sb, group.BuiltinName ?? "", variableParamIndex + 1, "bare atom argument must be a variable", group.CallType);
+            sb.Unindent();
+            sb.AppendLine("}");
+            sb.AppendLine("else");
+            sb.AppendLine("{");
+            sb.Indent();
+            // Not a variable reference, compile as operand expression and call plain operand overload
+            sb.AppendLine("// Not a variable reference, compile as operand expression");
+            GenerateOverloadCallWithOperandCompilation(sb, plainOperandOverload, group.CallType, variableParamIndex);
+            sb.Unindent();
+            sb.AppendLine("}");
+            sb.Unindent();
+            sb.AppendLine("}");
         }
 
         private static void GenerateIVariableVsIOperandDispatch(IndentedStringBuilder sb, OverloadGroup group, OverloadInfo iVariableOverload, OverloadInfo iOperandVariableOverload)

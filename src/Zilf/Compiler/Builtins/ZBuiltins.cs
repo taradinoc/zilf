@@ -1113,6 +1113,44 @@ namespace Zilf.Compiler.Builtins
             return storage;
         }
 
+        [Builtin("SET", HasSideEffect = true, Priority = 2)]
+        public static IOperand SetValueOp(ValueCall c, IOperand dest, IOperand value)
+        {
+            // use a temporary variable
+            // slightly tricky because dest and value might both be Stack,
+            // and we need them in the other order for the StoreIndirect.
+            // the temp variable will also go out of scope immediately.
+            var tempAtom = ZilAtom.Parse("?TMP", c.cc.Context);
+            c.cc.PushInnerLocal(c.rb, tempAtom, LocalBindingType.CompilerTemporary, c.form.SourceLine);
+            try
+            {
+                var tempLocal = c.cc.Locals[tempAtom].LocalBuilder;
+                // store value into temp
+                c.rb.EmitStore(tempLocal, value);
+                // store temp into dest
+                c.rb.EmitBinary(BinaryOp.StoreIndirect, dest, tempLocal, null);
+                // push temp back onto stack as result
+                c.rb.EmitStore(c.rb.Stack, tempLocal);
+                return c.rb.Stack;
+
+                /* TODO: generate better code for this. currently we get:
+                        .FUNCT FANCY,A,B,C,?TMP
+                        ADD A,1 >STACK
+                        ADD A,123 >?TMP
+                        SET STACK,?TMP
+                        PUSH ?TMP
+                        ADD STACK,B >STACK
+                        RSTACK
+                 * ...but we should collapse PUSH ?TMP and ADD STACK,B >STACK
+                 * into ADD ?TMP,B >STACK
+                 */
+            }
+            finally
+            {
+                c.cc.PopInnerLocal(tempAtom);
+            }
+        }
+
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SETG", HasSideEffect = true)]
         public static IOperand SetgValueOp(
@@ -1125,6 +1163,12 @@ namespace Zilf.Compiler.Builtins
         [Builtin("SETG", HasSideEffect = true)]
         public static IOperand SetgValueOp(
             ValueCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Global)] SoftGlobal dest, ZilObject value)
+        {
+            return SetValueOp(c, dest, value);
+        }
+
+        [Builtin("SETG", HasSideEffect = true, Priority = 2)]
+        public static IOperand SetgValueOp(ValueCall c, IOperand dest, IOperand value)
         {
             return SetValueOp(c, dest, value);
         }
