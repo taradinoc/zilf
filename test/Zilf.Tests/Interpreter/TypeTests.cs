@@ -876,15 +876,8 @@ namespace Zilf.Tests.Interpreter
                 new ZilList(new ZilList(null, null),
                     new ZilList(null, null)));
 
-            // second argument can be a form, but the tail of the new list will still become a list
-            TestHelpers.EvalAndAssert(ctx, "<CONS FOO '<BAR>>",
-                new ZilList(ZilAtom.Parse("FOO", ctx),
-                    new ZilList(ZilAtom.Parse("BAR", ctx),
-                        new ZilList(null, null))));
-            TestHelpers.EvalAndAssert(ctx, "<TYPE <REST <CONS FOO '<BAR>>>>",
-                ctx.GetStdAtom(StdAtom.LIST));
-
             // second argument can't be another type
+            TestHelpers.EvalAndCatch<InterpreterError>("<CONS FOO '<BAR>>");
             TestHelpers.EvalAndCatch<InterpreterError>("<CONS FOO BAR>");
             TestHelpers.EvalAndCatch<InterpreterError>("<CONS () FOO>");
 
