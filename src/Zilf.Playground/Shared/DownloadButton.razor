@@ -49,8 +49,8 @@ else if (!string.IsNullOrEmpty(fallbackUrl))
             var latestRelease = await ReleaseService.GetLatestReleaseAsync();
             if (latestRelease != null)
             {
-                var platform = await ReleaseService.DetectPlatformAsync();
-                var asset = ReleaseService.FindAssetForPlatform(latestRelease, platform);
+                    var platformInfo = await ReleaseService.DetectPlatformInfoAsync();
+                    var asset = ReleaseService.FindAssetForPlatform(latestRelease, platformInfo.Platform, platformInfo.Architecture);
                 
                 if (asset?.DirectAssetUrl != null || asset?.Url != null)
                 {
@@ -58,7 +58,7 @@ else if (!string.IsNullOrEmpty(fallbackUrl))
                     {
                         DownloadUrl = asset.DirectAssetUrl ?? asset.Url,
                         Version = ExtractVersionFromTag(latestRelease.TagName),
-                        Platform = platform,
+                            Platform = platformInfo.Platform,
                         ReleasesPageUrl = latestRelease.Links?.Self
                     };
                 }

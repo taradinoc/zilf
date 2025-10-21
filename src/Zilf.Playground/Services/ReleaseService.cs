@@ -407,43 +407,121 @@ namespace Zilf.Playground.Services
         }
 
         /// <summary>
+            /// Detects the current platform and architecture from the browser.
+            /// </summary>
+            public async Task<PlatformInfo> DetectPlatformInfoAsync()
+            {
+                try
+                {
+                    var userAgent = await jsRuntime.InvokeAsync<string>("eval", "navigator.userAgent");
+                    var platform = await jsRuntime.InvokeAsync<string>("eval", "navigator.platform");
+
+                    // Detect mobile devices and return Unknown (which will show fallback page)
+                    if (IsMobileUserAgent(userAgent))
+                    {
+                        return new PlatformInfo { Platform = Platform.Unknown, Architecture = Architecture.Unknown };
+                    }
+
+                    var detectedPlatform = Platform.Unknown;
+                    var detectedArch = Architecture.Unknown;
+
+                    // Detect platform
+                    if (userAgent.Contains("Windows", StringComparison.OrdinalIgnoreCase) ||
+                        platform.Contains("Win", StringComparison.OrdinalIgnoreCase) ||
+                        userAgent.Contains("win64", StringComparison.OrdinalIgnoreCase) ||
+                        userAgent.Contains("wow64", StringComparison.OrdinalIgnoreCase))
+                    {
+                        detectedPlatform = Platform.Windows;
+                    }
+                    else if (userAgent.Contains("Mac", StringComparison.OrdinalIgnoreCase) ||
+                             platform.Contains("Mac", StringComparison.OrdinalIgnoreCase) ||
+                             userAgent.Contains("Darwin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        detectedPlatform = Platform.MacOS;
+                    }
+                    else if (userAgent.Contains("Linux", StringComparison.OrdinalIgnoreCase) ||
+                             platform.Contains("Linux", StringComparison.OrdinalIgnoreCase) ||
+                             userAgent.Contains("X11", StringComparison.OrdinalIgnoreCase))
+                    {
+                        detectedPlatform = Platform.Linux;
+                    }
+
+                    // Detect architecture
+                    // Check for ARM first (more specific)
+                    if (userAgent.Contains("aarch64", StringComparison.OrdinalIgnoreCase) ||
+                        userAgent.Contains("arm64", StringComparison.OrdinalIgnoreCase) ||
+                        platform.Contains("arm64", StringComparison.OrdinalIgnoreCase) ||
+                        (detectedPlatform == Platform.MacOS && platform.Contains("MacIntel") && 
+                         userAgent.Contains("Safari") && !userAgent.Contains("Chrome"))) // M1/M2 Macs often report as Intel
+                    {
+                        detectedArch = Architecture.ARM64;
+                    }
+                    else if (userAgent.Contains("armv7", StringComparison.OrdinalIgnoreCase) ||
+                             userAgent.Contains("arm", StringComparison.OrdinalIgnoreCase))
+                    {
+                        detectedArch = Architecture.ARM;
+                    }
+                    // Check for x64
+                    else if (userAgent.Contains("x86_64", StringComparison.OrdinalIgnoreCase) ||
+                             userAgent.Contains("x64", StringComparison.OrdinalIgnoreCase) ||
+                             userAgent.Contains("amd64", StringComparison.OrdinalIgnoreCase) ||
+                             userAgent.Contains("win64", StringComparison.OrdinalIgnoreCase) ||
+                             userAgent.Contains("wow64", StringComparison.OrdinalIgnoreCase) ||
+                             platform.Contains("x64", StringComparison.OrdinalIgnoreCase) ||
+                             platform.Contains("Linux x86_64", StringComparison.OrdinalIgnoreCase) ||
+                             (platform.Contains("Linux", StringComparison.OrdinalIgnoreCase) && !platform.Contains("arm", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        detectedArch = Architecture.X64;
+                    }
+                    // Check for x86
+                    else if (userAgent.Contains("i686", StringComparison.OrdinalIgnoreCase) ||
+                             userAgent.Contains("i386", StringComparison.OrdinalIgnoreCase) ||
+                             platform.Contains("Win32", StringComparison.OrdinalIgnoreCase))
+                    {
+                        detectedArch = Architecture.X86;
+                    }
+                    else
+                    {
+                        // Default assumptions based on platform
+                        detectedArch = detectedPlatform switch
+                        {
+                            Platform.Windows => Architecture.X64, // Most Windows users are x64 now
+                            Platform.Linux => Architecture.X64,   // Most Linux desktop users are x64
+                            Platform.MacOS => Architecture.ARM64, // Most Mac users are M1/M2 now
+                            _ => Architecture.Unknown
+                        };
+                    }
+
+                    return new PlatformInfo { Platform = detectedPlatform, Architecture = detectedArch };
+                }
+                catch
+                {
+                    return new PlatformInfo { Platform = Platform.Unknown, Architecture = Architecture.Unknown };
+                }
+            }
+
+            /// <summary>
         /// Detects the current platform from the browser.
         /// </summary>
         public async Task<Platform> DetectPlatformAsync()
         {
-            try
-            {
-                var userAgent = await jsRuntime.InvokeAsync<string>("eval", "navigator.userAgent");
-                var platform = await jsRuntime.InvokeAsync<string>("eval", "navigator.platform");
-
-                // More comprehensive Windows detection
-                if (userAgent.Contains("Windows", StringComparison.OrdinalIgnoreCase) ||
-                    platform.Contains("Win", StringComparison.OrdinalIgnoreCase) ||
-                    userAgent.Contains("win64", StringComparison.OrdinalIgnoreCase) ||
-                    userAgent.Contains("wow64", StringComparison.OrdinalIgnoreCase))
-                {
-                    return Platform.Windows;
-                }
-                else if (userAgent.Contains("Mac", StringComparison.OrdinalIgnoreCase) ||
-                         platform.Contains("Mac", StringComparison.OrdinalIgnoreCase) ||
-                         userAgent.Contains("Darwin", StringComparison.OrdinalIgnoreCase))
-                {
-                    return Platform.MacOS;
-                }
-                else if (userAgent.Contains("Linux", StringComparison.OrdinalIgnoreCase) ||
-                         platform.Contains("Linux", StringComparison.OrdinalIgnoreCase) ||
-                         userAgent.Contains("X11", StringComparison.OrdinalIgnoreCase))
-                {
-                    return Platform.Linux;
-                }
-
-                return Platform.Unknown;
-            }
-            catch
-            {
-                return Platform.Unknown;
-            }
+                var info = await DetectPlatformInfoAsync();
+                return info.Platform;
         }
+
+            private static bool IsMobileUserAgent(string userAgent)
+            {
+                // Common mobile indicators
+                return userAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase) ||
+                       userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
+                       userAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
+                       userAgent.Contains("iPad", StringComparison.OrdinalIgnoreCase) ||
+                       userAgent.Contains("iPod", StringComparison.OrdinalIgnoreCase) ||
+                       userAgent.Contains("webOS", StringComparison.OrdinalIgnoreCase) ||
+                       userAgent.Contains("BlackBerry", StringComparison.OrdinalIgnoreCase) ||
+                       userAgent.Contains("IEMobile", StringComparison.OrdinalIgnoreCase) ||
+                       userAgent.Contains("Opera Mini", StringComparison.OrdinalIgnoreCase);
+            }
 
         private async Task<bool> IsLocalhostAsync()
         {
@@ -479,43 +557,56 @@ namespace Zilf.Playground.Services
         /// <summary>
         /// Finds the best matching download asset for the given platform.
         /// </summary>
-        public static ReleaseAssetLink? FindAssetForPlatform(Release release, Platform platform)
+            public static ReleaseAssetLink? FindAssetForPlatform(Release release, Platform platform, Architecture arch = Architecture.Unknown)
         {
             if (release.Assets?.Links == null)
                 return null;
 
             var links = release.Assets.Links;
 
-            var metadataMatch = FindByMetadata(links, platform);
+                var metadataMatch = FindByMetadata(links, platform, arch);
             if (metadataMatch != null)
                 return metadataMatch;
 
-            return platform switch
+                // Fallback to URL-based matching if no metadata
+                var archSuffix = arch switch
             {
-                Platform.Windows => links.FirstOrDefault(l =>
-                    l.DirectAssetUrl?.Contains("win-x64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.Url?.Contains("win-x64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.DirectAssetUrl?.Contains("win64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.Url?.Contains("win64", StringComparison.OrdinalIgnoreCase) == true),
-                Platform.MacOS => links.FirstOrDefault(l =>
-                    l.DirectAssetUrl?.Contains("osx-x64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.Url?.Contains("osx-x64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.DirectAssetUrl?.Contains("osx-arm64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.Url?.Contains("osx-arm64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.DirectAssetUrl?.Contains("macos", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.Url?.Contains("macos", StringComparison.OrdinalIgnoreCase) == true),
-                Platform.Linux => links.FirstOrDefault(l =>
-                    l.DirectAssetUrl?.Contains("linux-x64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.Url?.Contains("linux-x64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.DirectAssetUrl?.Contains("linux-arm64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.Url?.Contains("linux-arm64", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.DirectAssetUrl?.Contains("linux-arm", StringComparison.OrdinalIgnoreCase) == true ||
-                    l.Url?.Contains("linux-arm", StringComparison.OrdinalIgnoreCase) == true),
+                    Architecture.X64 => "x64",
+                    Architecture.ARM64 => "arm64",
+                    Architecture.ARM => "arm",
+                    Architecture.X86 => "x86",
                 _ => null
             };
+
+                return (platform, archSuffix) switch
+                {
+                    (Platform.Windows, not null) => links.FirstOrDefault(l =>
+                        l.DirectAssetUrl?.Contains($"win-{archSuffix}", StringComparison.OrdinalIgnoreCase) == true ||
+                        l.Url?.Contains($"win-{archSuffix}", StringComparison.OrdinalIgnoreCase) == true),
+                    (Platform.MacOS, not null) => links.FirstOrDefault(l =>
+                        l.DirectAssetUrl?.Contains($"osx-{archSuffix}", StringComparison.OrdinalIgnoreCase) == true ||
+                        l.Url?.Contains($"osx-{archSuffix}", StringComparison.OrdinalIgnoreCase) == true ||
+                        l.DirectAssetUrl?.Contains($"macos-{archSuffix}", StringComparison.OrdinalIgnoreCase) == true ||
+                        l.Url?.Contains($"macos-{archSuffix}", StringComparison.OrdinalIgnoreCase) == true),
+                    (Platform.Linux, not null) => links.FirstOrDefault(l =>
+                        l.DirectAssetUrl?.Contains($"linux-{archSuffix}", StringComparison.OrdinalIgnoreCase) == true ||
+                        l.Url?.Contains($"linux-{archSuffix}", StringComparison.OrdinalIgnoreCase) == true),
+                    (Platform.Windows, _) => links.FirstOrDefault(l =>
+                        l.DirectAssetUrl?.Contains("win-", StringComparison.OrdinalIgnoreCase) == true ||
+                        l.Url?.Contains("win-", StringComparison.OrdinalIgnoreCase) == true),
+                    (Platform.MacOS, _) => links.FirstOrDefault(l =>
+                        l.DirectAssetUrl?.Contains("osx-", StringComparison.OrdinalIgnoreCase) == true ||
+                        l.Url?.Contains("osx-", StringComparison.OrdinalIgnoreCase) == true ||
+                        l.DirectAssetUrl?.Contains("macos-", StringComparison.OrdinalIgnoreCase) == true ||
+                        l.Url?.Contains("macos-", StringComparison.OrdinalIgnoreCase) == true),
+                    (Platform.Linux, _) => links.FirstOrDefault(l =>
+                        l.DirectAssetUrl?.Contains("linux-", StringComparison.OrdinalIgnoreCase) == true ||
+                        l.Url?.Contains("linux-", StringComparison.OrdinalIgnoreCase) == true),
+                    _ => null
+                };
         }
 
-        private static ReleaseAssetLink? FindByMetadata(IEnumerable<ReleaseAssetLink> links, Platform platform)
+            private static ReleaseAssetLink? FindByMetadata(IEnumerable<ReleaseAssetLink> links, Platform platform, Architecture arch)
         {
             var aliases = GetOsAliases(platform);
             if (aliases.Length == 0)
@@ -528,11 +619,34 @@ namespace Zilf.Playground.Services
             if (candidates.Count == 0)
                 return null;
 
-            candidates.Sort((a, b) => GetLinkScore(b, platform).CompareTo(GetLinkScore(a, platform)));
+                // Filter by architecture if known
+                if (arch != Architecture.Unknown)
+                {
+                    var archString = arch switch
+                    {
+                        Architecture.X64 => "x64",
+                        Architecture.ARM64 => "arm64",
+                        Architecture.ARM => "arm",
+                        Architecture.X86 => "x86",
+                        _ => null
+                    };
+
+                    if (archString != null)
+                    {
+                        var archMatches = candidates
+                            .Where(l => string.Equals(l.Arch, archString, StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+
+                        if (archMatches.Count > 0)
+                            candidates = archMatches;
+                    }
+                }
+
+                candidates.Sort((a, b) => GetLinkScore(b, platform, arch).CompareTo(GetLinkScore(a, platform, arch)));
             return candidates.FirstOrDefault();
         }
 
-        private static int GetLinkScore(ReleaseAssetLink link, Platform platform)
+            private static int GetLinkScore(ReleaseAssetLink link, Platform platform, Architecture arch)
         {
             var prefs = GetArchPreference(platform);
             var score = 0;
@@ -541,6 +655,19 @@ namespace Zilf.Playground.Services
                 var idx = Array.IndexOf(prefs, link.Arch.ToLowerInvariant());
                 if (idx >= 0)
                     score += 100 - idx;
+
+                    // Bonus points for exact architecture match
+                    var archString = arch switch
+                    {
+                        Architecture.X64 => "x64",
+                        Architecture.ARM64 => "arm64",
+                        Architecture.ARM => "arm",
+                        Architecture.X86 => "x86",
+                        _ => null
+                    };
+
+                    if (archString != null && string.Equals(link.Arch, archString, StringComparison.OrdinalIgnoreCase))
+                        score += 50;
             }
 
             var typePrefs = GetTypePreference(platform);
@@ -589,6 +716,21 @@ namespace Zilf.Playground.Services
         MacOS,
         Linux
     }
+
+        public enum Architecture
+        {
+            Unknown,
+            X64,
+            X86,
+            ARM,
+            ARM64
+        }
+
+        public record PlatformInfo
+        {
+            public Platform Platform { get; init; }
+            public Architecture Architecture { get; init; }
+        }
 
     public record Release
     {
