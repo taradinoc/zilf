@@ -231,5 +231,18 @@ namespace Zilf.Common.Tests
 
             Assert.AreEqual(3, ssc.CountOccurrences("here"));
         }
+
+        [TestMethod]
+        public void TestSearchableStringCollection_Overlapping()
+        {
+            const string Substring = "aaaaaaaaaa"; // 10 a's
+
+            var ssc = new IndexedStringCollection
+            {
+                "aaaaaaaaaaaaaaaaaaaa"  // 20 a's
+            };
+
+            Assert.AreEqual(2, ssc.CountOccurrences(Substring));
+        }
     }
 }

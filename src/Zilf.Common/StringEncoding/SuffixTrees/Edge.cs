@@ -20,13 +20,29 @@ using System;
 
 namespace Zilf.Common.StringEncoding.SuffixTrees
 {
+    /// <summary>
+    /// Represents an edge in a suffix tree, connecting one node to another with a labeled substring.
+    /// </summary>
+    /// <typeparam name="T">The type of data associated with each string in the suffix tree.</typeparam>
     internal sealed class Edge<T> : IEdge<T>
     {
+        /// <summary>
+        /// Gets or sets the substring label for this edge.
+        /// </summary>
         public ReadOnlyMemory<char> Label { get; set; }
+
+        /// <summary>
+        /// Gets or sets the destination node that this edge points to.
+        /// </summary>
         public Node<T> Dest { get; set; }
 
         INode<T> IEdge<T>.Dest => Dest;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Edge{T}"/> class.
+        /// </summary>
+        /// <param name="label">The substring label for this edge.</param>
+        /// <param name="dest">The destination node that this edge points to.</param>
         public Edge(ReadOnlyMemory<char> label, Node<T> dest)
         {
             this.Label = label;
@@ -34,9 +50,20 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         }
     }
 
+    /// <summary>
+    /// Represents a read-only view of an edge in a suffix tree.
+    /// </summary>
+    /// <typeparam name="T">The type of data associated with each string in the suffix tree.</typeparam>
     public interface IEdge<T>
     {
+        /// <summary>
+        /// Gets the substring label for this edge.
+        /// </summary>
         ReadOnlyMemory<char> Label { get; }
+
+        /// <summary>
+        /// Gets the destination node that this edge points to.
+        /// </summary>
         INode<T> Dest { get; }
     }
 }

@@ -24,17 +24,34 @@ using System.Linq;
 
 namespace Zilf.Common.StringEncoding.SuffixTrees
 {
+    /// <summary>
+    /// A read-only view of an edge map, providing access to edges keyed by the first character of their labels.
+    /// </summary>
+    /// <typeparam name="T">The type of data associated with each string in the suffix tree.</typeparam>
     public readonly struct ReadOnlyEdgeMap<T>
     {
         private readonly Dictionary<char, Edge<T>>? dict;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ReadOnlyEdgeMap{T}"/> struct.
+        /// </summary>
+        /// <param name="dict">The underlying dictionary, or <c>null</c> if the edge map is empty.</param>
         internal ReadOnlyEdgeMap(Dictionary<char, Edge<T>>? dict)
         {
             this.dict = dict;
         }
 
+        /// <summary>
+        /// Gets the number of edges in the map.
+        /// </summary>
         public int Count => dict == null ? 0 : dict.Count;
 
+        /// <summary>
+        /// Attempts to retrieve an edge by its character key.
+        /// </summary>
+        /// <param name="c">The character key to look up.</param>
+        /// <param name="edge">When this method returns, contains the edge associated with the key, if found; otherwise, <c>null</c>.</param>
+        /// <returns><c>true</c> if an edge was found; otherwise, <c>false</c>.</returns>
         public bool TryGetValue(char c, [NotNullWhen(true)] out IEdge<T>? edge)
         {
             if (dict == null)
@@ -48,6 +65,11 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             return found;
         }
 
+        /// <summary>
+        /// Determines whether the map contains an edge with the specified character key.
+        /// </summary>
+        /// <param name="key">The character key to check.</param>
+        /// <returns><c>true</c> if an edge with the key exists; otherwise, <c>false</c>.</returns>
         public bool ContainsKey(char key)
         {
             if (dict == null)
@@ -56,6 +78,12 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             return dict.ContainsKey(key);
         }
 
+        /// <summary>
+        /// Gets the edge associated with the specified character key.
+        /// </summary>
+        /// <param name="c">The character key.</param>
+        /// <returns>The edge associated with the key.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown if the edge doesn't exist.</exception>
         public IEdge<T> this[char c]
         {
             get
@@ -66,10 +94,20 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             }
         }
 
+        /// <summary>
+        /// Gets a collection of all character keys in the map.
+        /// </summary>
         public KeyCollection Keys => new(dict);
 
+        /// <summary>
+        /// Gets a collection of all edges in the map.
+        /// </summary>
         public ValueCollection Values => new(dict);
 
+        /// <summary>
+        /// Returns an enumerator that iterates through the edge map.
+        /// </summary>
+        /// <returns>An enumerator for the key-value pairs in the map.</returns>
         public IEnumerator<KeyValuePair<char, IEdge<T>>> GetEnumerator()
         {
             if (dict == null)
@@ -80,15 +118,26 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
 
         #region Key/Value Collections
 
+        /// <summary>
+        /// Represents a read-only collection of character keys in an edge map.
+        /// </summary>
         public readonly struct KeyCollection : IEnumerable<char>
         {
             private readonly Dictionary<char, Edge<T>>? dict;
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="KeyCollection"/> struct.
+            /// </summary>
+            /// <param name="dict">The underlying dictionary, or <c>null</c> if the edge map is empty.</param>
             internal KeyCollection(Dictionary<char, Edge<T>>? dict)
             {
                 this.dict = dict;
             }
 
+            /// <summary>
+            /// Returns an enumerator that iterates through the keys.
+            /// </summary>
+            /// <returns>An enumerator for the character keys.</returns>
             public Enumerator GetEnumerator()
             {
                 if (dict == null)
@@ -101,6 +150,9 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+            /// <summary>
+            /// Enumerates the characters in a read-only key collection.
+            /// </summary>
             public struct Enumerator : IEnumerator<char>
             {
                 private readonly bool hasValue;
@@ -139,15 +191,26 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             }
         }
 
+        /// <summary>
+        /// Represents a read-only collection of edges in an edge map.
+        /// </summary>
         public readonly struct ValueCollection : IEnumerable<IEdge<T>>
         {
             private readonly Dictionary<char, Edge<T>>? dict;
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ValueCollection"/> struct.
+            /// </summary>
+            /// <param name="dict">The underlying dictionary, or <c>null</c> if the edge map is empty.</param>
             internal ValueCollection(Dictionary<char, Edge<T>>? dict)
             {
                 this.dict = dict;
             }
 
+            /// <summary>
+            /// Returns an enumerator that iterates through the edges.
+            /// </summary>
+            /// <returns>An enumerator for the edges.</returns>
             public Enumerator GetEnumerator()
             {
                 if (dict == null)
@@ -160,6 +223,9 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+            /// <summary>
+            /// Enumerates the edges in a read-only value collection.
+            /// </summary>
             public struct Enumerator : IEnumerator<IEdge<T>>
             {
                 private readonly bool hasValue;

@@ -25,7 +25,11 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
     /// <summary>
     /// Implements a Generalized Suffix Tree using Ukkonen's algorithm.
     /// </summary>
+    /// <typeparam name="T">The type of data to associate with each string added to the tree.</typeparam>
     /// <remarks>
+    /// A suffix tree is a compressed trie containing all the suffixes of the input strings.
+    /// This implementation supports multiple strings (generalized suffix tree) and allows
+    /// searching for substrings, counting occurrences, and retrieving associated data.
     /// See also:
     /// <list type="bullet">
     /// <item>https://github.com/gmamaladze/trienet</item>
@@ -41,11 +45,20 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         private Node<T> activeLeaf;
         private bool annotated;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SuffixTree{T}"/> class.
+        /// </summary>
         public SuffixTree()
         {
             activeLeaf = root = new Node<T>();
         }
 
+        /// <summary>
+        /// Searches for all distinct data values associated with strings containing the specified substring.
+        /// </summary>
+        /// <param name="word">The substring to search for.</param>
+        /// <returns>A sequence of distinct data values associated with strings containing the substring,
+        /// or an empty sequence if the substring is not found.</returns>
         public IEnumerable<T> Search(string word)
         {
             var tmpNode = SearchNode(word);
@@ -54,6 +67,17 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             return tmpNode.GetData().Distinct();
         }
 
+        /// <summary>
+        /// Searches for all data values associated with strings containing the specified substring,
+        /// along with the depth (position) where each occurrence ends.
+        /// </summary>
+        /// <param name="word">The substring to search for.</param>
+        /// <returns>A sequence of tuples containing data values and their corresponding depths,
+        /// or an empty sequence if the substring is not found.</returns>
+        /// <remarks>
+        /// The depth represents the number of characters from the start of the original string
+        /// to the end of the matched substring. This method triggers annotation if not already done.
+        /// </remarks>
         public IEnumerable<(T data, int depth)> SearchWithDepth(string word)
         {
             Annotate();
@@ -64,6 +88,14 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             return tmpNode.GetDataWithDepth().Distinct();
         }
 
+        /// <summary>
+        /// Counts the total number of occurrences of the specified substring across all strings in the tree.
+        /// </summary>
+        /// <param name="word">The substring to count.</param>
+        /// <returns>The number of occurrences, or zero if the substring is not found.</returns>
+        /// <remarks>
+        /// This method triggers annotation if not already done.
+        /// </remarks>
         public int CountOccurrences(string word)
         {
             Annotate();
@@ -74,6 +106,13 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             return tmpNode.ResultCount;
         }
 
+        /// <summary>
+        /// Ensures the tree has been annotated with computed metrics.
+        /// </summary>
+        /// <remarks>
+        /// Annotation is required for operations that need depth, leaf count, or result count information.
+        /// This method is idempotent and will only perform annotation once.
+        /// </remarks>
         private void Annotate()
         {
             if (!annotated)
@@ -83,12 +122,28 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             }
         }
 
+        /// <summary>
+        /// Gets the root node of the suffix tree.
+        /// </summary>
+        /// <returns>A read-only view of the root node.</returns>
+        /// <remarks>
+        /// This method triggers annotation before returning the root, ensuring all metrics are available.
+        /// </remarks>
         public INode<T> GetRoot()
         {
             Annotate();
             return root;
         }
 
+        /// <summary>
+        /// Searches for the node corresponding to a given substring.
+        /// </summary>
+        /// <param name="word">The substring to search for.</param>
+        /// <returns>The node representing the end of the substring path, or <c>null</c> if not found.</returns>
+        /// <remarks>
+        /// This method traverses the tree following edges that match the characters in the word.
+        /// It handles both exact edge label matches and partial matches within edge labels.
+        /// </remarks>
         private Node<T>? SearchNode(ReadOnlySpan<char> word)
         {
             var currentNode = root;
@@ -114,6 +169,16 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             return null;
         }
 
+        /// <summary>
+        /// Adds a string to the suffix tree with associated data.
+        /// </summary>
+        /// <param name="key">The string to add.</param>
+        /// <param name="value">The data to associate with the string.</param>
+        /// <remarks>
+        /// This method uses Ukkonen's algorithm to efficiently add all suffixes of the string to the tree.
+        /// After adding a string, the tree must be re-annotated before operations that depend on metrics.
+        /// The algorithm runs in O(n) time where n is the length of the string.
+        /// </remarks>
         public void Add(string key, T value)
         {
             annotated = false;
@@ -138,6 +203,20 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
                 activeLeaf.Suffix = s;
         }
 
+        /// <summary>
+        /// Tests whether a node already contains a path for the given character, and splits an edge if necessary.
+        /// </summary>
+        /// <param name="inputs">The starting node for the test.</param>
+        /// <param name="stringPart">The substring representing the path from the root to the current position.</param>
+        /// <param name="t">The character to test for.</param>
+        /// <param name="remainder">The remaining portion of the string being added.</param>
+        /// <param name="value">The data value being associated with the string.</param>
+        /// <returns>A tuple indicating whether the path is already contained (true) or a new branch was created (false),
+        /// and the node where the operation occurred or a newly created split node.</returns>
+        /// <remarks>
+        /// This is a core operation in Ukkonen's algorithm. If an edge needs to be split (the character appears
+        /// in the middle of an edge label), this method creates a new internal node and adjusts the edges accordingly.
+        /// </remarks>
         private static (bool contained, Node<T> lastNode) TestAndSplit(Node<T> inputs, ReadOnlyMemory<char> stringPart,
             char t, ReadOnlyMemory<char> remainder, T value)
         {
@@ -195,6 +274,17 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             return (true, s);
         }
 
+        /// <summary>
+        /// Canonizes a reference pair (node, string) to find the canonical reference for the same location.
+        /// </summary>
+        /// <param name="s">The starting node.</param>
+        /// <param name="inputStr">The substring from the node.</param>
+        /// <returns>A tuple containing the canonical node and the number of characters trimmed from the input.</returns>
+        /// <remarks>
+        /// Canonization is a key concept in Ukkonen's algorithm. It ensures that a (node, substring) pair
+        /// is represented in a canonical form by following explicit edges as far as possible. This operation
+        /// runs in O(1) amortized time due to the suffix link structure.
+        /// </remarks>
         private static (Node<T> lastNode, int leftTrimmedChars) Canonize(Node<T> s, ReadOnlyMemory<char> inputStr)
         {
             var trimmed = 0;
@@ -218,6 +308,19 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             return (currentNode, trimmed);
         }
 
+        /// <summary>
+        /// Updates the suffix tree by adding a new character and all its suffixes.
+        /// </summary>
+        /// <param name="inputNode">The active node at the start of the update.</param>
+        /// <param name="stringPart">The active substring being processed.</param>
+        /// <param name="rest">The remaining portion of the string to be added.</param>
+        /// <param name="value">The data value associated with the string.</param>
+        /// <returns>A tuple containing the final active node and the number of characters consumed.</returns>
+        /// <remarks>
+        /// This is the main update procedure in Ukkonen's algorithm. It adds all necessary suffixes for the
+        /// new character by following suffix links and creating new edges/nodes as needed. The algorithm maintains
+        /// suffix links to enable efficient suffix traversal.
+        /// </remarks>
         private (Node<T> lastNode, int trimmed) Update(Node<T> inputNode, ReadOnlyMemory<char> stringPart, ReadOnlyMemory<char> rest, T value)
         {
             var trimmed = 0;
@@ -277,6 +380,11 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
             return (s, trimmed);
         }
 
+        /// <summary>
+        /// Safely removes the last character from a substring, returning an empty substring if already empty.
+        /// </summary>
+        /// <param name="seq">The substring to trim.</param>
+        /// <returns>The substring with the last character removed, or an empty substring if the input was empty.</returns>
         private static ReadOnlyMemory<char> SafeCutLastChar(ReadOnlyMemory<char> seq)
         {
             if (seq.Length == 0)
@@ -286,8 +394,18 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         }
     }
 
+    /// <summary>
+    /// Provides extension methods for working with spans.
+    /// </summary>
     public static class SpanExtensions
     {
+        /// <summary>
+        /// Computes the sum of values in a span after applying a selector function to each element.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the span.</typeparam>
+        /// <param name="span">The span to sum.</param>
+        /// <param name="selector">A function to transform each element into an integer value.</param>
+        /// <returns>The sum of all transformed values.</returns>
         public static int Sum<T>(this ReadOnlySpan<T> span, Func<T, int> selector)
         {
             int result = 0;
