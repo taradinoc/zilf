@@ -131,8 +131,17 @@ jobs:
         run: ./tools/package-all.ps1 -RuntimeIdentifiers linux-x64 -Configuration Release
         shell: pwsh
         env:
-          ZILF_SHORT_VERSION: ${{ env.ZILF_SHORT_VERSION }}
-          ZILF_LONG_VERSION: ${{ env.ZILF_LONG_VERSION }}
+          ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+          ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
+      - name: Make rpm and deb packages
+        run: |
+          sudo apt-get update && sudo apt-get install -y ruby-full
+          sudo gem install fpm
+          ./tools/make-linux-packages.ps1 -Source Package/Release/Stage/zilf-$env:ZILF_LONG_VERSION-linux-x64 -Destination Package/Release/Packages -Version $env:ZILF_LONG_VERSION -Os linux -Arch x64
+        shell: pwsh
+        env:
+          ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+          ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
       - name: Upload linux-x64 packages
         uses: actions/upload-artifact@v4
         with:
@@ -154,8 +163,17 @@ jobs:
         run: ./tools/package-all.ps1 -RuntimeIdentifiers linux-arm64 -Configuration Release
         shell: pwsh
         env:
-          ZILF_SHORT_VERSION: ${{ env.ZILF_SHORT_VERSION }}
-          ZILF_LONG_VERSION: ${{ env.ZILF_LONG_VERSION }}
+          ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+          ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
+      - name: Make rpm and deb packages
+        run: |
+          sudo apt-get update && sudo apt-get install -y ruby-full
+          sudo gem install fpm
+          ./tools/make-linux-packages.ps1 -Source Package/Release/Stage/zilf-$env:ZILF_LONG_VERSION-linux-arm64 -Destination Package/Release/Packages -Version $env:ZILF_LONG_VERSION -Os linux -Arch arm64
+        shell: pwsh
+        env:
+          ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+          ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
       - name: Upload linux-arm64 packages
         uses: actions/upload-artifact@v4
         with:
@@ -177,8 +195,18 @@ jobs:
         run: ./tools/package-all.ps1 -RuntimeIdentifiers osx-arm64 -Configuration Release
         shell: pwsh
         env:
-          ZILF_SHORT_VERSION: ${{ env.ZILF_SHORT_VERSION }}
-          ZILF_LONG_VERSION: ${{ env.ZILF_LONG_VERSION }}
+          ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+          ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
+      - name: Make macOS .pkg
+        run: |
+          # brew update
+          # brew install ruby
+          gem install fpm
+          ./tools/make-macos-package.ps1 -Source Package/Release/Stage/zilf-$env:ZILF_LONG_VERSION-osx-arm64 -Destination Package/Release/Packages -Version $env:ZILF_LONG_VERSION -Arch arm64
+        shell: pwsh
+        env:
+          ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
+          ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
       - name: Upload mac packages
         uses: actions/upload-artifact@v4
         with:
@@ -218,7 +246,7 @@ jobs:
           $entries = @()
           Get-ChildItem -Path $pkgDir -File | ForEach-Object {
             $name = $_.Name
-            $type = if ($name -like '*.msi') { 'msi' } elseif ($name -like '*.zip') { 'zip' } elseif ($name -like '*.tar.gz') { 'tar.gz' } else { 'unknown' }
+            $type = if ($name -like '*.msi') { 'msi' } elseif ($name -like '*.zip') { 'zip' } elseif ($name -like '*.tar.gz') { 'tar.gz' } elseif ($name -like '*.pkg') { 'pkg' } elseif ($name -like '*.rpm') { 'rpm' } elseif ($name -like '*.deb') { 'deb' } else { 'unknown' }
 
             $baseName = $_.BaseName
             if ($name -like '*.tar.gz') {

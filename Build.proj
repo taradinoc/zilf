@@ -62,8 +62,19 @@
     <Copy SourceFiles="@(_ZilLibFiles)" DestinationFiles="@(_ZilLibFiles->'$(StageDir)/zillib/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
 
     <ItemGroup>
-      <_PublishOutputs Include="$(ZilfPublishDir)Zilf*;$(ZapfPublishDir)Zapf*;$(ZilfPublishDir)createdump*;$(ZapfPublishDir)createdump*"
-                        Exclude="$(ZilfPublishDir)Zilf.Common*;$(ZapfPublishDir)Zilf.Common*" />
+      <!-- Include both upper- and lower-case binary names to support platforms where AssemblyName is lower-case -->
+      <_PublishOutputs Include="
+          $(ZilfPublishDir)Zilf*;
+          $(ZilfPublishDir)zilf*;
+          $(ZapfPublishDir)Zapf*;
+          $(ZapfPublishDir)zapf*;
+          $(ZilfPublishDir)createdump*;
+          $(ZapfPublishDir)createdump*"
+                        Exclude="
+          $(ZilfPublishDir)Zilf.Common*;
+          $(ZilfPublishDir)zilf.common*;
+          $(ZapfPublishDir)Zilf.Common*;
+          $(ZapfPublishDir)zilf.common*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_PublishOutputs)" DestinationFiles="@(_PublishOutputs->'$(StageBinDir)/%(Filename)%(Extension)')" />
