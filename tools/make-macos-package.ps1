@@ -56,12 +56,14 @@ function Split-Version([string]$LongVersion) {
 }
 
 function New-TempScript([string]$Content) {
-    $tmpDir = $env:RUNNER_TEMP
-    if ([string]::IsNullOrWhiteSpace($tmpDir)) { $tmpDir = [System.IO.Path]::GetTempPath() }
-    $file = Join-Path $tmpDir ("fpm-script-" + [System.Guid]::NewGuid().ToString('N'))
-    Set-Content -Path $file -Value $Content -Encoding ascii -NoNewline:$false
-    try { & chmod +x $file } catch { }
-    return $file
+  $tmpDir = $env:RUNNER_TEMP
+  if ([string]::IsNullOrWhiteSpace($tmpDir)) { $tmpDir = [System.IO.Path]::GetTempPath() }
+  $file = Join-Path $tmpDir ("fpm-script-" + [System.Guid]::NewGuid().ToString('N') + ".sh")
+  # Normalize newlines to LF and write without BOM for shebang compatibility
+  $normalized = $Content -replace "`r`n", "`n" -replace "`r", "`n"
+  $normalized | Out-File -FilePath $file -Encoding utf8NoBOM
+  try { & chmod +x $file } catch { }
+  return $file
 }
 
 # Resolve and validate paths

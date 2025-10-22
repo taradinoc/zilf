@@ -74,13 +74,15 @@ function Get-ArchMaps([string]$Arch) {
 }
 
 function New-TempScript([string]$Content) {
-		$tmpDir = $env:RUNNER_TEMP
-		if ([string]::IsNullOrWhiteSpace($tmpDir)) { $tmpDir = [System.IO.Path]::GetTempPath() }
-		$file = Join-Path $tmpDir ("fpm-script-" + [System.Guid]::NewGuid().ToString('N'))
-		Set-Content -Path $file -Value $Content -Encoding ascii -NoNewline:$false
-		# Make it executable on *nix
-		try { & chmod +x $file } catch { }
-		return $file
+	$tmpDir = $env:RUNNER_TEMP
+	if ([string]::IsNullOrWhiteSpace($tmpDir)) { $tmpDir = [System.IO.Path]::GetTempPath() }
+	$file = Join-Path $tmpDir ("fpm-script-" + [System.Guid]::NewGuid().ToString('N') + ".sh")
+	# Normalize newlines to LF to avoid /bin/sh^M issues and write without BOM
+	$normalized = $Content -replace "`r`n", "`n" -replace "`r", "`n"
+	$normalized | Out-File -FilePath $file -Encoding utf8NoBOM
+	# Make it executable on *nix
+	try { & chmod +x $file } catch { }
+	return $file
 }
 
 # Resolve and validate paths
@@ -143,15 +145,22 @@ $common = @(
 )
 if ($versionParts.iteration) { $common += @('--iteration', $versionParts.iteration) }
 
+# Add runtime dependencies for native AOT .NET binaries
+$debDeps = @('libicu76 | libicu75 | libicu74 | libicu73 | libicu72 | libicu71 | libicu70 | libicu69 | libicu68 | libicu67 | libicu66')
+$rpmDeps = @('libicu')
+
+$debCommon = $common + ($debDeps | ForEach-Object { @('-d', $_) })
+$rpmCommon = $common + ($rpmDeps | ForEach-Object { @('-d', $_) })
+
 # Build DEB
 Write-Host "Building DEB: $debOut" -ForegroundColor Cyan
-$debArgs = $common + @('-t','deb','-a', $archMaps.deb, '-p', $debOut, '.')
+$debArgs = $debCommon + @('-t','deb','-a', $archMaps.deb, '-p', $debOut, '.')
 & fpm @debArgs
 if ($LASTEXITCODE -ne 0) { throw "fpm failed creating deb with exit code $LASTEXITCODE" }
 
 # Build RPM
 Write-Host "Building RPM: $rpmOut" -ForegroundColor Cyan
-$rpmArgs = $common + @('-t','rpm','-a', $archMaps.rpm, '-p', $rpmOut, '.')
+$rpmArgs = $rpmCommon + @('-t','rpm','-a', $archMaps.rpm, '-p', $rpmOut, '.')
 & fpm @rpmArgs
 if ($LASTEXITCODE -ne 0) { throw "fpm failed creating rpm with exit code $LASTEXITCODE" }
 
