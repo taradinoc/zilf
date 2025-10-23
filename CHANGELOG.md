@@ -28,6 +28,8 @@ and this project may someday adhere to
 - Changed `ALL-INCLUDES?` to exclude held objects from ALL when the verb is TAKE
   and unheld objects from ALL when the verb is DROP.
 
+- `BOTH` can now be used like `ALL` to match multiple objects.
+
 ### Fixed
 
 - Fixed OBJECT-TEMPLATE breaking when defining more than one template at a time

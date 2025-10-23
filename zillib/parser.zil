@@ -608,7 +608,7 @@ Args:
 <FINISH-PRONOUNS>
 
 "Buzzwords"
-<BUZZ A AN AND ANY ALL EVERY EVERYTHING BUT EXCEPT OF ONE THE THEN UNDO OOPS \. \, \">
+<BUZZ A AN AND ANY ALL EVERY EVERYTHING BOTH BUT EXCEPT OF ONE THE THEN UNDO OOPS \. \, \">
 
 "Parser entry points"
 
@@ -1360,7 +1360,7 @@ Returns:
 <ROUTINE STARTS-NOUN-PHRASE? (W)
     ;"T? forces the OR to be evaluated as a condition, since we don't
       care about the exact return value from CHKWORD?."
-    <T? <OR <EQUAL? .W ,W?A ,W?AN ,W?THE ,W?ALL ,W?EVERY ,W?EVERYTHING ,W?ANY ,W?ONE>
+    <T? <OR <EQUAL? .W ,W?A ,W?AN ,W?THE ,W?ALL ,W?EVERY ,W?EVERYTHING ,W?BOTH ,W?ANY ,W?ONE>
             <CHKWORD? .W ,PS?ADJECTIVE>
             <CHKWORD? .W ,PS?OBJECT>>>>
 
@@ -1429,7 +1429,7 @@ Returns:
              <SET SPEC <NP-NSPEC .NP 1>>
              <SET CNT 0>)
             ;"recognize ALL/ANY/ONE"
-            (<EQUAL? .W ,W?ALL ,W?EVERY ,W?EVERYTHING ,W?ANY ,W?ONE>
+            (<EQUAL? .W ,W?ALL ,W?EVERY ,W?EVERYTHING ,W?BOTH ,W?ANY ,W?ONE>
              <COND (<OR .MODE .ADJ .NOUN>
                     <TRACE 4 "[too late for mode change at word " N .WN "]" CR>
                     <COND (<NOT .SILENT?>
@@ -1437,7 +1437,7 @@ Returns:
                     <TRACE-OUT>
                     <RFALSE>)>
              <SET MODE
-                  <COND (<EQUAL? .W ,W?ALL ,W?EVERY ,W?EVERYTHING> ,MCM-ALL)
+                  <COND (<EQUAL? .W ,W?ALL ,W?EVERY ,W?EVERYTHING ,W?BOTH> ,MCM-ALL)
                         (ELSE ,MCM-ANY)>>
              <TRACE 4 "[mode change at word " N .WN ", now mode=" N .MODE "]" CR>
              <SET SPEC-WN .WN>)
