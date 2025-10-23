@@ -2207,9 +2207,11 @@ Returns:
 <ROUTINE ALL-INCLUDES? (OBJ)
     <NOT <OR <FSET? .OBJ ,INVISIBLE>
              <=? .OBJ ,WINNER>
+             <AND <VERB? TAKE> <HELD? .OBJ>>
+             <AND <VERB? DROP <NOT <HELD? .OBJ>>>>
              <AND <VERB? TAKE DROP>
                   <NOT <OR <FSET? .OBJ ,TAKEBIT>
-                       <FSET? .OBJ ,TRYTAKEBIT>>>>>>>
+                           <FSET? .OBJ ,TRYTAKEBIT>>>>>>>
 
 <ROUTINE APPLY-GENERIC-FCN (TBL "AUX" (MAX <GETB .TBL 0>) F R)
     <DO (I 1 .MAX) (END <RFALSE>)
