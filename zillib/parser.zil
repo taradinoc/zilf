@@ -2208,7 +2208,7 @@ Returns:
     <NOT <OR <FSET? .OBJ ,INVISIBLE>
              <=? .OBJ ,WINNER>
              <AND <VERB? TAKE> <HELD? .OBJ>>
-             <AND <VERB? DROP <NOT <HELD? .OBJ>>>>
+             <AND <VERB? DROP> <NOT <HELD? .OBJ>>>
              <AND <VERB? TAKE DROP>
                   <NOT <OR <FSET? .OBJ ,TAKEBIT>
                            <FSET? .OBJ ,TRYTAKEBIT>>>>>>>

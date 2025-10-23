@@ -91,6 +91,13 @@ apple: Taken.|">
     <CHECK <NOT <IN? ,BUCKET ,WINNER>>>
     <CHECK <NOT <IN? ,WINNER ,WINNER>>>>
 
+<TEST-CASE ("Take all when everything is held")
+    <MOVE ,HAT ,WINNER>
+    <MOVE ,BANANA ,WINNER>
+    <MOVE ,APPLE ,WINNER>
+    <COMMAND [TAKE ALL]>
+    <EXPECT "There are none at all available!|">>
+
 <TEST-CASE ("Exclude one object with BUT")
     <COMMAND [TAKE ALL BUT BANANA]>
     <EXPECT "hat: Taken.|
@@ -135,6 +142,10 @@ hat: Dropped.|">
     <CHECK <NOT <IN? ,HAT ,WINNER>>>
     <CHECK <NOT <IN? ,BANANA ,WINNER>>>
     <CHECK <NOT <IN? ,APPLE ,WINNER>>>>
+
+<TEST-CASE ("Drop all while empty-handed")
+    <COMMAND [DROP ALL]>
+    <EXPECT "There are none at all available!|">>
 
 <TEST-CASE ("Examine all")
     <COMMAND [EXAMINE ALL]>
