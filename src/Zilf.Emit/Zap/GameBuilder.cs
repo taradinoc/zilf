@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Zilf.Common.StringEncoding;
+using Zilf.Emit;
 
 namespace Zilf.Emit.Zap
 {
@@ -64,6 +65,10 @@ namespace Zilf.Emit.Zap
         internal readonly DebugFileBuilder? debug;
         internal readonly AbbrevFinder? abbrevs;
         readonly GameOptions options;
+
+#if DEBUG
+    readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
+#endif
 
         IRoutineBuilder? entryRoutine;
 
@@ -481,6 +486,9 @@ namespace Zilf.Emit.Zap
         {
             // finish main file
             writer.WriteLine();
+#if DEBUG
+            WritePeepholeStats();
+#endif
             writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetStringFileName(false));
             writer.WriteLine(INDENT + ".END");
             writer.Close();
@@ -877,5 +885,47 @@ namespace Zilf.Emit.Zap
         {
             writer.WriteLine(str);
         }
+
+#if DEBUG
+        internal void RecordPeepholeStats(IEnumerable<PeepholeOptimizationStat> stats)
+        {
+            foreach (var stat in stats)
+            {
+                if (stat.Applications == 0)
+                    continue;
+
+                if (peepholeStats.TryGetValue(stat.Name, out var aggregate))
+                {
+                    peepholeStats[stat.Name] = (
+                        aggregate.Applications + stat.Applications,
+                        aggregate.InstructionsSaved + stat.InstructionsSaved);
+                }
+                else
+                {
+                    peepholeStats.Add(stat.Name, (stat.Applications, stat.InstructionsSaved));
+                }
+            }
+        }
+
+        void WritePeepholeStats()
+        {
+            if (peepholeStats.Count == 0)
+                return;
+
+            writer.WriteLine(INDENT + "; Peephole optimization statistics (debug build)");
+
+            foreach (var entry in peepholeStats
+                     .OrderByDescending(static e => e.Value.InstructionsSaved)
+                     .ThenBy(static e => e.Key, StringComparer.Ordinal))
+            {
+                var name = entry.Key;
+                var (applications, saved) = entry.Value;
+                var instructionWord = saved == 1 ? "instruction" : "instructions";
+                writer.WriteLine(INDENT + $";   {name}: applied {applications}x, saved {saved} {instructionWord}");
+            }
+
+            writer.WriteLine();
+        }
+#endif
     }
 }

@@ -65,6 +65,11 @@ namespace Zilf.Emit
     readonly record struct CombinerResult<TCode>(int LinesConsumed, IEnumerable<CombinableLine<TCode>> NewLines);
 
     /// <summary>
+    /// Snapshot of a peephole optimization's activity.
+    /// </summary>
+    public readonly record struct PeepholeOptimizationStat(string Name, int Applications, int InstructionsSaved);
+
+    /// <summary>
     /// Indicates whether two branches test the same condition.
     /// </summary>
     enum SameTestResult
@@ -175,11 +180,11 @@ namespace Zilf.Emit
         [System.Diagnostics.Contracts.Pure]
         ControlsConditionResult ControlsConditionalBranch(TCode a, TCode b);
 
-        /// <summary>
-        /// Allocates a new label.
-        /// </summary>
-        /// <returns>The new label.</returns>
-        ILabel NewLabel();
+    }
+
+    interface IPeepholeCombinerWithStats
+    {
+        IEnumerable<PeepholeOptimizationStat> GetOptimizationStats();
     }
 
     /// <summary>
@@ -251,14 +256,82 @@ namespace Zilf.Emit
             }
         }
 
-        ILabel? pendingLabel;
-        readonly Dictionary<ILabel, ILabel> aliases = new();
-        readonly LinkedList<Line> lines = new();
+    ILabel? pendingLabel;
+    readonly Dictionary<ILabel, ILabel> aliases = new();
+    readonly LinkedList<Line> lines = new();
+    readonly OptimizationDescriptor[] optimizationPipeline;
+#if DEBUG
+    readonly OptimizationStats[] optimizationStats;
+#endif
 
         /// <summary>
         /// Gets or sets the delegate that will be used to combine adjacent instructions.
         /// </summary>
         public IPeepholeCombiner<TCode>? Combiner { get; set; }
+
+        /// <summary>
+        /// Gets or sets the factory used to allocate new labels for optimizations that need them.
+        /// </summary>
+        public Func<ILabel>? LabelFactory { get; set; }
+
+        public PeepholeBuffer()
+        {
+            optimizationPipeline = BuildOptimizationPipeline();
+#if DEBUG
+            optimizationStats = optimizationPipeline.Select(d => new OptimizationStats(d.Name)).ToArray();
+#endif
+        }
+
+        readonly record struct OptimizationDescriptor(string Name, OptimizationStep Step);
+
+        delegate OptimizationStepResult OptimizationStep(
+            ref LinkedListNode<Line>? node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels,
+            bool reachableFlag,
+            Action<LinkedListNode<Line>> markReachable);
+
+        enum OptimizationAdvance
+        {
+            Continue,
+            RestartCurrentNode,
+            MoveToNextNode,
+        }
+
+        readonly record struct OptimizationStepResult(bool Changed, OptimizationAdvance Advance, LinkedListNode<Line>? NextNode, int LinesRemoved, int LinesAdded)
+        {
+            public int InstructionsSaved => LinesRemoved - LinesAdded;
+
+            public static OptimizationStepResult Continue() => new(false, OptimizationAdvance.Continue, null, 0, 0);
+
+            public static OptimizationStepResult ChangedContinue(int linesRemoved = 0, int linesAdded = 0) =>
+                new(true, OptimizationAdvance.Continue, null, linesRemoved, linesAdded);
+
+            public static OptimizationStepResult RestartCurrent(LinkedListNode<Line>? node, int linesRemoved = 0, int linesAdded = 0, bool changed = true) =>
+                new(changed, OptimizationAdvance.RestartCurrentNode, node, linesRemoved, linesAdded);
+
+            public static OptimizationStepResult MoveTo(LinkedListNode<Line>? node, bool changed, int linesRemoved = 0, int linesAdded = 0) =>
+                new(changed, OptimizationAdvance.MoveToNextNode, node, linesRemoved, linesAdded);
+        }
+
+#if DEBUG
+        class OptimizationStats
+        {
+            public OptimizationStats(string name) => Name = name;
+
+            public string Name { get; }
+            public int Applications { get; private set; }
+            public int InstructionsSaved { get; private set; }
+
+            public void Record(int instructionsSaved)
+            {
+                Applications++;
+                InstructionsSaved += instructionsSaved;
+            }
+
+            public PeepholeOptimizationStat Snapshot() => new(Name, Applications, InstructionsSaved);
+        }
+#endif
 
         /// <summary>
         /// Adds an instruction to the buffer.
@@ -513,462 +586,736 @@ namespace Zilf.Emit
                     }
                 }
 
-                // apply optimizations to each line
-                for (LinkedListNode<Line>? node = lines.First; node != null; node = node!.Next)
+                var pipeline = optimizationPipeline;
+
+                for (LinkedListNode<Line>? node = lines.First; node != null;)
                 {
-                    var line = node.Value;
-                    bool delete = false;
+                    var restarted = false;
 
-                    // TODO: refactor optimizations (wrap each one in a method or class)
-
-                    // clear unused labels
-                    if (line.Label != null && !usedLabels.ContainsKey(line.Label))
+                    for (int i = 0; i < pipeline.Length && node != null; i++)
                     {
-                        line.Label = null;
-                        changed = true;
+                        var descriptor = pipeline[i];
+                        var result = descriptor.Step(ref node, labelMap, usedLabels, reachableFlag, MarkReachable);
 
-                        Trace("clear unused label");
+                        if (result.Changed)
+                        {
+                            changed = true;
+#if DEBUG
+                            optimizationStats[i].Record(result.InstructionsSaved);
+#endif
+                        }
+
+                        if (result.Advance == OptimizationAdvance.Continue)
+                            continue;
+
+                        if (result.Advance == OptimizationAdvance.RestartCurrentNode)
+                        {
+                            node = result.NextNode ?? node;
+                            restarted = true;
+                        }
+                        else if (result.Advance == OptimizationAdvance.MoveToNextNode)
+                        {
+                            node = result.NextNode;
+                            restarted = true;
+                        }
+
+                        break;
                     }
 
-                    if (line.Flag != reachableFlag)
-                    {
-                        // delete unreachable code
-                        delete = true;
+                    if (node == null)
+                        break;
 
-                        Trace("doom unreachable lineu");
-                    }
-                    else if (line.TargetLine != null && line.TargetLine != line)
-                    {
-                        SameTestResult sameTestResult;
-                        if (line.TargetLine.Type == PeepholeLineType.BranchAlways)
-                        {
-                            // if the target is an unconditional branch, use its target instead
-                            line.TargetLabel = line.TargetLine.TargetLabel;
-                            line.TargetLine = line.TargetLine.TargetLine;
-
-                            changed = true;
-
-                            Trace("optimize branch to unconditional");
-                        }
-                        else if (Combiner != null && IsInvertibleBranch(line.TargetLine.Type) &&
-                                 (sameTestResult = Combiner.AreSameTest(line.Code, line.TargetLine.Code)) != SameTestResult.Unrelated)
-                        {
-                            /* handle "conditional branch to [next?] related conditional branch":
-                             * 
-                             * If COND1? and COND2? test the same condition, then:
-                             * 
-                             *        COND1? /again
-                             *        ...
-                             * again: COND2? /elsewhere
-                             * 
-                             *        becomes:
-                             * 
-                             *        COND1? /elsewhere
-                             *        ...
-                             *        COND2? /elsewhere
-                             *        
-                             * If they test opposite conditions (or the polarities are opposite), then
-                             * instead it becomes:
-                             * 
-                             *        COND1? /skip
-                             *        ...
-                             *        COND2? /elsewhere
-                             * skip:  ...
-                             * 
-                             * Also, if COND1 falls through to its target (or falls through to an
-                             * unconditional jump to its target), insert a jump past COND2 (or to
-                             * COND2's target if they test opposite conditions!), so this:
-                             * 
-                             *        COND1? /again
-                             * again: COND2? /elsewhere
-                             *        ...
-                             * 
-                             *        becomes:
-                             *
-                             *        COND1? /elsewhere
-                             *        JUMP skip
-                             *        COND2? /elsewhere         ; may be deleted later
-                             * skip:  ...
-                             */
-
-                            var originalTarget = line.TargetLine;
-                            var targetNode = lines.Find(originalTarget);
-
-                            Debug.Assert(targetNode?.Next != null);
-
-                            var lineAfterTarget = targetNode.Next.Value;
-
-                            var sameCondition = (sameTestResult == SameTestResult.SameTest) == (line.Type == line.TargetLine.Type);
-                            if (sameCondition)
-                            {
-                                line.TargetLabel = line.TargetLine.TargetLabel;
-                                line.TargetLine = line.TargetLine.TargetLine;
-                            }
-                            else
-                            {
-                                if (lineAfterTarget.Label == null)
-                                {
-                                    lineAfterTarget.Label = Combiner.NewLabel();
-                                    labelMap[lineAfterTarget.Label] = lineAfterTarget;
-                                }
-
-                                line.TargetLabel = lineAfterTarget.Label;
-                                line.TargetLine = lineAfterTarget;
-                                usedLabels[line.TargetLabel] = true;
-                            }
-
-                            if (node.Next != null &&
-                                (node.Next.Value == originalTarget ||
-                                 (node.Next.Value.Type == PeepholeLineType.BranchAlways && node.Next.Value.TargetLine == originalTarget)))
-                            {
-                                ILabel jumpTargetLabel;
-                                Line? jumpTargetLine;
-                                if (sameCondition)
-                                {
-                                    if (lineAfterTarget.Label == null)
-                                    {
-                                        lineAfterTarget.Label = Combiner.NewLabel();
-                                        labelMap[lineAfterTarget.Label] = lineAfterTarget;
-                                    }
-
-                                    jumpTargetLabel = lineAfterTarget.Label;
-                                    jumpTargetLine = lineAfterTarget;
-                                }
-                                else
-                                {
-                                    Debug.Assert(originalTarget.TargetLabel != null);
-                                    jumpTargetLabel = originalTarget.TargetLabel;
-                                    jumpTargetLine = originalTarget.TargetLine;
-                                }
-
-                                var newLine = new Line(
-                                    null,
-                                    Combiner.SynthesizeBranchAlways(),
-                                    jumpTargetLabel,
-                                    PeepholeLineType.BranchAlways)
-                                {
-                                    TargetLine = jumpTargetLine,
-                                    Flag = reachableFlag
-                                };
-                                usedLabels[jumpTargetLabel] = true;
-
-                                node = lines.AddAfter(node, newLine);
-                            }
-
-                            changed = true;
-
-                            Trace("optimize conditional branch to related conditional");
-                        }
-                        else if (IsInvertibleBranch(line.Type) && node.Next?.Next != null &&
-                                 line.TargetLine == node.Next.Next.Value &&
-                                 node.Next.Value.Type == PeepholeLineType.BranchAlways &&
-                                 line.TargetLine != node.Next.Value.TargetLine)
-                        {
-                            /* handle "conditional branch over unconditional branch":
-                             * 
-                             *       COND? /skip
-                             *       JUMP  elsewhere
-                             * skip: FOO
-                             * 
-                             *       becomes:
-                             *       
-                             *       COND? \elsewhere       ; negate branch and use uncond's target
-                             *       JUMP skip              ; insert uncond branch to cond's target
-                             *       JUMP elsewhere
-                             * skip: FOO
-                             * 
-                             * both unconditional branches will eventually be deleted by other rules.
-                             * 
-                             * but we have to avoid getting trapped in a loop by something like this:
-                             * 
-                             *       COND? /skip
-                             *       JUMP skip
-                             * skip: FOO
-                             * 
-                             * which would otherwise become:
-                             * 
-                             *       COND? \skip
-                             *       JUMP skip
-                             *       JUMP skip
-                             * skip: FOO
-                             * 
-                             * ... and then the second jump is deleted and we're right back where we
-                             * started, with the opposite polarity.
-                             * 
-                             */
-
-                            line.Type = InvertBranch(line.Type);
-
-                            var newLine = new Line(
-                                null,
-                                Combiner == null ? default! : Combiner.SynthesizeBranchAlways(),
-                                line.TargetLabel,
-                                PeepholeLineType.BranchAlways)
-                            {
-                                TargetLine = line.TargetLine,
-                                Flag = reachableFlag
-                            };
-
-                            line.TargetLabel = node.Next.Value.TargetLabel;
-                            line.TargetLine = node.Next.Value.TargetLine;
-
-                            node = lines.AddAfter(node, newLine);
-                            changed = true;
-
-                            Trace("optimize conditional branch over unconditional");
-                        }
-                        else if (line.Type == PeepholeLineType.BranchAlways &&
-                            node.Next != null && line.TargetLine == node.Next.Value)
-                        {
-                            // delete "branch to next"
-                            delete = true;
-
-                            Trace("doom branch to next");
-                        }
-                        else if (line.Type == PeepholeLineType.BranchAlways &&
-                            line.TargetLine.Type == PeepholeLineType.Terminator &&
-                            Combiner?.CanDuplicate(line.TargetLine.Code) == true)
-                        {
-                            // handle "branch to terminator" by replacing the branch with a copy of the terminator
-                            var oldLabel = line.Label;
-                            line.CopyFrom(line.TargetLine);
-                            line.Label = oldLabel;
-                            if (line.Label != null)
-                                labelMap[line.Label] = line;
-                            changed = true;
-
-                            Trace("optimize branch to terminator");
-                        }
-                    }
-
-                    if (!delete && Combiner != null && line.Type == PeepholeLineType.Plain && node.Next != null)
-                    {
-                        ControlsConditionResult controlsCondResult;
-
-                        if (IsInvertibleBranch(node.Next.Value.Type) &&
-                            (controlsCondResult = Combiner.ControlsConditionalBranch(line.Code, node.Next.Value.Code)) != ControlsConditionResult.Unrelated)
-                        {
-                            // handle "push constant then fall through to a conditional branch that tests it"
-                            line.Code = Combiner.SynthesizeBranchAlways();
-                            line.Type = PeepholeLineType.BranchAlways;
-
-                            var polarity = node.Next.Value.Type == PeepholeLineType.BranchPositive;
-                            if ((controlsCondResult == ControlsConditionResult.CausesBranchIfPositive) == polarity)
-                            {
-                                // branch to condition's target
-                                line.TargetLabel = node.Next.Value.TargetLabel;
-                                line.TargetLine = node.Next.Value.TargetLine;
-                            }
-                            else
-                            {
-                                // branch to instruction after condition
-                                Debug.Assert(node.Next.Next != null);
-                                var lineAfterCondition = node.Next.Next.Value;
-                                if (lineAfterCondition.Label == null)
-                                {
-                                    lineAfterCondition.Label = Combiner.NewLabel();
-                                    labelMap[lineAfterCondition.Label] = lineAfterCondition;
-                                }
-
-                                line.TargetLabel = lineAfterCondition.Label;
-                                line.TargetLine = lineAfterCondition;
-                                usedLabels[line.TargetLabel] = true;
-                            }
-
-                            changed = true;
-
-                            Trace("optimize pushed constant falling through to conditional");
-                        }
-                        else if (node.Next.Value.Type == PeepholeLineType.BranchAlways && node.Next.Value.TargetLine != null &&
-                            (controlsCondResult = Combiner.ControlsConditionalBranch(line.Code, node.Next.Value.TargetLine.Code)) != ControlsConditionResult.Unrelated)
-                        {
-                            // handle "push constant then jump to a conditional branch that tests it"
-                            line.Code = Combiner.SynthesizeBranchAlways();
-                            line.Type = PeepholeLineType.BranchAlways;
-
-                            var polarity = node.Next.Value.TargetLine.Type == PeepholeLineType.BranchPositive;
-                            if ((controlsCondResult == ControlsConditionResult.CausesBranchIfPositive) == polarity)
-                            {
-                                // branch to condition's target
-                                line.TargetLabel = node.Next.Value.TargetLine.TargetLabel;
-                                line.TargetLine = node.Next.Value.TargetLine.TargetLine;
-                            }
-                            else
-                            {
-                                // branch to instruction after condition
-                                var targetLine = lines.Find(node.Next.Value.TargetLine);
-                                Debug.Assert(targetLine?.Next != null);
-                                var lineAfterCondition = targetLine.Next.Value;
-                                if (lineAfterCondition.Label == null)
-                                {
-                                    lineAfterCondition.Label = Combiner.NewLabel();
-                                    labelMap[lineAfterCondition.Label] = lineAfterCondition;
-                                }
-
-                                line.TargetLabel = lineAfterCondition.Label;
-                                line.TargetLine = lineAfterCondition;
-                                usedLabels[line.TargetLabel] = true;
-                            }
-
-                            changed = true;
-
-                            Trace("optimize pushed constant jumping to conditional");
-                        }
-                    }
-
-                    if (!delete && Combiner != null && node.Next != null)
-                    {
-                        var nextLine = node.Next.Value;
-
-                        // merge adjacent identical terminators and unconditional branches
-                        if ((line.Type == PeepholeLineType.BranchAlways ||
-                             line.Type == PeepholeLineType.Terminator ||
-                             line.Type == PeepholeLineType.HeavyTerminator) &&
-                            line.TargetLabel == nextLine.TargetLabel &&
-                            Combiner.AreIdentical(line.Code, nextLine.Code))
-                        {
-                            delete = true;
-
-                            MarkReachable(node.Next);
-
-                            // merge code
-                            nextLine.Code = Combiner.MergeIdentical(line.Code, nextLine.Code);
-
-                            // merge labels
-                            if (nextLine.Label == null)
-                            {
-                                nextLine.Label = line.Label;
-                                if (nextLine.Label != null)
-                                    labelMap[nextLine.Label] = nextLine;
-                                line.Label = null;
-                            }
-
-                            foreach (var l in lines)
-                            {
-                                if (l.TargetLine == line)
-                                {
-                                    l.TargetLabel = nextLine.Label;
-                                    l.TargetLine = nextLine;
-                                    usedLabels[l.TargetLabel!] = true;
-                                }
-                            }
-
-                            Trace("merge adjacent identical terminators/unconditionals");
-                        }
-                    }
-
-                    if (!delete && Combiner != null)
-                    {
-                        // give the user a chance to combine lines
-                        var result = Combiner.Apply(EnumerateCombinableLines(node));
-                        if (result.LinesConsumed > 0)
-                        {
-                            // the lines have been combined
-                            var count = result.LinesConsumed;
-                            var newClines = result.NewLines.ToList();
-                            var addAfter = node.Previous;
-
-                            // remove old lines
-                            var next = node.Next;
-                            while (node != null && count > 0)
-                            {
-                                lines.Remove(node);
-                                node = next;
-                                if (node != null)
-                                    next = node.Next;
-                                count--;
-                            }
-
-                            // we'll leave node pointing at the first new line, but clear it for now
-                            node = null;
-
-                            // add new lines
-                            foreach (var newCline in newClines)
-                            {
-                                var newLine =
-                                    new Line(newCline.Label, newCline.Code, newCline.Target, newCline.Type)
-                                    {
-                                        Flag = reachableFlag
-                                    };
-
-                                if (newLine.Label != null)
-                                    labelMap[newLine.Label] = newLine;
-
-                                var newNode = new LinkedListNode<Line>(newLine);
-
-                                if (addAfter != null)
-                                    lines.AddAfter(addAfter, newNode);
-                                else
-                                    lines.AddFirst(newNode);
-
-                                addAfter = newNode;
-
-                                node ??= newNode;
-                            }
-
-                            // fix targets for old and new lines
-                            foreach (var l in lines)
-                            {
-                                if (l.TargetLabel != null)
-                                {
-                                    if (labelMap.TryGetValue(l.TargetLabel, out var labeledLine))
-                                        l.TargetLine = labeledLine;
-                                }
-                            }
-
-                            changed = true;
-
-                            Trace("apply user combiner");
-                        }
-                    }
-
-                    // delete code that has been doomed
-                    if (delete)
-                    {
-                        var next = node!.Next;
-
-                        lines.Remove(node);
-                        changed = true;
-
-                        /* if the line is labeled, update references to it. we assume the
-                         * optimization rules will never delete the labeled last line of
-                         * the function unless it's unreachable. */
-                        if (line.Label != null && next != null)
-                        {
-                            MarkReachable(next);
-
-                            // update references to this label
-                            if (next.Value.Label == null)
-                            {
-                                next.Value.Label = line.Label;
-                                labelMap[next.Value.Label] = next.Value;
-                            }
-
-                            foreach (var l2 in lines)
-                            {
-                                if (l2.TargetLine == line)
-                                {
-                                    l2.TargetLabel = next.Value.Label;
-                                    l2.TargetLine = next.Value;
-                                    usedLabels[l2.TargetLabel] = true;
-                                }
-                            }
-                        }
-
-                        Trace("delete doomed line");
-
-                        if (next?.Previous != null)
-                        {
-                            node = next.Previous;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
+                    if (!restarted)
+                        node = node.Next;
                 }
             } while (changed);
         }
+
+        bool TryClearUnusedLabel(Line line, Dictionary<ILabel, bool> usedLabels)
+        {
+            if (line.Label != null && !usedLabels.ContainsKey(line.Label))
+            {
+                line.Label = null;
+                Trace("clear unused label");
+                return true;
+            }
+
+            return false;
+        }
+
+        bool TryRedirectBranchToUnconditional(Line line)
+        {
+            if (line.TargetLine != null && line.TargetLine.Type == PeepholeLineType.BranchAlways)
+            {
+                line.TargetLabel = line.TargetLine.TargetLabel;
+                line.TargetLine = line.TargetLine.TargetLine;
+
+                Trace("optimize branch to unconditional");
+                return true;
+            }
+
+            return false;
+        }
+
+        bool TryOptimizeConditionalBranchChain(
+            ref LinkedListNode<Line> node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels,
+            bool reachableFlag,
+            out int linesAdded)
+        {
+            linesAdded = 0;
+            if (Combiner == null)
+                return false;
+
+            var line = node.Value;
+            if (line.TargetLine == null || !IsInvertibleBranch(line.TargetLine.Type))
+                return false;
+
+            var relation = Combiner.AreSameTest(line.Code, line.TargetLine.Code);
+            if (relation == SameTestResult.Unrelated)
+                return false;
+
+            var originalTarget = line.TargetLine;
+            var targetNode = lines.Find(originalTarget);
+
+            Debug.Assert(targetNode?.Next != null);
+
+            var lineAfterTarget = targetNode.Next.Value;
+
+            /* handle "conditional branch to [next?] related conditional branch":
+             *
+             * If COND1? and COND2? test the same condition, then:
+             *
+             *        COND1? /again
+             *        ...
+             * again: COND2? /elsewhere
+             *
+             *        becomes:
+             *
+             *        COND1? /elsewhere
+             *        ...
+             *        COND2? /elsewhere
+             *
+             * If they test opposite conditions (or the polarities are opposite), then
+             * instead it becomes:
+             *
+             *        COND1? /skip
+             *        ...
+             *        COND2? /elsewhere
+             * skip:  ...
+             *
+             * Also, if COND1 falls through to its target (or falls through to an
+             * unconditional jump to its target), insert a jump past COND2 (or to
+             * COND2's target if they test opposite conditions!), so this:
+             *
+             *        COND1? /again
+             * again: COND2? /elsewhere
+             *        ...
+             *
+             *        becomes:
+             *
+             *        COND1? /elsewhere
+             *        JUMP skip
+             *        COND2? /elsewhere         ; may be deleted later
+             * skip:  ...
+             */
+
+            var sameCondition = (relation == SameTestResult.SameTest) == (line.Type == originalTarget.Type);
+            if (sameCondition)
+            {
+                line.TargetLabel = originalTarget.TargetLabel;
+                line.TargetLine = originalTarget.TargetLine;
+            }
+            else
+            {
+                var newLabel = EnsureLabel(lineAfterTarget, labelMap);
+                line.TargetLabel = newLabel;
+                line.TargetLine = lineAfterTarget;
+                usedLabels[newLabel] = true;
+            }
+
+            if (node.Next != null &&
+                (node.Next.Value == originalTarget ||
+                 (node.Next.Value.Type == PeepholeLineType.BranchAlways && node.Next.Value.TargetLine == originalTarget)))
+            {
+                ILabel jumpTargetLabel;
+                Line? jumpTargetLine;
+
+                if (sameCondition)
+                {
+                    jumpTargetLine = lineAfterTarget;
+                    jumpTargetLabel = EnsureLabel(lineAfterTarget, labelMap);
+                }
+                else
+                {
+                    Debug.Assert(originalTarget.TargetLabel != null);
+                    jumpTargetLabel = originalTarget.TargetLabel;
+                    jumpTargetLine = originalTarget.TargetLine;
+                }
+
+                var newLine = new Line(
+                    null,
+                    Combiner.SynthesizeBranchAlways(),
+                    jumpTargetLabel,
+                    PeepholeLineType.BranchAlways)
+                {
+                    TargetLine = jumpTargetLine,
+                    Flag = reachableFlag
+                };
+                usedLabels[jumpTargetLabel] = true;
+
+                node = lines.AddAfter(node, newLine);
+                linesAdded++;
+            }
+
+            Trace("optimize conditional branch to related conditional");
+            return true;
+        }
+
+        bool TryOptimizeBranchOverUnconditional(ref LinkedListNode<Line> node, bool reachableFlag, out int linesAdded)
+        {
+            linesAdded = 0;
+            var line = node.Value;
+
+            if (!IsInvertibleBranch(line.Type) || node.Next?.Next == null)
+                return false;
+
+            if (line.TargetLine != node.Next.Next.Value)
+                return false;
+
+            if (node.Next.Value.Type != PeepholeLineType.BranchAlways)
+                return false;
+
+            if (line.TargetLine == node.Next.Value.TargetLine)
+                return false;
+
+            /* handle "conditional branch over unconditional branch":
+             *
+             *       COND? /skip
+             *       JUMP  elsewhere
+             * skip: FOO
+             *
+             *       becomes:
+             *
+             *       COND? \elsewhere       ; negate branch and use uncond's target
+             *       JUMP skip              ; insert uncond branch to cond's target
+             *       JUMP elsewhere
+             * skip: FOO
+             *
+             * both unconditional branches will eventually be deleted by other rules.
+             *
+             * but we have to avoid getting trapped in a loop by something like this:
+             *
+             *       COND? /skip
+             *       JUMP skip
+             * skip: FOO
+             *
+             * which would otherwise become:
+             *
+             *       COND? \skip
+             *       JUMP skip
+             *       JUMP skip
+             * skip: FOO
+             *
+             * ... and then the second jump is deleted and we're right back where we
+             * started, with the opposite polarity.
+             */
+
+            line.Type = InvertBranch(line.Type);
+
+            var newLine = new Line(
+                null,
+                Combiner == null ? default! : Combiner.SynthesizeBranchAlways(),
+                line.TargetLabel,
+                PeepholeLineType.BranchAlways)
+            {
+                TargetLine = line.TargetLine,
+                Flag = reachableFlag
+            };
+
+            line.TargetLabel = node.Next.Value.TargetLabel;
+            line.TargetLine = node.Next.Value.TargetLine;
+
+            node = lines.AddAfter(node, newLine);
+            linesAdded = 1;
+
+            Trace("optimize conditional branch over unconditional");
+            return true;
+        }
+
+        bool TryRemoveBranchToNext(LinkedListNode<Line> node)
+        {
+            var line = node.Value;
+
+            if (line.Type == PeepholeLineType.BranchAlways &&
+                node.Next != null && line.TargetLine == node.Next.Value)
+            {
+                Trace("doom branch to next");
+                return true;
+            }
+
+            return false;
+        }
+
+        bool TryOptimizeBranchToTerminator(LinkedListNode<Line> node, Dictionary<ILabel, Line> labelMap)
+        {
+            if (Combiner == null)
+                return false;
+
+            var line = node.Value;
+
+            if (line.Type != PeepholeLineType.BranchAlways ||
+                line.TargetLine?.Type != PeepholeLineType.Terminator ||
+                !Combiner.CanDuplicate(line.TargetLine.Code))
+            {
+                return false;
+            }
+
+            var oldLabel = line.Label;
+            line.CopyFrom(line.TargetLine);
+            line.Label = oldLabel;
+            if (line.Label != null)
+                labelMap[line.Label] = line;
+
+            Trace("optimize branch to terminator");
+            return true;
+        }
+
+        bool TryOptimizePushedConstantFallThrough(
+            LinkedListNode<Line> node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels)
+        {
+            if (Combiner == null)
+                return false;
+
+            var line = node.Value;
+            if (line.Type != PeepholeLineType.Plain)
+                return false;
+
+            var nextNode = node.Next;
+            if (nextNode == null)
+                return false;
+
+            var nextLine = nextNode.Value;
+            if (!IsInvertibleBranch(nextLine.Type))
+                return false;
+
+            var controls = Combiner.ControlsConditionalBranch(line.Code, nextLine.Code);
+            if (controls == ControlsConditionResult.Unrelated)
+                return false;
+
+            line.Code = Combiner.SynthesizeBranchAlways();
+            line.Type = PeepholeLineType.BranchAlways;
+
+            var polarity = nextLine.Type == PeepholeLineType.BranchPositive;
+            if ((controls == ControlsConditionResult.CausesBranchIfPositive) == polarity)
+            {
+                line.TargetLabel = nextLine.TargetLabel;
+                line.TargetLine = nextLine.TargetLine;
+            }
+            else
+            {
+                Debug.Assert(nextNode.Next != null);
+                var afterCondition = nextNode.Next.Value;
+                var newLabel = EnsureLabel(afterCondition, labelMap);
+                line.TargetLabel = newLabel;
+                line.TargetLine = afterCondition;
+                usedLabels[newLabel] = true;
+            }
+
+            Trace("optimize pushed constant falling through to conditional");
+            return true;
+        }
+
+        bool TryOptimizePushedConstantJump(
+            LinkedListNode<Line> node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels)
+        {
+            if (Combiner == null)
+                return false;
+
+            var line = node.Value;
+            if (line.Type != PeepholeLineType.Plain)
+                return false;
+
+            var nextNode = node.Next;
+            if (nextNode == null)
+                return false;
+
+            var jumpLine = nextNode.Value;
+            if (jumpLine.Type != PeepholeLineType.BranchAlways || jumpLine.TargetLine == null)
+                return false;
+
+            var controls = Combiner.ControlsConditionalBranch(line.Code, jumpLine.TargetLine.Code);
+            if (controls == ControlsConditionResult.Unrelated)
+                return false;
+
+            line.Code = Combiner.SynthesizeBranchAlways();
+            line.Type = PeepholeLineType.BranchAlways;
+
+            var polarity = jumpLine.TargetLine.Type == PeepholeLineType.BranchPositive;
+            if ((controls == ControlsConditionResult.CausesBranchIfPositive) == polarity)
+            {
+                line.TargetLabel = jumpLine.TargetLine.TargetLabel;
+                line.TargetLine = jumpLine.TargetLine.TargetLine;
+            }
+            else
+            {
+                var targetNode = lines.Find(jumpLine.TargetLine);
+                Debug.Assert(targetNode?.Next != null);
+                var afterCondition = targetNode.Next.Value;
+                var newLabel = EnsureLabel(afterCondition, labelMap);
+                line.TargetLabel = newLabel;
+                line.TargetLine = afterCondition;
+                usedLabels[newLabel] = true;
+            }
+
+            Trace("optimize pushed constant jumping to conditional");
+            return true;
+        }
+
+        bool TryMergeAdjacentTerminators(
+            LinkedListNode<Line> node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels,
+            Action<LinkedListNode<Line>> markReachable)
+        {
+            if (Combiner == null)
+                return false;
+
+            var line = node.Value;
+            var nextNode = node.Next;
+            if (nextNode == null)
+                return false;
+
+            var nextLine = nextNode.Value;
+
+            if ((line.Type != PeepholeLineType.BranchAlways &&
+                 line.Type != PeepholeLineType.Terminator &&
+                 line.Type != PeepholeLineType.HeavyTerminator) ||
+                line.TargetLabel != nextLine.TargetLabel ||
+                !Combiner.AreIdentical(line.Code, nextLine.Code))
+            {
+                return false;
+            }
+
+            markReachable(nextNode);
+
+            nextLine.Code = Combiner.MergeIdentical(line.Code, nextLine.Code);
+
+            if (nextLine.Label == null)
+            {
+                nextLine.Label = line.Label;
+                if (nextLine.Label != null)
+                    labelMap[nextLine.Label] = nextLine;
+                line.Label = null;
+            }
+
+            foreach (var other in lines)
+            {
+                if (other.TargetLine == line)
+                {
+                    other.TargetLabel = nextLine.Label;
+                    other.TargetLine = nextLine;
+                    if (other.TargetLabel != null)
+                        usedLabels[other.TargetLabel] = true;
+                }
+            }
+
+            Trace("merge adjacent identical terminators/unconditionals");
+            return true;
+        }
+
+        bool TryApplyCombiner(
+            ref LinkedListNode<Line>? node,
+            Dictionary<ILabel, Line> labelMap,
+            bool reachableFlag,
+            Dictionary<ILabel, bool> usedLabels,
+            out int linesRemoved,
+            out int linesAdded)
+        {
+            linesRemoved = 0;
+            linesAdded = 0;
+            if (Combiner == null)
+                return false;
+
+            if (node == null)
+                return false;
+
+            var result = Combiner.Apply(EnumerateCombinableLines(node));
+            if (result.LinesConsumed <= 0)
+                return false;
+
+            var consumed = result.LinesConsumed;
+            var newClines = result.NewLines.ToList();
+            var insertAfter = node.Previous;
+
+            linesRemoved = result.LinesConsumed;
+            linesAdded = newClines.Count;
+
+            var current = node;
+            var next = node.Next;
+            while (consumed > 0 && current != null)
+            {
+                lines.Remove(current);
+                current = next;
+                next = current?.Next;
+                consumed--;
+            }
+
+            LinkedListNode<Line>? firstNewNode = null;
+            foreach (var newCline in newClines)
+            {
+                var newLine = new Line(newCline.Label, newCline.Code, newCline.Target, newCline.Type)
+                {
+                    Flag = reachableFlag
+                };
+
+                if (newLine.Label != null)
+                    labelMap[newLine.Label] = newLine;
+
+                var newNode = new LinkedListNode<Line>(newLine);
+
+                if (insertAfter != null)
+                    lines.AddAfter(insertAfter, newNode);
+                else
+                    lines.AddFirst(newNode);
+
+                insertAfter = newNode;
+                firstNewNode ??= newNode;
+            }
+
+            foreach (var line in lines)
+            {
+                if (line.TargetLabel != null && labelMap.TryGetValue(line.TargetLabel, out var labeledLine))
+                    line.TargetLine = labeledLine;
+            }
+
+            node = firstNewNode ?? current ?? insertAfter ?? lines.First;
+
+            Trace("apply user combiner");
+            return true;
+        }
+
+        LinkedListNode<Line>? DeleteLine(
+            LinkedListNode<Line> node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels,
+            Action<LinkedListNode<Line>> markReachable)
+        {
+            var line = node.Value;
+            var next = node.Next;
+
+            lines.Remove(node);
+
+            if (line.Label != null && next != null)
+            {
+                markReachable(next);
+
+                if (next.Value.Label == null)
+                {
+                    next.Value.Label = line.Label;
+                    labelMap[next.Value.Label] = next.Value;
+                }
+
+                foreach (var other in lines)
+                {
+                    if (other.TargetLine == line)
+                    {
+                        other.TargetLabel = next.Value.Label;
+                        other.TargetLine = next.Value;
+                        if (other.TargetLabel != null)
+                            usedLabels[other.TargetLabel] = true;
+                    }
+                }
+            }
+
+            Trace("delete doomed line");
+
+            return next;
+        }
+
+        ILabel EnsureLabel(Line line, Dictionary<ILabel, Line> labelMap)
+        {
+            if (line.Label == null)
+            {
+                line.Label = CreateLabel();
+                labelMap[line.Label] = line;
+            }
+
+            return line.Label;
+        }
+
+        ILabel CreateLabel()
+        {
+            if (LabelFactory == null)
+                throw new InvalidOperationException("No label factory was provided for peephole optimizations.");
+
+            return LabelFactory();
+        }
+
+        OptimizationDescriptor[] BuildOptimizationPipeline() =>
+        [
+            new("clear unused labels", RunClearUnusedLabelStep),
+            new("remove unreachable line", RunRemoveUnreachableLineStep),
+            new("optimize branch targets", RunOptimizeBranchTargetsStep),
+            new("optimize pushed constants", RunOptimizePushedConstantsStep),
+            new("merge adjacent terminators", RunMergeAdjacentTerminatorsStep),
+            new("apply combiner", RunApplyCombinerStep),
+        ];
+
+        OptimizationStepResult RunClearUnusedLabelStep(
+            ref LinkedListNode<Line>? node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels,
+            bool reachableFlag,
+            Action<LinkedListNode<Line>> markReachable)
+        {
+            if (node == null)
+                return OptimizationStepResult.Continue();
+
+            return TryClearUnusedLabel(node.Value, usedLabels)
+                ? OptimizationStepResult.ChangedContinue()
+                : OptimizationStepResult.Continue();
+        }
+
+        OptimizationStepResult RunRemoveUnreachableLineStep(
+            ref LinkedListNode<Line>? node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels,
+            bool reachableFlag,
+            Action<LinkedListNode<Line>> markReachable)
+        {
+            if (node == null)
+                return OptimizationStepResult.Continue();
+
+            if (node.Value.Flag == reachableFlag)
+                return OptimizationStepResult.Continue();
+
+            Trace("doom unreachable line");
+
+            var nextNode = DeleteLine(node, labelMap, usedLabels, markReachable);
+            node = nextNode;
+            return OptimizationStepResult.MoveTo(nextNode, changed: true, linesRemoved: 1);
+        }
+
+        OptimizationStepResult RunOptimizeBranchTargetsStep(
+            ref LinkedListNode<Line>? node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels,
+            bool reachableFlag,
+            Action<LinkedListNode<Line>> markReachable)
+        {
+            if (node == null)
+                return OptimizationStepResult.Continue();
+
+            var currentNode = node;
+            var line = currentNode.Value;
+
+            if (line.TargetLine == null || line.TargetLine == line)
+                return OptimizationStepResult.Continue();
+
+            if (TryRedirectBranchToUnconditional(line))
+                return OptimizationStepResult.ChangedContinue();
+
+            var refNode = currentNode;
+
+            if (TryOptimizeConditionalBranchChain(ref refNode, labelMap, usedLabels, reachableFlag, out var chainLinesAdded))
+            {
+                node = refNode;
+                return OptimizationStepResult.ChangedContinue(linesAdded: chainLinesAdded);
+            }
+
+            if (TryOptimizeBranchOverUnconditional(ref refNode, reachableFlag, out var overLinesAdded))
+            {
+                node = refNode;
+                return OptimizationStepResult.ChangedContinue(linesAdded: overLinesAdded);
+            }
+
+            if (TryRemoveBranchToNext(currentNode))
+            {
+                var nextNode = DeleteLine(currentNode, labelMap, usedLabels, markReachable);
+                node = nextNode;
+                return OptimizationStepResult.MoveTo(nextNode, changed: true, linesRemoved: 1);
+            }
+
+            if (TryOptimizeBranchToTerminator(currentNode, labelMap))
+                return OptimizationStepResult.ChangedContinue();
+
+            return OptimizationStepResult.Continue();
+        }
+
+        OptimizationStepResult RunOptimizePushedConstantsStep(
+            ref LinkedListNode<Line>? node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels,
+            bool reachableFlag,
+            Action<LinkedListNode<Line>> markReachable)
+        {
+            if (node == null || Combiner == null)
+                return OptimizationStepResult.Continue();
+
+            var currentNode = node;
+
+            if (TryOptimizePushedConstantFallThrough(currentNode, labelMap, usedLabels))
+                return OptimizationStepResult.ChangedContinue();
+
+            if (TryOptimizePushedConstantJump(currentNode, labelMap, usedLabels))
+                return OptimizationStepResult.ChangedContinue();
+
+            return OptimizationStepResult.Continue();
+        }
+
+        OptimizationStepResult RunMergeAdjacentTerminatorsStep(
+            ref LinkedListNode<Line>? node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels,
+            bool reachableFlag,
+            Action<LinkedListNode<Line>> markReachable)
+        {
+            if (node == null)
+                return OptimizationStepResult.Continue();
+
+            var currentNode = node;
+
+            if (!TryMergeAdjacentTerminators(currentNode, labelMap, usedLabels, markReachable))
+                return OptimizationStepResult.Continue();
+
+            var nextNode = DeleteLine(currentNode, labelMap, usedLabels, markReachable);
+            node = nextNode;
+            return OptimizationStepResult.MoveTo(nextNode, changed: true, linesRemoved: 1);
+        }
+
+        OptimizationStepResult RunApplyCombinerStep(
+            ref LinkedListNode<Line>? node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels,
+            bool reachableFlag,
+            Action<LinkedListNode<Line>> markReachable)
+        {
+            if (node == null)
+                return OptimizationStepResult.Continue();
+
+            if (!TryApplyCombiner(ref node, labelMap, reachableFlag, usedLabels, out var linesRemoved, out var linesAdded))
+                return OptimizationStepResult.Continue();
+
+            return OptimizationStepResult.RestartCurrent(node, linesRemoved, linesAdded);
+        }
+
+#if DEBUG
+        public IEnumerable<PeepholeOptimizationStat> GetOptimizationStats()
+        {
+            var stats = optimizationStats.Select(static s => s.Snapshot());
+
+            if (Combiner is IPeepholeCombinerWithStats withStats)
+                stats = stats.Concat(withStats.GetOptimizationStats());
+
+            return stats;
+        }
+#endif
 
         static IEnumerable<CombinableLine<TCode>> EnumerateCombinableLines([DisallowNull] LinkedListNode<Line>? node)
         {

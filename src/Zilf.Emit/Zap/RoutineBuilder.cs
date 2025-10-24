@@ -25,6 +25,7 @@ using System.Text;
 using Zapf.Parsing.Expressions;
 using Zapf.Parsing.Instructions;
 using Zilf.Common;
+using Zilf.Emit;
 
 namespace Zilf.Emit.Zap
 {
@@ -56,7 +57,11 @@ namespace Zilf.Emit.Zap
             this.entryPoint = entryPoint;
             CleanStack = cleanStack;
 
-            peep = new PeepholeBuffer<ZapCode>() { Combiner = new PeepholeCombiner(this) };
+            peep = new PeepholeBuffer<ZapCode>
+            {
+                Combiner = new PeepholeCombiner(),
+                LabelFactory = DefineLabel
+            };
             RoutineStart = DefineLabel();
         }
 
@@ -1008,19 +1013,55 @@ namespace Zilf.Emit.Zap
                     game.abbrevs.AddText(str);
             });
 
+#if DEBUG
+            game.RecordPeepholeStats(peep.GetOptimizationStats());
+#endif
+
             if (game.debug != null)
                 game.WriteOutput(
                     INDENT +
                     $".DEBUG-ROUTINE-END {game.debug.GetFileNumber(defnEnd.File)},{defnEnd.Line},{defnEnd.Column}");
         }
 
-        class PeepholeCombiner : IPeepholeCombiner<ZapCode>
+    class PeepholeCombiner : IPeepholeCombiner<ZapCode>, IPeepholeCombinerWithStats
         {
-            readonly RoutineBuilder routineBuilder;
+            private readonly CombinerOptimizationDescriptor[] optimizationPipeline;
+#if DEBUG
+            private readonly OptimizationStats[] optimizationStats;
+#endif
 
-            public PeepholeCombiner(RoutineBuilder routineBuilder)
+            private IEnumerator<CombinableLine<ZapCode>>? enumerator;
+            private List<CombinableLine<ZapCode>>? matches;
+
+            private readonly record struct CombinerOptimizationDescriptor(string Name, CombinerOptimization Step);
+
+            private delegate bool CombinerOptimization(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result);
+
+#if DEBUG
+            private class OptimizationStats
             {
-                this.routineBuilder = routineBuilder;
+                public OptimizationStats(string name) => Name = name;
+
+                public string Name { get; }
+                public int Applications { get; private set; }
+                public int InstructionsSaved { get; private set; }
+
+                public void Record(int instructionsSaved)
+                {
+                    Applications++;
+                    InstructionsSaved += instructionsSaved;
+                }
+
+                public PeepholeOptimizationStat Snapshot() => new(Name, Applications, InstructionsSaved);
+            }
+#endif
+
+            public PeepholeCombiner()
+            {
+                optimizationPipeline = BuildOptimizationPipeline();
+#if DEBUG
+                optimizationStats = optimizationPipeline.Select(d => new OptimizationStats(d.Name)).ToArray();
+#endif
             }
 
             void BeginMatch(IEnumerable<CombinableLine<ZapCode>> lines)
@@ -1050,9 +1091,6 @@ namespace Zilf.Emit.Zap
 
                 matches = null;
             }
-
-            IEnumerator<CombinableLine<ZapCode>>? enumerator;
-            List<CombinableLine<ZapCode>>? matches;
 
             CombinerResult<ZapCode> Combine1To1(Instruction newInstruction, PeepholeLineType? type = null, ILabel? target = null)
             {
@@ -1230,108 +1268,278 @@ namespace Zilf.Emit.Zap
             /// <inheritdoc />
             public CombinerResult<ZapCode> Apply(IEnumerable<CombinableLine<ZapCode>> lines)
             {
-                AsmExpr? expr1 = null;
-                NumericLiteral? const1 = null, const2 = null;
-                string? destStr = null;
+                for (int i = 0; i < optimizationPipeline.Length; i++)
+                {
+                    if (!optimizationPipeline[i].Step(lines, out var result))
+                        continue;
 
+#if DEBUG
+                    var newLineCount = CountNewLines(result.NewLines);
+                    var instructionsSaved = result.LinesConsumed - newLineCount;
+                    optimizationStats[i].Record(instructionsSaved);
+#endif
+                    return result;
+                }
+
+                return new CombinerResult<ZapCode>();
+            }
+
+            private static int CountNewLines(IEnumerable<CombinableLine<ZapCode>> newLines)
+            {
+                if (newLines is ICollection<CombinableLine<ZapCode>> collection)
+                    return collection.Count;
+
+                var count = 0;
+                using var enumerator = newLines.GetEnumerator();
+                while (enumerator.MoveNext())
+                    count++;
+
+                return count;
+            }
+
+            // these names are lowercase to avoid confusing the codegen tests
+            // that check for specific instructions
+            private CombinerOptimizationDescriptor[] BuildOptimizationPipeline() =>
+            [
+                new("simplify zero test", TrySimplifyEqualZero),
+                new("rewrite jump to boolean", TryRewriteJumpToBoolean),
+                new("fold push/rstack pair", TrySimplifyPushRStack),
+                new("eliminate stack pop pair", TryEliminateStackPopPair),
+                new("replace push+pop with set", TryReplacePushPopWithSet),
+                new("substitute pushed value", TrySubstitutePushedValue),
+                new("fold inc branch", TryFoldIncBranch),
+                new("fold dec branch", TryFoldDecBranch),
+                new("merge equal tests", TryMergeEqualTests),
+                new("combine crlf+rtrue", TryCombineCrlfRtrue),
+                new("upgrade printi", TryUpgradePrintI),
+                new("simplify band zero branch", TrySimplifyBandZeroBranch),
+                new("merge band constants", TryMergeBandConstants),
+                new("merge bor constants", TryMergeBorConstants),
+            ];
+
+            bool TrySimplifyEqualZero(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
                 BeginMatch(lines);
                 try
                 {
-                    if (Match(a => IsEqualZero(a.Code.Instruction, out expr1)))
+                    AsmExpr? expr = null;
+
+                    if (Match(a => IsEqualZero(a.Code.Instruction, out expr)))
                     {
-                        // EQUAL? x,0 | EQUAL? 0,x => ZERO? x
-                        return Combine1To1(new Instruction("ZERO?", expr1!));
+                        result = Combine1To1(new Instruction("ZERO?", expr!));
+                        return true;
                     }
 
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryRewriteJumpToBoolean(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
                     if (Match(a => a.Code.Instruction.Name == "JUMP" && (a.Target == RTRUE || a.Target == RFALSE)))
                     {
-                        // JUMP to TRUE/FALSE => RTRUE/RFALSE
-                        return Combine1To1(new Instruction(matches![0].Target == RTRUE ? "RTRUE" : "RFALSE"));
+                        var name = matches![0].Target == RTRUE ? "RTRUE" : "RFALSE";
+                        result = Combine1To1(new Instruction(name));
+                        return true;
                     }
 
-                    //if (Match(a => a.Code.Text.StartsWith("PUSH ", StringComparison.Ordinal), b => b.Code.Text == "RSTACK"))
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TrySimplifyPushRStack(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
                     if (Match(a => a.Code.Instruction.Name == "PUSH" && a.Code.Instruction.Operands.Count == 1,
                         b => b.Code.Instruction.Name == "RSTACK"))
                     {
-                        // PUSH + RSTACK => RFALSE/RTRUE/RETURN
-                        return matches![0].Code.Instruction.Operands[0] switch
+                        result = matches![0].Code.Instruction.Operands[0] switch
                         {
-                            NumericLiteral { Value: 0 } =>
-                                Combine2To1(new Instruction("RFALSE"),
-                                    PeepholeLineType.BranchAlways,
-                                    RFALSE),
-                            NumericLiteral { Value: 1 } =>
-                                Combine2To1(new Instruction("RTRUE"),
-                                    PeepholeLineType.BranchAlways,
-                                    RTRUE),
+                            NumericLiteral { Value: 0 } => Combine2To1(
+                                new Instruction("RFALSE"),
+                                PeepholeLineType.BranchAlways,
+                                RFALSE),
+                            NumericLiteral { Value: 1 } => Combine2To1(
+                                new Instruction("RTRUE"),
+                                PeepholeLineType.BranchAlways,
+                                RTRUE),
                             _ => Combine2To1(matches[0].Code.Instruction.WithName("RETURN"))
                         };
+                        return true;
                     }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryEliminateStackPopPair(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    string? dest = null;
 
                     if (Match(a => a.Code.Instruction.StoreTarget == "STACK",
-                        b => IsPopToVariable(b.Code.Instruction, out destStr)))
+                        b => IsPopToVariable(b.Code.Instruction, out dest)))
                     {
-                        // >STACK + POP 'dest => >dest
-                        return Combine2To1(matches![0].Code.Instruction.WithStoreTarget(destStr));
+                        result = Combine2To1(matches![0].Code.Instruction.WithStoreTarget(dest));
+                        return true;
                     }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryReplacePushPopWithSet(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    string? dest = null;
 
                     if (Match(a => a.Code.Instruction.Name == "PUSH",
-                        b => IsPopToVariable(b.Code.Instruction, out destStr)))
+                        b => IsPopToVariable(b.Code.Instruction, out dest)))
                     {
-                        // PUSH + POP 'dest => SET 'dest
-                        return Combine2To1(new Instruction(
+                        result = Combine2To1(new Instruction(
                             "SET",
-                            new QuoteExpr(new SymbolExpr(destStr!)),
+                            new QuoteExpr(new SymbolExpr(dest!)),
                             matches![0].Code.Instruction.Operands[0]));
+                        return true;
                     }
 
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TrySubstitutePushedValue(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
                     if (Match(a => a.Code.Instruction.Name == "PUSH" && !a.Code.Instruction.Operands[0].IsStack(),
                         b => b.Code.Instruction.Operands.Any(o => o.IsStack())))
                     {
-                        // PUSH v + ANY *,STACK,* => ANY v
-                        // v can be substituted for the leftmost appearance of STACK
-                        var newOperands = matches![1].Code.Instruction.Operands.ToArray();
-                        for (int i = 0; i < newOperands.Length; i++)
+                        var operands = matches![1].Code.Instruction.Operands.ToArray();
+
+                        for (var i = 0; i < operands.Length; i++)
                         {
-                            if (newOperands[i].IsStack())
+                            if (!operands[i].IsStack())
+                                continue;
+
+                            operands[i] = matches[0].Code.Instruction.Operands[0];
+
+                            var instruction = new Instruction(matches[1].Code.Instruction.Name, operands)
                             {
-                                newOperands[i] = matches[0].Code.Instruction.Operands[0];
-                                return Combine2To1(new Instruction(
-                                    matches[1].Code.Instruction.Name,
-                                    newOperands)
-                                {
-                                    StoreTarget = matches[1].Code.Instruction.StoreTarget,
-                                    BranchPolarity = matches[1].Code.Instruction.BranchPolarity,
-                                    BranchTarget = matches[1].Code.Instruction.BranchTarget,
-                                });
-                            }
+                                StoreTarget = matches[1].Code.Instruction.StoreTarget,
+                                BranchPolarity = matches[1].Code.Instruction.BranchPolarity,
+                                BranchTarget = matches[1].Code.Instruction.BranchTarget,
+                            };
+
+                            result = Combine2To1(instruction);
+                            return true;
                         }
                     }
 
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryFoldIncBranch(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    AsmExpr? expr = null;
+
                     if (Match(
-                        a => a.Code.Instruction.Name == "INC" && a.Code.Instruction.Operands[0].IsQuote(out expr1) &&
-                             !expr1.IsStack(),
-                        b => b.Code.Instruction.Name == "GRTR?" && b.Code.Instruction.Operands[0].Equals(expr1!)))
+                        a => a.Code.Instruction.Name == "INC" && a.Code.Instruction.Operands[0].IsQuote(out expr) &&
+                             !expr.IsStack(),
+                        b => b.Code.Instruction.Name == "GRTR?" && b.Code.Instruction.Operands[0].Equals(expr!)))
                     {
-                        // INC 'v + GRTR? v,w => IGRTR? 'v,w
-                        return Combine2To1(new Instruction(
+                        result = Combine2To1(new Instruction(
                             "IGRTR?",
                             matches![0].Code.Instruction.Operands[0],
                             matches[1].Code.Instruction.Operands[1]));
+                        return true;
                     }
 
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryFoldDecBranch(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    AsmExpr? expr = null;
+
                     if (Match(
-                        a => a.Code.Instruction.Name == "DEC" && a.Code.Instruction.Operands[0].IsQuote(out expr1) &&
-                             !expr1.IsStack(),
-                        b => b.Code.Instruction.Name == "LESS?" && b.Code.Instruction.Operands[0].Equals(expr1!)))
+                        a => a.Code.Instruction.Name == "DEC" && a.Code.Instruction.Operands[0].IsQuote(out expr) &&
+                             !expr.IsStack(),
+                        b => b.Code.Instruction.Name == "LESS?" && b.Code.Instruction.Operands[0].Equals(expr!)))
                     {
-                        // DEC 'v + LESS? v,w => DLESS? 'v,w
-                        return Combine2To1(new Instruction(
+                        result = Combine2To1(new Instruction(
                             "DLESS?",
                             matches![0].Code.Instruction.Operands[0],
                             matches[1].Code.Instruction.Operands[1]));
+                        return true;
                     }
 
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryMergeEqualTests(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
                     if (Match(
                         a => (a.Code.Instruction.Name == "EQUAL?" || a.Code.Instruction.Name == "ZERO?") &&
                              a.Type == PeepholeLineType.BranchPositive,
@@ -1340,107 +1548,197 @@ namespace Zilf.Emit.Zap
                     {
                         if (matches![0].Target == matches[1].Target)
                         {
-                            static IList<AsmExpr> GetParts(Instruction inst)
-                            {
-                                return inst.Name == "ZERO?"
+                            static IList<AsmExpr> GetParts(Instruction inst) =>
+                                inst.Name == "ZERO?"
                                     ? new[] { inst.Operands[0], new NumericLiteral(0) }
                                     : inst.Operands;
-                            }
 
-                            var aparts = GetParts(matches[0].Code.Instruction);
-                            var bparts = GetParts(matches[1].Code.Instruction);
+                            var aParts = GetParts(matches[0].Code.Instruction);
+                            var bParts = GetParts(matches[1].Code.Instruction);
 
-                            if (aparts[0].Equals(bparts[0]) && aparts.Count < 4)
+                            if (aParts[0].Equals(bParts[0]) && aParts.Count < 4)
                             {
-                                if (aparts.Count + bparts.Count <= 5)
+                                if (aParts.Count + bParts.Count <= 5)
                                 {
-                                    // EQUAL? v,a,b /L + EQUAL? v,c /L => EQUAL? v,a,b,c /L
-                                    return Combine2To1(new Instruction("EQUAL?", aparts.Concat(bparts.Skip(1))));
+                                    result = Combine2To1(new Instruction("EQUAL?", aParts.Concat(bParts.Skip(1))));
+                                    return true;
                                 }
-                                else
-                                {
-                                    // EQUAL? v,a,b /L + EQUAL? v,c,d /L => EQUAL? v,a,b,c /L + EQUAL? v,d /L
-                                    var allRhs = aparts.Skip(1).Concat(bparts.Skip(1)).ToArray();
 
-                                    var first = new Instruction("EQUAL?",
-                                        Enumerable.Repeat(aparts[0], 1).Concat(allRhs.Take(3)));
+                                var allRhs = aParts.Skip(1).Concat(bParts.Skip(1)).ToArray();
 
-                                    var second = new Instruction("EQUAL?",
-                                        Enumerable.Repeat(aparts[0], 1).Concat(allRhs.Skip(3)));
+                                var first = new Instruction("EQUAL?",
+                                    Enumerable.Repeat(aParts[0], 1).Concat(allRhs.Take(3)));
 
-                                    return Combine2To2(first, second);
-                                }
+                                var second = new Instruction("EQUAL?",
+                                    Enumerable.Repeat(aParts[0], 1).Concat(allRhs.Skip(3)));
+
+                                result = Combine2To2(first, second);
+                                return true;
                             }
                         }
                     }
 
-                    //if (Match(a => a.Code.Text == "CRLF", b => b.Code.Text == "RTRUE"))
-                    if (Match(a => a.Code.Instruction.Name == "CRLF", b => b.Code.Instruction.Name == "RTRUE"))
-                    {
-                        // combine CRLF + RTRUE into a single terminator
-                        // this can be pulled through a branch and thus allows more PRINTR transformations
-                        return Combine2To1(new Instruction("CRLF+RTRUE"), PeepholeLineType.Terminator);
-                    }
-
-                    //if (Match(a => a.Code.Text.StartsWith("PRINTI ", StringComparison.Ordinal), b => b.Code.Text == "CRLF+RTRUE"))
-                    if (Match(a => a.Code.Instruction.Name == "PRINTI", b => b.Code.Instruction.Name == "CRLF+RTRUE"))
-                    {
-                        // PRINTI + (CRLF + RTRUE) => PRINTR
-                        return Combine2To1(matches![0].Code.Instruction.WithName("PRINTR"), PeepholeLineType.HeavyTerminator);
-                    }
-
-                    // BAND v,c >STACK + ZERO? STACK /L =>
-                    //     when c == 0:              simple branch
-                    //     when c is a power of two: BTST v,c \L
-                    if (Match(a => IsBANDConstantToStack(a.Code.Instruction, out expr1, out const1),
-                        b => b.Code.Instruction.Name == "ZERO?" && b.Code.Instruction.Operands[0].IsStack()))
-                    {
-                        var constantValue = const1!.Value;
-
-                        if (constantValue == 0)
-                        {
-                            if (!expr1!.IsStack())
-                            {
-                                return matches![1].Type == PeepholeLineType.BranchPositive
-                                    ? Combine2To1(new Instruction("JUMP"), PeepholeLineType.BranchAlways, matches[1].Target)
-                                    : Consume(2);
-                            }
-                        }
-                        else if ((constantValue & (constantValue - 1)) == 0)
-                        {
-                            var oppositeType = matches![1].Type == PeepholeLineType.BranchPositive
-                                ? PeepholeLineType.BranchNegative
-                                : PeepholeLineType.BranchPositive;
-
-                            return Combine2To1(new Instruction("BTST", expr1!, const1), oppositeType);
-                        }
-                    }
-
-                    // BAND v,c1 >STACK + BAND STACK,c2 >dest => BAND v,(c1&c2) >dest
-                    if (Match(a => IsBANDConstantToStack(a.Code.Instruction, out expr1, out const1),
-                        b => IsBANDConstantWithStack(b.Code.Instruction, out const2, out destStr)))
-                    {
-                        var combined = const1!.Value & const2!.Value;
-                        return Combine2To1(
-                            new Instruction("BAND", expr1!, new NumericLiteral(combined)) { StoreTarget = destStr });
-                    }
-
-                    // BOR v,c1 >STACK + BOR STACK,c2 >dest => BOR v,(c1|c2) >dest
-                    if (Match(a => IsBORConstantToStack(a.Code.Instruction, out expr1, out const1),
-                        b => IsBORConstantWithStack(b.Code.Instruction, out const2, out destStr)))
-                    {
-                        var combined = const1!.Value | const2!.Value;
-                        return Combine2To1(
-                            new Instruction("BOR", expr1!, new NumericLiteral(combined)) { StoreTarget = destStr });
-                    }
-
-                    // no matches
-                    return new CombinerResult<ZapCode>();
+                    result = default;
+                    return false;
                 }
                 finally
                 {
                     EndMatch();
                 }
+            }
+
+            bool TryCombineCrlfRtrue(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    if (Match(a => a.Code.Instruction.Name == "CRLF",
+                        b => b.Code.Instruction.Name == "RTRUE"))
+                    {
+                        result = Combine2To1(new Instruction("CRLF+RTRUE"), PeepholeLineType.Terminator);
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryUpgradePrintI(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    if (Match(a => a.Code.Instruction.Name == "PRINTI",
+                        b => b.Code.Instruction.Name == "CRLF+RTRUE"))
+                    {
+                        result = Combine2To1(matches![0].Code.Instruction.WithName("PRINTR"), PeepholeLineType.HeavyTerminator);
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TrySimplifyBandZeroBranch(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    AsmExpr? expr = null;
+                    NumericLiteral? constant = null;
+
+                    if (Match(a => IsBANDConstantToStack(a.Code.Instruction, out expr, out constant),
+                        b => b.Code.Instruction.Name == "ZERO?" && b.Code.Instruction.Operands[0].IsStack()))
+                    {
+                        var value = constant!.Value;
+
+                        if (value == 0)
+                        {
+                            if (!expr!.IsStack())
+                            {
+                                result = matches![1].Type == PeepholeLineType.BranchPositive
+                                    ? Combine2To1(new Instruction("JUMP"), PeepholeLineType.BranchAlways, matches[1].Target)
+                                    : Consume(2);
+                                return true;
+                            }
+                        }
+                        else if ((value & (value - 1)) == 0)
+                        {
+                            var opposite = matches![1].Type == PeepholeLineType.BranchPositive
+                                ? PeepholeLineType.BranchNegative
+                                : PeepholeLineType.BranchPositive;
+
+                            result = Combine2To1(new Instruction("BTST", expr!, constant), opposite);
+                            return true;
+                        }
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryMergeBandConstants(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    AsmExpr? expr = null;
+                    NumericLiteral? leftConst = null;
+                    NumericLiteral? rightConst = null;
+                    string? dest = null;
+
+                    if (Match(a => IsBANDConstantToStack(a.Code.Instruction, out expr, out leftConst),
+                        b => IsBANDConstantWithStack(b.Code.Instruction, out rightConst, out dest)))
+                    {
+                        var combined = leftConst!.Value & rightConst!.Value;
+                        result = Combine2To1(new Instruction("BAND", expr!, new NumericLiteral(combined))
+                        {
+                            StoreTarget = dest
+                        });
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryMergeBorConstants(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    AsmExpr? expr = null;
+                    NumericLiteral? leftConst = null;
+                    NumericLiteral? rightConst = null;
+                    string? dest = null;
+
+                    if (Match(a => IsBORConstantToStack(a.Code.Instruction, out expr, out leftConst),
+                        b => IsBORConstantWithStack(b.Code.Instruction, out rightConst, out dest)))
+                    {
+                        var combined = leftConst!.Value | rightConst!.Value;
+                        result = Combine2To1(new Instruction("BOR", expr!, new NumericLiteral(combined))
+                        {
+                            StoreTarget = dest
+                        });
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            public IEnumerable<PeepholeOptimizationStat> GetOptimizationStats()
+            {
+#if DEBUG
+                return optimizationStats.Select(static s => s.Snapshot());
+#else
+                return Enumerable.Empty<PeepholeOptimizationStat>();
+#endif
             }
 
             public ZapCode SynthesizeBranchAlways()
@@ -1512,10 +1810,6 @@ namespace Zilf.Emit.Zap
                 return ControlsConditionResult.Unrelated;
             }
 
-            public ILabel NewLabel()
-            {
-                return routineBuilder.DefineLabel();
-            }
         }
     }
 }
