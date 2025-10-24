@@ -277,6 +277,18 @@ namespace Zilf.Emit.Zap
             };
         }
 
+        internal bool TryGetNumericConstantValue(string name, out int value)
+        {
+            if (constants.TryGetValue(name, out var operand) && operand is INumericOperand numeric)
+            {
+                value = numeric.Value;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
         /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
         public IGlobalBuilder DefineGlobal(string name)
         {

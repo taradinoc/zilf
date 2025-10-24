@@ -59,7 +59,7 @@ namespace Zilf.Emit.Zap
 
             peep = new PeepholeBuffer<ZapCode>
             {
-                Combiner = new PeepholeCombiner(),
+                Combiner = new PeepholeCombiner(game),
                 LabelFactory = DefineLabel
             };
             RoutineStart = DefineLabel();
@@ -1025,6 +1025,7 @@ namespace Zilf.Emit.Zap
 
     class PeepholeCombiner : IPeepholeCombiner<ZapCode>, IPeepholeCombinerWithStats
         {
+            private readonly GameBuilder gameBuilder;
             private readonly CombinerOptimizationDescriptor[] optimizationPipeline;
 #if DEBUG
             private readonly OptimizationStats[] optimizationStats;
@@ -1056,8 +1057,9 @@ namespace Zilf.Emit.Zap
             }
 #endif
 
-            public PeepholeCombiner()
+            public PeepholeCombiner(GameBuilder gameBuilder)
             {
+                this.gameBuilder = gameBuilder;
                 optimizationPipeline = BuildOptimizationPipeline();
 #if DEBUG
                 optimizationStats = optimizationPipeline.Select(d => new OptimizationStats(d.Name)).ToArray();
@@ -1177,17 +1179,33 @@ namespace Zilf.Emit.Zap
                 return false;
             }
 
-            static bool IsBANDConstantWithStack(Instruction inst,
-                [NotNullWhen(true)] out NumericLiteral? constant, [NotNullWhen(true)] out string? dest) =>
+            private bool TryGetNumericValue(AsmExpr expr, out int value)
+            {
+                switch (expr)
+                {
+                    case NumericLiteral literal:
+                        value = literal.Value;
+                        return true;
+                    case SymbolExpr symbol when gameBuilder.TryGetNumericConstantValue(symbol.Text, out var constant):
+                        value = constant;
+                        return true;
+                    default:
+                        value = default;
+                        return false;
+                }
+            }
+
+            bool IsBANDConstantWithStack(Instruction inst,
+                out int constant, [NotNullWhen(true)] out string? dest) =>
                 IsCommutativeConstantWithStack("BAND", inst, out constant, out dest);
 
-            static bool IsBORConstantWithStack(Instruction inst,
-                [NotNullWhen(true)] out NumericLiteral? constant, [NotNullWhen(true)] out string? dest) =>
+            bool IsBORConstantWithStack(Instruction inst,
+                out int constant, [NotNullWhen(true)] out string? dest) =>
                 IsCommutativeConstantWithStack("BOR", inst, out constant, out dest);
 
-            static bool IsCommutativeConstantWithStack(
+            bool IsCommutativeConstantWithStack(
                 string instructionName, Instruction inst,
-                [NotNullWhen(true)] out NumericLiteral? constant, [NotNullWhen(true)] out string? dest)
+                out int constant, [NotNullWhen(true)] out string? dest)
             {
                 if (inst.Name == instructionName && inst.Operands.Count == 2)
                 {
@@ -1195,54 +1213,55 @@ namespace Zilf.Emit.Zap
 
                     switch (inst.Operands[0], inst.Operands[1])
                     {
-                        case (NumericLiteral num, var other) when other.IsStack():
-                            constant = num;
+                        case var tuple when TryGetNumericValue(tuple.Item1, out var firstValue) && tuple.Item2.IsStack():
+                            constant = firstValue;
                             dest = inst.StoreTarget;
                             return true;
 
-                        case (var other, NumericLiteral num) when other.IsStack():
-                            constant = num;
+                        case var tuple when tuple.Item1.IsStack() && TryGetNumericValue(tuple.Item2, out var secondValue):
+                            constant = secondValue;
                             dest = inst.StoreTarget;
                             return true;
                     }
                 }
 
-                constant = null;
+                constant = default;
                 dest = null;
                 return false;
             }
 
-            static bool IsBANDConstantToStack(Instruction inst,
+            bool IsBANDConstantToStack(Instruction inst,
                 [NotNullWhen(true)] out AsmExpr? variable,
-                [NotNullWhen(true)] out NumericLiteral? constant) =>
+                out int constant) =>
                 IsCommutativeConstantToStack("BAND", inst, out variable, out constant);
 
-            static bool IsBORConstantToStack(Instruction inst,
+            bool IsBORConstantToStack(Instruction inst,
                 [NotNullWhen(true)] out AsmExpr? variable,
-                [NotNullWhen(true)] out NumericLiteral? constant) =>
+                out int constant) =>
                 IsCommutativeConstantToStack("BOR", inst, out variable, out constant);
 
-            static bool IsCommutativeConstantToStack(
+            bool IsCommutativeConstantToStack(
                 string instructionName, Instruction inst,
-                [NotNullWhen(true)] out AsmExpr? variable, [NotNullWhen(true)] out NumericLiteral? constant)
+                [NotNullWhen(true)] out AsmExpr? variable, out int constant)
             {
                 if (inst.Name == instructionName && inst.Operands.Count == 2 && inst.StoreTarget == "STACK")
                 {
                     switch (inst.Operands[0], inst.Operands[1])
                     {
-                        case (NumericLiteral num, var other):
-                            variable = other;
-                            constant = num;
+                        case var tuple when TryGetNumericValue(tuple.Item1, out var firstValue):
+                            variable = tuple.Item2;
+                            constant = firstValue;
                             return true;
 
-                        case (var other, NumericLiteral num):
-                            variable = other;
-                            constant = num;
+                        case var tuple when TryGetNumericValue(tuple.Item2, out var secondValue):
+                            variable = tuple.Item1;
+                            constant = secondValue;
                             return true;
                     }
                 }
 
-                variable = constant = null;
+                variable = null;
+                constant = default;
                 return false;
             }
 
@@ -1635,12 +1654,12 @@ namespace Zilf.Emit.Zap
                 try
                 {
                     AsmExpr? expr = null;
-                    NumericLiteral? constant = null;
+                    var constant = 0;
 
                     if (Match(a => IsBANDConstantToStack(a.Code.Instruction, out expr, out constant),
                         b => b.Code.Instruction.Name == "ZERO?" && b.Code.Instruction.Operands[0].IsStack()))
                     {
-                        var value = constant!.Value;
+                        var value = constant;
 
                         if (value == 0)
                         {
@@ -1654,11 +1673,12 @@ namespace Zilf.Emit.Zap
                         }
                         else if ((value & (value - 1)) == 0)
                         {
+                            // powers of two
                             var opposite = matches![1].Type == PeepholeLineType.BranchPositive
                                 ? PeepholeLineType.BranchNegative
                                 : PeepholeLineType.BranchPositive;
 
-                            result = Combine2To1(new Instruction("BTST", expr!, constant), opposite);
+                            result = Combine2To1(new Instruction("BTST", expr!, new NumericLiteral(value)), opposite);
                             return true;
                         }
                     }
@@ -1678,14 +1698,14 @@ namespace Zilf.Emit.Zap
                 try
                 {
                     AsmExpr? expr = null;
-                    NumericLiteral? leftConst = null;
-                    NumericLiteral? rightConst = null;
+                    var leftConst = 0;
+                    var rightConst = 0;
                     string? dest = null;
 
                     if (Match(a => IsBANDConstantToStack(a.Code.Instruction, out expr, out leftConst),
                         b => IsBANDConstantWithStack(b.Code.Instruction, out rightConst, out dest)))
                     {
-                        var combined = leftConst!.Value & rightConst!.Value;
+                        var combined = leftConst & rightConst;
                         result = Combine2To1(new Instruction("BAND", expr!, new NumericLiteral(combined))
                         {
                             StoreTarget = dest
@@ -1708,14 +1728,14 @@ namespace Zilf.Emit.Zap
                 try
                 {
                     AsmExpr? expr = null;
-                    NumericLiteral? leftConst = null;
-                    NumericLiteral? rightConst = null;
+                    var leftConst = 0;
+                    var rightConst = 0;
                     string? dest = null;
 
                     if (Match(a => IsBORConstantToStack(a.Code.Instruction, out expr, out leftConst),
                         b => IsBORConstantWithStack(b.Code.Instruction, out rightConst, out dest)))
                     {
-                        var combined = leftConst!.Value | rightConst!.Value;
+                        var combined = leftConst | rightConst;
                         result = Combine2To1(new Instruction("BOR", expr!, new NumericLiteral(combined))
                         {
                             StoreTarget = dest

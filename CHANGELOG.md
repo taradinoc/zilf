@@ -38,6 +38,8 @@ and this project may someday adhere to
 
 - `BOTH` can now be used like `ALL` to match multiple objects.
 
+- Optimized code generation for `BAND`/`BOR` when operating on named constants.
+
 ### Fixed
 
 - Fixed OBJECT-TEMPLATE breaking when defining more than one template at a time

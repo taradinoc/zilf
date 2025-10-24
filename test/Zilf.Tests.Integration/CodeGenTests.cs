@@ -525,6 +525,13 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("\"AUX\" X",
                 "<BOR <BOR 96 .X> 48>")
                 .GeneratesCodeMatchingAsync("BOR X,112 >STACK");
+
+            // test with named constants
+            await AssertRoutine("\"AUX\" X",
+                "<BOR <BOR .X ,FOO> ,BAR>")
+                .WithGlobal("<CONSTANT FOO 96>")
+                .WithGlobal("<CONSTANT BAR 48>")
+                .GeneratesCodeMatchingAsync("BOR X,112 >STACK");
         }
 
         [TestMethod]
