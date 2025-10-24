@@ -11,6 +11,14 @@ and this project may someday adhere to
 - Error ZIL0125 is issued when a bare atom that isn't an existing TELL token
   or a property constant is used in TELL.
 
+- Added a TAKE FROM verb, which is like TAKE but verifies that the object is
+  in/on the container first.
+
+- The parser can now be told to find PRSI before PRSO for certain verbs, via the
+  macro `MATCH-PRSI-FIRST?`. This is done for TAKE FROM, since `ALL-INCLUDES?`
+  needs to check whether a potential match is held by PRSI in order to make
+  TAKE ALL FROM X work correctly.
+
 ### Changed
 
 - Source file paths in the debug information are now absolute paths.

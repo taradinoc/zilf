@@ -1702,48 +1702,56 @@ Sets:
 
 Returns:
   True if all required objects were found, or false if not."
-<ROUTINE FIND-OBJECTS (KEEP "AUX" F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
-    <TRACE 2 "[FIND-OBJECTS: KEEP=" N .KEEP ", syntax expects " N .SNOBJ ", we have " N ,P-NOBJ "]" CR>
+<ROUTINE FIND-OBJECTS (KEEP "AUX" F)
+    <TRACE 2 "[FIND-OBJECTS: KEEP=" N .KEEP ", syntax expects " N <GETB ,P-SYNTAX ,SYN-NOBJ> ", we have " N ,P-NOBJ "]" CR>
     <TRACE-IN>
+    <COND (<MATCH-PRSI-FIRST?>
+           <SET F <AND <FIND-PRSI .KEEP> <FIND-PRSO .KEEP>>>)
+          (ELSE
+           <SET F <AND <FIND-PRSO .KEEP> <FIND-PRSI .KEEP>>>)>
+    <TRACE-OUT>
+    .F>
 
+<DEFMAC MATCH-PRSI-FIRST? ()
+    '<VERB? TAKE-FROM>>
+
+<ROUTINE FIND-PRSO (KEEP "AUX" F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
     ;"Direct object (PRSO)"
     <SET O <GETB ,P-SYNTAX ,SYN-OPTS1>>
-    <COND (<L? .SNOBJ 1>
-           <SETG PRSO <>>)
+    <COND (<L? .SNOBJ 1> <SETG PRSO <>>)
           (<L? .KEEP 1>
-           <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>
-           <COND (<L? ,P-NOBJ 1>
+          <SET F <GETB ,P-SYNTAX ,SYN-FIND1>>
+          <COND (<L? ,P-NOBJ 1>
                   <TRACE 3 "[gwimming PRSO]" CR>
-                  <SETG PRSO
-                      <GWIM .F .O <GETB ,P-SYNTAX ,SYN-PREP1>>>
+                  <SETG PRSO <GWIM .F .O <GETB ,P-SYNTAX ,SYN-PREP1>>>
                   <COND (<0? ,PRSO>
-                         <WHAT-DO-YOU-WANT>
-                         <ORPHAN T MISSING PRSO>
-                         <TRACE-OUT>
-                         <RFALSE>)
+                        <WHAT-DO-YOU-WANT>
+                        <ORPHAN T MISSING PRSO>
+                        <RFALSE>)
                         (ELSE
-                         <SETG P-NOBJ 1>
-                         <PUT/B ,P-PRSOS 1 ,PRSO>
-                         <PUTB ,P-PRSOS 0 1>)>)
-                 (ELSE
+                        <SETG P-NOBJ 1>
+                        <PUT/B ,P-PRSOS 1 ,PRSO>
+                        <PUTB ,P-PRSOS 0 1>)>)
+                (ELSE
                   <TRACE 3 "[matching PRSO]" CR>
                   <SETG PRSO
                       <OR <AND <1? <NP-YCNT ,P-NP-DOBJ>>
-                               <EXPAND-PRONOUN <OBJSPEC-NOUN <NP-YSPEC ,P-NP-DOBJ 1>> ,P-PRSOS>>
-                          <MATCH-NOUN-PHRASE ,P-NP-DOBJ ,P-PRSOS <ENCODE-NOUN-BITS .F .O>>>>
-                  <COND (<=? ,PRSO ,EXPAND-PRONOUN-FAILED>
-                         <TRACE-OUT>
-                         <RFALSE>)>)>
-           <COND (<NOT ,PRSO>
-                  <TRACE-OUT>
-                  <RFALSE>)>)>
+                              <EXPAND-PRONOUN <OBJSPEC-NOUN <NP-YSPEC ,P-NP-DOBJ
+                                                                      1>>
+                                              ,P-PRSOS>>
+                          <MATCH-NOUN-PHRASE ,P-NP-DOBJ
+                                            ,P-PRSOS
+                                            <ENCODE-NOUN-BITS .F .O>>>>
+                  <COND (<=? ,PRSO ,EXPAND-PRONOUN-FAILED> <RFALSE>)>)>
+          <COND (<NOT ,PRSO> <RFALSE>)>)>
     <COND (<AND ,PRSO
                 <NOT <OR ,PRSO-DIR
-                         <AND <MANY-CHECK ,PRSO .O <>>
+                        <AND <MANY-CHECK ,PRSO .O <>>
                               <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>>>>>
-           <TRACE-OUT>
-           <RFALSE>)>
+          <RFALSE>)>
+    <RTRUE>>
 
+<ROUTINE FIND-PRSI (KEEP "AUX" F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
     ;"Indirect object (PRSI)"
     <SET O <GETB ,P-SYNTAX ,SYN-OPTS2>>
     <COND (<L? .SNOBJ 2>
@@ -1757,7 +1765,6 @@ Returns:
                   <COND (<0? ,PRSI>
                          <WHAT-DO-YOU-WANT>
                          <ORPHAN T MISSING PRSI>
-                         <TRACE-OUT>
                          <RFALSE>)
                         (ELSE
                          <SETG P-NOBJ 2>
@@ -1770,17 +1777,13 @@ Returns:
                                <EXPAND-PRONOUN <OBJSPEC-NOUN <NP-YSPEC ,P-NP-IOBJ 1>> ,P-PRSIS>>
                           <MATCH-NOUN-PHRASE ,P-NP-IOBJ ,P-PRSIS <ENCODE-NOUN-BITS .F .O>>>>
                   <COND (<=? ,PRSI ,EXPAND-PRONOUN-FAILED>
-                         <TRACE-OUT>
                          <RFALSE>)>)>
            <COND (<NOT ,PRSI>
-                  <TRACE-OUT>
                   <RFALSE>)>)>
     <COND (<AND ,PRSI
                 <NOT <AND <MANY-CHECK ,PRSI .O T>
                           <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>>>>
-           <TRACE-OUT>
            <RFALSE>)>
-    <TRACE-OUT>
     <RTRUE>>
 
 <DEFAULT-DEFINITION WHAT-DO-YOU-WANT
@@ -2209,6 +2212,7 @@ Returns:
              <=? .OBJ ,WINNER>
              <AND <VERB? TAKE> <HELD? .OBJ>>
              <AND <VERB? DROP> <NOT <HELD? .OBJ>>>
+             <AND ,PRSI <VERB? TAKE-FROM> <NOT <HELD? .OBJ ,PRSI>>>
              <AND <VERB? TAKE DROP>
                   <NOT <OR <FSET? .OBJ ,TAKEBIT>
                            <FSET? .OBJ ,TRYTAKEBIT>>>>>>>

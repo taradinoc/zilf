@@ -170,6 +170,10 @@
     (TOO-HEAVY-SHORT "You're carrying too much.")
     (TOO-HEAVY "You're carrying too much to lift " T .OBJ ".")>
 
+<DEFAULT-LIBRARY-MESSAGES TAKE-FROM
+    (NOT-HELD-BY-PERSON CT .HOLDER " doesn't have " T .OBJ ".")
+    (NOT-HELD-BY-OBJECT CT .OBJ " isn't " IFELSE .SURFACE? "on " "in " T .HOLDER ".")>
+
 <DEFAULT-LIBRARY-MESSAGES DROP
     (NOT-HELD "You don't have that.")
     (SUCCESS "You drop " T .OBJ ".")

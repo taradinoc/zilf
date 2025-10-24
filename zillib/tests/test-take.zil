@@ -94,11 +94,32 @@
     <EXPECT "You pick up the apple.|">
     <CHECK <IN? ,APPLE ,WINNER>>>
 
+<TEST-CASE ("Take object from surface explicitly")
+    <MOVE ,APPLE ,DESK>
+    <COMMAND [TAKE APPLE FROM DESK]>
+    <EXPECT "You pick up the apple.|">
+    <CHECK <IN? ,APPLE ,WINNER>>>
+
 <TEST-CASE ("Take object from open container")
     <MOVE ,APPLE ,BUCKET>
+    <CHECK <NOT <FSET? ,BUCKET ,SURFACEBIT>>>
     <COMMAND [TAKE APPLE]>
     <EXPECT "You reach into the bucket and take the apple.|">
     <CHECK <IN? ,APPLE ,WINNER>>>
+
+<TEST-CASE ("Take object from open container explicitly")
+    <MOVE ,APPLE ,BUCKET>
+    <COMMAND [TAKE APPLE FROM BUCKET]>
+    <EXPECT "You reach into the bucket and take the apple.|">
+    <CHECK <IN? ,APPLE ,WINNER>>>
+
+<TEST-CASE ("Take ALL from open container explicitly")
+    <MOVE ,APPLE ,BUCKET>
+    <MOVE ,BANANA ,BUCKET>
+    <COMMAND [TAKE ALL FROM BUCKET]>
+    <EXPECT "banana: Taken.|apple: Taken.|">
+    <CHECK <IN? ,APPLE ,WINNER>>
+    <CHECK <IN? ,BANANA ,WINNER>>>
 
 <TEST-CASE ("Take object from closed container")
     <MOVE ,APPLE ,CAGE>
