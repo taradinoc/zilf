@@ -165,6 +165,8 @@ namespace Zilf.Diagnostics
         public const int _0_Requires_1_Additional_21s = 225;
         [Error("{0} requires {1} {2}{1:s}")]
         public const int _0_Requires_1_21s = 226;
+        [Info("previous definition was here")]
+        public const int Previous_Definition_Was_Here = 227;
 
         // Structured Values - 0300
 

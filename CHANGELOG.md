@@ -29,6 +29,9 @@ and this project may someday adhere to
   `<ROUTINE-FLAGS UNUSED?>` can also be used to flag only the next routine
   defined.
 
+- Error MDL0214, which is issued when a global entity is defined more than once,
+  now includes info MDL0227 pointing to the previous definition, when available.
+
 ### Changed
 
 - Source file paths in debug information and diagnostics are now absolute paths.

@@ -17,6 +17,7 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
@@ -44,7 +45,11 @@ namespace Zilf.Tests.Interpreter
 
             // ...but it's an error if false
             ctx.SetLocalVal(ctx.GetStdAtom(StdAtom.REDEFINE), null);
-            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<DEFINE FOO (REDEF2) <>>");
+            TestHelpers.EvalAndCatch<InterpreterError>(
+                ctx,
+                "<DEFINE FOO (REDEF2) <>>",
+                e => e.Diagnostic?.Code == "MDL0214" &&
+                    e.Diagnostic.SubDiagnostics.Any(d => d.Code == "MDL0227"));
 
             // must have at least 3 arguments
             TestHelpers.EvalAndCatch<InterpreterError>("<DEFINE>");

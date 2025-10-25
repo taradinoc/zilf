@@ -67,7 +67,8 @@ namespace Zilf.Interpreter
              [Required] ZilObject[] body)
         {
             var oldAtom = ctx.ZEnvironment.InternGlobalName(name);
-            if (ctx.GetZVal(oldAtom) != null)
+            ZilObject? prev;
+            if ((prev = ctx.GetZVal(oldAtom)) != null)
             {
                 if (ctx.AllowRedefine)
                 {
@@ -75,7 +76,21 @@ namespace Zilf.Interpreter
                     ctx.ZEnvironment.InternGlobalName(name);
                 }
                 else
-                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1, "ROUTINE", oldAtom.ToStringContext(ctx, false));
+                {
+                    var exn = new InterpreterError(
+                        InterpreterMessages._0_Already_Defined_1,
+                        "ROUTINE",
+                        oldAtom.ToStringContext(ctx, false));
+
+                    if (prev.SourceLine != null)
+                    {
+                        exn = exn.Combine(new InterpreterError(
+                            prev.SourceLine,
+                            InterpreterMessages.Previous_Definition_Was_Here));
+                    }
+                    
+                    throw exn;
+                }
             }
 
             var flags = CombineFlags(ctx.CurrentFile.Flags, ctx.NextRoutineFlags);
@@ -224,9 +239,18 @@ namespace Zilf.Interpreter
                 }
                 else
                 {
-                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1,
+                    var exn = new InterpreterError(InterpreterMessages._0_Already_Defined_1,
                         "CONSTANT",
                         oldAtom.ToStringContext(ctx, false));
+
+                    if (previous.SourceLine != null)
+                    {
+                        exn = exn.Combine(new InterpreterError(
+                            previous.SourceLine,
+                            InterpreterMessages.Previous_Definition_Was_Here));
+                    }
+
+                    throw exn;
                 }
             }
 
@@ -264,9 +288,18 @@ namespace Zilf.Interpreter
             {
                 if (!ctx.AllowRedefine)
                 {
-                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1,
+                    var exn = new InterpreterError(InterpreterMessages._0_Already_Defined_1,
                         "GLOBAL",
                         oldAtom.ToStringContext(ctx, false));
+
+                    if (oldVal.SourceLine != null)
+                    {
+                        exn = exn.Combine(new InterpreterError(
+                            oldVal.SourceLine,
+                            InterpreterMessages.Previous_Definition_Was_Here));
+                    }
+
+                    throw exn;
                 }
 
                 if (oldVal is ZilGlobal glob && glob.Value is ZilTable tbl)
@@ -424,12 +457,24 @@ namespace Zilf.Interpreter
             string name = isRoom ? "ROOM" : "OBJECT";
 
             var oldAtom = ctx.ZEnvironment.InternGlobalName(atom);
-            if (ctx.GetZVal(oldAtom) != null)
+            ZilObject? prev;
+            if ((prev = ctx.GetZVal(oldAtom)) != null)
             {
                 if (!ctx.AllowRedefine)
-                    throw new InterpreterError(InterpreterMessages._0_Already_Defined_1,
+                {
+                    var exn = new InterpreterError(InterpreterMessages._0_Already_Defined_1,
                         name,
                         oldAtom.ToStringContext(ctx, false));
+
+                    if (prev.SourceLine != null)
+                    {
+                        exn = exn.Combine(new InterpreterError(
+                            prev.SourceLine,
+                            InterpreterMessages.Previous_Definition_Was_Here));
+                    }
+
+                    throw exn;
+                }
 
                 ctx.Redefine(atom);
                 ctx.ZEnvironment.InternGlobalName(atom);

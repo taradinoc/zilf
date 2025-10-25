@@ -44,10 +44,23 @@ namespace Zilf.Interpreter
             ZilAtom? activationAtom,
             ZilList argList, ZilDecl? decl, ZilObject[] body, string subrName)
         {
-            if (!ctx.AllowRedefine && ctx.GetGlobalVal(name) != null)
-                throw new InterpreterError(InterpreterMessages._0_Already_Defined_1,
+            ZilObject? prev;
+
+            if (!ctx.AllowRedefine && (prev = ctx.GetGlobalVal(name)) != null)
+            {
+                var exn = new InterpreterError(InterpreterMessages._0_Already_Defined_1,
                     subrName,
                     name.ToStringContext(ctx, false));
+
+                if (prev.SourceLine != null)
+                {
+                    exn = exn.Combine(new InterpreterError(
+                        prev.SourceLine,
+                        InterpreterMessages.Previous_Definition_Was_Here));
+                }
+
+                throw exn;
+            }
 
             var func = new ZilFunction(
                 subrName,
@@ -55,7 +68,10 @@ namespace Zilf.Interpreter
                 activationAtom,
                 argList,
                 decl,
-                body);
+                body)
+            {
+                SourceLine = ctx.TopFrame.SourceLine
+            };
             ctx.SetGlobalVal(name, func);
             return name;
         }
@@ -75,7 +91,10 @@ namespace Zilf.Interpreter
                 activationAtom,
                 argList,
                 decl,
-                body);
+                body)
+            {
+                SourceLine = ctx.TopFrame.SourceLine
+            };
             var macro = new ZilEvalMacro(func) { SourceLine = ctx.TopFrame.SourceLine };
             ctx.SetGlobalVal(name, macro);
             return name;
