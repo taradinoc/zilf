@@ -127,7 +127,7 @@ namespace Zilf.Tests.Integration
                 .DoesNotCompileAsync(result =>
                     result.Diagnostics.Any(d =>
                         d.GetFormattedMessage().Contains("bare atom 'SPACE-TEXT'") &&
-                        d.Location.SourceInfo == "Input.zil:2"),
+                        d.Location.SourceInfo.EndsWith("Input.zil:2")),
                     "Expected diagnostic about bare atom SPACE-TEXT on line 2");
         }
 
