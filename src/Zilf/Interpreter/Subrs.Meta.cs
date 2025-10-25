@@ -94,6 +94,14 @@ namespace Zilf.Interpreter
                         newFlags |= FileFlags.SentenceEnds;
                         break;
 
+                    case StdAtom.KEEP_ROUTINES_P:
+                        newFlags |= FileFlags.KeepRoutines;
+                        break;
+
+                    case StdAtom.UNUSED_ROUTINES_P:
+                        newFlags |= FileFlags.SuppressUnusedRoutineWarnings;
+                        break;
+
                     default:
                         throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "FILE-FLAGS", "flag", atom);
                 }

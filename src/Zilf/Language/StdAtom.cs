@@ -129,6 +129,10 @@ namespace Zilf.Language
         INIT_ARGS,
         INITIAL,
         INTERRUPTS,
+        [Atom("KEEP?")]
+        KEEP_P,
+        [Atom("KEEP-ROUTINES?")]
+        KEEP_ROUTINES_P,
         KERNEL,
         [Atom("LAST-OBJECT")]
         LAST_OBJECT,
@@ -260,6 +264,7 @@ namespace Zilf.Language
         TAKE,
         TBUZZ,
         TDIR,
+        TELL,
         [Atom("TEMP-TABLE")]
         TEMP_TABLE,
         TOBJECT,
@@ -270,6 +275,10 @@ namespace Zilf.Language
         TVERB,
         TZERO,
         UNDO,
+        [Atom("UNUSED?")]
+        UNUSED_P,
+        [Atom("UNUSED-ROUTINES?")]
+        UNUSED_ROUTINES_P,
         [Atom("USE-COLOR?")]
         USE_COLOR_P,
         [Atom("USE-MENUS?")]

@@ -438,6 +438,7 @@ namespace Zilf.Tests.Integration
         public async Task PROPDEF_For_DIRECTIONS_Should_Not_Create_A_DIRECTIONS_Property()
         {
             await AssertGlobals(
+                "<FILE-FLAGS KEEP-ROUTINES?>",
                 "<PROPDEF DIRECTIONS <> " +
                 " (DIR GOES TO R:ROOM = (MY-UEXIT 3) <WORD 0> (MY-REXIT <ROOM .R>))>",
                 "<DIRECTIONS NORTH SOUTH>",
@@ -480,6 +481,7 @@ namespace Zilf.Tests.Integration
         public async Task Routines_Created_By_PROPSPEC_Should_Work_Correctly()
         {
             await AssertGlobals(
+                "<FILE-FLAGS KEEP-ROUTINES?>",
                 "<PUTPROP FOO PROPSPEC FOO-PROP>",
                 "<DEFINE FOO-PROP (L) <ROUTINE PROP-ROUTINE () 123> (<> PROP-ROUTINE)>",
                 "<OBJECT BAR (FOO FOO)>")
@@ -619,6 +621,7 @@ namespace Zilf.Tests.Integration
         public async Task Mentioning_A_Routine_As_An_Object_Should_Not_Throw()
         {
             await AssertGlobals(
+                    "<FILE-FLAGS UNUSED-ROUTINES?>",
                     @"<ROOM WEST-SIDE-OF-FISSURE
                       (DESC ""West Side of Fissure"")>",
                     @"<ROUTINE WEST-SIDE-OF-FISSURE-F (RARG) <>>",

@@ -289,6 +289,7 @@ namespace Zilf.Compiler
                             return Game.One;
                         if (Routines.TryGetValue(atom, out var routine))
                         {
+                            TrackRoutineOperand(atom);
                             MarkGlobalAsRead(atom);
                             return routine;
                         }
@@ -362,6 +363,11 @@ namespace Zilf.Compiler
         private void MarkGlobalAsRead(ZilAtom name)
         {
             ReadAccessedGlobalNames.Add(name);
+        }
+
+        private void TrackRoutineOperand(ZilAtom name)
+        {
+            ScheduleRoutineForCompilation(name);
         }
 
         private void WarnAboutUnusedGlobals()

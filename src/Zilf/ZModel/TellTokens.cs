@@ -106,6 +106,8 @@ namespace Zilf.ZModel
             this.outputForm = outputForm;
         }
 
+        internal ZilForm OutputTemplate => outputForm;
+
         /// <exception cref="InterpreterError">The pattern syntax is invalid.</exception>
         public static IEnumerable<TellPattern> Parse(IEnumerable<ZilObject> spec)
         {

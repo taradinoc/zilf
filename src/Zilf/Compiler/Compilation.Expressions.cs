@@ -173,6 +173,11 @@ namespace Zilf.Compiler
                             return wantResult ? Game.Zero : null;
                         }
 
+                        if (rtn.Name != null)
+                        {
+                            ScheduleRoutineForCompilation(rtn.Name);
+                        }
+
                         // compile routine call
                         resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
                         using (var argOperands = CompileOperands(rb, form.SourceLine, args))

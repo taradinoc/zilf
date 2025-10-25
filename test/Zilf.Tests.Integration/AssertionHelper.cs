@@ -254,7 +254,14 @@ namespace Zilf.Tests.Integration
 
         public Task ImpliesAsync(params string[] conditions)
         {
+            var expression = Expression();
+
             var sb = new StringBuilder();
+            if (!string.IsNullOrEmpty(expression))
+            {
+                sb.AppendLine(expression);
+            }
+
             foreach (var c in conditions)
             {
                 sb.AppendFormat(

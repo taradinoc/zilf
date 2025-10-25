@@ -1,5 +1,8 @@
 "Library header"
 
+;"We expect some routines to be unused, so don't issue warnings for them."
+<FILE-FLAGS UNUSED-ROUTINES?>
+
 <USE "QQ">
 <USE "LIBMSG">
 <USE "LIBMSG-DEFAULTS">

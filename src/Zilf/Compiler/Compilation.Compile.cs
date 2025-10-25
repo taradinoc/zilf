@@ -84,7 +84,9 @@ namespace Zilf.Compiler
             try
             {
                 ExpandRoutineBodies();
+                AnalyzeAndPlanRoutines();
                 GenerateRoutineCode();
+                WarnAboutUnusedRoutines();
             }
             finally
             {
@@ -227,35 +229,338 @@ namespace Zilf.Compiler
 
         void GenerateRoutineCode()
         {
-            // compile routines
+            var compiled = new HashSet<ZilAtom>(new AtomNameEqualityComparer(Context.IgnoreCase));
             IRoutineBuilder? mainRoutine = null;
 
-            foreach (var routine in Context.ZEnvironment.Routines)
+            bool compiledNew;
+            do
             {
-                var entryPoint = routine.Name == Context.ZEnvironment.EntryRoutineName;
-                Debug.Assert(routine.Name != null);
-                Debug.Assert(Routines.ContainsKey(routine.Name));
-                var rb = Routines[routine.Name];
-                try
-                {
-                    using (DiagnosticContext.Push(routine.SourceLine))
-                    {
-                        BuildRoutine(routine, rb, entryPoint, Context.TraceRoutines);
-                    }
-                }
-                catch (ZilError ex)
-                {
-                    // could be a compiler error, or an interpreter error thrown by macro evaluation
-                    Context.HandleError(ex);
-                }
-                rb.Finish();
+                compiledNew = false;
 
-                if (entryPoint)
-                    mainRoutine = rb;
+                foreach (var routine in Context.ZEnvironment.Routines)
+                {
+                    if (routine.Name == null)
+                        continue;
+
+                    if (_routinesToCompile != null && !_routinesToCompile.Contains(routine.Name))
+                    {
+                        // skipped due to being unreferenced
+                        continue;
+                    }
+
+                    if (!compiled.Add(routine.Name))
+                        continue;
+
+                    var entryPoint = routine.Name == Context.ZEnvironment.EntryRoutineName;
+                    Debug.Assert(Routines.ContainsKey(routine.Name));
+                    var rb = Routines[routine.Name];
+                    try
+                    {
+                        using (DiagnosticContext.Push(routine.SourceLine))
+                        {
+                            BuildRoutine(routine, rb, entryPoint, Context.TraceRoutines);
+                        }
+                    }
+                    catch (ZilError ex)
+                    {
+                        // could be a compiler error, or an interpreter error thrown by macro evaluation
+                        Context.HandleError(ex);
+                    }
+                    rb.Finish();
+
+                    if (entryPoint)
+                        mainRoutine = rb;
+                }
+
+                if (_routinesToCompile != null && _operandReferencedRoutineNames != null)
+                {
+                    foreach (var referenced in _operandReferencedRoutineNames)
+                    {
+                        if (_routinesToCompile.Add(referenced))
+                        {
+                            _maybeUnusedRoutineNames?.Remove(referenced);
+                            if (!compiled.Contains(referenced))
+                            {
+                                compiledNew = true;
+                            }
+                        }
+                        else if (_routinesToCompile.Contains(referenced))
+                        {
+                            _maybeUnusedRoutineNames?.Remove(referenced);
+                            if (!compiled.Contains(referenced))
+                            {
+                                compiledNew = true;
+                            }
+                        }
+                    }
+                    _operandReferencedRoutineNames.Clear();
+                }
             }
+            while (compiledNew);
 
             if (mainRoutine == null)
                 throw new CompilerError(CompilerMessages.Missing_GO_Routine);
+        }
+
+        void ScheduleRoutineForCompilation(ZilAtom routineName)
+        {
+            if (_routinesToCompile == null)
+                return;
+
+            _operandReferencedRoutineNames ??= new HashSet<ZilAtom>(new AtomNameEqualityComparer(Context.IgnoreCase));
+            _operandReferencedRoutineNames.Add(routineName);
+        }
+
+        void WarnAboutUnusedRoutines()
+        {
+            if (_maybeUnusedRoutineNames == null || _maybeUnusedRoutineNames.Count == 0)
+                return;
+
+            var comparer = new AtomNameEqualityComparer(Context.IgnoreCase);
+            var entry = Context.ZEnvironment.EntryRoutineName;
+
+            foreach (var name in _maybeUnusedRoutineNames)
+            {
+                if (entry != null && comparer.Equals(name, entry))
+                    continue;
+
+                if (_suppressUnusedRoutineWarnings != null && _suppressUnusedRoutineWarnings.Contains(name))
+                    continue;
+
+                if (_routineDefinitionsByName != null && _routineDefinitionsByName.TryGetValue(name, out var routine))
+                {
+                    Context.HandleError(new CompilerError(
+                        routine.SourceLine,
+                        CompilerMessages.Routine_0_Is_Defined_But_Never_Used,
+                        name));
+                }
+            }
+        }
+
+        // Build a routine reference graph from expanded bodies and previously recorded constant/global references,
+        // compute the reachable set, warn about unreferenced routines, and plan which to compile.
+        void AnalyzeAndPlanRoutines()
+        {
+            // Build reverse map from routine builders to their atoms for quick identification of routine constants
+            var routineByBuilder = Routines.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+
+            var comparer = new AtomNameEqualityComparer(Context.IgnoreCase);
+            var allRoutineNames = new HashSet<ZilAtom>(Context.ZEnvironment.Routines.Select(r => r.Name!), comparer);
+            var keepRoutines = new HashSet<ZilAtom>(comparer);
+            var suppressUnusedWarnings = new HashSet<ZilAtom>(comparer);
+
+            // Map routine -> direct routine references found in its body (calls or routine constants)
+            var adjacency = new Dictionary<ZilAtom, HashSet<ZilAtom>>(comparer);
+            var routineByName = new Dictionary<ZilAtom, ZilRoutine>(comparer);
+
+            foreach (var r in Context.ZEnvironment.Routines)
+            {
+                if (r.Name == null)
+                    continue;
+                routineByName[r.Name] = r;
+
+                if ((r.Flags & RoutineFlags.Keep) != 0)
+                    keepRoutines.Add(r.Name);
+
+                if ((r.Flags & RoutineFlags.SuppressUnusedWarning) != 0)
+                    suppressUnusedWarnings.Add(r.Name);
+
+                var refs = new HashSet<ZilAtom>(comparer);
+
+                foreach (var bodyItem in r.Body)
+                {
+                    CollectRoutineConstants(bodyItem, refs, suppressGlobalReads: false);
+                }
+
+                // Walk all FORMs in the routine body to find calls and nested constants
+                r.WalkRoutineForms(f =>
+                {
+                    // Detect routine calls via head resolution
+                    if (f.First is ZilAtom head)
+                    {
+                        var interned = Context.ZEnvironment.InternGlobalName(head);
+                        var obj = Context.GetZVal(interned);
+                        while (obj is ZilConstant c)
+                            obj = c.Value;
+                        if (obj is ZilRoutine called && called.Name != null)
+                        {
+                            refs.Add(called.Name);
+                        }
+                        else if (allRoutineNames.Contains(interned))
+                        {
+                            refs.Add(interned);
+                        }
+                    }
+
+                    // Recursively scan arguments for routine constants
+                    if (f.Rest != null)
+                    {
+                        foreach (var arg in f.Rest)
+                        {
+                            CollectRoutineConstants(arg, refs, suppressGlobalReads: false);
+                        }
+                    }
+                });
+
+                adjacency[r.Name] = refs;
+            }
+
+            // Seed reachable set with entry routine and any routine referenced outside routine bodies
+            var reachable = new HashSet<ZilAtom>(comparer);
+            if (Context.ZEnvironment.EntryRoutineName != null)
+                reachable.Add(Context.ZEnvironment.EntryRoutineName);
+
+            foreach (var name in ReadAccessedGlobalNames)
+            {
+                if (allRoutineNames.Contains(name))
+                    reachable.Add(name);
+            }
+
+            reachable.UnionWith(keepRoutines);
+
+            // Seed with routines referenced by property defaults, object properties, or table contents.
+            var dataReferencedRoutines = new HashSet<ZilAtom>(comparer);
+
+            foreach (var pair in Context.ZEnvironment.PropertyDefaults)
+            {
+                CollectRoutineConstants(pair.Value, dataReferencedRoutines, suppressGlobalReads: true);
+            }
+
+            foreach (var obj in Context.ZEnvironment.Objects)
+            {
+                foreach (var prop in obj.Properties)
+                {
+                    if (prop.Rest is not { } propBody)
+                        continue;
+
+                    foreach (var element in propBody)
+                    {
+                        CollectRoutineConstants(element, dataReferencedRoutines, suppressGlobalReads: true);
+                    }
+                }
+            }
+
+            foreach (var table in Context.ZEnvironment.Tables)
+            {
+                var rawElements = new ZilObject?[table.ElementCount];
+                table.CopyTo(rawElements, (zo, _) => zo, null, Context);
+
+                foreach (var element in rawElements)
+                {
+                    if (element != null)
+                    {
+                        CollectRoutineConstants(element, dataReferencedRoutines, suppressGlobalReads: true);
+                    }
+                }
+            }
+
+            reachable.UnionWith(dataReferencedRoutines);
+
+            // Also seed with routines referenced by syntax/verb tables (actions and preactions)
+            // These are emitted into ATBL/PATBL and must not be pruned even if never called directly.
+            foreach (var syn in Context.ZEnvironment.Syntaxes)
+            {
+                if (syn.Action != null && allRoutineNames.Contains(syn.Action))
+                    reachable.Add(syn.Action);
+                if (syn.Preaction != null && allRoutineNames.Contains(syn.Preaction))
+                    reachable.Add(syn.Preaction);
+            }
+
+            // Traverse call graph to find all routines reachable from the seeds
+            var stack = new Stack<ZilAtom>(reachable);
+            while (stack.Count > 0)
+            {
+                var cur = stack.Pop();
+                if (!adjacency.TryGetValue(cur, out var targets))
+                    continue;
+                foreach (var tgt in targets)
+                {
+                    if (allRoutineNames.Contains(tgt) && reachable.Add(tgt))
+                        stack.Push(tgt);
+                }
+            }
+
+            _routinesToCompile = reachable;
+            _maybeUnusedRoutineNames = new HashSet<ZilAtom>(allRoutineNames, comparer);
+            _maybeUnusedRoutineNames.ExceptWith(reachable);
+            _suppressUnusedRoutineWarnings = suppressUnusedWarnings;
+            _routineDefinitionsByName = routineByName;
+
+            // Local function to collect routine constants appearing within any expression
+            void CollectRoutineConstants(ZilObject expr, HashSet<ZilAtom> output, bool suppressGlobalReads)
+            {
+                var unwrapped = expr.Unwrap(Context);
+
+                if (unwrapped is ZilMacroResult zmr)
+                {
+                    unwrapped = zmr.Inner;
+                }
+
+                if (unwrapped is ZilRoutine routine && routine.Name != null)
+                {
+                    output.Add(routine.Name);
+                    return;
+                }
+
+                if (unwrapped is ZilAtom atom)
+                {
+                    var interned = Context.ZEnvironment.InternGlobalName(atom);
+                    var zval = Context.GetZVal(interned);
+                    while (zval is ZilConstant c)
+                        zval = c.Value;
+                    if (zval is ZilRoutine resolved && resolved.Name != null)
+                    {
+                        output.Add(resolved.Name);
+                        return;
+                    }
+
+                    if (allRoutineNames.Contains(interned))
+                    {
+                        output.Add(interned);
+                        return;
+                    }
+                }
+
+                HashSet<ZilAtom>? priorReads = null;
+                if (suppressGlobalReads)
+                {
+                    priorReads = new HashSet<ZilAtom>(ReadAccessedGlobalNames, comparer);
+                }
+
+                // Try to interpret as a constant; if it's a routine operand, map back to its atom
+                var op = CompileConstant(unwrapped, AmbiguousConstantMode.Pessimistic);
+                if (op is IRoutineBuilder rb && routineByBuilder.TryGetValue(rb, out var routineAtom))
+                {
+                    output.Add(routineAtom);
+                }
+
+                if (suppressGlobalReads && priorReads != null)
+                {
+                    var newlyRead = new List<ZilAtom>();
+                    foreach (var name in ReadAccessedGlobalNames)
+                    {
+                        if (!priorReads.Contains(name))
+                            newlyRead.Add(name);
+                    }
+
+                    if (newlyRead.Count != 0)
+                    {
+                        foreach (var name in newlyRead)
+                        {
+                            ReadAccessedGlobalNames.Remove(name);
+                        }
+                    }
+                }
+
+                // Recurse into lists/forms
+                if (unwrapped is ZilListBase list)
+                {
+                    foreach (var item in list)
+                    {
+                        CollectRoutineConstants(item, output, suppressGlobalReads);
+                    }
+                }
+            }
         }
 
         void EnterZilch()

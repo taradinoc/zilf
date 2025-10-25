@@ -50,6 +50,8 @@ namespace Zilf.Interpreter
                 newFlags |= atom.StdAtom switch
                 {
                     StdAtom.CLEAN_STACK_P => RoutineFlags.CleanStack,
+                    StdAtom.KEEP_P => RoutineFlags.Keep,
+                    StdAtom.UNUSED_P => RoutineFlags.SuppressUnusedWarning,
                     _ => throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "ROUTINE-FLAGS", "flag", atom),
                 };
             }
@@ -124,6 +126,12 @@ namespace Zilf.Interpreter
 
             if ((fileFlags & FileFlags.CleanStack) != 0)
                 result |= RoutineFlags.CleanStack;
+
+            if ((fileFlags & FileFlags.KeepRoutines) != 0)
+                result |= RoutineFlags.Keep;
+
+            if ((fileFlags & FileFlags.SuppressUnusedRoutineWarnings) != 0)
+                result |= RoutineFlags.SuppressUnusedWarning;
 
             return result;
         }

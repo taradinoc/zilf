@@ -176,6 +176,7 @@ tools\package-all.ps1
 5. When adding new interpreter commands, ensure they have corresponding tests in `test/Zilf.Tests/Interpreter` and follow existing naming and documentation conventions.
 6. New commands for use at **compile time** (i.e., Z-code built-in routines) go in `src/Zilf/Compiler/Builtins/ZBuiltins.cs` and are marked with `[Builtin(...)]`. Arguments are also automatically coerced, using a different mechanism; see the `ValidateArguments`, `MakeBuiltinMethodParams`, and `CompileBuiltinCall` methods in that file, as well as `src/zilf/Compiler/Builtins/ParameterTypeHandler.cs` for details.
 7. When adding new compile-time built-in routines, ensure they have corresponding tests in `test/Zilf.Tests.Integration` and follow existing naming and documentation conventions.
+8. When checking for a specific atom whose name is known at compile time, use `StdAtom` enum values (e.g., `StdAtom.TELL`) rather than string comparisons for performance and consistency. Add new `StdAtom` entries as needed in `src/Zilf/Common/StdAtom.cs`.
 
 ## 16. Minimal Example (Programmatic Compile)
 

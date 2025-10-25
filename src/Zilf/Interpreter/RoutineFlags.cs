@@ -25,5 +25,7 @@ namespace Zilf.Interpreter
     {
         None = 0,
         CleanStack = 1,
+        Keep = 2,
+        SuppressUnusedWarning = 4,
     }
 }

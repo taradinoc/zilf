@@ -31,6 +31,8 @@ In the future, we may also need to store something about which part of the noun 
 we're trying to improve (e.g. which YSPEC is ambiguous). So we use the top bits of a word
 to recall whether we're orphaning and why, and reserve the rest for future use."
 
+<FILE-FLAGS UNUSED-ROUTINES?>
+
 <USE "QQ">
 
 <CONSTANT P-OF-ORPHANING 32768>

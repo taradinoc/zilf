@@ -55,6 +55,7 @@ namespace Zilf.Tests.Integration
         public async Task Object_Names_Are_Shared_Across_Packages()
         {
             await AssertGlobals(
+                "<FILE-FLAGS UNUSED-ROUTINES?>",
                 "<DEFINITIONS \"FOO\"> <OBJECT FOO-OBJ> <END-DEFINITIONS>",
                 "<DEFINITIONS \"BAR\"> <OBJECT BAR-OBJ (LOC FOO-OBJ)> <END-DEFINITIONS>",
                 "<ROUTINE FOO () <REMOVE ,FOO-OBJ>>")
@@ -222,6 +223,8 @@ namespace Zilf.Tests.Integration
         public async Task Compilation_Stops_After_100_Errors()
         {
             var builder = AssertRoutine("", "T");
+
+            builder = builder.WithGlobal("<FILE-FLAGS KEEP-ROUTINES?>");
 
             for (var i = 1; i <= 150; i++)
             {

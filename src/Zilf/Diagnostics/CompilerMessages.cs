@@ -127,6 +127,8 @@ namespace Zilf.Diagnostics
         public const int Flag_0_Is_Defined_But_Never_Used = 211;
         [Warning("property '{0}' is defined but never used", Noisy = true)]
         public const int Property_0_Is_Defined_But_Never_Used = 212;
+        [Warning("routine '{0}' is defined but never used", Noisy = true)]
+        public const int Routine_0_Is_Defined_But_Never_Used = 213;
 
         // Z-machine Structures - 0300
 

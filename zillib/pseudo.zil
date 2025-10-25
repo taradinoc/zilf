@@ -28,6 +28,8 @@
 
  The property definition syntax is implemented by THINGS-PROPSPEC below."
 
+<FILE-FLAGS UNUSED-ROUTINES?>
+
 "Constants and macros to access pseudo entries"
 <CONSTANT PDO-SIZE 8>
 

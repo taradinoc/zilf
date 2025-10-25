@@ -22,6 +22,13 @@ and this project may someday adhere to
 - ZAPF now issues a warning when a `.BYTE` directive has a value outside the
   range of a signed or unsigned byte.
 
+- Warning ZIL0213 is issued when a routine is never referenced outside of its
+  own definition, unless `<FILE-FLAGS UNUSED-ROUTINES?>` is enabled. Such
+  routines will also be excluded from the compilation unless
+  `<FILE-FLAGS KEEP-ROUTINES?>` is enabled. `<ROUTINE-FLAGS KEEP?>` and
+  `<ROUTINE-FLAGS UNUSED?>` can also be used to flag only the next routine
+  defined.
+
 ### Changed
 
 - Source file paths in the debug information are now absolute paths.

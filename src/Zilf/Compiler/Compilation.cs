@@ -94,5 +94,12 @@ namespace Zilf.Compiler
         /// i.e. used anywhere in the story file as an operand or initializer.
         /// </summary>
         public readonly HashSet<ZilAtom> ReadAccessedGlobalNames = new();
+
+    // Set of routine names to compile after reachability analysis. If null, compile all.
+    private HashSet<ZilAtom>? _routinesToCompile;
+    private HashSet<ZilAtom>? _operandReferencedRoutineNames;
+    private HashSet<ZilAtom>? _maybeUnusedRoutineNames;
+    private HashSet<ZilAtom>? _suppressUnusedRoutineWarnings;
+    private Dictionary<ZilAtom, ZilRoutine>? _routineDefinitionsByName;
     }
 }
