@@ -1181,6 +1181,11 @@ General switches:
                                 Errors.ThrowFatal(expr, "global label refs inside vocab section must be assembled as words");
                             }
 
+                            if (sym.Value < -128 || sym.Value > 255)
+                            {
+                                Errors.Warn(ctx, node, "byte value out of range: " + sym.Value);
+                            }
+
                             ctx.WriteByte((byte)sym.Value);
                         }
                         else

@@ -19,6 +19,9 @@ and this project may someday adhere to
   needs to check whether a potential match is held by PRSI in order to make
   TAKE ALL FROM X work correctly.
 
+- ZAPF now issues a warning when a `.BYTE` directive has a value outside the
+  range of a signed or unsigned byte.
+
 ### Changed
 
 - Source file paths in the debug information are now absolute paths.
