@@ -40,7 +40,7 @@ namespace Zilf.Interpreter
             {
                 var newFile = ctx.FindIncludeFile(file);
 
-                using (ctx.PushFileContext(newFile))
+                using (ctx.PushFileContext(Path.GetFullPath(newFile)))
                 {
                     using var stream = ctx.FileSystem.OpenForReading(newFile);
                     Program.Evaluate(ctx, stream);

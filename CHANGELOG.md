@@ -31,7 +31,7 @@ and this project may someday adhere to
 
 ### Changed
 
-- Source file paths in the debug information are now absolute paths.
+- Source file paths in debug information and diagnostics are now absolute paths.
 
 - Changed ADVENT-PLAYER-F to be a slightly better role model. A few things
   that were handled by the player's ACTION routine are now handled by

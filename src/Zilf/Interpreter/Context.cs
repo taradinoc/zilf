@@ -536,6 +536,11 @@ namespace Zilf.Interpreter
             TopFrame = TopFrame.Parent;
         }
 
+        /// <summary>
+        /// Pushes a new file context onto the stack.
+        /// </summary>
+        /// <param name="path">A string, typically a file path, describing the new file context.</param>
+        /// <returns>The new file context.</returns>
         public FileContext PushFileContext(string path)
         {
             var result = new FileContext(this, path);
@@ -543,7 +548,10 @@ namespace Zilf.Interpreter
             return result;
         }
 
-        /// <exception cref="InvalidOperationException">This file is not on top of the stack.</exception>
+        /// <summary>
+        /// Pops the current file context off the stack, restoring the previous file context.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">There is no previous file context to restore.</exception>
         public void PopFileContext()
         {
             // ReSharper disable once JoinNullCheckWithUsage (workaround for Exceptional)

@@ -204,7 +204,7 @@ namespace Zilf.Compiler
             using var inputStream = FileSystem.OpenForReading(inputFileName);
 
             // evaluate source text
-            using (ctx.PushFileContext(inputFileName))
+            using (ctx.PushFileContext(Path.GetFullPath(inputFileName)))
             {
                 ctx.FileSystem = FileSystem;
                 ctx.IncludePaths.AddRange(IncludePaths);
