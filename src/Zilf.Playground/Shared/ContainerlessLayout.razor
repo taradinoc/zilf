@@ -2,6 +2,7 @@
 @using Zilf.Playground.Services
 @inject BuildService Build
 @inject StoryPlayerService StoryPlayer
+@inject VersionService Version
 
 <CascadingValue Value="this" IsFixed="true">
     <div class="page">
@@ -14,7 +15,12 @@
         <footer class="container">
             <p>
                 <small>
-                    &copy;&nbsp;2010&ndash;2025 Tara McGrew
+                    ZILF @Version.Version &copy;&nbsp;2010&ndash;2025 Tara McGrew
+                    @if (Version.BuildTimestamp.HasValue)
+                    {
+                        <br />
+                        <text>Built @Version.BuildTimestampFormatted</text>
+                    }
                 </small>
             </p>
             <p>

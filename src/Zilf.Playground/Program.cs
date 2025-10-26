@@ -49,6 +49,7 @@ namespace Zilf.Playground
 
             builder.Services.AddSingleton<JSInterop>();
             builder.Services.AddSingleton<StoryPlayerService>();
+                builder.Services.AddSingleton<VersionService>();
             builder.Services.AddSingleton<ProjectStorageService>();
             builder.Services.AddScoped<TemplateService>();
             builder.Services.AddScoped(sp =>

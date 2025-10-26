@@ -39,6 +39,28 @@
     <Content Remove="wwwroot\project_templates\**\*" />
   </ItemGroup>
 
+  <!-- Ensure no stray generated file at project root is compiled -->
+  <ItemGroup>
+    <Compile Remove="BuildInfo.g.cs" />
+  </ItemGroup>
+
+  <!-- Generate a build timestamp source file before compilation -->
+  <PropertyGroup>
+    <GeneratedBuildInfo>$(IntermediateOutputPath)BuildInfo.g.cs</GeneratedBuildInfo>
+  </PropertyGroup>
+  <Target Name="GenerateBuildInfo" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <!-- Use reproducible UTC time if provided by CI; otherwise current UTC -->
+      <_BuildTimeUtc>$([System.DateTime]::UtcNow.ToString("o"))</_BuildTimeUtc>
+      <_GeneratedBuildInfoText>namespace Zilf.Playground { internal static partial class BuildInfo { static BuildInfo() { BuildTimestampUtc = System.DateTime.Parse("$(_BuildTimeUtc)", null, System.Globalization.DateTimeStyles.RoundtripKind)%3B } } }</_GeneratedBuildInfoText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(GeneratedBuildInfo)" Overwrite="true" Lines="$(_GeneratedBuildInfoText)" />
+    <ItemGroup>
+      <!-- Ensure we only include once; keep at project root for IDE visibility -->
+      <Compile Include="$(GeneratedBuildInfo)" Visible="false" />
+    </ItemGroup>
+  </Target>
+
   <!-- Copy samples and zillib into wwwroot, then register as Content for static asset manifest -->
   <Target Name="CopyProjectTemplates" BeforeTargets="AssignTargetPaths">
     <ItemGroup>
