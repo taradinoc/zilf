@@ -53,6 +53,8 @@ and this project may someday adhere to
 
 - Optimized code generation for `BAND`/`BOR` when operating on named constants.
 
+- ZAPF no longer restarts the pass when it reaches a `.NEW` directive.
+
 ### Fixed
 
 - Fixed OBJECT-TEMPLATE breaking when defining more than one template at a time

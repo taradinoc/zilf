@@ -64,25 +64,15 @@ namespace Zapf
             // perform assembly
             try
             {
-                bool restart;
-                do
+                try
                 {
-                    restart = false;
-                    try
-                    {
-                        Program.Assemble(ctx);
-                    }
-                    catch (RestartException)
-                    {
-                        ctx.Restart();
-                        restart = true;
-                    }
-                    catch (FatalError fer)
-                    {
-                        ctx.HandleFatalError(fer);
-                        return AssemblyResult.Failed;
-                    }
-                } while (restart);
+                    Program.Assemble(ctx);
+                }
+                catch (FatalError fer)
+                {
+                    ctx.HandleFatalError(fer);
+                    return AssemblyResult.Failed;
+                }
 
                 //XXX find abbreviations?
 

@@ -60,28 +60,15 @@ namespace Zapf
             try
             {
                 // assemble the code
-                bool restart;
-                do
+                try
                 {
-                    restart = false;
-                    try
-                    {
-                        Assemble(ctx);
-                    }
-                    catch (RestartException)
-                    {
-                        if (!ctx.Quiet)
-                            Console.Error.WriteLine("\nRestarting");
-
-                        ctx.Restart();
-                        restart = true;
-                    }
-                    catch (FatalError fer)
-                    {
-                        ctx.HandleFatalError(fer);
-                        return 2;
-                    }
-                } while (restart);
+                    Assemble(ctx);
+                }
+                catch (FatalError fer)
+                {
+                    ctx.HandleFatalError(fer);
+                    return 2;
+                }
 
                 // list label addresses
                 PrintLabelAddresses(ctx);
@@ -521,7 +508,6 @@ General switches:
         /// </summary>
         /// <remarks>
         /// This pass discovers label addresses and header flags.
-        /// It also handles the .NEW directive.
         /// </remarks>
         /// <param name="ctx">The current context.</param>
         /// <param name="node">The node to process.</param>
@@ -540,7 +526,6 @@ General switches:
                     {
                         ctx.ZVersion = (byte)version;
                         ctx.OpcodeDict = MakeOpcodeDict(ctx.ZVersion, ctx.InformMode);
-                        throw new RestartException();
                     }
                     break;
 
@@ -874,7 +859,7 @@ General switches:
             using var stream = ctx.FileSystem.OpenForReading(path);
 
             Debug.Assert(ctx.OpcodeDict != null);
-            var parser = new ZapParser(ctx, ctx.OpcodeDict);
+            var parser = new ZapParser(ctx, ctx.OpcodeDict, MakeOpcodeDict, ctx.InformMode);
             var result = parser.Parse(stream, path);
 
             if (result.NumberOfSyntaxErrors > 0)

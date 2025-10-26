@@ -30,14 +30,19 @@ namespace Zapf.Parsing
     public sealed class ZapParser : IDisposable
     {
         readonly IErrorSink sink;
-        readonly IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict;
+        IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict;
+        readonly Func<int, bool, IDictionary<string, KeyValuePair<ushort, ZOpAttribute>>> makeOpcodeDict;
+        readonly bool informMode;
         Tokenizer? toks;
         int errorCount;
 
-        public ZapParser(IErrorSink sink, IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict)
+        public ZapParser(IErrorSink sink, IDictionary<string, KeyValuePair<ushort, ZOpAttribute>> opcodeDict,
+            Func<int, bool, IDictionary<string, KeyValuePair<ushort, ZOpAttribute>>> makeOpcodeDict, bool informMode)
         {
             this.sink = sink;
             this.opcodeDict = opcodeDict;
+            this.makeOpcodeDict = makeOpcodeDict;
+            this.informMode = informMode;
 
             directiveDict = new Dictionary<string, DirectiveParseHandler>
             {
@@ -774,6 +779,18 @@ namespace Zapf.Parsing
         {
             var version = TryParseExpr();
             MatchEndOfDirective();
+
+            // If version is a simple numeric literal, update the opcode dictionary now
+            // so the rest of the file is parsed with the correct opcodes
+            if (version is NumericLiteral numLit)
+            {
+                int ver = numLit.Value;
+                if (ver >= 3 && ver <= 8)
+                {
+                    opcodeDict = makeOpcodeDict(ver, informMode);
+                }
+            }
+
             return new NewDirective(version);
         }
 
