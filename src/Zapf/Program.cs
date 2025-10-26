@@ -173,8 +173,11 @@ namespace Zapf
                     "Addr",
                     "Length");
 
-                // TODO: don't allocate an array for the label addresses
-                var entries = query.ToArray();
+                // Remove accidental duplicate symbols (same name and address) that can occur
+                // when inputs define the same symbol more than once across segments.
+                var entries = query
+                    .DistinctBy(e => (e.Name, e.Address))
+                    .ToArray();
 
                 for (int i = 0; i < entries.Length; i++)
                 {

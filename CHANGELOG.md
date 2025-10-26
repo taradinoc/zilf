@@ -60,6 +60,8 @@ and this project may someday adhere to
 
 - Restored separate default messages for CLIMB X vs. CLIMB.
 
+- Fixed `zapf -la` listing some labels twice.
+
 ## [0.10] (October 14, 2025)
 
 ### Added
