@@ -21,7 +21,7 @@ using System.IO;
 
 namespace Zilf.Emit.Zap
 {
-    class TableBuilder : ConstantOperandBase, ITableBuilder
+    class TableBuilder : ConstantOperandBase, ITableBuilder, INonzeroConstantOperand
     {
         readonly List<short> numericValues = new();
         readonly List<IOperand> operandValues = new();

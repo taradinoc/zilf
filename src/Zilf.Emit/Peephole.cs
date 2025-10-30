@@ -885,7 +885,8 @@ namespace Zilf.Emit
         bool TryOptimizePushedConstantFallThrough(
             LinkedListNode<Line> node,
             Dictionary<ILabel, Line> labelMap,
-            Dictionary<ILabel, bool> usedLabels)
+            Dictionary<ILabel, bool> usedLabels,
+            Action<LinkedListNode<Line>> markReachable)
         {
             if (Combiner == null)
                 return false;
@@ -1260,7 +1261,7 @@ namespace Zilf.Emit
 
             var currentNode = node;
 
-            if (TryOptimizePushedConstantFallThrough(currentNode, labelMap, usedLabels))
+            if (TryOptimizePushedConstantFallThrough(currentNode, labelMap, usedLabels, markReachable))
                 return OptimizationStepResult.ChangedContinue();
 
             if (TryOptimizePushedConstantJump(currentNode, labelMap, usedLabels))

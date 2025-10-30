@@ -18,7 +18,7 @@
 
 namespace Zilf.Emit.Zap
 {
-    class PropertyBuilder : ConstantOperandBase, IPropertyBuilder
+    class PropertyBuilder : ConstantOperandBase, IPropertyBuilder, INonzeroConstantOperand
     {
         readonly string name;
 

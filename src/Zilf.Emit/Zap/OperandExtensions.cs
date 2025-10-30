@@ -36,8 +36,16 @@ namespace Zilf.Emit.Zap
                 NumericOperand num => (AsmExpr)new NumericLiteral(num.Value),
                 IndirectOperand indirect => new QuoteExpr(indirect.Variable.ToAsmExpr()),
                 SumOperand sum => new AdditionExpr(sum.Left.ToAsmExpr(), sum.Right.ToAsmExpr()),
+                INonzeroConstantOperand => CreateAnnotatedSymbol(operand),
                 _ => new SymbolExpr(operand.ToString() ?? throw new ArgumentException("Operand has no string representation"))
             };
+
+            static AsmExpr CreateAnnotatedSymbol(IOperand operand)
+            {
+                var symbol = new SymbolExpr(operand.ToString() ?? throw new ArgumentException("Operand has no string representation"));
+                AsmExprFacts.MarkNonzero(symbol);
+                return symbol;
+            }
         }
 
         public static bool IsStack(this AsmExpr asmExpr) => asmExpr is SymbolExpr sym && sym.Text == "STACK";

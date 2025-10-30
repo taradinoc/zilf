@@ -18,7 +18,7 @@
 
 namespace Zilf.Emit.Zap
 {
-    class WordBuilder : TableBuilder, IWordBuilder
+    class WordBuilder : TableBuilder, IWordBuilder, INonzeroConstantOperand
     {
         public WordBuilder(string tableName, string word)
             : base(tableName)

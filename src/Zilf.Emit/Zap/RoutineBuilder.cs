@@ -29,7 +29,8 @@ using Zilf.Emit;
 
 namespace Zilf.Emit.Zap
 {
-    class RoutineBuilder : ConstantOperandBase, IRoutineBuilder
+    // TODO: make sure RoutineBuilder is guaranteed nonzero in V6/V7
+    class RoutineBuilder : ConstantOperandBase, IRoutineBuilder, INonzeroConstantOperand
     {
         internal static readonly Label RTRUE = new("TRUE");
         internal static readonly Label RFALSE = new("FALSE");
@@ -1179,6 +1180,39 @@ namespace Zilf.Emit.Zap
                 return false;
             }
 
+            static bool IsSetOfKnownNonzero(Instruction instruction, out AsmExpr? destination)
+            {
+                destination = null;
+
+                if (instruction.Name != "SET" || instruction.Operands.Count != 2)
+                    return false;
+
+                if (instruction.Operands[0] is not QuoteExpr quote)
+                    return false;
+
+                if (!IsKnownNonzeroValue(instruction.Operands[1]))
+                    return false;
+
+                destination = quote.Inner;
+                return true;
+            }
+
+            static bool IsZeroTestOfOperand(Instruction instruction, AsmExpr operand)
+            {
+                return instruction.Name == "ZERO?" &&
+                       instruction.Operands.Count == 1 &&
+                       instruction.Operands[0].Equals(operand);
+            }
+
+            static bool IsKnownNonzeroValue(AsmExpr expr)
+            {
+                return expr switch
+                {
+                    NumericLiteral literal => literal.Value != 0,
+                    _ => AsmExprFacts.IsKnownNonzero(expr),
+                };
+            }
+
             private bool TryGetNumericValue(AsmExpr expr, out int value)
             {
                 switch (expr)
@@ -1321,6 +1355,7 @@ namespace Zilf.Emit.Zap
             private CombinerOptimizationDescriptor[] BuildOptimizationPipeline() =>
             [
                 new("simplify zero test", TrySimplifyEqualZero),
+                new("remove redundant zero? after set", TryRemoveZeroAfterNonzeroSet),
                 new("rewrite jump to boolean", TryRewriteJumpToBoolean),
                 new("fold push/rstack pair", TrySimplifyPushRStack),
                 new("eliminate stack pop pair", TryEliminateStackPopPair),
@@ -1346,6 +1381,49 @@ namespace Zilf.Emit.Zap
                     if (Match(a => IsEqualZero(a.Code.Instruction, out expr)))
                     {
                         result = Combine1To1(new Instruction("ZERO?", expr!));
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryRemoveZeroAfterNonzeroSet(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    AsmExpr? destination = null;
+
+                    if (Match(
+                        a => IsSetOfKnownNonzero(a.Code.Instruction, out destination),
+                        b => destination != null && IsZeroTestOfOperand(b.Code.Instruction, destination)))
+                    {
+                        var zeroLine = matches![1];
+
+                        if (zeroLine.Type == PeepholeLineType.BranchNegative && zeroLine.Target != null)
+                        {
+                            result = Combine2To2(
+                                matches[0].Code.Instruction,
+                                new Instruction("JUMP"),
+                                matches[0].Type,
+                                PeepholeLineType.BranchAlways,
+                                matches[0].Target,
+                                zeroLine.Target);
+                        }
+                        else
+                        {
+                            result = Combine2To1(
+                                matches[0].Code.Instruction,
+                                matches[0].Type,
+                                matches[0].Target);
+                        }
+
                         return true;
                     }
 

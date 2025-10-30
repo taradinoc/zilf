@@ -41,3 +41,4 @@ temp
 **/wwwroot/release-info.json
 *.g.cs
 **/wwwroot/project_templates
+src/WindowsInstaller/wix/WindowsInstaller.g.wxs
