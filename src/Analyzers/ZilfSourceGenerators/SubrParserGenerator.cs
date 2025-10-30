@@ -1548,6 +1548,15 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine("else");
                     sb.AppendLine("{");
                     sb.Indent();
+                    sb.AppendLine("// Element didn't match - check if it's a type error");
+                    sb.AppendLine("if (prevArgIndex < args.Length)");
+                    sb.AppendLine("{");
+                    sb.Indent();
+                    sb.AppendLine($"// Element failed to parse - record type error");
+                    var expectedTypeName = ElementNode.GetExpectedTypeName();
+                    sb.AppendLine($"{ctx.RankerVar}.WrongType(list.Count, {ctx.SiteVar}, prevArgIndex, \"{expectedTypeName}\");");
+                    sb.Unindent();
+                    sb.AppendLine("}");
                     sb.AppendLine("break; // element parser signalled no match -> end of params");
                     sb.Unindent();
                     sb.AppendLine("}");
@@ -1600,6 +1609,15 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine("else");
                     sb.AppendLine("{");
                     sb.Indent();
+                    sb.AppendLine("// Element didn't match - check if it's a type error");
+                    sb.AppendLine("if (prevArgIndex < args.Length)");
+                    sb.AppendLine("{");
+                    sb.Indent();
+                    sb.AppendLine($"// Element failed to parse - record type error");
+                    var expectedTypeName = ElementNode.GetExpectedTypeName();
+                    sb.AppendLine($"{ctx.RankerVar}.WrongType(list.Count, {ctx.SiteVar}, prevArgIndex, \"{expectedTypeName}\");");
+                    sb.Unindent();
+                    sb.AppendLine("}");
                     sb.AppendLine("break; // element didn't match -> array parsing complete");
                     sb.Unindent();
                     sb.AppendLine("}");
@@ -2203,7 +2221,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine();
 
                     // ErrorRanker used by nested helpers to record best failures for either/alt choice
-                    sb.AppendLine("ErrorRanker ranker = default; // accumulate best failure reasons");
+                    sb.AppendLine("ErrorRanker ranker = new(); // accumulate best failure reasons");
                     sb.AppendLine();
                 }
 

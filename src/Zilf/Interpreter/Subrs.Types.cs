@@ -314,7 +314,7 @@ namespace Zilf.Interpreter
 
         [Subr]
         public static ZilObject STRING(Context ctx,
-             [Decl("<LIST [REST <OR STRING CHARACTER>]>")] ZilObject[] args)
+             [Either(typeof(ZilString), typeof(ZilChar))] ZilObject[] args)
         {
             var sb = new StringBuilder();
 

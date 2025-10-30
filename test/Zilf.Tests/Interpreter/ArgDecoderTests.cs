@@ -87,8 +87,36 @@ namespace Zilf.Tests.Interpreter
         [TestMethod]
         public void Test_PROG_ArgumentDecodingError_Message_8()
         {
-           TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG () #DECL ()>",
-               ex => ex.Message.EndsWith("PROG requires 1 or more additional args", StringComparison.Ordinal));
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG () #DECL ()>",
+                ex => ex.Message.EndsWith("PROG requires 1 or more additional args", StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void Test_STRING_ArgumentDecodingError_Message_1()
+        {
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<STRING 123>",
+                ex => ex.Message.EndsWith("STRING: arg 1: expected STRING or CHARACTER", StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void Test_STRING_ArgumentDecodingError_Message_2()
+        {
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>(@"<STRING ""hi"" 5>",
+                ex => ex.Message.EndsWith("STRING: arg 2: expected STRING or CHARACTER", StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void Test_MAX_ArgumentDecodingError_Message_1()
+        {
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<MAX POWER>",
+                ex => ex.Message.EndsWith("MAX: arg 1: expected FIX", StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void Test_MAX_ArgumentDecodingError_Message_2()
+        {
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<MAX 4 POWER>",
+                ex => ex.Message.EndsWith("MAX: arg 2: expected FIX", StringComparison.Ordinal));
         }
 
         [TestMethod]

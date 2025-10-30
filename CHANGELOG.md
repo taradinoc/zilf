@@ -67,6 +67,9 @@ and this project may someday adhere to
 
 - Fixed `zapf -la` listing some labels twice.
 
+- Fixed unhelpful error messages when passing the wrong type of argument to
+  STRING or arithmetic functions.
+
 ## [0.10] (October 14, 2025)
 
 ### Added
