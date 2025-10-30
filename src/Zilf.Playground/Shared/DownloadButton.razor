@@ -13,10 +13,10 @@
 else if (downloadInfo != null)
 {
     <div class="d-inline-flex flex-column align-items-start">
-        <a class="btn btn-success btn-lg" href="@downloadInfo.DownloadUrl" target="_blank" rel="noopener noreferrer">
+        <button class="btn btn-success btn-lg" @onclick="OpenModal">
             <i class="@GetPlatformIcon(downloadInfo.Platform) me-2"></i>
             Download ZILF @downloadInfo.Version for @GetPlatformName(downloadInfo.Platform)
-        </a>
+        </button>
         @if (!string.IsNullOrEmpty(downloadInfo.ReleasesPageUrl))
         {
             <small class="text-muted mt-2">
@@ -26,6 +26,54 @@ else if (downloadInfo != null)
             </small>
         }
     </div>
+
+    @if (showModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,.5);">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Download ZILF @downloadInfo.Version for @GetPlatformName(downloadInfo.Platform)</h5>
+                        <button type="button" class="btn-close" aria-label="Close" @onclick="CloseModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (packageOptions?.Count > 0)
+                        {
+                            @foreach (var opt in packageOptions)
+                            {
+                                <a class="btn btn-primary w-100 text-start mb-2" href="@opt.Url" target="_blank" rel="noopener noreferrer">
+                                    <i class="@GetPackageIcon(opt.PackageType) me-2"></i>
+                                    @opt.Label
+                                    @if (opt.Recommended)
+                                    {
+                                        <span class="badge bg-light text-dark ms-2">Recommended</span>
+                                    }
+                                </a>
+                            }
+
+                            @if (!string.IsNullOrEmpty(downloadInfo.ReleasesPageUrl))
+                            {
+                                <div class="mt-3">
+                                    <a href="@downloadInfo.ReleasesPageUrl" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                                        View all release files
+                                    </a>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning mb-0">
+                                We couldn't find installer packages for your platform. You can view other options on the releases page.
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 }
 else if (!string.IsNullOrEmpty(fallbackUrl))
 {
@@ -41,6 +89,8 @@ else if (!string.IsNullOrEmpty(fallbackUrl))
     private bool isLoading = true;
     private DownloadInfo downloadInfo;
     private string fallbackUrl;
+    private bool showModal = false;
+    private List<PackageOption> packageOptions = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -49,22 +99,24 @@ else if (!string.IsNullOrEmpty(fallbackUrl))
             var latestRelease = await ReleaseService.GetLatestReleaseAsync();
             if (latestRelease != null)
             {
-                    var platformInfo = await ReleaseService.DetectPlatformInfoAsync();
-                    var asset = ReleaseService.FindAssetForPlatform(latestRelease, platformInfo.Platform, platformInfo.Architecture);
-                
-                if (asset?.DirectAssetUrl != null || asset?.Url != null)
+                var platformInfo = await ReleaseService.DetectPlatformInfoAsync();
+
+                var options = BuildPackageOptions(latestRelease, platformInfo);
+                if (options.Count > 0)
                 {
+                    packageOptions = options;
+                    // Keep a valid URL for the main button's required model, though we open a modal
                     downloadInfo = new DownloadInfo
                     {
-                        DownloadUrl = asset.DirectAssetUrl ?? asset.Url,
+                        DownloadUrl = options[0].Url,
                         Version = ExtractVersionFromTag(latestRelease.TagName),
-                            Platform = platformInfo.Platform,
+                        Platform = platformInfo.Platform,
                         ReleasesPageUrl = latestRelease.Links?.Self
                     };
                 }
                 else
                 {
-                    // No matching asset, use fallback to releases page
+                    // No matching assets, use fallback to releases page
                     fallbackUrl = latestRelease.Links?.Self ?? "https://foss.heptapod.net/zilf/zilf/-/releases";
                 }
             }
@@ -83,6 +135,121 @@ else if (!string.IsNullOrEmpty(fallbackUrl))
         {
             isLoading = false;
         }
+    }
+
+    private void OpenModal() => showModal = true;
+    private void CloseModal() => showModal = false;
+
+    private List<PackageOption> BuildPackageOptions(Release release, PlatformInfo platformInfo)
+    {
+        var links = release.Assets?.Links ?? new List<ReleaseAssetLink>();
+        if (links.Count == 0)
+            return new List<PackageOption>();
+
+        string[] osAliases = platformInfo.Platform switch
+        {
+            Platform.Windows => new[] { "win", "windows" },
+            Platform.MacOS => new[] { "osx", "macos" },
+            Platform.Linux => new[] { "linux" },
+            _ => Array.Empty<string>()
+        };
+
+        bool UrlIndicatesOs(ReleaseAssetLink l, Platform p)
+        {
+            var url = (l.DirectAssetUrl ?? l.Url) ?? string.Empty;
+            return p switch
+            {
+                Platform.Windows => url.Contains("win-", StringComparison.OrdinalIgnoreCase) || url.Contains("windows", StringComparison.OrdinalIgnoreCase),
+                Platform.MacOS => url.Contains("osx-", StringComparison.OrdinalIgnoreCase) || url.Contains("macos-", StringComparison.OrdinalIgnoreCase) || url.Contains("macos", StringComparison.OrdinalIgnoreCase),
+                Platform.Linux => url.Contains("linux-", StringComparison.OrdinalIgnoreCase) || url.Contains("linux", StringComparison.OrdinalIgnoreCase),
+                _ => false
+            };
+        }
+
+        var candidates = links
+            .Where(l => (!string.IsNullOrEmpty(l.Os) && osAliases.Any(a => string.Equals(l.Os, a, StringComparison.OrdinalIgnoreCase)))
+                        || UrlIndicatesOs(l, platformInfo.Platform))
+            .ToList();
+
+        if (candidates.Count == 0)
+            return new List<PackageOption>();
+
+        string archStr = platformInfo.Architecture switch
+        {
+            Architecture.X64 => "x64",
+            Architecture.ARM64 => "arm64",
+            Architecture.ARM => "arm",
+            Architecture.X86 => "x86",
+            _ => null
+        };
+
+        var archExact = !string.IsNullOrEmpty(archStr)
+            ? candidates.Where(l => string.Equals(l.Arch, archStr, StringComparison.OrdinalIgnoreCase)).ToList()
+            : new List<ReleaseAssetLink>();
+
+        var subset = archExact.Count > 0 ? archExact : candidates;
+
+        // Desired package types per platform and display order
+        var desiredTypes = platformInfo.Platform switch
+        {
+            Platform.Windows => new[] { "msi", "zip" },
+            Platform.MacOS => new[] { "pkg", "tar.gz" },
+            Platform.Linux => new[] { "rpm", "deb", "tar.gz" },
+            _ => Array.Empty<string>()
+        };
+
+        static string DetectPackageType(ReleaseAssetLink l)
+        {
+            if (!string.IsNullOrEmpty(l.PackageType))
+                return l.PackageType!.ToLowerInvariant();
+            var url = (l.DirectAssetUrl ?? l.Url) ?? string.Empty;
+            url = url.ToLowerInvariant();
+            if (url.EndsWith(".msi")) return "msi";
+            if (url.EndsWith(".zip")) return "zip";
+            if (url.EndsWith(".pkg")) return "pkg";
+            if (url.EndsWith(".rpm")) return "rpm";
+            if (url.EndsWith(".deb")) return "deb";
+            if (url.EndsWith(".tar.gz") || url.EndsWith(".tgz")) return "tar.gz";
+            return "";
+        }
+
+        static string MakeLabel(string type)
+        {
+            return type switch
+            {
+                "msi" => "MSI installer (.msi)",
+                "zip" => "ZIP archive (.zip)",
+                "pkg" => "macOS installer (.pkg)",
+                "tar.gz" => "Tarball (.tar.gz)",
+                "rpm" => "RPM package (.rpm)",
+                "deb" => "DEB package (.deb)",
+                _ => type
+            };
+        }
+
+        var options = new List<PackageOption>();
+        var usedTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var t in desiredTypes)
+        {
+            var match = subset.FirstOrDefault(l => string.Equals(DetectPackageType(l), t, StringComparison.OrdinalIgnoreCase));
+            if (match != null)
+            {
+                var url = match.DirectAssetUrl ?? match.Url;
+                if (!string.IsNullOrEmpty(url) && usedTypes.Add(t))
+                {
+                    options.Add(new PackageOption
+                    {
+                        PackageType = t,
+                        Url = url!,
+                        Label = MakeLabel(t),
+                        Recommended = (platformInfo.Platform == Platform.Windows && t == "msi") ||
+                                      (platformInfo.Platform == Platform.MacOS && t == "pkg")
+                    });
+                }
+            }
+        }
+
+        return options;
     }
 
     private static string ExtractVersionFromTag(string tagName)
@@ -113,11 +280,30 @@ else if (!string.IsNullOrEmpty(fallbackUrl))
         _ => "your platform"
     };
 
+    private static string GetPackageIcon(string packageType) => packageType.ToLowerInvariant() switch
+    {
+        "msi" => "bi bi-download",
+        "pkg" => "bi bi-download",
+        "zip" => "bi bi-file-zip",
+        "tar.gz" => "bi bi-file-zip",
+        "rpm" => "bi bi-box",
+        "deb" => "bi bi-box",
+        _ => "bi bi-download"
+    };
+
     private record DownloadInfo
     {
         public required string DownloadUrl { get; init; }
         public required string Version { get; init; }
         public required Platform Platform { get; init; }
         public string ReleasesPageUrl { get; init; }
+    }
+
+    private record PackageOption
+    {
+        public required string PackageType { get; init; }
+        public required string Url { get; init; }
+        public required string Label { get; init; }
+        public bool Recommended { get; init; }
     }
 }
