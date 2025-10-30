@@ -3,12 +3,12 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <MajorVersion>0</MajorVersion>
-    <MinorVersion>10</MinorVersion>
+    <MinorVersion>11</MinorVersion>
     <MicroVersion>0</MicroVersion>
     <!-- Allowed: alpha,beta,candidate,final -->
-    <ReleaseLevel>final</ReleaseLevel>
+    <ReleaseLevel>candidate</ReleaseLevel>
     <!-- If ReleaseLevel is "final", ReleaseSerial should be 0 -->
-    <ReleaseSerial>0</ReleaseSerial>
+    <ReleaseSerial>1</ReleaseSerial>
 
     <AssemblyRevision>0</AssemblyRevision>
   </PropertyGroup>
