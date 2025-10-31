@@ -422,3 +422,5 @@ and this project may someday adhere to
 
 [0.9]: https://foss.heptapod.net/zilf/zilf/-/compare/0.8...0.9
 [0.10]: https://foss.heptapod.net/zilf/zilf/-/compare/0.9...0.10
+[0.11]: https://foss.heptapod.net/zilf/zilf/-/compare/0.10...0.11
+[0.11.1]: https://foss.heptapod.net/zilf/zilf/-/compare/0.11...0.11.1
