@@ -58,6 +58,8 @@ namespace Zilf.Language
         [Atom("CLEAN-STACK?")]
         CLEAN_STACK_P,
         COLOR,
+        [Atom("COMPACT-PREACTIONS?")]
+        COMPACT_PREACTIONS_P,
         [Atom("COMPACT-SYNTAXES?")]
         COMPACT_SYNTAXES_P,
         [Atom("COMPACT-VOCABULARY?")]

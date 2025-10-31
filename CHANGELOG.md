@@ -4,6 +4,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project may someday adhere to
 ~~[Semantic Versioning](http://semver.org/spec/v2.0.0.html)~~.
 
+## [1.0] (Unreleased)
+
+### Added
+
+- `<SETG COMPACT-PREACTIONS? T>` now switches to a more efficient format for the
+  preaction table, as proposed by Matthew Russotto.
+
+### Changed
+
+- Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
+  details.
+
 ## [0.11.1] (October 31, 2025)
 
 ### Fixed

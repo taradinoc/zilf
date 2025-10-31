@@ -24,6 +24,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.CommandLine;
+using System.CommandLine.Parsing;
 using Zilf.Common;
 using Zilf.Compiler;
 using Zilf.Diagnostics;
@@ -31,11 +33,14 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Language.Parsing;
+using CommandParseResult = System.CommandLine.ParseResult;
 
 namespace Zilf
 {
     static class Program
     {
+        static readonly Lazy<ZilfCommandSpec> CommandSpec = new(CreateCommandSpec);
+
         internal static string GetVersion() =>
             typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
                 ?.InformationalVersion ?? "<?.??>";
@@ -44,10 +49,313 @@ namespace Zilf
 
         internal static int Main(string[] args)
         {
-            var ctx = BuildContext(args, out var inFile, out var outFile);
+            var spec = CommandSpec.Value;
+            var parseResult = spec.RootCommand.Parse(args);
+            return parseResult.Invoke();
+        }
+
+        static ZilfCommandSpec CreateCommandSpec()
+        {
+            // Shared options
+            var quietOption = new Option<bool>("--quiet", "-q")
+            {
+                Description = "Quiet mode: suppress banner and prompts."
+            };
+
+            var caseSensitiveOption = new Option<bool?>("--case-sensitive")
+            {
+                Description = "Enable case-sensitive parsing.",
+                Arity = ArgumentArity.Zero
+            };
+            caseSensitiveOption.Aliases.Add("--cs");
+
+            var caseInsensitiveOption = new Option<bool?>("--case-insensitive")
+            {
+                Description = "Enable case-insensitive parsing.",
+                Arity = ArgumentArity.Zero
+            };
+            caseInsensitiveOption.Aliases.Add("--ci");
+
+            var includePathOption = new Option<string[]>("--include-path", "-I")
+            {
+                Description = "Add directory to include path (may be repeated).",
+                AllowMultipleArgumentsPerToken = false,
+                Arity = ArgumentArity.ZeroOrMore
+            };
+
+            var enableAllWarningsOption = new Option<bool>("--warn-all", "-W")
+            {
+                Description = "Enable all warnings (even noisy ones)."
+            };
+
+            var warningsAsErrorsOption = new Option<bool>("--warn-error", "-Werror")
+            {
+                Description = "Treat warnings as errors."
+            };
+
+            var suppressWarningsOption = new Option<string[]>("--warn-suppress")
+            {
+                Description = "Suppress specific warning codes (comma-separated).",
+                AllowMultipleArgumentsPerToken = true,
+                Arity = ArgumentArity.ZeroOrMore
+            };
+            suppressWarningsOption.Aliases.Add("-Wno");
+
+            // Compile mode (default root command)
+            var inputArgument = new Argument<string?>("input")
+            {
+                Description = "Input ZIL source file.",
+                HelpName = "input.zil",
+                Arity = ArgumentArity.ZeroOrOne
+            };
+
+            var outputArgument = new Argument<string?>("output")
+            {
+                Description = "Output ZAP file (defaults to input name with .zap extension).",
+                Arity = ArgumentArity.ZeroOrOne,
+                HelpName = "output.zap"
+            };
+
+            var traceRoutinesOption = new Option<bool>("--trace", "-t")
+            {
+                Description = "Trace routine calls at runtime."
+            };
+
+            var debugInfoOption = new Option<bool>("--debug", "-g")
+            {
+                Description = "Include debug information in output."
+            };
+
+            var root = new RootCommand("Compile ZIL source files into Z-machine assembly.")
+            {
+                TreatUnmatchedTokensAsErrors = true
+            };
+
+            root.Arguments.Add(inputArgument);
+            root.Arguments.Add(outputArgument);
+            root.Options.Add(quietOption);
+            root.Options.Add(caseSensitiveOption);
+            root.Options.Add(caseInsensitiveOption);
+            root.Options.Add(includePathOption);
+            root.Options.Add(traceRoutinesOption);
+            root.Options.Add(debugInfoOption);
+            root.Options.Add(enableAllWarningsOption);
+            root.Options.Add(warningsAsErrorsOption);
+            root.Options.Add(suppressWarningsOption);
+
+            // Expression evaluation mode (-e)
+            var expressionOption = new Option<string>("-e")
+            {
+                Description = "Evaluate a ZIL expression from the command line.",
+                HelpName = "expression"
+            };
+            root.Options.Add(expressionOption);
+
+            // REPL subcommand
+            var replCommand = new Command("repl", "Start an interactive read-eval-print loop.");
+            
+            var replQuietOption = new Option<bool>("--quiet", "-q")
+            {
+                Description = "Quiet mode: suppress banner and prompts."
+            };
+            var replCaseSensitiveOption = new Option<bool?>("--case-sensitive")
+            {
+                Description = "Enable case-sensitive parsing.",
+                Arity = ArgumentArity.Zero
+            };
+            replCaseSensitiveOption.Aliases.Add("--cs");
+            var replCaseInsensitiveOption = new Option<bool?>("--case-insensitive")
+            {
+                Description = "Enable case-insensitive parsing.",
+                Arity = ArgumentArity.Zero
+            };
+            replCaseInsensitiveOption.Aliases.Add("--ci");
+            var replIncludePathOption = new Option<string[]>("--include-path", "-I")
+            {
+                Description = "Add directory to include path (may be repeated).",
+                AllowMultipleArgumentsPerToken = false,
+                Arity = ArgumentArity.ZeroOrMore
+            };
+            
+            replCommand.Options.Add(replQuietOption);
+            replCommand.Options.Add(replCaseSensitiveOption);
+            replCommand.Options.Add(replCaseInsensitiveOption);
+            replCommand.Options.Add(replIncludePathOption);
+            root.Subcommands.Add(replCommand);
+
+            // Exec subcommand
+            var execCommand = new Command("exec", "Execute a ZIL file without generating output.");
+            
+            var execInputArgument = new Argument<string>("input")
+            {
+                Description = "Input ZIL source file to execute.",
+                HelpName = "input.zil"
+            };
+            
+            var execQuietOption = new Option<bool>("--quiet", "-q")
+            {
+                Description = "Quiet mode: suppress banner and prompts."
+            };
+            var execCaseSensitiveOption = new Option<bool?>("--case-sensitive")
+            {
+                Description = "Enable case-sensitive parsing.",
+                Arity = ArgumentArity.Zero
+            };
+            execCaseSensitiveOption.Aliases.Add("--cs");
+            var execCaseInsensitiveOption = new Option<bool?>("--case-insensitive")
+            {
+                Description = "Enable case-insensitive parsing.",
+                Arity = ArgumentArity.Zero
+            };
+            execCaseInsensitiveOption.Aliases.Add("--ci");
+            var execIncludePathOption = new Option<string[]>("--include-path", "-I")
+            {
+                Description = "Add directory to include path (may be repeated).",
+                AllowMultipleArgumentsPerToken = false,
+                Arity = ArgumentArity.ZeroOrMore
+            };
+            var execEnableAllWarningsOption = new Option<bool>("--warn-all", "-W")
+            {
+                Description = "Enable all warnings (even noisy ones)."
+            };
+            var execWarningsAsErrorsOption = new Option<bool>("--warn-error", "-Werror")
+            {
+                Description = "Treat warnings as errors."
+            };
+            var execSuppressWarningsOption = new Option<string[]>("--warn-suppress")
+            {
+                Description = "Suppress specific warning codes (comma-separated).",
+                AllowMultipleArgumentsPerToken = true,
+                Arity = ArgumentArity.ZeroOrMore
+            };
+            execSuppressWarningsOption.Aliases.Add("-Wno");
+            
+            execCommand.Arguments.Add(execInputArgument);
+            execCommand.Options.Add(execQuietOption);
+            execCommand.Options.Add(execCaseSensitiveOption);
+            execCommand.Options.Add(execCaseInsensitiveOption);
+            execCommand.Options.Add(execIncludePathOption);
+            execCommand.Options.Add(execEnableAllWarningsOption);
+            execCommand.Options.Add(execWarningsAsErrorsOption);
+            execCommand.Options.Add(execSuppressWarningsOption);
+            root.Subcommands.Add(execCommand);
+
+            var spec = new ZilfCommandSpec(
+                root,
+                inputArgument,
+                outputArgument,
+                quietOption,
+                caseSensitiveOption,
+                caseInsensitiveOption,
+                includePathOption,
+                traceRoutinesOption,
+                debugInfoOption,
+                enableAllWarningsOption,
+                warningsAsErrorsOption,
+                suppressWarningsOption,
+                expressionOption,
+                replCommand,
+                replQuietOption,
+                replCaseSensitiveOption,
+                replCaseInsensitiveOption,
+                replIncludePathOption,
+                execCommand,
+                execInputArgument,
+                execQuietOption,
+                execCaseSensitiveOption,
+                execCaseInsensitiveOption,
+                execIncludePathOption,
+                execEnableAllWarningsOption,
+                execWarningsAsErrorsOption,
+                execSuppressWarningsOption);
+
+            // Set up validators
+            root.Validators.Add(commandResult =>
+            {
+                bool hasCaseSensitive = commandResult.GetResult(spec.CaseSensitiveOption) is not null;
+                bool hasCaseInsensitive = commandResult.GetResult(spec.CaseInsensitiveOption) is not null;
+
+                if (hasCaseSensitive && hasCaseInsensitive)
+                {
+                    commandResult.AddError("Options --case-sensitive and --case-insensitive cannot be used together.");
+                }
+
+                bool hasExpression = commandResult.GetResult(spec.ExpressionOption) is not null;
+                bool hasInput = commandResult.GetResult(spec.InputArgument) is not null;
+
+                if (hasExpression && hasInput)
+                {
+                    commandResult.AddError("Cannot specify both -e and an input file.");
+                }
+            });
+
+            // Set up handlers
+            root.SetAction(parseResult =>
+            {
+                var expr = parseResult.GetValue(spec.ExpressionOption);
+                if (expr != null)
+                {
+                    return ExecuteExpressionMode(parseResult, expr);
+                }
+
+                var input = parseResult.GetValue(spec.InputArgument);
+                if (string.IsNullOrEmpty(input))
+                {
+                    // No input file and no -e option means interactive mode
+                    return ExecuteReplMode(parseResult);
+                }
+
+                return ExecuteCompileMode(parseResult, input);
+            });
+
+            replCommand.SetAction(ExecuteReplMode);
+            execCommand.SetAction(parseResult => ExecuteExecMode(parseResult, parseResult.GetValue(spec.ExecInputArgument)!));
+
+            return spec;
+        }
+
+        private sealed record class ZilfCommandSpec(
+            RootCommand RootCommand,
+            Argument<string?> InputArgument,
+            Argument<string?> OutputArgument,
+            Option<bool> QuietOption,
+            Option<bool?> CaseSensitiveOption,
+            Option<bool?> CaseInsensitiveOption,
+            Option<string[]> IncludePathOption,
+            Option<bool> TraceRoutinesOption,
+            Option<bool> DebugInfoOption,
+            Option<bool> EnableAllWarningsOption,
+            Option<bool> WarningsAsErrorsOption,
+            Option<string[]> SuppressWarningsOption,
+            Option<string> ExpressionOption,
+            Command ReplCommand,
+            Option<bool> ReplQuietOption,
+            Option<bool?> ReplCaseSensitiveOption,
+            Option<bool?> ReplCaseInsensitiveOption,
+            Option<string[]> ReplIncludePathOption,
+            Command ExecCommand,
+            Argument<string> ExecInputArgument,
+            Option<bool> ExecQuietOption,
+            Option<bool?> ExecCaseSensitiveOption,
+            Option<bool?> ExecCaseInsensitiveOption,
+            Option<string[]> ExecIncludePathOption,
+            Option<bool> ExecEnableAllWarningsOption,
+            Option<bool> ExecWarningsAsErrorsOption,
+            Option<string[]> ExecSuppressWarningsOption);
+
+        static int ExecuteCompileMode(CommandParseResult parseResult, string? inputFile)
+        {
+            if (string.IsNullOrEmpty(inputFile))
+            {
+                Console.Error.WriteLine("Error: Input file required for compile mode.");
+                return 1;
+            }
+
+            var spec = CommandSpec.Value;
+            var ctx = BuildContextFromParseResult(parseResult, RunMode.Compiler, inputFile, out var outFile);
 
             if (ctx == null)
-                return 1;       // BuildContext signaled an error
+                return 1;
 
             if (!ctx.Quiet)
             {
@@ -56,79 +364,216 @@ namespace Zilf
                 Console.WriteLine(GetBuildTimestamp());
             }
 
-            switch (ctx.RunMode)
+            var output = parseResult.GetValue(spec.OutputArgument);
+            outFile = string.IsNullOrEmpty(output) ? Path.ChangeExtension(inputFile, ".zap") : output;
+
+            return WrapInFrontEnd(frontEnd => frontEnd.Compile(ctx, inputFile, outFile, ctx.WantDebugInfo));
+        }
+
+        static int ExecuteExpressionMode(CommandParseResult parseResult, string expression)
+        {
+            var ctx = BuildContextFromParseResult(parseResult, RunMode.Expression, expression, out _);
+
+            if (ctx == null)
+                return 1;
+
+            if (!ctx.Quiet)
             {
-                case RunMode.Interactive:
-                    DoREPL(ctx);
-                    return 0;
-
-                case RunMode.Expression:
-                    Debug.Assert(inFile != null);
-                    using (ctx.PushFileContext("<cmdline>"))
-                    {
-                        Console.WriteLine(Evaluate(ctx, inFile));
-                        if (ctx.ErrorCount > 0)
-                            return 2;
-                    }
-                    return 0;
-
-                case RunMode.Compiler:
-                    Debug.Assert(inFile != null);
-                    Debug.Assert(outFile != null);
-                    return WrapInFrontEnd(frontEnd => frontEnd.Compile(ctx, inFile, outFile, ctx.WantDebugInfo));
-
-                case RunMode.Interpreter:
-                    Debug.Assert(inFile != null);
-                    return WrapInFrontEnd(frontEnd => frontEnd.Interpret(ctx, inFile));
-
-                default:
-                    throw new UnreachableCodeException();
+                Console.Write(GetBanner());
+                Console.Write(" built ");
+                Console.WriteLine(GetBuildTimestamp());
             }
 
-            static int WrapInFrontEnd(Func<FrontEnd, FrontEndResult> func)
+            using (ctx.PushFileContext("<cmdline>"))
             {
-                var frontEnd = new FrontEnd();
-                try
-                {
-                    var result = func(frontEnd);
-
-                    if (result.WarningCount > 0)
-                    {
-                        Console.Error.Write("{0} warning{1}",
-                            result.WarningCount,
-                            result.WarningCount == 1 ? "" : "s");
-
-                        if (result.SuppressedWarningCount > 0)
-                        {
-                            Console.Error.Write(
-                                " ({0} suppressed)",
-                                result.SuppressedWarningCount);
-                        }
-
-                        Console.Error.WriteLine();
-                    }
-
-                    if (result.ErrorCount > 0)
-                    {
-                        Console.Error.WriteLine("{0} error{1}",
-                            result.ErrorCount,
-                            result.ErrorCount == 1 ? "" : "s");
-                        return 2;
-                    }
-                }
-                catch (FileNotFoundException ex)
-                {
-                    Console.Error.WriteLine("file not found: " + ex.FileName);
-                    return 1;
-                }
-                catch (IOException ex)
-                {
-                    Console.Error.WriteLine("I/O error: " + ex.Message);
-                    return 1;
-                }
-
-                return 0;
+                Console.WriteLine(Evaluate(ctx, expression));
+                if (ctx.ErrorCount > 0)
+                    return 2;
             }
+
+            return 0;
+        }
+
+        static int ExecuteReplMode(CommandParseResult parseResult)
+        {
+            var ctx = BuildContextFromParseResult(parseResult, RunMode.Interactive, null, out _);
+
+            if (ctx == null)
+                return 1;
+
+            if (!ctx.Quiet)
+            {
+                Console.Write(GetBanner());
+                Console.Write(" built ");
+                Console.WriteLine(GetBuildTimestamp());
+            }
+
+            DoREPL(ctx);
+            return 0;
+        }
+
+        static int ExecuteExecMode(CommandParseResult parseResult, string inputFile)
+        {
+            var ctx = BuildContextFromParseResult(parseResult, RunMode.Interpreter, inputFile, out _);
+
+            if (ctx == null)
+                return 1;
+
+            if (!ctx.Quiet)
+            {
+                Console.Write(GetBanner());
+                Console.Write(" built ");
+                Console.WriteLine(GetBuildTimestamp());
+            }
+
+            return WrapInFrontEnd(frontEnd => frontEnd.Interpret(ctx, inputFile));
+        }
+
+        static int WrapInFrontEnd(Func<FrontEnd, FrontEndResult> func)
+        {
+            var frontEnd = new FrontEnd();
+            try
+            {
+                var result = func(frontEnd);
+
+                if (result.WarningCount > 0)
+                {
+                    Console.Error.Write("{0} warning{1}",
+                        result.WarningCount,
+                        result.WarningCount == 1 ? "" : "s");
+
+                    if (result.SuppressedWarningCount > 0)
+                    {
+                        Console.Error.Write(
+                            " ({0} suppressed)",
+                            result.SuppressedWarningCount);
+                    }
+
+                    Console.Error.WriteLine();
+                }
+
+                if (result.ErrorCount > 0)
+                {
+                    Console.Error.WriteLine("{0} error{1}",
+                        result.ErrorCount,
+                        result.ErrorCount == 1 ? "" : "s");
+                    return 2;
+                }
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.Error.WriteLine("file not found: " + ex.FileName);
+                return 1;
+            }
+            catch (IOException ex)
+            {
+                Console.Error.WriteLine("I/O error: " + ex.Message);
+                return 1;
+            }
+
+            return 0;
+        }
+
+        static Context? BuildContextFromParseResult(CommandParseResult parseResult, RunMode mode, string? inFile, out string? outFile)
+        {
+            var spec = CommandSpec.Value;
+            outFile = null;
+
+            // Determine which set of options to use based on the command
+            Option<bool> quietOption;
+            Option<bool?> caseSensitiveOption;
+            Option<bool?> caseInsensitiveOption;
+            Option<string[]> includePathOption;
+            Option<bool> enableAllWarningsOption;
+            Option<bool> warningsAsErrorsOption;
+            Option<string[]> suppressWarningsOption;
+
+            var commandResult = parseResult.CommandResult;
+            if (commandResult.Command == spec.ReplCommand)
+            {
+                quietOption = spec.ReplQuietOption;
+                caseSensitiveOption = spec.ReplCaseSensitiveOption;
+                caseInsensitiveOption = spec.ReplCaseInsensitiveOption;
+                includePathOption = spec.ReplIncludePathOption;
+                enableAllWarningsOption = spec.EnableAllWarningsOption; // Not available in REPL
+                warningsAsErrorsOption = spec.WarningsAsErrorsOption; // Not available in REPL
+                suppressWarningsOption = spec.SuppressWarningsOption; // Not available in REPL
+            }
+            else if (commandResult.Command == spec.ExecCommand)
+            {
+                quietOption = spec.ExecQuietOption;
+                caseSensitiveOption = spec.ExecCaseSensitiveOption;
+                caseInsensitiveOption = spec.ExecCaseInsensitiveOption;
+                includePathOption = spec.ExecIncludePathOption;
+                enableAllWarningsOption = spec.ExecEnableAllWarningsOption;
+                warningsAsErrorsOption = spec.ExecWarningsAsErrorsOption;
+                suppressWarningsOption = spec.ExecSuppressWarningsOption;
+            }
+            else
+            {
+                // Root command (compile or expression mode)
+                quietOption = spec.QuietOption;
+                caseSensitiveOption = spec.CaseSensitiveOption;
+                caseInsensitiveOption = spec.CaseInsensitiveOption;
+                includePathOption = spec.IncludePathOption;
+                enableAllWarningsOption = spec.EnableAllWarningsOption;
+                warningsAsErrorsOption = spec.WarningsAsErrorsOption;
+                suppressWarningsOption = spec.SuppressWarningsOption;
+            }
+
+            var quiet = parseResult.GetValue(quietOption);
+            var hasCaseSensitive = parseResult.GetResult(caseSensitiveOption) is not null;
+            var hasCaseInsensitive = parseResult.GetResult(caseInsensitiveOption) is not null;
+
+            bool caseSensitive;
+            if (hasCaseSensitive)
+            {
+                caseSensitive = true;
+            }
+            else if (hasCaseInsensitive)
+            {
+                caseSensitive = false;
+            }
+            else
+            {
+                // Default based on mode
+                caseSensitive = mode switch
+                {
+                    RunMode.Expression or RunMode.Interactive => false,
+                    _ => true,
+                };
+            }
+
+            var traceRoutines = parseResult.GetValue(spec.TraceRoutinesOption);
+            var debugInfo = parseResult.GetValue(spec.DebugInfoOption);
+            var suppressNoisyWarnings = !parseResult.GetValue(enableAllWarningsOption);
+            var warningsAsErrors = parseResult.GetValue(warningsAsErrorsOption);
+
+            var includePaths = parseResult.GetValue(includePathOption) ?? [];
+            var suppressedCodes = parseResult.GetValue(suppressWarningsOption) ?? [];
+
+            var ctx = new Context(!caseSensitive)
+            {
+                TraceRoutines = traceRoutines,
+                WantDebugInfo = debugInfo,
+                WarningsAsErrors = warningsAsErrors,
+                SuppressNoisyWarnings = suppressNoisyWarnings,
+                RunMode = mode,
+                Quiet = quiet
+            };
+
+            ctx.IncludePaths.AddRange(includePaths);
+            AddImplicitIncludePaths(ctx.IncludePaths, inFile, mode);
+
+            foreach (var codeList in suppressedCodes)
+            {
+                foreach (var code in codeList.Split(','))
+                {
+                    ctx.DiagnosticManager.Suppress(code.Trim());
+                }
+            }
+
+            return ctx;
         }
 
         private static DateTime GetBuildTimestamp()
@@ -223,203 +668,6 @@ namespace Zilf
             }
         }
 
-        [return: NotNullIfNotNull("inFile")]
-        static Context? BuildContext(string[] args, [NotNullIfNotNull(nameof(outFile))] out string? inFile, out string? outFile)
-        {
-            string? newInFile = inFile = null;
-            string? newOutFile = outFile = null;
-
-            bool traceRoutines = false, debugInfo = false, warningsAsErrors = false, suppressNoisyWarnings = true;
-            bool? caseSensitive = null;
-            RunMode? mode = null;
-            bool? quiet = null;
-            var includePaths = new List<string>();
-            var suppressedDiagnosticCodes = new List<string>();
-
-            if (!ParseArgs())
-                return null;
-
-            if (!SetDefaultsAndValidate())
-                return null;
-
-            Debug.Assert(caseSensitive != null);
-            Debug.Assert(mode != null);
-            Debug.Assert(quiet != null);
-
-            // initialize and return Context
-            var ctx = new Context(!caseSensitive.Value)
-            {
-                TraceRoutines = traceRoutines,
-                WantDebugInfo = debugInfo,
-                WarningsAsErrors = warningsAsErrors,
-                SuppressNoisyWarnings = suppressNoisyWarnings,
-                RunMode = mode.Value,
-                Quiet = quiet.Value
-            };
-
-            ctx.IncludePaths.AddRange(includePaths);
-            AddImplicitIncludePaths(ctx.IncludePaths, newInFile, mode.Value);
-
-            foreach (var code in suppressedDiagnosticCodes)
-                ctx.DiagnosticManager.Suppress(code);
-
-            inFile = newInFile;
-            outFile = newOutFile;
-            return ctx;
-
-            bool ParseArgs()
-            {
-                for (int i = 0; i < args.Length; i++)
-                {
-                    switch (args[i].ToUpperInvariant())
-                    {
-                        case "-C":
-                            mode = RunMode.Compiler;
-                            break;
-
-                        case "-E":
-                            mode = RunMode.Expression;
-                            break;
-
-                        case "-I":
-                            mode = RunMode.Interactive;
-                            break;
-
-                        case "-Q":
-                            quiet = true;
-                            break;
-
-                        case "-CS":
-                            caseSensitive = true;
-                            break;
-
-                        case "-CI":
-                            caseSensitive = false;
-                            break;
-
-                        case "-TR":
-                            traceRoutines = true;
-                            break;
-
-                        case "-D":
-                            debugInfo = true;
-                            break;
-
-                        case "-X":
-                            mode = RunMode.Interpreter;
-                            break;
-
-                        case "-IP":
-                            i++;
-                            if (i < args.Length)
-                            {
-                                includePaths.Add(args[i]);
-                            }
-                            else
-                            {
-                                Usage();
-                                return false;
-                            }
-
-                            break;
-
-                        case "-W":
-                            suppressNoisyWarnings = false;
-                            break;
-
-                        case "-WE":
-                            warningsAsErrors = true;
-                            break;
-
-                        case "-WS":
-                            i++;
-                            if (i < args.Length)
-                            {
-                                suppressedDiagnosticCodes.AddRange(args[i].Split(','));
-                            }
-                            else
-                            {
-                                Usage();
-                                return false;
-                            }
-
-                            break;
-
-                        case "-?":
-                        case "--HELP":
-                        case "/?":
-                            Usage();
-                            return false;
-
-                        default:
-                            if (newInFile == null)
-                            {
-                                newInFile = args[i];
-                            }
-                            else if (newOutFile == null)
-                            {
-                                newOutFile = args[i];
-                            }
-                            else
-                            {
-                                Usage();
-                                return false;
-                            }
-
-                            break;
-                    }
-                }
-
-                return true;
-            }
-
-            bool SetDefaultsAndValidate()
-            {
-                mode ??= (newInFile == null ? RunMode.Interactive : RunMode.Compiler);
-                quiet ??= (mode is RunMode.Expression or RunMode.Interpreter);
-
-                switch (mode.Value)
-                {
-                    case RunMode.Compiler:
-                        if (newInFile == null)
-                        {
-                            Usage();
-                            return false;
-                        }
-
-                        newOutFile ??= Path.ChangeExtension(newInFile, ".zap");
-                        break;
-
-                    case RunMode.Expression:
-                    case RunMode.Interpreter:
-                        if (newInFile == null || newOutFile != null)
-                        {
-                            Usage();
-                            return false;
-                        }
-
-                        break;
-
-                    case RunMode.Interactive:
-                        if (newInFile != null)
-                        {
-                            Usage();
-                            return false;
-                        }
-
-                        break;
-                }
-
-                caseSensitive ??= mode.Value switch
-                {
-                    RunMode.Expression or RunMode.Interactive => false,
-                    _ => true,
-                };
-
-                return true;
-            }
-        }
-
         static void AddImplicitIncludePaths(List<string> includePaths, string? inFile, RunMode mode)
         {
             if (inFile != null && mode != RunMode.Expression && Path.GetDirectoryName(Path.GetFullPath(inFile)) is string dir)
@@ -490,34 +738,6 @@ namespace Zilf
 
                 return first.Concat(rest);
             }
-        }
-
-        static void Usage()
-        {
-            Console.WriteLine(GetBanner());
-            Console.WriteLine(
-@"Interact: zilf [switches] [-i]
-Evaluate: zilf [switches] -e ""<expression>""
- Execute: zilf [switches] -x <inFile.zil>
- Compile: zilf [switches] [-c] <inFile.zil> [<outFile>]
-
-Modes:
-  -c filename           execute code file and generate Z-code (default)
-  -x filename           execute code file but produce no output
-  -e ""expr""             evaluate expr from command line
-  -i                    interactive mode (default if no filename given)
-General switches:
-  -q                    quiet: no banner or prompt
-  -cs                   case sensitive (default for -c, -x)
-  -ci                   case insensitive (default for -e, -i)
-  -ip dir               add dir to include path (may be repeated)
-Compiler switches:
-  -tr                   trace routine calls at runtime
-  -d                    include debug information
-Warning message options:
-  -w                    enable all warnings (even noisy ones)
-  -we                   treat warnings as errors
-  -ws code[,code...]    suppress specific warnings (may be repeated)");
         }
 
         // TODO: move Parse somewhere more sensible

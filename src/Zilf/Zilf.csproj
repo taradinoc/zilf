@@ -19,6 +19,7 @@
   <ItemGroup>
     <PackageReference Include="MSBuildTasks" Version="1.5.0.235" />
     <PackageReference Include="ReadLine" Version="2.0.1" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-rc.2.25502.107" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Zilf.Emit\Zilf.Emit.csproj" />

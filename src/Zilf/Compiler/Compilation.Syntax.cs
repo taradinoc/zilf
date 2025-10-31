@@ -59,6 +59,9 @@ namespace Zilf.Compiler
             // compact syntaxes?
             var compact = Context.GetGlobalOption(StdAtom.COMPACT_SYNTAXES_P);
 
+            // compact preactions?
+            var compactPreactions = Context.GetGlobalOption(StdAtom.COMPACT_PREACTIONS_P);
+
             var vf = Context.ZEnvironment.VocabFormat;
 
             // verb table
@@ -158,7 +161,23 @@ namespace Zilf.Compiler
             foreach (var act in actquery)
             {
                 actionTable.AddShort(act.Routine);
-                preactionTable.AddShort((IOperand?)act.PreRoutine ?? Game.Zero);
+                if (compactPreactions)
+                {
+                    if (act.PreRoutine != null)
+                    {
+                        preactionTable.AddShort(act.Constant);
+                        preactionTable.AddShort(act.PreRoutine);
+                    }
+                }
+                else
+                {
+                    preactionTable.AddShort((IOperand?)act.PreRoutine ?? Game.Zero);
+                }
+            }
+            if (compactPreactions)
+            {
+                preactionTable.AddShort(-1);
+                preactionTable.AddShort(0);
             }
         }
 

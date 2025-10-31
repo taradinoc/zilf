@@ -126,5 +126,25 @@ namespace Zilf.Tests.Integration
             await AssertGlobals([.. globals]).GeneratesCodeMatchingAsync(@"V\?VERB-256=256");
         }
 
+        [TestMethod]
+        public async Task COMPACT_PREACTIONS_P_Should_Affect_Preaction_Table_Format()
+        {
+            await AssertGlobals(
+                "<SETG COMPACT-PREACTIONS? T>",
+                "<SYNTAX FEE = V-FEE>",
+                "<SYNTAX FIE = V-FIE>",
+                "<SYNTAX FOE = V-FOE>",
+                "<SYNTAX FOO = V-FOO PRE-FOO>",
+                "<ROUTINE V-FEE () <>>",
+                "<ROUTINE V-FIE () <>>",
+                "<ROUTINE V-FOE () <>>",
+                "<ROUTINE V-FOO () <>>",
+                "<ROUTINE PRE-FOO () <>>")
+                .ImpliesAsync(
+                    "<=? <GET ,PREACTIONS 0> ,V?FOO>",
+                    "<=? <GET ,PREACTIONS 1> ,PRE-FOO>",
+                    "<=? <GET ,PREACTIONS 2> -1>",
+                    "<=? <GET ,PREACTIONS 3> 0>");
+        }
     }
 }
