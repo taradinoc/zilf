@@ -1032,7 +1032,7 @@ namespace Zilf.Interpreter
 
                 // unknown type
                 default:
-                    throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "type", newType);
+                    throw new InterpreterError(InterpreterMessages.Unrecognized_Type_0, newType);
             }
 
             result.SourceLine ??= SourceLines.Chtyped;

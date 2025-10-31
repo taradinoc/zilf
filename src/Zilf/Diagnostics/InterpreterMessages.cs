@@ -58,10 +58,10 @@ namespace Zilf.Diagnostics
         public const int FIXFALSE_In_PROPDEF_Output_Pattern_Must_Be_At_The_Beginning = 105;
         [Error("lists and atoms in TELL token specs must come at the beginning")]
         public const int Lists_And_Atoms_In_TELL_Token_Specs_Must_Come_At_The_Beginning = 106;
-/*
-        [Error("malformed GVAL in TELL token spec")]
-        public const int Malformed_GVAL_In_TELL_Token_Spec = 107;
-*/
+        /*
+                [Error("malformed GVAL in TELL token spec")]
+                public const int Malformed_GVAL_In_TELL_Token_Spec = 107;
+        */
         [Error("missing {0} in {1}")]
         public const int Missing_0_In_1 = 108;
         [Info("recognized versions are ZIP, EZIP, XZIP, YZIP, and numbers 3-8")]
@@ -72,8 +72,8 @@ namespace Zilf.Diagnostics
         public const int TELL_Token_Spec_Ends_With_An_Unterminated_Pattern = 111;
         [Error("too many {0} in syntax definition")]
         public const int Too_Many_0_In_Syntax_Definition = 112;
-        [Error("unrecognized {0}: {1}")]
-        public const int Unrecognized_0_1 = 113;
+        // [Error("unrecognized {0}: {1}")]
+        // public const int Unrecognized_0_1 = 113;
         [Error("{0} in {1} must be {2}")]
         public const int _0_In_1_Must_Be_2 = 114;
         [Error("{0} in {1} must have {2} element{2:s}")]
@@ -90,8 +90,8 @@ namespace Zilf.Diagnostics
         public const int _0_Multiple_1_Clauses = 120;
         [Error("{0}: not enough elements in 'CONSTRUCTOR spec")]
         public const int _0_Not_Enough_Elements_In_CONSTRUCTOR_Spec = 121;
-        [Error("{0}: unrecognized {1}: {2}")]
-        public const int _0_Unrecognized_1_2 = 122;
+        // [Error("{0}: unrecognized {1}: {2}")]
+        // public const int _0_Unrecognized_1_2 = 122;
         [Error("{0}: lists in defaults section must start with a quoted atom")]
         public const int _0_Lists_In_Defaults_Section_Must_Start_With_A_Quoted_Atom = 123;
         [Error("{0}: parts of defaults section must be quoted atoms or lists")]
@@ -108,6 +108,8 @@ namespace Zilf.Diagnostics
         public const int _0_Too_Many_1s_Starting_At_1_2 = 129;
         [Error("{0}: unexpected FORM in arg spec: {1}")]
         public const int _0_Unexpected_FORM_In_Arg_Spec_1 = 130;
+        [Error("{0}: unrecognized clause in arg spec: {1}")]
+        public const int _0_Unrecognized_Clause_In_Arg_Spec_1 = 131;
 
         // Type/Format/DECL - 0200
 
@@ -167,6 +169,17 @@ namespace Zilf.Diagnostics
         public const int _0_Requires_1_21s = 226;
         [Info("previous definition was here")]
         public const int Previous_Definition_Was_Here = 227;
+        [Error("unrecognized type: {0}")]
+        public const int Unrecognized_Type_0 = 228;
+        [Error("{0}: unrecognized type: {1}")]
+        public const int _0_Unrecognized_Type_1 = 229;
+        [Error("{0}: unrecognized primtype: {1}")]
+        public const int _0_Unrecognized_Primtype_1 = 230;
+
+        [Error("unrecognized value in DECL pattern: {0}")]
+        public const int Unrecognized_Value_In_DECL_Pattern_0 = 231;
+        [Error("unrecognized SUBR/FSUBR name: {0}")]
+        public const int Unrecognized_SUBR_FSUBR_Name_0 = 232;
 
         // Structured Values - 0300
 
@@ -208,6 +221,14 @@ namespace Zilf.Diagnostics
         public const int _0_Unaligned_Table_Read_Element_At_1_Offset_2_Is_Not_A_1 = 317;
         [Error("{0}: element {1} is read-only")]
         public const int _0_Element_1_Is_Read_Only = 318;
+        [Error("{0}: unrecognized base type")]
+        public const int _0_Unrecognized_Base_Type = 319;
+        [Error("{0}: unrecognized object in field definition")]
+        public const int _0_Unrecognized_Object_In_Field_Definition = 320;
+        [Error("{0}: unrecognized tag in defaults section")]
+        public const int _0_Unrecognized_Tag_In_Defaults_Section = 321;
+        [Error("{0}: unrecognized table flag: {1}")]
+        public const int _0_Unrecognized_Table_Flag_1 = 322;
 
         // Z-machine Structures - 0400
 
@@ -273,6 +294,22 @@ namespace Zilf.Diagnostics
         public const int _0_1_Is_Parsed_As_Two_Separate_Words_0_And_1_Did_You_Mean_0_1 = 429;
         [Warning("{0}: length prefix overflow: table element count ({1}) cannot be stored in a {2}")]
         public const int _0_Length_Prefix_Overflow_Table_Element_Count_1_Cannot_Be_Stored_In_A_2 = 430;
+        [Error("unrecognized value in syntax definition: {0}")]
+        public const int Unrecognized_Value_In_Syntax_Definition_0 = 431;
+        [Error("unrecognized value in TELL output template: {0}")]
+        public const int Unrecognized_Value_In_TELL_Output_Template_0 = 432;
+        [Error("unrecognized value in TELL token spec: {0}")]
+        public const int Unrecognized_Value_In_TELL_Token_Spec_0 = 433;
+        [Error("unrecognized object option: {0}")]
+        public const int Unrecognized_Object_Option_0 = 434;
+        [Error("{0}: unrecognized version specifier: {1}")]
+        public const int _0_Unrecognized_Version_Specifier_1 = 435;
+        [Error("{0}: unrecognized ZIP option: {1}")]
+        public const int _0_Unrecognized_ZIP_Option_1 = 436;
+        [Error("{0}: unrecognized language: {1}")]
+        public const int _0_Unrecognized_Language_1 = 437;
+        [Error("{0}: unrecognized part of speech: {1}")]
+        public const int _0_Unrecognized_Part_Of_Speech_1 = 438;
 
         // Modularity (package system, definitions sections) - 0500
 
@@ -294,6 +331,8 @@ namespace Zilf.Diagnostics
         public const int _0_Section_Has_Already_Been_Referenced_1 = 507;
         [Error("{0}: wrong package type, expected {1}")]
         public const int _0_Wrong_Package_Type_Expected_1 = 508;
+        [Error("{0}: unrecognized package: {1}")]
+        public const int _0_Unrecognized_Package_1 = 509;
 
         // Misc - 0600
 
@@ -313,5 +352,11 @@ namespace Zilf.Diagnostics
         public const int _0_No_Expressions_Found = 606;
         [Error("{0}: not supported by this type of channel")]
         public const int _0_Not_Supported_By_This_Type_Of_Channel = 607;
+        [Error("unrecognized template reference: {0}")]
+        public const int Unrecognized_Template_Reference_0 = 608;
+        [Error("{0}: unrecognized file flag: {1}")]
+        public const int _0_Unrecognized_File_Flag_1 = 609;
+        [Error("{0}: unrecognized routine flag: {1}")]
+        public const int _0_Unrecognized_Routine_Flag_1 = 610;
     }
 }

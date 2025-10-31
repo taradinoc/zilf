@@ -152,9 +152,8 @@ namespace Zilf.Interpreter
                             continue;
                         default:
                             throw new InterpreterError(
-                                InterpreterMessages._0_Unrecognized_1_2,
+                                InterpreterMessages._0_Unrecognized_Clause_In_Arg_Spec_1,
                                 caller,
-                                "clause in arg spec",
                                 arg.ToString());
                     }
                 }

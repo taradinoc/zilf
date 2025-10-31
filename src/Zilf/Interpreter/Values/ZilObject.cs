@@ -61,7 +61,7 @@ namespace Zilf.Interpreter.Values
                 ZilAdecl adecl when IsSpliceAdecl(adecl, out var result) =>
                     result!,
                 _ =>
-                    throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "template reference", selector),
+                    throw new InterpreterError(InterpreterMessages.Unrecognized_Template_Reference_0, selector),
             };
         }
 

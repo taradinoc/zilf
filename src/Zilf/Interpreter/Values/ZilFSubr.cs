@@ -40,7 +40,7 @@ namespace Zilf.Interpreter.Values
             {
                 return new ZilFSubr(name, del);
             }
-            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "FSUBR name", name);
+            throw new InterpreterError(InterpreterMessages.Unrecognized_SUBR_FSUBR_Name_0, name);
         }
 
         public override string ToString() => $"#FSUBR \"{name}\"";

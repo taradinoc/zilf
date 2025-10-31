@@ -209,7 +209,7 @@ namespace Zilf.Interpreter
 
             if (!ctx.IsRegisteredType(baseType))
             {
-                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "DEFSTRUCT", "base type", baseType);
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_Base_Type, "DEFSTRUCT", baseType);
             }
 
             // field definitions
@@ -709,7 +709,7 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "DEFSTRUCT", "object in field definition", part);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_Object_In_Field_Definition, "DEFSTRUCT", part);
                 }
             }
 
@@ -811,7 +811,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "DEFSTRUCT", "tag in defaults section", partFirst);
+                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_Tag_In_Defaults_Section, "DEFSTRUCT", partFirst);
                     }
                 }
             }

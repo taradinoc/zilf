@@ -82,7 +82,7 @@ namespace Zilf.Interpreter
         public static ZilObject TYPEPRIM(Context ctx, ZilAtom type)
         {
             if (!ctx.IsRegisteredType(type))
-                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "TYPEPRIM", "type", type.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_Type_1, "TYPEPRIM", type.ToStringContext(ctx, false));
 
             return ctx.GetStdAtom(PrimTypeToType(ctx.GetTypePrim(type)));
         }
@@ -105,7 +105,7 @@ namespace Zilf.Interpreter
             if (ctx.IsRegisteredType(primtypeAtom))
                 primtype = ctx.GetTypePrim(primtypeAtom);
             else
-                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "NEWTYPE", "primtype", primtypeAtom.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_Primtype_1, "NEWTYPE", primtypeAtom.ToStringContext(ctx, false));
 
             ctx.RegisterType(name, primtype);
             ctx.PutProp(name, ctx.GetStdAtom(StdAtom.DECL), decl);
@@ -160,7 +160,7 @@ namespace Zilf.Interpreter
             Func<Context, ZilAtom, ZilObject, Context.SetTypeHandlerResult> setter)
         {
             if (!ctx.IsRegisteredType(atom))
-                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "type", atom.ToStringContext(ctx, false));
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_Type_1, name, atom.ToStringContext(ctx, false));
 
             if (handler == null)
             {
@@ -177,9 +177,8 @@ namespace Zilf.Interpreter
                     throw new InterpreterError(InterpreterMessages._0_Must_Be_1, "handler", "atom or applicable value"),
                 Context.SetTypeHandlerResult.OtherTypeNotRegistered =>
                     throw new InterpreterError(
-                        InterpreterMessages._0_Unrecognized_1_2,
+                        InterpreterMessages._0_Unrecognized_Type_1,
                         name,
-                        "type",
                         handler.ToStringContext(ctx, false)),
                 Context.SetTypeHandlerResult.OtherTypePrimDiffers =>
                     throw new InterpreterError(

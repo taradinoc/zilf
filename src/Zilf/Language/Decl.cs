@@ -161,8 +161,8 @@ namespace Zilf.Language
                             return false;
 
                         default:
-                            throw new InterpreterError(InterpreterMessages.Unrecognized_0_1,
-                                "atom in DECL pattern",
+                            throw new InterpreterError(
+                                InterpreterMessages.Unrecognized_Value_In_DECL_Pattern_0,
                                 atom);
                     }
 
@@ -177,8 +177,7 @@ namespace Zilf.Language
                         return false;
 
                     throw new InterpreterError(
-                        InterpreterMessages.Unrecognized_0_1,
-                        "value in DECL pattern",
+                        InterpreterMessages.Unrecognized_Value_In_DECL_Pattern_0,
                         pattern.ToStringContext(ctx, false));
             }
         }
@@ -355,8 +354,7 @@ namespace Zilf.Language
                         return false;
 
                     throw new InterpreterError(
-                        InterpreterMessages.Unrecognized_0_1,
-                        "vector in DECL pattern",
+                        InterpreterMessages.Unrecognized_Value_In_DECL_Pattern_0,
                         vector.ToStringContext(ctx, false));
                 }
 

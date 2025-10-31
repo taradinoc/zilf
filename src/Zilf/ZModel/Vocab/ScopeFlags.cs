@@ -86,7 +86,7 @@ namespace Zilf.ZModel.Vocab
                         StdAtom.CARRIED => Original.Carried,
                         StdAtom.ON_GROUND => Original.OnGround,
                         StdAtom.IN_ROOM => Original.InRoom,
-                        _ => throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "object option", atom.ToString()),
+                        _ => throw new InterpreterError(InterpreterMessages.Unrecognized_Object_Option_0, atom.ToString()),
                     };
                 }
             }
@@ -153,7 +153,7 @@ namespace Zilf.ZModel.Vocab
                     string name = atom.Text;
 
                     if (!entry.Dict.TryGetValue(name, out var value))
-                        throw new InterpreterError(InterpreterMessages.Unrecognized_0_1, "object option", name)
+                        throw new InterpreterError(InterpreterMessages.Unrecognized_Object_Option_0, name)
                             .Combine(new InterpreterError(
                                 InterpreterMessages.Since_NEWSFLAGS_Is_Set_The_Following_Options_Are_Recognized_0,
                                 string.Join(", ", entry.Dict.Keys.OrderBy(s => s))));

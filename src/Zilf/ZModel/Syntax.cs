@@ -109,7 +109,7 @@ namespace Zilf.ZModel
                             break;
 
                         default:
-                            throw new InterpreterError(obj, InterpreterMessages.Unrecognized_0_1, "value in syntax definition", obj);
+                            throw new InterpreterError(obj, InterpreterMessages.Unrecognized_Value_In_Syntax_Definition_0, obj);
                     }
                 }
                 else

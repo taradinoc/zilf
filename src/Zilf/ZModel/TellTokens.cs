@@ -190,8 +190,7 @@ namespace Zilf.ZModel
                             {
                                 throw new InterpreterError(
                                     form,
-                                    InterpreterMessages.Unrecognized_0_1,
-                                    "value in TELL output template",
+                                    InterpreterMessages.Unrecognized_Value_In_TELL_Output_Template_0,
                                     elem);
                             }
                         }
@@ -212,8 +211,7 @@ namespace Zilf.ZModel
                     default:
                         throw new InterpreterError(
                             zo.SourceLine,
-                            InterpreterMessages.Unrecognized_0_1,
-                            "value in TELL token spec",
+                            InterpreterMessages.Unrecognized_Value_In_TELL_Token_Spec_0,
                             zo);
                 }
             }

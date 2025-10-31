@@ -222,7 +222,7 @@ namespace Zilf.Interpreter
                 }
 
                 if (externalObList == null)
-                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "package", packageName);
+                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_Package_1, name, packageName);
 
                 if (ctx.GetProp(externalObList, ctx.GetStdAtom(StdAtom.PACKAGE)) is not ZilAtom pkgTypeAtom ||
                     pkgTypeAtom.StdAtom != requiredPackageType)

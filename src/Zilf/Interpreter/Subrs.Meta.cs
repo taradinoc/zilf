@@ -103,7 +103,7 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "FILE-FLAGS", "flag", atom);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_File_Flag_1, "FILE-FLAGS", atom);
                 }
             }
 

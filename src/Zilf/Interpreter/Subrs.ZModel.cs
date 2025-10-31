@@ -52,7 +52,7 @@ namespace Zilf.Interpreter
                     StdAtom.CLEAN_STACK_P => RoutineFlags.CleanStack,
                     StdAtom.KEEP_P => RoutineFlags.Keep,
                     StdAtom.UNUSED_P => RoutineFlags.SuppressUnusedWarning,
-                    _ => throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "ROUTINE-FLAGS", "flag", atom),
+                    _ => throw new InterpreterError(InterpreterMessages._0_Unrecognized_Routine_Flag_1, "ROUTINE-FLAGS", atom),
                 };
             }
 
@@ -637,7 +637,7 @@ namespace Zilf.Interpreter
                             flags |= TableFormat.TempTable;
                             break;
                         default:
-                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "ITABLE", "flag", flag);
+                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_Table_Flag_1, "ITABLE", flag);
                     }
                 }
 
@@ -770,7 +770,7 @@ namespace Zilf.Interpreter
                             break;
 
                         default:
-                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "flag", flag);
+                            throw new InterpreterError(InterpreterMessages._0_Unrecognized_Table_Flag_1, name, flag);
                     }
 
                     flagList = flagList.Rest;
@@ -1031,9 +1031,8 @@ namespace Zilf.Interpreter
                         "EZIP" => 4,
                         "XZIP" => 5,
                         "YZIP" => 6,
-                        _ => throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2,
+                        _ => throw new InterpreterError(InterpreterMessages._0_Unrecognized_Version_Specifier_1,
                             name,
-                            "version name",
                             text).Combine(new InterpreterError(InterpreterMessages
                             .Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38))
                     };
@@ -1042,12 +1041,12 @@ namespace Zilf.Interpreter
                 case ZilFix fix:
                     newVersion = fix.Value;
                     if (newVersion < 3 || newVersion > 8)
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version number", newVersion)
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_Version_Specifier_1, name, newVersion)
                             .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
                     break;
 
                 default:
-                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, name, "version specifier", expr)
+                    throw new InterpreterError(InterpreterMessages._0_Unrecognized_Version_Specifier_1, name, expr)
                         .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
             }
             return newVersion;
@@ -1181,7 +1180,7 @@ namespace Zilf.Interpreter
                         continue;
 
                     default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "ZIP-OPTIONS", "option", atom);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_ZIP_Option_1, "ZIP-OPTIONS", atom);
                 }
 
                 ctx.DefineCompilationFlag(atom, ctx.TRUE, true);
@@ -1267,7 +1266,7 @@ namespace Zilf.Interpreter
         public static ZilObject LANGUAGE(Context ctx, ZilAtom name, char escapeChar = '%', bool changeChrset = true)
         {
             var language = ZModel.Language.Get(name.Text) ??
-                throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "LANGUAGE", "language", name.Text);
+                throw new InterpreterError(InterpreterMessages._0_Unrecognized_Language_1, "LANGUAGE", name.Text);
 
             // update language, escape char, and possibly charset
             ctx.ZEnvironment.Language = language;
@@ -1353,7 +1352,7 @@ namespace Zilf.Interpreter
                         break;
 
                     default:
-                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_1_2, "VOC", "part of speech", type);
+                        throw new InterpreterError(InterpreterMessages._0_Unrecognized_Part_Of_Speech_1, "VOC", type);
                 }
             }
 

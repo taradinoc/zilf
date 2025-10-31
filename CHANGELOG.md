@@ -16,6 +16,11 @@ and this project may someday adhere to
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
   details.
 
+- Split the unhelpfully generic errors MDL0113 and MDL0122 into more specific
+  errors: MDL0131, MDL0228, MDL0229, MDL0230, MDL0231, MDL0232, MDL0319,
+  MDL0320, MDL0322, MDL0431, MDL0432, MDL0433, MDL0434, MDL0435, MDL0436,
+  MDL0437, MDL0438, MDL0509, MDL0608, MDL0609, and MDL0610.
+
 ### Fixed
 
 - Fixed `WEAR` not using the library message system.
