@@ -74,7 +74,15 @@
           $(ZilfPublishDir)Zilf.Common*;
           $(ZilfPublishDir)zilf.common*;
           $(ZapfPublishDir)Zilf.Common*;
-          $(ZapfPublishDir)zilf.common*" />
+      $(ZapfPublishDir)zilf.common*;
+      $(ZilfPublishDir)*.pdb;
+      $(ZilfPublishDir)*.dbg;
+      $(ZapfPublishDir)*.pdb;
+      $(ZapfPublishDir)*.dbg;
+      $(ZilfPublishDir)*.dSYM/**;
+      $(ZapfPublishDir)*.dSYM/**;
+      $(ZilfPublishDir)*.dSYM;
+      $(ZapfPublishDir)*.dSYM" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_PublishOutputs)" DestinationFiles="@(_PublishOutputs->'$(StageBinDir)/%(Filename)%(Extension)')" />
