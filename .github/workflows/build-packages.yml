@@ -5,6 +5,8 @@ on:
     branches:
       - branch/default
       - topic/default/build
+    tags:
+      - '*'
 
 jobs:
   test:
