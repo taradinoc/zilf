@@ -1279,17 +1279,17 @@ This assumes that if the objects have a common parent, it's within HERE."
 
 <ROUTINE V-WEAR ()
     <COND (<FSET? ,PRSO ,WEARBIT>
-        <COND (<NOT <FSET? ,PRSO ,WORNBIT>>
-            <FSET ,PRSO ,WORNBIT>
-            <TELL "You wear " T ,PRSO "." CR>)
-        (ELSE <TELL "You are already wearing that." CR>)>)
-    (ELSE <TELL <LIBRARY-MESSAGE WEAR NOT-WEARABLE> CR>)>>
+           <COND (<NOT <FSET? ,PRSO ,WORNBIT>>
+                  <FSET ,PRSO ,WORNBIT>
+                  <TELL <LIBRARY-MESSAGE WEAR SUCCESS ((OBJ ,PRSO))> CR>)
+                 (ELSE <TELL <LIBRARY-MESSAGE WEAR ALREADY-WORN> CR>)>)
+          (ELSE <TELL <LIBRARY-MESSAGE WEAR NOT-WEARABLE> CR>)>>
 
 <ROUTINE V-UNWEAR ()
     <COND (<AND <IN? ,PRSO ,WINNER> <FSET? ,PRSO ,WORNBIT>>
-        <FCLEAR ,PRSO ,WORNBIT>
-        <TELL "You take off " T ,PRSO "." CR>)
-    (ELSE <TELL "You aren't wearing that." CR>)>>
+           <FCLEAR ,PRSO ,WORNBIT>
+           <TELL "You take off " T ,PRSO "." CR>)
+          (ELSE <TELL "You aren't wearing that." CR>)>>
 
 <ROUTINE V-EAT ()
     <COND (<PRSO? ,WINNER> <TELL <LIBRARY-MESSAGE EAT EAT-ME> CR> <RTRUE> ;"FIXME: impossible?")

@@ -16,6 +16,10 @@ and this project may someday adhere to
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
   details.
 
+### Fixed
+
+- Fixed `WEAR` not using the library message system.
+
 ## [0.11.1] (October 31, 2025)
 
 ### Fixed
