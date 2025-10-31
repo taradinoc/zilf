@@ -521,6 +521,12 @@ namespace Zilf.Compiler
                     }
                 }
 
+                // Strings cannot be routine references, so skip them to avoid registering them as global strings
+                if (unwrapped is ZilString)
+                {
+                    return;
+                }
+
                 HashSet<ZilAtom>? priorReads = null;
                 if (suppressGlobalReads)
                 {
