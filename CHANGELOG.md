@@ -16,6 +16,13 @@ and this project may someday adhere to
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
   details.
 
+## [0.11.1] (October 31, 2025)
+
+### Fixed
+
+- Fixed a bug where all string literals were being registered as global strings,
+  leading to assembler errors and increased story file size.
+
 ## [0.11] (October 30, 2025)
 
 ### Added
@@ -428,3 +435,4 @@ and this project may someday adhere to
 [0.9]: https://foss.heptapod.net/zilf/zilf/-/compare/0.8...0.9
 [0.10]: https://foss.heptapod.net/zilf/zilf/-/compare/0.9...0.10
 [0.11]: https://foss.heptapod.net/zilf/zilf/-/compare/0.10...0.11
+[0.11.1]: https://foss.heptapod.net/zilf/zilf/-/compare/0.11...0.11.1

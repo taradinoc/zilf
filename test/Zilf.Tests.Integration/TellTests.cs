@@ -277,5 +277,25 @@ namespace Zilf.Tests.Integration
                 .InV5()
                 .OutputsAsync(@"äß");
         }
+
+        [TestMethod]
+        public async Task Strings_Used_In_Tell_Should_Not_Become_GSTR()
+        {
+            // in the future we might want to dedupe strings used in TELL by
+            // making the GSTRs, so the test below doesn't duplicate strings
+
+            await AssertRoutine("", "<TELL \"hello world\">")
+                .GeneratesCodeNotMatchingAsync(@"GSTR.*hello world");
+        }
+
+        [TestMethod]
+        public async Task Strings_Used_In_PRINTI_Should_Not_Become_GSTR()
+        {
+            // in the future we might want to dedupe strings used in TELL by
+            // making the GSTRs, so the test below doesn't duplicate strings
+
+            await AssertRoutine("", "<PRINTI \"hello world\">")
+                .GeneratesCodeNotMatchingAsync(@"GSTR.*hello world");
+        }
     }
 }
