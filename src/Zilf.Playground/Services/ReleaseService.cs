@@ -146,7 +146,7 @@ namespace Zilf.Playground.Services
                 ReleasedAt = null,
                 UpcomingRelease = false,
                 Assets = new ReleaseAssets { Links = assets },
-                Links = new ReleaseLinks { Self = $"https://foss.heptapod.net/zilf/zilf/-/releases/{latest.Tag.Name}" }
+                Links = new ReleaseLinks { Self = $"https://foss.heptapod.net/zilf/zilf/-/releases" }
             };
         }
 
