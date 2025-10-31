@@ -6,6 +6,11 @@ and this project may someday adhere to
 
 ## [1.0] (Unreleased)
 
+### Added
+
+- `<SETG COMPACT-PREACTIONS? T>` now switches to a more efficient format for the
+  preaction table, as proposed by Matthew Russotto.
+
 ### Changed
 
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
