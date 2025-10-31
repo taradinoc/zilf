@@ -30,6 +30,9 @@ using Zapf.Parsing.Directives;
 using Zapf.Parsing.Expressions;
 using Zapf.Parsing.Instructions;
 using System.Diagnostics.CodeAnalysis;
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using CommandParseResult = System.CommandLine.ParseResult;
 
 namespace Zapf
 {
@@ -39,14 +42,182 @@ namespace Zapf
 
         public const byte DEFAULT_ZVERSION = 3;
 
+        static readonly Lazy<ZapfCommandSpec> CommandSpec = new(CreateCommandSpec);
+
         public static int Main(string[] args)
         {
-            if (!TryParseArgs(args, out var ctx))
+            var normalizedArgs = NormalizeArgs(args);
+            var spec = CommandSpec.Value;
+            var parseResult = spec.RootCommand.Parse(normalizedArgs);
+            return parseResult.Invoke();
+        }
+
+        static ZapfCommandSpec CreateCommandSpec()
+        {
+            var inputArgument = CreateInputArgument();
+            var outputArgument = CreateOutputArgument();
+            var abbreviateOption = CreateBoolOption("--abbreviate", "-A",
+                "Also optimize abbreviations and print ZAPF code.");
+            var quietOption = CreateBoolOption("--quiet", "-q",
+                "Quiet mode (no banner).");
+            var informOption = CreateBoolOption("--inform", "-I",
+                "Use Inform opcode and stack names.");
+            var listAddressesOption = CreateBoolOption("--list-addresses", "-L",
+                "List global label addresses.");
+            var releaseOption = CreateOption<short?>("--release", "-r",
+                "Set release number.");
+            var serialOption = CreateOption<string?>("--serial", "-s",
+                "Set serial number.");
+            var creatorOption = CreateOption<string?>("--creator", "-C",
+                "Set creator version.");
+            var clearCreatorOption = CreateBoolOption("--no-creator", "-N",
+                "Clear creator version metadata.");
+            var xmlDebugOption = CreateBoolOption("--xml-debug", "-X",
+                "Use XML debug format.");
+
+            var root = new RootCommand("Assemble ZAP source files into Z-machine story files.")
             {
-                Usage();
-                return 1;
+                TreatUnmatchedTokensAsErrors = true
+            };
+
+            root.Arguments.Add(inputArgument);
+            root.Arguments.Add(outputArgument);
+            root.Options.Add(abbreviateOption);
+            root.Options.Add(quietOption);
+            root.Options.Add(informOption);
+            root.Options.Add(listAddressesOption);
+            root.Options.Add(releaseOption);
+            root.Options.Add(serialOption);
+            root.Options.Add(creatorOption);
+            root.Options.Add(clearCreatorOption);
+            root.Options.Add(xmlDebugOption);
+
+            var spec = new ZapfCommandSpec(
+                root,
+                inputArgument,
+                outputArgument,
+                abbreviateOption,
+                quietOption,
+                informOption,
+                listAddressesOption,
+                releaseOption,
+                serialOption,
+                creatorOption,
+                clearCreatorOption,
+                xmlDebugOption);
+
+            root.Validators.Add(commandResult =>
+            {
+                if (commandResult.GetResult(spec.CreatorOption) is not null &&
+                    commandResult.GetResult(spec.ClearCreatorOption) is not null &&
+                    commandResult.GetValue(spec.ClearCreatorOption))
+                {
+                    commandResult.AddError("Options -C/--creator and -N/--no-creator cannot be used together.");
+                }
+            });
+
+            root.SetAction(parseResult =>
+            {
+                using var ctx = new Context();
+
+                if (!TryPopulateContext(ctx, parseResult))
+                {
+                    return 1;
+                }
+
+                return RunAssembler(ctx);
+            });
+
+            return spec;
+        }
+
+        static Argument<string> CreateInputArgument()
+        {
+            return new Argument<string>("input")
+            {
+                Description = "Input ZAP source file.",
+                HelpName = "input.zap"
+            };
+        }
+
+        static Argument<string?> CreateOutputArgument()
+        {
+            return new Argument<string?>("output")
+            {
+                Description = "Optional output file path. Defaults to the input name with a .z# extension.",
+                Arity = ArgumentArity.ZeroOrOne,
+                HelpName = "output"
+            };
+        }
+
+        static Option<bool> CreateBoolOption(string name, string alias, string description)
+        {
+            var option = new Option<bool>(name)
+            {
+                Description = description
+            };
+            option.Aliases.Add(alias);
+            return option;
+        }
+
+        static Option<T> CreateOption<T>(string name, string alias, string description)
+        {
+            var option = new Option<T>(name)
+            {
+                Description = description
+            };
+            option.Aliases.Add(alias);
+            option.Arity = ArgumentArity.ZeroOrOne;
+            option.HelpName = "value";
+            return option;
+        }
+
+        private sealed record class ZapfCommandSpec(
+            RootCommand RootCommand,
+            Argument<string> InputArgument,
+            Argument<string?> OutputArgument,
+            Option<bool> AbbreviateOption,
+            Option<bool> QuietOption,
+            Option<bool> InformOption,
+            Option<bool> ListAddressesOption,
+            Option<short?> ReleaseOption,
+            Option<string?> SerialOption,
+            Option<string?> CreatorOption,
+            Option<bool> ClearCreatorOption,
+            Option<bool> XmlDebugOption);
+
+        static string[] NormalizeArgs(IReadOnlyList<string> args)
+        {
+            var hasLegacyHelp = false;
+
+            for (int i = 0; i < args.Count; i++)
+            {
+                if (args[i] is "-?" or "/?")
+                {
+                    hasLegacyHelp = true;
+                    break;
+                }
             }
 
+            if (!hasLegacyHelp)
+            {
+                if (args is string[] array)
+                    return array;
+
+                return args.ToArray();
+            }
+
+            var normalized = new string[args.Count];
+            for (int i = 0; i < args.Count; i++)
+            {
+                normalized[i] = args[i] is "-?" or "/?" ? "--help" : args[i];
+            }
+
+            return normalized;
+        }
+
+        static int RunAssembler(Context ctx)
+        {
             // show banner
             if (!ctx.Quiet)
                 Console.Error.WriteLine(GetBanner());
@@ -234,102 +405,78 @@ namespace Zapf
                 return true;
             }
 
+            result.Dispose();
             ctx = null;
             return false;
         }
 
         internal static bool TryParseArgs(IReadOnlyList<string> args, Context ctx)
         {
-            string? inFile = null, outFile = null;
+            var normalized = NormalizeArgs(args);
 
-            for (int i = 0; i < args.Count; i++)
-            {
-                switch (args[i])
-                {
-                    case "-ab":
-                        ctx.AbbreviateMode = true;
-                        break;
-
-                    case "-q":
-                        ctx.Quiet = true;
-                        break;
-
-                    case "-i":
-                        ctx.InformMode = true;
-                        break;
-
-                    case "-la":
-                        ctx.ListAddresses = true;
-                        break;
-
-                    case "-r":
-                        if (++i == args.Count)
-                            return false;
-                        ctx.Release = short.Parse(args[i]);
-                        break;
-
-                    case "-s":
-                        if (++i == args.Count)
-                            return false;
-                        ctx.Serial = args[i];
-                        break;
-
-                    case "-c":
-                        if (++i == args.Count)
-                            return false;
-                        ctx.Creator = args[i];
-                        break;
-
-                    case "-c0":
-                        ctx.Creator = null;
-                        break;
-
-                    case "-dx":
-                        ctx.XmlDebugMode = true;
-                        break;
-
-                    case "-?":
-                    case "--help":
-                    case "/?":
-                        return false;
-
-                    default:
-                        if (inFile == null)
-                            inFile = args[i];
-                        else if (outFile == null)
-                            outFile = args[i];
-                        else
-                            return false;
-                        break;
-                }
-            }
-
-            // validate
-            if (inFile == null)
+            if (normalized.Any(arg => arg is "--help" or "-h"))
                 return false;
 
-            ctx.InFile = inFile;
-            ctx.OutFile = outFile ?? Path.ChangeExtension(ctx.InFile, ".z#");
+            var parseResult = CommandSpec.Value.RootCommand.Parse(normalized);
+
+            if (parseResult.Errors.Count > 0)
+                return false;
+
+            return TryPopulateContext(ctx, parseResult);
+        }
+
+        static bool TryPopulateContext(Context ctx, CommandParseResult parseResult)
+        {
+            if (parseResult.Errors.Count > 0)
+                return false;
+
+            var spec = CommandSpec.Value;
+
+            var input = parseResult.GetValue(spec.InputArgument);
+            if (string.IsNullOrWhiteSpace(input))
+                return false;
+
+            ctx.InFile = input;
+
+            var output = parseResult.GetValue(spec.OutputArgument);
+            ctx.OutFile = string.IsNullOrEmpty(output)
+                ? Path.ChangeExtension(ctx.InFile, ".z#")
+                : output;
+
+            if (parseResult.GetResult(spec.AbbreviateOption) is not null)
+                ctx.AbbreviateMode = parseResult.GetValue(spec.AbbreviateOption);
+
+            if (parseResult.GetResult(spec.QuietOption) is not null)
+                ctx.Quiet = parseResult.GetValue(spec.QuietOption);
+
+            if (parseResult.GetResult(spec.InformOption) is not null)
+                ctx.InformMode = parseResult.GetValue(spec.InformOption);
+
+            if (parseResult.GetResult(spec.ListAddressesOption) is not null)
+                ctx.ListAddresses = parseResult.GetValue(spec.ListAddressesOption);
+
+            if (parseResult.GetResult(spec.XmlDebugOption) is not null)
+                ctx.XmlDebugMode = parseResult.GetValue(spec.XmlDebugOption);
+
+            if (parseResult.GetResult(spec.ReleaseOption) is not null)
+                ctx.Release = parseResult.GetValue(spec.ReleaseOption);
+
+            if (parseResult.GetResult(spec.SerialOption) is not null)
+                ctx.Serial = parseResult.GetValue(spec.SerialOption);
+
+            if (parseResult.GetResult(spec.ClearCreatorOption) is not null &&
+                parseResult.GetValue(spec.ClearCreatorOption))
+            {
+                ctx.Creator = null;
+            }
+            else if (parseResult.GetResult(spec.CreatorOption) is not null)
+            {
+                ctx.Creator = parseResult.GetValue(spec.CreatorOption);
+            }
+
             ctx.DebugFile = Path.ChangeExtension(ctx.OutFile, ctx.XmlDebugMode ? ".dbg.xml" : ".dbg");
 
             return true;
-        }
-
-        static void Usage()
-        {
-            Console.Error.WriteLine(GetBanner());
-            Console.Error.WriteLine(
-@"Assemble: zapf [switches] <inFile.zap> [<outFile.z#>]
-
-General switches:
-  -i                    use Inform opcode/stack names
-  -q                    quiet (no banner)
-  -la                   list global label addresses
-  -r #                  set release number (this overrides RELEASEID)
-  -s ######             set serial number
-  -c ####               set creator version
-  -ab                   also optimize abbreviations and print ZAPF code
-  -dx                   use XML debug format");
         }
 
         /// <exception cref="FatalError">An <see cref="IOException"/> occurred while reading the input file(s).</exception>

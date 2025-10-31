@@ -4,6 +4,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project may someday adhere to
 ~~[Semantic Versioning](http://semver.org/spec/v2.0.0.html)~~.
 
+## [1.0] (Unreleased)
+
+### Changed
+
+- Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
+  details.
+
 ## [0.11] (October 30, 2025)
 
 ### Added
@@ -415,3 +422,4 @@ and this project may someday adhere to
 
 [0.9]: https://foss.heptapod.net/zilf/zilf/-/compare/0.8...0.9
 [0.10]: https://foss.heptapod.net/zilf/zilf/-/compare/0.9...0.10
+[0.11]: https://foss.heptapod.net/zilf/zilf/-/compare/0.10...0.11
