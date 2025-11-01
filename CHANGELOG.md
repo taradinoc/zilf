@@ -11,6 +11,10 @@ and this project adheres to
 - `<SETG COMPACT-PREACTIONS? T>` now switches to a more efficient format for the
   preaction table, as proposed by Matthew Russotto.
 
+- ZILF now invokes ZAPF automatically after compiling ZIL source code, unless
+  `-S` (`--stop-after-compile`) is specified. Additional arguments can be
+  passed to ZAPF with `--zapf-options`.
+
 ### Changed
 
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for

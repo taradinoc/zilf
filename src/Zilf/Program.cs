@@ -1,17 +1,17 @@
 ﻿/* Copyright 2010-2023 Tara McGrew
- * 
+ *
  * This file is part of ZILF.
- * 
+ *
  * ZILF is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * ZILF is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -121,12 +121,12 @@ namespace Zilf
                 Description = "Trace routine calls at runtime."
             };
 
-            var debugInfoOption = new Option<bool>("--debug", "-g")
+            var debugInfoOption = new Option<bool>("--debug", "-d")
             {
                 Description = "Include debug information in output."
             };
 
-            var root = new RootCommand("Compile ZIL source files into Z-machine assembly.")
+            var root = new RootCommand("Compile ZIL source files into Z-machine assembly and optionally invokes ZAPF to produce a story file.")
             {
                 TreatUnmatchedTokensAsErrors = true
             };
@@ -143,6 +143,23 @@ namespace Zilf
             root.Options.Add(warningsAsErrorsOption);
             root.Options.Add(suppressWarningsOption);
 
+            // Assembly handoff controls
+            var stopAfterCompileOption = new Option<bool>("--stop-after-compile", "-S")
+            {
+                Description = "Stop after compilation; do not run ZAPF."
+            };
+            root.Options.Add(stopAfterCompileOption);
+
+            // Zapf pass-through options: --zapf-options opt[,opt...]
+            // These accumulate and will be split on commas before invoking ZAPF.
+            var zapfPassThroughOption = new Option<string[]>("--zapf-options")
+            {
+                Description = "Pass comma-separated options through to ZAPF (assembler). May be repeated.",
+                AllowMultipleArgumentsPerToken = true,
+                Arity = ArgumentArity.ZeroOrMore
+            };
+            root.Options.Add(zapfPassThroughOption);
+
             // Expression evaluation mode (-e)
             var expressionOption = new Option<string>("-e")
             {
@@ -153,7 +170,7 @@ namespace Zilf
 
             // REPL subcommand
             var replCommand = new Command("repl", "Start an interactive read-eval-print loop.");
-            
+
             var replQuietOption = new Option<bool>("--quiet", "-q")
             {
                 Description = "Quiet mode: suppress banner and prompts."
@@ -176,7 +193,7 @@ namespace Zilf
                 AllowMultipleArgumentsPerToken = false,
                 Arity = ArgumentArity.ZeroOrMore
             };
-            
+
             replCommand.Options.Add(replQuietOption);
             replCommand.Options.Add(replCaseSensitiveOption);
             replCommand.Options.Add(replCaseInsensitiveOption);
@@ -185,13 +202,13 @@ namespace Zilf
 
             // Exec subcommand
             var execCommand = new Command("exec", "Execute a ZIL file without generating output.");
-            
+
             var execInputArgument = new Argument<string>("input")
             {
                 Description = "Input ZIL source file to execute.",
                 HelpName = "input.zil"
             };
-            
+
             var execQuietOption = new Option<bool>("--quiet", "-q")
             {
                 Description = "Quiet mode: suppress banner and prompts."
@@ -229,7 +246,7 @@ namespace Zilf
                 Arity = ArgumentArity.ZeroOrMore
             };
             execSuppressWarningsOption.Aliases.Add("-Wno");
-            
+
             execCommand.Arguments.Add(execInputArgument);
             execCommand.Options.Add(execQuietOption);
             execCommand.Options.Add(execCaseSensitiveOption);
@@ -253,6 +270,8 @@ namespace Zilf
                 enableAllWarningsOption,
                 warningsAsErrorsOption,
                 suppressWarningsOption,
+                stopAfterCompileOption,
+                zapfPassThroughOption,
                 expressionOption,
                 replCommand,
                 replQuietOption,
@@ -327,6 +346,8 @@ namespace Zilf
             Option<bool> EnableAllWarningsOption,
             Option<bool> WarningsAsErrorsOption,
             Option<string[]> SuppressWarningsOption,
+            Option<bool> StopAfterCompileOption,
+            Option<string[]> ZapfPassThroughOption,
             Option<string> ExpressionOption,
             Command ReplCommand,
             Option<bool> ReplQuietOption,
@@ -367,7 +388,130 @@ namespace Zilf
             var output = parseResult.GetValue(spec.OutputArgument);
             outFile = string.IsNullOrEmpty(output) ? Path.ChangeExtension(inputFile, ".zap") : output;
 
-            return WrapInFrontEnd(frontEnd => frontEnd.Compile(ctx, inputFile, outFile, ctx.WantDebugInfo));
+            // Perform compilation, then optionally invoke ZAPF
+            var frontEnd = new FrontEnd();
+            FrontEndResult result;
+            try
+            {
+                result = frontEnd.Compile(ctx, inputFile, outFile, ctx.WantDebugInfo);
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.Error.WriteLine("file not found: " + ex.FileName);
+                return 1;
+            }
+            catch (IOException ex)
+            {
+                Console.Error.WriteLine("I/O error: " + ex.Message);
+                return 1;
+            }
+
+            if (result.WarningCount > 0)
+            {
+                Console.Error.Write("{0} warning{1}",
+                    result.WarningCount,
+                    result.WarningCount == 1 ? "" : "s");
+
+                if (result.SuppressedWarningCount > 0)
+                {
+                    Console.Error.Write(
+                        " ({0} suppressed)",
+                        result.SuppressedWarningCount);
+                }
+
+                Console.Error.WriteLine();
+            }
+
+            if (result.ErrorCount > 0)
+            {
+                Console.Error.WriteLine("{0} error{1}",
+                    result.ErrorCount,
+                    result.ErrorCount == 1 ? "" : "s");
+                return 2;
+            }
+
+            // If requested, stop after compile
+            var stopAfter = parseResult.GetValue(spec.StopAfterCompileOption);
+            if (stopAfter)
+                return 0;
+
+            // Prepare Zapf invocation
+            var zapfArgsRaw = parseResult.GetValue(spec.ZapfPassThroughOption) ?? Array.Empty<string>();
+            var zapfArgsExpanded = new List<string>();
+            foreach (var token in zapfArgsRaw)
+            {
+                if (string.IsNullOrWhiteSpace(token)) continue;
+                foreach (var part in token.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    zapfArgsExpanded.Add(part.Trim());
+            }
+
+            // Propagate quiet to Zapf if the user asked for quiet
+            if (ctx.Quiet && !zapfArgsExpanded.Any(a => a is "-q" or "--quiet"))
+                zapfArgsExpanded.Insert(0, "-q");
+
+            // Invoke Zapf
+            var zapfExe = FindZapfExecutable();
+            if (zapfExe == null)
+            {
+                Console.Error.WriteLine("ZAPF not found next to ZILF (looked for zapf, Zapf, zapf.exe). Use -S to skip assembly.");
+                return 1;
+            }
+
+            var exit = RunZapfProcess(zapfExe, outFile!, zapfArgsExpanded);
+            return exit;
+        }
+
+        private static string? FindZapfExecutable()
+        {
+            var baseDir = AppContext.BaseDirectory;
+            var candidates = new[] { "zapf", "Zapf", "zapf.exe", "Zapf.exe" };
+            foreach (var name in candidates)
+            {
+                var full = Path.Combine(baseDir, name);
+                if (File.Exists(full))
+                    return full;
+            }
+            return null;
+        }
+
+        private static int RunZapfProcess(string zapfPath, string zapInputPath, List<string> extraArgs)
+        {
+            using var proc = new Process();
+            proc.StartInfo = new ProcessStartInfo
+            {
+                FileName = zapfPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+                CreateNoWindow = false,
+            };
+
+            // Arguments: [extraArgs...] <input.zap>
+            foreach (var a in extraArgs)
+                proc.StartInfo.ArgumentList.Add(a);
+            proc.StartInfo.ArgumentList.Add(zapInputPath);
+
+            try
+            {
+                proc.Start();
+                proc.WaitForExit();
+                return proc.ExitCode;
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to launch ZAPF: {ex.Message}");
+                return 1;
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.Error.WriteLine($"ZAPF not found: {ex.FileName}");
+                return 1;
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.Error.WriteLine($"Failed to run ZAPF: {ex.Message}");
+                return 1;
+            }
         }
 
         static int ExecuteExpressionMode(CommandParseResult parseResult, string expression)
