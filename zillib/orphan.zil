@@ -160,7 +160,9 @@ Returns:
            <TELL <LIBRARY-MESSAGE ORPHANING NOT-AN-OPTION> ,TRY-REPHRASING-CMD CR>
            <SETG P-CONT 0>
            <RETURN ,O-RES-FAILED>)
-          (<OR <1? .CNT> <=? <NP-MODE ,P-NP-XOBJ> ,MCM-ALL>>
+          (<OR <1? .CNT>
+               <=? <NP-MODE ,P-NP-XOBJ> ,MCM-ALL>
+               <G? .NY 1>>
            <RETURN ,O-RES-SET-PRSTBL>)
           (<L? .CNT .MAX>
            <TELL <LIBRARY-MESSAGE ORPHANING SUCCESS-PARTIAL>>

@@ -139,6 +139,12 @@ red cube: Taken.|">
     <COMMAND [NAVY]>
     <EXPECT "You pick up the blue cube.|">>
 
+<TEST-CASE ("Disambiguate: explicit multiple objects without ALL")
+    <COMMAND [GET CUBE]>
+    <EXPECT "Which do you mean, the blue cube, the green cube, or the red cube?|">
+    <COMMAND [RED AND GREEN]>
+    <EXPECT "green cube: Taken.|red cube: Taken.|">>
+
 <TEST-CASE ("Noun as adjective: quality distinction")
     <MOVE ,ROYAL-NAVY ,STARTROOM>
     <COMMAND [GET NAVY]>

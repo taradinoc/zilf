@@ -25,6 +25,11 @@ and this project adheres to
   MDL0320, MDL0322, MDL0431, MDL0432, MDL0433, MDL0434, MDL0435, MDL0436,
   MDL0437, MDL0438, MDL0509, MDL0608, MDL0609, and MDL0610.
 
+- An orphaning response that names multiple objects is now accepted even
+  when the command didn't use `ALL` or `BOTH`. In other words, the player can
+  respond to "Which do you mean, the red cube or the blue cube?" with
+  "red and blue" and it will work as expected.
+
 ### Fixed
 
 - Fixed `WEAR` not using the library message system.
