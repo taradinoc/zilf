@@ -1,7 +1,15 @@
-﻿<li class="nav-item file-link-item">
+﻿@using Zilf.Playground.Services.Builds
+@implements IDisposable
+@inject BuildService Build
+
+<li class="nav-item file-link-item">
     <NavLink class="nav-link file-link" href="@LinkHref">
         <span class="oi oi-document file-icon" aria-hidden="true"></span>
         <span class="file-path">@File.Path</span>
+        @if (DiagnosticCount > 0)
+        {
+            <span class="badge bg-danger ms-2" title="@DiagnosticCount diagnostic@(DiagnosticCount == 1 ? "" : "s")">@DiagnosticCount</span>
+        }
     </NavLink>
     @if (File.Path == EntryPointPath)
     {
@@ -27,7 +35,29 @@
     [CascadingParameter(Name = "ProjectId")]
     public string ProjectId { get; set; }
 
-    // private string ActiveCssClass => File.Path == ActivePath ? "active" : null;
+    private int DiagnosticCount { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Build.LiveDiagnosticsChanged += OnDiagnosticsChanged;
+        UpdateDiagnosticCount();
+    }
+
+    private void OnDiagnosticsChanged()
+    {
+        UpdateDiagnosticCount();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateDiagnosticCount()
+    {
+        DiagnosticCount = Build.GetDiagnosticCountForFile(File.Path);
+    }
+
+    public void Dispose()
+    {
+        Build.LiveDiagnosticsChanged -= OnDiagnosticsChanged;
+    }
 
     private string LinkHref => Pages.ProjectEdit.GetLink(ProjectId, File.Path);
 }

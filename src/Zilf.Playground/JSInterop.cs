@@ -85,5 +85,10 @@ namespace Zilf.Playground
         {
             return js.InvokeVoidAsync("ZilfJsInterop.hideOffcanvasById", id);
         }
+
+        public ValueTask SetEditorMarkersAsync(string owner, object[] markers)
+        {
+            return js.InvokeVoidAsync("ZilfJsInterop.setEditorMarkers", owner, markers);
+        }
     }
 }

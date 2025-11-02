@@ -7,6 +7,8 @@
 @layout ProjectLayout
 @using BlazorMonaco.Editor
 @using Microsoft.AspNetCore.Components
+@using System.Threading
+@inject JSInterop Interop
 
 <div class="editor-container">
     <div class="file-tab">
@@ -27,6 +29,7 @@
     private StandaloneCodeEditor _editor;
     private bool _rendered = false;
     private bool _needsContentUpdate = false;
+    private CancellationTokenSource _debounceCts;
 
     public static string GetLink(Project project, string path) => GetLink(project.Guid.ToString(), path);
 
@@ -123,6 +126,7 @@
         _ = Task.Run(async () =>
         {
             FileContent = await _editor.GetValue();
+            await DebouncedAnalyzeAsync();
         });
         return Task.CompletedTask;
     }
@@ -204,10 +208,96 @@
             Console.WriteLine($"[ProjectEdit] File found: {File.Path}, requesting content update");
             _needsContentUpdate = true;
             StateHasChanged();
+            
+            // Update markers for this file if diagnostics already exist
+            await UpdateMarkersAsync();
+            
+            // Trigger initial diagnostics compile only if we don't have cached diagnostics yet
+            if (Build.LiveDiagnostics.Count == 0)
+            {
+                Console.WriteLine($"[ProjectEdit] No cached diagnostics, triggering initial compile");
+                await DebouncedAnalyzeAsync(delayMs: 100); // shorter delay for initial load
+            }
+            else
+            {
+                Console.WriteLine($"[ProjectEdit] Using cached diagnostics from {Build.LastDiagnosticsCompileTime?.ToString("HH:mm:ss")}");
+            }
         }
         else
         {
             Console.WriteLine($"[ProjectEdit] No file to display");
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        // Subscribe to diagnostics updates to refresh markers
+        Build.LiveDiagnosticsChanged += async () => await UpdateMarkersAsync();
+    }
+
+    private async Task DebouncedAnalyzeAsync(int delayMs = 400)
+    {
+        try
+        {
+            _debounceCts?.Cancel();
+            var cts = new CancellationTokenSource();
+            _debounceCts = cts;
+            await Task.Delay(delayMs, cts.Token);
+            if (!cts.IsCancellationRequested)
+            {
+                await Build.CompileWorkspaceQuickAsync();
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // ignore - superseded by a new change event
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ProjectEdit] DebouncedAnalyzeAsync error: {ex.Message}");
+        }
+    }
+
+    private static int ToMarkerSeverity(Zilf.Diagnostics.Severity s) => s switch
+    {
+        Zilf.Diagnostics.Severity.Info => 2,     // monaco MarkerSeverity.Info
+        Zilf.Diagnostics.Severity.Warning => 4,  // monaco MarkerSeverity.Warning
+        Zilf.Diagnostics.Severity.Error => 8,    // monaco MarkerSeverity.Error
+        Zilf.Diagnostics.Severity.Fatal => 8,
+        _ => 8,
+    };
+
+    private async Task UpdateMarkersAsync()
+    {
+        try
+        {
+            if (Path == null)
+            {
+                return;
+            }
+
+            var absolutePath = Path.StartsWith("/") ? Path : "/" + Path;
+
+            var diags = Build.LiveDiagnostics
+                .Where(d => string.Equals(d.Path, absolutePath, StringComparison.Ordinal))
+                .ToArray();
+
+            var markers = diags.Select(d => new
+            {
+                startLineNumber = d.Line,
+                startColumn = 1,
+                endLineNumber = d.Line,
+                endColumn = 1000,
+                message = $"{d.Code}: {d.Message}",
+                severity = ToMarkerSeverity(d.Severity),
+                code = d.Code
+            }).Cast<object>().ToArray();
+
+            await Interop.SetEditorMarkersAsync("zilf", markers);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ProjectEdit] UpdateMarkersAsync error: {ex.Message}");
         }
     }
 }

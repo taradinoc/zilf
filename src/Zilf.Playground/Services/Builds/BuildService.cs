@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Zapf;
 using Zilf.Common;
@@ -49,6 +50,7 @@ namespace Zilf.Playground.Services.Builds
     {
         public event EventHandler<int>? StatusUpdate;
         public event EventHandler<string>? OutputMessage;
+        public event EventHandler<PlaygroundDiagnostic[]>? DiagnosticsReady;
 
         private static string GetZapPath(string zilPath)
         {
@@ -150,6 +152,42 @@ namespace Zilf.Playground.Services.Builds
                 Console.SetError(originalError);
             }
         }
+
+        public PlaygroundDiagnostic[] BuildDiagnostics(string[] filePaths, string[] fileContents, string[] includePaths, string mainFilePath)
+        {
+            // set up filesystem
+            var fileSystem = new InMemoryFileSystem();
+
+            for (int i = 0; i < filePaths.Length; i++)
+                fileSystem.SetText(filePaths[i], fileContents[i]);
+
+            var zapPath = GetZapPath(mainFilePath);
+
+            // Create custom logger that collects diagnostics
+            var logger = new EventDiagnosticLogger();
+            var diags = new List<PlaygroundDiagnostic>();
+            logger.DiagnosticFound += (_, d) => diags.Add(d);
+            logger.DiagnosticLogged += (_, msg) => LogMessage(msg);
+
+            // invoke ZILF
+            var frontEnd = new FrontEnd
+            {
+                FileSystem = fileSystem,
+                Logger = logger
+            };
+
+            foreach (var path in includePaths)
+                frontEnd.IncludePaths.Add(path);
+
+            // We still call Compile to surface diagnostics, but do not assemble or
+            // return any file changes; the returned diagnostics are sufficient for squiggles.
+            StatusUpdate?.Invoke(this, (int)BuildStatus.Compiling);
+            _ = frontEnd.Compile(mainFilePath, zapPath, false);
+
+            var result = diags.ToArray();
+            DiagnosticsReady?.Invoke(this, result);
+            return result;
+        }
     }
 
     sealed partial class BuildService
@@ -161,6 +199,15 @@ namespace Zilf.Playground.Services.Builds
         private BuildStatus _status = BuildStatus.NotBuilt;
         private readonly List<string> _buildOutput = new();
         private byte[]? _lastCompiledGame;
+        private readonly List<PlaygroundDiagnostic> _liveDiagnostics = new();
+        private DateTime? _lastDiagnosticsCompileTime;
+        private long _currentBuildVersion = 0;
+        private long _latestAppliedBuildVersion = 0;
+        private CancellationTokenSource? _currentBuildCts;
+        private IWorker? _currentWorker;
+        
+        public IReadOnlyList<PlaygroundDiagnostic> LiveDiagnostics => _liveDiagnostics;
+        public DateTime? LastDiagnosticsCompileTime => _lastDiagnosticsCompileTime;
 
         public BuildStatus Status
         {
@@ -185,6 +232,7 @@ namespace Zilf.Playground.Services.Builds
 
         public event Action? StatusChanged;
         public event Action? BuildOutputChanged;
+        public event Action? LiveDiagnosticsChanged;
 
         public FrontEndResult? CompilerResult { get; private set; }
         public AssemblyResult? AssemblerResult { get; private set; }
@@ -277,6 +325,114 @@ namespace Zilf.Playground.Services.Builds
             {
                 AddBuildOutput("Build failed");
             }
+        }
+
+        public void ClearLiveDiagnostics()
+        {
+            _liveDiagnostics.Clear();
+            _lastDiagnosticsCompileTime = null;
+            LiveDiagnosticsChanged?.Invoke();
+        }
+
+        public async Task CompileWorkspaceQuickAsync()
+        {
+            // Cancel any previous build in progress and dispose the worker to kill it
+            _currentBuildCts?.Cancel();
+            if (_currentWorker != null)
+            {
+                try
+                {
+                    Console.WriteLine($"[BuildService] Disposing previous worker");
+                    await _currentWorker.DisposeAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[BuildService] Error disposing worker: {ex.Message}");
+                }
+                _currentWorker = null;
+            }
+            
+            _currentBuildCts = new CancellationTokenSource();
+            var thisBuildCts = _currentBuildCts;
+            
+            // Increment build version to track this specific build
+            var thisBuildVersion = Interlocked.Increment(ref _currentBuildVersion);
+            
+            Console.WriteLine($"[BuildService] Starting build version {thisBuildVersion}");
+            
+            // Do not touch build status; this is a background diagnostics compile only.
+            var project = workspace.Project;
+            if (project.Files.Count == 0)
+            {
+                ClearLiveDiagnostics();
+                return;
+            }
+
+            var worker = await workerFactory.CreateAsync();
+            _currentWorker = worker;
+            var service = await worker.CreateBackgroundServiceAsync<BackgroundBuildWorker>();
+
+            var paths = new List<string>();
+            var contents = new List<string>();
+
+            foreach (var f in project.Files)
+            {
+                paths.Add(f.Path);
+                contents.Add(f.Content);
+            }
+
+            var includePaths = project.GetIncludePaths().ToArray();
+            var mainFilePath = project.MainFile.Path;
+
+            // Optional: capture any message output for the build pane
+            await service.RegisterEventListenerAsync(nameof(BackgroundBuildWorker.OutputMessage), (object? _, string msg) => AddBuildOutput(msg));
+
+            // Check if cancelled before starting the long-running operation
+            if (thisBuildCts.IsCancellationRequested)
+            {
+                Console.WriteLine($"[BuildService] Build version {thisBuildVersion} cancelled before starting");
+                return;
+            }
+
+            var result = await service.RunAsync(w => w.BuildDiagnostics(paths.ToArray(), contents.ToArray(), includePaths, mainFilePath));
+
+            // Check if this build was superseded by a newer one
+            if (thisBuildCts.IsCancellationRequested)
+            {
+                Console.WriteLine($"[BuildService] Build version {thisBuildVersion} cancelled after completion, discarding results");
+                return;
+            }
+
+            // Only apply results if this is still the latest build
+            if (thisBuildVersion > _latestAppliedBuildVersion)
+            {
+                Console.WriteLine($"[BuildService] Applying build version {thisBuildVersion} results");
+                _liveDiagnostics.Clear();
+                if (result != null && result.Length > 0)
+                    _liveDiagnostics.AddRange(result);
+
+                _lastDiagnosticsCompileTime = DateTime.UtcNow;
+                _latestAppliedBuildVersion = thisBuildVersion;
+                LiveDiagnosticsChanged?.Invoke();
+            }
+            else
+            {
+                Console.WriteLine($"[BuildService] Discarding build version {thisBuildVersion} results (superseded by version {_latestAppliedBuildVersion})");
+            }
+            
+            // Clean up the worker reference if this is still the current build
+            if (_currentWorker == worker)
+            {
+                _currentWorker = null;
+            }
+        }
+
+        public int GetDiagnosticCountForFile(string path)
+        {
+            if (!path.StartsWith("/"))
+                path = "/" + path;
+
+            return _liveDiagnostics.Count(d => string.Equals(d.Path, path, StringComparison.Ordinal));
         }
 
         public async Task DownloadStoryFileAsync()

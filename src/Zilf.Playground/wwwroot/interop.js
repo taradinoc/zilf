@@ -109,3 +109,17 @@ ZilfJsInterop.loadGameInParchment = function (gameData) {
     
     return 'loading';
 }
+
+// Set Monaco markers for the active editor's current model.
+// markers: array of { startLineNumber, startColumn, endLineNumber, endColumn, message, severity, code }
+ZilfJsInterop.setEditorMarkers = function (owner, markers) {
+    try {
+        if (!window.monaco || !window.monaco.editor) return;
+        const models = window.monaco.editor.getModels();
+        if (!models || models.length === 0) return;
+        const model = models[0]; // Playground hosts a single editor
+        window.monaco.editor.setModelMarkers(model, owner || 'zilf', markers || []);
+    } catch (e) {
+        console.error('setEditorMarkers failed', e);
+    }
+}

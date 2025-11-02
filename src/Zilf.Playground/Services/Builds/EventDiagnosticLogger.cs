@@ -30,6 +30,7 @@ namespace Zilf.Playground.Services.Builds
     internal sealed class EventDiagnosticLogger : IDiagnosticLogger
     {
         public event EventHandler<string>? DiagnosticLogged;
+        public event EventHandler<PlaygroundDiagnostic>? DiagnosticFound;
 
         public void Log(Diagnostic diagnostic)
         {
@@ -37,6 +38,7 @@ namespace Zilf.Playground.Services.Builds
 
             var message = Format(diagnostic);
             DiagnosticLogged?.Invoke(this, message);
+            TryEmitStructured(diagnostic);
 
             const string SubDiagnosticIndent = "    ";
 
@@ -44,6 +46,7 @@ namespace Zilf.Playground.Services.Builds
             {
                 var subMessage = SubDiagnosticIndent + Format(sd, diagnostic);
                 DiagnosticLogged?.Invoke(this, subMessage);
+                TryEmitStructured(sd);
             }
 
             if (diagnostic.StackTrace != null)
@@ -86,6 +89,43 @@ namespace Zilf.Playground.Services.Builds
                 diagnostic.Location.SourceInfo != parentDiagnostic.Location.SourceInfo;
 
             return Format(diagnostic, includeSourceInfo);
+        }
+
+        private void TryEmitStructured(Diagnostic diagnostic)
+        {
+            // Expect SourceInfo format like "path:line"; if parsing fails, skip emitting.
+            var src = diagnostic.Location?.SourceInfo;
+            if (string.IsNullOrEmpty(src))
+                return;
+
+            var (path, line) = ParseSourceInfo(src!);
+            if (path == null || line <= 0)
+                return;
+
+            DiagnosticFound?.Invoke(this, new PlaygroundDiagnostic
+            {
+                Path = path,
+                Line = line,
+                Severity = diagnostic.Severity,
+                Code = Diagnostic.FormatCode(diagnostic.CodePrefix, diagnostic.CodeNumber),
+                Message = diagnostic.GetFormattedMessage()
+            });
+        }
+
+        private static (string? path, int line) ParseSourceInfo(string sourceInfo)
+        {
+            // Expected most common format from FileSourceLine: "fileName:lineNumber"
+            // Use last ':' to split (safe for file names that may contain ':')
+            var idx = sourceInfo.LastIndexOf(':');
+            if (idx <= 0 || idx >= sourceInfo.Length - 1)
+                return (null, 0);
+
+            var path = sourceInfo.Substring(0, idx);
+            var tail = sourceInfo.Substring(idx + 1);
+            if (int.TryParse(tail, out var line))
+                return (path, line);
+
+            return (null, 0);
         }
     }
 }
