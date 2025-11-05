@@ -184,5 +184,18 @@ namespace Zilf.Tests.Interpreter
 
             TestHelpers.AssertStructurallyEqual(args, [.. spec.AsZilListBody()]);
         }
+
+        [TestMethod]
+        public void Extra_Elements_In_Binding_Should_Throw()
+        {
+            var ctx = new Context();
+
+            var args = Program.Parse(ctx, @"""OPT"" (X <> Y)").ToArray();
+
+            Assert.ThrowsException<InterpreterError>(() =>
+            {
+                ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, args);
+            });
+        }
     }
 }
