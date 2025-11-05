@@ -733,5 +733,24 @@ namespace Zilf.Tests.Interpreter
     %<VERSION? (ZIP '(SYNONYM FOOV3)) (ELSE '(SYNONYM FOOV4))>>
 ");
         }
+
+        [TestMethod]
+        public void SEGMENT_Expanded_While_Constructing_LIST_Is_Linked_If_Possible()
+        {
+            var ctx = new Context();
+
+            TestHelpers.EvalAndAssert(ctx,
+                "<SET L1 '(A B C)> <SET L2 (!.L1)> <==? .L1 .L2>",
+                ctx.TRUE);
+
+            TestHelpers.EvalAndAssert(ctx,
+                "<SET L1 '(A B C)> <SET L2 (X !.L1)> <==? .L1 <REST .L2>>",
+                ctx.TRUE);
+
+            TestHelpers.EvalAndAssert(ctx,
+                "<NEWTYPE MYLIST LIST> <EVALTYPE MYLIST LIST> " +
+                "<SET L1 '#MYLIST (A B C)> <SET L2 #MYLIST (X !.L1)> <==? .L1 <REST .L2>>",
+                ctx.TRUE);
+        }
     }
 }

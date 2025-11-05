@@ -37,6 +37,9 @@ and this project adheres to
 
 - Fixed `WEAR` not using the library message system.
 
+- When using a SEGMENT to splice a list at the end of a new list (as in
+  `(A B !.L)`), the spliced list is now linked in directly instead of copied.
+
 ## [0.11.1] (October 31, 2025)
 
 ### Fixed

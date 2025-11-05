@@ -37,9 +37,21 @@ namespace Zilf.Interpreter.Values
         public sealed override int GetHashCode() =>
             type.GetHashCode() ^ primValue.GetHashCode();
 
-        public sealed override bool ExactlyEquals(ZilObject? other) =>
-            other is ZilHashBase<TPrim> hash && hash.type == type &&
-            ((ZilObject)(object)hash.primValue).ExactlyEquals((ZilObject)(object)primValue);
+        public sealed override bool ExactlyEquals(ZilObject? other)
+        {
+            if (other is ZilHashBase<TPrim> hash && hash.type == type &&
+                ((ZilObject)(object)hash.primValue).ExactlyEquals((ZilObject)(object)primValue))
+            {
+                return true;
+            }
+
+            if (primType == PrimType.LIST && other is ZilListoidBase list)
+            {
+                return ((ZilObject)(object)primValue).ExactlyEquals(list);
+            }
+
+            return false;
+        }
 
         public sealed override bool StructurallyEquals(ZilObject? other) =>
             other is ZilHashBase<TPrim> hash && hash.type == type &&
