@@ -15,6 +15,9 @@ and this project adheres to
   `-S` (`--stop-after-compile`) is specified. Additional arguments can be
   passed to ZAPF with `--zapf-options`.
 
+- Error MDL0117 is issued when a binding in a routine header doesn't have
+  exactly two elements.
+
 ### Changed
 
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
