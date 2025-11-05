@@ -40,6 +40,8 @@ and this project adheres to
 - When using a SEGMENT to splice a list at the end of a new list (as in
   `(A B !.L)`), the spliced list is now linked in directly instead of copied.
 
+- Fixed an internal type name appearing in some error messages for PUTREST.
+
 ## [0.11.1] (October 31, 2025)
 
 ### Fixed

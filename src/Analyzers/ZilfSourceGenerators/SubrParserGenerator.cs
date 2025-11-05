@@ -622,6 +622,7 @@ namespace ZilfSourceGenerators
             "ZilEnvironment" => "ENVIRONMENT",
             "ZilFix" => "FIX",
             "ZilList" => "LIST",
+            "ZilListoidBase" => "PRIMTYPE LIST",
             "ZilObject" => "any value",
             "ZilString" => "STRING",
             _ => null,
@@ -1407,28 +1408,28 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 {
                     var matchVar = $"matched_{ParameterId}";
                     var mismatchVar = $"optionalMismatch_{ParameterId}";
-                    
+
                     sb.AppendLine($"var {matchVar} = {fnName}({ctx.RankerArgument});");
                     sb.AppendLine($"if (!{matchVar})");
                     sb.AppendLine("{");
                     sb.Indent();
-                    
+
                     // Check if we have arguments available but parsing failed
                     sb.AppendLine($"if ({ctx.ArgIndexVar} < {ctx.ArgsVar}.Length)");
                     sb.AppendLine("{");
                     sb.Indent();
-                    
+
                     if (ctx.TrackOptionalMismatch)
                     {
                         sb.AppendLine($"{mismatchVar} = true;");
                     }
-                    
+
                     // Let the ranker throw any detailed error it may have recorded
                     sb.AppendLine($"{ctx.RankerVar}.ThrowIfError();");
-                    
+
                     sb.Unindent();
                     sb.AppendLine("}");
-                    
+
                     // No arguments available or no detailed error - use default
                     sb.AppendLine($"result_{ParameterId} = {GetDefaultValueExpression()};");
                     sb.Unindent();
@@ -1974,7 +1975,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             {
                 _redirectClause = redirectClause;
                 _compilation = compilation;
-                
+
                 // Generate helper methods for any ZilSequenceParam structures used in this parser
                 GenerateHelperMethods(sb, tree, debugLog);
 
@@ -2165,7 +2166,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 sb.AppendLine("{");
                 sb.Indent();
                 sb.AppendLine("var site = new FunctionCallSite(name);");
-           
+
                 var ctx = new GenerationContext
                 {
                     MethodName = method.Name,
@@ -2324,7 +2325,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 foreach (var node in tree)
                 {
                     var (nodeMin, nodeMax) = GetNodeArgumentBounds(node);
-                    
+
                     minArgs += nodeMin;
 
                     if (nodeMax == null || maxArgs == null)
@@ -2336,7 +2337,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                         maxArgs += nodeMax.Value;
                     }
                 }
-                
+
                 return (minArgs, maxArgs);
             }
 
@@ -2356,8 +2357,8 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
 
                     case SimpleParameterNode simple:
                         // Check if this is a ZilSequenceParam type
-                        if (simple.TargetType?.GetAttributes().Any(a => 
-                            a.AttributeClass?.Name == "ZilSequenceParamAttribute" || 
+                        if (simple.TargetType?.GetAttributes().Any(a =>
+                            a.AttributeClass?.Name == "ZilSequenceParamAttribute" ||
                             a.AttributeClass?.Name == "ZilSequenceParam") == true)
                         {
                             // Count the number of fields in the structure type
@@ -2369,7 +2370,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                                 return simple.IsOptional ? (0, fields) : (fields, fields);
                             }
                         }
-                        
+
                         if (simple.IsOptional)
                             return (0, 1); // Optional parameters consume 0 or 1 argument
                         else
@@ -2505,7 +2506,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                         return foundNode;
                 }
 
-                // If we can't find a specific node, return null 
+                // If we can't find a specific node, return null
                 return null;
             }
 
@@ -2662,15 +2663,15 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 foreach (var member in structType.GetMembers().OfType<IFieldSymbol>())
                 {
                     var fieldType = member.Type;
-                    
+
                     // Check for Either attribute first (before excluding types)
                     var eitherAttr = member.GetAttributes().FirstOrDefault(a =>
                         a.AttributeClass?.Name == "EitherAttribute" || a.AttributeClass?.Name == "Either");
-                    
+
                     if (eitherAttr != null)
                     {
                         // Check each Either alternative to see if it needs a helper
-                        if (eitherAttr.ConstructorArguments.Length > 0 && 
+                        if (eitherAttr.ConstructorArguments.Length > 0 &&
                             eitherAttr.ConstructorArguments[0].Kind == Microsoft.CodeAnalysis.TypedConstantKind.Array)
                         {
                             var typeValues = eitherAttr.ConstructorArguments[0].Values;
@@ -2684,7 +2685,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                                         a.AttributeClass?.Name == "ZilSequenceParamAttribute" ||
                                         a.AttributeClass?.Name == "ZilStructuredParam" ||
                                         a.AttributeClass?.Name == "ZilSequenceParam");
-                                    
+
                                     if (altNeedsHelper)
                                     {
                                         var altTypeName = eitherAltType.Name;
@@ -2706,23 +2707,23 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                         {
                             continue;
                         }
-                        
+
                         // Handle both direct field type and array element types
                         ITypeSymbol typeToCheck = fieldType;
-                        
+
                         // If it's an array, check the element type instead
                         if (fieldType is IArrayTypeSymbol arrayType)
                         {
                             typeToCheck = arrayType.ElementType;
                         }
-                        
+
                         // Check if this type needs a helper method (has ZilStructuredParam or ZilSequenceParam attribute)
                         var needsHelper = typeToCheck.GetAttributes().Any(a =>
                             a.AttributeClass?.Name == "ZilStructuredParamAttribute" ||
                             a.AttributeClass?.Name == "ZilSequenceParamAttribute" ||
                             a.AttributeClass?.Name == "ZilStructuredParam" ||
                             a.AttributeClass?.Name == "ZilSequenceParam");
-                        
+
                         if (needsHelper)
                         {
                             var fieldTypeName = typeToCheck.Name;
@@ -3004,91 +3005,6 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 sb.AppendLine("}");
             }
 
-            //private void GenerateHelperMethod(IndentedStringBuilder sb, string structTypeName, string helperName, ITypeSymbol structTypeSymbol, ParameterNode node)
-            //{
-            //    var fullTypeName = structTypeSymbol.ToDisplayString();
-
-            //    var bodyName = helperName + "_Body";
-
-            //    // Body method: contains the real parsing logic. To make helpers follow the
-            //    // two-phase parsing-step architecture, emit an inner local parsing function
-            //    // which operates on a local index variable (so local functions won't capture
-            //    // ref parameters). The outer body will call the inner function using a
-            //    // temporary index and then copy the updated index back to the ref param.
-            //    sb.AppendLine($"private static {fullTypeName} {bodyName}(ZilObject[] args, ref int argIndex, Context context, CallSite site)");
-            //    sb.AppendLine("{");
-            //    sb.Indent();
-
-            //    // Inner local parsing function: uses a local (non-ref) 'argIndex' variable
-            //    // so existing field-parsing emitters (which reference 'argIndex') continue
-            //    // to work without significant edits. We will copy the incoming ref into a
-            //    // local and after the inner function returns copy it back to the outer ref.
-            //    sb.AppendLine($"{fullTypeName} InnerParse(ref int localIdx)");
-            //    sb.AppendLine("{");
-            //    sb.Indent();
-            //    sb.AppendLine("// create a local argIndex alias so generated code can refer to it");
-            //    sb.AppendLine("int argIndex = localIdx;");
-            //    sb.AppendLine();
-
-            //    if (_compilation != null)
-            //    {
-            //        // Generate the parsing logic into the scope of InnerParse. GenerateGenericStructureParsing
-            //        // will emit code that references 'argIndex' and 'args' and sets a 'result' variable.
-            //        // In order to propagate the updated argIndex back to the caller, request that
-            //        // GenerateGenericStructureParsing emit an assignment to localIdx before returning.
-            //        GenerateGenericStructureParsing(sb, structTypeName, structTypeSymbol, fullTypeName, "localIdx");
-            //    }
-            //    else
-            //    {
-            //        sb.AppendLine($"// WARNING: No compilation context available for {structTypeName}");
-            //        sb.AppendLine($"throw new NotImplementedException($\"Generic helper method for {structTypeName} requires compilation context\");");
-            //    }
-
-            //    sb.Unindent();
-            //    sb.AppendLine("}");
-            //    sb.AppendLine();
-
-            //    // Call inner parse using a temporary so caller's ref isn't captured by inner locals
-            //    sb.AppendLine("int _temp = argIndex;");
-            //    sb.AppendLine("var _res = InnerParse(ref _temp);");
-            //    sb.AppendLine("argIndex = _temp;");
-            //    sb.AppendLine("return _res;");
-
-            //    sb.Unindent();
-            //    sb.AppendLine("}");
-            //    sb.AppendLine();
-
-            //    // Wrapper helper: provides a safe entry point that saves the caller's index
-            //    // and rethrows ArgumentTypeError with a call-site-specific message.
-            //    sb.AppendLine($"private static {fullTypeName} {helperName}(ZilObject[] args, ref int argIndex, Context context, CallSite site)");
-            //    sb.AppendLine("{");
-            //    sb.Indent();
-
-            //    // Attempt parsing using a temporary saved argIndex so we can backtrack on failure
-            //    sb.AppendLine("int _saved = argIndex;");
-            //    sb.AppendLine("try");
-            //    sb.AppendLine("{");
-            //    sb.Indent();
-            //    sb.AppendLine($"var _parsed = {bodyName}(args, ref _saved, context, site);");
-            //    sb.AppendLine("argIndex = _saved;");
-            //    sb.AppendLine("return _parsed;");
-            //    sb.Unindent();
-            //    sb.AppendLine("}");
-            //    // If the inner parser produced a decoding error, rethrow it so
-            //    // more specific diagnostics (including nested call-site descriptions)
-            //    // are preserved. We still want the caller's argIndex unchanged on
-            //    // failure, so simply rethrow the caught exception.
-            //    sb.AppendLine("catch (ArgumentDecodingError)");
-            //    sb.AppendLine("{");
-            //    sb.Indent();
-            //    sb.AppendLine("throw;");
-            //    sb.Unindent();
-            //    sb.AppendLine("}");
-            //    sb.Unindent();
-            //    sb.AppendLine("}");
-            //    sb.AppendLine();
-            //}
-
             /// <summary>
             /// Recursively search for a type in an assembly
             /// </summary>
@@ -3110,30 +3026,6 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 }
 
                 return null;
-            }
-
-            /// <summary>
-            /// Get the expected type name for error messages, mapping C# types to ZIL types
-            /// </summary>
-            private string GetExpectedTypeNameForField(string typeName) => SubrParserGenerator.SymbolTypeToZil(typeName) ?? typeName;
-            
-            /// <summary>
-            /// Generate type checking code for Either alternatives
-            /// </summary>
-            private void GenerateTypeCheck(IndentedStringBuilder sb, string keyword, string typeName)
-            {
-                var checkExpression = typeName switch
-                {
-                    "ZilAtom" => "args[argIndex] is Zilf.Interpreter.Values.ZilAtom",
-                    "String" => "args[argIndex] is Zilf.Interpreter.Values.ZilString", 
-                    "ZilString" => "args[argIndex] is Zilf.Interpreter.Values.ZilString",
-                    "ZilFix" => "args[argIndex] is Zilf.Interpreter.Values.ZilFix",
-                    "ZilVector" => "args[argIndex] is Zilf.Interpreter.Values.ZilVector",
-                    "AdeclForAtom" => "args[argIndex] is Zilf.Interpreter.Values.ZilAdecl",
-                    _ => $"args[argIndex] is {typeName}"
-                };
-
-                sb.AppendLine($"{keyword} ({checkExpression})");
             }
         }
 
@@ -3196,25 +3088,6 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 foreach (var type in base.GetErrorExpectedTypes())
                     yield return type;
             }
-
-            //public override string GetCSharpTypeName()
-            //{
-            //    var baseTypeName = TargetType?.ToDisplayString() ?? "object";
-
-            //    //// If this is the original parameter type (like CondClause[]), use it directly
-            //    //if ((Parameter?.Type ?? Field?.Type) is IArrayTypeSymbol ats)
-            //    //{
-            //    //    return ats.ToDisplayString();
-            //    //}
-
-            //    // // If this node represents an array, append "[]" to the type name.
-            //    // if (IsArray)
-            //    // {
-            //    //     return $"{baseTypeName}[]";
-            //    // }
-
-            //    return baseTypeName;
-            //}
 
             public override void GenerateParsingStep(IndentedStringBuilder sb, GenerationContext ctx)
             {
@@ -3420,21 +3293,6 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     yield return type;
             }
 
-            //public override string GetCSharpTypeName()
-            //{
-            //    // Get the base type name (e.g., "Zilf.Interpreter.Subrs.CondClause").
-            //    var baseTypeName = TargetType?.ToDisplayString() ?? "object";
-
-            //    // // If this node represents an array, append "[]" to the type name.
-            //    // if (IsArray)
-            //    // {
-            //    //     return $"{baseTypeName}[]";
-            //    // }
-
-            //    // Otherwise, just return the base type name.
-            //    return baseTypeName;
-            //}
-
             public override void GenerateParsingStep(IndentedStringBuilder sb, GenerationContext ctx)
             {
                 var fnName = $"TryParse_{ParameterId}";
@@ -3513,12 +3371,12 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                         sb.AppendLine($"if (!{fnName}({ctx.RankerArgument}))");
                         sb.AppendLine("{");
                         sb.Indent();
-                        
+
                         // Check if we have arguments available but parsing failed
                         sb.AppendLine($"if ({ctx.ArgIndexVar} < {ctx.ArgsVar}.Length)");
                         sb.AppendLine("{");
                         sb.Indent();
-                        
+
                         // If no detailed error was recorded, try to probe for better error info
                         // TODO: This "probing" sure looks redundant, but it seems necessary for correct error messages. Figure out why.
                         sb.AppendLine($"if (!{ctx.RankerVar}.HasError && {ctx.ArgsVar}[{ctx.ArgIndexVar}] is IStructure)");
@@ -3535,13 +3393,13 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                         sb.AppendLine("}");
                         sb.Unindent();
                         sb.AppendLine("}");
-                        
+
                         // Let the ranker throw any detailed structured parsing errors it may have recorded
                         sb.AppendLine($"{ctx.RankerVar}.ThrowIfError();");
-                        
+
                         sb.Unindent();
                         sb.AppendLine("}");
-                        
+
                         // No arguments available or no detailed error - use default
                         sb.AppendLine($"{resultVar} = {GetDefaultValueExpression()};");
                         sb.Unindent();
@@ -3566,7 +3424,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                             sb.AppendLine($"if (!{fnName}({ctx.RankerArgument}))");
                             sb.AppendLine("{");
                             sb.Indent();
-                            
+
                             // Build combined expected type list from prior optional parameters
                             if (ctx.PriorOptionalNodes.Length > 0)
                             {
@@ -3580,7 +3438,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                                 }
                                 sb.AppendLine($"expectedTypes.Add(\"{expectedTypeEscaped}\");");
                                 sb.AppendLine("var combinedExpected = expectedTypes.Count == 1 ? expectedTypes[0] : expectedTypes.Count == 2 ? expectedTypes[0] + \" or \" + expectedTypes[1] : string.Join(\", \", expectedTypes.GetRange(0, expectedTypes.Count - 1)) + \", or \" + expectedTypes[expectedTypes.Count - 1];");
-                                
+
                                 // Try to get detailed error by probing the structure if it's a structure argument
                                 // TODO: This "probing" sure looks redundant, but it seems necessary for correct error messages. Figure out why.
                                 sb.AppendLine($"if ({ctx.ArgIndexVar} < {ctx.ArgsVar}.Length && {ctx.ArgsVar}[{ctx.ArgIndexVar}] is IStructure)");
@@ -3596,7 +3454,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                                 sb.AppendLine("}");
                                 sb.Unindent();
                                 sb.AppendLine("}");
-                                
+
                                 sb.AppendLine($"{ctx.RankerVar}.WrongType({ctx.ArgIndexVar}, {ctx.SiteVar}, {ctx.ArgIndexVar}, combinedExpected);");
                                 sb.AppendLine($"throw new ArgumentTypeError({ctx.SiteVar}, {ctx.ArgIndexVar}, combinedExpected);");
                             }
@@ -3607,7 +3465,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                                 sb.AppendLine($"{ctx.RankerVar}.WrongType({ctx.ArgIndexVar}, {ctx.SiteVar}, {ctx.ArgIndexVar}, \"{expectedTypeEscaped}\");");
                                 sb.AppendLine($"throw new ArgumentTypeError({ctx.SiteVar}, {ctx.ArgIndexVar}, \"{expectedTypeEscaped}\");");
                             }
-                            
+
                             sb.Unindent();
                             sb.AppendLine("}");
                         }
@@ -3661,22 +3519,22 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 var paramType = parameter.Type;
                 var actualType = paramType;
                 bool isArray = false, isNullable = false;
-                
+
                 // TODO: modularize array parsing - use ArrayParameterNode for all types instead of IsArray
                 if (paramType is IArrayTypeSymbol arrayType)
                 {
                     actualType = arrayType.ElementType;
                     isArray = true;
-                    
+
                     // Check if it's a nullable array (like AdditionalSortParam[]?)
                     isNullable = parameter.NullableAnnotation == NullableAnnotation.Annotated;
                 }
-                
+
                 // Check if the type (or array element type) has ZilSequenceParamAttribute
-                var hasZilSequenceParam = actualType.GetAttributes().Any(a => 
-                    a.AttributeClass?.Name == "ZilSequenceParamAttribute" || 
+                var hasZilSequenceParam = actualType.GetAttributes().Any(a =>
+                    a.AttributeClass?.Name == "ZilSequenceParamAttribute" ||
                     a.AttributeClass?.Name == "ZilSequenceParam");
-                
+
                 if (hasZilSequenceParam)
                 {
                     // debugLog.Add($"BuildNode(IParameterSymbol): {parameter.Name} is ZilSequenceParam, target type {parameter.Type.ToDisplayString()}, actual type {actualType.ToDisplayString()}, isArray={isArray}, isNullable={isNullable}");
@@ -3696,10 +3554,10 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 }
 
                 // Check if the type (or array element type) has ZilStructuredParamAttribute
-                var hasZilStructuredParam = actualType.GetAttributes().Any(a => 
-                    a.AttributeClass?.Name == "ZilStructuredParamAttribute" || 
+                var hasZilStructuredParam = actualType.GetAttributes().Any(a =>
+                    a.AttributeClass?.Name == "ZilStructuredParamAttribute" ||
                     a.AttributeClass?.Name == "ZilStructuredParam");
-                
+
                 if (hasZilStructuredParam)
                 {
                     // debugLog.Add($"BuildNode(IParameterSymbol): {parameter.Name} is ZilStructuredParam, target type {parameter.Type.ToDisplayString()}, actual type {actualType.ToDisplayString()}, isArray={isArray}, isNullable={isNullable}");
@@ -3721,7 +3579,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 // Check for [Either] attribute first, before handling arrays
                 var eitherAttr = parameter.GetAttributes().FirstOrDefault(a =>
                     a.AttributeClass?.Name == "EitherAttribute" || a.AttributeClass?.Name == "Either");
-                
+
                 if (eitherAttr != null)
                 {
                     // Handle Either parameters
@@ -3736,7 +3594,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     };
 
                     // Extract the types from the Either attribute
-                    if (eitherAttr.ConstructorArguments.Length > 0 && 
+                    if (eitherAttr.ConstructorArguments.Length > 0 &&
                         eitherAttr.ConstructorArguments[0].Kind == Microsoft.CodeAnalysis.TypedConstantKind.Array)
                     {
                         var typeValues = eitherAttr.ConstructorArguments[0].Values;
@@ -3817,7 +3675,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     };
                 }
 
-                
+
 
                 // Handle simple parameters
                 var simpleNode = new SimpleParameterNode
