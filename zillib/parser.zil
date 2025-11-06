@@ -2846,10 +2846,11 @@ Returns:
                 <WRAP-FOR-DARK-STATUS <USL>>>)
         (T
             ;"Splits the screen and clears a 1-line status line."
-            <ROUTINE INIT-STATUS-LINE ()
-                <SPLIT 1>
-                <CLEAR 1>
-                <USE-STATUS-LINE DEFAULT>>
+            <DEFMAC INIT-STATUS-LINE ("OPT" ('NAME DEFAULT))
+                `<PROG ()
+                    <SPLIT 1>
+                    <CLEAR 1>
+                    <USE-STATUS-LINE ~.NAME>>>
 
             ;"Writes the location name, score, and turn count in the status line.
 

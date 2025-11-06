@@ -171,18 +171,21 @@
 <STATUS-LINE-SECTION TIME-24H
     (JUSTIFY LEFT)
     (WIDTH 10)
-    (CONTENT <COND (<L? ,SCORE 10> <TELL !\ >)>
+    (CONTENT <COND (<L? ,SCORE 10> <TELL !\0>)>
              <TELL N ,SCORE>
-             <COND (<L? ,MOVES 10> <TELL !\ >)>
+             <COND (<L? ,MOVES 10> <TELL !\0>)>
              <TELL N ,MOVES>)>
 
 <STATUS-LINE-SECTION TIME-12H
     (JUSTIFY LEFT)
     (WIDTH 10)
-    (CONTENT <COND (<L? ,SCORE 10> <TELL !\ >)>
-             <TELL N ,SCORE>
-             <COND (<L? ,MOVES 10> <TELL !\ >)>
-             <TELL N ,MOVES>)>
+    (CONTENT <PROG ((H <MOD ,SCORE 12>))
+                <COND (<==? .H 0> <SET H 12>)>
+                <COND (<L? ,H 10> <TELL !\ >)>
+                <TELL N ,H>
+                <COND (<L? ,MOVES 10> <TELL !\0>)>
+                <TELL N ,MOVES>
+                <COND (<L? ,SCORE 12> <TELL " AM">) (ELSE <TELL " PM">)>>)>
 
 "Status line formats"
 
