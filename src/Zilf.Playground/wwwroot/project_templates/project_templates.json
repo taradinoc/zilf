@@ -84,6 +84,7 @@
         "zillib/pseudo.zil",
         "zillib/qq.mud",
         "zillib/scope.zil",
+        "zillib/status.zil",
         "zillib/template.zil",
         "zillib/verbs.zil"
       ]

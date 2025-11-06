@@ -18,6 +18,10 @@ and this project adheres to
 - Error MDL0117 is issued when a binding in a routine header doesn't have
   exactly two elements.
 
+- In V4+, the status line can now be customized with `USE-STATUS-LINE` and
+  related macros. A few standard options are available: score/moves, 12-hour
+  time, 24-hour time, and location only. See `zillib/status.zil` for details.
+
 ### Changed
 
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for

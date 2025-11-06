@@ -2834,6 +2834,8 @@ Returns:
 <OR <GASSIGNED? DARKNESS-STATUS-TEXT>
     <SETG DARKNESS-STATUS-TEXT "Darkness">>
 
+<INSERT-FILE "status">
+
 <DEFAULT-DEFINITION STATUS-LINE
 
     <VERSION?
@@ -2844,9 +2846,11 @@ Returns:
                 <WRAP-FOR-DARK-STATUS <USL>>>)
         (T
             ;"Splits the screen and clears a 1-line status line."
-            <ROUTINE INIT-STATUS-LINE ()
-                <SPLIT 1>
-                <CLEAR 1>>
+            <DEFMAC INIT-STATUS-LINE ("OPT" ('NAME DEFAULT))
+                `<PROG ()
+                    <SPLIT 1>
+                    <CLEAR 1>
+                    <USE-STATUS-LINE ~.NAME>>>
 
             ;"Writes the location name, score, and turn count in the status line.
 
@@ -2855,7 +2859,7 @@ Returns:
             HERE-LIT
             SCORE
             MOVES"
-            <ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
+            ;<ROUTINE UPDATE-STATUS-LINE ("AUX" WIDTH)
                 <SCREEN 1>
                 <HLIGHT ,H-INVERSE>
                 <FAKE-ERASE>
@@ -2872,11 +2876,9 @@ Returns:
                 <SCREEN 0>
                 <HLIGHT ,H-NORMAL>>
 
-            ;"Fills the top row with spaces."
-            <ROUTINE FAKE-ERASE ()
-                <CURSET 1 1>
-                <DO (I <LOWCORE SCRH> 1 -1) <PRINTC !\ >>
-                <CURSET 1 1>>)>
+            <GLOBAL CURRENT-STATUS-LINE <>>
+            <DEFMAC UPDATE-STATUS-LINE ()
+                '<APPLY ,CURRENT-STATUS-LINE>>)>
 >
 
 ;"Prints a message and ends the game, prompting the player to restart,
