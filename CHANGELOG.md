@@ -42,6 +42,9 @@ and this project adheres to
 
 - Fixed an internal type name appearing in some error messages for PUTREST.
 
+- Fixed an unhelpful error message when passing the wrong type of argument to
+  `SUBSTRUC`.
+
 ## [0.11.1] (October 31, 2025)
 
 ### Fixed

@@ -120,6 +120,27 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        public void Test_SUBSTRUC_ArgumentDecodingError_Message_1()
+        {
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<SUBSTRUC '(1 2 3) FOO>",
+                ex => ex.Message.EndsWith("SUBSTRUC: arg 2: expected FIX or structured value", StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void Test_SUBSTRUC_ArgumentDecodingError_Message_2()
+        {
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<SUBSTRUC '(1 2 3) 1 FOO>",
+                ex => ex.Message.EndsWith("SUBSTRUC: arg 3: expected FIX or structured value", StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        public void Test_SUBSTRUC_ArgumentDecodingError_Message_3()
+        {
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<SUBSTRUC '(1 2 3) 1 2 FOO>",
+                ex => ex.Message.EndsWith("SUBSTRUC: arg 4: expected structured value", StringComparison.Ordinal));
+        }
+
+        [TestMethod]
         public void Test_BIND_Allows_Mixed_Bindings_With_Initializers()
         {
             var ctx = new Context();

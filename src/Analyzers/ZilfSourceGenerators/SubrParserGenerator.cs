@@ -1010,7 +1010,15 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     }
                 }
 
-                var typeName = TargetType?.Name ?? "unknown";
+                var typeSymbol = TargetType;
+                if (typeSymbol is INamedTypeSymbol namedType && namedType.IsGenericType && namedType.Name == "Nullable" && namedType.TypeArguments.Length == 1)
+                {
+                    var inner = namedType.TypeArguments[0];
+                    var innerName = inner.Name;
+                    return SubrParserGenerator.SymbolTypeToZil(innerName) ?? innerName;
+                }
+
+                var typeName = typeSymbol?.Name ?? "unknown";
                 return SubrParserGenerator.SymbolTypeToZil(typeName) ?? typeName;
             }
 
@@ -2257,10 +2265,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 }
                 sb.AppendLine();
 
-                var optionalNodesToTrack = tree.Select((n, i) => (node: n, index: i))
-                    .Where(pair => pair.node.IsOptional && tree.Skip(pair.index + 1).Any(next => !next.IsOptional))
-                    .Select(pair => pair.node)
-                    .ToArray();
+                var optionalNodesToTrack = tree.Where(n => n.IsOptional).ToArray();
                 var optionalTrackedIds = new HashSet<int>(optionalNodesToTrack.Select(n => n.ParameterId));
 
                 if (optionalNodesToTrack.Length > 0)
@@ -2306,7 +2311,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 }
 
                 // Generate method call
-                GenerateMethodCall(sb, method, tree);
+                GenerateMethodCall(sb, method, tree, optionalNodesToTrack);
 
                 // Close the method
                 sb.Unindent();
@@ -2534,7 +2539,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 return null;
             }
 
-            private void GenerateMethodCall(IndentedStringBuilder sb, IMethodSymbol method, ParameterNode[] tree)
+            private void GenerateMethodCall(IndentedStringBuilder sb, IMethodSymbol method, ParameterNode[] tree, ParameterNode[] optionalTrackedNodes)
             {
                 var parameters = method.Parameters.Where(p => p.Type.Name != "Context").ToArray();
                 var paramNames = new List<string>
@@ -2565,8 +2570,30 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine("if (argIndex < args.Length)");
                     sb.AppendLine("{");
                     sb.Indent();
-                    // Prefer any recorded ranked error (type/count) before reporting TooMany.
-                    sb.AppendLine($"ranker.ThrowIfError();");
+                    if (optionalTrackedNodes.Length > 0)
+                    {
+                        sb.AppendLine("if (!ranker.HasError)");
+                        sb.AppendLine("{");
+                        sb.Indent();
+                        sb.AppendLine("var expectedTypes = new List<string>();");
+                        sb.AppendLine("var expectedSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);");
+                        foreach (var optionalNode in optionalTrackedNodes)
+                        {
+                            var expectedDisplay = BuildExpectedTypeDisplay(optionalNode.GetErrorExpectedTypes(), optionalNode.GetExpectedTypeName());
+                            var expectedEscaped = expectedDisplay.Replace("\"", "\\\"");
+                            sb.AppendLine($"if (optionalMismatch_{optionalNode.ParameterId} && expectedSeen.Add(\"{expectedEscaped}\")) expectedTypes.Add(\"{expectedEscaped}\");");
+                        }
+                        sb.AppendLine("if (expectedTypes.Count > 0)");
+                        sb.AppendLine("{");
+                        sb.Indent();
+                        sb.AppendLine("var expected = expectedTypes.Count == 1 ? expectedTypes[0] : expectedTypes.Count == 2 ? expectedTypes[0] + \" or \" + expectedTypes[1] : string.Join(\", \", expectedTypes.GetRange(0, expectedTypes.Count - 1)) + \", or \" + expectedTypes[expectedTypes.Count - 1];");
+                        sb.AppendLine("throw new ArgumentTypeError(site, argIndex, expected);");
+                        sb.Unindent();
+                        sb.AppendLine("}");
+                        sb.Unindent();
+                        sb.AppendLine("}");
+                    }
+                    sb.AppendLine("ranker.ThrowIfError();");
                     sb.AppendLine("throw ArgumentCountError.TooMany(site, argIndex, null);");
                     sb.Unindent();
                     sb.AppendLine("}");
