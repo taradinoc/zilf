@@ -21,6 +21,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+using System.IO.Compression;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Zilf.Playground.Services.Workspaces;
@@ -40,6 +42,43 @@ namespace Zilf.Playground.Services
         public ProjectStorageService(JSInterop jsInterop)
         {
             this.jsInterop = jsInterop;
+        }
+
+        /// <summary>
+        /// Creates a ZIP archive of the given project and returns its bytes.
+        /// The archive contains all project files at their paths, plus a project.json metadata file
+        /// with ProjectName, MainFile and Includes fields.
+        /// </summary>
+        public async Task<byte[]> ExportProjectZipAsync(Project project)
+        {
+            using var memoryStream = new MemoryStream();
+
+            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                // Add all project files to the archive
+                foreach (var file in project.Files)
+                {
+                    var entry = archive.CreateEntry(file.Path);
+                    using var entryStream = entry.Open();
+                    using var writer = new StreamWriter(entryStream);
+                    await writer.WriteAsync(file.Content);
+                }
+
+                // Add project metadata file
+                var metadataEntry = archive.CreateEntry("project.json");
+                using var metadataStream = metadataEntry.Open();
+                using var metadataWriter = new StreamWriter(metadataStream);
+                var metadata = JsonSerializer.Serialize(new
+                {
+                    ProjectName = project.Name,
+                    MainFile = project.MainFile?.Path,
+                    Includes = project.Includes
+                });
+                await metadataWriter.WriteAsync(metadata);
+            }
+
+            memoryStream.Position = 0;
+            return memoryStream.ToArray();
         }
 
         /// <summary>
