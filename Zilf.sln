@@ -74,6 +74,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZilfSourceGenerators", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsInstaller", "src\WindowsInstaller\WindowsInstaller.csproj", "{80D73805-64CA-4A1B-8D66-0CB35BDCEC96}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.CompilerService", "src\Zilf.CompilerService\Zilf.CompilerService.csproj", "{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zilf.CompilerService.Tests", "test\Zilf.CompilerService.Tests\Zilf.CompilerService.Tests.csproj", "{9A9E2D25-6A7F-4E9E-9B9B-12E2F5C0F7B1}"
+EndProject
+ 
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		CI|Any CPU = CI|Any CPU
@@ -275,6 +280,22 @@ Global
 		{80D73805-64CA-4A1B-8D66-0CB35BDCEC96}.Release|Any CPU.Build.0 = Release|Any CPU
 		{80D73805-64CA-4A1B-8D66-0CB35BDCEC96}.Release|x86.ActiveCfg = Release|Any CPU
 		{80D73805-64CA-4A1B-8D66-0CB35BDCEC96}.Release|x86.Build.0 = Release|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.CI|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.CI|Any CPU.Build.0 = Debug|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.CI|x86.ActiveCfg = Debug|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.CI|x86.Build.0 = Debug|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.Debug|x86.Build.0 = Debug|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.Release|x86.ActiveCfg = Release|Any CPU
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11}.Release|x86.Build.0 = Release|Any CPU
+			{9A9E2D25-6A7F-4E9E-9B9B-12E2F5C0F7B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+			{9A9E2D25-6A7F-4E9E-9B9B-12E2F5C0F7B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+			{9A9E2D25-6A7F-4E9E-9B9B-12E2F5C0F7B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+			{9A9E2D25-6A7F-4E9E-9B9B-12E2F5C0F7B1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -302,6 +323,7 @@ Global
 		{D38CAE84-836D-416D-83F6-DE2F2502658C} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
 		{3A306179-F77C-4344-A475-4AB12299972F} = {598B603F-F081-440B-BD43-4813EC6E043C}
 		{80D73805-64CA-4A1B-8D66-0CB35BDCEC96} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
+		{2C6F2B9C-4E2D-4E7B-8E6F-3B4B6A6C9A11} = {639D8160-38EF-4ED1-8202-8B8CFBE22FBD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {774D42F0-105F-4B51-BC60-F4661B610BAC}

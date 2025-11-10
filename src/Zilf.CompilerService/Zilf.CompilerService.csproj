@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Zilf.CompilerService</RootNamespace>
+    <AssemblyName>Zilf.CompilerService</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Zilf\Zilf.csproj" />
+    <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj" />
+    <ProjectReference Include="..\Zilf.Emit\Zilf.Emit.csproj" />
+    <ProjectReference Include="..\Zapf\Zapf.csproj" />
+    <ProjectReference Include="..\Zapf.Parsing\Zapf.Parsing.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,2 @@
+# Cleanup old build files daily at midnight UTC
+0 0 * * * /app/cleanup.sh >> /var/log/cron.log 2>&1
