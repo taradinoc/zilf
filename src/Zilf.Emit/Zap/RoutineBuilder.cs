@@ -452,6 +452,24 @@ namespace Zilf.Emit.Zap
                 case BinaryOp.Sub when left == result && right == game.One:
                     AddLine(new Instruction("DEC", new QuoteExpr(result.ToAsmExpr())), null, PeepholeLineType.Plain);
                     return;
+                case BinaryOp.Add when left == game.Zero:
+                    EmitStore(result!, right);
+                    return;
+                case BinaryOp.Add when right == game.Zero:
+                    EmitStore(result!, left);
+                    return;
+                case BinaryOp.Sub when right == game.Zero:
+                    EmitStore(result!, left);
+                    return;
+                case BinaryOp.Mul when left == game.One:
+                    EmitStore(result!, right);
+                    return;
+                case BinaryOp.Mul when right == game.One:
+                    EmitStore(result!, left);
+                    return;
+                case BinaryOp.Div when right == game.One:
+                    EmitStore(result!, left);
+                    return;
                 case BinaryOp.StoreIndirect when right == Stack && game.zversion != 6:
                     AddLine(new Instruction("POP", left.ToAsmExpr()), null, PeepholeLineType.Plain);
                     return;

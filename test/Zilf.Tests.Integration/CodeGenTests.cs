@@ -695,5 +695,29 @@ namespace Zilf.Tests.Integration
                 .GeneratesCodeMatchingAsync(@"\.DEBUG-LINE ([^\r\n]*)\r?\n\s*ASSIGNED\? 'A")
                 .AndMatching(@"\.DEBUG-LINE ([^\r\n]*)\r?\n\s*(\S+:\s*)?CALL1 FOO >B");
         }
+
+        [TestMethod]
+        public async Task ADD_Or_SUB_With_Zero_Should_Be_Optimized_Away()
+        {
+            await AssertRoutine("\"AUX\" X",
+                "<SET X <+ <GETB 0 33> 0>>")
+                .GeneratesCodeNotMatchingAsync(@"ADD");
+
+            await AssertRoutine("\"AUX\" X",
+                "<SET X <- <GETB 0 33> 0>>")
+                .GeneratesCodeNotMatchingAsync(@"SUB");
+        }
+
+        [TestMethod]
+        public async Task MUL_Or_DIV_With_One_Should_Be_Optimized_Away()
+        {
+            await AssertRoutine("\"AUX\" X",
+                "<SET X <* <GETB 0 33> 1>>")
+                .GeneratesCodeNotMatchingAsync(@"MUL");
+
+            await AssertRoutine("\"AUX\" X",
+                "<SET X </ <GETB 0 33> 1>>")
+                .GeneratesCodeNotMatchingAsync(@"DIV");
+        }
     }
 }
