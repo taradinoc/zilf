@@ -37,6 +37,12 @@ namespace Dezapf
         }
 
         public OutputStyle OutputStyle;
+        
+    // When enabled, emit raw byte dumps before each emitted line/chunk for debugging
+    public bool DebugDumpRawBytes { get; set; }
+
+    // Entire input image for raw-byte lookups
+    public byte[] Image { get; set; }
 
         public int ZVersion
         {
@@ -79,9 +85,16 @@ namespace Dezapf
             }
         }
 
+        private Header _header;
+
         public Header Header
         {
-            set => ZVersion = value.ZVersion;
+            get => _header;
+            set
+            {
+                _header = value;
+                ZVersion = value.ZVersion;
+            }
         }
 
         public RangeList<Chunk> Chunks { get; } = new RangeList<Chunk>();

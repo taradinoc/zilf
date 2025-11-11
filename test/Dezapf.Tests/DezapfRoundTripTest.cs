@@ -16,6 +16,10 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Dezapf.Tests
@@ -48,15 +52,31 @@ namespace Dezapf.Tests
         //
         #endregion
 
-/*
-        static int RunZapf(string code, out byte[] zcode)
+        static int RunZapf(string code, byte[] originalZcode, out byte[] zcode)
         {
             string inputFile = Path.GetTempFileName();
             string outputFile = Path.GetTempFileName();
             try
             {
                 File.WriteAllText(inputFile, code);
-                int rc = Zapf.Program.Main(new[] { inputFile, outputFile });
+                
+                // Extract serial number from original z-code (bytes 18-23)
+                string serial = "";
+                if (originalZcode != null && originalZcode.Length >= 24)
+                {
+                    for (int i = 18; i < 24; i++)
+                        serial += (char)originalZcode[i];
+                }
+                
+                // Build command line args
+                var args = new List<string> { inputFile, outputFile };
+                if (!string.IsNullOrEmpty(serial))
+                {
+                    args.Add("-s");
+                    args.Add(serial);
+                }
+                
+                int rc = Zapf.Program.Main(args.ToArray());
                 if (rc == 0)
                     zcode = File.ReadAllBytes(outputFile);
                 else
@@ -69,9 +89,7 @@ namespace Dezapf.Tests
                 File.Delete(outputFile);
             }
         }
-*/
 
-/*
         static int RunDezapf(byte[] zcode, out string code)
         {
             string inputFile = Path.GetTempFileName();
@@ -93,9 +111,8 @@ namespace Dezapf.Tests
                 Console.SetOut(oldOut);
             }
         }
-*/
 
-        /*[TestMethod]
+        [TestMethod]
         public void RoundTripTest_name_z3()
         {
             TestRoundTrip(Resources.name_z3);
@@ -105,15 +122,8 @@ namespace Dezapf.Tests
         public void RoundTripTest_hello_z3()
         {
             TestRoundTrip(Resources.hello_z3);
-        }*/
-
-        [TestMethod]
-        public void NoTest()
-        {
-            Assert.Inconclusive("DeZapf is not ready for end-to-end testing");
         }
 
-/*
         void TestRoundTrip(byte[] zcode)
         {
             int rc;
@@ -121,11 +131,10 @@ namespace Dezapf.Tests
             rc = RunDezapf(zcode, out var code);
             Assert.AreEqual(0, rc, "Dezapf signaled error");
 
-            rc = RunZapf(code, out var actual);
+            rc = RunZapf(code, zcode, out var actual);
             Assert.AreEqual(0, rc, "Zapf signaled error");
 
             CollectionAssert.AreEqual(zcode, actual);
         }
-*/
     }
 }

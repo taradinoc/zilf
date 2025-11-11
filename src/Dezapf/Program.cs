@@ -24,16 +24,29 @@ using Zapf.Parsing.Instructions;
 
 namespace Dezapf
 {
-    static class Program
+    public static class Program
     {
         public static void Main(string[] args)
         {
             using Stream stream = new FileStream(args[0], FileMode.Open, FileAccess.Read);
+            // Load entire image for debug raw-byte dumping
+            byte[] allBytes;
+            using (var mem = new MemoryStream())
+            {
+                stream.CopyTo(mem);
+                allBytes = mem.ToArray();
+            }
+            // Reset position for normal reading
+            stream.Seek(0, SeekOrigin.Begin);
 
             var fileLength = (int)stream.Length;
             var rdr = new BinaryReader(stream);
 
             var ctx = new Context();
+            ctx.Image = allBytes;
+            // Enable debug dumping if environment variable DEZAPF_DEBUG_BYTES=1
+            if (Environment.GetEnvironmentVariable("DEZAPF_DEBUG_BYTES") == "1")
+                ctx.DebugDumpRawBytes = true;
             var ranges = new RangeList<Chunk>();
             var hdr = new Header(rdr);
 
@@ -136,6 +149,26 @@ namespace Dezapf
                 ranges.AddRange(hdr.Globals, maxGlobal * 2, globalsChunk);
             }
 
+            // mark important header locations to ensure proper labels
+            // These must be added before filling gaps to ensure they start their own ranges
+            if (hdr.Words != 0 && !ranges.Contains(hdr.Words))
+                ranges.AddRange(hdr.Words, 1, DataChunk.FromStream(stream, hdr.Words, 1));
+
+            if (hdr.Objects != 0 && !ranges.Contains(hdr.Objects))
+                ranges.AddRange(hdr.Objects, 1, DataChunk.FromStream(stream, hdr.Objects, 1));
+
+            if (hdr.Vocab != 0 && !ranges.Contains(hdr.Vocab))
+                ranges.AddRange(hdr.Vocab, 1, DataChunk.FromStream(stream, hdr.Vocab, 1));
+
+            if (hdr.AlphabetTable != 0 && !ranges.Contains(hdr.AlphabetTable))
+                ranges.AddRange(hdr.AlphabetTable, 1, DataChunk.FromStream(stream, hdr.AlphabetTable, 1));
+
+            if (hdr.TCharsTable != 0 && !ranges.Contains(hdr.TCharsTable))
+                ranges.AddRange(hdr.TCharsTable, 1, DataChunk.FromStream(stream, hdr.TCharsTable, 1));
+
+            if (hdr.ExtensionTable != 0 && !ranges.Contains(hdr.ExtensionTable))
+                ranges.AddRange(hdr.ExtensionTable, 1, DataChunk.FromStream(stream, hdr.ExtensionTable, 1));
+
             // mark memory borders
             if (!ranges.Contains(hdr.EndLod))
                 ranges.AddRange(hdr.EndLod, 1, DataChunk.FromStream(stream, hdr.EndLod, 1));
@@ -156,10 +189,27 @@ namespace Dezapf
                     chunk.Length < nextChunk.GetAlignment(ctx) &&
                     chunk.Bytes.All(b => b == 0))
                 {
-                    continue;
+                    // Preserve trailing zero padding at end-of-file to keep file length exact
+                    if (chunk.PC + chunk.Length < fileLength)
+                        continue;
                 }
 
                 ranges.AddRange(chunk.PC, chunk.Length, chunk);
+            }
+
+            // Ensure any trailing bytes (even if gap detection missed them) are preserved
+            var lastEnd = 0;
+            foreach (var r in ranges)
+            {
+                var end = r.Start + r.Length;
+                if (end > lastEnd)
+                    lastEnd = end;
+            }
+            if (lastEnd < fileLength)
+            {
+                var tailLen = fileLength - lastEnd;
+                var tailChunk = DataChunk.FromStream(stream, lastEnd, tailLen);
+                ranges.AddRange(lastEnd, tailLen, tailChunk);
             }
 
             // output

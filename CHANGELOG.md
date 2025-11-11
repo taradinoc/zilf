@@ -22,6 +22,8 @@ and this project adheres to
   related macros. A few standard options are available: score/moves, 12-hour
   time, 24-hour time, and location only. See `zillib/status.zil` for details.
 
+- ZAPF: Added .FORM and .OPERAND directives for use by Dezapf.
+
 ### Changed
 
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for

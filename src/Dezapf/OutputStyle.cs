@@ -17,6 +17,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Zapf.Parsing.Instructions;
@@ -129,8 +130,28 @@ namespace Dezapf
 
     abstract class ZapOutputStyle : OutputStyle
     {
-        const string INDENT = "            ";
+        protected const string INDENT = "            ";
         const string INST_LABEL = "ZC${0:X5}:   ";
+
+        protected void DumpRaw(TextWriter writer, Context ctx, int offset, int length)
+        {
+            if (!ctx.DebugDumpRawBytes || ctx.Image == null || length <= 0)
+                return;
+
+            // Clamp to image length
+            int maxLen = Math.Min(length, ctx.Image.Length - offset);
+            if (maxLen <= 0)
+                return;
+
+            writer.Write(INDENT);
+            writer.Write($"; RAW @0x{offset:X5} len={maxLen}:");
+            for (int i = 0; i < maxLen; i++)
+            {
+                writer.Write(' ');
+                writer.Write(ctx.Image[offset + i].ToString("X2"));
+            }
+            writer.WriteLine();
+        }
 
         public override void FormatHeader(TextWriter writer, Context ctx, HeaderChunk hdrChunk)
         {
@@ -204,6 +225,10 @@ namespace Dezapf
 
         public override void FormatFunctStart(TextWriter writer, Context ctx, FunctChunk funct)
         {
+            // Dump raw function header bytes (locals count + defaults)
+            int headerLen = 1 + (ctx.ZVersion < 5 ? funct.Locals.Length * 2 : 0);
+            DumpRaw(writer, ctx, funct.PC, headerLen);
+
             writer.Write(INDENT + ".FUNCT ZR${0:X5}", funct.PC);
             for (int i = 0; i < funct.Locals.Length; i++)
             {
@@ -225,13 +250,41 @@ namespace Dezapf
 
         public override void FormatInstruction(TextWriter writer, Context ctx, Instruction inst)
         {
+            // Dump raw bytes for this instruction
+            DumpRaw(writer, ctx, inst.PC, inst.Length);
+
+            ZOpAttribute attr = ctx.GetOpcodeInfo(inst.Op);
+
+            if (ShouldEmitVarFormDirective(ctx, inst))
+            {
+                writer.Write(INDENT);
+                writer.WriteLine(".FORM VAR");
+            }
+
+            foreach (var operandIndex in GetOperandsRequiringLong(attr, inst))
+            {
+                writer.Write(INDENT);
+                writer.WriteLine(".OPERAND {0},LONG", operandIndex);
+            }
+
+            // Check if this is a long-form JUMP instruction
+            bool isJumpInstruction = attr.ClassicName.Equals("JUMP", StringComparison.OrdinalIgnoreCase);
+            bool usesWordOperand = isJumpInstruction &&
+                                   inst.OperandTypes.Length > 0 &&
+                                   inst.OperandTypes[0] == OperandType.Word;
+
+            // If long-form JUMP, emit .OPERAND directive so the assembler preserves word encoding
+            if (usesWordOperand)
+            {
+                writer.Write(INDENT);
+                writer.WriteLine(".OPERAND 1,LONG");
+            }
+
             // label or indent
             if (inst.Parent == null)
                 writer.Write(INDENT);
             else
                 writer.Write(INST_LABEL, inst.PC);
-
-            ZOpAttribute attr = ctx.GetOpcodeInfo(inst.Op);
 
             // instruction name
             writer.Write(attr.ClassicName);
@@ -260,7 +313,8 @@ namespace Dezapf
                         {
                             if ((attr.Flags & ZOpFlags.Call) != 0)
                             {
-                                writer.Write("ZR${0:X4}", operands[i]);
+                                var unpackedAddr = ctx.UnpackAddress(operands[i], ctx.Header.RoutineOffset);
+                                writer.Write("ZR${0:X5}", unpackedAddr);
                                 continue;
                             }
                             if ((attr.Flags & ZOpFlags.Label) != 0)
@@ -351,6 +405,71 @@ namespace Dezapf
             writer.WriteLine();
         }
 
+        static bool ShouldEmitVarFormDirective(Context ctx, Instruction inst)
+        {
+            if (ctx.Image == null)
+                return false;
+
+            int pc = inst.PC;
+            if (pc < 0 || pc >= ctx.Image.Length)
+                return false;
+
+            byte firstByte = ctx.Image[pc];
+            if (firstByte < 0xC0 || firstByte >= 0xE0)
+                return false;
+
+            var operandTypes = inst.OperandTypes;
+            int operandCount = 0;
+            foreach (var type in operandTypes)
+            {
+                byte t = (byte)type;
+                if (t > 2)
+                    continue;
+
+                operandCount++;
+                if (t == (byte)OperandType.Word)
+                    return false;
+            }
+
+            return operandCount <= 2;
+        }
+
+        static IEnumerable<int> GetOperandsRequiringLong(ZOpAttribute attr, Instruction inst)
+        {
+            var operandTypes = inst.OperandTypes;
+            var operands = inst.Operands;
+            int count = Math.Min(operandTypes.Length, operands.Length);
+
+            for (int i = 0; i < count; i++)
+            {
+                if (operandTypes[i] != OperandType.Word)
+                    continue;
+
+                if (!OperandIsNumeric(attr, inst, i))
+                    continue;
+
+                if (operands[i] <= 255)
+                    yield return i + 1;
+            }
+        }
+
+        static bool OperandIsNumeric(ZOpAttribute attr, Instruction inst, int index)
+        {
+            if (index == 0)
+            {
+                if ((attr.Flags & ZOpFlags.Call) != 0)
+                    return false;
+
+                if ((attr.Flags & ZOpFlags.Label) != 0)
+                    return false;
+
+                if ((attr.Flags & ZOpFlags.IndirectVar) != 0)
+                    return false;
+            }
+
+            return true;
+        }
+
         protected static string FormatVariable(ushort num)
         {
             if (num == 0)
@@ -362,6 +481,9 @@ namespace Dezapf
         public override void FormatData(TextWriter writer, Context ctx, DataChunk data)
         {
             const int PERLINE = 16;
+
+            // Dump raw bytes for this data chunk
+            DumpRaw(writer, ctx, data.PC, data.Length);
 
             writer.Write(INDENT);
 
@@ -418,6 +540,37 @@ namespace Dezapf
     /// </remarks>
     class ZapRoundTripStyle : ZapOutputStyle
     {
+        public override void FormatHeader(TextWriter writer, Context ctx, HeaderChunk hdrChunk)
+        {
+            // Call base implementation for comments and .TIME directive
+            base.FormatHeader(writer, ctx, hdrChunk);
+            
+            // Add header constants to preserve exact header values
+            Header hdr = hdrChunk.Header;
+            
+            writer.WriteLine();
+            writer.WriteLine(INDENT + "; Header constants for round-trip assembly");
+            
+            // Release number
+            writer.WriteLine(INDENT + "RELEASEID={0}", hdr.Release);
+            
+            // FLAGS2
+            writer.WriteLine(INDENT + "FLAGS2={0}", hdr.Flags2);
+            
+            // Extension table
+            if (hdr.ExtensionTable != 0)
+                writer.WriteLine(INDENT + "EXTAB={0}", hdr.ExtensionTable);
+            
+            // Terminating characters table
+            if (hdr.TCharsTable != 0)
+                writer.WriteLine(INDENT + "TCHARS={0}", hdr.TCharsTable);
+            
+            // Alphabet table
+            if (hdr.AlphabetTable != 0)
+                writer.WriteLine(INDENT + "ALPHABET={0}", hdr.AlphabetTable);
+            
+            writer.WriteLine();
+        }
     }
 
     /// <summary>

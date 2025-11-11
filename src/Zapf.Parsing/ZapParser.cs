@@ -59,6 +59,8 @@ namespace Zapf.Parsing
                 { ".INSERT", ParseInsertDirective },
                 { ".LANG", ParseLangDirective },
                 { ".LEN", ParseLenDirective },
+                { ".FORM", ParseFormDirective },
+                { ".OPERAND", ParseOperandDirective },
                 { ".NEW", ParseNewDirective },
                 { ".OBJECT", ParseObjectDirective },
                 { ".PROP", ParsePropDirective },
@@ -644,6 +646,44 @@ namespace Zapf.Parsing
         {
             SkipLine();
             return new NullDirective();
+        }
+
+        AsmLine ParseFormDirective(Token head)
+        {
+            Debug.Assert(toks != null);
+
+            var formToken = toks.NextToken();
+            if (formToken.Type != TokenType.Symbol)
+            {
+                ReportErrorAndSkipLine(formToken, ".FORM expects a form specifier");
+                return new NullDirective();
+            }
+
+            MatchEndOfDirective();
+            return new FormDirective(formToken.Text);
+        }
+
+        AsmLine ParseOperandDirective(Token head)
+        {
+            Debug.Assert(toks != null);
+
+            var index = ParseExpr();
+
+            if (!TryMatchComma())
+            {
+                ReportErrorAndSkipLine(toks.PeekToken(), "expected ',' after operand index");
+                return new NullDirective();
+            }
+
+            var modeToken = toks.NextToken();
+            if (modeToken.Type != TokenType.Symbol)
+            {
+                ReportErrorAndSkipLine(modeToken, ".OPERAND expects an encoding specifier");
+                return new NullDirective();
+            }
+
+            MatchEndOfDirective();
+            return new OperandDirective(index, modeToken.Text);
         }
 
         AsmLine ParseAlignDirective(Token head)

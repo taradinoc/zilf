@@ -36,7 +36,7 @@ using CommandParseResult = System.CommandLine.ParseResult;
 
 namespace Zapf
 {
-    static class Program
+    public static class Program
     {
         // TODO: Blorb output
 
@@ -660,7 +660,7 @@ namespace Zapf
         /// <param name="node">The node to process.</param>
         /// <param name="nodeIndex">The current node's index. The method may change this
         /// to rewind the source file.</param>
-        static void PassOne(Context ctx, AsmLine node, ref int nodeIndex)
+    static void PassOne(Context ctx, AsmLine node, ref int nodeIndex)
         {
             switch (node)
             {
@@ -946,8 +946,8 @@ namespace Zapf
         /// </remarks>
         /// <param name="ctx">The current context.</param>
         /// <param name="node">The node to process.</param>
-        /// <param name="nodeIndex">The current node's index. The method may change this
-        /// to rewind the source file.</param>
+    /// <param name="nodeIndex">The current node's index. The method may change this
+    /// to rewind the source file.</param>
         static void PassTwo(Context ctx, AsmLine node, ref int nodeIndex)
         {
             switch (node)
@@ -1186,7 +1186,8 @@ namespace Zapf
         static void HandleDirective(Context ctx, AsmLine node, int nodeIndex, bool assembling)
         {
             // local scope is terminated by any directive except .DEBUG_LINE (not counting labels)
-            if (node is not DebugLineDirective)
+            // or directives that apply to the following instruction (.FORM/.OPERAND)
+            if (node is not (DebugLineDirective or FormDirective or OperandDirective))
                 ctx.EndReassemblyScope(nodeIndex);
 
             switch (node)
@@ -1233,6 +1234,58 @@ namespace Zapf
 
                 case FunctDirective functNode:
                     BeginFunction(ctx, functNode, nodeIndex);
+                    break;
+
+                case FormDirective formNode:
+                    var form = formNode.FormSpecifier;
+                    if (string.Equals(form, "2OP", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ctx.PendingInstructionForm = InstructionForm.TwoOp;
+                    }
+                    else if (string.Equals(form, "VAR", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ctx.PendingInstructionForm = InstructionForm.Var;
+                    }
+                    else
+                    {
+                        Errors.ThrowSerious(node, "unrecognized form specifier: {0}", form);
+                    }
+                    break;
+
+                case OperandDirective operandNode:
+                    var indexSym = EvalExpr(ctx, operandNode.OperandIndex);
+                    if (indexSym.Type != SymbolType.Constant)
+                        Errors.ThrowSerious(operandNode.OperandIndex, ".OPERAND index must be constant");
+
+                    int operandIndex = indexSym.Value;
+                    if (operandIndex < 1)
+                        Errors.ThrowSerious(operandNode.OperandIndex, ".OPERAND index must be >= 1");
+
+                    OperandEncoding encoding;
+                    var enc = operandNode.EncodingSpecifier;
+                    if (string.Equals(enc, "LONG", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(enc, "WORD", StringComparison.OrdinalIgnoreCase))
+                    {
+                        encoding = OperandEncoding.Word;
+                    }
+                    else if (string.Equals(enc, "SHORT", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(enc, "BYTE", StringComparison.OrdinalIgnoreCase))
+                    {
+                        encoding = OperandEncoding.Byte;
+                    }
+                    else if (string.Equals(enc, "VAR", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(enc, "VARIABLE", StringComparison.OrdinalIgnoreCase))
+                    {
+                        encoding = OperandEncoding.Variable;
+                    }
+                    else
+                    {
+                        Errors.ThrowSerious(node, "unrecognized operand encoding: {0}", enc);
+                        break;
+                    }
+
+                    ctx.PendingOperandEncodings ??= new Dictionary<int, OperandEncoding>();
+                    ctx.PendingOperandEncodings[operandIndex] = encoding;
                     break;
 
                 case AlignDirective alignNode:
@@ -1767,7 +1820,7 @@ namespace Zapf
         static readonly ushort[] tmpOperandValues = new ushort[8];
         static readonly Fixup?[] tmpOperandFixups = new Fixup[8];
 
-        static void HandleInstruction(Context ctx, Instruction node)
+    static void HandleInstruction(Context ctx, Instruction node)
         {
             Debug.Assert(ctx.OpcodeDict != null);
             var pair = ctx.OpcodeDict[node.Name];
@@ -1783,10 +1836,86 @@ namespace Zapf
                 attr = pair.Value;
             }
 
-            // force a 2OP instruction to EXT mode if it uses long constants
-            // or has more than 2 operands
-            if (opcode < 128 && (operandCount > 2 || node.Operands.Any(o => IsLongConstant(ctx, o))))
+            var forcedForm = ctx.PendingInstructionForm;
+            ctx.PendingInstructionForm = null;
+
+            var forcedOperandEncodings = ctx.PendingOperandEncodings;
+            ctx.PendingOperandEncodings = null;
+
+            if (forcedOperandEncodings != null)
+            {
+                foreach (var index in forcedOperandEncodings.Keys)
+                {
+                    if (index < 1 || index > operandCount)
+                        Errors.ThrowSerious(node, ".OPERAND index {0} out of range for instruction {1}", index, node.Name);
+                }
+            }
+
+            bool forceTwoOp = forcedForm == InstructionForm.TwoOp;
+            bool forceVarForm = forcedForm == InstructionForm.Var;
+
+            if (forceTwoOp)
+            {
+                if (opcode >= 224)
+                {
+                    Errors.ThrowSerious(node, ".FORM 2OP is not valid for instruction {0}", node.Name);
+                }
+                else if (opcode >= 192)
+                {
+                    opcode -= 192;
+                }
+
+                if (operandCount > 2)
+                    Errors.ThrowSerious(node, ".FORM 2OP cannot be applied because {0} has {1} operands", node.Name, operandCount);
+            }
+
+            if (forceVarForm && opcode < 192)
+            {
+                if (opcode < 128)
+                {
+                    opcode += 192;
+                }
+                else
+                {
+                    Errors.ThrowSerious(node, ".FORM VAR is only valid for 2OP instructions");
+                }
+            }
+
+            // force a 2OP instruction to VAR mode if it uses long constants
+            // or has more than 2 operands (unless explicitly forced to remain 2OP)
+            if (opcode < 128 && !forceTwoOp && (operandCount > 2 || node.Operands.Any(o => IsLongConstant(ctx, o))))
                 opcode += 192;
+
+            OperandEncoding? ForcedEncodingFor(int operandIndex)
+            {
+                if (forcedOperandEncodings == null || !forcedOperandEncodings.TryGetValue(operandIndex + 1, out var encoding))
+                    return null;
+                return encoding;
+            }
+
+            void ApplyForcedEncoding(int operandIndex)
+            {
+                var forced = ForcedEncodingFor(operandIndex);
+                if (forced == null)
+                    return;
+
+                switch (forced.Value)
+                {
+                    case OperandEncoding.Byte:
+                        if (tmpOperandValues[operandIndex] > 255)
+                            Errors.ThrowSerious(node, ".OPERAND {0},BYTE cannot encode value {1}", operandIndex + 1, tmpOperandValues[operandIndex]);
+                        tmpOperandTypes[operandIndex] = OPERAND_BYTE;
+                        break;
+
+                    case OperandEncoding.Word:
+                        tmpOperandTypes[operandIndex] = OPERAND_WORD;
+                        break;
+
+                    case OperandEncoding.Variable:
+                        tmpOperandTypes[operandIndex] = OPERAND_VAR;
+                        break;
+                }
+            }
 
             if (opcode < 128)
             {
@@ -1797,10 +1926,15 @@ namespace Zapf
                 var b = (byte)opcode;
                 EvalOperand(ctx, node.Operands[0], out tmpOperandTypes[0], out tmpOperandValues[0], out tmpOperandFixups[0]);
                 EvalOperand(ctx, node.Operands[1], out tmpOperandTypes[1], out tmpOperandValues[1], out tmpOperandFixups[1]);
+
+                ApplyForcedEncoding(0);
+                ApplyForcedEncoding(1);
+
+                if (tmpOperandTypes[0] == OPERAND_WORD || tmpOperandTypes[1] == OPERAND_WORD)
+                    Errors.ThrowSerious(node, ".FORM 2OP requires byte or variable operands; use .FORM VAR for word operands");
+
                 Debug.Assert(tmpOperandFixups[0] == null);
                 Debug.Assert(tmpOperandFixups[1] == null);
-                Debug.Assert(tmpOperandTypes[0] != OPERAND_WORD);
-                Debug.Assert(tmpOperandTypes[1] != OPERAND_WORD);
 
                 if (tmpOperandTypes[0] == OPERAND_VAR)
                     b |= 0x40;
@@ -1821,11 +1955,13 @@ namespace Zapf
                 EvalOperand(ctx, node.Operands[0], out tmpOperandTypes[0], out tmpOperandValues[0], out tmpOperandFixups[0],
                     (attr.Flags & ZOpFlags.Label) != 0);
 
-                if ((attr.Flags & ZOpFlags.Label) != 0)
-                {
-                    // correct label offset (-3 for the opcode and operand, +2 for the normal jump bias)
-                    tmpOperandValues[0]--;
-                }
+                    if ((attr.Flags & ZOpFlags.Label) != 0)
+                    {
+                        // correct label offset (-3 for the opcode and operand, +2 for the normal jump bias)
+                        tmpOperandValues[0]--;
+                    }
+
+                ApplyForcedEncoding(0);
 
                 b |= (byte)(tmpOperandTypes[0] << 4);
 
@@ -1885,6 +2021,7 @@ namespace Zapf
                     {
                         EvalOperand(ctx, node.Operands[i], out t, out tmpOperandValues[i], out tmpOperandFixups[i]);
                         tmpOperandTypes[i] = t;
+                        ApplyForcedEncoding(i);
                     }
                     else
                         t = OPERAND_OMITTED;

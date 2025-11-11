@@ -28,6 +28,19 @@ using Zilf.Common;
 
 namespace Zapf
 {
+    public enum InstructionForm
+    {
+        TwoOp,
+        Var,
+    }
+
+    public enum OperandEncoding
+    {
+        Byte,
+        Word,
+        Variable,
+    }
+
     public delegate IDebugFileWriter GetDebugWriterDelegate(Stream stream);
 
     public sealed class Context : IErrorSink, IDisposable
@@ -76,7 +89,17 @@ namespace Zapf
 
         public IFileSystem FileSystem { get; set; } = PhysicalFileSystem.Instance;
 
-        public GetDebugWriterDelegate? InterceptGetDebugWriter;
+    public GetDebugWriterDelegate? InterceptGetDebugWriter;
+
+    /// <summary>
+    /// Forced instruction form for the next instruction, if any.
+    /// </summary>
+    public InstructionForm? PendingInstructionForm;
+
+    /// <summary>
+    /// Forced operand encodings for the next instruction, indexed by 1-based operand position.
+    /// </summary>
+    public Dictionary<int, OperandEncoding>? PendingOperandEncodings;
 
         char? LanguageEscapeChar { get; set; }
 
@@ -165,6 +188,8 @@ namespace Zapf
 
             LanguageEscapeChar = null;
             LanguageSpecialChars.Clear();
+            PendingInstructionForm = null;
+            PendingOperandEncodings = null;
         }
 
         public void WriteByte(byte b)
