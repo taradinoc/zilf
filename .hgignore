@@ -33,6 +33,7 @@ Examples/**/*.code-workspace
 Examples/**/*.bat
 .mypy_cache
 venv
+.venv
 Package/Debug/**
 Package/Release/**
 .nuget
