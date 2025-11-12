@@ -45,7 +45,7 @@ namespace Zilf.ZModel
     /// </list>
     /// </para>
     /// </remarks>
-    class SyntaxMatcher
+    sealed class SyntaxMatcher
     {
         enum PatternType
         {
