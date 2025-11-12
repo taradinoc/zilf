@@ -141,7 +141,7 @@ namespace Zilf.Language
                 new object[] { message }, MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
-        [return: NotNullIfNotNull("errorFrame")]
+        [return: NotNullIfNotNull(nameof(errorFrame))]
         static string? MakeStackTrace(Frame? errorFrame)
         {
             if (errorFrame == null)
@@ -200,7 +200,7 @@ namespace Zilf.Language
                 messageArgs, MakeStackTrace(DiagnosticContext.Current.Frame));
         }
 
-        [return: NotNullIfNotNull("errorFrame")]
+        [return: NotNullIfNotNull(nameof(errorFrame))]
         static string? MakeStackTrace(Frame? errorFrame)
         {
             if (errorFrame == null)

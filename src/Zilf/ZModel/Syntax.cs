@@ -321,7 +321,7 @@ namespace Zilf.ZModel
             }
         }
 
-        [return: NotNullIfNotNull("list")]
+        [return: NotNullIfNotNull(nameof(list))]
         static ZilAtom? ParseFindFlag(ZilList? list)
         {
             if (list == null)

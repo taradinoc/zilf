@@ -31,7 +31,7 @@ namespace Zilf.Interpreter.Values
         {
         }
 
-        public ZilList([NotNullIfNotNull("rest")] ZilObject? first, [NotNullIfNotNull("first")] ZilListoidBase? rest)
+        public ZilList([NotNullIfNotNull(nameof(rest))] ZilObject? first, [NotNullIfNotNull(nameof(first))] ZilListoidBase? rest)
             : base(first, rest) { }
 
         [ChtypeMethod]

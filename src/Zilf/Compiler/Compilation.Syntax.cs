@@ -408,7 +408,7 @@ namespace Zilf.Compiler
             }
         }
 
-        [return: NotNullIfNotNull("word")]
+        [return: NotNullIfNotNull(nameof(word))]
         IOperand? GetPreposition(IWord? word)
         {
             if (word == null)

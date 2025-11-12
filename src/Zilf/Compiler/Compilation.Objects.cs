@@ -33,7 +33,7 @@ namespace Zilf.Compiler
 {
     partial class Compilation
     {
-        [return: NotNullIfNotNull("flag")]
+        [return: NotNullIfNotNull(nameof(flag))]
         IFlagBuilder? GetFlag(ZilAtom? flag)
         {
             if (flag == null)
