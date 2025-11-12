@@ -372,6 +372,18 @@ namespace Zilf.Tests.Integration
             return Task.FromResult(new CodeMatchingResult(output));
         }
 
+        public Task<CodeMatchingResult> GeneratesCodeMatchingAsync(Predicate<string> outputPredicate)
+        {
+            return GeneratesCodeMatchingAsync(output => CheckOutputPassesPredicate(output, outputPredicate));
+        }
+
+        public static void CheckOutputPassesPredicate(string output, Predicate<string> outputPredicate)
+        {
+            Assert.IsTrue(
+                outputPredicate(output),
+                "Output did not pass the provided predicate.");
+        }
+
         public sealed class CodeMatchingResult(string output)
         {
             public string Output { get; } = output;

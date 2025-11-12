@@ -146,5 +146,91 @@ namespace Zilf.Tests.Integration
                     "<=? <GET ,PREACTIONS 2> -1>",
                     "<=? <GET ,PREACTIONS 3> 0>");
         }
+
+        [TestMethod]
+        public async Task REMOVE_SYNTAX_Should_Remove_Matching_Syntax_By_Verb()
+        {
+            await AssertGlobals(
+                "<SYNTAX TAKE OBJECT = V-TAKE>",
+                "<SYNTAX TAKE OBJECT FROM OBJECT = V-TAKE-FROM>",
+                "<SYNTAX DROP OBJECT = V-DROP>",
+                "<ROUTINE V-TAKE () <>>",
+                "<ROUTINE V-TAKE-FROM () <>>",
+                "<ROUTINE V-DROP () <>>",
+                "<REMOVE-SYNTAX TAKE>")
+                .GeneratesCodeNotMatchingAsync("V-TAKE");
+        }
+
+        [TestMethod]
+        public async Task REMOVE_SYNTAX_Should_Remove_Matching_Syntax_By_Action()
+        {
+            await AssertGlobals(
+                "<SYNTAX TAKE OBJECT = V-TAKE>",
+                "<SYNTAX GRAB OBJECT = V-TAKE>",
+                "<SYNTAX DROP OBJECT = V-DROP>",
+                "<ROUTINE V-TAKE () <>>",
+                "<ROUTINE V-DROP () <>>",
+                "<REMOVE-SYNTAX * = V-TAKE>")
+                .GeneratesCodeNotMatchingAsync("V-TAKE");
+        }
+
+        [TestMethod]
+        public async Task REMOVE_SYNTAX_Should_Remove_Matching_Syntax_By_Preposition()
+        {
+            await AssertGlobals(
+                "<SYNTAX PUT OBJECT IN OBJECT = V-PUT-IN>",
+                "<SYNTAX PUT OBJECT ON OBJECT = V-PUT-ON>",
+                "<SYNTAX TAKE OBJECT = V-TAKE>",
+                "<ROUTINE V-PUT-IN () <>>",
+                "<ROUTINE V-PUT-ON () <>>",
+                "<ROUTINE V-TAKE () <>>",
+                "<REMOVE-SYNTAX PUT OBJECT IN>")
+                .GeneratesCodeMatchingAsync(code => code.Contains("V-PUT-ON") && !code.Contains("V-PUT-IN"));
+        }
+
+        [TestMethod]
+        public async Task REMOVE_SYNTAX_Should_Match_Wildcard_Patterns()
+        {
+            await AssertGlobals(
+                "<SYNTAX PUT OBJECT IN OBJECT = V-PUT-IN>",
+                "<SYNTAX PUT OBJECT ON OBJECT = V-PUT-ON>",
+                "<SYNTAX TAKE OBJECT = V-TAKE>",
+                "<ROUTINE V-PUT-IN () <>>",
+                "<ROUTINE V-PUT-ON () <>>",
+                "<ROUTINE V-TAKE () <>>",
+                "<REMOVE-SYNTAX PUT * * OBJECT>")
+                .GeneratesCodeNotMatchingAsync("V-PUT");
+        }
+
+        [TestMethod]
+        public async Task REMOVE_SYNTAX_Should_Match_FALSE_As_Nothing()
+        {
+            await AssertGlobals(
+                "<SYNTAX TAKE INVENTORY OBJECT (FIND KLUDGEBIT) = V-INVENTORY>",
+                "<SYNTAX TAKE OBJECT = V-YOINK>",
+                "<SYNTAX TAKE = V-TAKE>",
+                "<ROUTINE V-INVENTORY () <>>",
+                "<ROUTINE V-TAKE () <>>",
+                "<REMOVE-SYNTAX TAKE <>>")
+                .GeneratesCodeMatchingAsync(code => code.Contains("V-INVENTORY") && !code.Contains("V-YOINK") && !code.Contains("V-TAKE"));
+
+            await AssertGlobals(
+                "<SYNTAX TAKE INVENTORY OBJECT (FIND KLUDGEBIT) = V-INVENTORY>",
+                "<SYNTAX TAKE OBJECT = V-YOINK>",
+                "<SYNTAX TAKE = V-TAKE>",
+                "<ROUTINE V-INVENTORY () <>>",
+                "<ROUTINE V-TAKE () <>>",
+                "<REMOVE-SYNTAX TAKE <> * = *>")
+                .GeneratesCodeMatchingAsync(code => code.Contains("V-INVENTORY") && !code.Contains("V-YOINK") && !code.Contains("V-TAKE"));
+
+            await AssertGlobals(
+                "<SYNTAX TAKE INVENTORY OBJECT (FIND KLUDGEBIT) = V-INVENTORY>",
+                "<SYNTAX TAKE OBJECT = V-YOINK>",
+                "<SYNTAX TAKE = V-TAKE>",
+                "<ROUTINE V-INVENTORY () <>>",
+                "<ROUTINE V-TAKE () <>>",
+                "<REMOVE-SYNTAX TAKE <> OBJECT>")
+                .GeneratesCodeMatchingAsync(code => code.Contains("V-INVENTORY") && !code.Contains("V-YOINK") && code.Contains("V-TAKE"));
+        }
     }
 }

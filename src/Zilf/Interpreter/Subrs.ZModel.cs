@@ -1377,6 +1377,25 @@ namespace Zilf.Interpreter
             return syntax.Verb.Atom;
         }
 
+        [Subr("REMOVE-SYNTAX")]
+        public static ZilObject REMOVE_SYNTAX(Context ctx, ZilObject[] args)
+        {
+            // <REMOVE-SYNTAX verb-pattern [[prep-pattern] object-pattern] [[prep-pattern] object-pattern] [= action-pattern]>
+            //  where verb-pattern, prep-pattern, object-pattern, and action-pattern can be <>, *, or an appropriate atom
+            //        <> matches nothing, * matches any atom or nothing
+            //        omitted parts default to *
+            // Example:
+            //    <REMOVE-SYNTAX TAKE>             matches TAKE, TAKE INVENTORY, TAKE OBJECT FROM OBJECT
+            //    <REMOVE-SYNTAX PUT * * OBJECT>   matches PUT OBJECT IN OBJECT, PUT OBJECT ON OBJECT
+            //    <REMOVE-SYNTAX PUT OBJECT IN>    matches PUT OBJECT IN OBJECT
+            //    <REMOVE-SYNTAX * = V-TAKE-FROM>  matches any verb syntax with action V-TAKE-FROM
+            //    <REMOVE-SYNTAX *>                matches all syntaxes (!)
+
+            var matcher = new SyntaxMatcher(args);
+            ctx.ZEnvironment.Syntaxes.RemoveAll(s => matcher.Matches(s));
+            return ctx.TRUE;
+        }
+
         static ZilAtom PerformSynonym(Context ctx, ZilAtom original, ZilAtom[] synonyms, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type synonymType)
         {
             if (!ctx.ZEnvironment.Vocabulary.TryGetValue(original, out var oldWord))

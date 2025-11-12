@@ -110,6 +110,8 @@ namespace Zilf.Diagnostics
         public const int _0_Unexpected_FORM_In_Arg_Spec_1 = 130;
         [Error("{0}: unrecognized clause in arg spec: {1}")]
         public const int _0_Unrecognized_Clause_In_Arg_Spec_1 = 131;
+        [Error("unrecognized token in syntax pattern: {0}")]
+        public const int Unrecognized_Token_In_Syntax_Pattern_0 = 132;
 
         // Type/Format/DECL - 0200
 

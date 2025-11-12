@@ -24,6 +24,11 @@ and this project adheres to
 
 - ZAPF: Added .FORM and .OPERAND directives for use by Dezapf.
 
+- Added `REMOVE-SYNTAX` to remove previously defined syntax rules based on a
+  pattern. `<REMOVE-SYNTAX GET *>` removes all syntaxes for the verb GET,
+  `<REMOVE-SYNTAX * = V-TAKE>` removes all syntaxes with the action routine
+  V-TAKE, `<REMOVE-SYNTAX GET IN OBJECT>` removes that specific syntax, etc.
+
 ### Changed
 
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
