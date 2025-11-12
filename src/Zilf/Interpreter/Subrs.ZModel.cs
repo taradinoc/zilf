@@ -1453,6 +1453,15 @@ namespace Zilf.Interpreter
             return PerformSynonym(ctx, original, synonyms, typeof(DirSynonym));
         }
 
+        [Subr("REMOVE-SYNONYM")]
+        public static ZilObject REMOVE_SYNONYM(Context ctx, ZilAtom[] synonyms)
+        {
+            var synonymSet = new HashSet<ZilAtom>(synonyms);
+            ctx.ZEnvironment.Synonyms.RemoveAll(
+                s => synonymSet.Contains(s.OriginalWord.Atom) || synonymSet.Contains(s.SynonymWord.Atom));
+            return ctx.TRUE;
+        }
+
         #endregion
 
         #region Z-Code: Tell

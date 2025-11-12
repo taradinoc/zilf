@@ -232,5 +232,21 @@ namespace Zilf.Tests.Integration
                 "<REMOVE-SYNTAX TAKE <> OBJECT>")
                 .GeneratesCodeMatchingAsync(code => code.Contains("V-INVENTORY") && !code.Contains("V-YOINK") && code.Contains("V-TAKE"));
         }
+
+        [TestMethod]
+        public async Task REMOVE_SYNONYM_Should_Remove_Synonyms()
+        {
+            await AssertGlobals(
+                "<SYNTAX TAKE OBJECT = V-TAKE>",
+                "<SYNONYM TAKE GET GRAB>",
+                "<REMOVE-SYNONYM GET>",
+                "<SYNTAX GET OBJECT = V-GET>",
+                "<ROUTINE V-TAKE () <>>",
+                "<ROUTINE V-GET () <>>",
+                "<ROUTINE GET-SYNTAXES (WORD) <GET ,VTBL <- 255 <GETB .WORD 5>>>>")
+                .ImpliesAsync(
+                    "<=? <GET-SYNTAXES ,W?TAKE> <GET-SYNTAXES ,W?GRAB>>",
+                    "<N=? <GET-SYNTAXES ,W?TAKE> <GET-SYNTAXES ,W?GET>>");
+        }
     }
 }

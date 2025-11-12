@@ -29,6 +29,10 @@ and this project adheres to
   `<REMOVE-SYNTAX * = V-TAKE>` removes all syntaxes with the action routine
   V-TAKE, `<REMOVE-SYNTAX GET IN OBJECT>` removes that specific syntax, etc.
 
+- Added `REMOVE-SYNONYM` to undo the effect of a previous `SYNONYM` definition.
+  `<REMOVE-SYNONYM GRAB>` will undo both `<SYNONYM GRAB TAKE>` and
+  `<SYNONYM TAKE GRAB>`.
+
 ### Changed
 
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
