@@ -89,21 +89,21 @@ namespace Zapf
 
         public IFileSystem FileSystem { get; set; } = PhysicalFileSystem.Instance;
 
-    public GetDebugWriterDelegate? InterceptGetDebugWriter;
+        public GetDebugWriterDelegate? InterceptGetDebugWriter;
 
-    /// <summary>
-    /// Forced instruction form for the next instruction, if any.
-    /// </summary>
-    public InstructionForm? PendingInstructionForm;
+        /// <summary>
+        /// Forced instruction form for the next instruction, if any.
+        /// </summary>
+        public InstructionForm? PendingInstructionForm;
 
-    /// <summary>
-    /// Forced operand encodings for the next instruction, indexed by 1-based operand position.
-    /// </summary>
-    public Dictionary<int, OperandEncoding>? PendingOperandEncodings;
+        /// <summary>
+        /// Forced operand encodings for the next instruction, indexed by 1-based operand position.
+        /// </summary>
+        public Dictionary<int, OperandEncoding>? PendingOperandEncodings;
 
         char? LanguageEscapeChar { get; set; }
 
-        IDictionary<char, char> LanguageSpecialChars { get; }
+        Dictionary<char, char> LanguageSpecialChars { get; }
 
         Stream? stream;
         Stream? prevStream;
@@ -140,7 +140,7 @@ namespace Zapf
         /// When one of these labels is defined, we rewind to the beginning of the
         /// reassembly scope and start again using the new value.
         /// </remarks>
-        readonly Dictionary<string, bool> reassemblyLabels; // TODO: convert to HashSet
+        readonly HashSet<string> reassemblyLabels;
 
         /// <summary>
         /// The global labels that have been encountered in the current reassembly scope
@@ -160,11 +160,11 @@ namespace Zapf
             LocalSymbols = new Dictionary<string, Symbol>(25);
             GlobalSymbols = new Dictionary<string, Symbol>(200);
             Fixups = new List<Fixup>(200);
-            DebugFileMap = new Dictionary<string, Symbol>();
+            DebugFileMap = [];
 
             fileStack = new Stack<string>();
-            reassemblyLabels = new Dictionary<string, bool>();
-            deferredGlobalLabelChecks = new Dictionary<Symbol, Action>();
+            reassemblyLabels = [];
+            deferredGlobalLabelChecks = [];
 
             ZVersion = Program.DEFAULT_ZVERSION;
 
@@ -641,22 +641,19 @@ namespace Zapf
 
         public bool CausesReassembly(string label)
         {
-            return reassemblyLabels.ContainsKey(label);
+            return reassemblyLabels.Contains(label);
         }
 
         public bool InReassemblyScope => reassemblyPosition != -1;
 
         public void MarkUnknownBranch(string label)
         {
-            reassemblyLabels[label] = true;
+            reassemblyLabels.Add(label);
         }
 
         public void DeferGlobalLabelStabilityCheck(Symbol sym, Action checkMismatch)
         {
-            if (!deferredGlobalLabelChecks.ContainsKey(sym))
-            {
-                deferredGlobalLabelChecks.Add(sym, checkMismatch);
-            }
+            deferredGlobalLabelChecks.TryAdd(sym, checkMismatch);
         }
 
         public int Reassemble(string curLabel)
