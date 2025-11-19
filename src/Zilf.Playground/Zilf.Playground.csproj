@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
     <Nullable>warnings</Nullable>
@@ -16,12 +16,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BlazorMonaco" Version="3.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.9" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="9.0.9" />
-    <PackageReference Include="System.Net.Http.Json" Version="9.0.9" />
-    <PackageReference Include="Tewr.BlazorWorker.BackgroundService" Version="5.0.1" />
+    <PackageReference Include="BlazorMonaco" Version="3.4.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.0" />
+    <PackageReference Include="Tewr.BlazorWorker.BackgroundService" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -68,13 +67,9 @@
       <ZilibFiles Include="..\..\zillib\**\*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(SampleFiles)"
-          DestinationFolder="wwwroot\project_templates\%(RecursiveDir)"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(SampleFiles)" DestinationFolder="wwwroot\project_templates\%(RecursiveDir)" SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="@(ZilibFiles)"
-          DestinationFolder="wwwroot\project_templates\zillib\%(RecursiveDir)"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ZilibFiles)" DestinationFolder="wwwroot\project_templates\zillib\%(RecursiveDir)" SkipUnchangedFiles="true" />
 
     <!-- Now register the copied files as Content so they're included in the static asset manifest -->
     <ItemGroup>
