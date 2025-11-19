@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2025 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,17 +18,139 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Zapf.Parsing.Instructions;
+using CommandParseResult = System.CommandLine.ParseResult;
 
 namespace Dezapf
 {
     public static class Program
     {
-        public static void Main(string[] args)
+        static readonly Lazy<DezapfCommandSpec> CommandSpec = new(CreateCommandSpec);
+
+        public static int Main(string[] args)
         {
-            using Stream stream = new FileStream(args[0], FileMode.Open, FileAccess.Read);
+            var normalizedArgs = NormalizeArgs(args);
+            var spec = CommandSpec.Value;
+            var parseResult = spec.RootCommand.Parse(normalizedArgs);
+            return parseResult.Invoke();
+        }
+
+        static DezapfCommandSpec CreateCommandSpec()
+        {
+            var inputArgument = CreateInputArgument();
+            var debugBytesOption = CreateBoolOption("--debug-bytes", "-D",
+                "Enable raw byte dumping for debugging.");
+
+            var root = new RootCommand("Disassemble Z-machine story files into ZAP source files.")
+            {
+                TreatUnmatchedTokensAsErrors = true
+            };
+
+            root.Arguments.Add(inputArgument);
+            root.Options.Add(debugBytesOption);
+
+            var spec = new DezapfCommandSpec(
+                root,
+                inputArgument,
+                debugBytesOption);
+
+            root.SetAction(parseResult =>
+            {
+                if (!TryGetInputFile(parseResult, out var inputFile))
+                {
+                    return 1;
+                }
+
+                var debugDumpRawBytes = parseResult.GetValue(spec.DebugBytesOption);
+                return RunDisassembler(inputFile, debugDumpRawBytes);
+            });
+
+            return spec;
+        }
+
+        static Argument<string> CreateInputArgument()
+        {
+            return new Argument<string>("input")
+            {
+                Description = "Input Z-machine story file.",
+                HelpName = "input.z#"
+            };
+        }
+
+        static Option<bool> CreateBoolOption(string name, string alias, string description)
+        {
+            var option = new Option<bool>(name)
+            {
+                Description = description
+            };
+            option.Aliases.Add(alias);
+            return option;
+        }
+
+        private sealed record class DezapfCommandSpec(
+            RootCommand RootCommand,
+            Argument<string> InputArgument,
+            Option<bool> DebugBytesOption);
+
+        static string[] NormalizeArgs(IReadOnlyList<string> args)
+        {
+            var hasLegacyHelp = false;
+
+            for (int i = 0; i < args.Count; i++)
+            {
+                if (args[i] is "-?" or "/?")
+                {
+                    hasLegacyHelp = true;
+                    break;
+                }
+            }
+
+            if (!hasLegacyHelp)
+            {
+                if (args is string[] array)
+                    return array;
+
+                return args.ToArray();
+            }
+
+            var normalized = new string[args.Count];
+            for (int i = 0; i < args.Count; i++)
+            {
+                normalized[i] = args[i] is "-?" or "/?" ? "--help" : args[i];
+            }
+
+            return normalized;
+        }
+
+        static bool TryGetInputFile(CommandParseResult parseResult, out string inputFile)
+        {
+            if (parseResult.Errors.Count > 0)
+            {
+                inputFile = null!;
+                return false;
+            }
+
+            var spec = CommandSpec.Value;
+            var input = parseResult.GetValue(spec.InputArgument);
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                inputFile = null!;
+                return false;
+            }
+
+            inputFile = input;
+            return true;
+        }
+
+        static int RunDisassembler(string inputFile, bool debugDumpRawBytes)
+        {
+            using var stream = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
+
             // Load entire image for debug raw-byte dumping
             byte[] allBytes;
             using (var mem = new MemoryStream())
@@ -36,16 +158,17 @@ namespace Dezapf
                 stream.CopyTo(mem);
                 allBytes = mem.ToArray();
             }
+
             // Reset position for normal reading
             stream.Seek(0, SeekOrigin.Begin);
 
             var fileLength = (int)stream.Length;
             var rdr = new BinaryReader(stream);
 
-            var ctx = new Context();
-            ctx.Image = allBytes;
-            // Enable debug dumping if environment variable DEZAPF_DEBUG_BYTES=1
-            if (Environment.GetEnvironmentVariable("DEZAPF_DEBUG_BYTES") == "1")
+            var ctx = new Context { Image = allBytes };
+
+            // Enable debug dumping if requested via command line or environment variable
+            if (debugDumpRawBytes || Environment.GetEnvironmentVariable("DEZAPF_DEBUG_BYTES") == "1")
                 ctx.DebugDumpRawBytes = true;
             var ranges = new RangeList<Chunk>();
             var hdr = new Header(rdr);
@@ -121,9 +244,8 @@ namespace Dezapf
                 while (todo.Count == 0 && pendingFuncs.Count > 0)
                 {
                     var funcAddr = pendingFuncs.Dequeue();
-                    if (!pastFuncs.Contains(funcAddr))
+                    if (pastFuncs.Add(funcAddr))
                     {
-                        pastFuncs.Add(funcAddr);
                         stream.Seek(funcAddr, SeekOrigin.Begin);
                         funcAddr++;
 
@@ -251,7 +373,7 @@ namespace Dezapf
                 lastChunk = r.Value;
             }
 
-            //Console.ReadKey();
+            return 0;
         }
 
         static void ComposeFunc(Context ctx, Stream stream, BinaryReader rdr, RangeList<Chunk> ranges, int address)
