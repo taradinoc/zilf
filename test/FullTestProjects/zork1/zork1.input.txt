@@ -1,0 +1,488 @@
+north
+n
+climb tree
+take egg
+d
+s
+e
+open window
+west
+get bottle
+w
+open case
+take sword, lantern
+e
+u
+turn on lantern
+take rope, knife
+turn off lantern
+d
+w
+move rug
+open trap door
+d
+turn on lantern
+n
+hit troll with sword
+diagnose
+w
+s
+e
+u
+take coins
+sw
+e
+s
+se
+ulysses
+nw
+drop coins
+se
+save
+u
+restore
+u
+restore
+u
+restore
+u
+restore
+u
+restore
+u
+restore
+u
+restore
+u
+restore
+u
+give egg to thief
+d
+diagnose
+nw
+se
+nw
+take coins
+se
+e
+e
+open case
+put treasure in case
+save
+d
+open door
+trap
+d
+n
+e
+n
+ne
+e
+n
+take matchbook
+s
+s
+d
+w
+se
+e
+tie rope to railing
+d
+s
+take bell
+s
+take candles and book
+d
+d
+open matchbook
+ring bell
+light match
+light candles with match
+wave candles
+read book
+save
+pour water on bell
+take bell
+put candles out
+drop bottle
+s
+take skull
+n
+u
+n
+n
+n
+w
+w
+s
+s
+e
+drop bell, book
+take painting
+w
+n
+u
+take coins
+put painting in case
+take coins
+w
+w
+save
+u
+restore
+u
+restore
+u
+kill thief with knife
+give coins to thief
+kill thief with knife
+g
+g
+save
+d
+e
+e
+turn off lantern
+diagnose
+z. z. z. z. z
+z. z. z. z. z
+z. z. z. z. z
+z
+z
+z
+diagnose
+put all treasures in case
+w
+turn on lantern
+w
+u
+drop knife
+take all treasures
+take stiletto
+i
+drop sword
+take stiletto
+d
+e
+e
+save
+turn off lantern
+take canary
+e
+e
+n
+n
+u
+wind canary
+d
+take bauble
+s
+e
+w
+w
+put all treasure in case
+save
+d
+turn on lantern
+n
+e
+n
+ne
+e
+n
+n
+push red button
+turn off lantern
+take wrench, screwdriver
+push yellow button
+s
+s
+turn bolt with wrench
+z
+z
+l
+z
+z
+l
+w
+turn on lantern
+n
+drop all but lantern
+n
+n
+take trident
+s
+s
+take trunk
+s
+sw
+sw
+w
+s
+u
+put all treasure in case
+turn off lantern
+save
+e
+open sack
+get garlic
+w
+d
+turn on lantern
+n
+e
+n
+ne
+n
+get all
+n
+u
+n
+n
+l
+u
+n
+n
+w
+n
+w
+n
+take figurine
+e
+put screwdriver in basket
+drop matchbook, candles
+n
+d
+get bracelet
+e
+ne
+se
+sw
+d
+d
+w
+drop all but lantern
+e
+s
+take coal
+n
+u
+u
+n
+e
+s
+n
+u
+s
+take candles, matchbook
+light match
+light candle with match
+put candle, coal in basket
+lower basket
+n
+d
+e
+ne
+se
+sw
+d
+w
+l
+d
+w
+drop all
+w
+take candles, coal, screwdriver
+s
+open lid
+put coal in machine
+close lid
+move switch with screwdriver
+open lid
+take diamond
+n
+put candle, diamond, screwdriver in basket
+go east
+take all but timber
+drop stiletto
+e
+u
+u
+n
+e
+s
+n
+u
+s
+raise basket
+take candle, diamond
+w
+s
+e
+s
+d
+u
+put all treasure in case
+save
+d
+n
+e
+e
+n
+turn off lantern
+ne
+e
+turn bolt with wrench
+s
+d
+take bar
+w
+se
+e
+down
+drop lantern, candles
+take torch
+s
+e
+open coffin
+take sceptre
+w
+s
+d
+n
+n
+n
+w
+w
+s
+u
+put all treasure but sceptre, torch in case
+save
+e
+e
+e
+e
+d
+d
+n
+wave sceptre
+get pot
+e
+e
+n
+n
+get shovel
+ne
+dig in sand with shovel
+g
+g
+g
+get scarab
+sw
+s
+s
+w
+w
+sw
+u
+u
+nw
+w
+w
+w
+put all treasure but torch in case
+save
+d
+n
+e
+e
+e
+u
+nw
+n
+e
+turn bolt wiht wrench
+turn bolt with wrench
+w
+z
+n
+z
+n
+n
+take pump
+s
+s
+e
+d
+take plastic
+u
+s
+d
+e
+e
+drop all but pump, torch
+inflate plastic
+pump
+inflate plastic with pump
+read label
+drop label
+get in boat
+launch boat
+z
+get buoy
+land
+east
+open buoy
+get emerald
+drop buoy
+get out of boat
+deflate boat
+take plastic
+s
+w
+w
+sw
+u
+u
+nw
+w
+w
+w
+put emerald in case
+d
+n
+e
+e
+e
+e
+e
+take all but label
+save
+w
+w
+w
+se
+e
+d
+s
+e
+drop all but torch
+take coffin
+s
+w
+s
+pray
+e
+s
+se
+w
+w
+put all treasure in case
+read parchment
+e
+e
+sw
+nw
+sw
+in
+quit

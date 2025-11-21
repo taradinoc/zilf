@@ -1,0 +1,1628 @@
+ZORK I: The Great Underground Empire
+Infocom interactive fiction - a fantasy story
+Copyright (c) 1981, 1982, 1983, 1984, 1985, 1986 Infocom, Inc. All rights reserved.
+ZORK is a registered trademark of Infocom, Inc.
+Release 0 / Serial number 251121
+
+West of House
+You are standing in an open field west of a white house, with a boarded front door.
+There is a small mailbox here.
+
+> West of House                                                 Score: 0                                                                 Moves: 0                                                                               North of House
+You are facing the north side of a white house. There is no door here, and all the windows are boarded up. To the north a narrow path winds through the trees.
+
+> North of House                                                 Score: 0                                                                 Moves: 1                                                                               Forest Path
+This is a path winding through a dimly lit forest. The path heads north-south here. One particularly large tree with some low branches stands at the edge of the path.
+You hear in the distance the chirping of a song bird.
+
+> Forest Path                                                 Score: 0                                                                 Moves: 2                                                                               Up a Tree
+You are about 10 feet above the ground nestled among some large branches. The nearest branch above you is above your reach.
+Beside you on the branch is a small bird's nest.
+In the bird's nest is a large egg encrusted with precious jewels, apparently scavenged by a childless songbird. The egg is covered with fine gold inlay, and ornamented in lapis lazuli and mother-of-pearl. Unlike most eggs, this one is hinged and closed with a delicate looking clasp. The egg appears extremely fragile.
+You hear in the distance the chirping of a song bird.
+
+> Up a Tree                                                 Score: 0                                                                 Moves: 3                                                                               Taken.
+
+> Up a Tree                                                 Score: 5                                                                 Moves: 4                                                                               Forest Path
+
+> Forest Path                                                 Score: 5                                                                 Moves: 5                                                                               North of House
+
+> North of House                                                 Score: 5                                                                 Moves: 6                                                                               Behind House
+You are behind the white house. A path leads into the forest to the east. In one corner of the house there is a small window which is slightly ajar.
+
+> Behind House                                                 Score: 5                                                                 Moves: 7                                                                               With great effort, you open the window far enough to allow entry.
+
+> Behind House                                                 Score: 5                                                                 Moves: 8                                                                               Kitchen
+You are in the kitchen of the white house. A table seems to have been used recently for the preparation of food. A passage leads to the west and a dark staircase can be seen leading upward. A dark chimney leads down and to the east is a small window which is open.
+On the table is an elongated brown sack, smelling of hot peppers.
+A bottle is sitting on the table.
+The glass bottle contains:
+  A quantity of water
+
+> Kitchen                                                 Score: 15                                                                 Moves: 9                                                                               Taken.
+
+> Kitchen                                                 Score: 15                                                                 Moves: 10                                                                               Living Room
+You are in the living room. There is a doorway to the east, a wooden door with strange gothic lettering to the west, which appears to be nailed shut, a trophy case, and a large oriental rug in the center of the room.
+Above the trophy case hangs an elvish sword of great antiquity.
+A battery-powered brass lantern is on the trophy case.
+
+> Living Room                                                 Score: 15                                                                 Moves: 11                                                                               Opened.
+
+> Living Room                                                 Score: 15                                                                 Moves: 12                                                                               sword: Taken.
+brass lantern: Taken.
+
+> Living Room                                                 Score: 15                                                                 Moves: 13                                                                               Kitchen
+On the table is an elongated brown sack, smelling of hot peppers.
+
+> Kitchen                                                 Score: 15                                                                 Moves: 14                                                                               You have moved into a dark place.
+It is pitch black. You are likely to be eaten by a grue.
+
+> Attic                                                 Score: 15                                                                 Moves: 15                                                                               The brass lantern is now on.
+
+Attic
+This is the attic. The only exit is a stairway leading down.
+A large coil of rope is lying in the corner.
+On a table is a nasty-looking knife.
+
+> Attic                                                 Score: 15                                                                 Moves: 16                                                                               rope: Taken.
+nasty knife: Taken.
+
+> Attic                                                 Score: 15                                                                 Moves: 17                                                                               The brass lantern is now off.
+It is now pitch black.
+
+> Attic                                                 Score: 15                                                                 Moves: 18                                                                               Kitchen
+On the table is an elongated brown sack, smelling of hot peppers.
+
+> Kitchen                                                 Score: 15                                                                 Moves: 19                                                                               Living Room
+
+> Living Room                                                 Score: 15                                                                 Moves: 20                                                                               With a great effort, the rug is moved to one side of the room, revealing the dusty cover of a closed trap door.
+
+> Living Room                                                 Score: 15                                                                 Moves: 21                                                                               The door reluctantly opens to reveal a rickety staircase descending into darkness.
+
+> Living Room                                                 Score: 15                                                                 Moves: 22                                                                               You have moved into a dark place.
+The trap door crashes shut, and you hear someone barring it.
+
+It is pitch black. You are likely to be eaten by a grue.
+Your sword is glowing with a faint blue glow.
+
+> Cellar                                                 Score: 40                                                                 Moves: 23                                                                               The brass lantern is now on.
+
+Cellar
+You are in a dark and damp cellar with a narrow passageway leading north, and a crawlway to the south. On the west is the bottom of a steep metal ramp which is unclimbable.
+
+> Cellar                                                 Score: 40                                                                 Moves: 24                                                                               The Troll Room
+This is a small room with passages to the east and south and a forbidding hole leading west. Bloodstains and deep scratches (perhaps made by an axe) mar the walls.
+A nasty-looking troll, brandishing a bloody axe, blocks all passages out of the room.
+Your sword has begun to glow very brightly.
+
+> The Troll Room                                                 Score: 40                                                                 Moves: 25                                                                               It's curtains for the troll as your sword removes his head.
+Almost as soon as the troll breathes his last breath, a cloud of sinister black fog envelops him, and when the fog lifts, the carcass has disappeared.
+Your sword is no longer glowing.
+
+> The Troll Room                                                 Score: 40                                                                 Moves: 26                                                                               You are in perfect health.
+You can be killed by a serious wound.
+
+> The Troll Room                                                 Score: 40                                                                 Moves: 27                                                                               Maze
+This is part of a maze of twisty little passages, all alike.
+
+> Maze                                                 Score: 40                                                                 Moves: 28                                                                               Maze
+This is part of a maze of twisty little passages, all alike.
+
+> Maze                                                 Score: 40                                                                 Moves: 29                                                                               Maze
+This is part of a maze of twisty little passages, all alike.
+
+> Maze                                                 Score: 40                                                                 Moves: 30                                                                               Maze
+This is part of a maze of twisty little passages, all alike. A skeleton, probably the remains of a luckless adventurer, lies here.
+Beside the skeleton is a rusty knife.
+The deceased adventurer's useless lantern is here.
+There is a skeleton key here.
+An old leather bag, bulging with coins, is here.
+
+> Maze                                                 Score: 40                                                                 Moves: 31                                                                               Taken.
+
+> Maze                                                 Score: 50                                                                 Moves: 32                                                                               Maze
+This is part of a maze of twisty little passages, all alike.
+
+> Maze                                                 Score: 50                                                                 Moves: 33                                                                               Maze
+This is part of a maze of twisty little passages, all alike.
+
+> Maze                                                 Score: 50                                                                 Moves: 34                                                                               Maze
+This is part of a maze of twisty little passages, all alike.
+Your sword is glowing with a faint blue glow.
+
+> Maze                                                 Score: 50                                                                 Moves: 35                                                                               Cyclops Room
+This room has an exit on the northwest, and a staircase leading up.
+A cyclops, who looks prepared to eat horses (much less mere adventurers), blocks the staircase. From his state of health, and the bloodstains on the walls, you gather that he is not very friendly, though he likes people.
+Your sword has begun to glow very brightly.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 36                                                                               The cyclops, hearing the name of his father's deadly nemesis, flees the room by knocking down the wall on the east of the room.
+Your sword is no longer glowing.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 37                                                                               Maze
+This is part of a maze of twisty little passages, all alike.
+
+> Maze                                                 Score: 50                                                                 Moves: 38                                                                               Dropped.
+
+> Maze                                                 Score: 50                                                                 Moves: 39                                                                               Cyclops Room
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 40                                                                               Ok.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 40                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+This is a large room, whose east wall is solid granite. A number of discarded bags, which crumble at your touch, are scattered about on the floor. There is an exit down a staircase.
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+A long, theatrical slash. You catch it on your nasty knife, but the thief twists his knife, and the nasty knife goes flying.
+Fortunately, you still have a sword.
+
+> Treasure Room                                                 Score: 75                                                                 Moves: 41                                                                               Ok.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 40                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+This is a large room, whose east wall is solid granite. A number of discarded bags, which crumble at your touch, are scattered about on the floor. There is an exit down a staircase.
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+A quick thrust pinks your left arm, and blood starts to trickle down.
+
+> Treasure Room                                                 Score: 75                                                                 Moves: 41                                                                               Ok.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 40                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+This is a large room, whose east wall is solid granite. A number of discarded bags, which crumble at your touch, are scattered about on the floor. There is an exit down a staircase.
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+The thief strikes at your wrist, and suddenly your grip is slippery with blood.
+
+> Treasure Room                                                 Score: 75                                                                 Moves: 41                                                                               Ok.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 40                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+This is a large room, whose east wall is solid granite. A number of discarded bags, which crumble at your touch, are scattered about on the floor. There is an exit down a staircase.
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+A quick thrust pinks your left arm, and blood starts to trickle down.
+
+> Treasure Room                                                 Score: 75                                                                 Moves: 41                                                                               Ok.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 40                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+This is a large room, whose east wall is solid granite. A number of discarded bags, which crumble at your touch, are scattered about on the floor. There is an exit down a staircase.
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+The thief draws blood, raking his stiletto across your arm.
+
+> Treasure Room                                                 Score: 75                                                                 Moves: 41                                                                               Ok.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 40                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+This is a large room, whose east wall is solid granite. A number of discarded bags, which crumble at your touch, are scattered about on the floor. There is an exit down a staircase.
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+The stiletto flashes faster than you can follow, and blood wells from your leg.
+
+> Treasure Room                                                 Score: 75                                                                 Moves: 41                                                                               Ok.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 40                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+This is a large room, whose east wall is solid granite. A number of discarded bags, which crumble at your touch, are scattered about on the floor. There is an exit down a staircase.
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+The stiletto flashes faster than you can follow, and blood wells from your leg.
+
+> Treasure Room                                                 Score: 75                                                                 Moves: 41                                                                               Ok.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 40                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+This is a large room, whose east wall is solid granite. A number of discarded bags, which crumble at your touch, are scattered about on the floor. There is an exit down a staircase.
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+The thief draws blood, raking his stiletto across your arm.
+
+> Treasure Room                                                 Score: 75                                                                 Moves: 41                                                                               Ok.
+
+> Cyclops Room                                                 Score: 50                                                                 Moves: 40                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+This is a large room, whose east wall is solid granite. A number of discarded bags, which crumble at your touch, are scattered about on the floor. There is an exit down a staircase.
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+The butt of his stiletto cracks you on the skull, and you stagger back.
+
+> Treasure Room                                                 Score: 75                                                                 Moves: 41                                                                               The thief is taken aback by your unexpected generosity, but accepts the jewel-encrusted egg and stops to admire its beauty.
+
+> Treasure Room                                                 Score: 75                                                                 Moves: 42                                                                               Cyclops Room
+Your sword is no longer glowing.
+
+> Cyclops Room                                                 Score: 75                                                                 Moves: 43                                                                               You are in perfect health.
+You can survive one serious wound.
+
+> Cyclops Room                                                 Score: 75                                                                 Moves: 44                                                                               Maze
+This is part of a maze of twisty little passages, all alike.
+An old leather bag, bulging with coins, is here.
+Someone carrying a large bag is casually leaning against one of the walls here. He does not speak, but it is clear from his aspect that the bag will be taken only over his dead body.
+Your sword has begun to glow very brightly.
+
+> Maze                                                 Score: 75                                                                 Moves: 45                                                                               Cyclops Room
+Your sword is no longer glowing.
+
+> Cyclops Room                                                 Score: 75                                                                 Moves: 46                                                                               Maze
+This is part of a maze of twisty little passages, all alike.
+An old leather bag, bulging with coins, is here.
+
+> Maze                                                 Score: 75                                                                 Moves: 47                                                                               Taken.
+
+> Maze                                                 Score: 75                                                                 Moves: 48                                                                               Cyclops Room
+
+> Cyclops Room                                                 Score: 75                                                                 Moves: 49                                                                               Strange Passage
+This is a long passage. To the west is one entrance. On the east there is an old wooden door, with a large opening in it (about cyclops sized).
+
+> Strange Passage                                                 Score: 75                                                                 Moves: 50                                                                               Living Room
+
+> Living Room                                                 Score: 75                                                                 Moves: 51                                                                               It is already open.
+
+> Living Room                                                 Score: 75                                                                 Moves: 52                                                                               Done.
+
+> Living Room                                                 Score: 80                                                                 Moves: 53                                                                               Ok.
+
+> Living Room                                                 Score: 80                                                                 Moves: 53                                                                               The trap door is closed.
+
+> Living Room                                                 Score: 80                                                                 Moves: 54                                                                               Which door do you mean, the wooden door or the trap door?
+
+> Living Room                                                 Score: 80                                                                 Moves: 54                                                                               The door reluctantly opens to reveal a rickety staircase descending into darkness.
+
+> Living Room                                                 Score: 80                                                                 Moves: 55                                                                               Cellar
+
+> Cellar                                                 Score: 80                                                                 Moves: 56                                                                               The Troll Room
+There is a bloody axe here.
+
+> The Troll Room                                                 Score: 80                                                                 Moves: 57                                                                               East-West Passage
+This is a narrow east-west passageway. There is a narrow stairway leading down at the north end of the room.
+
+> East-West Passage                                                 Score: 85                                                                 Moves: 58                                                                               Chasm
+A chasm runs southwest to northeast and the path follows it. You are on the south side of the chasm, where a crack opens into a passage.
+
+> Chasm                                                 Score: 85                                                                 Moves: 59                                                                               Reservoir South
+You are in a long room on the south shore of a large lake, far too deep and wide for crossing.
+There is a path along the stream to the east or west, a steep pathway climbing southwest along the edge of a chasm, and a path leading into a canyon to the southeast.
+
+> Reservoir South                                                 Score: 85                                                                 Moves: 60                                                                               Dam
+You are standing on the top of the Flood Control Dam #3, which was quite a tourist attraction in times far distant. There are paths to the north, south, and west, and a scramble down.
+The sluice gates on the dam are closed. Behind the dam, there can be seen a wide reservoir. Water is pouring over the top of the now abandoned dam.
+There is a control panel here, on which a large metal bolt is mounted. Directly above the bolt is a small green plastic bubble.
+
+> Dam                                                 Score: 85                                                                 Moves: 61                                                                               Dam Lobby
+This room appears to have been the waiting room for groups touring the dam. There are open doorways here to the north and east marked "Private", and there is a path leading south over the top of the dam.
+Some guidebooks entitled "Flood Control Dam #3" are on the reception desk.
+There is a matchbook whose cover says "Visit Beautiful FCD#3" here.
+
+> Dam Lobby                                                 Score: 85                                                                 Moves: 62                                                                               Taken.
+
+> Dam Lobby                                                 Score: 85                                                                 Moves: 63                                                                               Dam
+
+> Dam                                                 Score: 85                                                                 Moves: 64                                                                               Deep Canyon
+You are on the south edge of a deep canyon. Passages lead off to the east, northwest and southwest. A stairway leads down. You can hear the sound of flowing water from below.
+
+> Deep Canyon                                                 Score: 85                                                                 Moves: 65                                                                               Loud Room
+This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is deafeningly loud with an undetermined rushing sound. The sound seems to reverberate from all of the walls, making it difficult even to think.
+On the ground is a large platinum bar.
+
+> Loud Room                                                 Score: 85                                                                 Moves: 65                                                                               Round Room
+This is a circular stone room with passages in all directions. Several of them have unfortunately been blocked by cave-ins.
+
+> Round Room                                                 Score: 85                                                                 Moves: 66                                                                               Engravings Cave
+You have entered a low cave with passages leading northwest and east.
+There are old engravings on the walls here.
+
+> Engravings Cave                                                 Score: 85                                                                 Moves: 67                                                                               Dome Room
+You are at the periphery of a large dome, which forms the ceiling of another room below. Protecting you from a precipitous drop is a wooden railing which circles the dome.
+
+> Dome Room                                                 Score: 85                                                                 Moves: 68                                                                               The rope drops over the side and comes within ten feet of the floor.
+
+> Dome Room                                                 Score: 85                                                                 Moves: 69                                                                               Torch Room
+This is a large room with a prominent doorway leading to a down staircase. Above you is a large dome. Up around the edge of the dome (20 feet up) is a wooden railing. In the center of the room sits a white marble pedestal.
+A piece of rope descends from the railing above, ending some five feet above your head.
+Sitting on the pedestal is a flaming torch, made of ivory.
+
+> Torch Room                                                 Score: 85                                                                 Moves: 70                                                                               Temple
+This is the north end of a large temple. On the east wall is an ancient inscription, probably a prayer in a long-forgotten language. Below the prayer is a staircase leading down. The west wall is solid granite. The exit to the north end of the room is through huge marble pillars.
+There is a brass bell here.
+
+> Temple                                                 Score: 85                                                                 Moves: 71                                                                               Taken.
+
+> Temple                                                 Score: 85                                                                 Moves: 72                                                                               Altar
+This is the south end of a large temple. In front of you is what appears to be an altar. In one corner is a small hole in the floor which leads into darkness. You probably could not get back up it.
+On the two ends of the altar are burning candles.
+On the altar is a large black book, open to page 569.
+
+> Altar                                                 Score: 85                                                                 Moves: 73                                                                               pair of candles: Taken.
+black book: Taken.
+
+> Altar                                                 Score: 85                                                                 Moves: 74                                                                               Cave
+This is a tiny cave with entrances west and north, and a dark, forbidding staircase leading down.
+A gust of wind blows out your candles!
+Your sword is glowing with a faint blue glow.
+
+> Cave                                                 Score: 85                                                                 Moves: 75                                                                               Entrance to Hades
+You are outside a large gateway, on which is inscribed
+
+  Abandon every hope all ye who enter here!
+
+The gate is open; through it you can see a desolation, with a pile of mangled bodies in one corner. Thousands of voices, lamenting some hideous fate, can be heard.
+The way through the gate is barred by evil spirits, who jeer at your attempts to pass.
+Your sword has begun to glow very brightly.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 76                                                                               You have 5 matches.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 77                                                                               The bell suddenly becomes red hot and falls to the ground. The wraiths, as if paralyzed, stop their jeering and slowly turn to face you. On their ashen faces, the expression of a long-forgotten terror takes shape.
+In your confusion, the candles drop to the ground (and they are out).
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 78                                                                               One of the matches starts to burn.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 79                                                                               The candles are lit.
+The match has gone out.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 80                                                                               (Taken)
+Waving the pair of candles isn't notably helpful.
+The flames flicker wildly and appear to dance. The earth beneath your feet trembles, and your legs nearly buckle beneath you. The spirits cower at your unearthly power.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 81                                                                               Each word of the prayer reverberates through the hall in a deafening confusion. As the last word fades, a voice, loud and commanding, speaks: "Begone, fiends!" A heart-stopping scream fills the cavern, and the spirits, sensing a greater power, flee through the walls.
+Your sword is no longer glowing.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 82                                                                               Ok.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 82                                                                               The water cools the bell and is evaporated.
+The bell appears to have cooled down.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 83                                                                               Taken.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 84                                                                               The flame is extinguished.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 85                                                                               Dropped.
+
+> Entrance to Hades                                                 Score: 85                                                                 Moves: 86                                                                               Land of the Dead
+You have entered the Land of the Living Dead. Thousands of lost souls can be heard weeping and moaning. In the corner are stacked the remains of dozens of previous adventurers less fortunate than yourself. A passage exits to the north.
+Lying in one corner of the room is a beautifully carved crystal skull. It appears to be grinning at you rather nastily.
+
+> Land of the Dead                                                 Score: 85                                                                 Moves: 87                                                                               Taken.
+
+> Land of the Dead                                                 Score: 95                                                                 Moves: 88                                                                               Entrance to Hades
+There is a glass bottle here.
+
+> Entrance to Hades                                                 Score: 95                                                                 Moves: 89                                                                               Cave
+
+> Cave                                                 Score: 95                                                                 Moves: 90                                                                               Mirror Room
+You are in a large square room with tall ceilings. On the south wall is an enormous mirror which fills the entire wall. There are exits on the other three sides of the room.
+
+> Mirror Room                                                 Score: 95                                                                 Moves: 91                                                                               Narrow Passage
+This is a long and narrow corridor where a long north-south passageway briefly narrows even further.
+
+> Narrow Passage                                                 Score: 95                                                                 Moves: 92                                                                               Round Room
+
+> Round Room                                                 Score: 95                                                                 Moves: 93                                                                               East-West Passage
+
+> East-West Passage                                                 Score: 95                                                                 Moves: 94                                                                               The Troll Room
+
+> The Troll Room                                                 Score: 95                                                                 Moves: 95                                                                               Cellar
+
+> Cellar                                                 Score: 95                                                                 Moves: 96                                                                               East of Chasm
+You are on the east edge of a chasm, the bottom of which cannot be seen. A narrow passage goes north, and the path you are on continues to the east.
+
+> East of Chasm                                                 Score: 95                                                                 Moves: 97                                                                               Gallery
+This is an art gallery. Most of the paintings have been stolen by vandals with exceptional taste. The vandals left through either the north or west exits.
+Fortunately, there is still one chance for you to be a vandal, for on the far wall is a painting of unparalleled beauty.
+
+> Gallery                                                 Score: 95                                                                 Moves: 98                                                                               brass bell: Dropped.
+black book: Dropped.
+
+> Gallery                                                 Score: 95                                                                 Moves: 99                                                                               Taken.
+
+> Gallery                                                 Score: 99                                                                 Moves: 100                                                                               East of Chasm
+
+> East of Chasm                                                 Score: 99                                                                 Moves: 101                                                                               Cellar
+
+> Cellar                                                 Score: 99                                                                 Moves: 102                                                                               Living Room
+Your collection of treasures consists of:
+  A leather bag of coins
+
+> Living Room                                                 Score: 99                                                                 Moves: 103                                                                               Your load is too heavy.
+
+> Living Room                                                 Score: 99                                                                 Moves: 104                                                                               Done.
+
+> Living Room                                                 Score: 105                                                                 Moves: 105                                                                               Taken.
+
+> Living Room                                                 Score: 100                                                                 Moves: 106                                                                               Strange Passage
+
+> Strange Passage                                                 Score: 100                                                                 Moves: 107                                                                               Cyclops Room
+
+> Cyclops Room                                                 Score: 100                                                                 Moves: 108                                                                               Ok.
+
+> Cyclops Room                                                 Score: 100                                                                 Moves: 108                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+The stiletto flashes faster than you can follow, and blood wells from your leg.
+
+> Treasure Room                                                 Score: 100                                                                 Moves: 109                                                                               Ok.
+
+> Cyclops Room                                                 Score: 100                                                                 Moves: 108                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+The thief draws blood, raking his stiletto across your arm.
+
+> Treasure Room                                                 Score: 100                                                                 Moves: 109                                                                               Ok.
+
+> Cyclops Room                                                 Score: 100                                                                 Moves: 108                                                                               You hear a scream of anguish as you violate the robber's hideaway. Using passages unknown to you, he rushes to its defense.
+The thief gestures mysteriously, and the treasures in the room suddenly vanish.
+
+Treasure Room
+There is a suspicious-looking individual, holding a large bag, leaning against one wall. He is armed with a deadly stiletto.
+There is a silver chalice, intricately engraved, here.
+Your sword has begun to glow very brightly.
+You parry a lightning thrust, and the thief salutes you with a grim nod.
+
+> Treasure Room                                                 Score: 100                                                                 Moves: 109                                                                               The thief is struck on the arm; blood begins to trickle down.
+The thief strikes like a snake! The resulting wound is serious.
+
+> Treasure Room                                                 Score: 100                                                                 Moves: 110                                                                               The thief is taken aback by your unexpected generosity, but accepts the leather bag of coins and stops to admire its beauty.
+
+> Treasure Room                                                 Score: 100                                                                 Moves: 111                                                                               You charge, but the thief jumps nimbly aside.
+The thief stabs nonchalantly with his stiletto and misses.
+
+> Treasure Room                                                 Score: 100                                                                 Moves: 112                                                                               Your nasty knife crashes down, knocking the thief into dreamland.
+
+> Treasure Room                                                 Score: 100                                                                 Moves: 113                                                                               The unconscious thief cannot defend himself: He dies.
+Almost as soon as the thief breathes his last breath, a cloud of sinister black fog envelops him, and when the fog lifts, the carcass has disappeared.
+As the thief dies, the power of his magic decreases, and his treasures reappear:
+  A leather bag of coins
+  A stiletto
+  A jewel-encrusted egg, with a golden clockwork canary
+The chalice is now safe to take.
+Your sword is no longer glowing.
+
+> Treasure Room                                                 Score: 100                                                                 Moves: 114                                                                               Ok.
+
+> Treasure Room                                                 Score: 100                                                                 Moves: 114                                                                               Cyclops Room
+
+> Cyclops Room                                                 Score: 100                                                                 Moves: 115                                                                               Strange Passage
+
+> Strange Passage                                                 Score: 100                                                                 Moves: 116                                                                               Living Room
+Your collection of treasures consists of:
+  A painting
+
+> Living Room                                                 Score: 100                                                                 Moves: 117                                                                               The brass lantern is now off.
+
+> Living Room                                                 Score: 100                                                                 Moves: 118                                                                               You have a serious wound, which will be cured after 54 moves.
+You can be killed by one more light wound.
+
+> Living Room                                                 Score: 100                                                                 Moves: 119                                                                               Time passes...
+
+Time passes...
+
+Time passes...
+
+Time passes...
+
+Time passes...
+
+> Living Room                                                 Score: 100                                                                 Moves: 134                                                                               Time passes...
+
+Time passes...
+
+Time passes...
+
+Time passes...
+
+Time passes...
+
+> Living Room                                                 Score: 100                                                                 Moves: 148                                                                               Time passes...
+
+Time passes...
+
+Time passes...
+
+Time passes...
+
+Time passes...
+
+> Living Room                                                 Score: 100                                                                 Moves: 163                                                                               Time passes...
+
+> Living Room                                                 Score: 100                                                                 Moves: 166                                                                               Time passes...
+
+> Living Room                                                 Score: 100                                                                 Moves: 169                                                                               Time passes...
+
+> Living Room                                                 Score: 100                                                                 Moves: 172                                                                               You are in perfect health.
+You can survive one serious wound.
+
+> Living Room                                                 Score: 100                                                                 Moves: 173                                                                               crystal skull: Done.
+
+> Living Room                                                 Score: 110                                                                 Moves: 174                                                                               You have moved into a dark place.
+It is pitch black. You are likely to be eaten by a grue.
+
+> Strange Passage                                                 Score: 110                                                                 Moves: 175                                                                               The brass lantern is now on.
+
+Strange Passage
+This is a long passage. To the west is one entrance. On the east there is an old wooden door, with a large opening in it (about cyclops sized).
+
+> Strange Passage                                                 Score: 110                                                                 Moves: 176                                                                               Cyclops Room
+
+> Cyclops Room                                                 Score: 110                                                                 Moves: 177                                                                               Treasure Room
+An old leather bag, bulging with coins, is here.
+There is a stiletto here.
+There is a jewel-encrusted egg here.
+There is a golden clockwork canary nestled in the egg. It has ruby eyes and a silver beak. Through a crystal window below its left wing you can see intricate machinery inside. It appears to have wound down.
+There is a silver chalice, intricately engraved, here.
+
+> Treasure Room                                                 Score: 110                                                                 Moves: 178                                                                               Dropped.
+
+> Treasure Room                                                 Score: 110                                                                 Moves: 179                                                                               leather bag of coins: Taken.
+jewel-encrusted egg: Taken.
+chalice: Taken.
+
+> Treasure Room                                                 Score: 120                                                                 Moves: 180                                                                               Your load is too heavy.
+
+> Treasure Room                                                 Score: 120                                                                 Moves: 181                                                                               You are carrying:
+  A chalice
+  A jewel-encrusted egg
+  The jewel-encrusted egg contains:
+    A golden clockwork canary
+  A leather bag of coins
+  A pair of candles
+  A matchbook
+  A brass lantern (providing light)
+  A sword
+
+> Treasure Room                                                 Score: 120                                                                 Moves: 182                                                                               Dropped.
+
+> Treasure Room                                                 Score: 120                                                                 Moves: 183                                                                               Taken.
+
+> Treasure Room                                                 Score: 120                                                                 Moves: 184                                                                               Cyclops Room
+
+> Cyclops Room                                                 Score: 120                                                                 Moves: 185                                                                               Strange Passage
+
+> Strange Passage                                                 Score: 120                                                                 Moves: 186                                                                               Living Room
+Your collection of treasures consists of:
+  A crystal skull
+  A painting
+
+> Living Room                                                 Score: 120                                                                 Moves: 187                                                                               Ok.
+
+> Living Room                                                 Score: 120                                                                 Moves: 187                                                                               The brass lantern is now off.
+
+> Living Room                                                 Score: 120                                                                 Moves: 188                                                                               Taken.
+
+> Living Room                                                 Score: 126                                                                 Moves: 189                                                                               Kitchen
+On the table is an elongated brown sack, smelling of hot peppers.
+
+> Kitchen                                                 Score: 126                                                                 Moves: 190                                                                               Behind House
+
+> Behind House                                                 Score: 126                                                                 Moves: 191                                                                               North of House
+
+> North of House                                                 Score: 126                                                                 Moves: 192                                                                               Forest Path
+
+> Forest Path                                                 Score: 126                                                                 Moves: 193                                                                               Up a Tree
+Beside you on the branch is a small bird's nest.
+
+> Up a Tree                                                 Score: 126                                                                 Moves: 194                                                                               The canary chirps, slightly off-key, an aria from a forgotten opera. From out of the greenery flies a lovely songbird. It perches on a limb just over your head and opens its beak to sing. As it does so a beautiful brass bauble drops from its mouth, bounces off the top of your head, and lands glimmering in the grass. As the canary winds down, the songbird flies away.
+
+> Up a Tree                                                 Score: 126                                                                 Moves: 195                                                                               Forest Path
+There is a beautiful brass bauble here.
+
+> Forest Path                                                 Score: 126                                                                 Moves: 196                                                                               Taken.
+
+> Forest Path                                                 Score: 127                                                                 Moves: 197                                                                               North of House
+
+> North of House                                                 Score: 127                                                                 Moves: 198                                                                               Behind House
+
+> Behind House                                                 Score: 127                                                                 Moves: 199                                                                               Kitchen
+On the table is an elongated brown sack, smelling of hot peppers.
+
+> Kitchen                                                 Score: 127                                                                 Moves: 200                                                                               Living Room
+Your collection of treasures consists of:
+  A crystal skull
+  A painting
+
+> Living Room                                                 Score: 127                                                                 Moves: 201                                                                               beautiful brass bauble: Done.
+golden clockwork canary: Done.
+chalice: Done.
+jewel-encrusted egg: Done.
+leather bag of coins: Done.
+
+> Living Room                                                 Score: 147                                                                 Moves: 202                                                                               Ok.
+
+> Living Room                                                 Score: 147                                                                 Moves: 202                                                                               You have moved into a dark place.
+It is pitch black. You are likely to be eaten by a grue.
+
+> Cellar                                                 Score: 147                                                                 Moves: 203                                                                               The brass lantern is now on.
+
+Cellar
+You are in a dark and damp cellar with a narrow passageway leading north, and a crawlway to the south. On the west is the bottom of a steep metal ramp which is unclimbable.
+
+> Cellar                                                 Score: 147                                                                 Moves: 204                                                                               The Troll Room
+
+> The Troll Room                                                 Score: 147                                                                 Moves: 205                                                                               East-West Passage
+
+> East-West Passage                                                 Score: 147                                                                 Moves: 206                                                                               Chasm
+
+> Chasm                                                 Score: 147                                                                 Moves: 207                                                                               Reservoir South
+
+> Reservoir South                                                 Score: 147                                                                 Moves: 208                                                                               Dam
+
+> Dam                                                 Score: 147                                                                 Moves: 209                                                                               Dam Lobby
+Some guidebooks entitled "Flood Control Dam #3" are on the reception desk.
+
+> Dam Lobby                                                 Score: 147                                                                 Moves: 210                                                                               Maintenance Room
+This is what appears to have been the maintenance room for Flood Control Dam #3. Apparently, this room has been ransacked recently, for most of the valuable equipment is gone. On the wall in front of you is a group of buttons colored blue, yellow, brown, and red. There are doorways to the west and south.
+There is a group of tool chests here.
+There is a wrench here.
+There is an object which looks like a tube of toothpaste here.
+There is a screwdriver here.
+
+> Maintenance Room                                                 Score: 147                                                                 Moves: 211                                                                               The lights within the room come on.
+
+> Maintenance Room                                                 Score: 147                                                                 Moves: 212                                                                               The brass lantern is now off.
+
+> Maintenance Room                                                 Score: 147                                                                 Moves: 213                                                                               wrench: Taken.
+screwdriver: Taken.
+
+> Maintenance Room                                                 Score: 147                                                                 Moves: 214                                                                               Click.
+
+> Maintenance Room                                                 Score: 147                                                                 Moves: 215                                                                               Dam Lobby
+Some guidebooks entitled "Flood Control Dam #3" are on the reception desk.
+
+> Dam Lobby                                                 Score: 147                                                                 Moves: 216                                                                               Dam
+You are standing on the top of the Flood Control Dam #3, which was quite a tourist attraction in times far distant. There are paths to the north, south, and west, and a scramble down.
+The sluice gates on the dam are closed. Behind the dam, there can be seen a wide reservoir. Water is pouring over the top of the now abandoned dam.
+There is a control panel here, on which a large metal bolt is mounted. Directly above the bolt is a small green plastic bubble which is glowing serenely.
+
+> Dam                                                 Score: 147                                                                 Moves: 217                                                                               The sluice gates open and water pours through the dam.
+
+> Dam                                                 Score: 147                                                                 Moves: 218                                                                               Time passes...
+
+> Dam                                                 Score: 147                                                                 Moves: 221                                                                               Time passes...
+
+> Dam                                                 Score: 147                                                                 Moves: 224                                                                               Dam
+You are standing on the top of the Flood Control Dam #3, which was quite a tourist attraction in times far distant. There are paths to the north, south, and west, and a scramble down.
+The sluice gates are open, and water rushes through the dam. The water level behind the dam is still high.
+There is a control panel here, on which a large metal bolt is mounted. Directly above the bolt is a small green plastic bubble which is glowing serenely.
+
+> Dam                                                 Score: 147                                                                 Moves: 225                                                                               Time passes...
+
+> Dam                                                 Score: 147                                                                 Moves: 228                                                                               Time passes...
+
+> Dam                                                 Score: 147                                                                 Moves: 231                                                                               Dam
+You are standing on the top of the Flood Control Dam #3, which was quite a tourist attraction in times far distant. There are paths to the north, south, and west, and a scramble down.
+The water level behind the dam is low: The sluice gates have been opened. Water rushes through the dam and downstream.
+There is a control panel here, on which a large metal bolt is mounted. Directly above the bolt is a small green plastic bubble which is glowing serenely.
+
+> Dam                                                 Score: 147                                                                 Moves: 232                                                                               You have moved into a dark place.
+It is pitch black. You are likely to be eaten by a grue.
+
+> Reservoir South                                                 Score: 147                                                                 Moves: 233                                                                               The brass lantern is now on.
+
+Reservoir South
+You are in a long room, to the north of which was formerly a lake. However, with the water level lowered, there is merely a wide stream running through the center of the room.
+There is a path along the stream to the east or west, a steep pathway climbing southwest along the edge of a chasm, and a path leading into a canyon to the southeast.
+
+> Reservoir South                                                 Score: 147                                                                 Moves: 234                                                                               Reservoir
+You are on what used to be a large lake, but which is now a large mud pile. There are "shores" to the north and south.
+Lying half buried in the mud is an old trunk, bulging with jewels.
+
+> Reservoir                                                 Score: 147                                                                 Moves: 235                                                                               screwdriver: Dropped.
+wrench: Dropped.
+stiletto: Dropped.
+pair of candles: Dropped.
+matchbook: Dropped.
+
+> Reservoir                                                 Score: 147                                                                 Moves: 236                                                                               Reservoir North
+You are in a large cavernous room, the south of which was formerly a lake. However, with the water level lowered, there is merely a wide stream running through there.
+There is a slimy stairway leaving the room to the north.
+There is a hand-held air pump here.
+
+> Reservoir North                                                 Score: 147                                                                 Moves: 237                                                                               Atlantis Room
+This is an ancient room, long under water. There is an exit to the south and a staircase leading up.
+On the shore lies Poseidon's own crystal trident.
+
+> Atlantis Room                                                 Score: 147                                                                 Moves: 238                                                                               Taken.
+
+> Atlantis Room                                                 Score: 151                                                                 Moves: 239                                                                               Reservoir North
+There is a hand-held air pump here.
+
+> Reservoir North                                                 Score: 151                                                                 Moves: 240                                                                               Reservoir
+Lying half buried in the mud is an old trunk, bulging with jewels.
+There is a matchbook whose cover says "Visit Beautiful FCD#3" here.
+There is a pair of candles here.
+There is a stiletto here.
+There is a wrench here.
+There is a screwdriver here.
+
+> Reservoir                                                 Score: 151                                                                 Moves: 241                                                                               Taken.
+
+> Reservoir                                                 Score: 166                                                                 Moves: 242                                                                               Reservoir South
+
+> Reservoir South                                                 Score: 166                                                                 Moves: 243                                                                               Chasm
+
+> Chasm                                                 Score: 166                                                                 Moves: 244                                                                               East-West Passage
+
+> East-West Passage                                                 Score: 166                                                                 Moves: 245                                                                               The Troll Room
+
+> The Troll Room                                                 Score: 166                                                                 Moves: 246                                                                               Cellar
+
+> Cellar                                                 Score: 166                                                                 Moves: 247                                                                               Living Room
+Your collection of treasures consists of:
+  A leather bag of coins
+  A jewel-encrusted egg
+  A chalice
+  A golden clockwork canary
+  A beautiful brass bauble
+  A crystal skull
+  A painting
+
+> Living Room                                                 Score: 166                                                                 Moves: 248                                                                               trunk of jewels: Done.
+crystal trident: Done.
+
+> Living Room                                                 Score: 182                                                                 Moves: 249                                                                               The brass lantern is now off.
+
+> Living Room                                                 Score: 182                                                                 Moves: 250                                                                               Ok.
+
+> Living Room                                                 Score: 182                                                                 Moves: 250                                                                               Kitchen
+On the table is an elongated brown sack, smelling of hot peppers.
+
+> Kitchen                                                 Score: 182                                                                 Moves: 251                                                                               Opening the brown sack reveals a lunch, and a clove of garlic.
+
+> Kitchen                                                 Score: 182                                                                 Moves: 252                                                                               Taken.
+
+> Kitchen                                                 Score: 182                                                                 Moves: 253                                                                               Living Room
+Your collection of treasures consists of:
+  A crystal trident
+  A trunk of jewels
+  A leather bag of coins
+  A jewel-encrusted egg
+  A chalice
+  A golden clockwork canary
+  A beautiful brass bauble
+  A crystal skull
+  A painting
+
+> Living Room                                                 Score: 182                                                                 Moves: 254                                                                               You have moved into a dark place.
+It is pitch black. You are likely to be eaten by a grue.
+
+> Cellar                                                 Score: 182                                                                 Moves: 255                                                                               The brass lantern is now on.
+
+Cellar
+You are in a dark and damp cellar with a narrow passageway leading north, and a crawlway to the south. On the west is the bottom of a steep metal ramp which is unclimbable.
+
+> Cellar                                                 Score: 182                                                                 Moves: 256                                                                               The Troll Room
+
+> The Troll Room                                                 Score: 182                                                                 Moves: 257                                                                               East-West Passage
+
+> East-West Passage                                                 Score: 182                                                                 Moves: 258                                                                               Chasm
+
+> Chasm                                                 Score: 182                                                                 Moves: 259                                                                               Reservoir South
+
+> Reservoir South                                                 Score: 182                                                                 Moves: 260                                                                               Reservoir
+There is a matchbook whose cover says "Visit Beautiful FCD#3" here.
+There is a pair of candles here.
+There is a stiletto here.
+There is a wrench here.
+There is a screwdriver here.
+
+> Reservoir                                                 Score: 182                                                                 Moves: 261                                                                               matchbook: Taken.
+pair of candles: Taken.
+stiletto: Taken.
+wrench: Taken.
+screwdriver: Taken.
+
+> Reservoir                                                 Score: 182                                                                 Moves: 262                                                                               Reservoir North
+There is a hand-held air pump here.
+
+> Reservoir North                                                 Score: 182                                                                 Moves: 263                                                                               You can't go that way.
+
+> Reservoir North                                                 Score: 182                                                                 Moves: 264                                                                               Atlantis Room
+
+> Atlantis Room                                                 Score: 182                                                                 Moves: 265                                                                               You can't go that way.
+
+> Atlantis Room                                                 Score: 182                                                                 Moves: 266                                                                               Atlantis Room
+This is an ancient room, long under water. There is an exit to the south and a staircase leading up.
+
+> Atlantis Room                                                 Score: 182                                                                 Moves: 267                                                                               Cave
+This is a tiny cave with entrances west and north, and a staircase leading down.
+
+> Cave                                                 Score: 182                                                                 Moves: 268                                                                               Mirror Room
+You are in a large square room with tall ceilings. On the south wall is an enormous mirror which fills the entire wall. There are exits on the other three sides of the room.
+
+> Mirror Room                                                 Score: 182                                                                 Moves: 269                                                                               Cold Passage
+This is a cold and damp corridor where a long east-west passageway turns into a southward path.
+
+> Cold Passage                                                 Score: 182                                                                 Moves: 270                                                                               Slide Room
+This is a small chamber, which appears to have been part of a coal mine. On the south wall of the chamber the letters "Granite Wall" are etched in the rock. To the east is a long passage, and there is a steep metal slide twisting downward. To the north is a small opening.
+
+> Slide Room                                                 Score: 182                                                                 Moves: 271                                                                               Mine Entrance
+You are standing at the entrance of what might have been a coal mine. The shaft enters the west wall, and there is another exit on the south end of the room.
+
+> Mine Entrance                                                 Score: 182                                                                 Moves: 272                                                                               Squeaky Room
+You are in a small room. Strange squeaky sounds may be heard coming from the passage at the north end. You may also escape to the east.
+
+> Squeaky Room                                                 Score: 182                                                                 Moves: 273                                                                               Bat Room
+You are in a small room which has doors only to the east and south.
+In the corner of the room on the ceiling is a large vampire bat who is obviously deranged and holding his nose.
+There is an exquisite jade figurine here.
+
+> Bat Room                                                 Score: 182                                                                 Moves: 274                                                                               Taken.
+
+> Bat Room                                                 Score: 187                                                                 Moves: 275                                                                               Shaft Room
+This is a large room, in the middle of which is a small shaft descending through the floor into darkness below. To the west and the north are exits from this room. Constructed over the top of the shaft is a metal framework to which a heavy iron chain is attached.
+At the end of the chain is a basket.
+
+> Shaft Room                                                 Score: 187                                                                 Moves: 276                                                                               Done.
+
+> Shaft Room                                                 Score: 187                                                                 Moves: 277                                                                               matchbook: Dropped.
+pair of candles: Dropped.
+
+> Shaft Room                                                 Score: 187                                                                 Moves: 278                                                                               Smelly Room
+This is a small nondescript room. However, from the direction of a small descending staircase a foul odor can be detected. To the south is a narrow tunnel.
+
+> Smelly Room                                                 Score: 187                                                                 Moves: 279                                                                               Gas Room
+This is a small room which smells strongly of coal gas. There is a short climb up some stairs and a narrow tunnel leading east.
+There is a sapphire-encrusted bracelet here.
+
+> Gas Room                                                 Score: 187                                                                 Moves: 280                                                                               Taken.
+
+> Gas Room                                                 Score: 192                                                                 Moves: 281                                                                               Coal Mine
+This is a nondescript part of a coal mine.
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 282                                                                               Coal Mine
+This is a nondescript part of a coal mine.
+There is a bloody axe here.
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 283                                                                               Coal Mine
+This is a nondescript part of a coal mine.
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 284                                                                               Coal Mine
+This is a nondescript part of a coal mine.
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 285                                                                               Ladder Top
+This is a very small room. In the corner is a rickety wooden ladder, leading downward. It might be safe to descend. There is also a staircase leading upward.
+
+> Ladder Top                                                 Score: 192                                                                 Moves: 286                                                                               Ladder Bottom
+This is a rather wide room. On one side is the bottom of a narrow wooden ladder. To the west and the south are passages leaving the room.
+
+> Ladder Bottom                                                 Score: 192                                                                 Moves: 287                                                                               Timber Room
+This is a long and narrow passage, which is cluttered with broken timbers. A wide passage comes from the east and turns at the west end of the room into a very narrow passageway. From the west comes a strong draft.
+There is a broken timber here.
+
+> Timber Room                                                 Score: 192                                                                 Moves: 288                                                                               sapphire-encrusted bracelet: Dropped.
+jade figurine: Dropped.
+wrench: Dropped.
+stiletto: Dropped.
+clove of garlic: Dropped.
+
+> Timber Room                                                 Score: 192                                                                 Moves: 289                                                                               Ladder Bottom
+
+> Ladder Bottom                                                 Score: 192                                                                 Moves: 290                                                                               Dead End
+You have come to a dead end in the mine.
+There is a small pile of coal here.
+
+> Dead End                                                 Score: 192                                                                 Moves: 291                                                                               Taken.
+
+> Dead End                                                 Score: 192                                                                 Moves: 292                                                                               Ladder Bottom
+
+> Ladder Bottom                                                 Score: 192                                                                 Moves: 293                                                                               Ladder Top
+
+> Ladder Top                                                 Score: 192                                                                 Moves: 294                                                                               Coal Mine
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 295                                                                               Coal Mine
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 296                                                                               Coal Mine
+There is a bloody axe here.
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 297                                                                               Coal Mine
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 298                                                                               Gas Room
+
+> Gas Room                                                 Score: 192                                                                 Moves: 299                                                                               Smelly Room
+
+> Smelly Room                                                 Score: 192                                                                 Moves: 300                                                                               Shaft Room
+There is a pair of candles here.
+There is a matchbook whose cover says "Visit Beautiful FCD#3" here.
+At the end of the chain is a basket.
+The basket contains:
+  A screwdriver
+
+> Shaft Room                                                 Score: 192                                                                 Moves: 301                                                                               pair of candles: Taken.
+matchbook: Taken.
+
+> Shaft Room                                                 Score: 192                                                                 Moves: 302                                                                               One of the matches starts to burn.
+
+> Shaft Room                                                 Score: 192                                                                 Moves: 303                                                                               The candles are lit.
+The match has gone out.
+
+> Shaft Room                                                 Score: 192                                                                 Moves: 304                                                                               pair of candles: Done.
+small pile of coal: Done.
+
+> Shaft Room                                                 Score: 192                                                                 Moves: 305                                                                               The basket is lowered to the bottom of the shaft.
+
+> Shaft Room                                                 Score: 192                                                                 Moves: 306                                                                               Smelly Room
+
+> Smelly Room                                                 Score: 192                                                                 Moves: 307                                                                               Gas Room
+
+> Gas Room                                                 Score: 192                                                                 Moves: 308                                                                               Coal Mine
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 309                                                                               Coal Mine
+There is a bloody axe here.
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 310                                                                               Coal Mine
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 311                                                                               Coal Mine
+
+> Coal Mine                                                 Score: 192                                                                 Moves: 312                                                                               Ladder Top
+
+> Ladder Top                                                 Score: 192                                                                 Moves: 313                                                                               You can't go that way.
+
+> Ladder Top                                                 Score: 192                                                                 Moves: 314                                                                               Ladder Top
+This is a very small room. In the corner is a rickety wooden ladder, leading downward. It might be safe to descend. There is also a staircase leading upward.
+
+> Ladder Top                                                 Score: 192                                                                 Moves: 315                                                                               Ladder Bottom
+
+> Ladder Bottom                                                 Score: 192                                                                 Moves: 316                                                                               Timber Room
+There is a clove of garlic here.
+There is a stiletto here.
+There is a wrench here.
+There is an exquisite jade figurine here.
+There is a sapphire-encrusted bracelet here.
+There is a broken timber here.
+
+> Timber Room                                                 Score: 192                                                                 Moves: 317                                                                               matchbook: Dropped.
+brass lantern: Dropped.
+
+> Timber Room                                                 Score: 192                                                                 Moves: 318                                                                               Drafty Room
+This is a small drafty room in which is the bottom of a long shaft. To the south is a passageway and to the east a very narrow passage. In the shaft can be seen a heavy iron chain.
+At the end of the chain is a basket.
+The basket contains:
+  A small pile of coal
+  A pair of candles (providing light)
+  A screwdriver
+
+> Drafty Room                                                 Score: 192                                                                 Moves: 319                                                                               pair of candles: Taken.
+small pile of coal: Taken.
+screwdriver: Taken.
+
+> Drafty Room                                                 Score: 205                                                                 Moves: 320                                                                               Machine Room
+This is a large, cold room whose sole exit is to the north. In one corner there is a machine which is reminiscent of a clothes dryer. On its face is a switch which is labelled "START". The switch does not appear to be manipulable by any human hand (unless the fingers are about 1/16 by 1/4 inch). On the front of the machine is a large lid, which is closed.
+
+> Machine Room                                                 Score: 205                                                                 Moves: 321                                                                               The lid opens.
+
+> Machine Room                                                 Score: 205                                                                 Moves: 322                                                                               Done.
+
+> Machine Room                                                 Score: 205                                                                 Moves: 323                                                                               The lid closes.
+
+> Machine Room                                                 Score: 205                                                                 Moves: 324                                                                               The machine comes to life (figuratively) with a dazzling display of colored lights and bizarre noises. After a few moments, the excitement abates.
+
+> Machine Room                                                 Score: 205                                                                 Moves: 325                                                                               The lid opens, revealing a huge diamond.
+
+> Machine Room                                                 Score: 205                                                                 Moves: 326                                                                               Taken.
+
+> Machine Room                                                 Score: 215                                                                 Moves: 327                                                                               Drafty Room
+At the end of the chain is a basket.
+
+> Drafty Room                                                 Score: 215                                                                 Moves: 328                                                                               pair of candles: Done.
+huge diamond: Done.
+screwdriver: Done.
+
+> Drafty Room                                                 Score: 215                                                                 Moves: 329                                                                               Timber Room
+There is a brass lantern (battery-powered) here.
+There is a matchbook whose cover says "Visit Beautiful FCD#3" here.
+There is a clove of garlic here.
+There is a stiletto here.
+There is a wrench here.
+There is an exquisite jade figurine here.
+There is a sapphire-encrusted bracelet here.
+There is a broken timber here.
+
+> Timber Room                                                 Score: 215                                                                 Moves: 330                                                                               brass lantern: Taken.
+matchbook: Taken.
+clove of garlic: Taken.
+stiletto: Taken.
+wrench: Taken.
+jade figurine: Taken.
+sapphire-encrusted bracelet: Taken.
+
+> Timber Room                                                 Score: 215                                                                 Moves: 331                                                                               Dropped.
+
+> Timber Room                                                 Score: 215                                                                 Moves: 332                                                                               Ladder Bottom
+
+> Ladder Bottom                                                 Score: 215                                                                 Moves: 333                                                                               Ladder Top
+
+> Ladder Top                                                 Score: 215                                                                 Moves: 334                                                                               Coal Mine
+
+> Coal Mine                                                 Score: 215                                                                 Moves: 335                                                                               Coal Mine
+
+> Coal Mine                                                 Score: 215                                                                 Moves: 336                                                                               Coal Mine
+There is a bloody axe here.
+
+> Coal Mine                                                 Score: 215                                                                 Moves: 337                                                                               Coal Mine
+
+> Coal Mine                                                 Score: 215                                                                 Moves: 338                                                                               Gas Room
+
+> Gas Room                                                 Score: 215                                                                 Moves: 339                                                                               Smelly Room
+
+> Smelly Room                                                 Score: 215                                                                 Moves: 340                                                                               Shaft Room
+From the chain is suspended a basket.
+
+> Shaft Room                                                 Score: 215                                                                 Moves: 341                                                                               The basket is raised to the top of the shaft.
+
+> Shaft Room                                                 Score: 215                                                                 Moves: 342                                                                               pair of candles: Taken.
+huge diamond: Taken.
+
+> Shaft Room                                                 Score: 215                                                                 Moves: 343                                                                               Bat Room
+In the corner of the room on the ceiling is a large vampire bat who is obviously deranged and holding his nose.
+
+> Bat Room                                                 Score: 215                                                                 Moves: 344                                                                               Squeaky Room
+
+> Squeaky Room                                                 Score: 215                                                                 Moves: 345                                                                               Mine Entrance
+
+> Mine Entrance                                                 Score: 215                                                                 Moves: 346                                                                               Slide Room
+
+> Slide Room                                                 Score: 215                                                                 Moves: 347                                                                               Cellar
+
+> Cellar                                                 Score: 215                                                                 Moves: 348                                                                               Living Room
+Your collection of treasures consists of:
+  A crystal trident
+  A trunk of jewels
+  A leather bag of coins
+  A jewel-encrusted egg
+  A chalice
+  A golden clockwork canary
+  A beautiful brass bauble
+  A crystal skull
+  A painting
+
+> Living Room                                                 Score: 215                                                                 Moves: 349                                                                               huge diamond: Done.
+sapphire-encrusted bracelet: Done.
+jade figurine: Done.
+
+> Living Room                                                 Score: 235                                                                 Moves: 350                                                                               Ok.
+
+> Living Room                                                 Score: 235                                                                 Moves: 350                                                                               Cellar
+
+> Cellar                                                 Score: 235                                                                 Moves: 351                                                                               The Troll Room
+
+> The Troll Room                                                 Score: 235                                                                 Moves: 352                                                                               East-West Passage
+
+> East-West Passage                                                 Score: 235                                                                 Moves: 353                                                                               Round Room
+
+> Round Room                                                 Score: 235                                                                 Moves: 354                                                                               North-South Passage
+This is a high north-south passage, which forks to the northeast.
+
+> North-South Passage                                                 Score: 235                                                                 Moves: 355                                                                               The brass lantern is now off.
+
+> North-South Passage                                                 Score: 235                                                                 Moves: 356                                                                               Deep Canyon
+You are on the south edge of a deep canyon. Passages lead off to the east, northwest and southwest. A stairway leads down. You can hear the sound of flowing water from below.
+The candles are becoming quite short.
+
+> Deep Canyon                                                 Score: 235                                                                 Moves: 357                                                                               Dam
+
+> Dam                                                 Score: 235                                                                 Moves: 358                                                                               The sluice gates close and water starts to collect behind the dam.
+
+> Dam                                                 Score: 235                                                                 Moves: 359                                                                               Deep Canyon
+
+> Deep Canyon                                                 Score: 235                                                                 Moves: 360                                                                               Loud Room
+This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is eerie in its quietness.
+On the ground is a large platinum bar.
+
+> Loud Room                                                 Score: 235                                                                 Moves: 361                                                                               Taken.
+
+> Loud Room                                                 Score: 245                                                                 Moves: 362                                                                               Round Room
+
+> Round Room                                                 Score: 245                                                                 Moves: 363                                                                               Engravings Cave
+There are old engravings on the walls here.
+
+> Engravings Cave                                                 Score: 245                                                                 Moves: 364                                                                               Dome Room
+
+> Dome Room                                                 Score: 245                                                                 Moves: 365                                                                               Torch Room
+Sitting on the pedestal is a flaming torch, made of ivory.
+
+> Torch Room                                                 Score: 245                                                                 Moves: 366                                                                               brass lantern: Dropped.
+pair of candles: Dropped.
+The candles won't last long now.
+
+> Torch Room                                                 Score: 245                                                                 Moves: 367                                                                               Taken.
+
+> Torch Room                                                 Score: 259                                                                 Moves: 368                                                                               Temple
+
+> Temple                                                 Score: 259                                                                 Moves: 369                                                                               Egyptian Room
+This is a room which looks like an Egyptian tomb. There is an ascending staircase to the west.
+The solid-gold coffin used for the burial of Ramses II is here.
+
+> Egyptian Room                                                 Score: 259                                                                 Moves: 370                                                                               The gold coffin opens.
+A sceptre, possibly that of ancient Egypt itself, is in the coffin. The sceptre is ornamented with colored enamel, and tapers to a sharp point.
+
+> Egyptian Room                                                 Score: 259                                                                 Moves: 371                                                                               Taken.
+
+> Egyptian Room                                                 Score: 263                                                                 Moves: 372                                                                               Temple
+
+> Temple                                                 Score: 263                                                                 Moves: 373                                                                               Altar
+
+> Altar                                                 Score: 263                                                                 Moves: 374                                                                               Cave
+
+> Cave                                                 Score: 263                                                                 Moves: 375                                                                               Mirror Room
+
+> Mirror Room                                                 Score: 263                                                                 Moves: 376                                                                               Narrow Passage
+
+> Narrow Passage                                                 Score: 263                                                                 Moves: 377                                                                               Round Room
+
+> Round Room                                                 Score: 263                                                                 Moves: 378                                                                               East-West Passage
+
+> East-West Passage                                                 Score: 263                                                                 Moves: 379                                                                               The Troll Room
+
+> The Troll Room                                                 Score: 263                                                                 Moves: 380                                                                               Cellar
+
+> Cellar                                                 Score: 263                                                                 Moves: 381                                                                               Living Room
+Your collection of treasures consists of:
+  A jade figurine
+  A sapphire-encrusted bracelet
+  A huge diamond
+  A crystal trident
+  A trunk of jewels
+  A leather bag of coins
+  A jewel-encrusted egg
+  A chalice
+  A golden clockwork canary
+  A beautiful brass bauble
+  A crystal skull
+  A painting
+
+> Living Room                                                 Score: 263                                                                 Moves: 382                                                                               platinum bar: Done.
+
+> Living Room                                                 Score: 268                                                                 Moves: 383                                                                               Ok.
+
+> Living Room                                                 Score: 268                                                                 Moves: 383                                                                               Kitchen
+Sitting on the kitchen table is: 
+  A brown sack
+  The brown sack contains:
+    A lunch
+
+> Kitchen                                                 Score: 268                                                                 Moves: 384                                                                               Behind House
+
+> Behind House                                                 Score: 268                                                                 Moves: 385                                                                               Clearing
+You are in a small clearing in a well marked forest path that extends to the east and west.
+
+> Clearing                                                 Score: 268                                                                 Moves: 386                                                                               Canyon View
+You are at the top of the Great Canyon on its west wall. From here there is a marvelous view of the canyon and parts of the Frigid River upstream. Across the canyon, the walls of the White Cliffs join the mighty ramparts of the Flathead Mountains to the east. Following the Canyon upstream to the north, Aragain Falls may be seen, complete with rainbow. The mighty Frigid River flows out from a great dark cavern. To the west and south can be seen an immense forest, stretching for miles around. A path leads northwest. It is possible to climb down into the canyon from here.
+
+> Canyon View                                                 Score: 268                                                                 Moves: 387                                                                               Rocky Ledge
+You are on a ledge about halfway up the wall of the river canyon. You can see from here that the main flow from Aragain Falls twists along a passage which it is impossible for you to enter. Below you is the canyon bottom. Above you is more cliff, which appears climbable.
+
+> Rocky Ledge                                                 Score: 268                                                                 Moves: 388                                                                               Canyon Bottom
+You are beneath the walls of the river canyon which may be climbable here. The lesser part of the runoff of Aragain Falls flows by below. To the north is a narrow path.
+
+> Canyon Bottom                                                 Score: 268                                                                 Moves: 389                                                                               End of Rainbow
+You are on a small, rocky beach on the continuation of the Frigid River past the Falls. The beach is narrow due to the presence of the White Cliffs. The river canyon opens here and sunlight shines in from above. A rainbow crosses over the falls to the east and a narrow path continues to the southwest.
+
+> End of Rainbow                                                 Score: 268                                                                 Moves: 390                                                                               Suddenly, the rainbow appears to become solid and, I venture, walkable (I think the giveaway was the stairs and bannister).
+A shimmering pot of gold appears at the end of the rainbow.
+
+> End of Rainbow                                                 Score: 268                                                                 Moves: 391                                                                               Taken.
+
+> End of Rainbow                                                 Score: 278                                                                 Moves: 392                                                                               On the Rainbow
+You are on top of a rainbow (I bet you never thought you would walk on a rainbow), with a magnificent view of the Falls. The rainbow travels east-west here.
+
+> On the Rainbow                                                 Score: 278                                                                 Moves: 393                                                                               Aragain Falls
+You are at the top of Aragain Falls, an enormous waterfall with a drop of about 450 feet. The only path here is on the north end.
+A solid rainbow spans the falls.
+
+> Aragain Falls                                                 Score: 278                                                                 Moves: 394                                                                               Shore
+You are on the east shore of the river. The water here seems somewhat treacherous. A path travels from north to south here, the south end quickly turning around a sharp corner.
+
+> Shore                                                 Score: 278                                                                 Moves: 395                                                                               Sandy Beach
+You are on a large sandy beach on the east shore of the river, which is flowing quickly by. A path runs beside the river to the south here, and a passage is partially buried in sand to the northeast.
+There is a shovel here.
+
+> Sandy Beach                                                 Score: 278                                                                 Moves: 396                                                                               Taken.
+
+> Sandy Beach                                                 Score: 278                                                                 Moves: 397                                                                               Sandy Cave
+This is a sand-filled cave whose exit is to the southwest.
+
+> Sandy Cave                                                 Score: 278                                                                 Moves: 398                                                                               You seem to be digging a hole here.
+
+> Sandy Cave                                                 Score: 278                                                                 Moves: 399                                                                               The hole is getting deeper, but that's about it.
+
+> Sandy Cave                                                 Score: 278                                                                 Moves: 400                                                                               You are surrounded by a wall of sand on all sides.
+
+> Sandy Cave                                                 Score: 278                                                                 Moves: 401                                                                               You can see a scarab here in the sand.
+
+> Sandy Cave                                                 Score: 278                                                                 Moves: 402                                                                               Taken.
+
+> Sandy Cave                                                 Score: 283                                                                 Moves: 403                                                                               Sandy Beach
+
+> Sandy Beach                                                 Score: 283                                                                 Moves: 404                                                                               Shore
+
+> Shore                                                 Score: 283                                                                 Moves: 405                                                                               Aragain Falls
+
+> Aragain Falls                                                 Score: 283                                                                 Moves: 406                                                                               On the Rainbow
+
+> On the Rainbow                                                 Score: 283                                                                 Moves: 407                                                                               End of Rainbow
+
+> End of Rainbow                                                 Score: 283                                                                 Moves: 408                                                                               Canyon Bottom
+
+> Canyon Bottom                                                 Score: 283                                                                 Moves: 409                                                                               Rocky Ledge
+
+> Rocky Ledge                                                 Score: 283                                                                 Moves: 410                                                                               Canyon View
+
+> Canyon View                                                 Score: 283                                                                 Moves: 411                                                                               Clearing
+
+> Clearing                                                 Score: 283                                                                 Moves: 412                                                                               Behind House
+
+> Behind House                                                 Score: 283                                                                 Moves: 413                                                                               Kitchen
+Sitting on the kitchen table is: 
+  A brown sack
+  The brown sack contains:
+    A lunch
+
+> Kitchen                                                 Score: 283                                                                 Moves: 414                                                                               Living Room
+Your collection of treasures consists of:
+  A platinum bar
+  A jade figurine
+  A sapphire-encrusted bracelet
+  A huge diamond
+  A crystal trident
+  A trunk of jewels
+  A leather bag of coins
+  A jewel-encrusted egg
+  A chalice
+  A golden clockwork canary
+  A beautiful brass bauble
+  A crystal skull
+  A painting
+
+> Living Room                                                 Score: 283                                                                 Moves: 415                                                                               beautiful jeweled scarab: Done.
+pot of gold: Done.
+sceptre: Done.
+
+> Living Room                                                 Score: 304                                                                 Moves: 416                                                                               Ok.
+
+> Living Room                                                 Score: 304                                                                 Moves: 416                                                                               Cellar
+
+> Cellar                                                 Score: 304                                                                 Moves: 417                                                                               The Troll Room
+
+> The Troll Room                                                 Score: 304                                                                 Moves: 418                                                                               East-West Passage
+
+> East-West Passage                                                 Score: 304                                                                 Moves: 419                                                                               Round Room
+
+> Round Room                                                 Score: 304                                                                 Moves: 420                                                                               Loud Room
+This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is deafeningly loud with an undetermined rushing sound. The sound seems to reverberate from all of the walls, making it difficult even to think.
+
+> Loud Room                                                 Score: 304                                                                 Moves: 420                                                                               Deep Canyon
+You are on the south edge of a deep canyon. Passages lead off to the east, northwest and southwest. A stairway leads down. You can hear the sound of flowing water from below.
+
+> Deep Canyon                                                 Score: 304                                                                 Moves: 421                                                                               Reservoir South
+You are in a long room on the south shore of a large lake, far too deep and wide for crossing.
+There is a path along the stream to the east or west, a steep pathway climbing southwest along the edge of a chasm, and a path leading into a canyon to the southeast.
+
+> Reservoir South                                                 Score: 304                                                                 Moves: 422                                                                               You would drown.
+
+> Reservoir South                                                 Score: 304                                                                 Moves: 423                                                                               Dam
+
+> Dam                                                 Score: 304                                                                 Moves: 424                                                                               I don't know the word "wiht".
+
+> Dam                                                 Score: 304                                                                 Moves: 424                                                                               The sluice gates open and water pours through the dam.
+
+> Dam                                                 Score: 304                                                                 Moves: 425                                                                               Reservoir South
+You are in a long room. To the north is a large lake, too deep to cross. You notice, however, that the water level appears to be dropping at a rapid rate. Before long, it might be possible to cross to the other side from here.
+There is a path along the stream to the east or west, a steep pathway climbing southwest along the edge of a chasm, and a path leading into a canyon to the southeast.
+
+> Reservoir South                                                 Score: 304                                                                 Moves: 426                                                                               Time passes...
+
+> Reservoir South                                                 Score: 304                                                                 Moves: 429                                                                               You would drown.
+
+> Reservoir South                                                 Score: 304                                                                 Moves: 430                                                                               Time passes...
+The water level is now quite low here and you could easily cross over to the other side.
+
+> Reservoir South                                                 Score: 304                                                                 Moves: 432                                                                               Reservoir
+
+> Reservoir                                                 Score: 304                                                                 Moves: 433                                                                               Reservoir North
+There is a hand-held air pump here.
+
+> Reservoir North                                                 Score: 304                                                                 Moves: 434                                                                               Taken.
+
+> Reservoir North                                                 Score: 304                                                                 Moves: 435                                                                               Reservoir
+
+> Reservoir                                                 Score: 304                                                                 Moves: 436                                                                               Reservoir South
+
+> Reservoir South                                                 Score: 304                                                                 Moves: 437                                                                               Dam
+
+> Dam                                                 Score: 304                                                                 Moves: 438                                                                               Dam Base
+You are at the base of Flood Control Dam #3, which looms above you and to the north. The river Frigid is flowing by here. Along the river are the White Cliffs which seem to form giant walls stretching from north to south along the shores of the river as it winds its way downstream.
+There is a folded pile of plastic here which has a small valve attached.
+
+> Dam Base                                                 Score: 304                                                                 Moves: 439                                                                               Taken.
+
+> Dam Base                                                 Score: 304                                                                 Moves: 440                                                                               Dam
+
+> Dam                                                 Score: 304                                                                 Moves: 441                                                                               Deep Canyon
+You are on the south edge of a deep canyon. Passages lead off to the east, northwest and southwest. A stairway leads down. You can hear the sound of flowing water from below.
+
+> Deep Canyon                                                 Score: 304                                                                 Moves: 442                                                                               Loud Room
+This is a large room with a ceiling which cannot be detected from the ground. There is a narrow passage from east to west and a stone stairway leading upward. The room is deafeningly loud with an undetermined rushing sound. The sound seems to reverberate from all of the walls, making it difficult even to think.
+
+> Loud Room                                                 Score: 304                                                                 Moves: 442                                                                               Damp Cave
+This cave has exits to the west and east, and narrows to a crack toward the south. The earth is particularly damp here.
+
+> Damp Cave                                                 Score: 304                                                                 Moves: 443                                                                               White Cliffs Beach
+You are on a narrow strip of beach which runs along the base of the White Cliffs. There is a narrow path heading south along the Cliffs and a tight passage leading west into the cliffs themselves.
+
+> White Cliffs Beach                                                 Score: 304                                                                 Moves: 444                                                                               pile of plastic: Dropped.
+shovel: Dropped.
+wrench: Dropped.
+clove of garlic: Dropped.
+matchbook: Dropped.
+
+> White Cliffs Beach                                                 Score: 304                                                                 Moves: 445                                                                               What do you want to inflate the plastic with?
+
+> White Cliffs Beach                                                 Score: 304                                                                 Moves: 445                                                                               The boat inflates and appears seaworthy.
+A tan label is lying inside the boat.
+
+> White Cliffs Beach                                                 Score: 304                                                                 Moves: 446                                                                               You can't see any plastic here!
+
+> White Cliffs Beach                                                 Score: 304                                                                 Moves: 447                                                                               (Taken)
+  !!!!FROBOZZ MAGIC BOAT COMPANY!!!!
+
+Hello, Sailor!
+
+Instructions for use:
+
+   To get into a body of water, say "Launch".
+   To get to shore, say "Land" or the direction in which you want to maneuver the boat.
+
+Warranty:
+
+  This boat is guaranteed against all defects for a period of 76 milliseconds from date of purchase or until first used, whichever comes first.
+
+Warning:
+   This boat is made of thin plastic.
+   Good Luck!
+
+> White Cliffs Beach                                                 Score: 304                                                                 Moves: 448                                                                               Dropped.
+
+> White Cliffs Beach                                                 Score: 304                                                                 Moves: 449                                                                               You are now in the magic boat.
+
+> White Cliffs Beach                                                 Score: 304                                                                 Moves: 450                                                                               Frigid River, in the magic boat
+The river descends here into a valley. There is a narrow beach on the west shore below the cliffs. In the distance a faint rumbling can be heard.
+
+> Frigid River                                                 Score: 304                                                                 Moves: 451                                                                               Time passes...
+The flow of the river carries you downstream.
+
+Frigid River, in the magic boat
+The river is running faster here and the sound ahead appears to be that of rushing water. On the east shore is a sandy beach. A small area of beach can also be seen below the cliffs on the west shore.
+There is a red buoy here (probably a warning).
+
+> Frigid River                                                 Score: 304                                                                 Moves: 453                                                                               Taken.
+
+> Frigid River                                                 Score: 304                                                                 Moves: 454                                                                               You can land either to the east or the west.
+The flow of the river carries you downstream.
+
+Frigid River, in the magic boat
+The sound of rushing water is nearly unbearable here. On the east shore is a large landing area.
+
+> Frigid River                                                 Score: 304                                                                 Moves: 455                                                                               The magic boat comes to a rest on the shore.
+
+Shore, in the magic boat
+
+> Shore                                                 Score: 304                                                                 Moves: 456                                                                               Opening the red buoy reveals a large emerald.
+
+> Shore                                                 Score: 309                                                                 Moves: 457                                                                               Taken.
+
+> Shore                                                 Score: 309                                                                 Moves: 458                                                                               Dropped.
+
+> Shore                                                 Score: 309                                                                 Moves: 459                                                                               You are on your own feet again.
+
+> Shore                                                 Score: 309                                                                 Moves: 460                                                                               The boat deflates.
+
+> Shore                                                 Score: 309                                                                 Moves: 461                                                                               Taken.
+
+> Shore                                                 Score: 309                                                                 Moves: 462                                                                               Aragain Falls
+
+> Aragain Falls                                                 Score: 309                                                                 Moves: 463                                                                               On the Rainbow
+
+> On the Rainbow                                                 Score: 309                                                                 Moves: 464                                                                               End of Rainbow
+
+> End of Rainbow                                                 Score: 309                                                                 Moves: 465                                                                               Canyon Bottom
+
+> Canyon Bottom                                                 Score: 309                                                                 Moves: 466                                                                               Rocky Ledge
+
+> Rocky Ledge                                                 Score: 309                                                                 Moves: 467                                                                               Canyon View
+
+> Canyon View                                                 Score: 309                                                                 Moves: 468                                                                               Clearing
+
+> Clearing                                                 Score: 309                                                                 Moves: 469                                                                               Behind House
+
+> Behind House                                                 Score: 309                                                                 Moves: 470                                                                               Kitchen
+Sitting on the kitchen table is: 
+  A brown sack
+  The brown sack contains:
+    A lunch
+
+> Kitchen                                                 Score: 309                                                                 Moves: 471                                                                               Living Room
+Your collection of treasures consists of:
+  A sceptre
+  A pot of gold
+  A beautiful jeweled scarab
+  A platinum bar
+  A jade figurine
+  A sapphire-encrusted bracelet
+  A huge diamond
+  A crystal trident
+  A trunk of jewels
+  A leather bag of coins
+  A jewel-encrusted egg
+  A chalice
+  A golden clockwork canary
+  A beautiful brass bauble
+  A crystal skull
+  A painting
+
+> Living Room                                                 Score: 309                                                                 Moves: 472                                                                               Done.
+
+> Living Room                                                 Score: 319                                                                 Moves: 473                                                                               Cellar
+
+> Cellar                                                 Score: 319                                                                 Moves: 474                                                                               The Troll Room
+
+> The Troll Room                                                 Score: 319                                                                 Moves: 475                                                                               East-West Passage
+
+> East-West Passage                                                 Score: 319                                                                 Moves: 476                                                                               Round Room
+
+> Round Room                                                 Score: 319                                                                 Moves: 477                                                                               Loud Room
+
+> Loud Room                                                 Score: 319                                                                 Moves: 477                                                                               Damp Cave
+
+> Damp Cave                                                 Score: 319                                                                 Moves: 478                                                                               White Cliffs Beach
+There is a tan label here.
+There is a matchbook whose cover says "Visit Beautiful FCD#3" here.
+There is a clove of garlic here.
+There is a wrench here.
+There is a shovel here.
+
+> White Cliffs Beach                                                 Score: 319                                                                 Moves: 479                                                                               matchbook: Taken.
+clove of garlic: Taken.
+wrench: Taken.
+shovel: Taken.
+
+> White Cliffs Beach                                                 Score: 319                                                                 Moves: 480                                                                               Ok.
+
+> White Cliffs Beach                                                 Score: 319                                                                 Moves: 480                                                                               Damp Cave
+
+> Damp Cave                                                 Score: 319                                                                 Moves: 481                                                                               Loud Room
+
+> Loud Room                                                 Score: 319                                                                 Moves: 481                                                                               Round Room
+
+> Round Room                                                 Score: 319                                                                 Moves: 482                                                                               Engravings Cave
+There are old engravings on the walls here.
+
+> Engravings Cave                                                 Score: 319                                                                 Moves: 483                                                                               Dome Room
+
+> Dome Room                                                 Score: 319                                                                 Moves: 484                                                                               Torch Room
+There is a pair of candles here.
+There is a brass lantern (battery-powered) here.
+
+> Torch Room                                                 Score: 319                                                                 Moves: 485                                                                               Temple
+
+> Temple                                                 Score: 319                                                                 Moves: 486                                                                               Egyptian Room
+The solid-gold coffin used for the burial of Ramses II is here.
+
+> Egyptian Room                                                 Score: 319                                                                 Moves: 487                                                                               shovel: Dropped.
+wrench: Dropped.
+clove of garlic: Dropped.
+matchbook: Dropped.
+pile of plastic: Dropped.
+hand-held air pump: Dropped.
+
+> Egyptian Room                                                 Score: 319                                                                 Moves: 488                                                                               Taken.
+
+> Egyptian Room                                                 Score: 329                                                                 Moves: 489                                                                               You can't go that way.
+
+> Egyptian Room                                                 Score: 329                                                                 Moves: 490                                                                               Temple
+
+> Temple                                                 Score: 329                                                                 Moves: 491                                                                               Altar
+
+> Altar                                                 Score: 329                                                                 Moves: 492                                                                               Forest
+This is a forest, with trees in all directions. To the east, there appears to be sunlight.
+
+> Forest                                                 Score: 329                                                                 Moves: 493                                                                               Forest Path
+
+> Forest Path                                                 Score: 329                                                                 Moves: 494                                                                               North of House
+
+> North of House                                                 Score: 329                                                                 Moves: 495                                                                               Behind House
+
+> Behind House                                                 Score: 329                                                                 Moves: 496                                                                               Kitchen
+Sitting on the kitchen table is: 
+  A brown sack
+  The brown sack contains:
+    A lunch
+
+> Kitchen                                                 Score: 329                                                                 Moves: 497                                                                               Living Room
+Your collection of treasures consists of:
+  A large emerald
+  A sceptre
+  A pot of gold
+  A beautiful jeweled scarab
+  A platinum bar
+  A jade figurine
+  A sapphire-encrusted bracelet
+  A huge diamond
+  A crystal trident
+  A trunk of jewels
+  A leather bag of coins
+  A jewel-encrusted egg
+  A chalice
+  A golden clockwork canary
+  A beautiful brass bauble
+  A crystal skull
+  A painting
+
+> Living Room                                                 Score: 329                                                                 Moves: 498                                                                               gold coffin: Done.
+torch: Done.
+An almost inaudible voice whispers in your ear, "Look to your treasures for the final secret."
+
+> Living Room                                                 Score: 350                                                                 Moves: 499                                                                               (Taken)
+The map shows a forest with three clearings. The largest clearing contains a house. Three paths leave the large clearing. One of these paths, leading southwest, is marked "To Stone Barrow".
+
+> Living Room                                                 Score: 350                                                                 Moves: 500                                                                               Kitchen
+Sitting on the kitchen table is: 
+  A brown sack
+  The brown sack contains:
+    A lunch
+
+> Kitchen                                                 Score: 350                                                                 Moves: 501                                                                               Behind House
+
+> Behind House                                                 Score: 350                                                                 Moves: 502                                                                               South of House
+You are facing the south side of a white house. There is no door here, and all the windows are boarded.
+
+> South of House                                                 Score: 350                                                                 Moves: 503                                                                               West of House
+You are standing in an open field west of a white house, with a boarded front door. A secret path leads southwest into the forest.
+There is a small mailbox here.
+
+> West of House                                                 Score: 350                                                                 Moves: 504                                                                               Stone Barrow
+You are standing in front of a massive barrow of stone. In the east face is a huge stone door which is open. You cannot see into the dark of the tomb.
+
+> Stone Barrow                                                 Score: 350                                                                 Moves: 505                                                                               Inside the Barrow
+As you enter the barrow, the door closes inexorably behind you. Around you it is dark, but ahead is an enormous cavern, brightly lit. Through its center runs a wide stream. Spanning the stream is a small wooden footbridge, and beyond a path leads into a dark tunnel. Above the bridge, floating in the air, is a large sign. It reads:  All ye who stand before this bridge have completed a great and perilous adventure which has tested your wit and courage. You have mastered the first part of the ZORK trilogy. Those who pass over this bridge must be prepared to undertake an even greater adventure that will severely test your skill and bravery!
+
+The ZORK trilogy continues with "ZORK II: The Wizard of Frobozz" and is completed in "ZORK III: The Dungeon Master."
+Your score is 350 (total of 350 points), in 505 moves.
+This gives you the rank of Master Adventurer.
+
+Would you like to restart the game from the beginning, restore a saved game position, or end this session of the game?
+(Type RESTART, RESTORE, or QUIT):
+> Stone Barrow                                                 Score: 350                                                                 Moves: 505                                                                               

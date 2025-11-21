@@ -1,0 +1,23 @@
+This directory contains the source code for Zork I, a 1980 interactive fiction
+game written by Marc Blank, Dave Lebling, Bruce Daniels, and Tim Anderson and
+published by Infocom. In 2025, it was released as open source by Microsoft (see
+the LICENSE file for details).
+
+Zork II and III are also available as open source:
+* https://github.com/historicalsource/zork2
+* https://github.com/historicalsource/zork3
+
+The Zork games were originally built with Infocom's compiler, ZILCH, but ZILF is
+able to compile them without modification.
+
+As a product of a different era, the code uses some conventions and practices
+that are not recommended for use in new ZIL projects. For example, Zork predates
+the concept of a "standard library" for interactive fiction, so it contains its
+own copy of the entire parser, which was copied from one game to another (with
+slight modifications) as new projects were started.
+
+Much of the functionality in Zork's parser is now available as part of ZILF's
+standard library, but some details of the implementation differ, so this code
+may not be the best reference for how to write a new game using ZILF. It's
+included here primarily for historical interest and as a demonstration of ZILF's
+ability to compile legacy ZIL code.
