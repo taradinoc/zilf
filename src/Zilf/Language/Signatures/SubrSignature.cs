@@ -26,11 +26,13 @@ namespace Zilf.Language.Signatures
         public IReadOnlyList<ISignaturePart> Parts { get; }
         public int MinArgs { get; }
         public int? MaxArgs { get; }
+        public string? Summary { get; }
 
         // Internal constructor used by builders
-        internal SubrSignature(IReadOnlyList<ISignaturePart> parts)
+        internal SubrSignature(IReadOnlyList<ISignaturePart> parts, string? summary)
         {
             Parts = parts;
+            Summary = summary;
 
             MinArgs = parts.Sum(p => p.MinArgs);
 
@@ -39,9 +41,9 @@ namespace Zilf.Language.Signatures
         }
 
         // Factory used by generated source to construct signatures from parts
-        internal static ISignature FromGeneratedParts(ISignaturePart[] parts)
+        internal static ISignature FromGeneratedParts(ISignaturePart[] parts, string? summary)
         {
-            return new SubrSignature(parts);
+            return new SubrSignature(parts, summary);
         }
     }
 }

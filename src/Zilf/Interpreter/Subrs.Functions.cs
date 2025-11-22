@@ -25,6 +25,17 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
+        /// <summary>
+        /// Defines a new function and sets it as the global value of an atom. (Or, in MDL-ZIL? mode, an alias for ROUTINE.)
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="name">The name of the new function.</param>
+        /// <param name="activationAtom">An optional atom which will be assigned an activation when the function is called.</param>
+        /// <param name="argList">A list of arguments for the function.</param>
+        /// <param name="decl">An optional DECL specifying the types of the function's arguments and return value.</param>
+        /// <param name="body">A sequence of expressions forming the function body.</param>
+        /// <returns>The name of the new function.</returns>
+        /// <exception cref="InterpreterError">A global named <paramref name="name"/> is already defined.</exception>
         [FSubr]
         [MdlZilRedirect(typeof(Subrs), nameof(ROUTINE))]
         public static ZilObject DEFINE(Context ctx, ZilAtom name,
@@ -32,6 +43,17 @@ namespace Zilf.Interpreter
             [Optional] ZilDecl? decl, [Required] ZilObject[] body) =>
             PerformDefine(ctx, name, activationAtom, argList, decl, body, "DEFINE");
 
+        /// <summary>
+        /// Defines a new function and sets it as the global value of an atom. (Equivalent to DEFINE.)
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="name">The name of the new function.</param>
+        /// <param name="activationAtom">An optional atom which will be assigned an activation when the function is called.</param>
+        /// <param name="argList">A list of arguments for the function.</param>
+        /// <param name="decl">An optional DECL specifying the types of the function's arguments and return value.</param>
+        /// <param name="body">A sequence of expressions forming the function body.</param>
+        /// <returns>The name of the new function.</returns>
+        /// <exception cref="InterpreterError">A global named <paramref name="name"/> is already defined.</exception>
         [FSubr]
         public static ZilObject DEFINE20(Context ctx, ZilAtom name,
             [Optional] ZilAtom? activationAtom, ZilList argList,
@@ -76,6 +98,16 @@ namespace Zilf.Interpreter
             return name;
         }
 
+        /// <summary>
+        /// Defines a new macro and sets it as the global value of an atom.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="name">The name of the new macro.</param>
+        /// <param name="activationAtom">An optional atom which will be assigned an activation when the macro is called.</param>
+        /// <param name="argList">A list of arguments for the macro.</param>
+        /// <param name="decl">An optional DECL specifying the types of the macro's arguments and return value.</param>
+        /// <param name="body">A sequence of expressions forming the macro body.</param>
+        /// <returns>The name of the new macro.</returns>
         /// <exception cref="InterpreterError">A global named <paramref name="name"/> is already defined.</exception>
         [FSubr]
         public static ZilObject DEFMAC(Context ctx, ZilAtom name,
@@ -100,18 +132,39 @@ namespace Zilf.Interpreter
             return name;
         }
 
+        /// <summary>
+        /// Returns an expression without evaluating it.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="value">The value to return.</param>
+        /// <returns>The value.</returns>
         [FSubr]
         public static ZilObject QUOTE(Context ctx, ZilObject value)
         {
             return value;
         }
 
+        /// <summary>
+        /// Evaluates an expression in a given environment.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="value">The expression to evaluate.</param>
+        /// <param name="env"></param>
+        /// <returns>The result of evaluating the expression.</returns>
         [Subr]
         public static ZilResult EVAL(Context ctx, ZilObject value, LocalEnvironment env)
         {
             return value.Eval(ctx, env);
         }
 
+        /// <summary>
+        /// Evaluates an expression in the current environment.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="_1">Ignored.</param>
+        /// <param name="value">The expression to evaluate.</param>
+        /// <param name="_2">Ignored.</param>
+        /// <returns>The result of evaluating the expression.</returns>
         [Subr("EVAL-IN-SEGMENT")]
         public static ZilResult EVAL_IN_SEGMENT(Context ctx, [ParamDesc("dummy1")] ZilObject _1,
              ZilObject value, [ParamDesc("dummy2")] ZilObject? _2 = null)
@@ -119,6 +172,12 @@ namespace Zilf.Interpreter
             return value.Eval(ctx);
         }
 
+        /// <summary>
+        /// Expands a macro invocation, or evaluates an expression in the current environment.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="value">The expression to expand or evaluate.</param>
+        /// <returns>The result of expanding or evaluating the expression.</returns>
         [Subr]
         public static ZilResult EXPAND(Context ctx, ZilObject value)
         {
@@ -132,6 +191,13 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        /// <summary>
+        /// Applies a function or other applicable value to a set of arguments.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="ap">The applicable value.</param>
+        /// <param name="args">The arguments to apply the value to.</param>
+        /// <returns>The result of the function application.</returns>
         [Subr]
         public static ZilResult APPLY(Context ctx, IApplicable ap, ZilObject[] args)
         {

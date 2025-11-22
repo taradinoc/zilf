@@ -25,6 +25,16 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
+        /// <summary>
+        /// Applies a function to each element of one or more structures, collecting the results.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="finalf">A function to apply to the collected results after the loop completes, or false to skip this step.</param>
+        /// <param name="loopf">A function to apply to each element of the structures.</param>
+        /// <param name="structs">Optional additional structures to iterate over simultaneously.</param>
+        /// <returns>The result of the final function applied to the collected results,
+        /// or the final result of the loop function if no final function is provided,
+        /// or false if no results were produced.</returns>
         [Subr]
         public static ZilResult MAPF(Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
@@ -33,6 +43,16 @@ namespace Zilf.Interpreter
             return PerformMap(ctx, finalf, loopf, structs, true);
         }
 
+        /// <summary>
+        /// Applies a function to each suffix of one or more structures, collecting the results.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="finalf">A function to apply to the collected results after the loop completes, or false to skip this step.</param>
+        /// <param name="loopf">A function to apply to each suffix of the structures.</param>
+        /// <param name="structs">Optional additional structures to iterate over simultaneously.</param>
+        /// <returns>The result of the final function applied to the collected results,
+        /// or the final result of the loop function if no final function is provided,
+        /// or false if no results were produced.</returns>
         [Subr]
         public static ZilResult MAPR(Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject finalf,
@@ -115,12 +135,30 @@ namespace Zilf.Interpreter
             return results.Count > 0 ? results[^1] : ctx.FALSE;
         }
 
+        /// <summary>
+        /// Causes the enclosing loop function to return zero or more values immediately, adding them to the collected results.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="args">The arguments to return immediately from the enclosing loop function.</param>
+        /// <returns>Does not return normally.</returns>
         [Subr]
         public static ZilResult MAPRET(Context ctx, ZilObject[] args) => ZilResult.MapRet(args);
 
+        /// <summary>
+        /// Causes the enclosing MAPF/MAPR to stop looping immediately, after adding zero or more values to the collected results.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="args">The arguments to add to the collected results before stopping the loop.</param>
+        /// <returns>Does not return normally.</returns>
         [Subr]
         public static ZilResult MAPSTOP(Context ctx, ZilObject[] args) => ZilResult.MapStop(args);
 
+        /// <summary>
+        /// Causes the enclosing MAPF/MAPR to exit immediately, returning a specified value and discarding any collected results.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="value">The value to return from MAPF/MAPR.</param>
+        /// <returns>Does not return normally.</returns>
         [Subr]
         public static ZilResult MAPLEAVE(Context ctx, ZilObject? value = null) => ZilResult.MapLeave(value ?? ctx.TRUE);
     }

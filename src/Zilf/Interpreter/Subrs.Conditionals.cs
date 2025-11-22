@@ -23,6 +23,12 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
+        /// <summary>
+        /// Evaluates a series of conditional clauses, returning the result of the first clause whose condition is true.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="clauses">A sequence of lists, where the first element of each list is the condition that gates evaluation of the rest of the list.</param>
+        /// <returns>The result of the last evaluation performed, i.e., the last expression in the first clause whose condition is true, or false if no clause is true.</returns>
         [FSubr]
         public static ZilResult COND(Context ctx, [Required] CondClause[] clauses)
         {
@@ -59,6 +65,12 @@ namespace Zilf.Interpreter
         }
 #pragma warning restore CS0649
 
+        /// <summary>
+        /// Evaluates a series of expressions, returning as soon as one is true.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="args">A sequence of expressions to evaluate.</param>
+        /// <returns>The result of the last evaluation performed, i.e., the first expression that evaluates to true, or false if none do.</returns>
         [FSubr]
         public static ZilResult OR(Context ctx, ZilObject[] args)
         {
@@ -79,6 +91,12 @@ namespace Zilf.Interpreter
             return resultObj;
         }
 
+        /// <summary>
+        /// Evaluates a series of expressions, returning as soon as one is false.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="args">A sequence of expressions to evaluate.</param>
+        /// <returns>The result of the last evaluation performed, i.e., the first expression that evaluates to false, or true if none do.</returns>
         [FSubr]
         public static ZilResult AND(Context ctx, ZilObject[] args)
         {

@@ -264,6 +264,13 @@ namespace Zilf.Compiler.Builtins
 
         // TODO: simplify this method
         // TODO: add a way to tag builtins as needing local variable access, so we can give better errors when they're used from GO?
+        /// <summary>
+        /// Returns true if the first argument is equal to any of the remaining arguments.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="arg1">The first argument to compare.</param>
+        /// <param name="arg2">The second argument to compare.</param>
+        /// <param name="restOfArgs">Optional additional arguments to compare.</param>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [Builtin("EQUAL?", "=?", "==?")]
         public static void VarargsEqualityOp(
@@ -408,6 +415,13 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        /// <summary>
+        /// Returns true if the first argument is not equal to any of the remaining arguments.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="arg1">The first argument to compare.</param>
+        /// <param name="arg2">The second argument to compare.</param>
+        /// <param name="restOfArgs">Optional additional arguments to compare.</param>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [Builtin("N=?", "N==?")]
         public static void NegatedVarargsEqualityOp(
@@ -422,12 +436,12 @@ namespace Zilf.Compiler.Builtins
 
         #region Ternary Opcodes
 
-        [Builtin("DCLEAR", Data = TernaryOp.ErasePicture, MinVersion = 6, HasSideEffect = true)]
-        [Builtin("DIROUT", Data = TernaryOp.DirectOutput, MinVersion = 6, HasSideEffect = true)]
-        [Builtin("DISPLAY", Data = TernaryOp.DrawPicture, MinVersion = 6, HasSideEffect = true)]
-        [Builtin("WINPOS", Data = TernaryOp.MoveWindow, MinVersion = 6, HasSideEffect = true)]
-        [Builtin("WINPUT", Data = TernaryOp.PutWindowProperty, MinVersion = 6, HasSideEffect = true)]
-        [Builtin("WINSIZE", Data = TernaryOp.WindowSize, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("DCLEAR", Data = TernaryOp.ErasePicture, MinVersion = 6, HasSideEffect = true, Summary = "Erases a picture from the screen.")]
+        [Builtin("DIROUT", Data = TernaryOp.DirectOutput, MinVersion = 6, HasSideEffect = true, Summary = "Directs output to the specified stream.")]
+        [Builtin("DISPLAY", Data = TernaryOp.DrawPicture, MinVersion = 6, HasSideEffect = true, Summary = "Draws a picture on the screen.")]
+        [Builtin("WINPOS", Data = TernaryOp.MoveWindow, MinVersion = 6, HasSideEffect = true, Summary = "Sets the position of a window.")]
+        [Builtin("WINPUT", Data = TernaryOp.PutWindowProperty, MinVersion = 6, HasSideEffect = true, Summary = "Sets a property of a window.")]
+        [Builtin("WINSIZE", Data = TernaryOp.WindowSize, MinVersion = 6, HasSideEffect = true, Summary = "Sets the size of a window.")]
         public static void TernaryVoidOp(
             VoidCall c, [Data] TernaryOp op,
              IOperand left, IOperand center, IOperand right)
@@ -435,8 +449,8 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitTernary(op, left, center, right, null);
         }
 
-        [Builtin("MARGIN", Data = TernaryOp.SetMargins, MinVersion = 6, HasSideEffect = true)]
-        [Builtin("WINATTR", Data = TernaryOp.WindowStyle, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("MARGIN", Data = TernaryOp.SetMargins, MinVersion = 6, HasSideEffect = true, Summary = "Sets a window's margins.")]
+        [Builtin("WINATTR", Data = TernaryOp.WindowStyle, MinVersion = 6, HasSideEffect = true, Summary = "Sets a window's attributes.")]
         public static void TernaryOptionalVoidOp(
             VoidCall c, [Data] TernaryOp op,
              IOperand left, IOperand center, IOperand? right = null)
@@ -444,8 +458,8 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitTernary(op, left, center, right ?? c.cc.Game.Zero, null);
         }
 
-        [Builtin("PUT", "ZPUT", Data = TernaryOp.PutWord, HasSideEffect = true)]
-        [Builtin("PUTB", Data = TernaryOp.PutByte, HasSideEffect = true)]
+        [Builtin("PUT", "ZPUT", Data = TernaryOp.PutWord, HasSideEffect = true, Summary = "Stores a word value into a table.")]
+        [Builtin("PUTB", Data = TernaryOp.PutByte, HasSideEffect = true, Summary = "Stores a byte value into a table.")]
         public static void TernaryTableVoidOp(
             VoidCall c, [Data] TernaryOp op,
             [Table] IOperand left, IOperand center, IOperand right)
@@ -453,7 +467,7 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitTernary(op, left, center, right, null);
         }
 
-        [Builtin("PUTP", Data = TernaryOp.PutProperty, HasSideEffect = true)]
+        [Builtin("PUTP", Data = TernaryOp.PutProperty, HasSideEffect = true, Summary = "Stores a value into an object's property.")]
         public static void TernaryObjectVoidOp(
             VoidCall c, [Data] TernaryOp op,
             [Object] IOperand left, IOperand center, IOperand right)
@@ -461,7 +475,7 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitTernary(op, left, center, right, null);
         }
 
-        [Builtin("COPYT", Data = TernaryOp.CopyTable, HasSideEffect = true, MinVersion = 5)]
+        [Builtin("COPYT", Data = TernaryOp.CopyTable, HasSideEffect = true, MinVersion = 5, Summary = "Copies a table.")]
         public static void TernaryTableTableVoidOp(
             VoidCall c, [Data] TernaryOp op,
             [Table] IOperand left, [Table] IOperand center, IOperand right)
@@ -473,10 +487,10 @@ namespace Zilf.Compiler.Builtins
 
         #region Binary Opcodes
 
-        [Builtin("MOD", Data = BinaryOp.Mod)]
-        [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5)]
-        [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5)]
-        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6)]
+        [Builtin("MOD", Data = BinaryOp.Mod, Summary = "Computes the modulus (remainder) of two numbers.")]
+        [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5, Summary = "Performs an arithmetic (signed) shift on a number.")]
+        [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5, Summary = "Performs a logical (unsigned) shift on a number.")]
+        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6, Summary = "Retrieves a property of a window.")]
         public static IOperand BinaryValueOp(
             ValueCall c, [Data] BinaryOp op, IOperand left, IOperand right)
         {
@@ -501,6 +515,13 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
+        /// <summary>
+        /// Computes the bitwise XOR of two numbers, where one operand must be the constant -1.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="left">The first number.</param>
+        /// <param name="right">The second number.</param>
+        /// <returns>The bitwise XOR of the two numbers, i.e., the bitwise NOT of whichever operand is not -1.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("XORB")]
         public static IOperand BinaryXorOp(ValueCall c, ZilObject left, ZilObject right)
@@ -529,12 +550,12 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("ADD", "+", Data = BinaryOp.Add)]
-        [Builtin("SUB", "-", Data = BinaryOp.Sub)]
-        [Builtin("MUL", "*", Data = BinaryOp.Mul)]
-        [Builtin("DIV", "/", Data = BinaryOp.Div)]
-        [Builtin("BAND", "ANDB", Data = BinaryOp.And)]
-        [Builtin("BOR", "ORB", Data = BinaryOp.Or)]
+        [Builtin("ADD", "+", Data = BinaryOp.Add, Summary = "Computes the sum of two or more numbers.")]
+        [Builtin("SUB", "-", Data = BinaryOp.Sub, Summary = "Computes the difference between two or more numbers.")]
+        [Builtin("MUL", "*", Data = BinaryOp.Mul, Summary = "Computes the product of two or more numbers.")]
+        [Builtin("DIV", "/", Data = BinaryOp.Div, Summary = "Computes the quotient of two or more numbers.")]
+        [Builtin("BAND", "ANDB", Data = BinaryOp.And, Summary = "Computes the bitwise AND of two or more numbers.")]
+        [Builtin("BOR", "ORB", Data = BinaryOp.Or, Summary = "Computes the bitwise OR of two or more numbers.")]
         public static IOperand ArithmeticOp(
             ValueCall c, [Data] BinaryOp op, params IOperand[] args)
         {
@@ -652,6 +673,12 @@ namespace Zilf.Compiler.Builtins
             return cc.Game.MakeOperand(value);
         }
 
+        /// <summary>
+        /// Computes the bitwise AND of two numbers.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="left">The first number.</param>
+        /// <param name="right">The second number.</param>
         [Builtin("BAND", "ANDB")]
         public static void BinaryAndPredOp(PredCall c, IOperand left, IOperand right)
         {
@@ -706,6 +733,13 @@ namespace Zilf.Compiler.Builtins
             c.rb.BranchIfZero(c.rb.Stack, c.label, !c.polarity);
         }
 
+        /// <summary>
+        /// Adds an offset to a table or constant pointer.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="left">The table or constant pointer.</param>
+        /// <param name="right">The offset to add, in bytes. If omitted, defaults to 1.</param>
+        /// <returns>A constant pointer with the offset added.</returns>
         [Builtin("REST", "ZREST")]
         public static IOperand RestOp(ValueCall c, IOperand left, IOperand? right = null)
         {
@@ -718,24 +752,31 @@ namespace Zilf.Compiler.Builtins
             };
         }
 
+        /// <summary>
+        /// Subtracts an offset from a table or constant pointer.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="left">The table or constant pointer.</param>
+        /// <param name="right">The offset to subtract, in bytes. If omitted, defaults to 1.</param>
+        /// <returns>A (non-constant) pointer with the offset subtracted.</returns>
         [Builtin("BACK", "ZBACK")]
         public static IOperand BackOp(ValueCall c, IOperand left, IOperand? right = null)
         {
             return ArithmeticOp(c, BinaryOp.Sub, left, right ?? c.cc.Game.One);
         }
 
-        [Builtin("CURSET", Data = BinaryOp.SetCursor, MinVersion = 4, MaxVersion = 5, HasSideEffect = true)]
-        [Builtin("COLOR", Data = BinaryOp.SetColor, MinVersion = 5, HasSideEffect = true)]
-        [Builtin("DIROUT", Data = BinaryOp.DirectOutput, HasSideEffect = true)]
-        [Builtin("THROW", Data = BinaryOp.Throw, MinVersion = 5, HasSideEffect = true)]
-        [Builtin("SCROLL", Data = BinaryOp.ScrollWindow, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("CURSET", Data = BinaryOp.SetCursor, MinVersion = 4, MaxVersion = 5, HasSideEffect = true, Summary = "Sets the cursor row and column.")]
+        [Builtin("COLOR", Data = BinaryOp.SetColor, MinVersion = 5, HasSideEffect = true, Summary = "Sets the foreground and background colors.")]
+        [Builtin("DIROUT", Data = BinaryOp.DirectOutput, HasSideEffect = true, Summary = "Directs output to the specified stream.")]
+        [Builtin("THROW", Data = BinaryOp.Throw, MinVersion = 5, HasSideEffect = true, Summary = "Causes a value to be returned from an outer function call.")]
+        [Builtin("SCROLL", Data = BinaryOp.ScrollWindow, MinVersion = 6, HasSideEffect = true, Summary = "Scrolls the contents of a window by a number of pixels.")]
         public static void BinaryVoidOp(
             VoidCall c, [Data] BinaryOp op, IOperand left, IOperand right)
         {
             c.rb.EmitBinary(op, left, right, null);
         }
 
-        [Builtin("CURSET", MinVersion = 6, HasSideEffect = true)]
+        [Builtin("CURSET", MinVersion = 6, HasSideEffect = true, Summary = "Sets the cursor row and column in a window.")]
         public static void CursetVoidOp(VoidCall c, IOperand line, IOperand? column = null,
             IOperand? window = null)
         {
@@ -750,9 +791,9 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        [Builtin("GRTR?", "G?", Data = Condition.Greater)]
-        [Builtin("LESS?", "L?", Data = Condition.Less)]
-        [Builtin("BTST", Data = Condition.TestBits)]
+        [Builtin("GRTR?", "G?", Data = Condition.Greater, Summary = "Tests whether the first value is greater than the second.")]
+        [Builtin("LESS?", "L?", Data = Condition.Less, Summary = "Tests whether the first value is less than the second.")]
+        [Builtin("BTST", Data = Condition.TestBits, Summary = "Tests whether all of the bits set in the second value are also set in the first value.")]
         public static void BinaryPredOp(
             PredCall c, [Data] Condition cond, IOperand left, IOperand right)
         {
@@ -775,6 +816,12 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        /// <summary>
+        /// Sets up a menu.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="menuId">The menu number, which must be greater than 2.</param>
+        /// <param name="table">A table of ZSCII strings comprising the menu name and items.</param>
         [Builtin("MENU", MinVersion = 6, HasSideEffect = true)]
         public static void BinaryMenuOp(
             PredCall c, IOperand menuId, [Table] IOperand table)
@@ -782,16 +829,16 @@ namespace Zilf.Compiler.Builtins
             c.rb.Branch(Condition.MakeMenu, menuId, table, c.label, c.polarity);
         }
 
-        [Builtin("L=?", Data = Condition.Greater)]
-        [Builtin("G=?", Data = Condition.Less)]
+        [Builtin("L=?", Data = Condition.Greater, Summary = "Tests whether the first value is less than or equal to the second.")]
+        [Builtin("G=?", Data = Condition.Less, Summary = "Tests whether the first value is greater than or equal to the second.")]
         public static void NegatedBinaryPredOp(
             PredCall c, [Data] Condition cond, IOperand left, IOperand right)
         {
             BinaryPredOp(new PredCall(c.cc, c.rb, c.form, c.label, !c.polarity), cond, left, right);
         }
 
-        [Builtin("DLESS?", Data = Condition.DecCheck, HasSideEffect = true)]
-        [Builtin("IGRTR?", Data = Condition.IncCheck, HasSideEffect = true)]
+        [Builtin("DLESS?", Data = Condition.DecCheck, HasSideEffect = true, Summary = "Decrements the named variable and tests whether it is now less than the specified value.")]
+        [Builtin("IGRTR?", Data = Condition.IncCheck, HasSideEffect = true, Summary = "Increments the named variable and tests whether it is now greater than the specified value.")]
         public static void BinaryVariablePredOp(
             PredCall c, [Data] Condition cond, [Variable(VariableScopeQuirks = VariableScopeQuirks.Both)] IVariable left, IOperand right)
         {
@@ -799,14 +846,14 @@ namespace Zilf.Compiler.Builtins
             c.rb.Branch(cond, left, right, c.label, c.polarity);
         }
 
-        [Builtin("PICINF", MinVersion = 6, HasSideEffect = true)]
+        [Builtin("PICINF", MinVersion = 6, HasSideEffect = true, Summary = "Tests whether the specified picture (or any picture) exists, and writes metadata about it into an array if so.")]
         public static void PicinfPredOp(PredCall c, IOperand left, [Table] IOperand right)
         {
             c.rb.Branch(Condition.PictureData, left, right, c.label, c.polarity);
         }
 
-        [Builtin("DLESS?", Data = Condition.Less, HasSideEffect = true)]
-        [Builtin("IGRTR?", Data = Condition.Greater, HasSideEffect = true)]
+        [Builtin("DLESS?", Data = Condition.Less, HasSideEffect = true, Summary = "Decrements the named variable and tests whether it is now less than the specified value.")]
+        [Builtin("IGRTR?", Data = Condition.Greater, HasSideEffect = true, Summary = "Increments the named variable and tests whether it is now greater than the specified value.")]
         public static void BinaryVariablePredOp(
             PredCall c, [Data] Condition cond, [Variable] SoftGlobal left, IOperand right)
         {
@@ -840,8 +887,8 @@ namespace Zilf.Compiler.Builtins
             c.rb.Branch(cond, c.rb.Stack, right, c.label, c.polarity);
         }
 
-        [Builtin("GETP", Data = BinaryOp.GetProperty)]
-        [Builtin("NEXTP", Data = BinaryOp.GetNextProp)]
+        [Builtin("GETP", Data = BinaryOp.GetProperty, Summary = "Returns the value of an object's property.")]
+        [Builtin("NEXTP", Data = BinaryOp.GetNextProp, Summary = "Returns an object's next (or first) property number.")]
         public static IOperand BinaryObjectValueOp(
             ValueCall c, [Data] BinaryOp op, [Object] IOperand left, IOperand right)
         {
@@ -849,36 +896,36 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("FSET", Data = BinaryOp.SetFlag, HasSideEffect = true)]
-        [Builtin("FCLEAR", Data = BinaryOp.ClearFlag, HasSideEffect = true)]
+        [Builtin("FSET", Data = BinaryOp.SetFlag, HasSideEffect = true, Summary = "Sets an object's flag.")]
+        [Builtin("FCLEAR", Data = BinaryOp.ClearFlag, HasSideEffect = true, Summary = "Clears an object's flag.")]
         public static void BinaryObjectVoidOp(
             VoidCall c, [Data] BinaryOp op, [Object] IOperand left, IOperand right)
         {
             c.rb.EmitBinary(op, left, right, null);
         }
 
-        [Builtin("FSET?", Data = Condition.TestAttr)]
+        [Builtin("FSET?", Data = Condition.TestAttr, Summary = "Tests whether an object has a flag set.")]
         public static void BinaryObjectPredOp(
             PredCall c, [Data] Condition cond, [Object] IOperand left, IOperand right)
         {
             c.rb.Branch(cond, left, right, c.label, c.polarity);
         }
 
-        [Builtin("IN?", Data = Condition.Inside)]
+        [Builtin("IN?", Data = Condition.Inside, Summary = "Tests whether one object is directly contained by another object.")]
         public static void BinaryObjectObjectPredOp(
             PredCall c, [Data] Condition cond, [Object] IOperand left, [Object] IOperand right)
         {
             c.rb.Branch(cond, left, right, c.label, c.polarity);
         }
 
-        [Builtin("MOVE", Data = BinaryOp.MoveObject, HasSideEffect = true)]
+        [Builtin("MOVE", Data = BinaryOp.MoveObject, HasSideEffect = true, Summary = "Moves one object to become the first child of another object.")]
         public static void BinaryObjectObjectVoidOp(
             VoidCall c, [Data] BinaryOp op, [Object] IOperand left, [Object] IOperand right)
         {
             c.rb.EmitBinary(op, left, right, null);
         }
 
-        [Builtin("GETPT", Data = BinaryOp.GetPropAddress)]
+        [Builtin("GETPT", Data = BinaryOp.GetPropAddress, Summary = "Gets the address of the table containing an object's property.")]
         [return: Table]
         public static IOperand BinaryObjectToTableValueOp(
             ValueCall c, [Data] BinaryOp op, [Object] IOperand left, IOperand right)
@@ -887,8 +934,8 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("GET", "NTH", "ZGET", Data = BinaryOp.GetWord)]
-        [Builtin("GETB", Data = BinaryOp.GetByte)]
+        [Builtin("GET", "NTH", "ZGET", Data = BinaryOp.GetWord, Summary = "Gets a word value from a table.")]
+        [Builtin("GETB", Data = BinaryOp.GetByte, Summary = "Gets a byte value from a table.")]
         public static IOperand BinaryTableValueOp(
             ValueCall c, [Data] BinaryOp op, [Table] IOperand left, IOperand right)
         {
@@ -900,10 +947,10 @@ namespace Zilf.Compiler.Builtins
 
         #region Unary Opcodes
 
-        [Builtin("BCOM", Data = UnaryOp.Not)]
-        [Builtin("RANDOM", "ZRANDOM", Data = UnaryOp.Random, HasSideEffect = true)]
-        [Builtin("FONT", Data = UnaryOp.SetFont, MinVersion = 5, HasSideEffect = true)]
-        [Builtin("CHECKU", Data = UnaryOp.CheckUnicode, MinVersion = 5)]
+        [Builtin("BCOM", Data = UnaryOp.Not, Summary = "Computes the bitwise NOT of a number.")]
+        [Builtin("RANDOM", "ZRANDOM", Data = UnaryOp.Random, HasSideEffect = true, Summary = "Computes a random number within a range, or reseeds the random number generator.")]
+        [Builtin("FONT", Data = UnaryOp.SetFont, MinVersion = 5, HasSideEffect = true, Summary = "Selects a font for the current window.")]
+        [Builtin("CHECKU", Data = UnaryOp.CheckUnicode, MinVersion = 5, Summary = "Determines whether the specified Unicode character can be printed and/or read as input.")]
         public static IOperand UnaryValueOp(
             ValueCall c, [Data] UnaryOp op, IOperand value)
         {
@@ -916,21 +963,26 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("DIRIN", Data = UnaryOp.DirectInput, HasSideEffect = true)]
-        [Builtin("DIROUT", Data = UnaryOp.DirectOutput, HasSideEffect = true)]
-        [Builtin("BUFOUT", "ZBUFOUT", Data = UnaryOp.OutputBuffer, MinVersion = 4, HasSideEffect = true)]
-        [Builtin("HLIGHT", Data = UnaryOp.OutputStyle, HasSideEffect = true)]
-        [Builtin("CLEAR", Data = UnaryOp.ClearWindow, MinVersion = 4, HasSideEffect = true)]
-        [Builtin("SCREEN", Data = UnaryOp.SelectWindow, HasSideEffect = true)]
-        [Builtin("SPLIT", Data = UnaryOp.SplitWindow, HasSideEffect = true)]
-        [Builtin("ERASE", Data = UnaryOp.EraseLine, MinVersion = 4, HasSideEffect = true)]
-        [Builtin("MOUSE-LIMIT", Data = UnaryOp.MouseWindow, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("DIRIN", Data = UnaryOp.DirectInput, HasSideEffect = true, Summary = "Directs input from the specified stream.")]
+        [Builtin("DIROUT", Data = UnaryOp.DirectOutput, HasSideEffect = true, Summary = "Directs output to the specified stream.")]
+        [Builtin("BUFOUT", "ZBUFOUT", Data = UnaryOp.OutputBuffer, MinVersion = 4, HasSideEffect = true, Summary = "Enables or disables text buffering for the lower window.")]
+        [Builtin("HLIGHT", Data = UnaryOp.OutputStyle, HasSideEffect = true, Summary = "Sets the output style (highlighting) for the current window.")]
+        [Builtin("CLEAR", Data = UnaryOp.ClearWindow, MinVersion = 4, HasSideEffect = true, Summary = "Clears the specified window.")]
+        [Builtin("SCREEN", Data = UnaryOp.SelectWindow, HasSideEffect = true, Summary = "Selects the specified window for output.")]
+        [Builtin("SPLIT", Data = UnaryOp.SplitWindow, HasSideEffect = true, Summary = "Sets the height of the upper window.")]
+        [Builtin("ERASE", Data = UnaryOp.EraseLine, MinVersion = 4, HasSideEffect = true, Summary = "Erases part or all of the current line in the current window.")]
+        [Builtin("MOUSE-LIMIT", Data = UnaryOp.MouseWindow, MinVersion = 6, HasSideEffect = true, Summary = "Limits the mouse to stay within the specified window.")]
         public static void UnaryVoidOp(
             VoidCall c, [Data] UnaryOp op, IOperand value)
         {
             c.rb.EmitUnary(op, value, null);
         }
 
+        /// <summary>
+        /// Tests whether a value is zero.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="value">The value to check.</param>
         [Builtin("ZERO?", "0?")]
         public static void ZeroPredOp(PredCall c, IOperand value)
         {
@@ -945,6 +997,11 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        /// <summary>
+        /// Tests whether a value is one.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="value">The value to check.</param>
         [Builtin("1?")]
         public static void OnePredOp(PredCall c, IOperand value)
         {
@@ -959,7 +1016,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        [Builtin("LOC", Data = UnaryOp.GetParent)]
+        [Builtin("LOC", Data = UnaryOp.GetParent, Summary = "Returns an object's direct container.")]
         public static IOperand UnaryObjectValueOp(
             ValueCall c, [Data] UnaryOp op, [Object] IOperand obj)
         {
@@ -967,8 +1024,8 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("FIRST?", Data = false)]
-        [Builtin("NEXT?", Data = true)]
+        [Builtin("FIRST?", Data = false, Summary = "Gets the first child of an object.")]
+        [Builtin("NEXT?", Data = true, Summary = "Gets the sibling of an object.")]
         public static void UnaryObjectValuePredOp(
             ValuePredCall c, [Data] bool sibling, [Object] IOperand obj)
         {
@@ -978,7 +1035,7 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitGetChild(obj, c.resultStorage, c.label, c.polarity);
         }
 
-        [Builtin("PTSIZE", Data = UnaryOp.GetPropSize)]
+        [Builtin("PTSIZE", Data = UnaryOp.GetPropSize, Summary = "Returns the size of an object's property.")]
         public static IOperand UnaryTableValueOp(
             ValueCall c, [Data] UnaryOp op, [Table] IOperand value)
         {
@@ -986,14 +1043,14 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("REMOVE", "ZREMOVE", Data = UnaryOp.RemoveObject, HasSideEffect = true)]
+        [Builtin("REMOVE", "ZREMOVE", Data = UnaryOp.RemoveObject, HasSideEffect = true, Summary = "Removes an object from the object tree.")]
         public static void UnaryObjectVoidOp(
             VoidCall c, [Data] UnaryOp op, [Object] IOperand value)
         {
             c.rb.EmitUnary(op, value, null);
         }
 
-        [Builtin("ASSIGNED?", Data = Condition.ArgProvided, MinVersion = 5)]
+        [Builtin("ASSIGNED?", Data = Condition.ArgProvided, MinVersion = 5, Summary = "Tests whether an argument was passed to the current routine.")]
         public static void UnaryVariablePredOp(
             PredCall c, [Data] Condition cond, [Variable] IVariable var)
         {
@@ -1002,7 +1059,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "var")]
-        [Builtin("ASSIGNED?", MinVersion = 5)]
+        [Builtin("ASSIGNED?", MinVersion = 5, Summary = "Tests whether an argument was passed to the current routine.")]
         public static void SoftGlobalAssignedOp(PredCall c, [Variable] SoftGlobal var)
         {
             // globals are never "assigned" in this sense
@@ -1010,10 +1067,10 @@ namespace Zilf.Compiler.Builtins
                 c.rb.Branch(c.label);
         }
 
-        [Builtin("CURGET", Data = UnaryOp.GetCursor, MinVersion = 4, HasSideEffect = true)]
-        [Builtin("PICSET", Data = UnaryOp.PictureTable, MinVersion = 6, HasSideEffect = true)]
-        [Builtin("MOUSE-INFO", Data = UnaryOp.ReadMouse, MinVersion = 6, HasSideEffect = true)]
-        [Builtin("PRINTF", Data = UnaryOp.PrintForm, MinVersion = 6, HasSideEffect = true)]
+        [Builtin("CURGET", Data = UnaryOp.GetCursor, MinVersion = 4, HasSideEffect = true, Summary = "Stores the cursor's row and column into a table.")]
+        [Builtin("PICSET", Data = UnaryOp.PictureTable, MinVersion = 6, HasSideEffect = true, Summary = "Caches the pictures listed in a table.")]
+        [Builtin("MOUSE-INFO", Data = UnaryOp.ReadMouse, MinVersion = 6, HasSideEffect = true, Summary = "Stores the mouse Y coordinate, X coordinate, button bits, and menu word into a table.")]
+        [Builtin("PRINTF", Data = UnaryOp.PrintForm, MinVersion = 6, HasSideEffect = true, Summary = "Prints lines of text from a formatted table.")]
         public static void UnaryTableVoidOp(
             VoidCall c, [Data] UnaryOp op, [Table] IOperand value)
         {
@@ -1024,18 +1081,26 @@ namespace Zilf.Compiler.Builtins
 
         #region Print Opcodes
 
-        [Builtin("PRINT", "ZPRINT", Data = PrintOp.PackedAddr, HasSideEffect = true)]
-        [Builtin("PRINTB", "ZPRINTB", Data = PrintOp.Address, HasSideEffect = true)]
-        [Builtin("PRINTC", Data = PrintOp.Character, HasSideEffect = true)]
-        [Builtin("PRINTD", Data = PrintOp.Object, HasSideEffect = true)]
-        [Builtin("PRINTN", Data = PrintOp.Number, HasSideEffect = true)]
-        [Builtin("PRINTU", Data = PrintOp.Unicode, HasSideEffect = true)]
+        [Builtin("PRINT", "ZPRINT", Data = PrintOp.PackedAddr, HasSideEffect = true, Summary = "Prints a packed ZSCII string from memory, given its packed address.")]
+        [Builtin("PRINTB", "ZPRINTB", Data = PrintOp.Address, HasSideEffect = true, Summary = "Prints a ZSCII string from memory, given its byte address.")]
+        [Builtin("PRINTC", Data = PrintOp.Character, HasSideEffect = true, Summary = "Prints a ZSCII character.")]
+        [Builtin("PRINTD", Data = PrintOp.Object, HasSideEffect = true, Summary = "Prints the DESC of an object.")]
+        [Builtin("PRINTN", Data = PrintOp.Number, HasSideEffect = true, Summary = "Prints a number.")]
+        [Builtin("PRINTU", Data = PrintOp.Unicode, HasSideEffect = true, Summary = "Prints a Unicode character.")]
         public static void UnaryPrintVoidOp(
             VoidCall c, [Data] PrintOp op, IOperand value)
         {
             c.rb.EmitPrint(op, value);
         }
 
+        /// <summary>
+        /// Prints a rectangle of text spreading right and down from the current cursor position.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="table">The table of ZSCII characters to print.</param>
+        /// <param name="width">The width of the rectangle to print.</param>
+        /// <param name="height">The height of the rectangle to print. If omitted, defaults to 1.</param>
+        /// <param name="skip">The number of characters to skip between each row. If omitted, defaults to 0.</param>
         [Builtin("PRINTT", HasSideEffect = true)]
         public static void PrintTableOp(
             VoidCall c, [Table] IOperand table, IOperand width,
@@ -1044,14 +1109,18 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitPrintTable(table, width, height, skip);
         }
 
-        [Builtin("PRINTI", Data = false, HasSideEffect = true)]
-        [Builtin("PRINTR", Data = true, HasSideEffect = true)]
+        [Builtin("PRINTI", Data = false, HasSideEffect = true, Summary = "Prints a packed ZSCII string embedded in the routine.")]
+        [Builtin("PRINTR", Data = true, HasSideEffect = true, Summary = "Prints a packed ZSCII string embedded in the routine, followed by a CRLF, and then returns true.")]
         public static void UnaryPrintStringOp(
             VoidCall c, [Data] bool crlfRtrue, string text)
         {
             c.rb.EmitPrint(text, crlfRtrue);
         }
 
+        /// <summary>
+        /// Prints a carriage return and line feed.
+        /// </summary>
+        /// <param name="c"></param>
         [Builtin("CRLF", "ZCRLF", HasSideEffect = true)]
         public static void CrlfVoidOp(VoidCall c)
         {
@@ -1062,24 +1131,18 @@ namespace Zilf.Compiler.Builtins
 
         #region Variable Opcodes/Builtins
 
+        /// <summary>
+        /// Sets the value of a local variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dest">The name of the local variable to set, or an expression producing the number of the variable.</param>
+        /// <param name="value">The new value to assign to the local variable.</param>
+        /// <returns>The new value.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET", HasSideEffect = true)]
         public static IOperand SetValueOp(
             ValueCall c, [Variable(VariableScopeQuirks = VariableScopeQuirks.Local)]  IVariable dest, ZilObject value)
         {
-            // in value context, we need to be able to return the newly set value,
-            // so dest is IVariable. this means <SET <fancy-expression> value> isn't
-            // supported in value context.
-
-            /* TODO: it could be supported if we wanted to get complicated:
-             * <SET expr value> ->
-             *   evaluate expr >TMP
-             *   evaluate value >STACK
-             *   PUSH 'STACK        ;duplicates top value
-             *   SET TMP,STACK      ;performs indirect store
-             *   return STACK       ;value is left on stack
-             */
-
             c.cc.MarkVariableAsWritten(dest);
 
             var storage = c.cc.CompileAsOperand(c.rb, value, c.form.SourceLine, dest);
@@ -1088,6 +1151,13 @@ namespace Zilf.Compiler.Builtins
             return dest;
         }
 
+        /// <summary>
+        /// Sets the value of a local variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dest">The name of the local variable to set, or an expression producing the number of the variable.</param>
+        /// <param name="value">The new value to assign to the local variable.</param>
+        /// <returns>The new value.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET", HasSideEffect = true)]
         public static IOperand SetValueOp(
@@ -1113,6 +1183,14 @@ namespace Zilf.Compiler.Builtins
             return storage;
         }
 
+        /// <summary>
+        /// Sets the value of a local variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dest">The name of the local variable to set, or an expression producing the number of the variable.</param>
+        /// <param name="value">The new value to assign to the local variable.</param>
+        /// <returns>The new value.</returns>
+        /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET", HasSideEffect = true, Priority = 2)]
         public static IOperand SetValueOp(ValueCall c, IOperand dest, IOperand value)
         {
@@ -1142,6 +1220,13 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        /// <summary>
+        /// Sets the value of a global variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dest">The name of the global variable to set, or an expression producing the number of the variable.</param>
+        /// <param name="value">The new value to assign to the global variable.</param>
+        /// <returns>The new value.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SETG", HasSideEffect = true)]
         public static IOperand SetgValueOp(
@@ -1150,6 +1235,13 @@ namespace Zilf.Compiler.Builtins
             return SetValueOp(c, dest, value);
         }
 
+        /// <summary>
+        /// Sets the value of a global variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dest">The name of the global variable to set, or an expression producing the number of the variable.</param>
+        /// <param name="value">The new value to assign to the global variable.</param>
+        /// <returns>The new value.</returns>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SETG", HasSideEffect = true)]
         public static IOperand SetgValueOp(
@@ -1206,6 +1298,12 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        /// <summary>
+        /// Sets the value of a local variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dest">The name of the local variable to set, or an expression producing the number of the variable.</param>
+        /// <param name="value">The new value to assign to the local variable.</param>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET")]
         public static void SetVoidOp(
@@ -1220,6 +1318,12 @@ namespace Zilf.Compiler.Builtins
                 null);
         }
 
+        /// <summary>
+        /// Sets the value of a global variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dest">The name of the global variable to set, or an expression producing the number of the variable.</param>
+        /// <param name="value">The new value to assign to the global variable.</param>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [Builtin("SETG")]
         public static void SetgVoidOp(
@@ -1228,6 +1332,12 @@ namespace Zilf.Compiler.Builtins
             SetVoidOp(c, dest, value);
         }
 
+        /// <summary>
+        /// Sets the value of a global variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dest">The name of the global variable to set, or an expression producing the number of the variable.</param>
+        /// <param name="value">The new value to assign to the global variable.</param>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SETG")]
         public static void SetgVoidOp(
@@ -1236,6 +1346,12 @@ namespace Zilf.Compiler.Builtins
             SetVoidOp(c, dest, value);
         }
 
+        /// <summary>
+        /// Sets the value of a local variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dest">The name of the local variable to set, or an expression producing the number of the variable.</param>
+        /// <param name="value">The new value to assign to the local variable.</param>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SET", HasSideEffect = true)]
         public static void SetPredOp(
@@ -1246,6 +1362,12 @@ namespace Zilf.Compiler.Builtins
             c.cc.CompileAsOperandWithBranch(c.rb, value, dest, c.label, c.polarity);
         }
 
+        /// <summary>
+        /// Sets the value of a global variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dest">The name of the global variable to set, or an expression producing the number of the variable.</param>
+        /// <param name="value">The new value to assign to the global variable.</param>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("SETG", HasSideEffect = true)]
         public static void SetgPredOp(
@@ -1254,8 +1376,8 @@ namespace Zilf.Compiler.Builtins
             SetPredOp(c, dest, value);
         }
 
-        [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
-        [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
+        [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true, Summary = "Increments the value of a variable by 1.")]
+        [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true, Summary = "Decrements the value of a variable by 1.")]
         public static IOperand IncValueOp(ValueCall c, [Data] BinaryOp op,
             [Variable(VariableScopeQuirks = VariableScopeQuirks.Both)] IVariable victim)
         {
@@ -1264,8 +1386,8 @@ namespace Zilf.Compiler.Builtins
             return victim;
         }
 
-        [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
-        [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
+        [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true, Summary = "Increments the value of a variable by 1.")]
+        [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true, Summary = "Decrements the value of a variable by 1.")]
         public static IOperand IncValueOp(ValueCall c, [Data] BinaryOp op,
             [Variable(VariableScopeQuirks = VariableScopeQuirks.Both)] SoftGlobal victim)
         {
@@ -1289,8 +1411,8 @@ namespace Zilf.Compiler.Builtins
             return c.rb.Stack;
         }
 
-        [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
-        [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
+        [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true, Summary = "Increments the value of a variable by 1.")]
+        [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true, Summary = "Decrements the value of a variable by 1.")]
         public static void IncVoidOp(VoidCall c, [Data] BinaryOp op,
             [Variable(VariableScopeQuirks = VariableScopeQuirks.Both)] IVariable victim)
         {
@@ -1298,8 +1420,8 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitBinary(op, victim, c.cc.Game.One, victim);
         }
 
-        [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true)]
-        [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true)]
+        [Builtin("INC", Data = BinaryOp.Add, HasSideEffect = true, Summary = "Increments the value of a variable by 1.")]
+        [Builtin("DEC", Data = BinaryOp.Sub, HasSideEffect = true, Summary = "Decrements the value of a variable by 1.")]
         public static void IncVoidOp(VoidCall c, [Data] BinaryOp op,
             [Variable(VariableScopeQuirks = VariableScopeQuirks.Both)] SoftGlobal victim)
         {
@@ -1321,18 +1443,35 @@ namespace Zilf.Compiler.Builtins
                 null);
         }
 
+        /// <summary>
+        /// Pushes a value onto the evaluation stack.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="value">The value to push.</param>
         [Builtin("PUSH", HasSideEffect = true)]
         public static void PushVoidOp(VoidCall c, IOperand value)
         {
             c.rb.EmitStore(c.rb.Stack, value);
         }
 
+        /// <summary>
+        /// Pushes a value onto a user-defined stack.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="value">The value to push.</param>
+        /// <param name="stack">The address of the user-defined stack to push onto.</param>
         [Builtin("XPUSH", MinVersion = 6, HasSideEffect = true)]
         public static void XpushPredOp(PredCall c, IOperand value, IOperand stack)
         {
             c.rb.EmitPushUserStack(value, stack, c.label, c.polarity);
         }
 
+        /// <summary>
+        /// Pops a value from the evaluation stack or a user-defined stack.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="stack">The address of the user-defined stack to pop from. If omitted, pops from the evaluation stack.</param>
+        /// <returns>The popped value.</returns>
         [Builtin("POP", MinVersion = 6, HasSideEffect = true)]
         public static IOperand PopValueOp(ValueCall c, IOperand? stack = null)
         {
@@ -1344,6 +1483,12 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
+        /// <summary>
+        /// Discards values from the evaluation stack or a user-defined stack.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="count">The number of values to discard.</param>
+        /// <param name="stack">The address of the user-defined stack to discard from. If omitted, discards from the evaluation stack.</param>
         [Builtin("FSTACK", MinVersion = 6, HasSideEffect = true)]
         public static void FstackVoidOp(VoidCall c, IOperand count, IOperand? stack = null)
         {
@@ -1353,6 +1498,12 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitBinary(BinaryOp.FlushUserStack, count, stack, null);
         }
 
+        /// <summary>
+        /// Returns the value of a variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="var">The name of the variable to get, or an expression producing the number of the variable.</param>
+        /// <returns>The value of the variable.</returns>
         [Builtin("VALUE", Priority = 1)]
         public static IOperand ValueOp_Variable(ValueCall c, [Variable] IVariable var)
         {
@@ -1366,6 +1517,12 @@ namespace Zilf.Compiler.Builtins
             return var;
         }
 
+        /// <summary>
+        /// Returns the value of a variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="value">The name of the variable to get, or an expression producing the number of the variable.</param>
+        /// <returns>The value of the variable.</returns>
         [Builtin("VALUE", Priority = 2)]
         public static IOperand ValueOp_Operand(ValueCall c, [Variable] IOperand value)
         {
@@ -1373,6 +1530,12 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
+        /// <summary>
+        /// Returns the value of a global or constant.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="atom">The name of the global or constant to get.</param>
+        /// <returns>The value of the global or constant.</returns>
         [Builtin("GVAL")]
         public static IOperand GvalOp(ValueCall c, ZilAtom atom)
         {
@@ -1421,6 +1584,12 @@ namespace Zilf.Compiler.Builtins
             return c.cc.Game.Zero;
         }
 
+        /// <summary>
+        /// Returns the value of a local variable.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="atom">The name of the local variable to get.</param>
+        /// <returns>The value of the local variable.</returns>
         [Builtin("LVAL")]
         public static IOperand LvalOp(ValueCall c, ZilAtom atom)
         {
@@ -1489,32 +1658,32 @@ namespace Zilf.Compiler.Builtins
 
         #region Nullary Opcodes
 
-        [Builtin("CATCH", Data = NullaryOp.Catch, MinVersion = 5)]
-        [Builtin("ISAVE", Data = NullaryOp.SaveUndo, HasSideEffect = true, MinVersion = 5)]
-        [Builtin("IRESTORE", Data = NullaryOp.RestoreUndo, HasSideEffect = true, MinVersion = 5)]
+        [Builtin("CATCH", Data = NullaryOp.Catch, MinVersion = 5, Summary = "Returns a catch token for use with THROW.")]
+        [Builtin("ISAVE", Data = NullaryOp.SaveUndo, HasSideEffect = true, MinVersion = 5, Summary = "Saves the current game state for later restoration with IRESTORE.")]
+        [Builtin("IRESTORE", Data = NullaryOp.RestoreUndo, HasSideEffect = true, MinVersion = 5, Summary = "Restores a game state previously saved with ISAVE.")]
         public static IOperand NullaryValueOp(ValueCall c, [Data] NullaryOp op)
         {
             c.rb.EmitNullary(op, c.resultStorage);
             return c.resultStorage;
         }
 
-        [Builtin("ORIGINAL?", Data = Condition.Original, MinVersion = 5)]
-        [Builtin("VERIFY", Data = Condition.Verify)]
+        [Builtin("ORIGINAL?", Data = Condition.Original, MinVersion = 5, Summary = "Asks the interpreter to test whether the story file is genuine. Typically hardcoded to return true.")]
+        [Builtin("VERIFY", Data = Condition.Verify, Summary = "Tests whether the checksum of the story file is valid.")]
         public static void NullaryPredOp(PredCall c, [Data] Condition cond)
         {
             c.rb.Branch(cond, null, null, c.label, c.polarity);
         }
 
-        [Builtin("USL", Data = NullaryOp.ShowStatus, MinVersion = 3, MaxVersion = 3, HasSideEffect = true)]
+        [Builtin("USL", Data = NullaryOp.ShowStatus, MinVersion = 3, MaxVersion = 3, HasSideEffect = true, Summary = "Updates the status line.")]
         public static void NullaryVoidOp(VoidCall c, [Data] NullaryOp op)
         {
             c.rb.EmitNullary(op, null);
         }
 
-        [Builtin("RTRUE", Data = 1, HasSideEffect = true)]
-        [Builtin("RFALSE", Data = 0, HasSideEffect = true)]
-        [Builtin("RFATAL", Data = 2, HasSideEffect = true)]
-        [Builtin("RSTACK", Data = -1, HasSideEffect = true)]
+        [Builtin("RTRUE", Data = 1, HasSideEffect = true, Summary = "Returns true (1) from the current routine.")]
+        [Builtin("RFALSE", Data = 0, HasSideEffect = true, Summary = "Returns false (0) from the current routine.")]
+        [Builtin("RFATAL", Data = 2, HasSideEffect = true, Summary = "Returns a fatal error code (2) from the current routine.")]
+        [Builtin("RSTACK", Data = -1, HasSideEffect = true, Summary = "Returns a value popped from the stack from the current routine.")]
         public static void NullaryReturnOp(VoidCall c, [Data] int what)
         {
             var operand =
@@ -1526,12 +1695,20 @@ namespace Zilf.Compiler.Builtins
             c.rb.Return(operand);
         }
 
+        /// <summary>
+        /// Resets all interpreter state and restarts the game from the beginning.
+        /// </summary>
+        /// <param name="c"></param>
         [Builtin("RESTART", HasSideEffect = true)]
         public static void RestartOp(VoidCall c)
         {
             c.rb.EmitRestart();
         }
 
+        /// <summary>
+        /// Quits the interpreter, ending the game.
+        /// </summary>
+        /// <param name="c"></param>
         [Builtin("QUIT", HasSideEffect = true)]
         public static void QuitOp(VoidCall c)
         {
@@ -1542,12 +1719,26 @@ namespace Zilf.Compiler.Builtins
 
         #region Input Opcodes
 
+        /// <summary>
+        /// Reads a line of text from the user into the given text and parse buffers.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="text">The address of the buffer where the input text will be written.</param>
+        /// <param name="parse">The address of the buffer where the parsed vocabulary words will be written.</param>
         [Builtin("READ", "ZREAD", MaxVersion = 3, HasSideEffect = true)]
         public static void ReadOp_V3(VoidCall c, IOperand text, IOperand parse)
         {
             c.rb.EmitRead(text, parse, null, null, null);
         }
 
+        /// <summary>
+        /// Reads a line of text from the user into the given text and parse buffers.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="text">The address of the buffer where the input text will be written.</param>
+        /// <param name="parse">The address of the buffer where the parsed vocabulary words will be written.</param>
+        /// <param name="time">The interval between calls to the interrupt routine, in tenths of a second. If omitted, no routine is called.</param>
+        /// <param name="routine">The address of an interrupt routine to call while waiting for input. If omitted, no routine is called.</param>
         [Builtin("READ", "ZREAD", MinVersion = 4, MaxVersion = 4, HasSideEffect = true)]
         public static void ReadOp_V4(VoidCall c, IOperand text, IOperand parse,
             IOperand? time = null, [Routine] IOperand? routine = null)
@@ -1555,15 +1746,30 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitRead(text, parse, time, routine, null);
         }
 
+        /// <summary>
+        /// Reads a line of text from the user into the given text and parse buffers.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="text">The address of the buffer where the input text will be written.</param>
+        /// <param name="parse">The address of the buffer where the parsed vocabulary words will be written.</param>
+        /// <param name="time">The interval between calls to the interrupt routine, in tenths of a second. If omitted, no routine is called.</param>
+        /// <param name="routine">The address of an interrupt routine to call while waiting for input. If omitted, no routine is called.</param>
         [Builtin("READ", "ZREAD", MinVersion = 5, HasSideEffect = true)]
         public static IOperand ReadOp_V5(ValueCall c, IOperand text,
             IOperand? parse = null, IOperand? time = null,
-             [Routine] IOperand? routine = null)
+            [Routine] IOperand? routine = null)
         {
             c.rb.EmitRead(text, parse, time, routine, c.resultStorage);
             return c.resultStorage;
         }
 
+        /// <summary>
+        /// Reads a character from the user.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="dummy">Must be 1.</param>
+        /// <param name="interval">The interval between calls to the interrupt routine, in tenths of a second. If omitted, no routine is called.</param>
+        /// <param name="routine">The address of an interrupt routine to call while waiting for input. If omitted, no routine is called.</param>
         [Builtin("INPUT", MinVersion = 4, HasSideEffect = true)]
         public static IOperand InputOp(ValueCall c, IOperand dummy,
             IOperand? interval = null, [Routine] IOperand? routine = null)
@@ -1589,6 +1795,13 @@ namespace Zilf.Compiler.Builtins
 
         #region Sound Opcodes
 
+        /// <summary>
+        /// Controls a sound effect.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="number">The number of the sound effect to control.</param>
+        /// <param name="effect">The operation to perform: 1 to prepare, 2 to start playing, 3 to stop playing, and 4 to finish.</param>
+        /// <param name="volume">The volume in the low byte and the number of repeats in the high byte.</param>
         [Builtin("SOUND", MaxVersion = 4, HasSideEffect = true)]
         public static void SoundOp_V3(VoidCall c, IOperand number,
             IOperand? effect = null, IOperand? volume = null)
@@ -1596,7 +1809,14 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitPlaySound(number, effect, volume, null);
         }
 
-        [Builtin("SOUND", MinVersion = 5, HasSideEffect = true)]
+        /// <summary>
+        /// Controls a sound effect.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="number">The number of the sound effect to control.</param>
+        /// <param name="effect">The operation to perform: 1 to prepare, 2 to start playing, 3 to stop playing, and 4 to finish.</param>
+        /// <param name="volume">The volume in the low byte and the number of repeats in the high byte.</param>
+        /// <param name="routine">The address of an interrupt routine to call when the sound is done playing. If omitted, no routine is called.</param>
         public static void SoundOp_V5(VoidCall c, IOperand number,
             IOperand? effect = null, IOperand? volume = null,
              [Routine] IOperand? routine = null)
@@ -1608,18 +1828,34 @@ namespace Zilf.Compiler.Builtins
 
         #region Vocab Opcodes
 
+        /// <summary>
+        /// Encodes text from a ZSCII string into a packed string as if it were a vocabulary word.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="src">The address of the ZSCII string.</param>
+        /// <param name="length">The number of ZSCII characters to encode.</param>
+        /// <param name="srcOffset">The offset within the string at which to start encoding.</param>
+        /// <param name="dest">The address where the encoded packed string will be stored.</param>
         [Builtin("ZWSTR", MinVersion = 5, HasSideEffect = true)]
         public static void EncodeTextOp(VoidCall c,
             [Table] IOperand src, IOperand length,
-             IOperand srcOffset, [Table] IOperand dest)
+            IOperand srcOffset, [Table] IOperand dest)
         {
             c.rb.EmitEncodeText(src, length, srcOffset, dest);
         }
 
+        /// <summary>
+        /// Tokenizes input text into words.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="text">The address of the input text to tokenize, in the same format it would be stored by READ.</param>
+        /// <param name="parse">The address of the buffer where the tokenized words will be stored.</param>
+        /// <param name="dictionary">The address of a user-specified vocabulary table to use. If omitted, defaults to the regular game vocabulary table.</param>
+        /// <param name="flag">If true, entries will not be written for unrecognized words. If omitted, defaults to false.</param>
         [Builtin("LEX", MinVersion = 5, HasSideEffect = true)]
         public static void LexOp(VoidCall c,
             [Table] IOperand text, [Table] IOperand parse,
-             [Table] IOperand? dictionary = null, IOperand? flag = null)
+            [Table] IOperand? dictionary = null, IOperand? flag = null)
         {
             c.rb.EmitTokenize(text, parse, dictionary, flag);
         }
@@ -1628,6 +1864,11 @@ namespace Zilf.Compiler.Builtins
 
         #region Save/Restore Opcodes
 
+        /// <summary>
+        /// Restores a saved game state.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <returns>False if the restore failed. Does not return if it succeeded.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
         [Builtin("RESTORE", "ZRESTORE", MaxVersion = 3, HasSideEffect = true)]
         public static void RestoreOp_V3(PredCall c)
@@ -1642,6 +1883,11 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        /// <summary>
+        /// Restores a saved game state.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <returns>Zero if the restore failed. Does not return if it succeeded.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
         [Builtin("RESTORE", "ZRESTORE", MinVersion = 4, HasSideEffect = true)]
         public static IOperand RestoreOp_V4(ValueCall c)
@@ -1654,6 +1900,14 @@ namespace Zilf.Compiler.Builtins
             throw new NotSupportedException($"{nameof(RestoreOp_V4)} without {nameof(c.rb.HasStoreSave)}");
         }
 
+        /// <summary>
+        /// Restores a saved game state, or loads a file into memory.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="table">The address of the buffer where the file contents will be stored. If omitted, restores a saved game state.</param>
+        /// <param name="bytes">The number of bytes to read from the file. If omitted, restores a saved game state.</param>
+        /// <param name="name">The address of the buffer containing the file name prefixed by a length byte. If omitted, restores a saved game state.</param>
+        /// <returns>The number of bytes loaded from the file, or zero if restoring a saved game state.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
         [Builtin("RESTORE", "ZRESTORE", MinVersion = 5, HasSideEffect = true)]
         public static IOperand RestoreOp_V5(ValueCall c, [Table] IOperand table,
@@ -1667,6 +1921,11 @@ namespace Zilf.Compiler.Builtins
             throw new NotSupportedException($"{nameof(RestoreOp_V5)} without {nameof(c.rb.HasExtendedSave)}");
         }
 
+        /// <summary>
+        /// Saves the game state.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <returns>False if the save failed, or true if it succeeded.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
         [Builtin("SAVE", "ZSAVE", MaxVersion = 3, HasSideEffect = true)]
         public static void SaveOp_V3(PredCall c)
@@ -1681,6 +1940,11 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        /// <summary>
+        /// Saves the game state.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <returns>Zero if the save failed, 1 if it succeeded, or 2 when the game state is being restored later.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
         [Builtin("SAVE", "ZSAVE", MinVersion = 4, HasSideEffect = true)]
         public static IOperand SaveOp_V4(ValueCall c)
@@ -1693,6 +1957,14 @@ namespace Zilf.Compiler.Builtins
             throw new NotSupportedException($"{nameof(SaveOp_V4)} without {nameof(c.rb.HasStoreSave)}");
         }
 
+        /// <summary>
+        /// Saves the game state, or saves a portion of memory to a file.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="table">The address of the buffer where the file contents are stored. If omitted, saves the game state.</param>
+        /// <param name="bytes">The number of bytes to write to the file. If omitted, saves the game state.</param>
+        /// <param name="name">The address of the buffer containing the file name prefixed by a length byte. If omitted, saves the game state.</param>
+        /// <returns>Zero if the save failed, 1 if it succeeded, or 2 when the game state is being restored later.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
         [Builtin("SAVE", "ZSAVE", MinVersion = 5, HasSideEffect = true)]
         public static IOperand SaveOp_V5(ValueCall c, [Table] IOperand table,
@@ -1710,6 +1982,12 @@ namespace Zilf.Compiler.Builtins
 
         #region Routine Opcodes/Builtins
 
+        /// <summary>
+        /// Causes the current routine or enclosing PROG/REPEAT block to return a value.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="expr">The value to return. If omitted, defaults to 1.</param>
+        /// <param name="block">The enclosing PROG/REPEAT block to return from. If omitted, returns from the innermost PROG/REPEAT or the current routine.</param>
         /// <exception cref="CompilerError">The syntax is incorrect, or an error occurred while compiling a subexpression.</exception>
         [Builtin("RETURN", HasSideEffect = true)]
         public static void ReturnOp(VoidCall c, ZilObject? expr = null, Block? block = null)
@@ -1782,6 +2060,11 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        /// <summary>
+        /// Causes the current routine or enclosing PROG/REPEAT block to repeat from the beginning, without reinitializing variables.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="block">The enclosing PROG/REPEAT block to repeat. If omitted, repeats the innermost PROG/REPEAT or the current routine.</param>
         [Builtin("AGAIN", HasSideEffect = true)]
         public static void AgainOp(VoidCall c, Block? block = null)
         {
@@ -1797,6 +2080,13 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        /// <summary>
+        /// Calls a routine and returns its value.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="routine">The packed address of the routine to call.</param>
+        /// <param name="args">The arguments to pass to the routine.</param>
+        /// <returns>The value returned by the routine.</returns>
         [Builtin("APPLY", "CALL", "ZAPPLY", HasSideEffect = true)]
         public static IOperand CallValueOp(ValueCall c,
             [Routine] IOperand routine, params IOperand[] args)
@@ -1812,6 +2102,12 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
+        /// <summary>
+        /// Calls a routine without returning a value.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="routine">The packed address of the routine to call.</param>
+        /// <param name="args">The arguments to pass to the routine.</param>
         [Builtin("APPLY", "CALL", MinVersion = 5, HasSideEffect = true)]
         public static void CallVoidOp(VoidCall c,
             [Routine] IOperand routine, params IOperand[] args)
@@ -1831,6 +2127,14 @@ namespace Zilf.Compiler.Builtins
 
         #region Table Opcodes/Builtins
 
+        /// <summary>
+        /// Searches for a value in a table.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="value">The value to search for.</param>
+        /// <param name="table">The address of the table to search in.</param>
+        /// <param name="length">The length of the table in words.</param>
+        /// <returns>The address of the word in the table, or zero if it wasn't found.</returns>
         [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4)]
         [return: Table]
         public static void IntblValuePredOp_V4(ValuePredCall c,
@@ -1839,6 +2143,14 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitScanTable(value, table, length, null, c.resultStorage, c.label, c.polarity);
         }
 
+        /// <summary>
+        /// Searches for a value in a table.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="value">The value to search for.</param>
+        /// <param name="table">The address of the table to search in.</param>
+        /// <param name="length">The length of the table in words.</param>
+        /// <param name="form">The length of each field in the table (in bytes), with the high bit set for words and cleared for bytes. If omitted, defaults to $82 (words, 2-byte fields).</param>
         [Builtin("INTBL?", MinVersion = 5)]
         [return: Table]
         public static void IntblValuePredOp_V5(ValuePredCall c,
@@ -1933,6 +2245,12 @@ namespace Zilf.Compiler.Builtins
             return false;
         }
 
+        /// <summary>
+        /// Reads a field from the low memory area (header and extension table).
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="fieldSpec">The name of a header field to read, or a list consisting of the header field name and either 0 or 1 to read the high or low byte.</param>
+        /// <returns>The value of the header field.</returns>
         [Builtin("LOWCORE")]
         public static IOperand LowCoreReadOp(ValueCall c, ZilObject fieldSpec)
         {
@@ -1955,6 +2273,12 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
+        /// <summary>
+        /// Writes a value to a field in the low memory area (header and extension table).
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="fieldSpec">The name of a header field to write, or a list consisting of the header field name and either 0 or 1 to write the high or low byte.</param>
+        /// <param name="newValue"></param>
         [Builtin("LOWCORE", HasSideEffect = true)]
         public static void LowCoreWriteOp(VoidCall c, ZilObject fieldSpec, IOperand newValue)
         {
@@ -1975,6 +2299,13 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        /// <summary>
+        /// Iterates over a table in the low memory area (header and extension table), calling a handler routine for each byte.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="fieldSpec">The name of a header field to iterate over.</param>
+        /// <param name="length">The number of bytes to iterate over.</param>
+        /// <param name="handler">The handler routine to call for each byte.</param>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [Builtin("LOWCORE-TABLE", HasSideEffect = true)]
         public static void LowCoreTableOp(VoidCall c, ZilObject fieldSpec, int length, ZilAtom handler)
@@ -2007,8 +2338,8 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        [Builtin("ITABLE")]
-        [Builtin("TABLE", "PTABLE", "LTABLE", "PLTABLE")]
+        [Builtin("ITABLE", Summary = "Defines a new table initialized by repeatedly evaluating an expression.")]
+        [Builtin("TABLE", "PTABLE", "LTABLE", "PLTABLE", Summary = "Defines a new table.")]
         [return: Table]
         public static IOperand TableOp(ValueCall c, params ZilObject[] args)
         {
@@ -2030,9 +2361,9 @@ namespace Zilf.Compiler.Builtins
 
         #region Logical & Loop Builtins
 
-        [Builtin("PROG", Data = StdAtom.PROG)]
-        [Builtin("REPEAT", Data = StdAtom.REPEAT)]
-        [Builtin("BIND", Data = StdAtom.BIND)]
+        [Builtin("PROG", Data = StdAtom.PROG, Summary = "Evaluates a sequence of expressions inside a new block, returning the value of the last expression.")]
+        [Builtin("REPEAT", Data = StdAtom.REPEAT, Summary = "Evaluates a sequence of expressions inside a new block, repeating until a RETURN or AGAIN is encountered.")]
+        [Builtin("BIND", Data = StdAtom.BIND, Summary = "Evaluates a sequence of expressions without creating a new block, returning the value of the last expression.")]
         public static IOperand ProgValueOp(ValueCall c, [Data] StdAtom mode, params ZilObject[] args)
         {
             bool repeat = mode == StdAtom.REPEAT;
@@ -2041,9 +2372,9 @@ namespace Zilf.Compiler.Builtins
             return c.cc.CompilePROG(c.rb, progBody, c.form.SourceLine, true, c.resultStorage, mode.ToString(), repeat, catchy)!;
         }
 
-        [Builtin("PROG", Data = StdAtom.PROG)]
-        [Builtin("REPEAT", Data = StdAtom.REPEAT)]
-        [Builtin("BIND", Data = StdAtom.BIND)]
+        [Builtin("PROG", Data = StdAtom.PROG, Summary = "Evaluates a sequence of expressions inside a new block.")]
+        [Builtin("REPEAT", Data = StdAtom.REPEAT, Summary = "Evaluates a sequence of expressions inside a new block, repeating until a RETURN or AGAIN is encountered.")]
+        [Builtin("BIND", Data = StdAtom.BIND, Summary = "Evaluates a sequence of expressions without creating a new block.")]
         public static void ProgVoidOp(VoidCall c, [Data] StdAtom mode, params ZilObject[] args)
         {
             bool repeat = mode == StdAtom.REPEAT;
@@ -2052,9 +2383,9 @@ namespace Zilf.Compiler.Builtins
             c.cc.CompilePROG(c.rb, progBody, c.form.SourceLine, false, null, mode.ToString(), repeat, catchy);
         }
 
-        [Builtin("NOT", Data = false)]
-        [Builtin("F?", Data = false)]
-        [Builtin("T?", Data = true)]
+        [Builtin("NOT", Data = false, Summary = "Returns true if the condition is false, and false otherwise.")]
+        [Builtin("F?", Data = false, Summary = "Returns true if the condition is false, and false otherwise.")]
+        [Builtin("T?", Data = true, Summary = "Returns true if the condition is true, and false otherwise.")]
         public static IOperand TrueFalseValueOp(ValueCall c, [Data] bool polarity, ZilObject condition)
         {
             var label1 = c.rb.DefineLabel();
@@ -2068,115 +2399,115 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("NOT", Data = false)]
-        [Builtin("F?", Data = false)]
-        [Builtin("T?", Data = true)]
+        [Builtin("NOT", Data = false, Summary = "Returns true if the condition is false, and false otherwise.")]
+        [Builtin("F?", Data = false, Summary = "Returns true if the condition is false, and false otherwise.")]
+        [Builtin("T?", Data = true, Summary = "Returns true if the condition is true, and false otherwise.")]
         public static void TrueFalsePredOp(PredCall c, [Data] bool polarity, ZilObject condition)
         {
             c.cc.CompileCondition(c.rb, condition, c.form.SourceLine, c.label, polarity == c.polarity);
         }
 
-        [Builtin("OR", Data = false)]
-        [Builtin("AND", Data = true)]
+        [Builtin("OR", Data = false, Summary = "Evaluates a sequence of expressions until one is true, returning the true value, or returning zero if all are false.")]
+        [Builtin("AND", Data = true, Summary = "Evaluates a sequence of expressions until one is false, returning zero, or returning the last true value if none are false.")]
         public static IOperand AndOrValueOp(ValueCall c, [Data] bool and, params ZilObject[] args)
         {
             Debug.Assert(c.form.Rest != null);
             return c.cc.CompileBoolean(c.rb, c.form.Rest, c.form.SourceLine, and, true, c.resultStorage)!;
         }
 
-        [Builtin("OR", Data = false)]
-        [Builtin("AND", Data = true)]
+        [Builtin("OR", Data = false, Summary = "Evaluates a sequence of expressions until one is true.")]
+        [Builtin("AND", Data = true, Summary = "Evaluates a sequence of expressions until one is false.")]
         public static void AndOrVoidOp(VoidCall c, [Data] bool and, params ZilObject[] args)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileBoolean(c.rb, c.form.Rest, c.form.SourceLine, and, false, null);
         }
 
-        [Builtin("OR", Data = false)]
-        [Builtin("AND", Data = true)]
+        [Builtin("OR", Data = false, Summary = "Evaluates a sequence of expressions until one is true, returning true, or returning false if all are false.")]
+        [Builtin("AND", Data = true, Summary = "Evaluates a sequence of expressions until one is false, returning false, or returning true if all are true.")]
         public static void AndOrPredOp(PredCall c, [Data] bool and, params ZilObject[] args)
         {
             c.cc.CompileBoolean(c.rb, args, c.form.SourceLine, and, c.label, c.polarity);
         }
 
-        [Builtin("DO")]
+        [Builtin("DO", Summary = "Evaluates a sequence of expressions in a loop, using a counter variable.")]
         public static IOperand DoLoopValueOp(ValueCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             return c.cc.CompileDO(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
         }
 
-        [Builtin("DO")]
+        [Builtin("DO", Summary = "Evaluates a sequence of expressions in a loop, using a counter variable.")]
         public static void DoLoopVoidOp(VoidCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileDO(c.rb, c.form.Rest, c.form.SourceLine, false, null);
         }
 
-        [Builtin("MAP-CONTENTS")]
+        [Builtin("MAP-CONTENTS", Summary = "Evaluates a sequence of expressions repeatedly for each object in a given location, returning the value of the last expression.")]
         public static IOperand MapContentsValueOp(ValueCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             return c.cc.CompileMAP_CONTENTS(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
         }
 
-        [Builtin("MAP-CONTENTS")]
+        [Builtin("MAP-CONTENTS", Summary = "Evaluates a sequence of expressions repeatedly for each object in a given location.")]
         public static void MapContentsVoidOp(VoidCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileMAP_CONTENTS(c.rb, c.form.Rest, c.form.SourceLine, false, null);
         }
 
-        [Builtin("MAP-DIRECTIONS")]
+        [Builtin("MAP-DIRECTIONS", Summary = "Evaluates a sequence of expressions repeatedly for each direction exiting a given location, returning the value of the last expression.")]
         public static IOperand MapDirectionsValueOp(ValueCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             return c.cc.CompileMAP_DIRECTIONS(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage);
         }
 
-        [Builtin("MAP-DIRECTIONS")]
+        [Builtin("MAP-DIRECTIONS", Summary = "Evaluates a sequence of expressions repeatedly for each direction exiting a given location.")]
         public static void MapDirectionsVoidOp(VoidCall c, params ZilObject[] body)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileMAP_DIRECTIONS(c.rb, c.form.Rest, c.form.SourceLine, false, null);
         }
 
-        [Builtin("COND")]
+        [Builtin("COND", Summary = "Evaluates a series of conditional clauses, returning the value of the last expression in the first true clause.")]
         public static IOperand CondValueOp(ValueCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
             return c.cc.CompileCOND(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage)!;
         }
 
-        [Builtin("COND")]
+        [Builtin("COND", Summary = "Evaluates a series of conditional clauses.")]
         public static void CondVoidOp(VoidCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileCOND(c.rb, c.form.Rest, c.form.SourceLine, false, null);
         }
 
-        [Builtin("VERSION?")]
+        [Builtin("VERSION?", Summary = "Evaluates the conditional clause corresponding to the current Z-machine version, returning the value of the last expression in the clause.")]
         public static IOperand IfVersionValueOp(ValueCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
             return c.cc.CompileVERSION_P(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage)!;
         }
 
-        [Builtin("VERSION?")]
+        [Builtin("VERSION?", Summary = "Evaluates the conditional clause corresponding to the current Z-machine version.")]
         public static void IfVersionVoidOp(VoidCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
             c.cc.CompileVERSION_P(c.rb, c.form.Rest, c.form.SourceLine, false, null);
         }
 
-        [Builtin("IFFLAG")]
+        [Builtin("IFFLAG", Summary = "Evaluates a series of conditional clauses based on the values of compilation flags, returning the value of the last expression in the first applicable clause.")]
         public static IOperand IfFlagValueOp(ValueCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
             return c.cc.CompileIFFLAG(c.rb, c.form.Rest, c.form.SourceLine, true, c.resultStorage)!;
         }
 
-        [Builtin("IFFLAG")]
+        [Builtin("IFFLAG", Summary = "Evaluates a series of conditional clauses based on the values of compilation flags.")]
         public static void IfFlagVoidOp(VoidCall c, params ZilObject[] clauses)
         {
             Debug.Assert(c.form.Rest != null);
@@ -2185,14 +2516,14 @@ namespace Zilf.Compiler.Builtins
 
         #endregion
 
-        [Builtin("CHTYPE")]
+        [Builtin("CHTYPE", Summary = "Does nothing.")]
         public static IOperand ChtypeValueOp(ValueCall c, IOperand value, ZilAtom type)
         {
             // TODO: check type?
             return value;
         }
 
-        [Builtin("TELL")]
+        [Builtin("TELL", Summary = "Outputs text to the player, or calls printing routines, based on a sequence of tokens.")]
         public static void TellVoidOp(VoidCall c, params ZilObject[] args)
         {
             c.cc.CompileTell(c.rb, c.form.SourceLine, args);

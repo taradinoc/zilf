@@ -73,7 +73,7 @@ namespace Zilf.Interpreter.Values
         /// <param name="text">The atom name.</param>
         /// <param name="ctx">The current context.</param>
         /// <returns>The parsed atom.</returns>
-        /// <remarks>This method does not strip backslashes from <see cref="text"/>.</remarks>
+        /// <remarks>This method does not strip backslashes from <paramref name="text"/>.</remarks>
         /// <exception cref="InterpreterError">No OBLIST path.</exception>
         public static ZilAtom Parse(string text, Context ctx)
         {

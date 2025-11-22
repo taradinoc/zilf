@@ -101,6 +101,10 @@ namespace ZilfSourceGenerators
                 {
                     var parameters = method.MethodSymbol.Parameters.Skip(1).ToArray(); // skip Context
 
+                    // Extract XML documentation summaries
+                    var methodSummary = XmlDocHelper.ExtractSummary(method.MethodSymbol);
+                    var paramSummaries = XmlDocHelper.ExtractParamSummaries(method.MethodSymbol);
+
                     // Local helpers to inspect parameter types
                     static bool IsZilObjectType(ITypeSymbol t)
                     {
@@ -265,10 +269,18 @@ namespace ZilfSourceGenerators
                             paramExpr = $"SignatureBuilder.Optional({paramExpr})";
                         }
 
+                        // Add parameter summary if available
+                        if (paramSummaries.TryGetValue(p.Name ?? "", out var paramSummary))
+                        {
+                            var escapedSummary = paramSummary.Replace("\"", "\\\"");
+                            paramExpr = $"{paramExpr}.WithSummary(\"{escapedSummary}\")";
+                        }
+
                         partExprs.Add(paramExpr);
                     }
 
                     // Emit an ISignaturePart[] initializer (with type-based constraints) and construct SubrSignature via factory
+                    var escapedMethodSummary = methodSummary != null ? $"\"{methodSummary.Replace("\"", "\\\"")}\"" : "null";
                     sb.AppendLine("SubrSignature.FromGeneratedParts(new ISignaturePart[] {");
                     sb.Indent();
                     for (int i = 0; i < partExprs.Count; i++)
@@ -277,7 +289,7 @@ namespace ZilfSourceGenerators
                         sb.AppendLine(partExprs[i] + comma);
                     }
                     sb.Unindent();
-                    sb.AppendLine("}),");
+                    sb.AppendLine($"}}, {escapedMethodSummary}),");
                 }
                 sb.Unindent();
                 sb.AppendLine("},");

@@ -29,7 +29,12 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
-        // TODO: use ArgDecoder
+        /// <summary>
+        /// Sets the defaults for DEFSTRUCT in the current file.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="args">A sequence of DEFSTRUCT parameters to set as defaults.</param>
+        /// <returns></returns>
         [FSubr("SET-DEFSTRUCT-FILE-DEFAULTS")]
         public static ZilObject SET_DEFSTRUCT_FILE_DEFAULTS(Context ctx, ZilObject[] args)
         {
@@ -171,6 +176,14 @@ namespace Zilf.Interpreter
         }
 #pragma warning restore 649
 
+        /// <summary>
+        /// Defines a new structure type with helper macros.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="name">The name of the new type.</param>
+        /// <param name="baseTypeOrDefaults">The base type or a list of default parameters.</param>
+        /// <param name="fieldSpecs">A sequence of field specifications.</param>
+        /// <returns>The name of the new type.</returns>
         /// <exception cref="InterpreterError">A type named <paramref name="name"/> is already defined.</exception>
         [FSubr]
         public static ZilObject DEFSTRUCT(Context ctx, ZilAtom name,
@@ -720,7 +733,7 @@ namespace Zilf.Interpreter
         }
 
         // TODO: delete once SET-DEFSTRUCT-FILE-DEFAULTS is using ArgDecoder
-        static void ParseDefStructDefaults(Context ctx, ZilList fileDefaults, ref DefStructDefaults defaults)
+        static void  ParseDefStructDefaults(Context ctx, ZilList fileDefaults, ref DefStructDefaults defaults)
         {
             var quoteAtom = ctx.GetStdAtom(StdAtom.QUOTE);
 

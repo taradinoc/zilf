@@ -129,14 +129,27 @@ namespace Zilf.Language.Signatures
                     throw new ArgumentException($"Unexpected signature class: {signature.GetType()}");
             }
 
+            if (signature.Summary != null)
+            {
+                result["summary"] = signature.Summary;
+            }
+
             return result;
         }
 
         protected override void PostProcess(ISignaturePart part, ref JsonObject? pendingResult)
         {
-            if (pendingResult != null && part.Name != null)
+            if (pendingResult != null)
             {
-                pendingResult["name"] = part.Name;
+                if (part.Name != null)
+                {
+                    pendingResult["name"] = part.Name;
+                }
+
+                if (part.Summary != null)
+                {
+                    pendingResult["summary"] = part.Summary;
+                }
             }
         }
 

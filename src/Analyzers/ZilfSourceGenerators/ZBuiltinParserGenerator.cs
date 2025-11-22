@@ -128,6 +128,10 @@ namespace ZilfSourceGenerators
                                 if (namedArg.Value.Value is int priority)
                                     info.Priority = priority;
                                 break;
+                            case "Summary":
+                                if (namedArg.Value.Value is string summary)
+                                    info.Summary = summary;
+                                break;
                         }
                     }
 
@@ -649,7 +653,17 @@ namespace ZilfSourceGenerators
                 {
                     foreach (var ov in group.Overloads)
                     {
-                        var argsParams = ov.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+                        var methodSymbol = ov.Method.MethodSymbol;
+                        
+                        // Extract XML documentation summaries from method.
+                        // For builtins, prefer BuiltinAttribute.Summary over XML doc summary, since
+                        // the same method often implements multiple operations (e.g., TernaryVoidOp
+                        // implements DCLEAR, DIROUT, DISPLAY, etc. with different [Builtin] attributes).
+                        // Parameter summaries always come from XML <param> elements.
+                        var methodSummary = XmlDocHelper.ExtractSummary(methodSymbol);
+                        var paramSummaries = XmlDocHelper.ExtractParamSummaries(methodSymbol);
+
+                        var argsParams = methodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
                         int requiredCount = argsParams.Count(p => !p.IsOptional && !p.IsParams);
                         int optionalCount = argsParams.Count(p => p.IsOptional && !p.IsParams);
                         bool hasParams = argsParams.Any(p => p.IsParams);
@@ -694,6 +708,13 @@ namespace ZilfSourceGenerators
                                 paramExpr = $"SignatureBuilder.Optional({innerExpr})";
                             }
 
+                            // Add parameter summary if available
+                            if (paramSummaries.TryGetValue(p.Name ?? "", out var paramSummary))
+                            {
+                                var escapedSummary = paramSummary.Replace("\"", "\\\"");
+                                paramExpr = $"{paramExpr}.WithSummary(\"{escapedSummary}\")";
+                            }
+
                             partExprs.Add(paramExpr);
                         }
 
@@ -715,7 +736,6 @@ namespace ZilfSourceGenerators
                         // Build return part expression
                         string returnExpr = "LiteralPart.From(\"T\")";
                         // Check if the method's return value is annotated with [Table]
-                        var methodSymbol = ov.Method.MethodSymbol;
                         var returnHasTable = methodSymbol.GetReturnTypeAttributes().Any(a => a.AttributeClass?.Name == "TableAttribute" || a.AttributeClass?.Name == "Table");
                         if (returnHasTable)
                         {
@@ -734,7 +754,12 @@ namespace ZilfSourceGenerators
                         ob.AppendLine($"minArgs: {requiredCount},");
                         ob.AppendLine($"maxArgs: {(hasParams ? "null" : (requiredCount + optionalCount).ToString())},");
                         ob.AppendLine($"minVersion: {minVersionExpr},");
-                        ob.AppendLine($"maxVersion: {maxVersionExpr}),");
+                        ob.AppendLine($"maxVersion: {maxVersionExpr},");
+                        
+                        // Determine summary: prefer attribute Summary over XML doc summary
+                        var chosenSummary = !string.IsNullOrWhiteSpace(ov.Attribute.Summary) ? ov.Attribute.Summary : methodSummary;
+                        var escapedMethodSummary = chosenSummary != null ? $"\"{chosenSummary.Replace("\"", "\\\"")}\"" : "null";
+                        ob.AppendLine($"summary: {escapedMethodSummary}),");
                         ob.Unindent();
 
                         overloadEntries.Add(ob.ToString());
@@ -2476,6 +2501,7 @@ namespace ZilfSourceGenerators
         public int? MaxVersion { get; set; }
         public bool HasSideEffect { get; set; }
         public int Priority { get; set; } = 1;
+        public string? Summary { get; set; }
     }
 
     public class ParameterInfo

@@ -9,6 +9,8 @@
     <Deterministic>false</Deterministic>
     <Nullable>enable</Nullable>
 	<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(PortableTarget)' != 'true'">
 	  <SelfContained>true</SelfContained>

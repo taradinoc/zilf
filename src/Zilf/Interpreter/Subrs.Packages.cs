@@ -26,6 +26,13 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
+        /// <summary>
+        /// Begins a new package with the specified name.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="pname">The name of the package.</param>
+        /// <returns>The package's external atom, i.e. the atom whose OBLIST property is the oblist containing atoms
+        /// exported from the package (such as PNAME!-PACKAGE).</returns>
         [Subr]
         [Subr("ZPACKAGE")]
         [Subr("ZZPACKAGE")]
@@ -51,6 +58,13 @@ namespace Zilf.Interpreter
             return externalAtom;
         }
 
+        /// <summary>
+        /// Begins a new definition package with the specified name.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="pname">The name of the package.</param>
+        /// <returns>The package's external atom, i.e. the atom whose OBLIST property is the oblist containing atoms
+        /// exported from the package (such as PNAME!-PACKAGE).</returns>
         [Subr]
         [Subr("ZSECTION")]
         [Subr("ZZSECTION")]
@@ -71,6 +85,11 @@ namespace Zilf.Interpreter
             return externalAtom;
         }
 
+        /// <summary>
+        /// Ends the current package or definition package.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <returns>The oblist path that was in effect before ending the package.</returns>
         [Subr]
         [Subr("END-DEFINITIONS")]
         [Subr("ENDSECTION")]
@@ -79,6 +98,12 @@ namespace Zilf.Interpreter
             return ENDBLOCK(ctx);
         }
 
+        /// <summary>
+        /// Exports the specified atoms from the current package by placing them on the package's external oblist.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="args">The atoms to export.</param>
+        /// <returns>True.</returns>
         /// <exception cref="InterpreterError">OBLIST path is malformed.</exception>
         [Subr]
         public static ZilObject ENTRY(Context ctx, ZilAtom[] args)
@@ -122,6 +147,12 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        /// <summary>
+        /// Exports the specified atoms from the current package by placing them on the root oblist.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="args">The atoms to export.</param>
+        /// <returns>True.</returns>
         /// <exception cref="InterpreterError">OBLIST path is malformed.</exception>
         [Subr]
         public static ZilObject RENTRY(Context ctx, ZilAtom[] args)
@@ -166,24 +197,50 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        /// <summary>
+        /// Imports the specified packages into the current OBLIST path, possibly loading them from files.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="args">The packages to import.</param>
+        /// <returns>True.</returns>
         [Subr]
         public static ZilObject USE(Context ctx, string[] args)
         {
             return PerformUse(ctx, args, "USE", StdAtom.PACKAGE);
         }
 
+        /// <summary>
+        /// Imports the specified definition packages into the current OBLIST path, possibly loading them from files.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="args">The definition packages to import.</param>
+        /// <returns>True.</returns>
         [Subr]
         public static ZilObject INCLUDE(Context ctx, string[] args)
         {
             return PerformUse(ctx, args, "INCLUDE", StdAtom.DEFINITIONS);
         }
 
+        /// <summary>
+        /// Imports the specified packages into the current OBLIST path if the condition is true, possibly loading them from files.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="condition">The condition to evaluate.</param>
+        /// <param name="args">The packages to import.</param>
+        /// <returns>True if the condition is true and the packages were imported; otherwise, the condition.</returns>
         [Subr("USE-WHEN")]
         public static ZilObject USE_WHEN(Context ctx, ZilObject condition, string[] args)
         {
             return condition.IsTrue ? PerformUse(ctx, args, "USE-WHEN", StdAtom.PACKAGE) : condition;
         }
 
+        /// <summary>
+        /// Imports the specified definition packages into the current OBLIST path if the condition is true, possibly loading them from files.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="condition">The condition to evaluate.</param>
+        /// <param name="args">The definition packages to import.</param>
+        /// <returns>True if the condition is true and the definition packages were imported; otherwise, the condition.</returns>
         [Subr("INCLUDE-WHEN")]
         public static ZilObject INCLUDE_WHEN(Context ctx, ZilObject condition, string[] args)
         {
@@ -238,6 +295,12 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        /// <summary>
+        /// Returns true.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="args">Ignored.</param>
+        /// <returns>True.</returns>
         [Subr("COMPILING?")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Arguments are discarded.")]
         public static ZilObject COMPILING_P(Context ctx, ZilObject[] args)

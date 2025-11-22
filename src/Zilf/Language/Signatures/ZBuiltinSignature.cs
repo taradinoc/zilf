@@ -31,14 +31,16 @@ namespace Zilf.Language.Signatures
         public ISignaturePart ReturnPart { get; }
         public int MinArgs { get; }
         public int? MaxArgs { get; }
+        public string? Summary { get; set; }
         public int MinVersion { get; }
         public int MaxVersion { get; }
 
         ZBuiltinSignature(int minArgs, int? maxArgs, int minVersion, int maxVersion,
-            IReadOnlyList<ISignaturePart> parts, ISignaturePart returnPart)
+            IReadOnlyList<ISignaturePart> parts, ISignaturePart returnPart, string? summary)
         {
             MinArgs = minArgs;
             MaxArgs = maxArgs;
+            Summary = summary;
             MinVersion = minVersion;
             MaxVersion = maxVersion;
             Parts = parts;
@@ -46,9 +48,9 @@ namespace Zilf.Language.Signatures
         }
 
         public static ISignature FromGeneratedParts(ISignaturePart[] parts, ISignaturePart returnPart,
-            int minArgs, int? maxArgs, int minVersion, int maxVersion)
+            int minArgs, int? maxArgs, int minVersion, int maxVersion, string? summary)
         {
-            return new ZBuiltinSignature(minArgs, maxArgs, minVersion, maxVersion, parts.ToArray(), returnPart);
+            return new ZBuiltinSignature(minArgs, maxArgs, minVersion, maxVersion, parts.ToArray(), returnPart, summary);
         }
     }
 }

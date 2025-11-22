@@ -25,5 +25,6 @@ namespace Zilf.Language.Signatures
         IReadOnlyList<ISignaturePart> Parts { get; }
         int MinArgs { get; }
         int? MaxArgs { get; }
+        string? Summary { get; }
     }
 }

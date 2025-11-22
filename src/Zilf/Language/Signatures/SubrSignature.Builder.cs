@@ -35,38 +35,6 @@ namespace Zilf.Language.Signatures
         static readonly object[] EmptyObjectArray = Array.Empty<object>();
 
         [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
-        [SuppressMessage("Performance", "CA1801:Unused parameter")]
-        [SuppressMessage("Redundancy", "RCS1163:Unused parameter.")]
-        public static ISignature FromMethodInfo(MethodInfo methodInfo, bool isFSubr)
-        {
-            ArgumentNullException.ThrowIfNull(methodInfo);
-
-            if (!typeof(ZilObject).IsAssignableFrom(methodInfo.ReturnType) &&
-                !typeof(ZilResult).IsAssignableFrom(methodInfo.ReturnType))
-                throw new ArgumentException("Method return type is not assignable to ZilObject or ZilResult");
-
-            var parameters = methodInfo.GetParameters();
-
-            if (parameters.Length < 1 || parameters[0].ParameterType != typeof(Context))
-                throw new ArgumentException("First parameter type must be Context");
-
-            var paramSigParts = methodInfo.GetParameters().Skip(1).Select(ConvertSubrParam);
-
-            return new SubrSignature(paramSigParts.ToArray());
-        }
-
-        static SignaturePart ConvertSubrParam(ParameterInfo pi)
-        {
-            var (isOptional, defaultValue) = CheckOptional(pi);
-            return ConvertForSubr(
-                pi.ParameterType,
-                Hyphenate(pi.Name!),
-                pi.GetCustomAttributes(false),
-                isOptional,
-                defaultValue);
-        }
-
-        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
         [SuppressMessage("Redundancy", "RCS1163:Unused parameter.")]
         [SuppressMessage("Performance", "CA1801:Unused parameter")]
         static SignaturePart ConvertForSubr(

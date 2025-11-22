@@ -16,19 +16,16 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Reflection;
-
 namespace Zilf.Language.Signatures
 {
     interface ISignaturePart
     {
-        ICustomAttributeProvider? Source { get; }
-
         IConstraint Constraint { get; }
 
         string? Name { get; }
         int MinArgs { get; }
         int? MaxArgs { get; }
+        string? Summary { get; }
 
         void Accept(ISignatureVisitor visitor);
     }

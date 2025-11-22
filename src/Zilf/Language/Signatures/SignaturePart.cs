@@ -18,18 +18,17 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace Zilf.Language.Signatures
 {
     abstract class SignaturePart : ISignaturePart
     {
-        public ICustomAttributeProvider? Source => null;
         public string? Name { get; set; }
 
         public abstract Constraint Constraint { get; }
         public abstract int MinArgs { get; }
         public abstract int? MaxArgs { get; }
+        public string? Summary { get; set; }
         public abstract void Accept(ISignatureVisitor visitor);
 
         protected abstract IEnumerable<SignaturePart> GetChildren();
@@ -40,5 +39,11 @@ namespace Zilf.Language.Signatures
         }
 
         IConstraint ISignaturePart.Constraint => Constraint;
+
+        public SignaturePart WithSummary(string? summary)
+        {
+            Summary = summary;
+            return this;
+        }
     }
 }

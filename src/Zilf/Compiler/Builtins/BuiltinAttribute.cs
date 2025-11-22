@@ -70,5 +70,10 @@ namespace Zilf.Compiler.Builtins
         /// Lower values indicate a better match. Defaults to 1.
         /// </summary>
         public int Priority { get; set; }
+
+        /// <summary>
+        /// Gets or sets a summary description for the builtin.
+        /// </summary>
+        public string? Summary { get; set; }
     }
 }

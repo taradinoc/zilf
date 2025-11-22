@@ -92,7 +92,7 @@ namespace Zilf.Interpreter
         /// <param name="lowerBound">The minimum number of arguments (or additional arguments) required.</param>
         /// <param name="upperBound">The maximum number of arguments (or additional arguments) allowed, or <c>null</c> if there is no upper bound.</param>
         /// <param name="morePrefix"><c>true</c> if <see paramref="lowerBound"/> and <see paramref="upperBound"/> indicate the number of
-        /// <b>additional</b> arguments expected./param>
+        /// <b>additional</b> arguments expected.</param>
         /// <remarks>
         /// <see paramref="morePrefix"/> can be used in situations such as when the number of arguments allowed depends on the values
         /// or types of some arguments.

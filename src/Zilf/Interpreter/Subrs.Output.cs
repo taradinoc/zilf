@@ -29,6 +29,13 @@ namespace Zilf.Interpreter
 {
     static partial class Subrs
     {
+        /// <summary>
+        /// Writes the round-trippable string representation of a value to a channel, preceded by a newline and followed by a space.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="value">The value to print.</param>
+        /// <param name="channel">The channel to write to. If omitted, defaults to the local or global value of OUTCHAN.</param>
+        /// <returns>The value whose representation was printed.</returns>
         /// <exception cref="InterpreterError">Bad OUTCHAN.</exception>
         [Subr]
         public static ZilObject PRINT(Context ctx, ZilObject value, ZilChannel? channel = null)
@@ -52,6 +59,13 @@ namespace Zilf.Interpreter
             return value;
         }
 
+        /// <summary>
+        /// Writes the round-trippable string representation of a value to a channel.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="value">The value to print.</param>
+        /// <param name="channel">The channel to write to. If omitted, defaults to the local or global value of OUTCHAN.</param>
+        /// <returns>The value whose representation was printed.</returns>
         /// <exception cref="InterpreterError">Bad OUTCHAN.</exception>
         [Subr]
         public static ZilObject PRIN1(Context ctx, ZilObject value, ZilChannel? channel = null)
@@ -73,6 +87,13 @@ namespace Zilf.Interpreter
             return value;
         }
 
+        /// <summary>
+        /// Writes the "friendly" string representation of a value to a channel.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="value">The value to print.</param>
+        /// <param name="channel">The channel to write to. If omitted, defaults to the local or global value of OUTCHAN.</param>
+        /// <returns>The value whose representation was printed.</returns>
         /// <exception cref="InterpreterError">Bad OUTCHAN.</exception>
         [Subr]
         public static ZilObject PRINC(Context ctx, ZilObject value, ZilChannel? channel = null)
@@ -94,6 +115,12 @@ namespace Zilf.Interpreter
             return value;
         }
 
+        /// <summary>
+        /// Writes a carriage return and linefeed to a channel.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="channel">The channel to write to.</param>
+        /// <returns></returns>
         /// <exception cref="InterpreterError">Bad OUTCHAN.</exception>
         [Subr]
         public static ZilObject CRLF(Context ctx, ZilChannel? channel = null)
@@ -113,6 +140,15 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
 
+        /// <summary>
+        /// Writes the string representations of a series of items to a channel,
+        /// using a specified printer function to convert each item to a string.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="channel">The channel to write to.</param>
+        /// <param name="printer">Either an applicable value (such as a function), or an atom whose global or local value contains an applicable value.</param>
+        /// <param name="items">The items to print.</param>
+        /// <returns>The last item printed.</returns>
         /// <exception cref="InterpreterError"><paramref name="printer"/> is an atom which has no local or global value.</exception>
         [Subr("PRINT-MANY")]
         public static ZilObject PRINT_MANY(Context ctx, ZilChannel channel,
@@ -162,6 +198,13 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        /// <summary>
+        /// Writes a single character to a channel by its ASCII value.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="ch">The ASCII value of the character to write.</param>
+        /// <param name="channel">The channel to write to.</param>
+        /// <returns>The ASCII value.</returns>
         /// <exception cref="InterpreterError">Bad OUTCHAN.</exception>
         [Subr]
         public static ZilObject IMAGE(Context ctx, ZilFix ch, ZilChannel? channel = null)
@@ -184,6 +227,13 @@ namespace Zilf.Interpreter
         [GeneratedRegex("^(?:(?<device>[^:]+):)?(?:<(?<directory>[^>]+)>)?(?<filename>[^:<>]+)$")]
         private static partial Regex GetRetroPathRegex();
 
+        /// <summary>
+        /// Opens a file channel for reading from a file specified by a retro-style path.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="mode">Must be the atom READ.</param>
+        /// <param name="path">A retro-style file path.</param>
+        /// <returns>The opened file channel.</returns>
         [Subr]
         public static ZilObject OPEN(Context ctx, [Decl("'\"READ\"")] string mode, string path)
         {
@@ -198,6 +248,12 @@ namespace Zilf.Interpreter
             return match.Success ? match.Groups["filename"].Value : retroPath;
         }
 
+        /// <summary>
+        /// Closes a channel.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="channel">The channel to close.</param>
+        /// <returns>The closed channel.</returns>
         [Subr]
         public static ZilObject CLOSE(Context ctx, ZilChannel channel)
         {
@@ -205,6 +261,12 @@ namespace Zilf.Interpreter
             return channel;
         }
 
+        /// <summary>
+        /// Gets the length of a file associated with a channel.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="channel">The channel to check.</param>
+        /// <returns>The length of the file, or false if the channel is not associated with a file.</returns>
         [Subr("FILE-LENGTH")]
         public static ZilObject FILE_LENGTH(Context ctx, ZilChannel channel)
         {
@@ -212,6 +274,14 @@ namespace Zilf.Interpreter
             return length == null ? ctx.FALSE : new ZilFix((int)length.Value);
         }
 
+        /// <summary>
+        /// Reads a string from a channel into a destination string, up to a maximum length or until a stop character is encountered.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="dest">The string to read into. Its contents will be overwritten by the data read from the channel.</param>
+        /// <param name="channel">The channel to read from.</param>
+        /// <param name="maxLengthOrStopChars">Either the maximum number of characters to read, or a string of stop characters.</param>
+        /// <returns>The number of characters read.</returns>
         [Subr]
         public static ZilObject READSTRING(Context ctx, ZilString dest, ZilChannel channel,
             [Decl("<OR FIX STRING>")] ZilObject? maxLengthOrStopChars = null)
@@ -253,6 +323,12 @@ namespace Zilf.Interpreter
             return new ZilFix(readCount);
         }
 
+        /// <summary>
+        /// Gets the horizontal position of the channel.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="channel">The channel to check.</param>
+        /// <returns>The zero-based column position of the channel.</returns>
         /// <exception cref="InterpreterError">Not supported by this type of channel.</exception>
         [Subr("M-HPOS")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "M_ is not a member prefix here")]
@@ -264,6 +340,13 @@ namespace Zilf.Interpreter
             return new ZilFix(hposChannel.HPos);
         }
 
+        /// <summary>
+        /// Writes spaces to a channel until the horizontal position reaches the specified column.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="position">The target horizontal position.</param>
+        /// <param name="channel">The channel to write to. If omitted, defaults to the current OUTCHAN.</param>
+        /// <returns>The target horizontal position.</returns>
         /// <exception cref="InterpreterError"><paramref name="position"/> is negative.</exception>
         [Subr("INDENT-TO")]
         public static ZilObject INDENT_TO(Context ctx, ZilFix position, ZilChannel? channel = null)
@@ -304,6 +387,14 @@ namespace Zilf.Interpreter
             return position;
         }
 
+        /// <summary>
+        /// Defines a prefix macro for the parser.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="ch">The character which will become a new prefix.</param>
+        /// <param name="handlerOrFalse">An applicable value (such as a function) to call when the prefix is encountered,
+        /// or false to remove the prefix macro.</param>
+        /// <returns>True.</returns>
         [Subr("MAKE-PREFIX-MACRO", ObList = "READER-MACROS!-PACKAGE")]
         public static ZilObject MAKE_PREFIX_MACRO(Context ctx, ZilChar ch,
             [Either(typeof(IApplicable), typeof(ZilFalse))]
@@ -316,6 +407,13 @@ namespace Zilf.Interpreter
             return ctx.TRUE;
         }
         
+        /// <summary>
+        /// Sets the source information of a destination value to match that of a source value.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="dest">The destination value to modify.</param>
+        /// <param name="src">The source value whose source information will be copied.</param>
+        /// <returns>The destination value.</returns>
         [Subr("SET-SOURCE-INFO", ObList = "READER-MACROS!-PACKAGE")]
         public static ZilObject SET_SOURCE_INFO(Context ctx, ZilObject dest, ZilObject src)
         {

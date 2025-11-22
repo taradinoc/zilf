@@ -24,8 +24,7 @@ namespace Zilf.Interpreter
     /// Specifies that a class implements a ZILF builtin primtype.
     /// </summary>
     /// <remarks>
-    /// This allows the class to be used as a SUBR parameter with <see cref="ArgDecoder"/>,
-    /// generating a primtype constraint.
+    /// This allows the class to be used as a SUBR parameter, generating a primtype constraint.
     /// </remarks>
     /// <seealso cref="BuiltinTypeAttribute"/>
     [AttributeUsage(AttributeTargets.Class)]

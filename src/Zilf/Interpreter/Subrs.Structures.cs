@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.Serialization;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Interpreter.Values;
@@ -33,6 +32,12 @@ namespace Zilf.Interpreter
     [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Subrs parameters are needed for validation, even if the values aren't used.")]
     static partial class Subrs
     {
+        /// <summary>
+        /// Returns true if the structure is empty.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="st">A structured value.</param>
+        /// <returns>True if the structure is empty; otherwise, false.</returns>
         [Subr("EMPTY?")]
         public static ZilObject EMPTY_P(Context ctx, IStructure st)
         {
@@ -52,6 +57,13 @@ namespace Zilf.Interpreter
             return st.GetFirst();
         }*/
 
+        /// <summary>
+        /// Returns the suffix of a structure after skipping a specified number of elements.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="st">A structured value.</param>
+        /// <param name="skip">The number of elements to skip. If omitted, defaults to 1.</param>
+        /// <returns>The suffix of the structure after skipping the specified number of elements.</returns>
         /// <exception cref="InterpreterError"><paramref name="st"/> has fewer than <paramref name="skip"/> elements.</exception>
         [Subr]
         public static ZilObject REST(Context ctx, IStructure st, int skip = 1)
@@ -62,6 +74,13 @@ namespace Zilf.Interpreter
             return result.GetPrimitive(ctx);
         }
 
+        /// <summary>
+        /// Partially reverses the effect of REST, returning a suffix of the original structure the specified number of elements before the specified suffix.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="st">A structure suffix previously obtained from REST.</param>
+        /// <param name="skip">The number of elements to move back. If omitted, defaults to 1.</param>
+        /// <returns>A longer suffix of the original structure.</returns>
         /// <exception cref="InterpreterError">The type of <paramref name="st"/> does not support this operation, or <paramref name="st"/> has not been RESTed at least <paramref name="skip"/> elements.</exception>
         [Subr]
         public static ZilObject BACK(Context ctx, IStructure st, int skip = 1)
@@ -79,6 +98,12 @@ namespace Zilf.Interpreter
             }
         }
 
+        /// <summary>
+        /// Reverses the effect of REST, returning the original structure.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="st">A structure suffix previously obtained from REST.</param>
+        /// <returns>The original structure.</returns>
         /// <exception cref="InterpreterError">The type of <paramref name="st"/> does not support this operation.</exception>
         [Subr]
         public static ZilObject TOP(Context ctx, IStructure st)
@@ -93,6 +118,14 @@ namespace Zilf.Interpreter
             }
         }
 
+        /// <summary>
+        /// Expands a structure by adding the specified number of empty elements at the end and/or the beginning.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="st">A structured value.</param>
+        /// <param name="end">The number of elements to add at the end.</param>
+        /// <param name="beginning">The number of elements to add at the beginning.</param>
+        /// <returns>The expanded structure.</returns>
         /// <exception cref="InterpreterError"><paramref name="beginning"/> or <paramref name="end"/> are negative, or the type of <paramref name="st"/> does not support this operation.</exception>
         [Subr]
         public static ZilObject GROW(Context ctx, IStructure st, int end, int beginning)
@@ -117,6 +150,13 @@ namespace Zilf.Interpreter
             }
         }
 
+        /// <summary>
+        /// Returns the element at the specified index in the structure.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="st">A structured value.</param>
+        /// <param name="idx">The 1-based index of the element to retrieve.</param>
+        /// <returns>The element at the specified index.</returns>
         /// <exception cref="InterpreterError"><paramref name="idx"/> is past the end of <paramref name="st"/>.</exception>
         [Subr]
         public static ZilObject NTH(Context ctx, IStructure st, int idx)
@@ -128,6 +168,14 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        /// <summary>
+        /// Sets the element at the specified index in the structure to a new value.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="st">A structured value.</param>
+        /// <param name="idx">The 1-based index of the element to set.</param>
+        /// <param name="newValue">The new value to set at the specified index.</param>
+        /// <returns>The updated structure.</returns>
         /// <exception cref="InterpreterError"><paramref name="idx"/> is past the end of <paramref name="st"/>, or <paramref name="st"/> is read-only.</exception>
         [Subr]
         public static ZilObject PUT(Context ctx, IStructure st, int idx, ZilObject newValue)
@@ -148,24 +196,51 @@ namespace Zilf.Interpreter
             return (ZilObject)st;
         }
 
+        /// <summary>
+        /// Creates a typed offset object, combining an index, a structure DECL, and optionally a value DECL.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="offset">The 1-based index of the element to point to.</param>
+        /// <param name="structurePattern">The DECL of the structure to which the new offset will apply.</param>
+        /// <param name="valuePattern">Optionally, the DECL that values at the specified index must match.</param>
+        /// <returns>The new offset object.</returns>
         [Subr]
         public static ZilObject OFFSET(Context ctx, int offset, ZilObject structurePattern, ZilObject? valuePattern = null)
         {
             return new ZilOffset(offset, structurePattern, valuePattern ?? ctx.GetStdAtom(StdAtom.ANY));
         }
 
+        /// <summary>
+        /// Returns the index contained in the specified offset object.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="offset">An offset object.</param>
+        /// <returns>The 1-based index of the element pointed to by the offset object.</returns>
         [Subr]
         public static ZilObject INDEX(Context ctx, ZilOffset offset)
         {
             return new ZilFix(offset.Index);
         }
 
+        /// <summary>
+        /// Returns the length of the specified structure, potentially looping indefinitely if the structure contains a reference to itself.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="st">A structured value.</param>
+        /// <returns>The number of elements in the structure.</returns>
         [Subr]
         public static ZilObject LENGTH(Context ctx, IStructure st)
         {
             return new ZilFix(st.GetLength());
         }
 
+        /// <summary>
+        /// Returns the length of the specified structure, up to a specified maximum. This is guaranteed to return, even if the structure contains a reference to itself.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="st">A structured value.</param>
+        /// <param name="limit">The maximum length to return.</param>
+        /// <returns>The length of the structure if it is less than or equal to the limit; otherwise, false.</returns>
         [Subr("LENGTH?")]
         public static ZilObject LENGTH_P(Context ctx, IStructure st, int limit)
         {
@@ -173,6 +248,13 @@ namespace Zilf.Interpreter
             return length != null ? new ZilFix((int)length) : ctx.FALSE;
         }
 
+        /// <summary>
+        /// Sets the tail pointer of a list cell.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="list">A list.</param>
+        /// <param name="newRest">The new tail of the list.</param>
+        /// <returns>The modified list.</returns>
         /// <exception cref="InterpreterError"><paramref name="list"/> is empty.</exception>
         [Subr]
         public static ZilObject PUTREST(Context ctx, ZilListoidBase list, ZilListoidBase newRest)
@@ -202,6 +284,15 @@ namespace Zilf.Interpreter
             return list;
         }
 
+        /// <summary>
+        /// Extracts the specified number of elements from a structure, optionally copying them into a destination structure.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="from">The source structure.</param>
+        /// <param name="rest">The number of source elements to skip at the start.</param>
+        /// <param name="amount">The number of source elements to extract.</param>
+        /// <param name="dest">The destination structure to copy elements into. If omitted, a new structure will be created.</param>
+        /// <returns>The specified destination structure, or a new structure of the same primtype as the source structure.</returns>
         /// <exception cref="InterpreterError"><paramref name="amount"/> is negative, or <paramref name="from"/> or <paramref name="dest"/> are too short, or the types of <paramref name="from"/> and <paramref name="dest"/> are incompatible.</exception>
         [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         [Subr]
@@ -292,6 +383,13 @@ namespace Zilf.Interpreter
             };
         }
 
+        /// <summary>
+        /// Returns the first element in a structure that matches the specified needle, using structural equality.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="needle">The value to search for.</param>
+        /// <param name="haystack">The structure in which to search.</param>
+        /// <returns>The suffix of the structure starting with the first matching element, or false if no match is found.</returns>
         [Subr]
         public static ZilObject MEMBER(Context ctx, ZilObject needle, IStructure haystack)
         {
@@ -312,6 +410,13 @@ namespace Zilf.Interpreter
             return PerformMember(ctx, needle, haystack, (a, b) => a.StructurallyEquals(b));
         }
 
+        /// <summary>
+        /// Returns the first element in a structure that matches the specified needle, using exact equality.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="needle">The value to search for.</param>
+        /// <param name="haystack">The structure in which to search.</param>
+        /// <returns>The suffix of the structure starting with the first matching element, or false if no match is found.</returns>
         [Subr]
         public static ZilObject MEMQ(Context ctx, ZilObject needle, IStructure haystack)
         {
@@ -364,6 +469,19 @@ namespace Zilf.Interpreter
             }
         }
 
+        /// <summary>
+        /// Sorts a vector of records according to a specified key and optional comparison predicate.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="predicate">An applicable value to use to check whether one element is greater than another, or false to use regular numeric or string comparison.</param>
+        /// <param name="vector">The vector to sort.</param>
+        /// <param name="recordSize">The number of elements in each record. If omitted, defaults to 1.</param>
+        /// <param name="keyOffset">The 0-based position of the sort key within each record. If omitted, defaults to 0.</param>
+        /// <param name="additionalSorts">Optional additional vectors to sort at the same time, each optionally followed by a record size.</param>
+        /// <returns></returns>
+        /// <exception cref="InterpreterError"></exception>
+        /// <exception cref="UnhandledCaseException"></exception>
+        /// <exception cref="SortAbortedException"></exception>
         [Subr]
         public static ZilResult SORT(Context ctx,
             [Decl("<OR FALSE APPLICABLE>")] ZilObject predicate,

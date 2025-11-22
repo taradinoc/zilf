@@ -85,6 +85,15 @@ namespace Zilf.Interpreter
         }
 #pragma warning restore CS0649
 
+        /// <summary>
+        /// Evaluates a sequence of expressions in a new activation context, with optional bindings.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="activationAtom">An optional atom to bind the new activation to.</param>
+        /// <param name="bindings">A list containing a sequence of bindings, each of which may have an optional initializer.</param>
+        /// <param name="bodyDecl">An optional DECL describing the types of the bindings.</param>
+        /// <param name="body">A sequence of expressions to evaluate within the new activation context.</param>
+        /// <returns>The results of evaluating the last expression in the body.</returns>
         [FSubr]
         public static ZilResult PROG(Context ctx,
             [Optional] ZilAtom? activationAtom,
@@ -95,6 +104,15 @@ namespace Zilf.Interpreter
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "PROG", false, true);
         }
 
+        /// <summary>
+        /// Repeatedly evaluates a sequence of expressions in a new activation context, with optional bindings, until explicitly exited.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="activationAtom">An optional atom to bind the new activation to.</param>
+        /// <param name="bindings">A list containing a sequence of bindings, each of which may have an optional initializer.</param>
+        /// <param name="bodyDecl">An optional DECL describing the types of the bindings.</param>
+        /// <param name="body">A sequence of expressions to evaluate within the new activation context.</param>
+        /// <returns>The results of evaluating the last expression in the body.</returns>
         [FSubr]
         public static ZilResult REPEAT(Context ctx,
             [Optional] ZilAtom? activationAtom,
@@ -105,6 +123,15 @@ namespace Zilf.Interpreter
             return PerformProg(ctx, activationAtom, bindings, bodyDecl, body, "REPEAT", true, true);
         }
 
+        /// <summary>
+        /// Evaluates a sequence of expressions, with optional bindings.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="activationAtom">An optional atom to bind the new activation to. If omitted, no activation context is created.</param>
+        /// <param name="bindings">A list containing a sequence of bindings, each of which may have an optional initializer.</param>
+        /// <param name="bodyDecl">An optional DECL describing the types of the bindings.</param>
+        /// <param name="body">A sequence of expressions to evaluate within the new activation context.</param>
+        /// <returns>The results of evaluating the last expression in the body.</returns>
         [FSubr]
         public static ZilResult BIND(Context ctx,
             [Optional] ZilAtom? activationAtom,
@@ -191,6 +218,13 @@ namespace Zilf.Interpreter
             return result;
         }
 
+        /// <summary>
+        /// Causes a value to be returned from the specified activation context (PROG, REPEAT, or function application).
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="value">The value to return.</param>
+        /// <param name="activation">The activation context from which to return. If omitted, defaults to the current enclosing PROG or REPEAT activation or function application.</param>
+        /// <returns>Does not return normally.</returns>
         /// <exception cref="InterpreterError">No enclosing PROG/REPEAT.</exception>
         [Subr]
         public static ZilResult RETURN(Context ctx, ZilObject? value = null, ZilActivation? activation = null)
@@ -208,6 +242,12 @@ namespace Zilf.Interpreter
             return ZilResult.Return(activation, value);
         }
 
+        /// <summary>
+        /// Causes the current PROG or REPEAT activation to restart from the beginning.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="activation">The activation context to restart. If omitted, defaults to the current enclosing PROG or REPEAT activation or function application.</param>
+        /// <returns>Does not return normally.</returns>
         /// <exception cref="InterpreterError">No enclosing PROG/REPEAT.</exception>
         [Subr]
         public static ZilResult AGAIN(Context ctx, ZilActivation? activation = null)
