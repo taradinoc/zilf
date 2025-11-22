@@ -1817,6 +1817,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="effect">The operation to perform: 1 to prepare, 2 to start playing, 3 to stop playing, and 4 to finish.</param>
         /// <param name="volume">The volume in the low byte and the number of repeats in the high byte.</param>
         /// <param name="routine">The address of an interrupt routine to call when the sound is done playing. If omitted, no routine is called.</param>
+        [Builtin("SOUND", MinVersion = 5, HasSideEffect = true)]
         public static void SoundOp_V5(VoidCall c, IOperand number,
             IOperand? effect = null, IOperand? volume = null,
              [Routine] IOperand? routine = null)
