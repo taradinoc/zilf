@@ -15,17 +15,19 @@ string longVersion = Environment.GetEnvironmentVariable("ZILF_LONG_VERSION") ??
 string arch = Environment.GetEnvironmentVariable("ZILF_ARCH") ??
     throw new InvalidOperationException("Missing ZILF_ARCH environment variable");
 
+static bool IsDotFile(string path) => Path.GetFileName(path).StartsWith('.');
+
 var project =
     new ManagedProject("ZILF",
         new Dir(@"%ProgramFiles%\ZILF",
-            new DirFiles(@".\*.*"),
+            new DirFiles(@".\*.*", f => !IsDotFile(f)),
             new Dir("bin",
                 new File(@"bin\Zilf.exe"),
                 new File(@"bin\Zapf.exe")),
             new Dir("sample",
-                new Files(@"sample\*.*")),
+                new Files(@"sample\*.*", f => !IsDotFile(f))),
             new Dir("zillib",
-                new Files(@"zillib\*.*"))),
+                new Files(@"zillib\*.*", f => !IsDotFile(f)))),
         //new Property("PropName", "<your value>")
         new EnvironmentVariable("Path", "[INSTALLDIR]bin")
         {
