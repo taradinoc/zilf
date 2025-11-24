@@ -1,0 +1,7 @@
+﻿[*.cs]
+
+# RCS1139: Add summary element to documentation comment.
+dotnet_diagnostic.RCS1139.severity = silent
+
+# IDE0110: Remove unnecessary discard
+dotnet_diagnostic.IDE0110.severity = suggestion

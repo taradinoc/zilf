@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>gaze</AssemblyName>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifiers>win-x86;win-x64;linux-arm;linux-arm64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+    <OutputType>Exe</OutputType>
+    <Description>An assembler for Glulx story files.</Description>
+    <Deterministic>false</Deterministic>
+    <Nullable>enable</Nullable>
+    <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(PortableTarget)' != 'true'">
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <!-- <PublishSingleFile>true</PublishSingleFile> -->
+    <PublishAot>true</PublishAot>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <WarningLevel>7</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <WarningLevel>7</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Zilf.Common\Zilf.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-rc.2.25502.107" />
+  </ItemGroup>
+
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

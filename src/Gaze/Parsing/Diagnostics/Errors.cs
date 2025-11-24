@@ -1,0 +1,122 @@
+﻿/* Copyright 2010-2023 Tara McGrew
+ * 
+ * This file is part of ZILF.
+ * 
+ * ZILF is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * ZILF is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+using System.Diagnostics.CodeAnalysis;
+
+namespace Gaze.Parsing.Diagnostics
+{
+    public static class Errors
+    {
+        public static void Warn(IErrorSink sink, ISourceLine? node, string message)
+        {
+            sink.HandleWarning(new Warning(node, message));
+        }
+
+        public static void Warn(IErrorSink sink, ISourceLine? node, string format, params object[] args)
+        {
+            Warn(sink, node, string.Format(format, args));
+        }
+
+        public static void Serious(IErrorSink sink, string message)
+        {
+            Serious(sink, null, message);
+        }
+
+        public static void Serious(IErrorSink sink, string format, params object[] args)
+        {
+            Serious(sink, string.Format(format, args));
+        }
+
+        public static void Serious(IErrorSink sink, ISourceLine? node, string message)
+        {
+            sink.HandleSeriousError(new SeriousError(node, message));
+        }
+
+        public static void Serious(IErrorSink sink, ISourceLine? node, string format,
+             params object[] args)
+        {
+            Serious(sink, node, string.Format(format, args));
+        }
+
+        public static SeriousError MakeSerious(ISourceLine? node, string message)
+        {
+            return new SeriousError(node, message);
+        }
+
+        public static SeriousError MakeSerious(ISourceLine? node, string format, params object[] args)
+        {
+            return MakeSerious(node, string.Format(format, args));
+        }
+
+        /// <exception cref="SeriousError">Always thrown.</exception>
+        [DoesNotReturn]
+        public static void ThrowSerious(string message)
+        {
+            ThrowSerious(null, message);
+        }
+
+        /// <exception cref="SeriousError">Always thrown.</exception>
+        [DoesNotReturn]
+        public static void ThrowSerious(string format, params object[] args)
+        {
+            ThrowSerious(null, format, args);
+        }
+
+        /// <exception cref="SeriousError">Always thrown.</exception>
+        [DoesNotReturn]
+        public static void ThrowSerious(ISourceLine? node, string message)
+        {
+            throw MakeSerious(node, message);
+        }
+
+        /// <exception cref="SeriousError">Always thrown.</exception>
+        [DoesNotReturn]
+        public static void ThrowSerious(ISourceLine? node, string format, params object[] args)
+        {
+            throw MakeSerious(node, format, args);
+        }
+
+        /// <exception cref="FatalError">Always thrown.</exception>
+        [DoesNotReturn]
+        public static void ThrowFatal(string message)
+        {
+            ThrowFatal(null, message);
+        }
+
+        /// <exception cref="FatalError">Always thrown.</exception>
+        [DoesNotReturn]
+        public static void ThrowFatal(string format, params object[] args)
+        {
+            ThrowFatal(null, format, args);
+        }
+
+        /// <exception cref="FatalError">Always thrown.</exception>
+        [DoesNotReturn]
+        public static void ThrowFatal(ISourceLine? node, string message)
+        {
+            throw new FatalError(node, message);
+        }
+
+        /// <exception cref="FatalError">Always thrown.</exception>
+        [DoesNotReturn]
+        public static void ThrowFatal(ISourceLine? node, string format, params object[] args)
+        {
+            ThrowFatal(node, string.Format(format, args));
+        }
+    }
+}
