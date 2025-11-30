@@ -459,7 +459,7 @@ namespace Zilf.Emit.Glulx
             switch (op)
             {
                 case UnaryOp.GetPropSize:
-                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_property_size))} {FormatLoad(value)} -> {FormatStore(result!)}", "callfi");
+                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_property_size))} {FormatLoad(value)} -> {FormatStore(result)}", "callfi");
                     return;
 
                 case UnaryOp.DirectOutput:
@@ -467,7 +467,7 @@ namespace Zilf.Emit.Glulx
                     return;
 
                 case UnaryOp.GetParent:
-                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_parent))} {FormatLoad(value)} -> {FormatStore(result!)}", "callfi");
+                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_parent))} {FormatLoad(value)} -> {FormatStore(result)}", "callfi");
                     return;
 
                 case UnaryOp.RemoveObject:
@@ -477,9 +477,9 @@ namespace Zilf.Emit.Glulx
                 case UnaryOp.LoadIndirect:
                     // this only works for global variables, where we have an address
                     if (value is IConstantOperand)
-                        Emit($"copy [{FormatLoad(value)}] -> {FormatStore(result!)}", "copy");
+                        Emit($"copy [{FormatLoad(value)}] -> {FormatStore(result)}", "copy");
                     else
-                        Emit($"aload {FormatLoad(value)} 0 -> {FormatStore(result!)}", "aload");
+                        Emit($"aload {FormatLoad(value)} 0 -> {FormatStore(result)}", "aload");
                     return;
 
                 case UnaryOp.OutputStyle:
@@ -497,13 +497,16 @@ namespace Zilf.Emit.Glulx
                 case UnaryOp.ClearWindow:
                     Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.clear_window))} {FormatLoad(value)}", "callfi");
                     return;
+
+                case UnaryOp.Random:
+                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.random_number))} {FormatLoad(value)} -> {FormatStore(result)}", "callfi");
+                    return;
             }
 
             string opcode = op switch
             {
                 UnaryOp.Neg => "neg",
                 UnaryOp.Not => "bitnot",
-                UnaryOp.Random => "random",  // TODO: direct negative arguments to setrandom
                 _ => throw new NotImplementedException($"Unary op {op} not implemented")
             };
 

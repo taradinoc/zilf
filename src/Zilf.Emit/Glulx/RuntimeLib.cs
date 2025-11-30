@@ -930,6 +930,25 @@ namespace Zilf.Emit.Glulx
             ; Glulx -1 -> restoring -> Z-machine 2
             return 2";
 
+        [RuntimeFunc]
+        public const string random_number = @"
+            function
+            local range
+            ; Reseeding?
+            jz range -> .seed_random
+            jlt range 0 -> .seed_predictable
+            ; No, rolling a number
+            random range -> push
+            add 1 pop -> push   ; Z-machine returns 1..N, Glulx returns 0..N-1
+            return pop
+        .seed_random:
+            setrandom 0
+            return 0
+        .seed_predictable:
+            neg range -> range
+            setrandom range
+            return 0";
+
 #endregion
     }
 }
