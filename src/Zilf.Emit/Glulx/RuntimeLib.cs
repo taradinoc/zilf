@@ -249,6 +249,12 @@ namespace Zilf.Emit.Glulx
             push style_User1
             push wintype_AllTypes
             glk glk_stylehint_set 4
+            ; Set up style_User2 as italic
+            push 1
+            push stylehint_Oblique
+            push style_User2
+            push wintype_AllTypes
+            glk glk_stylehint_set 4
             ; Recover existing Glk windows, if any
             callf _rt_recover_glk
             ; Open a main window
@@ -560,7 +566,9 @@ namespace Zilf.Emit.Glulx
         .fixed:
             push style_Preformatted
             jump .set_style
-        .italic:        ; TODO: distinguish between italic and bold
+        .italic:
+            push style_User2
+            jump .set_style
         .bold:
             push style_Emphasized
             jump .set_style

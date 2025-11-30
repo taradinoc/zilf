@@ -499,6 +499,8 @@ namespace Zilf.Compiler.Builtins
 
         #region Binary Opcodes
 
+        // TODO: constant folding should use 32-bit operations for Glulx
+
         [Builtin("MOD", Data = BinaryOp.Mod, Summary = "Computes the modulus (remainder) of two numbers.")]
         [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5, Summary = "Performs an arithmetic (signed) shift on a number.")]
         [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5, Summary = "Performs a logical (unsigned) shift on a number.")]

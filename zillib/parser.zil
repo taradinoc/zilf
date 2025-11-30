@@ -1322,9 +1322,11 @@ expressible as the sum of two cubes in two different ways">)
 <VERSION?
     (GLULX
         <CONSTANT MINWORD -2147483648>
+        <CONSTANT MAXWORD 2147483647>
         <CONSTANT MAXWORD/10 214748364>)
     (ELSE
         <CONSTANT MINWORD -32768>
+        <CONSTANT MAXWORD 32767>
         <CONSTANT MAXWORD/10 3276>)>
 
 ;"Tries to parse the given word as a number.

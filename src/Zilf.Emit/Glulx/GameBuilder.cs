@@ -698,8 +698,10 @@ namespace Zilf.Emit.Glulx
             writer.WriteLine();
             writer.WriteLine(INDENT + "; Metadata");
             writer.WriteLine(INDENT + "db \"ZILF\"");
-            writer.WriteLine("metadata_releaseid: dw RELEASEID");
-            writer.WriteLine("metadata_serial: db \"{0}\"", DateTime.Now.ToString("yyMMdd"));
+            writer.WriteLine("metadata_releaseid:");
+            writer.WriteLine(INDENT + "dw RELEASEID");
+            writer.WriteLine("metadata_serial:");
+            writer.WriteLine(INDENT + "db \"{0}\"", DateTime.Now.ToString("yyMMdd"));
         }
 
         internal void WriteOutput(string str)

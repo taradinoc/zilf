@@ -33,6 +33,28 @@ and this project adheres to
   `<REMOVE-SYNONYM GRAB>` will undo both `<SYNONYM GRAB TAKE>` and
   `<SYNONYM TAKE GRAB>`.
 
+- Added an experimental feature to compile to Glulx instead of the Z-Machine
+  when enabled with the `--glulx` command-line switch. You'll need to use
+  [Glazer](https://gitlab.com/andwj/glazer) to assemble the resulting `.asm`
+  file into a runnable `.ulx` file.
+
+  Since this is experimental, some Z-Machine features may be unimplemented, and
+  some projects may encounter bugs and incompatibilities. This will **not** work
+  with unmodified historical source like Zork I, for instance.
+
+  The most important difference from an author's perspective is that Glulx deals
+  with 32-bit values instead of 16-bit, so all numbers, addresses, and entries
+  in word tables are 4 bytes long instead of 2. The library defines a
+  `WORD-SIZE` constant to help with compatibility. You can check for Glulx with
+  `<VERSION? (GLULX ...)>`, but generally you shouldn't need to.
+
+  Other than word size, ZILF and `zillib` conspire to present Glulx as "a bigger
+  Z-Machine", for the most part: most ZIL functions work the same on Glulx as on
+  the Z-Machine, and most tables can be accessed using the same code (as long as
+  you use `WORD-SIZE` when relevant). Some of the Z-Machine's limits are raised
+  in Glulx mode, such as the number of flags and properties. On the other hand,
+  many features of Glulx and Glk are not exposed to the game.
+
 ### Changed
 
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
@@ -44,7 +66,7 @@ and this project adheres to
   MDL0437, MDL0438, MDL0509, MDL0608, MDL0609, and MDL0610.
 
 - An orphaning response that names multiple objects is now accepted even
-  when the command didn't use `ALL` or `BOTH`. In other words, the player can
+  when it doesn't use `ALL` or `BOTH`. In other words, the player can
   respond to "Which do you mean, the red cube or the blue cube?" with
   "red and blue" and it will work as expected.
 

@@ -34,6 +34,7 @@ using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Language.Parsing;
 using CommandParseResult = System.CommandLine.ParseResult;
+using Zilf.ZModel;
 
 namespace Zilf
 {
@@ -381,7 +382,7 @@ namespace Zilf
             }
 
             var spec = CommandSpec.Value;
-            var ctx = BuildContextFromParseResult(parseResult, RunMode.Compiler, inputFile, out var outFile);
+            var ctx = BuildContextFromParseResult(parseResult, RunMode.Compiler, inputFile);
 
             if (ctx == null)
                 return 1;
@@ -393,16 +394,16 @@ namespace Zilf
                 Console.WriteLine(GetBuildTimestamp());
             }
 
+            // TODO: reorder front-end processing so <VERSION GLULX> can affect the output file extension
             var output = parseResult.GetValue(spec.OutputArgument);
-            outFile = string.IsNullOrEmpty(output) ? Path.ChangeExtension(inputFile, ".zap") : output;
+            var outFile = string.IsNullOrEmpty(output) ? Path.ChangeExtension(inputFile, ctx.IsGlulx ? ".asm" : ".zap") : output;
 
             // Perform compilation, then optionally invoke ZAPF
-            var useGlulx = parseResult.GetValue(spec.GlulxOption);
             var frontEnd = new FrontEnd();
             FrontEndResult result;
             try
             {
-                result = frontEnd.Compile(ctx, inputFile, outFile, ctx.WantDebugInfo, useGlulx);
+                result = frontEnd.Compile(ctx, inputFile, outFile, ctx.WantDebugInfo);
             }
             catch (FileNotFoundException ex)
             {
@@ -443,7 +444,7 @@ namespace Zilf
             // Also stop for Glulx since we don't have an integrated assembler
             var stopAfter = parseResult.GetValue(spec.StopAfterCompileOption);
 
-            if (stopAfter || useGlulx)
+            if (stopAfter || ctx.IsGlulx)
             {
                 return 0;
             }
@@ -529,7 +530,7 @@ namespace Zilf
 
         static int ExecuteExpressionMode(CommandParseResult parseResult, string expression)
         {
-            var ctx = BuildContextFromParseResult(parseResult, RunMode.Expression, expression, out _);
+            var ctx = BuildContextFromParseResult(parseResult, RunMode.Expression, expression);
 
             if (ctx == null)
                 return 1;
@@ -553,7 +554,7 @@ namespace Zilf
 
         static int ExecuteReplMode(CommandParseResult parseResult)
         {
-            var ctx = BuildContextFromParseResult(parseResult, RunMode.Interactive, null, out _);
+            var ctx = BuildContextFromParseResult(parseResult, RunMode.Interactive, null);
 
             if (ctx == null)
                 return 1;
@@ -571,7 +572,7 @@ namespace Zilf
 
         static int ExecuteExecMode(CommandParseResult parseResult, string inputFile)
         {
-            var ctx = BuildContextFromParseResult(parseResult, RunMode.Interpreter, inputFile, out _);
+            var ctx = BuildContextFromParseResult(parseResult, RunMode.Interpreter, inputFile);
 
             if (ctx == null)
                 return 1;
@@ -631,10 +632,9 @@ namespace Zilf
             return 0;
         }
 
-        static Context? BuildContextFromParseResult(CommandParseResult parseResult, RunMode mode, string? inFile, out string? outFile)
+        static Context? BuildContextFromParseResult(CommandParseResult parseResult, RunMode mode, string? inFile)
         {
             var spec = CommandSpec.Value;
-            outFile = null;
 
             // Determine which set of options to use based on the command
             Option<bool> quietOption;
@@ -728,6 +728,12 @@ namespace Zilf
                 {
                     ctx.DiagnosticManager.Suppress(code.Trim());
                 }
+            }
+
+            var useGlulx = parseResult.GetValue(spec.GlulxOption);
+            if (useGlulx)
+            {
+                ctx.SetZVersion(ZEnvironment.GLULX_ZVERSION);
             }
 
             return ctx;

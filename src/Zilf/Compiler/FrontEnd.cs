@@ -27,6 +27,9 @@ using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Common;
 using Zilf.ZModel;
+using Zilf.Emit;
+
+using ZapGameOptions = Zilf.Emit.Zap.GameOptions;
 
 namespace Zilf.Compiler
 {
@@ -208,27 +211,24 @@ namespace Zilf.Compiler
         }
 
         internal FrontEndResult Interpret(Context ctx, string inputFileName) =>
-            InterpretOrCompile(ctx, inputFileName, null, false, false, false);
+            InterpretOrCompile(ctx, inputFileName, null, false, false);
 
         public FrontEndResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo = false)
         {
             var ctx = NewContext(RunMode.Compiler, wantDebugInfo);
-            return Compile(ctx, inputFileName, outputFileName, ctx.WantDebugInfo, false);
+            return Compile(ctx, inputFileName, outputFileName, ctx.WantDebugInfo);
         }
 
-        internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo, bool useGlulx = false) =>
-            InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo, useGlulx);
+        internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo) =>
+            InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
 
         // FIXME: not supported by R#, sadly...
         //[ContractAnnotation("wantCompile: true => outputFileName: notnull")]
         //[ContractAnnotation("wantCompile: false => outputFileName: null")]
         FrontEndResult InterpretOrCompile(Context ctx, string inputFileName,
-             string? outputFileName, bool wantCompile, bool wantDebugInfo, bool useGlulx)
+             string? outputFileName, bool wantCompile, bool wantDebugInfo)
         {
             Debug.Assert(!wantCompile || outputFileName != null);
-
-            if (useGlulx)
-                ctx.SetZVersion(ZEnvironment.GLULX_ZVERSION);
 
             // open input file
             using var inputStream = FileSystem.OpenForReading(inputFileName);
@@ -257,25 +257,25 @@ namespace Zilf.Compiler
 
                     try
                     {
-                        if (useGlulx)
+                        var gameOptions = MakeGameOptions(ctx);
+
+                        if (ctx.IsGlulx)
                         {
                             var streamFactory = new GlulxStreamFactory(this, outputFileName);
-                            var gameOptions = new GlulxGameOptions();
 
-                            using var gameBuilder = new Emit.Glulx.GameBuilder(streamFactory, gameOptions);
+                            using var gameBuilder = new Emit.Glulx.GameBuilder(streamFactory, (GlulxGameOptions)gameOptions);
                             Compilation.Compile(ctx, gameBuilder);
                         }
                         else
                         {
                             var zversion = ctx.ZEnvironment.ZVersion;
                             var streamFactory = new ZapStreamFactory(this, outputFileName);
-                            var gameOptions = MakeGameOptions(ctx);
 
                             var builderOptions = wantDebugInfo ? GameBuilderOptions.WantDebugInfo : GameBuilderOptions.None;
                             if (!streamFactory.FrequentWordsFileExists)
                                 builderOptions |= GameBuilderOptions.WantFrequentWords;
 
-                            using var gameBuilder = new Emit.Zap.GameBuilder(zversion, streamFactory, builderOptions, gameOptions);
+                            using var gameBuilder = new Emit.Zap.GameBuilder(zversion, streamFactory, builderOptions, (ZapGameOptions)gameOptions);
                             Compilation.Compile(ctx, gameBuilder);
                         }
                     }
@@ -295,14 +295,14 @@ namespace Zilf.Compiler
             );
         }
 
-        static GameOptions MakeGameOptions(Context ctx)
+        static IGameOptions MakeGameOptions(Context ctx)
         {
             var zenv = ctx.ZEnvironment;
 
             switch (zenv.ZVersion)
             {
                 case 3:
-                    return new GameOptions.V3
+                    return new ZapGameOptions.V3
                     {
                         TimeStatusLine = zenv.TimeStatusLine,
                         SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) ||
@@ -310,7 +310,7 @@ namespace Zilf.Compiler
                     };
 
                 case 4:
-                    return new GameOptions.V4
+                    return new ZapGameOptions.V4
                     {
                         SoundEffects = ctx.GetGlobalOption(StdAtom.USE_SOUND_P) ||
                                        ctx.GetGlobalOption(StdAtom.SOUND_EFFECTS_P)
@@ -319,11 +319,11 @@ namespace Zilf.Compiler
                 case 5:
                 case 7:
                 case 8:
-                    GameOptions.V5Plus v5Plus = new GameOptions.V5();
+                    ZapGameOptions.V5Plus v5Plus = new ZapGameOptions.V5();
                     goto V5Plus;
 
                 case 6:
-                    v5Plus = new GameOptions.V6 { Menus = ctx.GetGlobalOption(StdAtom.USE_MENUS_P) };
+                    v5Plus = new ZapGameOptions.V6 { Menus = ctx.GetGlobalOption(StdAtom.USE_MENUS_P) };
 
                 V5Plus:
                     var defaultLang = ZModel.Language.Default;
@@ -356,6 +356,9 @@ namespace Zilf.Compiler
                     }
 
                     return v5Plus;
+
+                case ZEnvironment.GLULX_ZVERSION:
+                    return new GlulxGameOptions();
 
                 default:
                     throw new ArgumentException("Unsupported Z-machine version", nameof(ctx));

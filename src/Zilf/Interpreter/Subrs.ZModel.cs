@@ -1003,6 +1003,13 @@ namespace Zilf.Interpreter
 
             var newVersion = ParseZVersion("VERSION", versionExpr);
 
+            if (newVersion == ZEnvironment.GLULX_ZVERSION)
+            {
+                throw new InterpreterError(
+                    InterpreterMessages._0_Glulx_Output_Must_Be_Selected_On_The_Command_Line_With_Glulx,
+                    "VERSION");
+            }
+
             ctx.SetZVersion(newVersion);
 
             if (time != null)
