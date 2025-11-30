@@ -79,9 +79,9 @@ namespace Zilf.ZModel.Values
         protected abstract string ToString(Func<ZilObject, string> convert);
 
         public static ZilTable Create(int repetitions, ZilObject[]? initializer, TableFormat flags,
-            ZilObject[]? pattern)
+            ZilObject[]? pattern, int wordSize = 2)
         {
-            return new OriginalTable(repetitions, initializer, flags, pattern);
+            return new OriginalTable(repetitions, initializer, flags, pattern, wordSize);
         }
 
         [ChtypeMethod]
@@ -120,13 +120,19 @@ namespace Zilf.ZModel.Values
             int[]? elementToByteOffsets;
             ZilObject[]? pattern;
 
+            /// <summary>
+            /// The size of a word in bytes (2 for Z-machine, 4 for Glulx).
+            /// </summary>
+            internal readonly int wordSize;
+
             public OriginalTable(int repetitions, ZilObject[]? initializer, TableFormat flags,
-                ZilObject[]? pattern)
+                ZilObject[]? pattern, int wordSize = 2)
             {
                 this.repetitions = repetitions;
                 this.initializer = initializer?.Length > 0 ? initializer : null;
                 this.flags = flags;
                 this.pattern = pattern;
+                this.wordSize = wordSize;
             }
 
             [System.Diagnostics.Contracts.Pure]
@@ -146,7 +152,7 @@ namespace Zilf.ZModel.Values
 
                     if (HasLengthPrefix)
                     {
-                        result = IsWord(-1) ? 2 : 1;
+                        result = IsWord(-1) ? wordSize : 1;
                     }
                     else
                     {
@@ -160,7 +166,7 @@ namespace Zilf.ZModel.Values
                     {
                         var last = elemOffsets.Length - 1;
                         result += elemOffsets[last];
-                        result += IsWord(last) ? 2 : 1;
+                        result += IsWord(last) ? wordSize : 1;
                     }
 
                     return result;
@@ -359,7 +365,7 @@ namespace Zilf.ZModel.Values
 
                 var length = ElementCountWithoutLength;
                 if (insert)
-                    length++;
+                    length += wordSize - 1;  // inserting a word split adds (wordSize - 1) extra bytes
 
                 var newPattern = new ZilObject[length];
 
@@ -369,8 +375,12 @@ namespace Zilf.ZModel.Values
 
                     if (insert && i == index)
                     {
-                        newPattern[i + 1] = newPattern[i];
-                        i++;
+                        // insert (wordSize - 1) extra copies at the insertion point
+                        for (int k = 1; k < wordSize; k++)
+                        {
+                            newPattern[i + k] = newPattern[i];
+                        }
+                        i += wordSize - 1;
                     }
                 }
 
@@ -398,10 +408,10 @@ namespace Zilf.ZModel.Values
                     if (offset == 0)
                         return -1;
 
-                    if (offset == 1)
+                    if (offset < wordSize)
                         return null;
 
-                    offset -= 2;
+                    offset -= wordSize;
                 }
 
                 // binary search to find the element
@@ -420,7 +430,7 @@ namespace Zilf.ZModel.Values
                         elementToByteOffsets[i] = nextOffset;
 
                         if (IsWord(i))
-                            nextOffset += 2;
+                            nextOffset += wordSize;
                         else
                             nextOffset++;
                     }
@@ -431,7 +441,7 @@ namespace Zilf.ZModel.Values
 
             public override ZilObject? GetWord(Context ctx, int offset)
             {
-                return GetWordAtByte(offset * 2);
+                return GetWordAtByte(offset * wordSize);
             }
 
             public ZilObject? GetWordAtByte(int byteOffset)
@@ -445,13 +455,42 @@ namespace Zilf.ZModel.Values
 
             public override void PutWord(Context ctx, int offset, ZilObject value)
             {
-                PutWordAtByte(ctx, offset * 2, value);
+                PutWordAtByte(ctx, offset * wordSize, value);
             }
 
             public void PutWordAtByte(Context ctx, int byteOffset, ZilObject value)
             {
-                var index = ByteOffsetToIndex(byteOffset) ??
-                            throw new ArgumentException($"No element at offset {byteOffset}");
+                var index = ByteOffsetToIndex(byteOffset);
+
+                // If byteOffset is in the middle of a word, we need to split overlapping words first
+                if (index == null)
+                {
+                    // Check if byteOffset or any of the wordSize bytes fall inside existing words
+                    // and split them into bytes
+                    for (int b = 0; b < wordSize; b++)
+                    {
+                        var targetOffset = byteOffset + b;
+                        if (ByteOffsetToIndex(targetOffset) == null)
+                        {
+                            // Find the word that contains this offset by checking previous offsets
+                            for (int check = 1; check < wordSize; check++)
+                            {
+                                var maybeWordIndex = ByteOffsetToIndex(targetOffset - check);
+                                if (maybeWordIndex != null && maybeWordIndex != -1 && IsWord(maybeWordIndex.Value))
+                                {
+                                    // Split this word into bytes
+                                    SplitWordIntoBytes(ctx, maybeWordIndex.Value);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Now try again
+                    index = ByteOffsetToIndex(byteOffset);
+                    if (index == null)
+                        throw new ArgumentException($"No element at offset {byteOffset} in table {this}");
+                }
 
                 if (index == -1)
                 {
@@ -459,37 +498,62 @@ namespace Zilf.ZModel.Values
                     index = 0;
                 }
 
-                if (!IsWord(index))
+                if (!IsWord(index.Value))
                 {
-                    // we may be able to replace 2 bytes with a word
-                    var index2 = ByteOffsetToIndex(byteOffset + 1);
-                    if (index2 == null || IsWord(index2.Value))
-                        throw new ArgumentException($"Element at byte offset {byteOffset} is not a word");
+                    // we may be able to replace wordSize bytes with a word
+                    // verify that all wordSize bytes are present and are bytes (not words)
+                    for (int b = 1; b < wordSize; b++)
+                    {
+                        var indexB = ByteOffsetToIndex(byteOffset + b);
 
-                    // remove one of the bytes from the initializer...
+                        // If this offset is inside a word, split it first
+                        if (indexB == null)
+                        {
+                            for (int check = 1; check < wordSize; check++)
+                            {
+                                var maybeWordIndex = ByteOffsetToIndex(byteOffset + b - check);
+                                if (maybeWordIndex != null && maybeWordIndex != -1 && IsWord(maybeWordIndex.Value))
+                                {
+                                    SplitWordIntoBytes(ctx, maybeWordIndex.Value);
+                                    indexB = ByteOffsetToIndex(byteOffset + b);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (indexB == null || IsWord(indexB.Value))
+                            throw new ArgumentException($"Element at byte offset {byteOffset} is not a word");
+                    }
+
+                    // Re-fetch index since splitting may have changed element positions
+                    index = ByteOffsetToIndex(byteOffset) ??
+                        throw new ArgumentException($"No element at offset {byteOffset} in table {this}");
+
+                    // remove (wordSize - 1) bytes from the initializer...
                     if (initializer == null || repetitions > 1)
                         ExpandInitializer(ctx.FALSE);
 
-                    var newInitializer = new ZilObject[initializer!.Length - 1];
-                    Array.Copy(initializer, newInitializer, index);
-                    Array.Copy(initializer, index + 2, newInitializer, index + 1, initializer.Length - index - 2);
+                    var bytesToRemove = wordSize - 1;
+                    var newInitializer = new ZilObject[initializer!.Length - bytesToRemove];
+                    Array.Copy(initializer, newInitializer, index.Value);
+                    Array.Copy(initializer, index.Value + wordSize, newInitializer, index.Value + 1, initializer.Length - index.Value - wordSize);
                     initializer = newInitializer;
 
                     // ...and the pattern, if appropriate. then store the new value.
                     if (pattern != null)
                     {
-                        ExpandPattern(ctx, index, false);
-                        var newPattern = new ZilObject[pattern.Length - 1];
-                        Array.Copy(pattern, newPattern, index);
-                        Array.Copy(pattern, index + 2, newPattern, index + 1, pattern.Length - index - 2);
+                        ExpandPattern(ctx, index.Value, false);
+                        var newPattern = new ZilObject[pattern.Length - bytesToRemove];
+                        Array.Copy(pattern, newPattern, index.Value);
+                        Array.Copy(pattern, index.Value + wordSize, newPattern, index.Value + 1, pattern.Length - index.Value - wordSize);
                         pattern = newPattern;
 
-                        initializer[index] = value;
-                        pattern[index] = ctx.GetStdAtom(StdAtom.WORD);
+                        initializer[index.Value] = value;
+                        pattern[index.Value] = ctx.GetStdAtom(StdAtom.WORD);
                     }
                     else
                     {
-                        initializer[index] = new ZilWord(value);
+                        initializer[index.Value] = new ZilWord(value);
                     }
 
                     elementToByteOffsets = null;
@@ -499,14 +563,43 @@ namespace Zilf.ZModel.Values
                     if (initializer == null || repetitions > 1)
                         ExpandInitializer(ctx.FALSE);
 
-                    if (initializer![index] is ZilWord)
+                    if (initializer![index.Value] is ZilWord)
                     {
-                        initializer[index] = new ZilWord(value);
+                        initializer[index.Value] = new ZilWord(value);
                     }
                     else
                     {
-                        initializer[index] = value;
+                        initializer[index.Value] = value;
                     }
+                }
+            }
+
+            /// <summary>
+            /// Splits a word element at the given index into wordSize byte elements.
+            /// </summary>
+            void SplitWordIntoBytes(Context ctx, int index)
+            {
+                if (!IsWord(index))
+                    return;
+
+                if (initializer == null || repetitions > 1)
+                    ExpandInitializer(ctx.FALSE);
+
+                var newInitializer = new ZilObject[initializer!.Length + wordSize - 1];
+                Array.Copy(initializer, newInitializer, index);
+                Array.Copy(initializer, index + 1, newInitializer, index + wordSize, initializer.Length - index - 1);
+                initializer = newInitializer;
+
+                if (pattern != null)
+                    ExpandPattern(ctx, index, true);
+
+                elementToByteOffsets = null;
+
+                var zeroByte = ctx.ChangeType(ZilFix.Zero, ctx.GetStdAtom(StdAtom.BYTE));
+
+                for (int b = 0; b < wordSize; b++)
+                {
+                    initializer[index + b] = zeroByte;
                 }
             }
 
@@ -525,24 +618,23 @@ namespace Zilf.ZModel.Values
                     ExpandInitializer(ctx.FALSE);
 
                 int index;
-                bool second = false;
+                int byteWithinWord = 0;
 
                 switch (ByteOffsetToIndex(offset))
                 {
                     case null:
-                        // might be the second byte of a word
-                        var maybeIndex = ByteOffsetToIndex(offset - 1);
-                        if (maybeIndex != null && IsWord(maybeIndex.Value))
+                        // might be a byte within a word - check all possible offsets
+                        for (int b = 1; b < wordSize; b++)
                         {
-                            index = (int)maybeIndex;
-                            second = true;
+                            var maybeIndex = ByteOffsetToIndex(offset - b);
+                            if (maybeIndex != null && IsWord(maybeIndex.Value))
+                            {
+                                index = (int)maybeIndex;
+                                byteWithinWord = b;
+                                goto foundWord;
+                            }
                         }
-                        else
-                        {
-                            throw new ArgumentException($"No element at offset {offset}");
-                        }
-
-                        break;
+                        throw new ArgumentException($"No element at offset {offset}");
 
                     case -1:
                         ExpandLengthPrefix(ctx);
@@ -554,12 +646,13 @@ namespace Zilf.ZModel.Values
                         break;
                 }
 
+            foundWord:
                 if (IsWord(index))
                 {
-                    // split the word into 2 bytes
-                    var newInitializer = new ZilObject[initializer!.Length + 1];
+                    // split the word into wordSize bytes
+                    var newInitializer = new ZilObject[initializer!.Length + wordSize - 1];
                     Array.Copy(initializer, newInitializer, index);
-                    Array.Copy(initializer, index + 1, newInitializer, index + 2, initializer.Length - index - 1);
+                    Array.Copy(initializer, index + 1, newInitializer, index + wordSize, initializer.Length - index - 1);
                     initializer = newInitializer;
 
                     if (pattern != null)
@@ -569,19 +662,15 @@ namespace Zilf.ZModel.Values
 
                     var zeroByte = ctx.ChangeType(ZilFix.Zero, ctx.GetStdAtom(StdAtom.BYTE));
 
-                    if (second)
+                    // fill all bytes with zero, then put the value in the right position
+                    for (int b = 0; b < wordSize; b++)
                     {
-                        initializer[index] = zeroByte;
-                        initializer[index + 1] = value;
+                        initializer[index + b] = zeroByte;
+                    }
+                    initializer[index + byteWithinWord] = value;
 
-                        // remember the index we actually used
-                        index++;
-                    }
-                    else
-                    {
-                        initializer[index] = value;
-                        initializer[index + 1] = zeroByte;
-                    }
+                    // remember the index we actually used
+                    index += byteWithinWord;
                 }
                 else
                 {
@@ -627,7 +716,8 @@ namespace Zilf.ZModel.Values
                     repetitions,
                     (ZilObject[])initializer?.Clone()!,
                     flags,
-                    (ZilObject[])pattern?.Clone()!);
+                    (ZilObject[])pattern?.Clone()!,
+                    wordSize);
 
             public override ZilTable OffsetByBytes(int bytesToSkip) => new OffsetTable(this, bytesToSkip);
         }
@@ -675,7 +765,7 @@ namespace Zilf.ZModel.Values
 
             public override ZilObject? GetWord(Context ctx, int offset)
             {
-                return orig.GetWordAtByte(offset * 2 + byteOffset);
+                return orig.GetWordAtByte(offset * orig.wordSize + byteOffset);
             }
 
             public override ZilObject? GetByte(Context ctx, int offset)
@@ -685,7 +775,7 @@ namespace Zilf.ZModel.Values
 
             public override void PutWord(Context ctx, int offset, ZilObject value)
             {
-                orig.PutWordAtByte(ctx, offset * 2 + byteOffset, value);
+                orig.PutWordAtByte(ctx, offset * orig.wordSize + byteOffset, value);
             }
 
             public override void PutByte(Context ctx, int offset, ZilObject value)

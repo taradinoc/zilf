@@ -139,13 +139,13 @@ namespace Zilf.Compiler
 
             Debug.Assert(longWordTable != null);
 
-            longWordTable.AddShort((short)longWords.Count);
+            longWordTable.AddWord((short)longWords.Count);
             while (longWords.Count > 0)
             {
                 var word = longWords.Dequeue();
                 var wb = Vocabulary[word];
-                longWordTable.AddShort(wb);
-                longWordTable.AddShort(Game.MakeOperand(word.Atom.Text.ToLowerInvariant()));
+                longWordTable.AddWord(wb);
+                longWordTable.AddWord(Game.MakeOperand(word.Atom.Text.ToLowerInvariant()));
             }
         }
 

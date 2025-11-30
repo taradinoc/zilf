@@ -61,14 +61,14 @@ namespace Zilf.Emit.Zap
             size++;
         }
 
-        public void AddShort(short value)
+        public void AddWord(int value)
         {
             types.Add(T_NUM_WORD);
-            numericValues.Add(value);
+            numericValues.Add((short)value);
             size += 2;
         }
 
-        public void AddShort(IOperand value)
+        public void AddWord(IOperand value)
         {
             types.Add(T_OP_WORD);
             operandValues.Add(value);

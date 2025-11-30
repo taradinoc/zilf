@@ -23,7 +23,7 @@ using Zilf.Language;
 
 namespace Zilf.ZModel.Vocab
 {
-    delegate IOperand DirIndexToPropertyOperandDelegate(byte dirIndex);
+    delegate IOperand DirIndexToPropertyOperandDelegate(int dirIndex);
 
     delegate IOperand? CompileConstantDelegate(ZilObject zo);
 
@@ -32,7 +32,7 @@ namespace Zilf.ZModel.Vocab
         public DirIndexToPropertyOperandDelegate DirIndexToPropertyOperandDelegate;
         public CompileConstantDelegate CompileConstantDelegate;
 
-        public IOperand DirIndexToPropertyOperand(byte dirIndex) => DirIndexToPropertyOperandDelegate(dirIndex);
+        public IOperand DirIndexToPropertyOperand(int dirIndex) => DirIndexToPropertyOperandDelegate(dirIndex);
 
         public IOperand? CompileConstant(ZilObject zo) => CompileConstantDelegate(zo);
     }
@@ -85,10 +85,10 @@ namespace Zilf.ZModel.Vocab
 
         IEnumerable<KeyValuePair<string, int>> GetVocabConstants(IWord word);
 
-        byte GetPrepositionValue(IWord word);
-        byte GetAdjectiveValue(IWord word);
-        byte GetVerbValue(IWord word);
-        byte GetDirectionValue(IWord word);
+        int GetPrepositionValue(IWord word);
+        int GetAdjectiveValue(IWord word);
+        int GetVerbValue(IWord word);
+        int GetDirectionValue(IWord word);
 
         int MaxActionCount { get; }
     }

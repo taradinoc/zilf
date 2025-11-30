@@ -7,12 +7,16 @@
 <USE "LIBMSG">
 <USE "LIBMSG-DEFAULTS">
 
-<SETG ZILLIB-VERSION "T1">
+<SETG ZILLIB-VERSION "T2">
 
 <VERSION?
     (ZIP)
     (EZIP)
     (ELSE <ZIP-OPTIONS UNDO COLOR>)>
+
+<VERSION?
+    (GLULX <CONSTANT WORD-SIZE 4>)
+    (ELSE <CONSTANT WORD-SIZE 2>)>
 
 ;"Filled in by compiler"
 <CONSTANT LAST-OBJECT <>>
@@ -114,12 +118,20 @@ other versions. These macros let us write the same code for all versions."
         <DEFMAC GET/B ('T 'O) `<GETB ~.T ~.O>>
         <DEFMAC PUT/B ('T 'O 'V) `<PUTB ~.T ~.O ~.V>>
         <DEFMAC IN-PB/WTBL? ('O 'P 'V) `<IN-PBTBL? ~.O ~.P ~.V>>
-        <DEFMAC IN-B/WTBL? ('T 'C 'V) `<IN-BTBL? ~.T ~.C ~.V>>)
+        <DEFMAC IN-B/WTBL? ('T 'C 'V) `<IN-BTBL? ~.T ~.C ~.V>>
+        <DEFMAC GETB/VAR ('T 'O) `<GETB ~.T ~.O>>)
+    (GLULX
+        <DEFMAC GET/B ('T 'O) `<GET ~.T ~.O>>
+        <DEFMAC PUT/B ('T 'O 'V) `<PUT ~.T ~.O ~.V>>
+        <DEFMAC IN-PB/WTBL? ('O 'P 'V) `<IN-PWTBL? ~.O ~.P ~.V>>
+        <DEFMAC IN-B/WTBL? ('T 'C 'V) `<IN-WTBL? ~.T ~.C ~.V>>
+        <DEFMAC GETB/VAR ('T 'O) `<GET ~.T ~.O>>)
     (ELSE
         <DEFMAC GET/B ('T 'O) `<GET ~.T ~.O>>
         <DEFMAC PUT/B ('T 'O 'V) `<PUT ~.T ~.O ~.V>>
         <DEFMAC IN-PB/WTBL? ('O 'P 'V) `<IN-PWTBL? ~.O ~.P ~.V>>
-        <DEFMAC IN-B/WTBL? ('T 'C 'V) `<IN-WTBL? ~.T ~.C ~.V>>)>
+        <DEFMAC IN-B/WTBL? ('T 'C 'V) `<IN-WTBL? ~.T ~.C ~.V>>
+        <DEFMAC GETB/VAR ('T 'O) `<GETB ~.T ~.O>>)>
 
 "Property and flag defaults"
 
@@ -212,6 +224,22 @@ other versions. These macros let us write the same code for all versions."
         <COPY-READBUF ,READBUF ,~<PARSE <STRING .PREFIX "-READBUF">>>
         <COPY-LEXBUF ,LEXBUF ,~<PARSE <STRING .PREFIX "-LEXBUF">>>>>
 
+<DEFMAC LEXBUF-W-WORD ('BUF 'WN "OPT" 'VAL)
+    <COND (<ASSIGNED? VAL>
+           `<PUT ~.BUF <- <* ~.WN 2> 1> ~.VAL>)
+          (ELSE
+           `<GET ~.BUF <- <* ~.WN 2> 1>>)>>
+<DEFMAC LEXBUF-W-LENGTH ('BUF 'WN "OPT" 'VAL)
+    <COND (<ASSIGNED? VAL>
+           `<PUTB ~.BUF <* ~.WN <* ,WORD-SIZE 2>> ~.VAL>)
+          (ELSE
+           `<GETB ~.BUF <* ~.WN <* ,WORD-SIZE 2>>>)>>
+<DEFMAC LEXBUF-W-OFFSET ('BUF 'WN "OPT" 'VAL)
+    <COND (<ASSIGNED? VAL>
+           `<PUTB ~.BUF <+ <* ~.WN <* ,WORD-SIZE 2>> 1> ~.VAL>)
+          (ELSE
+           `<GETB ~.BUF <+ <* ~.WN <* ,WORD-SIZE 2>> 1>>)>>
+
 <CONSTANT P1MASK 3>
 
 <GLOBAL WINNER PLAYER>
@@ -243,6 +271,20 @@ other versions. These macros let us write the same code for all versions."
         <CONSTANT VOCAB-FL 4>   ;"part of speech flags"
         <CONSTANT VOCAB-V1 5>   ;"value for 1st part of speech"
         <CONSTANT VOCAB-V2 6>   ;"value for 2nd part of speech")
+    (GLULX
+        ;"vocab format:
+          offset 0     1 byte                  type ID $60
+          offset 1     VOCAB-RESOLUTION bytes  text
+          offset V+1   1 byte                  part-of-speech flags
+          offset V+2   4 bytes                 direction value
+          offset V+6   4 bytes                 preposition value
+          offset V+10  4 bytes                 verb value"
+        <CONSTANT VOCAB-RESOLUTION 10>
+        <CONSTANT VOCAB-FL <+ ,VOCAB-RESOLUTION 1>>
+        <CONSTANT VOCAB-VALUES <+ ,VOCAB-RESOLUTION 2>>
+        <CONSTANT VOCAB-VAL-DIRECTION 0>
+        <CONSTANT VOCAB-VAL-PREPOSITION 1>
+        <CONSTANT VOCAB-VAL-VERB 2>)
     (T
         <CONSTANT VOCAB-FL 6>
         <CONSTANT VOCAB-V1 7>
@@ -273,16 +315,34 @@ Returns:
   If the word does not have the given part of speech, returns 0. Otherwise,
   returns the word's value for the given part of speech if P1 was supplied,
   or 1 if not."
-<ROUTINE CHKWORD? (W PS "OPT" (P1 -1) "AUX" F)
-    <COND (<0? .W> <RFALSE>)>
-    <SET F <GETB .W ,VOCAB-FL>>
-    <SET F <COND (<BTST .F .PS>
-                  <COND (<L? .P1 0>
-                         <RTRUE>)
-                        (<==? <BAND .F ,P1MASK> .P1>
-                         <GETB .W ,VOCAB-V1>)
-                        (ELSE <GETB .W ,VOCAB-V2>)>)>>
-    .F>
+<VERSION?
+    (GLULX
+     <ROUTINE CHKWORD? (W PS "OPT" (P1 -1) "AUX" F VS)
+         <COND (<0? .W> <RFALSE>)>
+         <SET F <GETB .W ,VOCAB-FL>>
+         <SET F <COND (<BTST .F .PS>
+                       <SET VS <+ .W ,VOCAB-VALUES>>
+                       <COND (<L? .P1 0>
+                              <RTRUE>)
+                             (<==? .PS ,PS?DIRECTION>
+                              <GET .VS ,VOCAB-VAL-DIRECTION>)
+                             (<==? .PS ,PS?PREPOSITION>
+                              <GET .VS ,VOCAB-VAL-PREPOSITION>)
+                             (<==? .PS ,PS?VERB>
+                              <GET .VS ,VOCAB-VAL-VERB>)
+                             (ELSE 1)>)>>
+         .F>)
+    (ELSE
+     <ROUTINE CHKWORD? (W PS "OPT" (P1 -1) "AUX" F)
+         <COND (<0? .W> <RFALSE>)>
+         <SET F <GETB .W ,VOCAB-FL>>
+         <SET F <COND (<BTST .F .PS>
+                       <COND (<L? .P1 0>
+                              <RTRUE>)
+                             (<==? <BAND .F ,P1MASK> .P1>
+                              <GETB .W ,VOCAB-V1>)
+                             (ELSE <GETB .W ,VOCAB-V2>)>)>>
+         .F>)>
 
 ;"Gets the word at the given index in LEXBUF.
 
@@ -293,7 +353,7 @@ Returns:
   A pointer to the vocab word, or 0 if the word at the given index was
   unrecognized."
 <ROUTINE GETWORD? (N "AUX" R)
-    <SET R <GET ,LEXBUF <- <* .N 2> 1>>>
+    <SET R <LEXBUF-W-WORD ,LEXBUF .N>>
     .R>
 
 ;"Prints the word at the given index in LEXBUF.
@@ -301,8 +361,8 @@ Returns:
 Args:
   N: The index, starting at 1."
 <ROUTINE PRINT-WORD (N "AUX" I MAX)
-    <SET I <GETB ,LEXBUF <+ <* .N 4> 1>>>
-    <SET MAX <- <+ .I <GETB ,LEXBUF <* .N 4>>> 1>>
+    <SET I <LEXBUF-W-OFFSET ,LEXBUF .N>>
+    <SET MAX <- <+ .I <LEXBUF-W-LENGTH ,LEXBUF .N>> 1>>
     <REPEAT ()
         <PRINTC <GETB ,READBUF .I>>
         <AND <IGRTR? I .MAX> <RETURN>>>>
@@ -351,21 +411,21 @@ Args:
    or special flag (TBD).
    OBJSPEC-NOUN contains a noun (voc word).
    Either field may be 0, but not both."
-<DEFSTRUCT NOUN-PHRASE (TABLE ('NTH GETB) ('PUT PUTB) ('START-OFFSET 0))
-    (NP-YCNT FIX)
-    (NP-NCNT FIX)
-    (NP-YTBL TABLE 'OFFSET 1 'NTH ZGET 'PUT ZPUT)
-    (NP-NTBL TABLE 'OFFSET 2 'NTH ZGET 'PUT ZPUT)
-    (NP-MODE FIX 'OFFSET 6)>
-
 <CONSTANT P-MAX-OBJSPECS 10>
+<DEFSTRUCT NOUN-PHRASE (TABLE ('NTH GETB) ('PUT PUTB) ('START-OFFSET 0))
+    (NP-YTBL TABLE 'OFFSET 0 'NTH ZGET 'PUT ZPUT)
+    (NP-NTBL TABLE 'OFFSET 1 'NTH ZGET 'PUT ZPUT)
+    (NP-YCNT FIX 'OFFSET %<* 2 ,WORD-SIZE>)
+    (NP-NCNT FIX 'OFFSET %<+ <* 2 ,WORD-SIZE> 1>)
+    (NP-MODE FIX 'OFFSET %<+ <* 2 ,WORD-SIZE> 2>)>
+
 <DEFINE NOUN-PHRASE ()
     <MAKE-NOUN-PHRASE
-        'NOUN-PHRASE <TABLE <BYTE 0> <BYTE 0> 0 0 <BYTE 0>>
+        'NOUN-PHRASE <TABLE 0 0 <BYTE 0> <BYTE 0> <BYTE 0>>
         'NP-YTBL <ITABLE <* 2 ,P-MAX-OBJSPECS>>
         'NP-NTBL <ITABLE <* 2 ,P-MAX-OBJSPECS>>>>
 
-<CONSTANT P-OBJSPEC-SIZE 4>
+<CONSTANT P-OBJSPEC-SIZE <* ,WORD-SIZE 2>>
 
 <DEFMAC NP-YSPEC ('NP 'I)
     <COND (<==? .I 1>
@@ -453,12 +513,15 @@ Args:
 <IFFLAG (<OR DEBUG DEBUGGING-VERBS>
          <ROUTINE PRINT-MATCHING-WORD (V PS P1 "AUX" W CNT SIZE)
              <COND (<0? .V> <TELL "---"> <RTRUE>)>
-             <SET W ,VOCAB>
-             <SET W <+ .W 1 <GETB .W 0>>>
-             <SET SIZE <GETB .W 0>>
-             <SET W <+ .W 1>>
-             <SET CNT <GET .W 0>>
-             <SET W <+ .W 2>>
+             <VERSION?
+                 (GLULX
+                  <SET SIZE <GET ,VOCAB 0>>
+                  <SET CNT <GET ,VOCAB 1>>
+                  <SET W <+ ,VOCAB <* ,WORD-SIZE 2>>>)
+                 (ELSE
+                  <SET SIZE <GETB ,VOCAB 0>>
+                  <SET CNT <GETB ,VOCAB 1>>
+                  <SET W <+ ,VOCAB 2>>)>
              <DO (I 1 .CNT)
                  <COND (<=? <CHKWORD? .W .PS .P1> .V>
                         <TELL B .W>
@@ -474,7 +537,7 @@ Args:
 <CONSTANT P-NP-XOBJ <NOUN-PHRASE>>
 
 "Tables for objects recognized from object specs.
- These each have one length byte, a dummy byte (V4+ only),
+ These each have one length byte, a dummy byte (V4+ only) or three (Glulx only),
  then P-MAX-OBJECTS bytes/words for the objects."
 <CONSTANT P-MAX-OBJECTS 50>
 
@@ -503,16 +566,16 @@ Args:
     (PST-READBUF TABLE)
     (PST-LEXBUF TABLE)
     (PST-WINNER OBJECT)
-    (PST-LEN BYTE 'OFFSET 20 'NTH GETB 'PUT PUTB)
-    (PST-V BYTE 'OFFSET 21 'NTH GETB 'PUT PUTB)
-    (PST-V-WORDN BYTE 'OFFSET 22 'NTH GETB 'PUT PUTB)
-    (PST-NOBJ BYTE 'OFFSET 23 'NTH GETB 'PUT PUTB)
-    (PST-PRSO-DIR BYTE 'OFFSET 24 'NTH GETB 'PUT PUTB)
-    (PST-PRSA BYTE 'OFFSET 25 'NTH GETB 'PUT PUTB)>
+    (PST-LEN BYTE 'OFFSET %<* ,WORD-SIZE 10> 'NTH GETB 'PUT PUTB)
+    (PST-V BYTE 'OFFSET %<+ <* ,WORD-SIZE 10> 1> 'NTH GETB 'PUT PUTB)
+    (PST-V-WORDN BYTE 'OFFSET %<+ <* ,WORD-SIZE 10> 2> 'NTH GETB 'PUT PUTB)
+    (PST-NOBJ BYTE 'OFFSET %<+ <* ,WORD-SIZE 10> 3> 'NTH GETB 'PUT PUTB)
+    (PST-PRSO-DIR BYTE 'OFFSET %<+ <* ,WORD-SIZE 10> 4> 'NTH GETB 'PUT PUTB)
+    (PST-PRSA BYTE 'OFFSET %<+ <* ,WORD-SIZE 10> 5> 'NTH GETB 'PUT PUTB)>
 
 <DEFINE PARSER-RESULT ()
     <MAKE-PARSER-RESULT
-        'PARSER-RESULT <ITABLE 26 (BYTE)>
+        'PARSER-RESULT <ITABLE <+ <* ,WORD-SIZE 10> 6> (BYTE)>
         'PST-PRSOS <PRSTBL>
         'PST-PRSIS <PRSTBL>
         'PST-READBUF <MAKE-READBUF>
@@ -1026,13 +1089,13 @@ Sets:
     <SET W <GETWORD? .N>>
     ;"Copy word into LEXBUF"
     <SET WN <P-OOPS-WN>>
-    <PUT .LBUF <- <* .WN 2> 1> .W>
+    <LEXBUF-W-WORD .LBUF .WN .W>
     ;"Copy word into READBUF"
-    <SET SS <GETB ,LEXBUF <+ <* .N 4> 1>>>
-    <SET SL <GETB ,LEXBUF <* .N 4>>>
-    <SET DS <GETB .LBUF <+ <* .WN 4> 1>>>
-    <SET DL <GETB .LBUF <* .WN 4>>>
-    <PUTB .LBUF <* .WN 4> .SL>
+    <SET SS <LEXBUF-W-OFFSET ,LEXBUF .N>>
+    <SET SL <LEXBUF-W-LENGTH ,LEXBUF .N>>
+    <SET DS <LEXBUF-W-OFFSET .LBUF .WN>>
+    <SET DL <LEXBUF-W-LENGTH .LBUF .WN>>
+    <LEXBUF-W-LENGTH .LBUF .WN .SL>
     <COND (<L? .SL .DL>
            ;"Copy the new word and overwrite the end of the old one with spaces"
            <COPY-TABLE-B <REST ,READBUF .SS> <REST .RBUF .DS> .SL>
@@ -1053,9 +1116,8 @@ Sets:
            <SET MAX <GETB .LBUF 1>>
            <COND (<L? .N .MAX>
                   <DO (I <+ .N 1> .MAX)
-                      <PUTB .LBUF
-                            <+ <* .I 4> 1>
-                            <+ <GETB .LBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
+                      <LEXBUF-W-OFFSET .LBUF .I
+                       <+ <LEXBUF-W-OFFSET .LBUF .I> .DELTA>>>)>)>
     ;"Activate held buffers, restore orphaning state, and clear oops state"
     <SETG READBUF .RBUF>
     <SETG LEXBUF .LBUF>
@@ -1070,15 +1132,15 @@ Sets:
                             (LBUF ,EDIT-LEXBUF) (RBUF ,EDIT-READBUF))
     <TRACE 5 "[replace held word " N .N " with '" B .NEW-WORD "']" CR>
     ;"Copy word into LEXBUF"
-    <PUT .LBUF <- <* .N 2> 1> .NEW-WORD>
+    <LEXBUF-W-WORD .LBUF .N .NEW-WORD>
     ;"Copy word into READBUF"
     <DIROUT 3 ,TEMPTABLE>
     <PRINTB .NEW-WORD>
     <DIROUT -3>
-    <SET S <GETB .LBUF <+ <* .N 4> 1>>>
-    <SET OL <GETB .LBUF <* .N 4>>>
+    <SET S <LEXBUF-W-OFFSET .LBUF .N>>
+    <SET OL <LEXBUF-W-LENGTH .LBUF .N>>
     <SET NL <GET ,TEMPTABLE 0>>
-    <PUTB .LBUF <* .N 4> .NL>
+    <LEXBUF-W-LENGTH .LBUF .N .NL>
     <COND (<L? .NL .OL>
            ;"Overwrite the end of the old word with spaces"
            <SET MAX <- <+ .S .OL> 1>>
@@ -1097,16 +1159,14 @@ Sets:
            <SET MAX <GETB .LBUF 1>>
            <COND (<L? .N .MAX>
                   <DO (I <+ .N 1> .MAX)
-                      <PUTB .LBUF
-                            <+ <* .I 4> 1>
-                            <+ <GETB .LBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
+                      <LEXBUF-W-OFFSET .LBUF .I <+ <LEXBUF-W-OFFSET .LBUF .I> .DELTA>>>)>)>
     ;"Copy the new word"
     <TRACE 5 "[at char " N .S "]" CR>
-    <COPY-TABLE-B <REST ,TEMPTABLE 2> <REST .RBUF .S> .NL>
+    <COPY-TABLE-B <REST ,TEMPTABLE ,WORD-SIZE> <REST .RBUF .S> .NL>
     <TRACE-DO 5 <DUMPLINE T>>>
 
 <ROUTINE INSERT-HELD-WORD (N NEW-WORD "AUX" (LBUF ,EDIT-LEXBUF) (RBUF ,EDIT-READBUF)
-                           (LEN <GETB .LBUF 1>) MIN BL S MAX NL DELTA)
+                           (LEN <GETB .LBUF 1>) BL S MAX NL DELTA)
     <TRACE 5 "[insert '" B .NEW-WORD "' as held word " N .N "]" CR>
     <COND (<L? .N 1> <SET N 1>)
           (<G? .N .LEN> <SET N <+ .LEN 1>>)>
@@ -1117,16 +1177,16 @@ Sets:
     ;"Shift LEXBUF up to make room (sacrificing the last word if needed)"
     <COND (<=? .LEN ,LEXBUF-SIZE> <SET LEN <- ,LEXBUF-SIZE 1>>)>
     <COND (<L=? .N .LEN>
-           <SET MIN <* .N 2>>
-           <DO (I <* .LEN 2> .MIN -2)
-               <PUT .LBUF <+ .I 2> <GET .LBUF .I>>
-               <PUT .LBUF <+ .I 1> <GET .LBUF <- .I 1>>>>)>
+           <DO (I .LEN .N -1)
+               <LEXBUF-W-WORD .LBUF <+ .I 1> <LEXBUF-W-WORD .LBUF .I>>
+               <LEXBUF-W-LENGTH .LBUF <+ .I 1> <LEXBUF-W-LENGTH .LBUF .I>>
+               <LEXBUF-W-OFFSET .LBUF <+ .I 1> <LEXBUF-W-OFFSET .LBUF .I>>>)>
     ;"Write the new entry and set the word count"
     <COND (<G? .N .LEN> <SET S <+ <READBUF-LENGTH .RBUF> 1>>)
-          (ELSE <SET S <GETB .LBUF <+ <* .N 4> 1>>>)>
-    <PUT .LBUF <- <* .N 2> 1> .NEW-WORD>
-    <PUTB .LBUF <* .N 4> .NL>
-    <PUTB .LBUF <+ <* .N 4> 1> .S>
+          (ELSE <SET S <GETB .LBUF <+ <* .N <* ,WORD-SIZE 2>> 1>>>)>
+    <LEXBUF-W-WORD .LBUF .N .NEW-WORD>
+    <LEXBUF-W-LENGTH .LBUF .N .NL>
+    <LEXBUF-W-OFFSET .LBUF .N .S>
     <PUTB .LBUF 1 <+ .LEN 1>>
     <COND (<L=? .N .LEN>
            ;"Shift READBUF up to make room"
@@ -1143,12 +1203,10 @@ Sets:
            <SET MAX <+ .LEN 1>>
            <COND (<L? .N .MAX>
                   <DO (I <+ .N 1> .MAX)
-                      <PUTB .LBUF
-                            <+ <* .I 4> 1>
-                            <+ <GETB .LBUF <+ <* .I 4> 1>> .DELTA>>>)>)>
+                      <LEXBUF-W-OFFSET .LBUF .I <+ <LEXBUF-W-OFFSET .LBUF .I> .DELTA>>>)>)>
     ;"Write word into READBUF, with space before/after as appropriate"
     <TRACE 5 "[at char " N .S "]" CR>
-    <COPY-TABLE-B <REST ,TEMPTABLE 2> <REST .RBUF .S> .NL>
+    <COPY-TABLE-B <REST ,TEMPTABLE ,WORD-SIZE> <REST .RBUF .S> .NL>
     <PUTB .RBUF
           <COND (<G? .N .LEN> <- .S 1>) (ELSE <+ .S .NL>)>
           !\ >
@@ -1261,6 +1319,14 @@ expressible as the sum of two cubes in two different ways">)
 
 <GLOBAL P-NUMBER 0>
 
+<VERSION?
+    (GLULX
+        <CONSTANT MINWORD -2147483648>
+        <CONSTANT MAXWORD/10 214748364>)
+    (ELSE
+        <CONSTANT MINWORD -32768>
+        <CONSTANT MAXWORD/10 3276>)>
+
 ;"Tries to parse the given word as a number.
 
 If successful, the value is left in P-NUMBER, and the buffer is updated to
@@ -1273,8 +1339,8 @@ Sets:
 Returns:
   True if the number was parsed and the buffer updated; otherwise false."
 <ROUTINE PARSE-NUMBER? (WN "AUX" I MAX V C NEG)
-    <SET I <GETB ,LEXBUF <+ <* .WN 4> 1>>>
-    <SET MAX <- <+ .I <GETB ,LEXBUF <* .WN 4>>> 1>>
+    <SET I <LEXBUF-W-OFFSET ,LEXBUF .WN>>
+    <SET MAX <- <+ .I <LEXBUF-W-LENGTH ,LEXBUF .WN>> 1>>
     <COND (<0? .MAX> <RFALSE>)>
     <COND (<=? <SET C <GETB ,READBUF .I>> !\->
            <SET NEG T>
@@ -1282,16 +1348,16 @@ Returns:
            <SET C <GETB ,READBUF .I>>)>
     <PROG ()
         <COND (<AND <G=? .C !\0> <L=? .C !\9>>
-               ;"Special case for -32768"
-               <COND (<AND <=? .V 3276>
+               ;"Special case for MININT (the final digit is the same in Z and Glulx)"
+               <COND (<AND <=? .V ,MAXWORD/10>
                            <=? .C !\8>
                            .NEG
                            <=? .I .MAX>>
-                      <SET V -32768>
+                      <SET V ,MINWORD>
                       <RETURN>)>
                ;"Detect overflow"
-               <COND (<AND <G=? .V 3276>
-                           <OR <G? .V 3276>
+               <COND (<AND <G=? .V ,MAXWORD/10>
+                           <OR <G? .V ,MAXWORD/10>
                                <G? .C !\7>>>
                       <RFALSE>)>
                <SET V <+ <* .V 10> <- .C !\0>>>)
@@ -1301,7 +1367,9 @@ Returns:
                <AGAIN>)>
         <COND (.NEG <SET V <- .V>>)>>
     <SETG P-NUMBER .V>
-    <PUT ,LEXBUF <- <* .I 2> 1> ,W?\,NUMBER>
+    <TRACE 3 "[parsed number " N .V "]" CR>
+    <LEXBUF-W-WORD ,LEXBUF .WN ,W?\,NUMBER>
+    <TRACE-DO 3 <DUMPLINE T>>
     <RETURN ,NUMBER>>
 
 <VERSION?
@@ -1344,8 +1412,8 @@ Returns:
     (ELSE
         <DEFMAC COPY-TABLE ('SRC 'DEST 'LEN "AUX" BYTES)
             ;"someday the compiler should do this optimization on its own..."
-            <SET BYTES <COND (<TYPE? .LEN FIX> <* .LEN 2>)
-                             (ELSE `<* ~.LEN 2>)>>
+            <SET BYTES <COND (<TYPE? .LEN FIX> <* .LEN ,WORD-SIZE>)
+                             (ELSE `<* ~.LEN ,WORD-SIZE>)>>
             `<COPYT ~.SRC ~.DEST ~.BYTES>>
 
         <DEFMAC COPY-TABLE-B ('SRC 'DEST 'LEN)
@@ -1353,7 +1421,7 @@ Returns:
 
 ;"Determines whether a given word can start a noun phrase.
 
-For a word to pass this test, it must be an article, adjective, or noun.
+For a word to pass this test, it must be an article/quantifier, adjective, or noun.
 
 Args:
   W: The word to test.
@@ -1404,6 +1472,7 @@ Returns:
             ;"exit loop if we reached the end of the command"
             (<G? .WN ,P-LEN>
              <TRACE 4 "[end of command]" CR>
+             <TRACE 5 "[ADJ=" N .ADJ " NOUN=" N .NOUN "]" CR>
              <RETURN>)
             ;"fail if we found an unrecognized word"
             (<NOT <OR <SET W <GETWORD? .WN>>
@@ -2311,7 +2380,7 @@ Returns:
   True if the word is located, otherwise false."
 <ROUTINE IN-PWTBL? (O P V "AUX" PT)
     <AND <SET PT <GETPT .O .P>>
-         <IN-WTBL? .PT </ <PTSIZE .PT> 2> .V>>>
+         <IN-WTBL? .PT </ <PTSIZE .PT> ,WORD-SIZE> .V>>>
 
 ;"Attempts to locate a byte in a property table.
 
@@ -2363,7 +2432,7 @@ Returns:
 
 <IF-DEBUG
     ;"Prints the contents of LEXBUF, calling DUMPWORD for each word."
-    <ROUTINE DUMPLINE ("OPT" RAW? "AUX" (WDS <GETB ,LEXBUF 1>) (P <+ ,LEXBUF 2>))
+    <ROUTINE DUMPLINE ("OPT" RAW? "AUX" (WDS <GETB ,LEXBUF 1>))
         <TELL N .WDS " words in ">
         <COND (<==? ,LEXBUF ,KBD-LEXBUF> <TELL "KBD">)
               (<==? ,LEXBUF ,EDIT-LEXBUF> <TELL "EDIT">)
@@ -2372,9 +2441,8 @@ Returns:
         <TELL " buf:">
         <DO (I 1 .WDS)
             <TELL " ">
-            <DUMPWORD <GET .P 0>>
-            <COND (.RAW? <TELL "[\"" WORD .I "\"]">)>
-            <SET P <+ .P 4>>>
+            <DUMPWORD <LEXBUF-W-WORD ,LEXBUF .I>>
+            <COND (.RAW? <TELL "[\"" WORD .I "\"]">)>>
         <CRLF>>
 
     ;"Prints the raw contents of LEXBUF."
@@ -2418,11 +2486,11 @@ Returns:
 ;"Copies a LEXBUF-like table."
 <ROUTINE COPY-LEXBUF (SRC DEST "AUX" (WDS <GETB .SRC 1>))
     <PUTB .DEST 1 .WDS>
-    <COPY-TABLE <REST .SRC 2> <REST .DEST 2> <* 2 .WDS>>>
+    <COPY-TABLE <REST .SRC ,WORD-SIZE> <REST .DEST ,WORD-SIZE> <* 2 .WDS>>>
 
 ;"Copies a READBUF-like table."
 <ROUTINE COPY-READBUF (SRC DEST)
-    <COPY-TABLE .SRC .DEST </ ,READBUF-SIZE 2>>>
+    <COPY-TABLE .SRC .DEST </ <+ ,READBUF-SIZE ,WORD-SIZE -1> ,WORD-SIZE>>>
 
 ;"Measures the length of a READBUF-like table (not including the null terminator on V3-4)."
 <ROUTINE READBUF-LENGTH (TBL)
@@ -2532,7 +2600,10 @@ Sets (temporarily):
 <ROUTINE PERFORM (ACT "OPT" DOBJ IOBJ "AUX" PRTN RTN OA OD ODD OI WON CNT ORM)
     <TRACE 1 "[PERFORM: ACT=" N .ACT>
     <TRACE-DO 1
-        <COND (.DOBJ <TELL " DOBJ=" D .DOBJ "(" N .DOBJ ")">)>
+        <COND (.DOBJ
+               <TELL " DOBJ=">
+               <COND (<NOT ,PRSO-DIR> <TELL D .DOBJ>)>
+               <TELL "(" N .DOBJ ")">)>
         <COND (.IOBJ <TELL " IOBJ=" D .IOBJ "(" N .IOBJ ")">)>
         <TELL "]" CR>>
     <SET PRTN <GET ,PREACTIONS .ACT>>
@@ -2742,7 +2813,7 @@ Returns:
            <TRACE-IN>
 
            <SET MAX <PTSIZE .PT>>
-           <VERSION? (ZIP) (ELSE <SET MAX </ .MAX 2>>)>
+           <VERSION? (ZIP) (ELSE <SET MAX </ .MAX ,WORD-SIZE>>)>
            <SET MAX <- .MAX 1>>
            <DO (J 0 .MAX)
                <BIND ((I <GET/B .PT .J>))

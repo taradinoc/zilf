@@ -58,7 +58,7 @@
         `<ROUTINE SET-PRONOUNS (O OBJS "AUX" PT MAX)
             <COND (<=? .O <> ,ROOMS> <RFALSE>)
                   (<SET PT <GETPT .O ,P?PRONOUN>>
-                   <SET MAX <- </ <PTSIZE .PT> 2> 1>>
+                   <SET MAX <- </ <PTSIZE .PT> ,WORD-SIZE> 1>>
                    <DO (I 0 .MAX)
                        <APPLY <GET .PT .I> .OBJS>>
                    <RTRUE>)>

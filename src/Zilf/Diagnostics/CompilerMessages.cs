@@ -182,6 +182,12 @@ namespace Zilf.Diagnostics
         public const int _0_Field_1_Is_Not_A_Word_Field = 409;
         [Warning("ZSCII {0} ({1}) cannot be safely printed in Z-machine version {2}")]
         public const int ZSCII_0_1_Cannot_Be_Safely_Printed_In_Zmachine_Version_2 = 410;
+        [Error("{0} is not supported when targeting Glulx")]
+        public const int _0_Is_Not_Supported_When_Targeting_Glulx = 411;
+        [Error("{0} is not supported when targeting the Z-machine")]
+        public const int _0_Is_Not_Supported_When_Targeting_The_Zmachine = 412;
+        [Error("{0}: field '{1}' is not supported when targeting Glulx")]
+        public const int _0_Field_1_Is_Not_Supported_When_Targeting_Glulx = 413;
 
         // Misc - 0500
 

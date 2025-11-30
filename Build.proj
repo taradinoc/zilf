@@ -45,12 +45,12 @@
     <MakeDir Directories="$(StageBinDir)" />
 
     <MSBuild Projects="$(RootDir)src/Zilf/Zilf.csproj"
-             Targets="Publish"
-             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishAot=true;PublishSingleFile=true;PublishTrimmed=true;StripSymbols=true;DebuggerSupport=false;IncludeNativeLibrariesForSelfExtract=true;PublishDir=$(ZilfPublishDir)" />
+         Targets="Publish"
+         Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishAot=true;PublishSingleFile=true;PublishTrimmed=true;StripSymbols=true;DebuggerSupport=false;IncludeNativeLibrariesForSelfExtract=true;PublishDir=$(ZilfPublishDir);IncludeBuildTimestamp=true" />
 
     <MSBuild Projects="$(RootDir)src/Zapf/Zapf.csproj"
-             Targets="Publish"
-             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishAot=true;PublishSingleFile=true;PublishTrimmed=true;StripSymbols=true;DebuggerSupport=false;IncludeNativeLibrariesForSelfExtract=true;PublishDir=$(ZapfPublishDir)" />
+         Targets="Publish"
+         Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishAot=true;PublishSingleFile=true;PublishTrimmed=true;StripSymbols=true;DebuggerSupport=false;IncludeNativeLibrariesForSelfExtract=true;PublishDir=$(ZapfPublishDir);IncludeBuildTimestamp=true" />
 
     <Copy SourceFiles="@(_RootDocs)" DestinationFolder="$(StageDir)" />
 

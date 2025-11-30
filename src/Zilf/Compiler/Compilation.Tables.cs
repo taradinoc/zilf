@@ -36,9 +36,9 @@ namespace Zilf.Compiler
                 if (Game.Options is GameOptions.V5Plus v5Options)
                 {
                     var extab = Game.DefineTable("EXTAB", false);
-                    extab.AddShort((short)size);
+                    extab.AddWord((short)size);
                     for (int i = 0; i < size; i++)
-                        extab.AddShort(Game.Zero);
+                        extab.AddWord(Game.Zero);
 
                     v5Options.HeaderExtensionTable = extab;
                 }
@@ -73,7 +73,7 @@ namespace Zilf.Compiler
 
                 for (int i = 0; i < values.Length; i++)
                     if (i % 3 == 0)
-                        tb.AddShort(values[i]);
+                        tb.AddWord(values[i]);
                     else
                         tb.AddByte(values[i]);
             }
@@ -124,7 +124,7 @@ namespace Zilf.Compiler
 
                     if (values[i]!.Value.IsWord ?? defaultWord)
                     {
-                        tb.AddShort(values[i]!.Value.Operand);
+                        tb.AddWord(values[i]!.Value.Operand);
                     }
                     else
                     {

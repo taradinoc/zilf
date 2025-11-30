@@ -739,10 +739,24 @@ Returns:
         <CONSTANT EXIT-RM 0>        ;GET/B
         <CONSTANT NEXIT-MSG 0>      ;GET
         <CONSTANT FEXIT-RTN 0>      ;GET
-        <CONSTANT CEXIT-VAR 1>      ;GETB
+        <CONSTANT CEXIT-VAR 1>      ;GETB/VAR
         <CONSTANT CEXIT-MSG 1>      ;GET
         <CONSTANT DEXIT-OBJ 1>      ;GET/B
         <CONSTANT DEXIT-MSG 1>      ;GET)
+    (GLULX
+        <CONSTANT UEXIT 4>          ;"room(4)"
+        <CONSTANT NEXIT 5>          ;"msg(4) dummy(1)"
+        <CONSTANT FEXIT 6>          ;"routine(4) dummy(2)"
+        <CONSTANT CEXIT 12>         ;"room(4) var(4) msg(4)"
+        <CONSTANT DEXIT 13>         ;"room(4) door(4) msg(4) dummy(1)"
+
+        <CONSTANT EXIT-RM 0>
+        <CONSTANT NEXIT-MSG 0>
+        <CONSTANT FEXIT-RTN 0>
+        <CONSTANT CEXIT-VAR 1>
+        <CONSTANT CEXIT-MSG 2>
+        <CONSTANT DEXIT-OBJ 1>
+        <CONSTANT DEXIT-MSG 2>)
     (T
         <CONSTANT UEXIT 2>
         <CONSTANT NEXIT 3>
@@ -793,7 +807,7 @@ Returns:
                   <SETG P-CONT 0>
                   <RTRUE>)>)
           (<==? .PTS ,CEXIT>
-           <COND (<VALUE <GETB .PT ,CEXIT-VAR>>
+           <COND (<VALUE <GETB/VAR .PT ,CEXIT-VAR>>
                   <SET RM <GET/B .PT ,EXIT-RM>>)
                  (ELSE
                   <COND (<SET RM <GET .PT ,CEXIT-MSG>>
@@ -1635,31 +1649,59 @@ This assumes that if the objects have a common parent, it's within HERE."
 
 <IF-DEBUGGING-VERBS
 
-    <ROUTINE OBJREF? (O)
-        <COND (<=? .O ,NUMBER>
-               <COND (<AND <G=? ,P-NUMBER 1>
-                           <L=? ,P-NUMBER ,LAST-OBJECT>>
-                      ,P-NUMBER)
-                     (ELSE
-                      <TELL "[Bad objref.]" CR>
-                      <>)>)
-              (ELSE .O)>>
-
     <CONSTANT TREE-INDENT <ITABLE BYTE 80 <BYTE !\ >>>
 
-    <ROUTINE V-XTREE ("AUX" OFL ROOT L)
-        <SET OFL <LOWCORE FLAGS>>
-        <LOWCORE FLAGS <ORB .OFL 2>>
-        <PUTB ,TREE-INDENT 0 0>
-        <COND (<SET ROOT <OBJREF? ,PRSO>>
-               <COND (<SET L <LOC .ROOT>>
-                      <PRINT-OBJREF .L>
-                      <CRLF>)>
-               <TREE-FROM .ROOT>)
-              (ELSE
-               <DO (I ,LAST-OBJECT 1 -1)
-                   <COND (<IN? .I <>> <TREE-FROM .I>)>>)>
-        <LOWCORE FLAGS .OFL>>
+    <VERSION?
+        (GLULX
+         <ROUTINE OBJREF? (O)
+             <COND (<=? .O ,NUMBER>
+                    <COND (<AND <L=? ,P-NUMBER <LOWCORE MEMSIZE>>
+                                <==? <GETB ,P-NUMBER 0> 112 ;"70 hex">>
+                           ,P-NUMBER)
+                          (ELSE
+                           <TELL "[Bad objref.]" CR>
+                           <>)>)
+                   (ELSE .O)>>
+
+        <ROUTINE V-XTREE ("AUX" ROOT L)
+             <HLIGHT ,H-MONO>
+             <PUTB ,TREE-INDENT 0 0>
+             <COND (<SET ROOT <OBJREF? ,PRSO>>
+                 <COND (<SET L <LOC .ROOT>>
+                         <PRINT-OBJREF .L>
+                         <CRLF>)>
+                 <TREE-FROM .ROOT>)
+                 (ELSE
+                  <DO (I ,LAST-OBJECT <0? .I> <GET .I 2>)    ;"traverse linked list"
+                      <COND (<IN? .I <>> <TREE-FROM .I>)>>)>
+             <HLIGHT ,H-NORMAL>>)
+
+
+        (ELSE
+         <ROUTINE OBJREF? (O)
+             <COND (<=? .O ,NUMBER>
+                 <COND (<AND <G=? ,P-NUMBER 1>
+                             <L=? ,P-NUMBER ,LAST-OBJECT>>
+                         ,P-NUMBER)
+                         (ELSE
+                         <TELL "[Bad objref.]" CR>
+                         <>)>)
+                 (ELSE .O)>>
+
+         <ROUTINE V-XTREE ("AUX" OFL ROOT L)
+             <SET OFL <LOWCORE FLAGS>>
+             <LOWCORE FLAGS <ORB .OFL 2>>
+             <PUTB ,TREE-INDENT 0 0>
+             <COND (<SET ROOT <OBJREF? ,PRSO>>
+                 <COND (<SET L <LOC .ROOT>>
+                         <PRINT-OBJREF .L>
+                         <CRLF>)>
+                 <TREE-FROM .ROOT>)
+                 (ELSE
+                 <DO (I ,LAST-OBJECT 1 -1)
+                     <COND (<IN? .I <>> <TREE-FROM .I>)>>)>
+             <LOWCORE FLAGS .OFL>>)>
+
 
     <ROUTINE TREE-FROM (O "AUX" I)
         <PRINT-TREE-INDENT>
@@ -1795,7 +1837,7 @@ This assumes that if the objects have a common parent, it's within HERE."
         <TELL "Adjectives: ">
         <COND (<AND <SET PT <GETPT .O ,P?ADJECTIVE>>
                     <SET MAX <PTSIZE .PT>>>
-               <VERSION? (ZIP) (ELSE <SET MAX </ .MAX 2>>)>
+               <VERSION? (ZIP) (ELSE <SET MAX </ .MAX ,WORD-SIZE>>)>
                <SET MAX <- .MAX 1>>
                <DO (I 0 .MAX)
                    <COND (.I <TELL ", ">)>
@@ -1805,7 +1847,7 @@ This assumes that if the objects have a common parent, it's within HERE."
         <CRLF>
         <TELL "Nouns: ">
         <COND (<AND <SET PT <GETPT .O ,P?SYNONYM>>
-                    <SET MAX </ <PTSIZE .PT> 2>>>
+                    <SET MAX </ <PTSIZE .PT> ,WORD-SIZE>>>
                <SET MAX <- .MAX 1>>
                <DO (I 0 .MAX)
                    <COND (.I <TELL ", ">)>
@@ -1815,7 +1857,7 @@ This assumes that if the objects have a common parent, it's within HERE."
         <PRINT-OBJREF <LOC .O>>
         <COND (<AND <SET PT <GETPT .O ,P?GLOBAL>>
                     <SET MAX <PTSIZE .PT>>>
-               <VERSION? (ZIP) (ELSE <SET MAX </ .MAX 2>>)>
+               <VERSION? (ZIP) (ELSE <SET MAX </ .MAX ,WORD-SIZE>>)>
                <SET MAX <- .MAX 1>>
                <CRLF>
                <TELL "Local globals: ">

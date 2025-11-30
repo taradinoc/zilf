@@ -114,6 +114,7 @@ namespace Zilf.Language
         GLOBAL,
         [Atom("GLOBAL-VARS-TABLE")]
         GLOBAL_VARS_TABLE,
+        GLULX,
         GO,
         GVAL,
         HAVE,

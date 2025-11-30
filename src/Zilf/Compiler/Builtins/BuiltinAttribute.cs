@@ -64,6 +64,7 @@ namespace Zilf.Compiler.Builtins
         public int MinVersion { get; set; }
         public int MaxVersion { get; set; }
         public bool HasSideEffect { get; set; }
+        public BuiltinPlatform Platform { get; set; }
 
         /// <summary>
         /// Gets or sets a priority value used to disambiguate when more than one method matches the call.

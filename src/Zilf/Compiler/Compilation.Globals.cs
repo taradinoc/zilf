@@ -230,7 +230,7 @@ namespace Zilf.Compiler
                     SoftGlobals.Add(g.Name, entry);
 
                     var gSave = g;
-                    globalInitializers.Enqueue(() => table.AddShort(GetGlobalDefaultValue(gSave) ?? Game.Zero));
+                    globalInitializers.Enqueue(() => table.AddWord(GetGlobalDefaultValue(gSave) ?? Game.Zero));
 
                     byteOffset += 2;
                 }

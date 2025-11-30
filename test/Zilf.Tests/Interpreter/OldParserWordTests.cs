@@ -291,7 +291,7 @@ namespace Zilf.Tests.Interpreter
 
         class MockOperand : IOperand
         {
-            public byte Value;
+            public int Value;
         }
 
         class MockWordBuilder : IWordBuilder
@@ -307,17 +307,17 @@ namespace Zilf.Tests.Interpreter
             {
                 Assert.IsInstanceOfType<MockOperand>(value, "IWordBuilder.AddByte should be called with an operand we gave it");
 
-                ActualBytes.Add(((MockOperand)value).Value);
+                ActualBytes.Add((byte)((MockOperand)value).Value);
             }
 
-            public void AddShort(short value)
+            public void AddWord(int value)
             {
-                Assert.Fail("IWordBuilder.AddShort shouldn't be called");
+                Assert.Fail("IWordBuilder.AddWord shouldn't be called");
             }
 
-            public void AddShort(IOperand value)
+            public void AddWord(IOperand value)
             {
-                Assert.Fail("IWordBuilder.AddShort shouldn't be called");
+                Assert.Fail("IWordBuilder.AddWord shouldn't be called");
             }
 
             public IConstantOperand Add(IConstantOperand other)

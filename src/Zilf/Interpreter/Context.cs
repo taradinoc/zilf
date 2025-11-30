@@ -232,6 +232,10 @@ namespace Zilf.Interpreter
 
         public ZEnvironment ZEnvironment { get; }
 
+        public bool IsGlulx => ZEnvironment.ZVersion == ZEnvironment.GLULX_ZVERSION;
+
+        public int ZWordSize => IsGlulx ? 4 : 2;
+
         public FileContext CurrentFile { get; set; }
 
         public RoutineFlags NextRoutineFlags { get; set; }
@@ -335,6 +339,7 @@ namespace Zilf.Interpreter
             SetGlobalVal(GetStdAtom(StdAtom.PREDGEN), TRUE);
             SetGlobalVal(GetStdAtom(StdAtom.PLUS_MODE), ZEnvironment.ZVersion > 3 ? TRUE : FALSE);
             SetGlobalVal(GetStdAtom(StdAtom.SIBREAKS), ZilString.FromString(",.\""));
+            SetGlobalVal(GetStdAtom(StdAtom.GLULX), ZEnvironment.ZVersion == ZEnvironment.GLULX_ZVERSION ? TRUE : FALSE);
 
             // runtime constants
             AddZConstant(GetStdAtom(StdAtom.TRUE_VALUE), TRUE);
@@ -767,6 +772,7 @@ namespace Zilf.Interpreter
         {
             ZEnvironment.ZVersion = newVersion;
             SetGlobalVal(GetStdAtom(StdAtom.PLUS_MODE), newVersion > 3 ? TRUE : FALSE);
+            SetGlobalVal(GetStdAtom(StdAtom.GLULX), newVersion == ZEnvironment.GLULX_ZVERSION ? TRUE : FALSE);
             InitPropDefs();
         }
 
@@ -1016,7 +1022,8 @@ namespace Zilf.Interpreter
                 // special case for TABLE: its primtype is TABLE, but VECTOR can be converted too
                 case StdAtom.TABLE when value.PrimType == PrimType.VECTOR:
                     var vector = (ZilVector)value.GetPrimitive(this);
-                    result = ZilTable.Create(1, vector.ToArray(), 0, null);
+                    var wordSize = IsGlulx ? 4 : 2;
+                    result = ZilTable.Create(1, vector.ToArray(), 0, null, wordSize);
                     break;
 
                 // look it up in the typemap
@@ -1150,7 +1157,7 @@ B * <PRINTB .X>
     (NEXITSTR <STRING .S>))
 ]";
 
-            const string SDirectionsPropDef_V4_Etc = @"'[
+            const string SDirectionsPropDef_V4_Plus = @"'[
 (DIR TO R:ROOM =
     (UEXIT 2)
     (REXIT <ROOM .R>))
@@ -1181,7 +1188,42 @@ B * <PRINTB .X>
     <BYTE 0>)
 ]";
 
-            InitPropDef(StdAtom.DIRECTIONS, ZEnvironment.ZVersion == 3 ? SDirectionsPropDef_V3 : SDirectionsPropDef_V4_Etc);
+            const string SDirectionsPropDef_Glulx = @"'[
+(DIR TO R:ROOM =
+    (UEXIT 4)
+    (REXIT <ROOM .R>))
+(DIR SORRY S:STRING =
+    (NEXIT 5)
+    (NEXITSTR <STRING .S>)
+    <BYTE 0>)
+(DIR PER F:FCN =
+    (FEXIT 6)
+    (FEXITFCN <WORD .F>)
+    <BYTE 0>
+    <BYTE 0>)
+(DIR TO R:ROOM IF G:GLOBAL ""OPT"" ELSE S:STRING =
+    (CEXIT 12)
+    (REXIT <ROOM .R>)
+    (CEXITSTR <STRING .S>)
+    (CEXITFLAG <GLOBAL .G>))
+(DIR TO R:ROOM IF D:OBJECT IS OPEN ""OPT"" ELSE S:STRING =
+    (DEXIT 13)
+    (REXIT <ROOM .R>)
+    (DEXITOBJ <OBJECT .D>)
+    (DEXITSTR <STRING .S>)
+    <BYTE 0>)
+(DIR R:ROOM =
+    (UEXIT 4)
+    (REXIT <ROOM .R>))
+(DIR S:STRING =
+    (NEXIT 5)
+    (NEXITSTR <STRING .S>)
+    <BYTE 0>)
+]";
+
+            InitPropDef(
+                StdAtom.DIRECTIONS,
+                IsGlulx ? SDirectionsPropDef_Glulx :ZEnvironment.ZVersion == 3 ? SDirectionsPropDef_V3 : SDirectionsPropDef_V4_Plus);
         }
 
         void InitPropDef(StdAtom propName, string def)

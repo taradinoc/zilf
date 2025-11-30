@@ -98,7 +98,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
         /// <exception cref="InvalidOperationException">Wrong Z-machine version, or <paramref name="word"/> is not an adjective.</exception>
         /// <exception cref="ArgumentException">The word's AdjId has the wrong type.</exception>
-        public byte GetAdjectiveValue(IWord word)
+        public int GetAdjectiveValue(IWord word)
         {
             var nw = (NewParserWord)word;
 
@@ -116,19 +116,19 @@ namespace Zilf.ZModel.Vocab.NewParser
         }
 
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        public byte GetDirectionValue(IWord word)
+        public int GetDirectionValue(IWord word)
         {
             throw new NotSupportedException();
         }
 
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        public byte GetPrepositionValue(IWord word)
+        public int GetPrepositionValue(IWord word)
         {
             throw new NotSupportedException();
         }
 
         /// <exception cref="NotSupportedException">Always thrown.</exception>
-        public byte GetVerbValue(IWord word)
+        public int GetVerbValue(IWord word)
         {
             throw new NotSupportedException();
         }
@@ -451,7 +451,7 @@ namespace Zilf.ZModel.Vocab.NewParser
                     var actTableAtom = ZilAtom.Parse("ACT?" + ((ZilAtom)verbStuffId).Text, ctx);
                     var actConstant = helpers.CompileConstant(actTableAtom);
                     Debug.Assert(actConstant != null);
-                    wb.AddShort(actConstant);
+                    wb.AddWord(actConstant);
                     verbed = true;
                 }
             }
@@ -460,7 +460,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             {
                 if (zversion == 3)
                 {
-                    wb.AddShort(0);
+                    wb.AddWord(0);
                 }
                 else if (needSemanticStuff)
                 {
@@ -470,7 +470,7 @@ namespace Zilf.ZModel.Vocab.NewParser
 
             if (!ctx.GetCompilationFlagOption(StdAtom.WORD_FLAGS_IN_TABLE))
             {
-                wb.AddShort((short)nw.Flags);
+                wb.AddWord((short)nw.Flags);
             }
 
             if (ctx.GetCompilationFlagOption(StdAtom.ONE_BYTE_PARTS_OF_SPEECH))
@@ -493,7 +493,7 @@ namespace Zilf.ZModel.Vocab.NewParser
             }
             else
             {
-                wb.AddShort((short)nw.Classification);
+                wb.AddWord((short)nw.Classification);
             }
         }
 
@@ -516,7 +516,7 @@ namespace Zilf.ZModel.Vocab.NewParser
         {
             if (value == null)
             {
-                wb.AddShort(0);
+                wb.AddWord(0);
             }
             else
             {
@@ -528,11 +528,11 @@ namespace Zilf.ZModel.Vocab.NewParser
                         "vocab word",
                         word,
                         value.ToString()));
-                    wb.AddShort(0);
+                    wb.AddWord(0);
                 }
                 else
                 {
-                    wb.AddShort(operand);
+                    wb.AddWord(operand);
                 }
             }
         }
@@ -778,9 +778,9 @@ namespace Zilf.ZModel.Vocab.NewParser
                     Debug.Assert(wordFlagsList != null);
                 }
 
-                wordFlagTable.AddShort((short)filtered.Count);
+                wordFlagTable.AddWord((short)filtered.Count);
                 foreach (var operand in filtered)
-                    wordFlagTable.AddShort(operand);
+                    wordFlagTable.AddWord(operand);
             }
         }
     }

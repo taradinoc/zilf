@@ -72,17 +72,18 @@ namespace Zilf.Compiler
 
                 // built-in statements handled by ZBuiltins
                 var zversion = Context.ZEnvironment.ZVersion;
+                var isGlulx = Context.IsGlulx;
                 Debug.Assert(form.Rest != null);
                 var argCount = form.Rest.Count();
 
                 if (wantResult)
                 {
                     // prefer the gb version, then gb+predicate, predicate, void
-                    if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount, isGlulx))
                     {
                         return ZBuiltins.CompileValueCall(head.Text, this, rb, form, resultStorage);
                     }
-                    if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount, isGlulx))
                     {
                         var label1 = rb.DefineLabel();
                         resultStorage ??= rb.Stack;
@@ -90,7 +91,7 @@ namespace Zilf.Compiler
                         rb.MarkLabel(label1);
                         return resultStorage;
                     }
-                    if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount, isGlulx))
                     {
                         var label1 = rb.DefineLabel();
                         var label2 = rb.DefineLabel();
@@ -103,7 +104,7 @@ namespace Zilf.Compiler
                         rb.MarkLabel(label2);
                         return resultStorage;
                     }
-                    if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount, isGlulx))
                     {
                         ZBuiltins.CompileVoidCall(head.Text, this, rb, form);
                         return Game.One;
@@ -113,25 +114,25 @@ namespace Zilf.Compiler
                 {
                     // prefer the void version, then predicate, gb, gb+predicate
                     // (predicate saves a cleanup instruction)
-                    if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount, isGlulx))
                     {
                         ZBuiltins.CompileVoidCall(head.Text, this, rb, form);
                         return null;
                     }
-                    if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount, isGlulx))
                     {
                         var dummy = rb.DefineLabel();
                         ZBuiltins.CompilePredCall(head.Text, this, rb, form, dummy, true);
                         rb.MarkLabel(dummy);
                         return null;
                     }
-                    if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount, isGlulx))
                     {
                         if (ZBuiltins.CompileValueCall(head.Text, this, rb, form, null) == rb.Stack)
                             rb.EmitPopStack();
                         return null;
                     }
-                    if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount, isGlulx))
                     {
                         var label1 = rb.DefineLabel();
                         ZBuiltins.CompileValuePredCall(head.Text, this, rb, form, rb.Stack, label1, true);
@@ -204,7 +205,7 @@ namespace Zilf.Compiler
 
                     default:
                         // unrecognized
-                        if (!ZBuiltins.IsNearMatchBuiltin(head.Text, zversion, argCount, out var error))
+                        if (!ZBuiltins.IsNearMatchBuiltin(head.Text, zversion, argCount, isGlulx, out var error))
                         {
                             error = new CompilerError(CompilerMessages.Unrecognized_0_1, "routine or instruction", head);
                         }
@@ -329,8 +330,9 @@ namespace Zilf.Compiler
                     // check for standard built-ins
                     // prefer the value+predicate version, then value, predicate, void
                     var zversion = Context.ZEnvironment.ZVersion;
+                    var isGlulx = Context.IsGlulx;
                     var argCount = form.Count() - 1;
-                    if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount, isGlulx))
                     {
                         if (resultStorage == null)
                         {
@@ -341,7 +343,7 @@ namespace Zilf.Compiler
                         ZBuiltins.CompileValuePredCall(head.Text, this, rb, form, resultStorage, label, polarity);
                         return resultStorage;
                     }
-                    if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount, isGlulx))
                     {
                         result = ZBuiltins.CompileValueCall(head.Text, this, rb, form, resultStorage);
                         if (resultStorage != null && resultStorage != result)
@@ -359,7 +361,7 @@ namespace Zilf.Compiler
                         rb.BranchIfZero(result, label, !polarity);
                         return result;
                     }
-                    if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount, isGlulx))
                     {
                         if (resultStorage == null)
                         {
@@ -379,7 +381,7 @@ namespace Zilf.Compiler
                         rb.MarkLabel(label2);
                         return resultStorage;
                     }
-                    if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
+                    if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount, isGlulx))
                     {
                         ZBuiltins.CompileVoidCall(head.Text, this, rb, form);
 

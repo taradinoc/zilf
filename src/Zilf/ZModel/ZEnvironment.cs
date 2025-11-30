@@ -30,6 +30,7 @@ using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
+using Zilf.ZModel.Vocab.Glulx;
 using Zilf.ZModel.Vocab.NewParser;
 using Zilf.ZModel.Vocab.OldParser;
 
@@ -40,6 +41,11 @@ namespace Zilf.ZModel
     /// </summary>
     sealed class ZEnvironment
     {
+        /// <summary>
+        /// The fake ZVersion used to indicate that the compilation target is Glulx.
+        /// </summary>
+        public const int GLULX_ZVERSION = 1000;
+
         readonly Context ctx;
         IVocabFormat? vocabFormat;
 
@@ -154,7 +160,9 @@ namespace Zilf.ZModel
             {
                 if (vocabFormat == null)
                 {
-                    if (ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
+                    if (ZVersion == GLULX_ZVERSION)
+                        vocabFormat = new GlulxVocabFormat(ctx);
+                    else if (ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
                         vocabFormat = new NewParserVocabFormat(ctx);
                     else
                         vocabFormat = new OldParserVocabFormat(ctx);

@@ -21,10 +21,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Zilf.Emit.Zap;
+using Zilf.Emit.Glulx;
 using Zilf.Interpreter;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Common;
+using Zilf.ZModel;
 
 namespace Zilf.Compiler
 {
@@ -169,6 +171,31 @@ namespace Zilf.Compiler
             #endregion
         }
 
+        sealed class GlulxStreamFactory : IGlulxStreamFactory
+        {
+            readonly FrontEnd owner;
+            readonly string mainFile;
+
+            /// <exception cref="ArgumentException">mainFile is not a file name.</exception>
+            public GlulxStreamFactory(FrontEnd owner, string mainFile)
+            {
+                this.owner = owner;
+                this.mainFile = mainFile;
+
+                var dir = Path.GetDirectoryName(mainFile);
+                if (dir == null)
+                    throw new ArgumentException("Must be a file name.", nameof(mainFile));
+            }
+
+            public Stream CreateMainStream() => owner.FileSystem.OpenForWriting(mainFile);
+
+            public string GetMainFileName(bool withExt)
+            {
+                var result = mainFile;
+                return withExt ? result : Path.ChangeExtension(result, null);
+            }
+        }
+
         Context NewContext(RunMode runMode, bool wantDebugInfo)
         {
             var ignoreCase = runMode == RunMode.Interactive;
@@ -181,24 +208,27 @@ namespace Zilf.Compiler
         }
 
         internal FrontEndResult Interpret(Context ctx, string inputFileName) =>
-            InterpretOrCompile(ctx, inputFileName, null, false, false);
+            InterpretOrCompile(ctx, inputFileName, null, false, false, false);
 
         public FrontEndResult Compile(string inputFileName, string outputFileName, bool wantDebugInfo = false)
         {
             var ctx = NewContext(RunMode.Compiler, wantDebugInfo);
-            return Compile(ctx, inputFileName, outputFileName, ctx.WantDebugInfo);
+            return Compile(ctx, inputFileName, outputFileName, ctx.WantDebugInfo, false);
         }
 
-        internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo) =>
-            InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
+        internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo, bool useGlulx = false) =>
+            InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo, useGlulx);
 
         // FIXME: not supported by R#, sadly...
         //[ContractAnnotation("wantCompile: true => outputFileName: notnull")]
         //[ContractAnnotation("wantCompile: false => outputFileName: null")]
         FrontEndResult InterpretOrCompile(Context ctx, string inputFileName,
-             string? outputFileName, bool wantCompile, bool wantDebugInfo)
+             string? outputFileName, bool wantCompile, bool wantDebugInfo, bool useGlulx)
         {
             Debug.Assert(!wantCompile || outputFileName != null);
+
+            if (useGlulx)
+                ctx.SetZVersion(ZEnvironment.GLULX_ZVERSION);
 
             // open input file
             using var inputStream = FileSystem.OpenForReading(inputFileName);
@@ -227,16 +257,27 @@ namespace Zilf.Compiler
 
                     try
                     {
-                        var zversion = ctx.ZEnvironment.ZVersion;
-                        var streamFactory = new ZapStreamFactory(this, outputFileName);
-                        var gameOptions = MakeGameOptions(ctx);
+                        if (useGlulx)
+                        {
+                            var streamFactory = new GlulxStreamFactory(this, outputFileName);
+                            var gameOptions = new GlulxGameOptions();
 
-                        var builderOptions = wantDebugInfo ? GameBuilderOptions.WantDebugInfo : GameBuilderOptions.None;
-                        if (!streamFactory.FrequentWordsFileExists)
-                            builderOptions |= GameBuilderOptions.WantFrequentWords;
+                            using var gameBuilder = new Emit.Glulx.GameBuilder(streamFactory, gameOptions);
+                            Compilation.Compile(ctx, gameBuilder);
+                        }
+                        else
+                        {
+                            var zversion = ctx.ZEnvironment.ZVersion;
+                            var streamFactory = new ZapStreamFactory(this, outputFileName);
+                            var gameOptions = MakeGameOptions(ctx);
 
-                        using var gameBuilder = new GameBuilder(zversion, streamFactory, builderOptions, gameOptions);
-                        Compilation.Compile(ctx, gameBuilder);
+                            var builderOptions = wantDebugInfo ? GameBuilderOptions.WantDebugInfo : GameBuilderOptions.None;
+                            if (!streamFactory.FrequentWordsFileExists)
+                                builderOptions |= GameBuilderOptions.WantFrequentWords;
+
+                            using var gameBuilder = new Emit.Zap.GameBuilder(zversion, streamFactory, builderOptions, gameOptions);
+                            Compilation.Compile(ctx, gameBuilder);
+                        }
                     }
                     catch (ZilErrorBase ex)     // catch fatals too
                     {

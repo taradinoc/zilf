@@ -22,7 +22,7 @@ namespace Zilf.Emit
     {
         void AddByte(byte value);
         void AddByte(IOperand value);
-        void AddShort(short value);
-        void AddShort(IOperand value);
+        void AddWord(int value);
+        void AddWord(IOperand value);
     }
 }

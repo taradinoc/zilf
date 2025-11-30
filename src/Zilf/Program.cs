@@ -126,6 +126,11 @@ namespace Zilf
                 Description = "Include debug information in output."
             };
 
+            var glulxOption = new Option<bool>("--glulx", "-g")
+            {
+                Description = "Target Glulx VM instead of Z-machine (experimental)."
+            };
+
             var root = new RootCommand("Compile ZIL source files into Z-machine assembly and optionally invokes ZAPF to produce a story file.")
             {
                 TreatUnmatchedTokensAsErrors = true
@@ -139,6 +144,7 @@ namespace Zilf
             root.Options.Add(includePathOption);
             root.Options.Add(traceRoutinesOption);
             root.Options.Add(debugInfoOption);
+            root.Options.Add(glulxOption);
             root.Options.Add(enableAllWarningsOption);
             root.Options.Add(warningsAsErrorsOption);
             root.Options.Add(suppressWarningsOption);
@@ -267,6 +273,7 @@ namespace Zilf
                 includePathOption,
                 traceRoutinesOption,
                 debugInfoOption,
+                glulxOption,
                 enableAllWarningsOption,
                 warningsAsErrorsOption,
                 suppressWarningsOption,
@@ -343,6 +350,7 @@ namespace Zilf
             Option<string[]> IncludePathOption,
             Option<bool> TraceRoutinesOption,
             Option<bool> DebugInfoOption,
+            Option<bool> GlulxOption,
             Option<bool> EnableAllWarningsOption,
             Option<bool> WarningsAsErrorsOption,
             Option<string[]> SuppressWarningsOption,
@@ -389,11 +397,12 @@ namespace Zilf
             outFile = string.IsNullOrEmpty(output) ? Path.ChangeExtension(inputFile, ".zap") : output;
 
             // Perform compilation, then optionally invoke ZAPF
+            var useGlulx = parseResult.GetValue(spec.GlulxOption);
             var frontEnd = new FrontEnd();
             FrontEndResult result;
             try
             {
-                result = frontEnd.Compile(ctx, inputFile, outFile, ctx.WantDebugInfo);
+                result = frontEnd.Compile(ctx, inputFile, outFile, ctx.WantDebugInfo, useGlulx);
             }
             catch (FileNotFoundException ex)
             {
@@ -431,9 +440,13 @@ namespace Zilf
             }
 
             // If requested, stop after compile
+            // Also stop for Glulx since we don't have an integrated assembler
             var stopAfter = parseResult.GetValue(spec.StopAfterCompileOption);
-            if (stopAfter)
+
+            if (stopAfter || useGlulx)
+            {
                 return 0;
+            }
 
             // Prepare Zapf invocation
             var zapfArgsRaw = parseResult.GetValue(spec.ZapfPassThroughOption) ?? Array.Empty<string>();

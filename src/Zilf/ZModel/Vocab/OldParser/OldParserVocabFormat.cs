@@ -154,10 +154,10 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         static byte GetPart(IWord word, PartOfSpeech part) => ((OldParserWord)word).GetValue(part);
 
-        public byte GetPrepositionValue(IWord word) => GetPart(word, PartOfSpeech.Preposition);
-        public byte GetAdjectiveValue(IWord word) => GetPart(word, PartOfSpeech.Adjective);
-        public byte GetVerbValue(IWord word) => GetPart(word, PartOfSpeech.Verb);
-        public byte GetDirectionValue(IWord word) => GetPart(word, PartOfSpeech.Direction);
+        public int GetPrepositionValue(IWord word) => GetPart(word, PartOfSpeech.Preposition);
+        public int GetAdjectiveValue(IWord word) => GetPart(word, PartOfSpeech.Adjective);
+        public int GetVerbValue(IWord word) => GetPart(word, PartOfSpeech.Verb);
+        public int GetDirectionValue(IWord word) => GetPart(word, PartOfSpeech.Direction);
 
         public string[] GetReservedGlobalNames()
         {
@@ -206,16 +206,16 @@ namespace Zilf.ZModel.Vocab.OldParser
             var prepositions = query.ToArray();
 
             // build the table
-            prepositionsTable.AddShort((short)prepositions.Length);
+            prepositionsTable.AddWord((short)prepositions.Length);
 
             foreach (var p in prepositions)
             {
-                prepositionsTable.AddShort(p.builder);
+                prepositionsTable.AddWord(p.builder);
 
                 if (compactVocab)
                     prepositionsTable.AddByte(p.constant);
                 else
-                    prepositionsTable.AddShort(p.constant);
+                    prepositionsTable.AddWord(p.constant);
             }
         }
     }

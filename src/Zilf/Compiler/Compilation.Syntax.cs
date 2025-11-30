@@ -76,7 +76,7 @@ namespace Zilf.Compiler
             {
                 // syntax table
                 var stbl = Game.DefineTable("ST?" + verb.Key.Atom, true);
-                verbTable.AddShort(stbl);
+                verbTable.AddWord(stbl);
 
                 stbl.AddByte((byte)verb.Count());
 
@@ -160,24 +160,24 @@ namespace Zilf.Compiler
                            select a.Value;
             foreach (var act in actquery)
             {
-                actionTable.AddShort(act.Routine);
+                actionTable.AddWord(act.Routine);
                 if (compactPreactions)
                 {
                     if (act.PreRoutine != null)
                     {
-                        preactionTable.AddShort(act.Constant);
-                        preactionTable.AddShort(act.PreRoutine);
+                        preactionTable.AddWord(act.Constant);
+                        preactionTable.AddWord(act.PreRoutine);
                     }
                 }
                 else
                 {
-                    preactionTable.AddShort((IOperand?)act.PreRoutine ?? Game.Zero);
+                    preactionTable.AddWord((IOperand?)act.PreRoutine ?? Game.Zero);
                 }
             }
             if (compactPreactions)
             {
-                preactionTable.AddShort(-1);
-                preactionTable.AddShort(0);
+                preactionTable.AddWord(-1);
+                preactionTable.AddWord(0);
             }
         }
 
@@ -214,64 +214,64 @@ namespace Zilf.Compiler
                 if (verb.Nullary != null)
                 {
                     var act = ValidateAction(actions, verb.Nullary);
-                    acttbl.AddShort(act != null ? act.Constant : Game.Zero);
+                    acttbl.AddWord(act != null ? act.Constant : Game.Zero);
                 }
                 else
                 {
-                    acttbl.AddShort(-1);
+                    acttbl.AddWord(-1);
                 }
 
                 // reserved word
-                acttbl.AddShort(0);
+                acttbl.AddWord(0);
 
                 // 1-object syntaxes
                 if (verb.Unary.Length > 0)
                 {
                     var utbl = Game.DefineTable(null, true);
-                    utbl.AddShort((short)verb.Unary.Length);
+                    utbl.AddWord((short)verb.Unary.Length);
 
                     foreach (var line in verb.Unary)
                     {
                         var act = ValidateAction(actions, line);
-                        utbl.AddShort(act?.Constant ?? Game.Zero);
+                        utbl.AddWord(act?.Constant ?? Game.Zero);
 
-                        utbl.AddShort(line.Preposition1 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition1]);
+                        utbl.AddWord(line.Preposition1 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition1]);
                         utbl.AddByte((IOperand?)GetFlag(line.FindFlag1) ?? Game.Zero);
                         utbl.AddByte(line.Options1);
                     }
 
-                    acttbl.AddShort(utbl);
+                    acttbl.AddWord(utbl);
                 }
                 else
                 {
-                    acttbl.AddShort(0);
+                    acttbl.AddWord(0);
                 }
 
                 // 2-object syntaxes
                 if (verb.Binary.Length > 0)
                 {
                     var btbl = Game.DefineTable(null, true);
-                    btbl.AddShort((short)verb.Binary.Length);
+                    btbl.AddWord((short)verb.Binary.Length);
 
                     foreach (var line in verb.Binary)
                     {
                         var act = ValidateAction(actions, line);
-                        btbl.AddShort(act?.Constant ?? Game.Zero);
+                        btbl.AddWord(act?.Constant ?? Game.Zero);
 
-                        btbl.AddShort(line.Preposition1 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition1]);
+                        btbl.AddWord(line.Preposition1 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition1]);
                         btbl.AddByte((IOperand?)GetFlag(line.FindFlag1) ?? Game.Zero);
                         btbl.AddByte(line.Options1);
 
-                        btbl.AddShort(line.Preposition2 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition2]);
+                        btbl.AddWord(line.Preposition2 == null ? (IOperand)Game.Zero : Vocabulary[line.Preposition2]);
                         btbl.AddByte((IOperand?)GetFlag(line.FindFlag2) ?? Game.Zero);
                         btbl.AddByte(line.Options2);
                     }
 
-                    acttbl.AddShort(btbl);
+                    acttbl.AddWord(btbl);
                 }
                 else
                 {
-                    acttbl.AddShort(0);
+                    acttbl.AddWord(0);
                 }
             }
 
@@ -281,8 +281,8 @@ namespace Zilf.Compiler
                            select a.Value;
             foreach (var act in actquery)
             {
-                actionTable.AddShort(act.Routine);
-                preactionTable.AddShort((IOperand?)act.PreRoutine ?? Game.Zero);
+                actionTable.AddWord(act.Routine);
+                preactionTable.AddWord((IOperand?)act.PreRoutine ?? Game.Zero);
             }
         }
 

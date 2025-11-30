@@ -624,7 +624,7 @@ namespace Zilf.Compiler
 
                                 var word = Context.ZEnvironment.GetVocabNoun(atom, src);
                                 var wb = Vocabulary[word];
-                                tb.AddShort(wb);
+                                tb.AddWord(wb);
                                 length += 2;
                             }
                             break;
@@ -649,7 +649,7 @@ namespace Zilf.Compiler
                                 }
                                 else
                                 {
-                                    tb.AddShort(wb);
+                                    tb.AddWord(wb);
                                     length += 2;
                                 }
                             }
@@ -664,11 +664,11 @@ namespace Zilf.Compiler
                                 {
                                     var word = Context.ZEnvironment.GetVocabNoun(ZilAtom.Parse(str.Text, Context), src);
                                     var wb = Vocabulary[word];
-                                    tb.AddShort(wb);
+                                    tb.AddWord(wb);
                                 }
                                 else
                                 {
-                                    tb.AddShort(CompileConstant(obj)!);
+                                    tb.AddWord(CompileConstant(obj)!);
                                 }
                                 length += 2;
                             }
@@ -737,7 +737,7 @@ namespace Zilf.Compiler
                                     obj));
                                 word = Game.Zero;
                             }
-                            tb.AddShort(word);
+                            tb.AddWord(word);
                             length += 2;
                         }
                     }

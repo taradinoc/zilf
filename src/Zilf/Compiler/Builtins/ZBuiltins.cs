@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using Zilf.Common;
 using Zilf.Diagnostics;
@@ -97,40 +98,40 @@ namespace Zilf.Compiler.Builtins
             return Array.Empty<ISignature>();
         }
 
-        public static bool IsBuiltinValueCall(string name, int zversion, int argCount)
+        public static bool IsBuiltinValueCall(string name, int zversion, int argCount, bool isGlulx)
         {
             // Check generated parsers using capability checking
             // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
             int normalizedVersion = zversion > 6 ? 5 : zversion;
             return GeneratedBuiltinParsers.ValueCallParsers.TryGetValue(name, out var valueEntry) &&
-                   valueEntry.SupportsCall(normalizedVersion, argCount);
+                   valueEntry.SupportsCall(normalizedVersion, argCount, isGlulx);
         }
 
-        public static bool IsBuiltinVoidCall(string name, int zversion, int argCount)
+        public static bool IsBuiltinVoidCall(string name, int zversion, int argCount, bool isGlulx)
         {
             // Check generated parsers using capability checking
             // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
             int normalizedVersion = zversion > 6 ? 5 : zversion;
             return GeneratedBuiltinParsers.VoidCallParsers.TryGetValue(name, out var voidEntry) &&
-                   voidEntry.SupportsCall(normalizedVersion, argCount);
+                   voidEntry.SupportsCall(normalizedVersion, argCount, isGlulx);
         }
 
-        public static bool IsBuiltinPredCall(string name, int zversion, int argCount)
+        public static bool IsBuiltinPredCall(string name, int zversion, int argCount, bool isGlulx)
         {
             // Check generated parsers using capability checking
             // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
             int normalizedVersion = zversion > 6 ? 5 : zversion;
             return GeneratedBuiltinParsers.PredCallParsers.TryGetValue(name, out var predEntry) &&
-                   predEntry.SupportsCall(normalizedVersion, argCount);
+                   predEntry.SupportsCall(normalizedVersion, argCount, isGlulx);
         }
 
-        public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount)
+        public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount, bool isGlulx)
         {
             // Check generated parsers using capability checking
             // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
             int normalizedVersion = zversion > 6 ? 5 : zversion;
             return GeneratedBuiltinParsers.ValuePredCallParsers.TryGetValue(name, out var valuePredEntry) &&
-                   valuePredEntry.SupportsCall(normalizedVersion, argCount);
+                   valuePredEntry.SupportsCall(normalizedVersion, argCount, isGlulx);
         }
 
         public static bool IsBuiltinWithSideEffects(string name, int zversion, int argCount)
@@ -141,7 +142,7 @@ namespace Zilf.Compiler.Builtins
             return GeneratedBuiltinParsers.HasSideEffects(name);
         }
 
-        public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, [NotNullWhen(true)] out CompilerError? error)
+        public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, bool isGlulx, [NotNullWhen(true)] out CompilerError? error)
         {
             // Check if the builtin name exists in any generated parser dictionary
             bool hasVoidCall = GeneratedBuiltinParsers.VoidCallParsers.ContainsKey(name);
@@ -158,14 +159,14 @@ namespace Zilf.Compiler.Builtins
                 // Try different argument counts to see if any would work with this version
                 for (int testArgCount = 0; testArgCount <= 10; testArgCount++) // reasonable upper bound
                 {
-                    if ((hasVoidCall && GeneratedBuiltinParsers.VoidCallParsers[name].SupportsCall(normalizedVersion, testArgCount)) ||
-                        (hasValueCall && GeneratedBuiltinParsers.ValueCallParsers[name].SupportsCall(normalizedVersion, testArgCount)) ||
-                        (hasPredCall && GeneratedBuiltinParsers.PredCallParsers[name].SupportsCall(normalizedVersion, testArgCount)) ||
-                        (hasValuePredCall && GeneratedBuiltinParsers.ValuePredCallParsers[name].SupportsCall(normalizedVersion, testArgCount)))
+                    if ((hasVoidCall && GeneratedBuiltinParsers.VoidCallParsers[name].SupportsCall(normalizedVersion, testArgCount, isGlulx)) ||
+                        (hasValueCall && GeneratedBuiltinParsers.ValueCallParsers[name].SupportsCall(normalizedVersion, testArgCount, isGlulx)) ||
+                        (hasPredCall && GeneratedBuiltinParsers.PredCallParsers[name].SupportsCall(normalizedVersion, testArgCount, isGlulx)) ||
+                        (hasValuePredCall && GeneratedBuiltinParsers.ValuePredCallParsers[name].SupportsCall(normalizedVersion, testArgCount, isGlulx)))
                     {
                         // Found a working arg count for this version - this is a wrong argument count error
                         // Get the specific argument count ranges from the builtin metadata
-                        var ranges = GetArgumentCountRanges(name, normalizedVersion);
+                        var ranges = GetArgumentCountRanges(name, normalizedVersion, isGlulx);
                         if (ranges.Count > 0)
                         {
                             error = CompilerError.WrongArgCount(name, ranges);
@@ -180,7 +181,11 @@ namespace Zilf.Compiler.Builtins
                 }
 
                 // No working arg count found for this version - version not supported
-                error = new CompilerError(CompilerMessages._0_Is_Not_Supported_In_This_Zmachine_Version, name);
+                error = new CompilerError(
+                    isGlulx
+                        ? CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx
+                        : CompilerMessages._0_Is_Not_Supported_In_This_Zmachine_Version,
+                    name);
                 return true;
             }
 
@@ -189,7 +194,7 @@ namespace Zilf.Compiler.Builtins
             return false;
         }
 
-        private static List<ArgCountRange> GetArgumentCountRanges(string name, int normalizedVersion)
+        private static List<ArgCountRange> GetArgumentCountRanges(string name, int normalizedVersion, bool isGlulx)
         {
             var ranges = new List<ArgCountRange>();
 
@@ -201,7 +206,14 @@ namespace Zilf.Compiler.Builtins
                     // For Z-code builtins, check if this signature applies to the current version
                     if (signature is ZBuiltinSignature zSignature)
                     {
-                        if (normalizedVersion >= zSignature.MinVersion && normalizedVersion <= zSignature.MaxVersion)
+                        bool platformMatch = zSignature.Platform switch
+                        {
+                            BuiltinPlatform.ZMachineOnly => !isGlulx,
+                            BuiltinPlatform.GlulxOnly => isGlulx,
+                            _ => true,
+                        };
+
+                        if (platformMatch && normalizedVersion >= zSignature.MinVersion && normalizedVersion <= zSignature.MaxVersion)
                         {
                             ranges.Add(new ArgCountRange(signature.MinArgs, signature.MaxArgs));
                         }
@@ -1024,8 +1036,8 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("FIRST?", Data = false, Summary = "Gets the first child of an object.")]
-        [Builtin("NEXT?", Data = true, Summary = "Gets the sibling of an object.")]
+        [Builtin("FIRST?", Data = false, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Gets the first child of an object.")]
+        [Builtin("NEXT?", Data = true, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Gets the sibling of an object.")]
         public static void UnaryObjectValuePredOp(
             ValuePredCall c, [Data] bool sibling, [Object] IOperand obj)
         {
@@ -1033,6 +1045,26 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitGetSibling(obj, c.resultStorage, c.label, c.polarity);
             else
                 c.rb.EmitGetChild(obj, c.resultStorage, c.label, c.polarity);
+        }
+
+        [Builtin("FIRST?", Data = false, Platform = BuiltinPlatform.GlulxOnly, Summary = "Gets the first child of an object.")]
+        [Builtin("NEXT?", Data = true, Platform = BuiltinPlatform.GlulxOnly, Summary = "Gets the sibling of an object.")]
+        public static IOperand UnaryObjectValueOp_Glulx(
+            ValueCall c, [Data] bool sibling, [Object] IOperand obj)
+        {
+            if (c.rb is IProvideNoValuePredEmit nvpe)
+            {
+                if (sibling)
+                    nvpe.EmitGetSibling(obj, c.resultStorage);
+                else
+                    nvpe.EmitGetChild(obj, c.resultStorage);
+
+                return c.resultStorage;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
 
         [Builtin("PTSIZE", Data = UnaryOp.GetPropSize, Summary = "Returns the size of an object's property.")]
@@ -1871,7 +1903,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <returns>False if the restore failed. Does not return if it succeeded.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("RESTORE", "ZRESTORE", MaxVersion = 3, HasSideEffect = true)]
+        [Builtin("RESTORE", "ZRESTORE", MaxVersion = 3, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
         public static void RestoreOp_V3(PredCall c)
         {
             if (c.rb.HasBranchSave)
@@ -1890,7 +1922,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <returns>Zero if the restore failed. Does not return if it succeeded.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("RESTORE", "ZRESTORE", MinVersion = 4, HasSideEffect = true)]
+        [Builtin("RESTORE", "ZRESTORE", MinVersion = 4, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
         public static IOperand RestoreOp_V4(ValueCall c)
         {
             if (c.rb.HasStoreSave)
@@ -1910,7 +1942,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="name">The address of the buffer containing the file name prefixed by a length byte. If omitted, restores a saved game state.</param>
         /// <returns>The number of bytes loaded from the file, or zero if restoring a saved game state.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("RESTORE", "ZRESTORE", MinVersion = 5, HasSideEffect = true)]
+        [Builtin("RESTORE", "ZRESTORE", MinVersion = 5, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
         public static IOperand RestoreOp_V5(ValueCall c, [Table] IOperand table,
             IOperand bytes, [Table] IOperand name)
         {
@@ -1922,13 +1954,20 @@ namespace Zilf.Compiler.Builtins
             throw new NotSupportedException($"{nameof(RestoreOp_V5)} without {nameof(c.rb.HasExtendedSave)}");
         }
 
+        [Builtin("RESTORE", "ZRESTORE", HasSideEffect = true, Platform = BuiltinPlatform.GlulxOnly)]
+        public static IOperand RestoreOp_Glulx(ValueCall c)
+        {
+            c.rb.EmitRestore(c.resultStorage);
+            return c.resultStorage;
+        }
+
         /// <summary>
         /// Saves the game state.
         /// </summary>
         /// <param name="c"></param>
         /// <returns>False if the save failed, or true if it succeeded.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("SAVE", "ZSAVE", MaxVersion = 3, HasSideEffect = true)]
+        [Builtin("SAVE", "ZSAVE", MaxVersion = 3, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
         public static void SaveOp_V3(PredCall c)
         {
             if (c.rb.HasBranchSave)
@@ -1937,7 +1976,7 @@ namespace Zilf.Compiler.Builtins
             }
             else
             {
-                throw new NotSupportedException($"{nameof(SaveOp_V3)} without {nameof(c.rb.HasBranchSave)}");
+                throw new NotSupportedException($"{nameof(SaveOp_V3)} without {nameof(c.rb.HasBranchSave)} (current version is {c.cc.Context.ZEnvironment.ZVersion})");
             }
         }
 
@@ -1947,7 +1986,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <returns>Zero if the save failed, 1 if it succeeded, or 2 when the game state is being restored later.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("SAVE", "ZSAVE", MinVersion = 4, HasSideEffect = true)]
+        [Builtin("SAVE", "ZSAVE", MinVersion = 4, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
         public static IOperand SaveOp_V4(ValueCall c)
         {
             if (c.rb.HasStoreSave)
@@ -1967,7 +2006,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="name">The address of the buffer containing the file name prefixed by a length byte. If omitted, saves the game state.</param>
         /// <returns>Zero if the save failed, 1 if it succeeded, or 2 when the game state is being restored later.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("SAVE", "ZSAVE", MinVersion = 5, HasSideEffect = true)]
+        [Builtin("SAVE", "ZSAVE", MinVersion = 5, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
         public static IOperand SaveOp_V5(ValueCall c, [Table] IOperand table,
             IOperand bytes, [Table] IOperand name)
         {
@@ -1977,6 +2016,13 @@ namespace Zilf.Compiler.Builtins
                 return c.resultStorage;
             }
             throw new NotSupportedException($"{nameof(SaveOp_V5)} without {nameof(c.rb.HasExtendedSave)}");
+        }
+
+        [Builtin("SAVE", "ZSAVE", HasSideEffect = true, Platform = BuiltinPlatform.GlulxOnly)]
+        public static IOperand SaveOp_Glulx(ValueCall c)
+        {
+            c.rb.EmitSave(c.resultStorage);
+            return c.resultStorage;
         }
 
         #endregion
@@ -2136,7 +2182,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="table">The address of the table to search in.</param>
         /// <param name="length">The length of the table in words.</param>
         /// <returns>The address of the word in the table, or zero if it wasn't found.</returns>
-        [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4)]
+        [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4, Platform = BuiltinPlatform.ZMachineOnly)]
         [return: Table]
         public static void IntblValuePredOp_V4(ValuePredCall c,
             IOperand value, [Table] IOperand table, IOperand length)
@@ -2152,12 +2198,36 @@ namespace Zilf.Compiler.Builtins
         /// <param name="table">The address of the table to search in.</param>
         /// <param name="length">The length of the table in words.</param>
         /// <param name="form">The length of each field in the table (in bytes), with the high bit set for words and cleared for bytes. If omitted, defaults to $82 (words, 2-byte fields).</param>
-        [Builtin("INTBL?", MinVersion = 5)]
+        [Builtin("INTBL?", MinVersion = 5, Platform = BuiltinPlatform.ZMachineOnly)]
         [return: Table]
         public static void IntblValuePredOp_V5(ValuePredCall c,
             IOperand value, [Table] IOperand table, IOperand length, IOperand? form = null)
         {
             c.rb.EmitScanTable(value, table, length, form, c.resultStorage, c.label, c.polarity);
+        }
+
+        /// <summary>
+        /// Searches for a value in a table.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="value">The value to search for.</param>
+        /// <param name="table">The address of the table to search in.</param>
+        /// <param name="length">The length of the table in words.</param>
+        /// <param name="form">The length of each field in the table (in bytes), with the high bit set for words and cleared for bytes. If omitted, defaults to $82 (words, 2-byte fields).</param>
+        [Builtin("INTBL?", Platform = BuiltinPlatform.GlulxOnly)]
+        [return: Table]
+        public static IOperand IntblValueOp_Glulx(ValueCall c,
+            IOperand value, [Table] IOperand table, IOperand length, IOperand? form = null)
+        {
+            if (c.rb is IProvideNoValuePredEmit nvpe)
+            {
+                nvpe.EmitScanTable(value, table, length, form, c.resultStorage);
+                return c.resultStorage;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
 
         static bool TryGetLowCoreField(string name, Context ctx, ISourceLine src, ZilObject fieldSpec, bool writing,
@@ -2252,8 +2322,8 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <param name="fieldSpec">The name of a header field to read, or a list consisting of the header field name and either 0 or 1 to read the high or low byte.</param>
         /// <returns>The value of the header field.</returns>
-        [Builtin("LOWCORE")]
-        public static IOperand LowCoreReadOp(ValueCall c, ZilObject fieldSpec)
+        [Builtin("LOWCORE", Platform = BuiltinPlatform.ZMachineOnly)]
+        public static IOperand LowCoreReadOp_Z(ValueCall c, ZilObject fieldSpec)
         {
             if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out var offset, out var flags, out _))
                 return c.cc.Game.Zero;
@@ -2280,8 +2350,8 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <param name="fieldSpec">The name of a header field to write, or a list consisting of the header field name and either 0 or 1 to write the high or low byte.</param>
         /// <param name="newValue"></param>
-        [Builtin("LOWCORE", HasSideEffect = true)]
-        public static void LowCoreWriteOp(VoidCall c, ZilObject fieldSpec, IOperand newValue)
+        [Builtin("LOWCORE", HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
+        public static void LowCoreWriteOp_Z(VoidCall c, ZilObject fieldSpec, IOperand newValue)
         {
             if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, true, out var offset, out var flags, out _))
                 return;
@@ -2308,8 +2378,8 @@ namespace Zilf.Compiler.Builtins
         /// <param name="length">The number of bytes to iterate over.</param>
         /// <param name="handler">The handler routine to call for each byte.</param>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
-        [Builtin("LOWCORE-TABLE", HasSideEffect = true)]
-        public static void LowCoreTableOp(VoidCall c, ZilObject fieldSpec, int length, ZilAtom handler)
+        [Builtin("LOWCORE-TABLE", HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
+        public static void LowCoreTableOp_Z(VoidCall c, ZilObject fieldSpec, int length, ZilAtom handler)
         {
             if (!TryGetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out var offset, out var flags, out _))
                 return;
@@ -2337,6 +2407,71 @@ namespace Zilf.Compiler.Builtins
             {
                 c.cc.PopInnerLocal(tmpAtom);
             }
+        }
+
+        /// <summary>
+        /// Reads a field from the low memory area (header and extension table).
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="fieldSpec">The name of a header field to read, or a list consisting of the header field name and either 0 or 1 to read the high or low byte.</param>
+        /// <returns>The value of the header field.</returns>
+        [Builtin("LOWCORE", Platform = BuiltinPlatform.GlulxOnly)]
+        public static IOperand LowCoreReadOp_Glulx(ValueCall c, ZilAtom fieldSpec)
+        {
+            if (c.rb is IProvideLowCoreEmulation emulator)
+            {
+                if (emulator.TryEmitLowCoreRead(fieldSpec.Text, c.resultStorage))
+                    return c.resultStorage;
+            }
+
+            throw new CompilerError(
+                CompilerMessages._0_Field_1_Is_Not_Supported_When_Targeting_Glulx,
+                "LOWCORE",
+                fieldSpec);
+        }
+
+        [Builtin("LOWCORE-TABLE")]
+        public static void LowCoreTableOp_Glulx(VoidCall c, ZilAtom fieldSpec, int length, ZilAtom handler)
+        {
+            if (c.rb is IProvideLowCoreEmulation emulator)
+            {
+                var tmpAtom1 = ZilAtom.Parse("?TMP", c.cc.Context);
+                var lbStart = c.cc.PushInnerLocal(c.rb, tmpAtom1, LocalBindingType.CompilerTemporary, c.form.SourceLine);
+                try
+                {
+                    var tmpAtom2 = ZilAtom.Parse("?TMP2", c.cc.Context);
+                    var lbEnd = c.cc.PushInnerLocal(c.rb, tmpAtom2, LocalBindingType.CompilerTemporary, c.form.SourceLine);
+                    try
+                    {
+                        if (emulator.TryEmitLowCoreGetTable(fieldSpec.Text, lbStart))
+                        {
+                            c.rb.EmitBinary(BinaryOp.Add, lbStart, c.cc.Game.MakeOperand(length - 1), lbEnd);
+
+                            var label = c.rb.DefineLabel();
+                            c.rb.MarkLabel(label);
+
+                            var form = (ZilForm)Program.Parse(c.cc.Context, c.form.SourceLine, "<{0} <GETB 0 .{1}>>", handler, tmpAtom1).Single();
+                            c.cc.CompileForm(c.rb, form, false, null);
+
+                            c.rb.Branch(Condition.IncCheck, lbStart, lbEnd, label, false);
+                            return;
+                        }
+                    }
+                    finally
+                    {
+                        c.cc.PopInnerLocal(tmpAtom2);
+                    }
+                }
+                finally
+                {
+                    c.cc.PopInnerLocal(tmpAtom1);
+                }
+            }
+
+            throw new CompilerError(
+                CompilerMessages._0_Field_1_Is_Not_Supported_When_Targeting_Glulx,
+                "LOWCORE-TABLE",
+                fieldSpec);
         }
 
         [Builtin("ITABLE", Summary = "Defines a new table initialized by repeatedly evaluating an expression.")]

@@ -91,19 +91,20 @@ namespace Zilf.Compiler
             // prefer the predicate version, then value, value+predicate, void
             // (value+predicate is hard to clean up)
             var zversion = Context.ZEnvironment.ZVersion;
+            var isGlulx = Context.IsGlulx;
             var argCount = form.Count() - 1;
-            if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount))
+            if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount, isGlulx))
             {
                 ZBuiltins.CompilePredCall(head.Text, this, rb, form, label, polarity);
                 return;
             }
-            if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount))
+            if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount, isGlulx))
             {
                 var result = ZBuiltins.CompileValueCall(head.Text, this, rb, form, rb.Stack);
                 BranchIfNonZero(result);
                 return;
             }
-            if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount))
+            if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount, isGlulx))
             {
                 if (rb.CleanStack)
                 {
@@ -120,7 +121,7 @@ namespace Zilf.Compiler
                 }
                 return;
             }
-            if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount))
+            if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount, isGlulx))
             {
                 ZBuiltins.CompileVoidCall(head.Text, this, rb, form);
 
@@ -287,7 +288,7 @@ namespace Zilf.Compiler
                     // for OR, if the value is true we want to return it; otherwise discard it and try the next expr
                     // however, if the expr is a predicate anyway, we can branch out of the OR if it's true;
                     // otherwise fall through to the next expr
-                    if (first.IsPredicate(Context.ZEnvironment.ZVersion))
+                    if (first.IsPredicate(Context.ZEnvironment.ZVersion, Context.IsGlulx))
                     {
                         CompileCondition(rb, first, src, TrueLabelProvider(), true);
                         // fall through to nextLabel
@@ -510,6 +511,7 @@ namespace Zilf.Compiler
                             StdAtom.EZIP => 4,
                             StdAtom.XZIP => 5,
                             StdAtom.YZIP => 6,
+                            StdAtom.GLULX => ZModel.ZEnvironment.GLULX_ZVERSION,
                             StdAtom.ELSE or StdAtom.T => 0,
                             _ => throw new CompilerError(CompilerMessages.Unrecognized_Atom_In_VERSION_Must_Be_ZIP_EZIP_XZIP_YZIP_ELSET),
                         };

@@ -661,7 +661,7 @@ namespace Zilf.Interpreter
 
             CheckForTableLengthPrefixOverflow(ctx, "ITABLE", flags, elementCount);
 
-            var tab = ZilTable.Create(count, initializer.Length == 0 ? null : initializer, flags, null);
+            var tab = ZilTable.Create(count, initializer.Length == 0 ? null : initializer, flags, null, ctx.ZWordSize);
             tab.SourceLine = ctx.TopFrame.SourceLine;
             if ((flags & TableFormat.TempTable) == 0)
                 ctx.ZEnvironment.Tables.Add(tab);
@@ -809,7 +809,7 @@ namespace Zilf.Interpreter
 
             CheckForTableLengthPrefixOverflow(ctx, name, flags, newValues.Count);
 
-            var tab = ZilTable.Create(1, newValues.ToArray(), flags, pattern?.ToArray());
+            var tab = ZilTable.Create(1, newValues.ToArray(), flags, pattern?.ToArray(), ctx.ZWordSize);
             tab.SourceLine = ctx.TopFrame.SourceLine;
             if (!tempTable)
                 ctx.ZEnvironment.Tables.Add(tab);
@@ -899,7 +899,7 @@ namespace Zilf.Interpreter
 
             var table = (ZilTable)tableish.GetPrimitive(ctx);
 
-            if (index * 2 > table.ByteCount - 2)
+            if (index * ctx.ZWordSize > table.ByteCount - ctx.ZWordSize)
                 throw new InterpreterError(InterpreterMessages._0_Reading_Past_End_Of_Structure, "ZGET");
 
             try
@@ -926,7 +926,7 @@ namespace Zilf.Interpreter
 
             var table = (ZilTable)tableish.GetPrimitive(ctx);
 
-            if (index * 2 > table.ByteCount - 2)
+            if (index * ctx.ZWordSize > table.ByteCount - ctx.ZWordSize)
                 throw new InterpreterError(InterpreterMessages._0_Writing_Past_End_Of_Structure, "ZPUT");
 
             table.PutWord(ctx, index, newValue);
@@ -997,6 +997,10 @@ namespace Zilf.Interpreter
              ZilObject versionExpr,
              [Decl("'TIME")] ZilAtom? time = null)
         {
+            // silently ignore the change if we're already in Glulx mode
+            if (ctx.IsGlulx)
+                return new ZilFix(ZEnvironment.GLULX_ZVERSION);
+
             var newVersion = ParseZVersion("VERSION", versionExpr);
 
             ctx.SetZVersion(newVersion);
@@ -1031,10 +1035,11 @@ namespace Zilf.Interpreter
                         "EZIP" => 4,
                         "XZIP" => 5,
                         "YZIP" => 6,
+                        "GLULX" => ZEnvironment.GLULX_ZVERSION,
                         _ => throw new InterpreterError(InterpreterMessages._0_Unrecognized_Version_Specifier_1,
                             name,
                             text).Combine(new InterpreterError(InterpreterMessages
-                            .Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38))
+                            .Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_GLULX_And_Numbers_38))
                     };
                     break;
 
@@ -1042,12 +1047,12 @@ namespace Zilf.Interpreter
                     newVersion = fix.Value;
                     if (newVersion < 3 || newVersion > 8)
                         throw new InterpreterError(InterpreterMessages._0_Unrecognized_Version_Specifier_1, name, newVersion)
-                            .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
+                            .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_GLULX_And_Numbers_38));
                     break;
 
                 default:
                     throw new InterpreterError(InterpreterMessages._0_Unrecognized_Version_Specifier_1, name, expr)
-                        .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38));
+                        .Combine(new InterpreterError(InterpreterMessages.Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_GLULX_And_Numbers_38));
             }
             return newVersion;
         }

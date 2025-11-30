@@ -677,7 +677,15 @@ namespace Zilf.Compiler
                     // initialize counter
                     counter = cc.PushInnerLocal(rb, atom, LocalBindingType.LoopState, src);
                     var operand = cc.CompileAsOperand(rb, container, src);
-                    rb.EmitGetChild(operand, counter, exhaustedLabel, false);
+                    if (rb is IProvideNoValuePredEmit nvpe)
+                    {
+                        nvpe.EmitGetChild(operand, counter);
+                        rb.BranchIfZero(counter, exhaustedLabel, true);
+                    }
+                    else
+                    {
+                        rb.EmitGetChild(operand, counter, exhaustedLabel, false);
+                    }
                 }
             }
 
@@ -696,7 +704,15 @@ namespace Zilf.Compiler
                 protected override void EmitAfterBody(IRoutineBuilder rb, ILabel againLabel)
                 {
                     // next object
-                    rb.EmitGetSibling(counter!, counter!, againLabel, true);
+                    if (rb is IProvideNoValuePredEmit nvpe)
+                    {
+                        nvpe.EmitGetSibling(counter!, counter!);
+                        rb.BranchIfZero(counter!, againLabel, false);
+                    }
+                    else
+                    {
+                        rb.EmitGetSibling(counter!, counter!, againLabel, true);
+                    }
                 }
             }
 
@@ -724,9 +740,16 @@ namespace Zilf.Compiler
                 {
                     // initialize next
                     next = cc.PushInnerLocal(rb, nextAtom, LocalBindingType.LoopState, src);
-                    var tempLabel = rb.DefineLabel();
-                    rb.EmitGetSibling(counter!, next, tempLabel, true);
-                    rb.MarkLabel(tempLabel);
+                    if (rb is IProvideNoValuePredEmit nvpe)
+                    {
+                        nvpe.EmitGetSibling(counter!, next);
+                    }
+                    else
+                    {
+                        var tempLabel = rb.DefineLabel();
+                        rb.EmitGetSibling(counter!, next, tempLabel, true);
+                        rb.MarkLabel(tempLabel);
+                    }
                 }
 
                 protected override void EmitAfterBody(IRoutineBuilder rb, ILabel againLabel)

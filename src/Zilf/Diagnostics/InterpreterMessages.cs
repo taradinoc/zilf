@@ -64,8 +64,8 @@ namespace Zilf.Diagnostics
         */
         [Error("missing {0} in {1}")]
         public const int Missing_0_In_1 = 108;
-        [Info("recognized versions are ZIP, EZIP, XZIP, YZIP, and numbers 3-8")]
-        public const int Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_And_Numbers_38 = 109;
+        [Info("recognized versions are ZIP, EZIP, XZIP, YZIP, GLULX, and numbers 3-8")]
+        public const int Recognized_Versions_Are_ZIP_EZIP_XZIP_YZIP_GLULX_And_Numbers_38 = 109;
         [Info("since NEW-SFLAGS is set, the following options are recognized: {0}")]
         public const int Since_NEWSFLAGS_Is_Set_The_Following_Options_Are_Recognized_0 = 110;
         [Error("TELL token spec ends with an unterminated pattern")]

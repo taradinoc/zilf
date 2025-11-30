@@ -274,6 +274,16 @@ namespace Zilf.Emit
         /// </summary>
         public Func<ILabel>? LabelFactory { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether tracing output should be enabled for this buffer.
+        /// </summary>
+        public bool TracingEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets a name for this buffer (e.g., routine name) for tracing purposes.
+        /// </summary>
+        public string? TracingName { get; set; }
+
         public PeepholeBuffer()
         {
             optimizationPipeline = BuildOptimizationPipeline();
@@ -443,12 +453,19 @@ namespace Zilf.Emit
                 handler(line.Label, line.Code, line.TargetLabel, line.Type);
         }
 
-        [System.Diagnostics.Conditional("TRACE_PEEPHOLE")]
         void Trace(string? message = null)
         {
+            if (!TracingEnabled)
+                return;
+
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine();
+
+            if (TracingName != null)
+            {
+                Console.WriteLine("=== {0} ===", TracingName);
+            }
 
             if (message != null)
             {
@@ -1118,13 +1135,22 @@ namespace Zilf.Emit
 
                 if (next.Value.Label == null)
                 {
+                    // Transfer the label to the next line
                     next.Value.Label = line.Label;
                     labelMap[next.Value.Label] = next.Value;
                 }
+                else
+                {
+                    // Next line already has a label - update labelMap to point the deleted label
+                    // to the next line, and update any branches that targeted the deleted label
+                    labelMap[line.Label] = next.Value;
+                }
 
+                // Update any branches that target the deleted line (by TargetLine reference)
+                // or the deleted line's label (by TargetLabel, in case TargetLine wasn't resolved)
                 foreach (var other in lines)
                 {
-                    if (other.TargetLine == line)
+                    if (other.TargetLine == line || other.TargetLabel == line.Label)
                     {
                         other.TargetLabel = next.Value.Label;
                         other.TargetLine = next.Value;

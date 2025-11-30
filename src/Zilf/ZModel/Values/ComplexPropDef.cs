@@ -936,12 +936,12 @@ namespace Zilf.ZModel.Values
                         if (capturedValue != null)
                         {
                             Debug.Assert(capturedConstantValue != null);
-                            tb.AddShort(capturedConstantValue);
+                            tb.AddWord(capturedConstantValue);
                         }
                         else
                         {
                             Debug.Assert(output.Fix != null);
-                            tb.AddShort((short)output.Fix.Value);
+                            tb.AddWord((short)output.Fix.Value);
                         }
                         break;
 
@@ -955,13 +955,13 @@ namespace Zilf.ZModel.Values
                         else
                         {
                             Debug.Assert(capturedConstantValue != null);
-                            tb.AddShort(capturedConstantValue);
+                            tb.AddWord(capturedConstantValue);
                         }
                         break;
 
                     case OutputElementType.String:
                         Debug.Assert(capturedConstantValue != null);
-                        tb.AddShort(capturedConstantValue);
+                        tb.AddWord(capturedConstantValue);
                         break;
 
                     case OutputElementType.Global:
@@ -977,18 +977,18 @@ namespace Zilf.ZModel.Values
                         }
                         else
                         {
-                            tb.AddShort(converters.GetAdjectiveValue(capturedAtom, src));
+                            tb.AddWord(converters.GetAdjectiveValue(capturedAtom, src));
                         }
                         break;
 
                     case OutputElementType.Noun:
                         Debug.Assert(capturedAtom != null);
-                        tb.AddShort(converters.GetVocabWord(capturedAtom, ctx.GetStdAtom(StdAtom.OBJECT), src));
+                        tb.AddWord(converters.GetVocabWord(capturedAtom, ctx.GetStdAtom(StdAtom.OBJECT), src));
                         break;
 
                     case OutputElementType.Voc:
                         Debug.Assert(capturedAtom != null && output.PartOfSpeech != null);
-                        tb.AddShort(converters.GetVocabWord(capturedAtom, output.PartOfSpeech, src));
+                        tb.AddWord(converters.GetVocabWord(capturedAtom, output.PartOfSpeech, src));
                         break;
 
                     case OutputElementType.Many:

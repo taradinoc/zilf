@@ -125,7 +125,7 @@ namespace Zilf.Compiler
             return list.Any(zo => ModifiesLocal(zo, localAtom));
         }
 
-        public static bool IsPredicate(this ZilObject zo, int zversion)
+        public static bool IsPredicate(this ZilObject zo, int zversion, bool isGlulx)
         {
             if (zo is not ZilForm form || form.First is not ZilAtom head)
                 return false;
@@ -135,8 +135,8 @@ namespace Zilf.Compiler
             // ReSharper disable once SwitchStatementMissingSomeCases
             return head.StdAtom switch
             {
-                StdAtom.AND or StdAtom.OR or StdAtom.NOT => form.Rest.All(a => a.IsPredicate(zversion)),
-                _ => ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count()),
+                StdAtom.AND or StdAtom.OR or StdAtom.NOT => form.Rest.All(a => a.IsPredicate(zversion, isGlulx)),
+                _ => ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count(), isGlulx),
             };
         }
 
