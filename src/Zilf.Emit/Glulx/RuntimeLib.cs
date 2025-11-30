@@ -141,11 +141,15 @@ namespace Zilf.Emit.Glulx
             glk_window_clear = 0x2A
             glk_window_move_cursor = 0x2B
             glk_set_window = 0x2F
+            glk_stream_iterate = 0x40
+            glk_stream_open_file = 0x42
             glk_stream_open_memory = 0x43
             glk_stream_close = 0x44
             glk_stream_get_position = 0x46
             glk_stream_set_current = 0x47
             glk_stream_get_current = 0x48
+            glk_fileref_create_by_prompt = 0x62
+            glk_fileref_destroy = 0x63
             glk_set_style = 0x86
             glk_char_to_lower = 0xA0
             glk_stylehint_set = 0xB0
@@ -173,10 +177,18 @@ namespace Zilf.Emit.Glulx
             winmethod_NoBorder = 0x100
             winmethod_BorderMask = 0x100
 
-            filemode_Read = 1
-            filemode_Write = 2
+            filemode_Write = 1
+            filemode_Read = 2
             filemode_ReadWrite = 3
             filemode_WriteAppend = 5
+
+            fileusage_Data = 0x00
+            fileusage_SavedGame = 0x01
+            fileusage_Transcript = 0x02
+            fileusage_InputRecord = 0x03
+            fileusage_TypeMask = 0x0f
+            fileusage_TextMode = 0x100
+            fileusage_BinaryMode = 0x000
 
             evtype_LineInput = 3
             evtype_Arrange = 5
@@ -211,10 +223,12 @@ namespace Zilf.Emit.Glulx
 
             GG_MAIN_WINDOW_ROCK = 31415
             GG_STATUS_WINDOW_ROCK = 92653
+            GG_SAVE_STREAM_ROCK = 58979
 
             section .data
             gg_main_window_id: dd 0
             gg_status_window_id: dd 0
+            gg_save_stream_id: dd 0
             gg_status_height: dd 0
             gg_prev_stream_sp: dd 0
 
@@ -280,7 +294,7 @@ namespace Zilf.Emit.Glulx
             push id
             glk glk_window_iterate 2 -> id
             ; Are we done?
-            jz id -> rfalse
+            jz id -> .windows_done
             ; Is it the main window?
             jeq [gg_temp_word] GG_MAIN_WINDOW_ROCK -> .found_main
             ; Is it the status window?
@@ -301,6 +315,23 @@ namespace Zilf.Emit.Glulx
             glk glk_window_get_size 3
             copy [gg_temp_word] -> [gg_status_height]
             jump .next_window
+        .windows_done:
+            ; Look for streams we recognize
+            copy 0 -> id
+        .next_stream:
+            push gg_temp_word
+            push id
+            glk glk_stream_iterate 2 -> id
+            ; Are we done?
+            jz id -> rfalse
+            ; Is it the save stream?
+            jeq [gg_temp_word] GG_SAVE_STREAM_ROCK -> .found_save
+            ; Keep looking
+            jump .next_stream
+        .found_save:
+            ; Save save [sic] stream ID
+            copy id -> [gg_save_stream_id]
+            jump .next_stream
             ; No return needed, function is exited with rfalse above";
 
         [RuntimeFunc(nameof(glk_defines))]
@@ -539,9 +570,67 @@ namespace Zilf.Emit.Glulx
             glk glk_set_style 1
             return";
 
-#endregion
+        [RuntimeFunc(nameof(glk_defines), nameof(translate_save_result))]
+        public const string save_game = @"
+            function
+            local fref
+            local res
+            ; Prompt player to select a file
+            push 0
+            push filemode_Write
+            push fileusage_SavedGame
+            glk glk_fileref_create_by_prompt 3 -> fref
+            jz fref -> rfalse                   ; failure
+            ; Open stream
+            push GG_SAVE_STREAM_ROCK
+            push filemode_Write
+            push fref
+            glk glk_stream_open_file 3 -> [gg_save_stream_id]
+            push fref
+            glk glk_fileref_destroy 1
+            jz [gg_save_stream_id] -> rfalse    ; failure
+            ; Save state
+            save [gg_save_stream_id] -> res
+            callfi _rt_translate_save_result res -> res     ; may call recover_glk
+            ; Close stream
+            push 0
+            push [gg_save_stream_id]
+            glk glk_stream_close 2
+            copy 0 -> [gg_save_stream_id]
+            return res";
 
-#region Objects
+        [RuntimeFunc(nameof(glk_defines), nameof(translate_save_result))]
+        public const string restore_game = @"
+            function
+            local fref
+            local res
+            ; Prompt player to select a file
+            push 0
+            push filemode_Read
+            push fileusage_SavedGame
+            glk glk_fileref_create_by_prompt 3 -> fref
+            jz fref -> rfalse                   ; failure
+            ; Open stream
+            push GG_SAVE_STREAM_ROCK
+            push filemode_Read
+            push fref
+            glk glk_stream_open_file 3 -> [gg_save_stream_id]
+            push fref
+            glk glk_fileref_destroy 1
+            jz [gg_save_stream_id] -> rfalse    ; failure
+            ; Restore state
+            restore [gg_save_stream_id] -> res
+            callfi _rt_translate_save_result res -> res
+            ; Close stream
+            push 0
+            push [gg_save_stream_id]
+            glk glk_stream_close 2
+            copy 0 -> [gg_save_stream_id]
+            return res";
+
+        #endregion
+
+        #region Objects
 
         [RuntimeDefinitionSet]
         public const string object_defines = @"

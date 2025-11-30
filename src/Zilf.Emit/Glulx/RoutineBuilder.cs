@@ -654,8 +654,7 @@ namespace Zilf.Emit.Glulx
 
         public void EmitSave(IVariable result)
         {
-            // TODO: implement save for Glulx
-            Emit($"copy 0 -> {FormatStore(result)}", "copy");
+            Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.save_game))} -> {FormatStore(result)}", "callf");
         }
 
         public void EmitSave(ILabel label, bool polarity)
@@ -670,8 +669,7 @@ namespace Zilf.Emit.Glulx
 
         public void EmitRestore(IVariable result)
         {
-            // TODO: implement restore for Glulx
-            Emit($"copy 0 -> {FormatStore(result)}", "copy");
+            Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.restore_game))} -> {FormatStore(result)}", "callf");
         }
 
         public void EmitRestore(ILabel label, bool polarity)
