@@ -133,6 +133,7 @@ namespace Zilf.Emit.Glulx
         public const string glk_defines = @"
             MAX_OUTPUT_BUFFER = 65536
 
+            glk_window_iterate = 0x20
             glk_window_open = 0x23
             glk_window_get_size = 0x25
             glk_window_set_arrangement = 0x26
@@ -208,6 +209,9 @@ namespace Zilf.Emit.Glulx
             stylehint_BackColor = 8
             stylehint_ReverseColor = 9
 
+            GG_MAIN_WINDOW_ROCK = 31415
+            GG_STATUS_WINDOW_ROCK = 92653
+
             section .data
             gg_main_window_id: dd 0
             gg_status_window_id: dd 0
@@ -220,7 +224,7 @@ namespace Zilf.Emit.Glulx
             gg_event: resd 4
             gg_temp_word: resd 4";
 
-        [RuntimeFunc(nameof(glk_defines))]
+        [RuntimeFunc(nameof(glk_defines), nameof(recover_glk))]
         public const string initialize_glk = @"
             function
             ; Select Glk I/O system
@@ -231,26 +235,73 @@ namespace Zilf.Emit.Glulx
             push style_User1
             push wintype_AllTypes
             glk glk_stylehint_set 4
-            ; TODO: Recover existing Glk windows, if any
+            ; Recover existing Glk windows, if any
+            callf _rt_recover_glk
             ; Open a main window
-            push 0
+            jnz [gg_main_window_id] -> .recovered_main_window
+            push GG_MAIN_WINDOW_ROCK
             push wintype_TextBuffer
             push 0
             push 0
             push 0
             glk glk_window_open 5 -> [gg_main_window_id]
+            jump .check_status_window
+        .recovered_main_window:
+            ; Clear the previously opened main window
+            push [gg_main_window_id]
+            glk glk_window_clear 1
+        .check_status_window:
             ; Open a status window (initially 0 height)
-            push 0
+            jnz [gg_status_window_id] -> .recovered_status_window
+            push GG_STATUS_WINDOW_ROCK
             push wintype_TextGrid
             push 0
             push (winmethod_Above | winmethod_Fixed)
             push [gg_main_window_id]
             glk glk_window_open 5 -> [gg_status_window_id]
             copy 0 -> [gg_status_height]
+        .recovered_status_window:
             ; Select the main window
             push [gg_main_window_id]
             glk glk_set_window 1
             return";
+
+        [RuntimeFunc(nameof(glk_defines))]
+        public const string recover_glk = @"
+            function
+            local id
+            ; Clear all stored Glk IDs
+            copy 0 -> [gg_main_window_id]
+            copy 0 -> [gg_status_window_id]
+            ; Look for windows we recognize
+            copy 0 -> id
+        .next_window:
+            push gg_temp_word
+            push id
+            glk glk_window_iterate 2 -> id
+            ; Are we done?
+            jz id -> rfalse
+            ; Is it the main window?
+            jeq [gg_temp_word] GG_MAIN_WINDOW_ROCK -> .found_main
+            ; Is it the status window?
+            jeq [gg_temp_word] GG_STATUS_WINDOW_ROCK -> .found_status
+            ; Keep looking
+            jump .next_window
+        .found_main:
+            ; Save main window ID
+            copy id -> [gg_main_window_id]
+            jump .next_window
+        .found_status:
+            ; Save status window ID
+            copy id -> [gg_status_window_id]
+            ; Measure height
+            push gg_temp_word
+            push 0
+            push [gg_status_window_id]
+            glk glk_window_get_size 3
+            copy [gg_temp_word] -> [gg_status_height]
+            jump .next_window
+            ; No return needed, function is exited with rfalse above";
 
         [RuntimeFunc(nameof(glk_defines))]
         public const string split_window = @"
@@ -919,7 +970,7 @@ namespace Zilf.Emit.Glulx
             sub argc 1 -> argc
             tailcall func argc";
 
-        [RuntimeFunc]
+        [RuntimeFunc(nameof(recover_glk))]
         public const string translate_save_result = @"
             function
             local value
@@ -928,6 +979,7 @@ namespace Zilf.Emit.Glulx
             ; Glulx 1 -> failure -> Z-machine 0
             jeq value 1 -> rfalse
             ; Glulx -1 -> restoring -> Z-machine 2
+            callf _rt_recover_glk
             return 2";
 
         [RuntimeFunc]
