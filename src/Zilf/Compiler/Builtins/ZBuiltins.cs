@@ -499,13 +499,11 @@ namespace Zilf.Compiler.Builtins
 
         #region Binary Opcodes
 
-        // TODO: constant folding should use 32-bit operations for Glulx
-
-        [Builtin("MOD", Data = BinaryOp.Mod, Summary = "Computes the modulus (remainder) of two numbers.")]
-        [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5, Summary = "Performs an arithmetic (signed) shift on a number.")]
-        [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5, Summary = "Performs a logical (unsigned) shift on a number.")]
-        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6, Summary = "Retrieves a property of a window.")]
-        public static IOperand BinaryValueOp(
+        [Builtin("MOD", Data = BinaryOp.Mod, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the modulus (remainder) of two numbers.")]
+        [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Performs an arithmetic (signed) shift on a number.")]
+        [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Performs a logical (unsigned) shift on a number.")]
+        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Retrieves a property of a window.")]
+        public static IOperand BinaryValueOp_Z(
             ValueCall c, [Data] BinaryOp op, IOperand left, IOperand right)
         {
             if (left is INumericOperand nleft && right is INumericOperand nright)
@@ -522,6 +520,34 @@ namespace Zilf.Compiler.Builtins
                         if (nright.Value < 0)
                             return c.cc.Game.MakeOperand((short)((ushort)nleft.Value >> -nright.Value));
                         return c.cc.Game.MakeOperand((short)((ushort)nleft.Value << nright.Value));
+                }
+            }
+
+            c.rb.EmitBinary(op, left, right, c.resultStorage);
+            return c.resultStorage;
+        }
+
+        [Builtin("MOD", Data = BinaryOp.Mod, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the modulus (remainder) of two numbers.")]
+        [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5, Platform = BuiltinPlatform.GlulxOnly, Summary = "Performs an arithmetic (signed) shift on a number.")]
+        [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5, Platform = BuiltinPlatform.GlulxOnly, Summary = "Performs a logical (unsigned) shift on a number.")]
+        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6, Platform = BuiltinPlatform.GlulxOnly, Summary = "Retrieves a property of a window.")]
+        public static IOperand BinaryValueOp_Glulx(
+            ValueCall c, [Data] BinaryOp op, IOperand left, IOperand right)
+        {
+            if (left is INumericOperand nleft && right is INumericOperand nright)
+            {
+                switch (op)
+                {
+                    case BinaryOp.Mod:
+                        return c.cc.Game.MakeOperand(nleft.Value % nright.Value);
+                    case BinaryOp.ArtShift:
+                        if (nright.Value < 0)
+                            return c.cc.Game.MakeOperand(nleft.Value >> -nright.Value);
+                        return c.cc.Game.MakeOperand(nleft.Value << nright.Value);
+                    case BinaryOp.LogShift:
+                        if (nright.Value < 0)
+                            return c.cc.Game.MakeOperand((int)((uint)nleft.Value >> -nright.Value));
+                        return c.cc.Game.MakeOperand((int)((uint)nleft.Value << nright.Value));
                 }
             }
 
@@ -558,27 +584,30 @@ namespace Zilf.Compiler.Builtins
 
             if (storage is INumericOperand num)
             {
-                return c.cc.Game.MakeOperand((short)(~num.Value));
+                if (c.cc.Context.IsGlulx)
+                    return c.cc.Game.MakeOperand(~num.Value);
+                else
+                    return c.cc.Game.MakeOperand((short)(~num.Value));
             }
             c.rb.EmitUnary(UnaryOp.Not, storage, c.resultStorage);
             return c.resultStorage;
         }
 
-        [Builtin("ADD", "+", Data = BinaryOp.Add, Summary = "Computes the sum of two or more numbers.")]
-        [Builtin("SUB", "-", Data = BinaryOp.Sub, Summary = "Computes the difference between two or more numbers.")]
-        [Builtin("MUL", "*", Data = BinaryOp.Mul, Summary = "Computes the product of two or more numbers.")]
-        [Builtin("DIV", "/", Data = BinaryOp.Div, Summary = "Computes the quotient of two or more numbers.")]
-        [Builtin("BAND", "ANDB", Data = BinaryOp.And, Summary = "Computes the bitwise AND of two or more numbers.")]
-        [Builtin("BOR", "ORB", Data = BinaryOp.Or, Summary = "Computes the bitwise OR of two or more numbers.")]
-        public static IOperand ArithmeticOp(
+        [Builtin("ADD", "+", Data = BinaryOp.Add, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the sum of two or more numbers.")]
+        [Builtin("SUB", "-", Data = BinaryOp.Sub, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the difference between two or more numbers.")]
+        [Builtin("MUL", "*", Data = BinaryOp.Mul, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the product of two or more numbers.")]
+        [Builtin("DIV", "/", Data = BinaryOp.Div, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the quotient of two or more numbers.")]
+        [Builtin("BAND", "ANDB", Data = BinaryOp.And, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the bitwise AND of two or more numbers.")]
+        [Builtin("BOR", "ORB", Data = BinaryOp.Or, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the bitwise OR of two or more numbers.")]
+        public static IOperand ArithmeticOp_Z(
             ValueCall c, [Data] BinaryOp op, params IOperand[] args)
         {
-            GetArithmeticInfo(op, out var initialValue, out var operation, out var compileUnary);
+            GetArithmeticInfo_Z(op, out var initialValue, out var operation, out var compileUnary);
 
             // can we evaluate the whole operation at compile time?
             if (args.Length > 0)
             {
-                var folded = FoldConstantArithmetic(c.cc, initialValue, operation, args);
+                var folded = FoldConstantArithmetic_Z(c.cc, initialValue, operation, args);
                 if (folded != null)
                     return folded;
             }
@@ -607,7 +636,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        static void GetArithmeticInfo(BinaryOp op, out short initialValue,
+        static void GetArithmeticInfo_Z(BinaryOp op, out short initialValue,
             out Func<short, short, short> operation,
             out Func<ValueCall, IOperand, IOperand, IOperand> compileUnary)
         {
@@ -669,7 +698,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        static IOperand? FoldConstantArithmetic(Compilation cc, short init, Func<short, short, short> op,
+        static IOperand? FoldConstantArithmetic_Z(Compilation cc, short init, Func<short, short, short> op,
             IOperand[] args)
         {
             // make sure all args are constants
@@ -687,14 +716,137 @@ namespace Zilf.Compiler.Builtins
             return cc.Game.MakeOperand(value);
         }
 
+        [Builtin("ADD", "+", Data = BinaryOp.Add, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the sum of two or more numbers.")]
+        [Builtin("SUB", "-", Data = BinaryOp.Sub, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the difference between two or more numbers.")]
+        [Builtin("MUL", "*", Data = BinaryOp.Mul, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the product of two or more numbers.")]
+        [Builtin("DIV", "/", Data = BinaryOp.Div, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the quotient of two or more numbers.")]
+        [Builtin("BAND", "ANDB", Data = BinaryOp.And, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the bitwise AND of two or more numbers.")]
+        [Builtin("BOR", "ORB", Data = BinaryOp.Or, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the bitwise OR of two or more numbers.")]
+        public static IOperand ArithmeticOp_Glulx(
+            ValueCall c, [Data] BinaryOp op, params IOperand[] args)
+        {
+            GetArithmeticInfo_Glulx(op, out var initialValue, out var operation, out var compileUnary);
+
+            // can we evaluate the whole operation at compile time?
+            if (args.Length > 0)
+            {
+                var folded = FoldConstantArithmetic_Glulx(c.cc, initialValue, operation, args);
+                if (folded != null)
+                    return folded;
+            }
+
+            // nope, compile it
+            switch (args.Length)
+            {
+                case 0:
+                    return c.cc.Game.MakeOperand(initialValue);
+
+                case 1:
+                    return compileUnary(c, c.cc.Game.MakeOperand(initialValue), args[0]);
+
+                case 2:
+                    c.rb.EmitBinary(op, args[0], args[1], c.resultStorage);
+                    return c.resultStorage;
+
+                default:
+                    c.rb.EmitBinary(op, args[0], args[1], c.rb.Stack);
+                    for (int i = 2; i + 1 < args.Length; i++)
+                    {
+                        c.rb.EmitBinary(op, c.rb.Stack, args[i], c.rb.Stack);
+                    }
+                    c.rb.EmitBinary(op, c.rb.Stack, args[^1], c.resultStorage);
+                    return c.resultStorage;
+            }
+        }
+
+        static void GetArithmeticInfo_Glulx(BinaryOp op, out int initialValue,
+            out Func<int, int, int> operation,
+            out Func<ValueCall, IOperand, IOperand, IOperand> compileUnary)
+        {
+            // a delegate implementing the actual arithmetic operation
+            operation = op switch
+            {
+                BinaryOp.Add => (a, b) => a + b,
+                BinaryOp.Sub => (a, b) => a - b,
+                BinaryOp.Mul => (a, b) => a * b,
+                BinaryOp.Div => (a, b) => a / b,
+                BinaryOp.And => (a, b) => a & b,
+                BinaryOp.Or => (a, b) => a | b,
+                _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
+            };
+
+            // the initial value, which is returned as-is if there are no args,
+            // or possibly combined with the single arg if there's only one
+            initialValue = op switch
+            {
+                BinaryOp.Mul => 1,
+                BinaryOp.Div => 1,
+                BinaryOp.And => -1,
+                _ => 0
+            };
+
+            // another delegate describing how to combine the initial value
+            // with the single arg in that case
+            // ReSharper disable once ConvertSwitchStatementToSwitchExpression
+#pragma warning disable IDE0066 // Convert switch statement to expression
+            switch (op)
+#pragma warning restore IDE0066 // Convert switch statement to expression
+            {
+                case BinaryOp.Add:
+                case BinaryOp.Mul:
+                case BinaryOp.And:
+                case BinaryOp.Or:
+                    // <+ X>, <* X>, <BAND X>, and <BOR X> all return X
+                    compileUnary = (c, init, arg) => arg;
+                    break;
+
+                case BinaryOp.Sub:
+                    // <- X> negates X
+                    compileUnary = (c, init, arg) =>
+                    {
+                        c.rb.EmitUnary(UnaryOp.Neg, arg, c.resultStorage);
+                        return c.resultStorage;
+                    };
+                    break;
+
+                default:
+                    // </ X> divides 1 by X
+                    // presumably it sounded like a good idea at the time
+                    compileUnary = (c, init, arg) =>
+                    {
+                        c.rb.EmitBinary(op, init, arg, c.resultStorage);
+                        return c.resultStorage;
+                    };
+                    break;
+            }
+        }
+
+        static IOperand? FoldConstantArithmetic_Glulx(Compilation cc, int init, Func<int, int, int> op,
+            IOperand[] args)
+        {
+            // make sure all args are constants
+            foreach (var arg in args)
+                if (arg is not INumericOperand)
+                    return null;
+
+            if (args.Length == 1)
+                return cc.Game.MakeOperand(op(init, ((INumericOperand)args[0]).Value));
+
+            var value = ((INumericOperand)args[0]).Value;
+            for (int i = 1; i < args.Length; i++)
+                value = op(value, ((INumericOperand)args[i]).Value);
+
+            return cc.Game.MakeOperand(value);
+        }
+
         /// <summary>
         /// Computes the bitwise AND of two numbers.
         /// </summary>
         /// <param name="c"></param>
         /// <param name="left">The first number.</param>
         /// <param name="right">The second number.</param>
-        [Builtin("BAND", "ANDB")]
-        public static void BinaryAndPredOp(PredCall c, IOperand left, IOperand right)
+        [Builtin("BAND", "ANDB", Platform = BuiltinPlatform.ZMachineOnly)]
+        public static void BinaryAndPredOp_Z(PredCall c, IOperand left, IOperand right)
         {
             var nleft = left as INumericOperand;
             var nright = right as INumericOperand;
@@ -703,6 +855,66 @@ namespace Zilf.Compiler.Builtins
             if (nleft != null && nright != null)
             {
                 var result = (short)(nleft.Value) & (short)(nright.Value);
+                if ((result != 0) == c.polarity)
+                    c.rb.Branch(c.label);
+
+                return;
+            }
+
+            // if one is a constant power of two, we can use BTST
+            if (nleft != null || nright != null)
+            {
+                IOperand variable;
+                INumericOperand constant;
+
+                if (nleft != null)
+                {
+                    constant = nleft;
+                    variable = right;
+                }
+                else
+                {
+                    constant = nright!;
+                    variable = left;
+                }
+
+                if (constant.Value == 0)
+                {
+                    // always false
+                    if (!c.polarity)
+                        c.rb.Branch(c.label);
+
+                    return;
+                }
+                if ((constant.Value & (constant.Value - 1)) == 0)
+                {
+                    // power of two
+                    c.rb.Branch(Condition.TestBits, variable, constant, c.label, c.polarity);
+                    return;
+                }
+            }
+
+            // otherwise use BAND and ZERO?
+            c.rb.EmitBinary(BinaryOp.And, left, right, c.rb.Stack);
+            c.rb.BranchIfZero(c.rb.Stack, c.label, !c.polarity);
+        }
+
+        /// <summary>
+        /// Computes the bitwise AND of two numbers.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="left">The first number.</param>
+        /// <param name="right">The second number.</param>
+        [Builtin("BAND", "ANDB", Platform = BuiltinPlatform.GlulxOnly)]
+        public static void BinaryAndPredOp_Glulx(PredCall c, IOperand left, IOperand right)
+        {
+            var nleft = left as INumericOperand;
+            var nright = right as INumericOperand;
+
+            // if both are constants, we can fully optimize
+            if (nleft != null && nright != null)
+            {
+                var result = nleft.Value & nright.Value;
                 if ((result != 0) == c.polarity)
                     c.rb.Branch(c.label);
 
@@ -762,7 +974,8 @@ namespace Zilf.Compiler.Builtins
             {
                 (IConstantOperand lconst, IConstantOperand rconst) => lconst.Add(rconst),
                 (IConstantOperand lconst, null) => lconst.Add(c.cc.Game.One),
-                _ => ArithmeticOp(c, BinaryOp.Add, left, right ?? c.cc.Game.One),
+                _ when c.cc.Context.IsGlulx => ArithmeticOp_Glulx(c, BinaryOp.Add, left, right ?? c.cc.Game.One),
+                _ => ArithmeticOp_Z(c, BinaryOp.Add, left, right ?? c.cc.Game.One),
             };
         }
 
@@ -776,7 +989,9 @@ namespace Zilf.Compiler.Builtins
         [Builtin("BACK", "ZBACK")]
         public static IOperand BackOp(ValueCall c, IOperand left, IOperand? right = null)
         {
-            return ArithmeticOp(c, BinaryOp.Sub, left, right ?? c.cc.Game.One);
+            return c.cc.Context.IsGlulx
+                ? ArithmeticOp_Glulx(c, BinaryOp.Sub, left, right ?? c.cc.Game.One)
+                : ArithmeticOp_Z(c, BinaryOp.Sub, left, right ?? c.cc.Game.One);
         }
 
         [Builtin("CURSET", Data = BinaryOp.SetCursor, MinVersion = 4, MaxVersion = 5, HasSideEffect = true, Summary = "Sets the cursor row and column.")]
@@ -970,7 +1185,10 @@ namespace Zilf.Compiler.Builtins
         {
             if (op == UnaryOp.Not && value is INumericOperand num)
             {
-                return c.cc.Game.MakeOperand((short)(~num.Value));
+                if (c.cc.Context.IsGlulx)
+                    return c.cc.Game.MakeOperand(~num.Value);
+                else
+                    return c.cc.Game.MakeOperand((short)(~num.Value));
             }
 
             c.rb.EmitUnary(op, value, c.resultStorage);
