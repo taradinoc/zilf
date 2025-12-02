@@ -64,6 +64,13 @@ namespace Zilf.ZModel
         public readonly List<ZilTable> Tables = new();
 
         /// <summary>
+        /// A set of table names that should be traced for writes.
+        /// When a table is traced, PUT and PUTB operations that affect it
+        /// will emit debugging information at runtime.
+        /// </summary>
+        public readonly HashSet<ZilAtom> TracedTableWrites = new();
+
+        /// <summary>
         /// Maps property names to default property values.
         /// (Note: keys are compared by name, not by reference.)
         /// </summary>

@@ -51,6 +51,7 @@ namespace Zilf.Emit.Glulx
         readonly List<GlobalBuilder> globals = new(100);
         readonly List<TableBuilder> impureTables = new(10);
         readonly List<TableBuilder> pureTables = new(10);
+        readonly List<(TableBuilder Table, string OriginalName)> tracedTables = new(10);
         readonly List<WordBuilder> vocabulary = new(100);
         readonly HashSet<char> siBreaks = new();
         readonly Dictionary<string, IOperand> stringPool = new(100);
@@ -172,6 +173,25 @@ namespace Zilf.Emit.Glulx
             symbols.Add(name, "table");
             return tb;
         }
+
+        /// <summary>
+        /// Marks a table for write tracing. When tracing is enabled, PUT and PUTB operations
+        /// that affect any traced table will emit debugging information at runtime.
+        /// </summary>
+        /// <param name="table">The table to trace.</param>
+        /// <param name="originalName">The original name of the table as it appears in ZIL source code.</param>
+        public void TraceTable(ITableBuilder table, string originalName)
+        {
+            if (table is TableBuilder tb && !tracedTables.Any(t => t.Table == tb))
+            {
+                tracedTables.Add((tb, originalName));
+            }
+        }
+
+        /// <summary>
+        /// Gets whether any tables are being traced for writes.
+        /// </summary>
+        public bool HasTracedTables => tracedTables.Count > 0;
 
         /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined; or <paramref name="entryPoint"/> is <see langword="true"/> and an entry point routine is alrady defined.</exception>
         public IRoutineBuilder DefineRoutine(string name, bool entryPoint, bool cleanStack)
@@ -407,6 +427,7 @@ namespace Zilf.Emit.Glulx
 
             FinishSyntax();
             FinishPureTables();
+            FinishTracedTablesMetadata();
             FinishHooks();
 
             writer.WriteLine();
@@ -678,6 +699,44 @@ namespace Zilf.Emit.Glulx
             }
 
             writer.WriteLine(INDENT + "return");
+        }
+
+        void FinishTracedTablesMetadata()
+        {
+            if (tracedTables.Count == 0)
+                return;
+
+            writer.WriteLine();
+            writer.WriteLine("; Traced table write metadata");
+            writer.WriteLine("_traced_tables:");
+            writer.WriteLine(INDENT + "dd {0} ; count", tracedTables.Count);
+
+            foreach (var (tb, originalName) in tracedTables)
+            {
+                // Each entry: address, size, name string address
+                var nameLabel = $"_traced_name_{tb.Name}";
+                writer.WriteLine(INDENT + "dd {0} ; table address", tb.Name);
+                writer.WriteLine(INDENT + "dd {0} ; table size", tb.Size);
+                writer.WriteLine(INDENT + "dd {0} ; table name", nameLabel);
+            }
+
+            // Define the name strings for table names (use original ZIL names)
+            foreach (var (tb, originalName) in tracedTables)
+            {
+                var nameLabel = $"_traced_name_{tb.Name}";
+                writer.WriteLine("{0}: huffstr \"{1}\"", nameLabel, originalName);
+            }
+
+            // Define the trace message strings
+            writer.WriteLine("_trace_msg_word: huffstr \" word \"");
+            writer.WriteLine("_trace_msg_byte: huffstr \" byte \"");
+            writer.WriteLine("_trace_msg_unaligned: huffstr \" (+\"");
+            writer.WriteLine("_trace_msg_bytes_suffix: huffstr \" bytes)\"");
+            writer.WriteLine("_trace_msg_addr: huffstr \" (addr \"");
+            writer.WriteLine("_trace_msg_dash: huffstr \"-\"");
+            writer.WriteLine("_trace_msg_value: huffstr \"), value \"");
+            writer.WriteLine("_trace_msg_newline: huffstr \"\\n\"");
+            writer.WriteLine("_trace_msg_prefix: huffstr \"[TRACE] Write to \"");
         }
 
         void FinishStrings()

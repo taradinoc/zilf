@@ -397,6 +397,12 @@ namespace Zilf.Interpreter
             if (GetZVal(atom) != null)
                 Redefine(atom);
 
+            // If the value is a table, give it a name from the constant
+            if (value is ZilTable table && table.Name == null)
+            {
+                table.Name = atom.Text;
+            }
+
             var constant = new ZilConstant(atom, value);
             ZEnvironment.Constants.Add(constant);
             SetZVal(atom, constant);

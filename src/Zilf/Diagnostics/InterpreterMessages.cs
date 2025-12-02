@@ -362,5 +362,7 @@ namespace Zilf.Diagnostics
         public const int _0_Unrecognized_Routine_Flag_1 = 610;
         [Error("{0}: Glulx output must be selected on the command line with '--glulx'")]
         public const int _0_Glulx_Output_Must_Be_Selected_On_The_Command_Line_With_Glulx = 611;
+        [Error("{0}: requires Glulx (use --glulx command line option)")]
+        public const int _0_Requires_Glulx = 612;
     }
 }

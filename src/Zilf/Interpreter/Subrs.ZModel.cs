@@ -1494,6 +1494,49 @@ namespace Zilf.Interpreter
 
         #endregion
 
+        #region Table Write Tracing
+
+        /// <summary>
+        /// Registers one or more tables for write tracing.
+        /// When enabled, PUT and PUTB operations that affect a traced table
+        /// will emit debugging information at runtime, including detection of
+        /// unaligned writes, writes from neighboring tables, and writes with
+        /// invalid base addresses.
+        /// </summary>
+        /// <remarks>
+        /// This is a Glulx-only feature intended for debugging.
+        /// </remarks>
+        /// <exception cref="InterpreterError">Not compiling for Glulx, or an argument is not an atom.</exception>
+        [FSubr("TRACE-TABLE-WRITES?")]
+        public static ZilObject TRACE_TABLE_WRITES_P(Context ctx, [Required] ZilObject[] args)
+        {
+            if (!ctx.IsGlulx)
+                throw new InterpreterError(InterpreterMessages._0_Requires_Glulx, "TRACE-TABLE-WRITES?");
+
+            foreach (var arg in args)
+            {
+                ZilAtom? atom = null;
+
+                if (arg is ZilAtom a)
+                {
+                    atom = a;
+                }
+
+                if (atom == null)
+                {
+                    throw new InterpreterError(
+                        InterpreterMessages._0_Flags_Must_Be_Atoms,
+                        "TRACE-TABLE-WRITES?");
+                }
+
+                ctx.ZEnvironment.TracedTableWrites.Add(atom);
+            }
+
+            return ctx.TRUE;
+        }
+
+        #endregion
+
         #region Z-Code: Version 6 Parser
 
         /// <exception cref="InterpreterError">NEW-PARSER? is not enabled.</exception>

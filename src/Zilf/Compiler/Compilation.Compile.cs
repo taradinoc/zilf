@@ -697,7 +697,17 @@ namespace Zilf.Compiler
                     value = Game.Zero;
                 }
 
-                Constants.Add(constant.Name, Game.DefineConstant(constant.Name.Text, value));
+                // If the value is already a table builder (whose symbol was already defined
+                // during PrepareTableBuilders), just add it to the Constants dictionary
+                // without calling DefineConstant
+                if (value is ITableBuilder tableBuilder)
+                {
+                    Constants.Add(constant.Name, tableBuilder);
+                }
+                else
+                {
+                    Constants.Add(constant.Name, Game.DefineConstant(constant.Name.Text, value));
+                }
             }
         }
 
@@ -922,11 +932,31 @@ namespace Zilf.Compiler
                 return (t.Flags & TableFormat.ParserTable) != 0 ? 1 : 2;
             }
 
+            // Check if we're compiling for Glulx and have traced tables
+            var glulxGameBuilder = Game as Emit.Glulx.GameBuilder;
+            var tracedTableNames = Context.ZEnvironment.TracedTableWrites;
+
             foreach (var table in Context.ZEnvironment.Tables.OrderBy(ParserTablesFirst))
             {
                 var pure = (table.Flags & TableFormat.Pure) != 0;
                 var builder = Game.DefineTable(table.Name, pure);
                 Tables.Add(table, builder);
+
+                // If this table is being traced and we're using Glulx, mark it for tracing
+                if (glulxGameBuilder != null && table.Name != null)
+                {
+                    foreach (var tracedAtom in tracedTableNames)
+                    {
+                        // Table names can match directly, or with a "T?" prefix (for globals)
+                        var tracedName = tracedAtom.Text;
+                        if (string.Equals(tracedName, table.Name, System.StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals("T?" + tracedName, table.Name, System.StringComparison.OrdinalIgnoreCase))
+                        {
+                            glulxGameBuilder.TraceTable(builder, tracedName);
+                            break;
+                        }
+                    }
+                }
 
                 if (pure && firstPureTable == null)
                     firstPureTable = builder;

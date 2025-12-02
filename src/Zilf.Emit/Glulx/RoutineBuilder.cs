@@ -551,6 +551,24 @@ namespace Zilf.Emit.Glulx
                 case TernaryOp.CopyTable:
                     Emit($"callfiii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.copy_table))} {FormatLoad(left)} {FormatLoad(center)} {FormatLoad(right)}", "callfiii");
                     return;
+
+                case TernaryOp.PutByte:
+                    if (gameBuilder.HasTracedTables)
+                    {
+                        // Use trace function instead of direct astoreb
+                        Emit($"callfiii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.trace_byte_write))} {FormatLoad(left)} {FormatLoad(center)} {FormatLoad(right)}", "callfiii");
+                        return;
+                    }
+                    break;
+
+                case TernaryOp.PutWord:
+                    if (gameBuilder.HasTracedTables)
+                    {
+                        // Use trace function instead of direct astore
+                        Emit($"callfiii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.trace_word_write))} {FormatLoad(left)} {FormatLoad(center)} {FormatLoad(right)}", "callfiii");
+                        return;
+                    }
+                    break;
             }
 
             string opcode = op switch

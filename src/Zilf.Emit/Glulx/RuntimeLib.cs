@@ -1139,5 +1139,229 @@ namespace Zilf.Emit.Glulx
             return 0";
 
 #endregion
+
+#region Table Write Tracing
+
+        [RuntimeFunc(nameof(trace_check_write_word))]
+        public const string trace_word_write = @"
+            function
+            local base_addr
+            local offset
+            local value
+            ; Check against traced tables before the write
+            callfiii _rt_trace_check_write_word base_addr offset value
+            ; Perform the actual write
+            astore base_addr offset value
+            return";
+
+        [RuntimeFunc(nameof(trace_check_write_byte))]
+        public const string trace_byte_write = @"
+            function
+            local base_addr
+            local offset
+            local value
+            ; Check against traced tables before the write
+            callfiii _rt_trace_check_write_byte base_addr offset value
+            ; Perform the actual write
+            astoreb base_addr offset value
+            return";
+
+        [RuntimeFunc(nameof(trace_report_word))]
+        public const string trace_check_write_word = @"
+            function
+            local base_addr
+            local offset
+            local value
+            local traced_tables
+            local count
+            local i
+            local table_addr
+            local table_size
+            local table_name
+            local table_end
+            local write_start
+            local write_end
+
+            ; Calculate write address range for word (4 bytes)
+            mul offset 4 -> push
+            add base_addr pop -> write_start
+            add write_start 4 -> write_end
+
+            ; Load the _traced_tables pointer
+            copy _traced_tables -> traced_tables
+
+            ; Load count
+            aload traced_tables 0 -> count
+            jz count -> .done
+
+            ; Loop through each traced table entry
+            copy 0 -> i
+        .check_next:
+            jge i count -> .done
+
+            ; Each entry is 3 words: address, size, name string
+            mul i 3 -> push
+            add pop 1 -> push
+            aload traced_tables pop -> table_addr
+            mul i 3 -> push
+            add pop 2 -> push
+            aload traced_tables pop -> table_size
+            mul i 3 -> push
+            add pop 3 -> push
+            aload traced_tables pop -> table_name
+
+            ; Calculate table_end
+            add table_addr table_size -> table_end
+
+            ; Check for overlap: write overlaps table if write_start < table_end AND write_end > table_addr
+            jge write_start table_end -> .no_overlap
+            jle write_end table_addr -> .no_overlap
+
+            ; Overlap detected - calculate offset within table and call report
+            ; offset_in_table = write_start - table_addr (may be negative for partial overlap before table)
+            sub write_start table_addr -> push
+            copy value -> push
+            copy write_end -> push
+            copy write_start -> push
+            copy table_addr -> push
+            copy table_name -> push
+            call _rt_trace_report_word 6 -> push
+
+        .no_overlap:
+            add i 1 -> i
+            jump .check_next
+
+        .done:
+            return";
+
+        [RuntimeFunc(nameof(trace_report_byte))]
+        public const string trace_check_write_byte = @"
+            function
+            local base_addr
+            local offset
+            local value
+            local traced_tables
+            local count
+            local i
+            local table_addr
+            local table_size
+            local table_name
+            local table_end
+            local write_addr
+
+            ; Calculate write address for byte
+            add base_addr offset -> write_addr
+
+            ; Load the _traced_tables pointer
+            copy _traced_tables -> traced_tables
+
+            ; Load count
+            aload traced_tables 0 -> count
+            jz count -> .done
+
+            ; Loop through each traced table entry
+            copy 0 -> i
+        .check_next:
+            jge i count -> .done
+
+            ; Each entry is 3 words: address, size, name string
+            mul i 3 -> push
+            add pop 1 -> push
+            aload traced_tables pop -> table_addr
+            mul i 3 -> push
+            add pop 2 -> push
+            aload traced_tables pop -> table_size
+            mul i 3 -> push
+            add pop 3 -> push
+            aload traced_tables pop -> table_name
+
+            ; Calculate table_end
+            add table_addr table_size -> table_end
+
+            ; Check if write_addr is within table bounds
+            jlt write_addr table_addr -> .no_overlap
+            jge write_addr table_end -> .no_overlap
+
+            ; Write is within table - calculate offset within table and call report
+            sub write_addr table_addr -> push
+            copy value -> push
+            copy write_addr -> push
+            copy table_name -> push
+            call _rt_trace_report_byte 4 -> push
+
+        .no_overlap:
+            add i 1 -> i
+            jump .check_next
+
+        .done:
+            return";
+
+        [RuntimeFunc]
+        public const string trace_report_word = @"
+            function
+            local table_name
+            local table_addr
+            local write_start
+            local write_end
+            local value
+            local offset_in_table
+            local word_offset
+            local misalignment
+
+            ; Print: ""[TRACE] Write to <table_name>""
+            streamstr _trace_msg_prefix
+            streamstr table_name
+
+            ; Calculate word offset and misalignment
+            ; word_offset = offset_in_table / 4
+            div offset_in_table 4 -> word_offset
+            ; misalignment = offset_in_table % 4
+            mod offset_in_table 4 -> misalignment
+
+            ; Print "" word <n>"" or "" word <n> (+<m> bytes)""
+            streamstr _trace_msg_word
+            streamnum word_offset
+            jz misalignment -> .no_misalign
+            streamstr _trace_msg_unaligned
+            streamnum misalignment
+            streamstr _trace_msg_bytes_suffix
+        .no_misalign:
+
+            ; Print "" (addr <start>-<end>)""
+            streamstr _trace_msg_addr
+            streamnum write_start
+            streamstr _trace_msg_dash
+            sub write_end 1 -> push
+            streamnum pop
+            streamstr _trace_msg_value
+            streamnum value
+            streamstr _trace_msg_newline
+            return";
+
+        [RuntimeFunc]
+        public const string trace_report_byte = @"
+            function
+            local table_name
+            local write_addr
+            local value
+            local offset_in_table
+
+            ; Print: ""[TRACE] Write to <table_name>""
+            streamstr _trace_msg_prefix
+            streamstr table_name
+
+            ; Print "" byte <n>""
+            streamstr _trace_msg_byte
+            streamnum offset_in_table
+
+            ; Print "" (addr <addr>)""
+            streamstr _trace_msg_addr
+            streamnum write_addr
+            streamstr _trace_msg_value
+            streamnum value
+            streamstr _trace_msg_newline
+            return";
+
+#endregion
     }
 }
