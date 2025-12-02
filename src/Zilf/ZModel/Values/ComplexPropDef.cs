@@ -566,36 +566,43 @@ namespace Zilf.ZModel.Values
                     if (ctx.ZEnvironment.ZVersion == 3)
                         return 1;
 
-                    return 2;
+                    return ctx.ZWordSize;
 
                 case OutputElementType.Byte:
+                    return 1;
+
                 case OutputElementType.Global:
+                    if (ctx.IsGlulx)
+                        return ctx.ZWordSize;
+
                     return 1;
 
                 case OutputElementType.Noun:
                 case OutputElementType.Voc:
                 case OutputElementType.Word:
                 case OutputElementType.String:
-                    return 2;
+                    return ctx.ZWordSize;
 
                 case OutputElementType.Object:
-                    if (ctx.ZEnvironment.ZVersion == 3 ||
-                        ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsLast)
+                    if (!ctx.IsGlulx &&
+                        (ctx.ZEnvironment.ZVersion == 3 ||
+                         ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsLast))
                     {
                         return 1;
                     }
 
-                    return 2;
+                    return ctx.ZWordSize;
 
                 case OutputElementType.Room:
-                    if (ctx.ZEnvironment.ZVersion == 3 ||
-                        ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsFirst ||
-                        ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsAndLocalGlobalsFirst)
+                    if (!ctx.IsGlulx &&
+                        (ctx.ZEnvironment.ZVersion == 3 ||
+                         ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsFirst ||
+                         ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsAndLocalGlobalsFirst))
                     {
                         return 1;
                     }
 
-                    return 2;
+                    return ctx.ZWordSize;
 
                 default:
                     return 0;
@@ -965,8 +972,16 @@ namespace Zilf.ZModel.Values
                         break;
 
                     case OutputElementType.Global:
-                        Debug.Assert(capturedAtom != null);
-                        tb.AddByte(converters.GetGlobalNumber(capturedAtom));
+                        if (OutputElementSize(output, ctx) == 1)
+                        {
+                            Debug.Assert(capturedAtom != null);
+                            tb.AddByte(converters.GetGlobalNumber(capturedAtom));
+                        }
+                        else
+                        {
+                            Debug.Assert(capturedAtom != null);
+                            tb.AddWord(converters.GetGlobalNumber(capturedAtom));
+                        }
                         break;
 
                     case OutputElementType.Adjective:

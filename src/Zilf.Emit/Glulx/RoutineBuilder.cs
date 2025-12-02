@@ -37,6 +37,7 @@ namespace Zilf.Emit.Glulx
         readonly List<LocalBuilder> locals = [];
         readonly PeepholeBuffer<GlulxCode> peep;
         int nextLabelNum;
+        bool varargsRequired;
 
         // Routines to trace for debugging
         static readonly HashSet<string> TracedRoutines = [
@@ -82,8 +83,7 @@ namespace Zilf.Emit.Glulx
 
         public ILabel RoutineStart { get; }
 
-        // TODO: provide HasArgCount by converting the function to func_va (varargs) if ArgProvided is used
-        public bool HasArgCount => false;
+        public bool HasArgCount => true;
 
         public bool HasBranchSave => false;
 
@@ -302,6 +302,18 @@ namespace Zilf.Emit.Glulx
                     cmp = polarity ? "jnz" : "jz";
                     AddLine($"{cmp} pop", cmp, label, branchType);
                     return;
+
+                case Condition.Verify:
+                    Emit($"verify -> push");
+                    cmp = polarity ? "jz" : "jnz";      // verify returns 0 for success
+                    AddLine($"{cmp} pop", cmp, label, branchType);
+                    return;
+
+                case Condition.ArgProvided:
+                    varargsRequired = true;
+                    cmp = polarity ? "jge" : "jlt";
+                    AddLine($"{cmp} _va_count {FormatLoad(left!)}", cmp, label, branchType);
+                    return;
             }
 
             string opcode = cond switch
@@ -412,6 +424,10 @@ namespace Zilf.Emit.Glulx
                     Emit($"callfii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_property_address))} {FormatLoad(left)} {FormatLoad(right)} -> {FormatStore(result!)}", "callfii");
                     return;
 
+                case BinaryOp.GetNextProp:
+                    Emit($"callfii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_next_property))} {FormatLoad(left)} {FormatLoad(right)} -> {FormatStore(result!)}", "callfii");
+                    return;
+
                 case BinaryOp.DirectOutput:
                     Emit($"callfii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.direct_output))} {FormatLoad(left)} {FormatLoad(right)}", "callfii");
                     return;
@@ -464,6 +480,10 @@ namespace Zilf.Emit.Glulx
 
                 case UnaryOp.DirectOutput:
                     Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.direct_output))} {FormatLoad(value)}", "callfi");
+                    return;
+
+                case UnaryOp.DirectInput:
+                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.direct_input))} {FormatLoad(value)}", "callfi");
                     return;
 
                 case UnaryOp.GetParent:
@@ -858,13 +878,51 @@ namespace Zilf.Emit.Glulx
                 sb.AppendLine("entry_point:");
             }
             sb.AppendLine($"{name}:");
-            sb.AppendLine(INDENT + "function");
-            foreach (var local in requiredParams.Concat(optionalParams).Concat(locals))
-            {
-                sb.AppendLine(INDENT + $"local {local}");
-            }
 
-            // TODO: initialize unpassed optional parameters (this requires varargs)
+            if (optionalParams.Any(p => p.DefaultValue != null))
+                varargsRequired = true;
+
+            if (varargsRequired)
+            {
+                sb.AppendLine(INDENT + "func_va");
+                sb.AppendLine(INDENT + "local _va_count");
+                sb.AppendLine(INDENT + "pull -> _va_count");
+
+                int argIndex = 1;
+                foreach (var arg in requiredParams)
+                {
+                    sb.AppendLine(INDENT + $"local {arg}");
+                    sb.AppendLine(INDENT + $"pull -> {arg}");
+                    argIndex++;
+                }
+
+                foreach (var arg in optionalParams)
+                {
+                    sb.AppendLine(INDENT + $"local {arg}");
+                    if (arg.DefaultValue != null)
+                        sb.AppendLine(INDENT + $"copy {FormatLoad(arg.DefaultValue)} -> {arg}");
+                }
+                foreach (var arg in optionalParams)
+                {
+                    sb.AppendLine(INDENT + $"jlt _va_count {argIndex} -> ._va_done");
+                    sb.AppendLine(INDENT + $"pull -> {arg}");
+                    argIndex++;
+                }
+                sb.AppendLine("._va_done:");
+
+                foreach (var local in locals)
+                {
+                    sb.AppendLine(INDENT + $"local {local}");
+                }
+            }
+            else
+            {
+                sb.AppendLine(INDENT + "function");
+                foreach (var local in requiredParams.Concat(optionalParams).Concat(locals))
+                {
+                    sb.AppendLine(INDENT + $"local {local}");
+                }
+            }
 
             // write preamble
             var preamble = new PeepholeBuffer<GlulxCode>();

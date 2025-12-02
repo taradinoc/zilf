@@ -100,9 +100,16 @@ namespace Zilf.Emit.Glulx
                     writer.Write(' ');
 
                 if (isOperand)
-                    writer.Write(operandValues[oi++].StripIndirect());
+                {
+                    var operand = operandValues[oi++];
+                    if (operand is GlobalBuilder gb)
+                        operand = gb.Indirect;
+                    writer.Write(operand);
+                }
                 else
+                {
                     writer.Write(numericValues[ni++]);
+                }
 
                 wasWord = isWord;
                 lineCount++;

@@ -509,6 +509,12 @@ namespace Zilf.Emit.Glulx
             glk glk_stream_set_current 1
             return";
 
+        [RuntimeFunc]
+        public const string direct_input = @"
+            function
+            ; TODO: implement other input streams
+            return";
+
         [RuntimeFunc(nameof(glk_defines), nameof(tokenize_line), nameof(check_call))]
         public const string read_line = @"
             function
@@ -790,6 +796,40 @@ namespace Zilf.Emit.Glulx
             jz addr -> rfalse       ; Not found
             ; Read value
             aload addr 0 -> push
+            return pop";
+
+        [RuntimeFunc(nameof(object_defines))]
+        public const string get_next_property = @"
+            function
+            local obj
+            local prop
+            local entry
+            local ptbl
+            local max
+            ; Get object property table
+            aload obj objfield_PropTable -> ptbl
+            jz ptbl -> rfalse
+            ; Finding the first property?
+            jz prop -> .want_first
+            ; Get property count
+            aload ptbl proptable_Max -> max
+            ; Search for property entry
+            add ptbl 4 -> ptbl
+            binarysearch prop 2 ptbl 10 max 0 0 -> entry
+            jz entry -> rfalse      ; shouldn't happen
+            ; Advance to the next entry
+            add entry 10 -> entry
+            ; Are we at the end?
+            mul max 10 -> push
+            add ptbl pop -> push
+            jge entry pop -> rfalse
+            jump .done
+        .want_first:
+            ; Get the first entry
+            add ptbl 4 -> entry
+        .done:
+            ; Return the property number
+            aloads entry 0 -> push
             return pop";
 
         [RuntimeFunc(nameof(object_defines))]

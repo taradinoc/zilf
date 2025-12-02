@@ -24,7 +24,10 @@ namespace Zilf.Emit.Glulx
     {
         public IVariable Variable => variable;
 
-        public override string? ToString() => variable.ToString();
+        public override string? ToString() => variable switch {
+            GlobalBuilder gb => gb.Name,
+            _ => variable.ToString()
+        };
 
         public IConstantOperand Add(IConstantOperand other)
         {
