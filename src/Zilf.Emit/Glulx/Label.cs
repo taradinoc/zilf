@@ -20,7 +20,22 @@ namespace Zilf.Emit.Glulx
 {
     class Label(string name) : ILabel
     {
+        /// <summary>
+        /// Special label for "return true" (return 1). Branch to this to return 1.
+        /// </summary>
+        public static readonly Label RTRUE = new("rtrue");
+
+        /// <summary>
+        /// Special label for "return false" (return 0). Branch to this to return 0.
+        /// </summary>
+        public static readonly Label RFALSE = new("rfalse");
+
         public string Name => name;
+
+        /// <summary>
+        /// Returns true if this label is one of the special rtrue/rfalse pseudo-labels.
+        /// </summary>
+        public bool IsReturnLabel => ReferenceEquals(this, RTRUE) || ReferenceEquals(this, RFALSE);
 
         public override string ToString() => $".{name}";
     }

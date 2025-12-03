@@ -170,6 +170,7 @@ namespace Zilf.Emit.Glulx
 
         /// <summary>
         /// Optimizes push X followed by return pop to return X.
+        /// For push 0/1, creates BranchAlways to Label.RFALSE/Label.RTRUE for further optimization.
         /// </summary>
         bool TrySimplifyPushReturn(IEnumerable<CombinableLine<GlulxCode>> lines, out CombinerResult<GlulxCode> result)
         {
@@ -183,6 +184,18 @@ namespace Zilf.Emit.Glulx
                     // Extract the value from "push X"
                     var pushText = matches![0].Code.Text;
                     var value = pushText.Substring(5).Trim(); // Skip "push "
+                    
+                    // For push 0/1, create BranchAlways to Label.RFALSE/Label.RTRUE for further optimization
+                    if (value == "0")
+                    {
+                        result = Combine2To1("return 0", "return", PeepholeLineType.BranchAlways, Label.RFALSE);
+                        return true;
+                    }
+                    if (value == "1")
+                    {
+                        result = Combine2To1("return 1", "return", PeepholeLineType.BranchAlways, Label.RTRUE);
+                        return true;
+                    }
                     
                     result = Combine2To1($"return {value}", "return", PeepholeLineType.Terminator);
                     return true;

@@ -65,8 +65,6 @@ namespace Zilf.Emit.Glulx
             RoutineStart = DefineLabel();
         }
 
-        static readonly Label RTRUE = new("rtrue");
-        static readonly Label RFALSE = new("rfalse");
         static readonly StackOperand STACK = new();
 
         public string Name => name;
@@ -75,9 +73,9 @@ namespace Zilf.Emit.Glulx
 
         public bool CleanStack => true;
 
-        public ILabel RTrue => RTRUE;
+        public ILabel RTrue => Label.RTRUE;
 
-        public ILabel RFalse => RFALSE;
+        public ILabel RFalse => Label.RFALSE;
 
         public IVariable Stack => STACK;
 
@@ -240,13 +238,13 @@ namespace Zilf.Emit.Glulx
 
         public void Branch(ILabel label)
         {
-            if (label == RTRUE)
+            if (label == Label.RTRUE)
             {
-                AddLine("return 1", "return", RTRUE, PeepholeLineType.BranchAlways);
+                AddLine("return 1", "return", Label.RTRUE, PeepholeLineType.BranchAlways);
             }
-            else if (label == RFALSE)
+            else if (label == Label.RFALSE)
             {
-                AddLine("return 0", "return", RFALSE, PeepholeLineType.BranchAlways);
+                AddLine("return 0", "return", Label.RFALSE, PeepholeLineType.BranchAlways);
             }
             else
             {
@@ -397,7 +395,12 @@ namespace Zilf.Emit.Glulx
 
         public void Return(IOperand result)
         {
-            AddLine($"return {FormatLoad(result)}", "return", null, PeepholeLineType.Terminator);
+            if (result == GameBuilder.ONE)
+                AddLine("return 1", "return", Label.RTRUE, PeepholeLineType.BranchAlways);
+            else if (result == GameBuilder.ZERO)
+                AddLine("return 0", "return", Label.RFALSE, PeepholeLineType.BranchAlways);
+            else
+                AddLine($"return {FormatLoad(result)}", "return", null, PeepholeLineType.Terminator);
         }
 
         public void EmitStore(IVariable dest, IOperand src)
@@ -732,7 +735,7 @@ namespace Zilf.Emit.Glulx
             if (crlfRtrue)
             {
                 Emit("streamchar 10", "streamchar");
-                AddLine("return 1", "return", RTRUE, PeepholeLineType.BranchAlways);
+                AddLine("return 1", "return", Label.RTRUE, PeepholeLineType.BranchAlways);
             }
         }
 
@@ -974,11 +977,11 @@ namespace Zilf.Emit.Glulx
                 // Handle special cases for return to RTRUE/RFALSE
                 switch (type)
                 {
-                    case PeepholeLineType.BranchAlways when target == RTRUE:
+                    case PeepholeLineType.BranchAlways when target == Label.RTRUE:
                         sb.Append(label != null ? $"{label}:" : "");
                         sb.AppendLine(INDENT + "return 1");
                         return;
-                    case PeepholeLineType.BranchAlways when target == RFALSE:
+                    case PeepholeLineType.BranchAlways when target == Label.RFALSE:
                         sb.Append(label != null ? $"{label}:" : "");
                         sb.AppendLine(INDENT + "return 0");
                         return;
@@ -1003,12 +1006,24 @@ namespace Zilf.Emit.Glulx
                 {
                     case PeepholeLineType.BranchAlways when code.Opcode == "jump":
                         sb.Append(' ');
-                        sb.Append(target);
+                        // Use special Glulx branch targets for rtrue/rfalse
+                        if (target == Label.RTRUE)
+                            sb.Append("rtrue");
+                        else if (target == Label.RFALSE)
+                            sb.Append("rfalse");
+                        else
+                            sb.Append(target);
                         break;
                     case PeepholeLineType.BranchPositive:
                     case PeepholeLineType.BranchNegative:
                         sb.Append(" -> ");
-                        sb.Append(target);
+                        // Use special Glulx branch targets for rtrue/rfalse
+                        if (target == Label.RTRUE)
+                            sb.Append("rtrue");
+                        else if (target == Label.RFALSE)
+                            sb.Append("rfalse");
+                        else
+                            sb.Append(target);
                         break;
                 }
 
