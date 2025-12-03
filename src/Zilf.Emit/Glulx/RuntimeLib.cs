@@ -131,7 +131,7 @@ namespace Zilf.Emit.Glulx
 
         [RuntimeDefinitionSet]
         public const string glk_defines = @"
-            MAX_OUTPUT_BUFFER = 65536
+            MAX_OUTPUT_BUFFER = 4096
 
             glk_window_iterate = 0x20
             glk_window_open = 0x23
@@ -150,7 +150,11 @@ namespace Zilf.Emit.Glulx
             glk_stream_get_current = 0x48
             glk_fileref_create_by_prompt = 0x62
             glk_fileref_destroy = 0x63
+            glk_put_char_stream = 0x81
+            glk_put_buffer = 0x84
+            glk_put_buffer_stream = 0x85
             glk_set_style = 0x86
+            glk_get_line_stream = 0x91
             glk_char_to_lower = 0xA0
             glk_stylehint_set = 0xB0
             glk_select = 0xC0
@@ -224,11 +228,15 @@ namespace Zilf.Emit.Glulx
             GG_MAIN_WINDOW_ROCK = 31415
             GG_STATUS_WINDOW_ROCK = 92653
             GG_SAVE_STREAM_ROCK = 58979
+            GG_COMMAND_INPUT_STREAM_ROCK = 32384
+            GG_COMMAND_OUTPUT_STREAM_ROCK = 62643
 
             section .data
             gg_main_window_id: dd 0
             gg_status_window_id: dd 0
             gg_save_stream_id: dd 0
+            gg_command_input_stream_id: dd 0
+            gg_command_output_stream_id: dd 0
             gg_status_height: dd 0
             gg_prev_stream_sp: dd 0
 
@@ -332,11 +340,23 @@ namespace Zilf.Emit.Glulx
             jz id -> rfalse
             ; Is it the save stream?
             jeq [gg_temp_word] GG_SAVE_STREAM_ROCK -> .found_save
+            ; Is it the command input stream?
+            jeq [gg_temp_word] GG_COMMAND_INPUT_STREAM_ROCK -> .found_command_input
+            ; Is it the command output stream?
+            jeq [gg_temp_word] GG_COMMAND_OUTPUT_STREAM_ROCK -> .found_command_output
             ; Keep looking
             jump .next_stream
         .found_save:
             ; Save save [sic] stream ID
             copy id -> [gg_save_stream_id]
+            jump .next_stream
+        .found_command_input:
+            ; Save command input stream ID
+            copy id -> [gg_command_input_stream_id]
+            jump .next_stream
+        .found_command_output:
+            ; Save command output stream ID
+            copy id -> [gg_command_output_stream_id]
             jump .next_stream
             ; No return needed, function is exited with rfalse above";
 
@@ -463,7 +483,9 @@ namespace Zilf.Emit.Glulx
              the length is still at <GET ,OUTPUT-BUF 0>
              the first char is still at <GETB ,OUTPUT-BUF ,WORD-SIZE>
          */
-        [RuntimeFunc(nameof(glk_defines))]
+        [RuntimeFunc(
+            nameof(enable_output_stream_3), nameof(disable_output_stream_3),
+            nameof(enable_output_stream_4), nameof(disable_output_stream_4))]
         public const string direct_output = @"
             function
             local stream
@@ -473,9 +495,30 @@ namespace Zilf.Emit.Glulx
             jeq stream 3 -> .enable_3
             ; Disabling stream 3?
             jeq stream -3 -> .disable_3
+            ; Enabling stream 4 (command record)?
+            jeq stream 4 -> .enable_4
+            ; Disabling stream 4?
+            jeq stream -4 -> .disable_4
             ; TODO: implement other output streams
             return
         .enable_3:
+            callfii _rt_enable_output_stream_3 table width
+            return
+        .disable_3:
+            callf _rt_disable_output_stream_3
+            return
+        .enable_4:
+            callf _rt_enable_output_stream_4
+            return
+        .disable_4:
+            callf _rt_disable_output_stream_4
+            return";
+
+        [RuntimeFunc(nameof(glk_defines))]
+        public const string enable_output_stream_3 = @"
+            function
+            local table
+            local width
             ; Push current stream and new table address
             glk glk_stream_get_current 0 -> push
             astore gg_prev_stream_stack [gg_prev_stream_sp] pop
@@ -489,8 +532,12 @@ namespace Zilf.Emit.Glulx
             glk glk_stream_open_memory 4 -> push
             ; Select it
             glk glk_stream_set_current 1
-            return
-        .disable_3:
+            return";
+
+        [RuntimeFunc(nameof(glk_defines))]
+        public const string disable_output_stream_3 = @"
+            function
+            local stream
             ; Get current stream and decrement stream stack pointer
             glk glk_stream_get_current 0 -> stream
             sub [gg_prev_stream_sp] 1 -> [gg_prev_stream_sp]
@@ -510,9 +557,69 @@ namespace Zilf.Emit.Glulx
             return";
 
         [RuntimeFunc]
+        public const string enable_output_stream_4 = @"
+            function
+            local fref
+            ; Prompt player to select a file
+            push 0
+            push filemode_Write
+            push (fileusage_InputRecord | fileusage_TextMode)
+            glk glk_fileref_create_by_prompt 3 -> fref
+            jz fref -> rfalse
+            ; Open stream
+            push GG_COMMAND_OUTPUT_STREAM_ROCK
+            push filemode_Write
+            push fref
+            glk glk_stream_open_file 3 -> [gg_command_output_stream_id]
+            push fref
+            glk glk_fileref_destroy 1
+            return";
+
+        [RuntimeFunc(nameof(glk_defines))]
+        public const string disable_output_stream_4 = @"
+            function
+            ; Are we rolling?
+            jz [gg_command_output_stream_id] -> rfalse
+            ; Close stream
+            push 0
+            push [gg_command_output_stream_id]
+            glk glk_stream_close 2
+            copy 0 -> [gg_command_output_stream_id]
+            return";
+
+        [RuntimeFunc]
         public const string direct_input = @"
             function
-            ; TODO: implement other input streams
+            local stream
+            local fref
+            ; Enabling stream 1 (recorded commands)?
+            jeq stream 1 -> .enable_1
+            ; Disabling stream 1?
+            jeq stream -1 -> .disable_1
+            ; There is no other input stream
+            return
+        .enable_1:
+            ; Prompt player to select a file
+            push 0
+            push filemode_Read
+            push (fileusage_InputRecord | fileusage_TextMode)
+            glk glk_fileref_create_by_prompt 3 -> fref
+            jz fref -> rfalse
+            ; Open stream
+            push GG_COMMAND_INPUT_STREAM_ROCK
+            push filemode_Read
+            push fref
+            glk glk_stream_open_file 3 -> [gg_command_input_stream_id]
+            push fref
+            glk glk_fileref_destroy 1
+            return
+        .disable_1:
+            jz [gg_command_input_stream_id] -> rfalse
+            ; Close stream
+            push 0
+            push [gg_command_input_stream_id]
+            glk glk_stream_close 2
+            copy 0 -> [gg_command_input_stream_id]
             return";
 
         [RuntimeFunc(nameof(glk_defines), nameof(tokenize_line), nameof(check_call))]
@@ -521,6 +628,10 @@ namespace Zilf.Emit.Glulx
             local textbuf
             local lexbuf
             local evtype
+            local nchars
+            ; Are we playing back recorded input?
+            jnz [gg_command_input_stream_id] -> .read_from_stream
+        .read_from_window:
             ; Request line input in the main window
             ; TODO: handle terminating characters
             push 0
@@ -543,12 +654,55 @@ namespace Zilf.Emit.Glulx
             ; Store line length
             aload gg_event event_Val1 -> push
             astoreb textbuf 1 pop
+        .got_command:
             ; Populate lexbuf
             callfii _rt_tokenize_line textbuf lexbuf
+            ; Are we recording commands?
+            jz [gg_command_output_stream_id] -> rfalse
+            ; Write command to stream
+            aloadb textbuf 1 -> push
+            add textbuf 2 -> push
+            push [gg_command_output_stream_id]
+            glk glk_put_buffer_stream 3
+            push 10
+            push [gg_command_output_stream_id]
+            glk glk_put_char_stream 2
             return
         .got_arrange_event:
             callf update_status_line_hook
-            jump .select";
+            jump .select
+        .read_from_stream:
+            aloadb textbuf 0 -> push    ; size of buffer
+            add textbuf 2 -> push       ; buffer (skip first 2 bytes)
+            push [gg_command_input_stream_id]
+            glk glk_get_line_stream 3 -> nchars
+            ; Did we run out of recorded input?
+            jz nchars -> .eof
+            ; Trim trailing newline
+            add nchars 1 -> push
+            aloadb textbuf pop -> push
+            jne pop 10 -> .trim_done
+            sub nchars 1 -> nchars
+        .trim_done:
+            ; Store character count
+            astoreb textbuf 1 nchars
+            ; Echo command to window
+            push style_Input
+            glk glk_set_style 1
+            push nchars
+            add textbuf 2 -> push
+            glk glk_put_buffer 2
+            push style_Normal
+            glk glk_set_style 1
+            streamchar 10
+            jump .got_command
+        .eof:
+            ; Close stream
+            push 0
+            push [gg_command_input_stream_id]
+            glk glk_stream_close 2
+            copy 0 -> [gg_command_input_stream_id]
+            jump .read_from_window";
 
         [RuntimeFunc(nameof(glk_defines))]
         public const string output_style = @"
