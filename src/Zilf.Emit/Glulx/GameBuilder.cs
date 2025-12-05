@@ -21,10 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection.PortableExecutable;
 using System.Text;
-using Zilf.Common.StringEncoding;
-using Zilf.Emit;
 
 namespace Zilf.Emit.Glulx
 {
@@ -66,6 +63,7 @@ namespace Zilf.Emit.Glulx
 
         IRoutineBuilder? entryRoutine;
         IOperand? updateStatusLineHook;     // IRoutineBuilder or IGlobalBuilder
+        ITableBuilder? terminatingCharsTable;
 
         Stream? stream;
         TextWriter writer;
@@ -419,6 +417,7 @@ namespace Zilf.Emit.Glulx
             FinishGlobals();
             FinishObjects();
             FinishImpureTables();
+            FinishTerminatingChars();
 
             // pure data
             writer.WriteLine();
@@ -581,6 +580,18 @@ namespace Zilf.Emit.Glulx
             }
         }
 
+        void FinishTerminatingChars()
+        {
+            if (impureTables.Concat(pureTables).FirstOrDefault(tb => tb.Name == "TCHARS") is TableBuilder tcharsTable)
+            {
+                terminatingCharsTable = tcharsTable;
+
+                writer.WriteLine();
+                writer.WriteLine(INDENT + "section .bss");
+                writer.WriteLine(INDENT + "terminating_chars_translations: resd {0}", tcharsTable.Size);
+            }
+        }
+
         void FinishSyntax()
         {
             // vocabulary table
@@ -699,6 +710,30 @@ namespace Zilf.Emit.Glulx
             }
 
             writer.WriteLine(INDENT + "return");
+
+            // terminating chars hooks
+            writer.WriteLine();
+            writer.WriteLine("init_terminating_chars_hook:");
+            writer.WriteLine(INDENT + "function");
+
+            if (terminatingCharsTable != null)
+            {
+                writer.WriteLine(INDENT + $"callfi {RuntimeLib.Use(nameof(RuntimeLib.init_terminating_chars))} {terminatingCharsTable}");
+            }
+
+            writer.WriteLine(INDENT + "return");
+
+            writer.WriteLine();
+            writer.WriteLine("convert_terminating_char_hook:");
+            writer.WriteLine(INDENT + "function");
+            writer.WriteLine(INDENT + "local ch");
+
+            if (terminatingCharsTable != null)
+            {
+                writer.WriteLine(INDENT + $"callfi {RuntimeLib.Use(nameof(RuntimeLib.convert_terminating_char))} ch -> ch");
+            }
+
+            writer.WriteLine(INDENT + "return ch");
         }
 
         void FinishTracedTablesMetadata()

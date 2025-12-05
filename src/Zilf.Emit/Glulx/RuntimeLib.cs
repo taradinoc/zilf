@@ -159,6 +159,7 @@ namespace Zilf.Emit.Glulx
             glk_stylehint_set = 0xB0
             glk_select = 0xC0
             glk_request_line_event = 0xD0
+            glk_set_terminators_line_event = 0x151
 
             wintype_AllTypes = 0
             wintype_Pair = 1
@@ -629,11 +630,12 @@ namespace Zilf.Emit.Glulx
             local lexbuf
             local evtype
             local nchars
+            local tchar
             ; Are we playing back recorded input?
             jnz [gg_command_input_stream_id] -> .read_from_stream
         .read_from_window:
             ; Request line input in the main window
-            ; TODO: handle terminating characters
+            callf init_terminating_chars_hook
             push 0
             aloadb textbuf 0 -> push    ; size of buffer
             add textbuf 2 -> push       ; buffer (skip first 2 bytes)
@@ -658,7 +660,7 @@ namespace Zilf.Emit.Glulx
             ; Populate lexbuf
             callfii _rt_tokenize_line textbuf lexbuf
             ; Are we recording commands?
-            jz [gg_command_output_stream_id] -> rfalse
+            jz [gg_command_output_stream_id] -> .not_recording
             ; Write command to stream
             aloadb textbuf 1 -> push
             add textbuf 2 -> push
@@ -667,7 +669,14 @@ namespace Zilf.Emit.Glulx
             push 10
             push [gg_command_output_stream_id]
             glk glk_put_char_stream 2
-            return
+        .not_recording:
+            ; Convert terminating character if needed
+            aload gg_event event_Val2 -> tchar
+            jnz tchar -> .convert_tchar
+            return 13
+        .convert_tchar:
+            callfi convert_terminating_char_hook tchar -> tchar
+            return tchar
         .got_arrange_event:
             callf update_status_line_hook
             jump .select
@@ -703,6 +712,134 @@ namespace Zilf.Emit.Glulx
             glk glk_stream_close 2
             copy 0 -> [gg_command_input_stream_id]
             jump .read_from_window";
+
+        [RuntimeDefinitionSet]
+        public const string keycode_defines = @"
+            keycode_Unknown = 0xffffffff
+            keycode_Left = 0xfffffffe
+            keycode_Right = 0xfffffffd
+            keycode_Up = 0xfffffffc
+            keycode_Down = 0xfffffffb
+            keycode_Return = 0xfffffffa
+            keycode_Delete = 0xfffffff9
+            keycode_Escape = 0xfffffff8
+            keycode_Tab = 0xfffffff7
+            keycode_PageUp = 0xfffffff6
+            keycode_PageDown = 0xfffffff5
+            keycode_Home = 0xfffffff4
+            keycode_End = 0xfffffff3
+            keycode_Func1 = 0xffffffef
+            keycode_Func2 = 0xffffffee
+            keycode_Func3 = 0xffffffed
+            keycode_Func4 = 0xffffffec
+            keycode_Func5 = 0xffffffeb
+            keycode_Func6 = 0xffffffea
+            keycode_Func7 = 0xffffffe9
+            keycode_Func8 = 0xffffffe8
+            keycode_Func9 = 0xffffffe7
+            keycode_Func10 = 0xffffffe6
+            keycode_Func11 = 0xffffffe5
+            keycode_Func12 = 0xffffffe4
+
+            section .data
+        keycode_map:
+            db 129
+            dd keycode_Up
+            db 130
+            dd keycode_Down
+            db 131
+            dd keycode_Left
+            db 132
+            dd keycode_Right
+            db 133
+            dd keycode_Func1
+            db 134
+            dd keycode_Func2
+            db 135
+            dd keycode_Func3
+            db 136
+            dd keycode_Func4
+            db 137
+            dd keycode_Func5
+            db 138
+            dd keycode_Func6
+            db 139
+            dd keycode_Func7
+            db 140
+            dd keycode_Func8
+            db 141
+            dd keycode_Func9
+            db 142
+            dd keycode_Func10
+            db 143
+            dd keycode_Func11
+            db 144
+            dd keycode_Func12
+            db 145
+            dd keycode_Unknown      ; keypad 0
+            db 146
+            dd keycode_Unknown      ; keypad 1
+            db 147
+            dd keycode_Unknown      ; keypad 2
+            db 148
+            dd keycode_Unknown      ; keypad 3
+            db 149
+            dd keycode_Unknown      ; keypad 4
+            db 150
+            dd keycode_Unknown      ; keypad 5
+            db 151
+            dd keycode_Unknown      ; keypad 6
+            db 152
+            dd keycode_Unknown      ; keypad 7
+            db 153
+            dd keycode_Unknown      ; keypad 8
+            db 154
+            dd keycode_Unknown      ; keypad 9
+            db 252
+            dd keycode_Unknown      ; menu click
+            db 253
+            dd keycode_Unknown      ; double click
+            db 254
+            dd keycode_Unknown      ; single click
+            KEYCODE_MAP_COUNT = 29";
+
+        [RuntimeFunc(nameof(glk_defines), nameof(keycode_defines))]
+        public const string init_terminating_chars = @"
+            function
+            local ztable
+            local i
+            local zkey
+            local gkey
+            ; Convert Z key codes into Glk key codes and copy into buffer
+            copy 0 -> i
+        .convert_next:
+            aloadb ztable i -> zkey
+            jz zkey -> .conversion_done
+            binarysearch zkey 1 keycode_map 5 KEYCODE_MAP_COUNT 0 0 -> gkey
+            add gkey 1 -> gkey
+            aload gkey 0 -> gkey
+            astore terminating_chars_translations i gkey
+            add i 1 -> i
+            jump .convert_next
+        .conversion_done:
+            push i
+            push terminating_chars_translations
+            push [gg_main_window_id]
+            glk glk_set_terminators_line_event 3
+            return";
+
+        [RuntimeFunc(nameof(keycode_defines))]
+        public const string convert_terminating_char = @"
+            function
+            local gkey
+            local zkey
+            ; Convert Glk key code to Z key code
+            linearsearch gkey 4 keycode_map 5 KEYCODE_MAP_COUNT 1 0 -> zkey
+            jz zkey -> .not_found
+            aloadb zkey 0 -> zkey
+            return zkey
+        .not_found:
+            return 13";
 
         [RuntimeFunc(nameof(glk_defines))]
         public const string output_style = @"
