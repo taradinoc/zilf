@@ -1,15 +1,12 @@
 ;"Main file for ADVENTURE"
 ;"Ported to ZIL by Tara McGrew, July-September 2015"
 
-;"TODO: DESCRIBE-OBJECTS should mention special LOCAL-GLOBALS?"
-;"TODO: Add CANT-GO property?"
-
 ;----------------------------------------------------------------------
 "General directives"
 ;----------------------------------------------------------------------
 
 <VERSION ZIP>
-<CONSTANT RELEASEID 1>
+<CONSTANT RELEASEID 2>
 <CONSTANT IFID-ARRAY <PTABLE (STRING) "UUID://0E123F50-20A2-4F5B-8F01-264678ED419D//">>
 
 <COMPILATION-FLAG DEBUG <>>
@@ -1010,13 +1007,16 @@ flurry gets burnt to a cinder. The ashes blow away." CR>)
           (<AND <VERB? GIVE> <PRSI? ,LITTLE-BIRD>>
            <TELL "It's not hungry. (It's merely pinin' for the fjords).
 Besides, I suspect it would prefer bird seed." CR>)
-          ;"TODO: TELL, ASK, ANSWER...?"
           (<VERB? ATTACK>
            <COND (<IN? ,PRSO ,WICKER-CAGE>
                   <TELL "Oh, leave the poor unhappy bird alone." CR>)
                  (ELSE
                   <REMOVE ,PRSO>
-                  <TELL "The little bird is now dead. Its body disappears." CR>)>)>>
+                  <TELL "The little bird is now dead. Its body disappears." CR>)>)
+          (<VERB? TELL TELL-ABOUT>
+           <SETG P-CONT 0>
+           <TELL "Cheep! Chirp!" CR>)
+        >>
 
 ;----------------------------------------------------------------------
 
@@ -2955,8 +2955,8 @@ who, as you know, are extremely vain.">
     (ACTION SUSPENDED-MIRROR-F)>
 
 <ROUTINE SUSPENDED-MIRROR-F ()
-    ;"TODO: respond to SEARCH (LOOK IN MIRROR)"
-    <COND (<VERB? ATTACK TAKE> <TELL "You can't reach it from here." CR>)>>
+    <COND (<VERB? ATTACK TAKE> <TELL "You can't reach it from here." CR>)
+          (<VERB? SEARCH> <PERFORM ,V?EXAMINE ,WINNER>)>>
 
 ;----------------------------------------------------------------------
 
@@ -3115,7 +3115,8 @@ as that of a rhinoceros.")
                  (ELSE
                   <TELL "The troll deftly catches " T ,PRSO ", examines it carefully, and
 tosses it back, declaring, \"Good workmanship, but it's not valuable enough.\"" CR>)>)
-          ;"TODO: TELL, ASK, ANSWER">>
+          (<VERB? TELL> <TELL "You'll be lucky." CR>)
+          (<VERB? TELL-ABOUT> <TELL "Trolls make poor conversation." CR>)>>
 
 <OBJECT WRECKAGE
     (DESC "wreckage of the bridge")
@@ -3422,7 +3423,7 @@ The only exit is the way you came in.")
 to calm down considerably and even becomes rather friendly." CR>)
                  (,BEAR-FRIENDLY <TELL "The bear doesn't seem very interested in your offer." CR>)
                  (ELSE <TELL "Uh-oh -- your offer only makes the bear angrier!" CR>)>)
-          ;"TODO: TELL, ASK, ANSWER"
+          (<VERB? TELL TELL-ABOUT> <TELL "This is a bear of very little brain." CR>)
           (<VERB? EXAMINE>
            <TELL "The bear is extremely large, ">
            <COND (,BEAR-FRIENDLY <TELL "but appears to be friendly." CR>)
@@ -3622,7 +3623,6 @@ without getting so much as a scratch." CR>)
 
 <GLOBAL FRESH-BATTERIES-USED <>>
 
-;"TODO: FRESH-BATTERIES should be plural."
 <OBJECT FRESH-BATTERIES
     (DESC "fresh batteries")
     (IN VENDING-MACHINE)
@@ -3631,7 +3631,7 @@ without getting so much as a scratch." CR>)
     (FDESC "There are fresh batteries here.")
     (TEXT "They look like ordinary batteries. (A sepulchral voice says, \"Still going!\")")
     (ACTION COUNTABLE-BATTERIES-F)
-    (FLAGS TAKEBIT)>
+    (FLAGS TAKEBIT PLURALBIT)>
 
 <ROUTINE COUNTABLE-BATTERIES-F ()
     <COND (<VERB? COUNT> <TELL "A pair." CR>)>>
@@ -3643,7 +3643,7 @@ without getting so much as a scratch." CR>)
     (FDESC "Some worn-out batteries have been discarded nearby.")
     (TEXT "They look like ordinary batteries.")
     (ACTION COUNTABLE-BATTERIES-F)
-    (FLAGS TAKEBIT)>
+    (FLAGS TAKEBIT PLURALBIT)>
 
 ;----------------------------------------------------------------------
 "Dwarves!"
