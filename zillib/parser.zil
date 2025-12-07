@@ -519,9 +519,11 @@ Args:
                   <SET CNT <GET ,VOCAB 1>>
                   <SET W <+ ,VOCAB <* ,WORD-SIZE 2>>>)
                  (ELSE
-                  <SET SIZE <GETB ,VOCAB 0>>
-                  <SET CNT <GETB ,VOCAB 1>>
-                  <SET W <+ ,VOCAB 2>>)>
+                  <SET W <+ ,VOCAB <GETB ,VOCAB 0> 1>>    ;"skip sibreaks"
+                  <SET SIZE <GETB .W 0>>
+                  <SET W <+ .W 1>>
+                  <SET CNT <GET .W 0>>
+                  <SET W <+ ,W 2>>)>
              <DO (I 1 .CNT)
                  <COND (<=? <CHKWORD? .W .PS .P1> .V>
                         <TELL B .W>
