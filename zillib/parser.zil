@@ -523,7 +523,7 @@ Args:
                   <SET SIZE <GETB .W 0>>
                   <SET W <+ .W 1>>
                   <SET CNT <GET .W 0>>
-                  <SET W <+ ,W 2>>)>
+                  <SET W <+ .W 2>>)>
              <DO (I 1 .CNT)
                  <COND (<=? <CHKWORD? .W .PS .P1> .V>
                         <TELL B .W>
