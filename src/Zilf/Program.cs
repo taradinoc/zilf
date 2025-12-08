@@ -523,44 +523,72 @@ namespace Zilf
             }
 
             // If requested, stop after compile
-            // Also stop for Glulx since we don't have an integrated assembler
             var stopAfter = parseResult.GetValue(stopAfterCompileOption);
 
-            if (stopAfter || ctx.IsGlulx)
+            if (stopAfter)
             {
                 return 0;
             }
 
-            // Prepare Zapf invocation
-            var zapfArgsRaw = parseResult.GetValue(zapfPassThroughOption) ?? Array.Empty<string>();
-            var zapfArgsExpanded = new List<string>();
-            foreach (var token in zapfArgsRaw)
+            // Prepare assembler arguments (used by both ZAPF and Glazer)
+            var asmArgsRaw = parseResult.GetValue(zapfPassThroughOption) ?? Array.Empty<string>();
+            var asmArgsExpanded = new List<string>();
+            foreach (var token in asmArgsRaw)
             {
                 if (string.IsNullOrWhiteSpace(token)) continue;
                 foreach (var part in token.Split(',', StringSplitOptions.RemoveEmptyEntries))
-                    zapfArgsExpanded.Add(part.Trim());
+                    asmArgsExpanded.Add(part.Trim());
             }
 
-            // Propagate quiet to Zapf if the user asked for quiet
-            if (ctx.Quiet && !zapfArgsExpanded.Any(a => a is "-q" or "--quiet"))
-                zapfArgsExpanded.Insert(0, "-q");
+            // Propagate quiet to assembler if the user asked for quiet
+            if (ctx.Quiet && !asmArgsExpanded.Any(a => a is "-q" or "--quiet"))
+                asmArgsExpanded.Insert(0, "-q");
 
-            // Invoke Zapf
-            var zapfExe = FindZapfExecutable();
-            if (zapfExe == null)
+            if (ctx.IsGlulx)
             {
-                Console.Error.WriteLine("ZAPF not found next to ZILF (looked for zapf, Zapf, zapf.exe). Use -S to skip assembly.");
-                return 1;
-            }
+                // Invoke Glazer for Glulx
+                var glazerExe = FindGlazerExecutable();
+                if (glazerExe == null)
+                {
+                    Console.Error.WriteLine("Glazer not found next to ZILF (looked for glazer, Glazer, glazer.exe). Use -S to skip assembly.");
+                    return 1;
+                }
 
-            var exit = RunZapfProcess(zapfExe, outFile!, zapfArgsExpanded);
-            return exit;
+                var exit = RunGlazerProcess(glazerExe, outFile!, asmArgsExpanded);
+                return exit;
+            }
+            else
+            {
+                // Invoke Zapf for Z-machine
+                var zapfExe = FindZapfExecutable();
+                if (zapfExe == null)
+                {
+                    Console.Error.WriteLine("ZAPF not found next to ZILF (looked for zapf, Zapf, zapf.exe). Use -S to skip assembly.");
+                    return 1;
+                }
+
+                var exit = RunZapfProcess(zapfExe, outFile!, asmArgsExpanded);
+                return exit;
+            }
         }
 
         private static string? FindZapfExecutable()
         {
             var baseDir = AppContext.BaseDirectory;
             var candidates = new[] { "zapf", "Zapf", "zapf.exe", "Zapf.exe" };
+            foreach (var name in candidates)
+            {
+                var full = Path.Combine(baseDir, name);
+                if (File.Exists(full))
+                    return full;
+            }
+            return null;
+        }
+
+        private static string? FindGlazerExecutable()
+        {
+            var baseDir = AppContext.BaseDirectory;
+            var candidates = new[] { "glazer", "Glazer", "glazer.exe", "Glazer.exe" };
             foreach (var name in candidates)
             {
                 var full = Path.Combine(baseDir, name);
@@ -606,6 +634,46 @@ namespace Zilf
             catch (InvalidOperationException ex)
             {
                 Console.Error.WriteLine($"Failed to run ZAPF: {ex.Message}");
+                return 1;
+            }
+        }
+
+        private static int RunGlazerProcess(string glazerPath, string asmInputPath, List<string> extraArgs)
+        {
+            using var proc = new Process();
+            proc.StartInfo = new ProcessStartInfo
+            {
+                FileName = glazerPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+                CreateNoWindow = false,
+            };
+
+            // Arguments: [extraArgs...] <input.asm>
+            foreach (var a in extraArgs)
+                proc.StartInfo.ArgumentList.Add(a);
+            proc.StartInfo.ArgumentList.Add(asmInputPath);
+
+            try
+            {
+                proc.Start();
+                proc.WaitForExit();
+                return proc.ExitCode;
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to launch Glazer: {ex.Message}");
+                return 1;
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.Error.WriteLine($"Glazer not found: {ex.FileName}");
+                return 1;
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.Error.WriteLine($"Failed to run Glazer: {ex.Message}");
                 return 1;
             }
         }
