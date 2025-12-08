@@ -27,10 +27,10 @@ namespace Zilf.Emit.Zap
         Stream CreateDataStream();
         Stream CreateStringStream();
 
-        string GetMainFileName(bool withExt);
-        string GetDataFileName(bool withExt);
-        string GetFrequentWordsFileName(bool withExt);
-        string GetStringFileName(bool withExt);
+        string GetMainFileName(bool forceWithExt);
+        string GetDataFileName(bool forceWithExt);
+        string GetFrequentWordsFileName(bool forceWithExt);
+        string GetStringFileName(bool forceWithExt);
 
         bool FrequentWordsFileExists { get; }
     }

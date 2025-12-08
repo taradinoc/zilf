@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2025 Tara McGrew
  *
  * This file is part of ZILF.
  *
@@ -25,7 +25,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using Zilf.Common;
 using Zilf.Compiler;
 using Zilf.Diagnostics;
@@ -33,8 +32,8 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Language.Parsing;
-using CommandParseResult = System.CommandLine.ParseResult;
 using Zilf.ZModel;
+using CommandParseResult = System.CommandLine.ParseResult;
 
 namespace Zilf
 {
@@ -110,9 +109,9 @@ namespace Zilf
 
             var buildOutputArgument = new Argument<string?>("output")
             {
-                Description = "Output ZAP file (defaults to input name with .zap extension).",
+                Description = "Output file name. With -S, defaults to input name with .zap/.asm extension. Without -S, defaults to input name with .z#/.ulx extension.",
                 Arity = ArgumentArity.ZeroOrOne,
-                HelpName = "output.zap"
+                HelpName = "output.ext"
             };
 
             var buildQuietOption = new Option<bool>("--quiet", "-q")
@@ -478,7 +477,38 @@ namespace Zilf
 
             // TODO: reorder front-end processing so <VERSION GLULX> can affect the output file extension
             var output = parseResult.GetValue(outputArgument);
-            var outFile = string.IsNullOrEmpty(output) ? Path.ChangeExtension(inputFile, ctx.IsGlulx ? ".asm" : ".zap") : output;
+            var stopAfter = parseResult.GetValue(stopAfterCompileOption);
+
+            // Determine the intermediate assembly filename and the final assembler output filename
+            string intermediateFile;
+            string? finalAssemblerOutput = null;
+
+            if (string.IsNullOrEmpty(output))
+            {
+                // No second filename specified: use default intermediate output name
+                intermediateFile = Path.ChangeExtension(inputFile, ctx.IsGlulx ? ".asm" : ".zap");
+            }
+            else
+            {
+                // Second filename specified: check if it should be treated as intermediate or final output
+                var outputExt = Path.GetExtension(output);
+                var isIntermediateExtension = outputExt.Equals(".zap", StringComparison.OrdinalIgnoreCase) || 
+                                               outputExt.Equals(".asm", StringComparison.OrdinalIgnoreCase);
+
+                if (stopAfter || isIntermediateExtension)
+                {
+                    // Treat as intermediate assembly output
+                    intermediateFile = output;
+                }
+                else
+                {
+                    // Treat as final assembler output; generate intermediate name from input
+                    intermediateFile = Path.ChangeExtension(inputFile, ctx.IsGlulx ? ".asm" : ".zap");
+                    finalAssemblerOutput = output;
+                }
+            }
+
+            var outFile = intermediateFile;
 
             // Perform compilation, then optionally invoke ZAPF
             var frontEnd = new FrontEnd();
@@ -522,9 +552,6 @@ namespace Zilf
                 return 2;
             }
 
-            // If requested, stop after compile
-            var stopAfter = parseResult.GetValue(stopAfterCompileOption);
-
             if (stopAfter)
             {
                 return 0;
@@ -554,7 +581,7 @@ namespace Zilf
                     return 1;
                 }
 
-                var exit = RunGlazerProcess(glazerExe, outFile!, asmArgsExpanded);
+                var exit = RunGlazerProcess(glazerExe, outFile!, asmArgsExpanded, finalAssemblerOutput);
                 return exit;
             }
             else
@@ -567,7 +594,7 @@ namespace Zilf
                     return 1;
                 }
 
-                var exit = RunZapfProcess(zapfExe, outFile!, asmArgsExpanded);
+                var exit = RunZapfProcess(zapfExe, outFile!, asmArgsExpanded, finalAssemblerOutput);
                 return exit;
             }
         }
@@ -598,7 +625,7 @@ namespace Zilf
             return null;
         }
 
-        private static int RunZapfProcess(string zapfPath, string zapInputPath, List<string> extraArgs)
+        private static int RunZapfProcess(string zapfPath, string zapInputPath, List<string> extraArgs, string? finalOutput = null)
         {
             using var proc = new Process();
             proc.StartInfo = new ProcessStartInfo
@@ -610,10 +637,16 @@ namespace Zilf
                 CreateNoWindow = false,
             };
 
-            // Arguments: [extraArgs...] <input.zap>
+            // Arguments: [extraArgs...] <input.zap> [output]
             foreach (var a in extraArgs)
                 proc.StartInfo.ArgumentList.Add(a);
             proc.StartInfo.ArgumentList.Add(zapInputPath);
+
+            if (!string.IsNullOrEmpty(finalOutput))
+            {
+                proc.StartInfo.ArgumentList.Add("-o");
+                proc.StartInfo.ArgumentList.Add(finalOutput);
+            }
 
             try
             {
@@ -638,7 +671,7 @@ namespace Zilf
             }
         }
 
-        private static int RunGlazerProcess(string glazerPath, string asmInputPath, List<string> extraArgs)
+        private static int RunGlazerProcess(string glazerPath, string asmInputPath, List<string> extraArgs, string? finalOutput = null)
         {
             using var proc = new Process();
             proc.StartInfo = new ProcessStartInfo
@@ -650,10 +683,13 @@ namespace Zilf
                 CreateNoWindow = false,
             };
 
-            // Arguments: [extraArgs...] <input.asm>
+            // Arguments: [extraArgs...] <input.asm> [output]
             foreach (var a in extraArgs)
                 proc.StartInfo.ArgumentList.Add(a);
             proc.StartInfo.ArgumentList.Add(asmInputPath);
+
+            if (!string.IsNullOrEmpty(finalOutput))
+                proc.StartInfo.ArgumentList.Add(finalOutput);
 
             try
             {

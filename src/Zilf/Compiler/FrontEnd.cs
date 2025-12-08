@@ -30,6 +30,7 @@ using Zilf.ZModel;
 using Zilf.Emit;
 
 using ZapGameOptions = Zilf.Emit.Zap.GameOptions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Zilf.Compiler
 {
@@ -96,6 +97,8 @@ namespace Zilf.Compiler
 
             readonly string stringFile;
 
+            readonly bool isNonstandardExtension;
+
             const string FrequentWordsSuffix1 = "_freq";
             const string FrequentWordsSuffix2 = "freq";
             const string DataSuffix = "_data";
@@ -107,12 +110,11 @@ namespace Zilf.Compiler
                 this.owner = owner;
                 this.mainFile = mainFile;
 
-                var dir = Path.GetDirectoryName(mainFile);
-                if (dir == null)
-                    throw new ArgumentException("Must be a file name.", nameof(mainFile));
-
+                var dir = Path.GetDirectoryName(mainFile) ?? throw new ArgumentException("Must be a file name", nameof(mainFile));
                 var baseName = Path.GetFileNameWithoutExtension(mainFile);
                 var ext = Path.GetExtension(mainFile);
+
+                isNonstandardExtension = !ext.Equals(".zap", StringComparison.OrdinalIgnoreCase);
 
                 fwordsFile = IdentifyFrequentWordsFilePath(dir, baseName, ext);
                 dataFile = Path.Combine(dir, baseName + DataSuffix + ext);
@@ -145,28 +147,40 @@ namespace Zilf.Compiler
 
             public Stream CreateStringStream() => owner.FileSystem.OpenForWriting(stringFile);
 
-            public string GetMainFileName(bool withExt)
+            public string GetMainFileName(bool forceWithExt)
             {
                 var result = mainFile;
-                return withExt ? result : Path.ChangeExtension(result, null);
+                return forceWithExt ? result : Path.ChangeExtension(result, null);
             }
 
-            public string GetDataFileName(bool withExt)
+            public string GetDataFileName(bool forceWithExt)
             {
                 var result = dataFile;
-                return withExt ? result : Path.ChangeExtension(result, null);
+                if (forceWithExt)
+                    return result;
+
+                // When forceWithExt is false, include extension if it's not .zap
+                return isNonstandardExtension ? result : Path.ChangeExtension(result, null);
             }
 
-            public string GetFrequentWordsFileName(bool withExt)
+            public string GetFrequentWordsFileName(bool forceWithExt)
             {
                 var result = fwordsFile;
-                return withExt ? result : Path.ChangeExtension(result, null);
+                if (forceWithExt)
+                    return result;
+
+                // When forceWithExt is false, include extension if it's not .zap
+                return isNonstandardExtension ? result : Path.ChangeExtension(result, null);
             }
 
-            public string GetStringFileName(bool withExt)
+            public string GetStringFileName(bool forceWithExt)
             {
                 var result = stringFile;
-                return withExt ? result : Path.ChangeExtension(result, null);
+                if (forceWithExt)
+                    return result;
+
+                // When forceWithExt is false, include extension if it's not .zap
+                return isNonstandardExtension ? result : Path.ChangeExtension(result, null);
             }
 
             public bool FrequentWordsFileExists => owner.FileSystem.Exists(fwordsFile);
@@ -222,9 +236,6 @@ namespace Zilf.Compiler
         internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo) =>
             InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
 
-        // FIXME: not supported by R#, sadly...
-        //[ContractAnnotation("wantCompile: true => outputFileName: notnull")]
-        //[ContractAnnotation("wantCompile: false => outputFileName: null")]
         FrontEndResult InterpretOrCompile(Context ctx, string inputFileName,
              string? outputFileName, bool wantCompile, bool wantDebugInfo)
         {

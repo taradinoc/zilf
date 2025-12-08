@@ -13,7 +13,9 @@ and this project adheres to
 
 - ZILF now invokes ZAPF automatically after compiling ZIL source code, unless
   `-S` (`--stop-after-compile`) is specified. Additional arguments can be
-  passed to ZAPF with `--zapf-options`.
+  passed to ZAPF with `--zapf-options`. If a second filename is passed to ZILF,
+  it will be used to name the final output (story file), unless `-S` is
+  specified or it ends with `.zap` or `.asm`.
 
 - Error MDL0117 is issued when a binding in a routine header doesn't have
   exactly two elements.
@@ -90,6 +92,9 @@ and this project adheres to
   `SUBSTRUC`.
 
 - Fixed PRINT-MATCHING-WORD in zillib (used by some of the debugging verbs).
+
+- When the assembly output files have an extension other than `.zap`, the
+  extension is now properly included in the generated `.INSERT` directives.
 
 ## [0.11.1] (October 31, 2025)
 
