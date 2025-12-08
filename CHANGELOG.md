@@ -82,6 +82,8 @@ and this project adheres to
 - Fixed an unhelpful error message when passing the wrong type of argument to
   `SUBSTRUC`.
 
+- Fixed PRINT-MATCHING-WORD in zillib (used by some of the debugging verbs).
+
 ## [0.11.1] (October 31, 2025)
 
 ### Fixed
