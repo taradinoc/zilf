@@ -38,7 +38,12 @@ namespace Zilf.Compiler
                     var extab = Game.DefineTable("EXTAB", false);
                     extab.AddWord((short)size);
                     for (int i = 0; i < size; i++)
-                        extab.AddWord(Game.Zero);
+                    {
+                        if (i == 2 && unicodeTranslationTableOperand != null)
+                            extab.AddWord(unicodeTranslationTableOperand);
+                        else
+                            extab.AddWord(Game.Zero);
+                    }
 
                     v5Options.HeaderExtensionTable = extab;
                 }

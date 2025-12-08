@@ -60,6 +60,10 @@ namespace Zilf.Emit.Zap
         readonly Dictionary<string, IOperand> stringPool = new(100);
         readonly Dictionary<int, NumericOperand> numberPool = new(50);
 
+        List<ushort>? unicodeTranslationTableEntries;
+        string? unicodeTranslationTableName;
+        ConstantLiteralOperand? unicodeTranslationTableOperand;
+
         readonly IZapStreamFactory streamFactory;
         internal readonly int zversion;
         internal readonly DebugFileBuilder? debug;
@@ -322,6 +326,20 @@ namespace Zilf.Emit.Zap
             return tb;
         }
 
+        public IOperand DefineUnicodeTranslationTable(IEnumerable<char> characters)
+        {
+            if (unicodeTranslationTableEntries != null)
+                throw new ArgumentException("Unicode translation table already defined", nameof(characters));
+
+            unicodeTranslationTableName = "UNITBL";
+            unicodeTranslationTableEntries = characters.Select(c => (ushort)c).ToList();
+            unicodeTranslationTableOperand = new ConstantLiteralOperand(unicodeTranslationTableName);
+
+            return unicodeTranslationTableOperand;
+        }
+
+        public IOperand? GetUnicodeTranslationTableOperand() => unicodeTranslationTableOperand;
+
         /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined; or <paramref name="entryPoint"/> is <see langword="true"/> and an entry point routine is alrady defined.</exception>
         public IRoutineBuilder DefineRoutine(string name, bool entryPoint, bool cleanStack)
         {
@@ -523,8 +541,8 @@ namespace Zilf.Emit.Zap
             writer.WriteLine();
             writer.WriteLine("IMPURE::");   // sic
 
-            FinishSyntax();
             FinishPureTables();
+            FinishSyntax();
 
             // end of resident memory
             writer.WriteLine();
@@ -856,6 +874,17 @@ namespace Zilf.Emit.Zap
 
         void FinishPureTables()
         {
+            if (unicodeTranslationTableEntries is { Count: > 0 })
+            {
+                writer.WriteLine();
+                var totalSize = 1 + unicodeTranslationTableEntries.Count * 2;
+                writer.WriteLine("{0}:: .TABLE {1}", unicodeTranslationTableName, totalSize);
+                writer.WriteLine(INDENT + ".BYTE {0}", unicodeTranslationTableEntries.Count);
+                foreach (var entry in unicodeTranslationTableEntries)
+                    writer.WriteLine(INDENT + $".UNICHR \"U+{entry:X4}\"");
+                writer.WriteLine(INDENT + ".ENDT");
+            }
+
             if (zversion >= 5)
             {
                 var v5Options = (GameOptions.V5Plus)options;

@@ -87,6 +87,8 @@ namespace Zilf.Compiler
         public readonly Dictionary<ZilAtom, SoftGlobal> SoftGlobals;
         public IOperand? SoftGlobalsTable;
 
+        IOperand? unicodeTranslationTableOperand;
+
         public int UniqueFlags { get; set; }
 
         /// <summary>

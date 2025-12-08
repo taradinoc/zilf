@@ -172,6 +172,11 @@ namespace Zilf.Emit.Glulx
             return tb;
         }
 
+        public IOperand DefineUnicodeTranslationTable(IEnumerable<char> characters)
+        {
+            throw new NotSupportedException("Unicode translation tables are not used for Glulx targets.");
+        }
+
         /// <summary>
         /// Marks a table for write tracing. When tracing is enabled, PUT and PUTB operations
         /// that affect any traced table will emit debugging information at runtime.

@@ -59,6 +59,9 @@ namespace Zilf.Common.StringEncoding
         };
         readonly byte[][] charset;
 
+        readonly Dictionary<char, byte> unicodeMap;
+        bool usingCustomUnicodeTable;
+
         readonly List<AbbrevEntry> abbrevs = new();
         static readonly AbbrevComparer abbrevLengthComparer = new();
 
@@ -66,6 +69,9 @@ namespace Zilf.Common.StringEncoding
         {
             // convert characters in DefaultCharset through unicode mapping and into bytes
             charset = DefaultCharset.Select(s => s.Select(UnicodeTranslation.ToZscii).ToArray()).ToArray();
+
+            unicodeMap = new Dictionary<char, byte>(UnicodeTranslation.Table);
+            usingCustomUnicodeTable = false;
         }
 
         public int AbbreviationCount => abbrevs.Count;
@@ -168,8 +174,8 @@ namespace Zilf.Common.StringEncoding
             if (c == '\n')
                 return 2;
 
-            if (UnicodeTranslation.Table.TryGetValue(c, out byte b) == false)
-                b = (byte)c;
+            if (!TryGetZscii(c, out var b))
+                throw new InvalidOperationException($"No Unicode mapping exists for '{c}'");
 
             if (Array.IndexOf(charset[0], b) >= 0)
                 return 1;
@@ -213,10 +219,8 @@ namespace Zilf.Common.StringEncoding
                 }
                 else
                 {
-                    if (UnicodeTranslation.Table.TryGetValue(c, out byte b) == false)
-                    {
-                        b = (byte)c;
-                    }
+                    if (!TryGetZscii(c, out var b))
+                        throw new InvalidOperationException($"No Unicode mapping exists for '{c}'");
 
                     int idx;
                     if ((idx = Array.IndexOf(charset[0], b)) >= 0)
@@ -323,6 +327,44 @@ namespace Zilf.Common.StringEncoding
                 // unprintable
                 _ => false,
             };
+        }
+
+        public void ResetUnicodeTable()
+        {
+            unicodeMap.Clear();
+            foreach (var kvp in UnicodeTranslation.Table)
+                unicodeMap[kvp.Key] = kvp.Value;
+
+            usingCustomUnicodeTable = false;
+        }
+
+        public void StartCustomUnicodeTable()
+        {
+            unicodeMap.Clear();
+            usingCustomUnicodeTable = true;
+        }
+
+        public void AddUnicodeMapping(char c, int index)
+        {
+            if (!usingCustomUnicodeTable)
+                StartCustomUnicodeTable();
+
+            unicodeMap[c] = (byte)(155 + index);
+        }
+
+        bool TryGetZscii(char c, out byte zscii)
+        {
+            if (unicodeMap.TryGetValue(c, out zscii))
+                return true;
+
+            if (usingCustomUnicodeTable && c > 0x7f)
+            {
+                zscii = 0;
+                return false;
+            }
+
+            zscii = (byte)c;
+            return true;
         }
     }
 }

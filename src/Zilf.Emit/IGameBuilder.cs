@@ -50,6 +50,12 @@ namespace Zilf.Emit
         /// to the table as an operand.</returns>
         ITableBuilder DefineTable(string? name, bool pure);
         /// <summary>
+        /// Defines a Unicode translation table and returns an operand for it.
+        /// </summary>
+        /// <param name="characters">The Unicode characters to include, in order.</param>
+        /// <returns>An operand representing the table's address.</returns>
+        IOperand DefineUnicodeTranslationTable(IEnumerable<char> characters);
+        /// <summary>
         /// Defines a new routine.
         /// </summary>
         /// <param name="name">The name of the routine.</param>

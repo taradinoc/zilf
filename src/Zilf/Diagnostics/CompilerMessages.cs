@@ -180,14 +180,18 @@ namespace Zilf.Diagnostics
         public const int _0_Field_1_Is_Not_Supported_In_This_Zmachine_Version = 408;
         [Error("{0}: field '{1}' is not a word field: {1}")]
         public const int _0_Field_1_Is_Not_A_Word_Field = 409;
-        [Warning("ZSCII {0} ({1}) cannot be safely printed in Z-machine version {2}")]
-        public const int ZSCII_0_1_Cannot_Be_Safely_Printed_In_Zmachine_Version_2 = 410;
+        [Warning("ZSCII {0} ({1}) cannot safely be printed in Z-machine version {2}")]
+        public const int ZSCII_0_1_Cannot_Safely_Be_Printed_In_Zmachine_Version_2 = 410;
         [Error("{0} is not supported when targeting Glulx")]
         public const int _0_Is_Not_Supported_When_Targeting_Glulx = 411;
         [Error("{0} is not supported when targeting the Z-machine")]
         public const int _0_Is_Not_Supported_When_Targeting_The_Zmachine = 412;
         [Error("{0}: field '{1}' is not supported when targeting Glulx")]
         public const int _0_Field_1_Is_Not_Supported_When_Targeting_Glulx = 413;
+        [Error("character '{0}' is not part of standard ZSCII and cannot be printed in Z-machine version {1}")]
+        public const int Character_0_Is_Not_Part_Of_Standard_ZSCII_And_Cannot_Be_Printed_In_Zmachine_Version_1 = 414;
+        [Error("no room left in Unicode translation table for character '{0}'")]
+        public const int No_Room_Left_In_Unicode_Translation_Table_For_Character_0 = 415;
 
         // Misc - 0500
 

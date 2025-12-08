@@ -69,6 +69,7 @@ namespace Zapf.Parsing
                 { ".STRL", ParseStrlDirective },
                 { ".TABLE", ParseTableDirective },
                 { ".TIME", ParseTimeDirective },
+                { ".UNICHR", ParseUnichrDirective },
                 { ".VOCBEG", ParseVocbegDirective },
                 { ".VOCEND", ParseVocendDirective },
                 { ".WORD", ParseWordDirective },
@@ -902,6 +903,13 @@ namespace Zapf.Parsing
             var text = MatchString();
             MatchEndOfDirective();
             return new StrlDirective(text);
+        }
+
+        AsmLine ParseUnichrDirective(Token head)
+        {
+            var text = MatchString();
+            MatchEndOfDirective();
+            return new UnichrDirective(text);
         }
 
         AsmLine ParseTableDirective(Token head)

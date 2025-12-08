@@ -16,6 +16,7 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Zilf.Interpreter;
@@ -23,6 +24,7 @@ using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Common.StringEncoding;
 using Zilf.Diagnostics;
+using Zilf.ZModel;
 
 namespace Zilf.Compiler
 {
@@ -77,6 +79,16 @@ namespace Zilf.Compiler
             bool sawDotSpace = false;
 
             var zversion = ctx.ZEnvironment.ZVersion;
+            var isGlulx = zversion == ZEnvironment.GLULX_ZVERSION;
+            var unicodeUsage = ctx.ZEnvironment.UnicodeUsage;
+
+            static bool IsStandardZsciiChar(char c, out bool isDefaultExtra)
+            {
+                isDefaultExtra = UnicodeTranslation.Table.ContainsKey(c);
+
+                return c == '\0' || c == '\r' || c == '\n' ||
+                    (c >= 32 && c <= 126) || isDefaultExtra;
+            }
 
             static string? DescribeChar(byte zscii)
             {
@@ -95,17 +107,78 @@ namespace Zilf.Compiler
             for (int i = 0; i < sb.Length; i++)
             {
                 char c = sb[i];
-                byte b = UnicodeTranslation.ToZscii(c);
-
-                if (!StringEncoder.IsPrintable(b, zversion))
+                if (!isGlulx)
                 {
-                    var warning = new CompilerError(zstr,
-                        CompilerMessages.ZSCII_0_1_Cannot_Be_Safely_Printed_In_Zmachine_Version_2,
-                        b,
-                        DescribeChar(b) ?? "<???>",
-                        zversion);
+                    bool isControl = c < 32 && c != '\r' && c != '\n';
 
-                    ctx.HandleError(warning);
+                    if (isControl)
+                    {
+                        var b = (byte)c;
+                        if (!StringEncoder.IsPrintable(b, zversion))
+                        {
+                            var warning = new CompilerError(zstr,
+                                CompilerMessages.ZSCII_0_1_Cannot_Safely_Be_Printed_In_Zmachine_Version_2,
+                                b,
+                                DescribeChar(b) ?? "<???>",
+                                zversion);
+
+                            ctx.HandleError(warning);
+                        }
+                    }
+                    else
+                    {
+                        var isStandard = IsStandardZsciiChar(c, out bool isDefaultExtra);
+
+                        if (!isStandard)
+                        {
+                            if (zversion <= 4)
+                            {
+                                ctx.HandleError(new CompilerError(
+                                    zstr,
+                                    CompilerMessages.Character_0_Is_Not_Part_Of_Standard_ZSCII_And_Cannot_Be_Printed_In_Zmachine_Version_1,
+                                    c,
+                                    zversion));
+                            }
+                            else
+                            {
+                                if (!unicodeUsage.TryRequireCustomChar(c, out var rejected))
+                                {
+                                    Debug.Assert(rejected.HasValue);
+                                    ctx.HandleError(new CompilerError(
+                                        zstr,
+                                        CompilerMessages.No_Room_Left_In_Unicode_Translation_Table_For_Character_0,
+                                        rejected!.Value));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (isDefaultExtra)
+                            {
+                                if (!unicodeUsage.TryNoteDefaultChar(c, out var rejected))
+                                {
+                                    Debug.Assert(rejected.HasValue);
+                                    ctx.HandleError(new CompilerError(
+                                        zstr,
+                                        CompilerMessages.No_Room_Left_In_Unicode_Translation_Table_For_Character_0,
+                                        rejected!.Value));
+                                    continue;
+                                }
+                            }
+
+                            var b = UnicodeTranslation.ToZscii(c);
+                            if (!StringEncoder.IsPrintable(b, zversion))
+                            {
+                                var warning = new CompilerError(zstr,
+                                    CompilerMessages.ZSCII_0_1_Cannot_Safely_Be_Printed_In_Zmachine_Version_2,
+                                    b,
+                                    DescribeChar(b) ?? "<???>",
+                                    zversion);
+
+                                ctx.HandleError(warning);
+                            }
+                        }
+                    }
                 }
 
                 switch (spacesMode)

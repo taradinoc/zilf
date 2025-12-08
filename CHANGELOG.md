@@ -55,6 +55,12 @@ and this project adheres to
   in Glulx mode, such as the number of flags and properties. On the other hand,
   many features of Glulx and Glk are not exposed to the game.
 
+- ZILF now properly handles strings with Unicode characters other than those in
+  the default ZSCII set. In V5+, it creates a Unicode translation table (using
+  the new ZAPF directive `.UNICHR`). In V3-4, Unicode translation tables aren't
+  available, so it issues error ZIL0191. In Glulx, Unicode is supported natively
+  without any special effort.
+
 ### Changed
 
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for

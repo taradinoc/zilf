@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -1392,6 +1393,10 @@ namespace Zapf
                     }
                     break;
 
+                case UnichrDirective unichrNode:
+                    HandleUnichr(ctx, unichrNode);
+                    break;
+
                 case FstrDirective fstrNode:
                     AddAbbreviation(ctx, fstrNode);
                     break;
@@ -1792,6 +1797,31 @@ namespace Zapf
             ctx.WriteZString(node.Text, false);
         }
 
+        static void HandleUnichr(Context ctx, UnichrDirective node)
+        {
+            ushort codepoint;
+            var text = node.Text;
+
+            if (text.StartsWith("U+", StringComparison.OrdinalIgnoreCase))
+            {
+                var hex = text.Substring(2);
+                if (!ushort.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out codepoint))
+                    Errors.ThrowSerious(node, "invalid Unicode codepoint in .UNICHR: {0}", text);
+            }
+            else if (text.Length == 1)
+            {
+                codepoint = text[0];
+            }
+            else
+            {
+                Errors.ThrowSerious(node, ".UNICHR requires exactly one character or a U+XXXX literal");
+                return;
+            }
+
+            ctx.AddUnicodeCharacter(node, codepoint);
+            ctx.WriteWord(codepoint);
+        }
+
         static void AddAbbreviation(Context ctx, FstrDirective node)
         {
             if (ctx.StringEncoder.Frozen)
@@ -1805,7 +1835,9 @@ namespace Zapf
             ctx.GlobalSymbols[name] = new Symbol(name, SymbolType.Constant, ctx.Position / 2);
 
             string text = node.Text;
+            ctx.WritingAbbreviationString = true;
             ctx.WriteZString(text, false, StringEncoderMode.NoAbbreviations);
+            ctx.WritingAbbreviationString = false;
 
             if (text.Length > 0)
                 ctx.StringEncoder.AddAbbreviation(text);

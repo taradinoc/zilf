@@ -23,6 +23,7 @@ using System.IO;
 using System.Text;
 using Zilf.Common.StringEncoding;
 using Zapf.Parsing.Diagnostics;
+using Zapf.Parsing.Directives;
 using Zapf.Parsing.Instructions;
 using Zilf.Common;
 
@@ -60,6 +61,11 @@ namespace Zapf
         public Dictionary<string, KeyValuePair<ushort, ZOpAttribute>>? OpcodeDict;
 
         public StringEncoder StringEncoder;
+
+        public List<ushort>? UnicodeTranslationTable;
+
+        public bool EncodedTextStarted;
+        internal bool WritingAbbreviationString { get; set; }
 
         public readonly AbbrevFinder AbbrevFinder;
 
@@ -109,6 +115,8 @@ namespace Zapf
         Stream? prevStream;
         int position;
         int globalVarCount, objectCount;
+
+        readonly HashSet<ushort> unicodeTableValues = new();
 
         readonly Stack<string> fileStack;
 
@@ -169,6 +177,12 @@ namespace Zapf
             ZVersion = Program.DEFAULT_ZVERSION;
 
             LanguageSpecialChars = new Dictionary<char, char>();
+
+            unicodeTableValues.Clear();
+            UnicodeTranslationTable = null;
+            EncodedTextStarted = false;
+                WritingAbbreviationString = false; // Reset abbreviation flag on restart
+            StringEncoder.ResetUnicodeTable();
         }
 
         public void Restart()
@@ -190,6 +204,12 @@ namespace Zapf
             LanguageSpecialChars.Clear();
             PendingInstructionForm = null;
             PendingOperandEncodings = null;
+
+            unicodeTableValues.Clear();
+            UnicodeTranslationTable = null;
+            EncodedTextStarted = false;
+            WritingAbbreviationString = false; // Reset abbreviation flag on restart
+            StringEncoder.ResetUnicodeTable();
         }
 
         public void WriteByte(byte b)
@@ -272,6 +292,9 @@ namespace Zapf
 
             position += zstr.Length;
             stream?.Write(zstr, 0, zstr.Length);
+
+            if (!WritingAbbreviationString)
+                EncodedTextStarted = true;
         }
 
         void MaybeProcessEscapeChars(ref string str)
@@ -311,6 +334,7 @@ namespace Zapf
         {
             var zstr = StringEncoder.Encode(str);
             WriteByte((byte)(zstr.Length / 2));
+            EncodedTextStarted = true;
         }
 
         public int ZWordChars => ZVersion >= 4 ? 9 : 6;
@@ -323,6 +347,27 @@ namespace Zapf
             position += zstr.Length;
 
             stream?.Write(zstr, 0, zstr.Length);
+            EncodedTextStarted = true;
+        }
+
+        public void AddUnicodeCharacter(AsmLine node, ushort codepoint)
+        {
+            if (EncodedTextStarted)
+                Errors.ThrowSerious(node, ".UNICHR directives must appear before any text is encoded");
+
+            UnicodeTranslationTable ??= new List<ushort>();
+
+            if (UnicodeTranslationTable.Count >= 97)
+                Errors.ThrowSerious(node, "Unicode translation table can hold at most 97 entries");
+
+            if (!unicodeTableValues.Add(codepoint))
+                Errors.ThrowSerious(node, "duplicate .UNICHR entry");
+
+            if (UnicodeTranslationTable.Count == 0)
+                StringEncoder.StartCustomUnicodeTable();
+
+            StringEncoder.AddUnicodeMapping((char)codepoint, UnicodeTranslationTable.Count);
+            UnicodeTranslationTable.Add(codepoint);
         }
 
         public bool AtVocabRecord => InVocab && (position - vocabStart) % vocabRecSize == 0;
@@ -832,6 +877,11 @@ namespace Zapf
         {
             Fixups.Clear();
             StringEncoder = new StringEncoder();
+
+            unicodeTableValues.Clear();
+            UnicodeTranslationTable = null;
+            EncodedTextStarted = false;
+            WritingAbbreviationString = false;
 
             foreach (var sym in GlobalSymbols.Values)
                 sym.Phantom = true;

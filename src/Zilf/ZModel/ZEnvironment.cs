@@ -125,6 +125,8 @@ namespace Zilf.ZModel
 
         public int HeaderExtensionWords;
 
+        public UnicodeCharUsage UnicodeUsage { get; } = new();
+
         byte[]? zcharCountCache;   // char -> # of Z-chars
         string charset0, charset1, charset2;
 
@@ -786,6 +788,42 @@ namespace Zilf.ZModel
         public void EnsureMinimumHeaderExtension(int words)
         {
             HeaderExtensionWords = Math.Max(HeaderExtensionWords, words);
+        }
+
+        public sealed class UnicodeCharUsage
+        {
+            const int MaxEntries = 97; // ZSCII 155-251 inclusive
+
+            readonly HashSet<char> chars = new();
+            readonly List<char> order = new();
+
+            public bool NeedsCustomTable { get; private set; }
+
+            public IReadOnlyList<char> Characters => order;
+
+            public bool TryNoteDefaultChar(char c, [NotNullWhen(false)] out char? rejected)
+            {
+                rejected = null;
+
+                if (chars.Contains(c))
+                    return true;
+
+                if (order.Count >= MaxEntries)
+                {
+                    rejected = c;
+                    return false;
+                }
+
+                chars.Add(c);
+                order.Add(c);
+                return true;
+            }
+
+            public bool TryRequireCustomChar(char c, [NotNullWhen(false)] out char? rejected)
+            {
+                NeedsCustomTable = true;
+                return TryNoteDefaultChar(c, out rejected);
+            }
         }
 
         public ZilAtom InternGlobalName(ZilAtom atom)

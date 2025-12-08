@@ -100,6 +100,7 @@ namespace Zilf.Compiler
             BuildLongWordTable(longWordTable, longWords);
             BuildLateSyntaxTables();
             BuildUserDefinedTables();
+            BuildUnicodeTranslationTable();
             BuildHeaderExtensionTable();
 
             WarnAboutUnusedGlobals();
@@ -129,6 +130,20 @@ namespace Zilf.Compiler
             {
                 BuildTable(pair.Key, pair.Value);
             }
+        }
+
+        void BuildUnicodeTranslationTable()
+        {
+            var zversion = Context.ZEnvironment.ZVersion;
+            if (zversion < 5 || zversion == ZEnvironment.GLULX_ZVERSION)
+                return;
+
+            var usage = Context.ZEnvironment.UnicodeUsage;
+            if (!usage.NeedsCustomTable || usage.Characters.Count == 0)
+                return;
+
+            unicodeTranslationTableOperand = Game.DefineUnicodeTranslationTable(usage.Characters);
+            Context.ZEnvironment.EnsureMinimumHeaderExtension(4);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Z-machine requirement.")]

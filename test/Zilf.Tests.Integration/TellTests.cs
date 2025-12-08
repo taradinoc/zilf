@@ -281,9 +281,6 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public async Task Strings_Used_In_Tell_Should_Not_Become_GSTR()
         {
-            // in the future we might want to dedupe strings used in TELL by
-            // making the GSTRs, so the test below doesn't duplicate strings
-
             await AssertRoutine("", "<TELL \"hello world\">")
                 .GeneratesCodeNotMatchingAsync(@"GSTR.*hello world");
         }
@@ -291,11 +288,46 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public async Task Strings_Used_In_PRINTI_Should_Not_Become_GSTR()
         {
-            // in the future we might want to dedupe strings used in TELL by
-            // making the GSTRs, so the test below doesn't duplicate strings
-
             await AssertRoutine("", "<PRINTI \"hello world\">")
                 .GeneratesCodeNotMatchingAsync(@"GSTR.*hello world");
+        }
+
+        [TestMethod]
+        public async Task Unicode_Characters_Should_Work_In_TELL_In_V5()
+        {
+            // U+2014: em dash, U+2019: right single quotation mark
+            await AssertRoutine("", "<TELL \"the em dash\u2014nature\u2019s most dramatic symbol\">")
+                .InV5()
+                .WithoutWarnings()
+                .OutputsAsync("the em dash\u2014nature\u2019s most dramatic symbol");
+        }
+
+        [TestMethod]
+        public async Task Unicode_Characters_Outside_Standard_Should_Error_In_V3()
+        {
+            await AssertRoutine("", "<TELL \"bad\u2014news\">")
+                .InV3()
+                .DoesNotCompileAsync("ZIL0414");
+        }
+
+        [TestMethod]
+        public async Task Unicode_Table_Should_Be_Emitted_In_V5()
+        {
+            await AssertRoutine("", "<TELL \"\u2014\u2019\u263A\">")
+                .InV5()
+                .WithoutWarnings()
+                .GeneratesCodeMatchingAsync(@"\.UNICHR ""U\+2014"".*\.UNICHR ""U\+263A""");
+        }
+
+        [TestMethod]
+        public async Task Unicode_Table_Should_Report_Overflow_When_Full()
+        {
+            var chars = string.Concat(Enumerable.Range(0, 98).Select(i => char.ConvertFromUtf32(0x0100 + i)));
+            var code = "<TELL \"" + chars + "\">";
+
+            await AssertRoutine("", code)
+                .InV5()
+                .DoesNotCompileAsync("ZIL0415");
         }
     }
 }
