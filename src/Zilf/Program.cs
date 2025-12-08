@@ -50,130 +50,169 @@ namespace Zilf
 
         internal static int Main(string[] args)
         {
+            // If no subcommand is specified and the first argument looks like a file or option,
+            // assume "build" subcommand for backward compatibility
+            args = PreprocessArgs(args);
+
             var spec = CommandSpec.Value;
             var parseResult = spec.RootCommand.Parse(args);
             return parseResult.Invoke();
         }
 
+        static string[] PreprocessArgs(string[] args)
+        {
+            if (args.Length == 0)
+                return args;
+
+            var firstArg = args[0];
+
+            // Check if it's a known subcommand
+            if (firstArg is "build" or "repl" or "exec")
+                return args;
+
+            // Check if it's a help or version flag
+            if (firstArg is "-?" or "-h" or "--help" or "--version")
+                return args;
+
+            // Check if -e or --expr is present, route to exec
+            if (args.Any(a => a is "-e" or "--expr"))
+            {
+                var newArgs = new string[args.Length + 1];
+                newArgs[0] = "exec";
+                Array.Copy(args, 0, newArgs, 1, args.Length);
+                return newArgs;
+            }
+
+            // Otherwise, assume it's meant for the build command
+            // Insert "build" at the beginning
+            var newArgs2 = new string[args.Length + 1];
+            newArgs2[0] = "build";
+            Array.Copy(args, 0, newArgs2, 1, args.Length);
+            return newArgs2;
+        }
+
         static ZilfCommandSpec CreateCommandSpec()
         {
-            // Shared options
-            var quietOption = new Option<bool>("--quiet", "-q")
+            var root = new RootCommand("ZILF compiler and interpreter for ZIL (Zork Implementation Language).")
             {
-                Description = "Quiet mode: suppress banner and prompts."
+                TreatUnmatchedTokensAsErrors = true
             };
 
-            var caseSensitiveOption = new Option<bool?>("--case-sensitive")
-            {
-                Description = "Enable case-sensitive parsing.",
-                Arity = ArgumentArity.Zero
-            };
-            caseSensitiveOption.Aliases.Add("--cs");
+            // Build subcommand (also serves as default when no subcommand given)
+            var buildCommand = new Command("build", "(Default.) Compile ZIL source files into Z-machine assembly and optionally invoke ZAPF to produce a story file.");
 
-            var caseInsensitiveOption = new Option<bool?>("--case-insensitive")
+            var buildInputArgument = new Argument<string?>("input")
             {
-                Description = "Enable case-insensitive parsing.",
-                Arity = ArgumentArity.Zero
-            };
-            caseInsensitiveOption.Aliases.Add("--ci");
-
-            var includePathOption = new Option<string[]>("--include-path", "-I")
-            {
-                Description = "Add directory to include path (may be repeated).",
-                AllowMultipleArgumentsPerToken = false,
-                Arity = ArgumentArity.ZeroOrMore
-            };
-
-            var enableAllWarningsOption = new Option<bool>("--warn-all", "-W")
-            {
-                Description = "Enable all warnings (even noisy ones)."
-            };
-
-            var warningsAsErrorsOption = new Option<bool>("--warn-error", "-Werror")
-            {
-                Description = "Treat warnings as errors."
-            };
-
-            var suppressWarningsOption = new Option<string[]>("--warn-suppress")
-            {
-                Description = "Suppress specific warning codes (comma-separated).",
-                AllowMultipleArgumentsPerToken = true,
-                Arity = ArgumentArity.ZeroOrMore
-            };
-            suppressWarningsOption.Aliases.Add("-Wno");
-
-            // Compile mode (default root command)
-            var inputArgument = new Argument<string?>("input")
-            {
-                Description = "Input ZIL source file.",
+                Description = "Input ZIL source file. If not specified, looks for a .zil file matching the current directory name.",
                 HelpName = "input.zil",
                 Arity = ArgumentArity.ZeroOrOne
             };
 
-            var outputArgument = new Argument<string?>("output")
+            var buildOutputArgument = new Argument<string?>("output")
             {
                 Description = "Output ZAP file (defaults to input name with .zap extension).",
                 Arity = ArgumentArity.ZeroOrOne,
                 HelpName = "output.zap"
             };
 
-            var traceRoutinesOption = new Option<bool>("--trace", "-t")
+            var buildQuietOption = new Option<bool>("--quiet", "-q")
+            {
+                Description = "Quiet mode: suppress banner and prompts."
+            };
+
+            var buildCaseSensitiveOption = new Option<bool?>("--case-sensitive")
+            {
+                Description = "Enable case-sensitive parsing.",
+                Arity = ArgumentArity.Zero
+            };
+            buildCaseSensitiveOption.Aliases.Add("--cs");
+
+            var buildCaseInsensitiveOption = new Option<bool?>("--case-insensitive")
+            {
+                Description = "Enable case-insensitive parsing.",
+                Arity = ArgumentArity.Zero
+            };
+            buildCaseInsensitiveOption.Aliases.Add("--ci");
+
+            var buildIncludePathOption = new Option<string[]>("--include-path", "-I")
+            {
+                Description = "Add directory to include path (may be repeated).",
+                AllowMultipleArgumentsPerToken = false,
+                Arity = ArgumentArity.ZeroOrMore
+            };
+
+            var buildTraceRoutinesOption = new Option<bool>("--trace", "-t")
             {
                 Description = "Trace routine calls at runtime."
             };
 
-            var debugInfoOption = new Option<bool>("--debug", "-d")
+            var buildDebugInfoOption = new Option<bool>("--debug", "-d")
             {
                 Description = "Include debug information in output."
             };
 
-            var glulxOption = new Option<bool>("--glulx", "-g")
+            var buildGlulxOption = new Option<bool>("--glulx", "-g")
             {
                 Description = "Target Glulx VM instead of Z-machine (experimental)."
             };
 
-            var root = new RootCommand("Compile ZIL source files into Z-machine assembly and optionally invokes ZAPF to produce a story file.")
+            var buildEnableAllWarningsOption = new Option<bool>("--warn-all", "-W")
             {
-                TreatUnmatchedTokensAsErrors = true
+                Description = "Enable all warnings (even noisy ones)."
             };
 
-            root.Arguments.Add(inputArgument);
-            root.Arguments.Add(outputArgument);
-            root.Options.Add(quietOption);
-            root.Options.Add(caseSensitiveOption);
-            root.Options.Add(caseInsensitiveOption);
-            root.Options.Add(includePathOption);
-            root.Options.Add(traceRoutinesOption);
-            root.Options.Add(debugInfoOption);
-            root.Options.Add(glulxOption);
-            root.Options.Add(enableAllWarningsOption);
-            root.Options.Add(warningsAsErrorsOption);
-            root.Options.Add(suppressWarningsOption);
-
-            // Assembly handoff controls
-            var stopAfterCompileOption = new Option<bool>("--stop-after-compile", "-S")
+            var buildWarningsAsErrorsOption = new Option<bool>("--warn-error", "-Werror")
             {
-                Description = "Stop after compilation; do not run ZAPF."
+                Description = "Treat warnings as errors."
             };
-            root.Options.Add(stopAfterCompileOption);
 
-            // Zapf pass-through options: --zapf-options opt[,opt...]
-            // These accumulate and will be split on commas before invoking ZAPF.
-            var zapfPassThroughOption = new Option<string[]>("--zapf-options")
+            var buildSuppressWarningsOption = new Option<string[]>("--warn-suppress")
             {
-                Description = "Pass comma-separated options through to ZAPF (assembler). May be repeated.",
+                Description = "Suppress specific warning codes (comma-separated).",
                 AllowMultipleArgumentsPerToken = true,
                 Arity = ArgumentArity.ZeroOrMore
             };
-            root.Options.Add(zapfPassThroughOption);
+            buildSuppressWarningsOption.Aliases.Add("-Wno");
 
-            // Expression evaluation mode (-e)
-            var expressionOption = new Option<string>("-e")
+            var buildStopAfterCompileOption = new Option<bool>("--stop-after-compile", "-S")
             {
-                Description = "Evaluate a ZIL expression from the command line.",
-                HelpName = "expression"
+                Description = "Stop after compilation; do not run ZAPF."
             };
-            root.Options.Add(expressionOption);
+
+            var buildZapfPassThroughOption = new Option<string[]>("--asm-options")
+            {
+                Description = "Pass comma-separated options through to the assembler (ZAPF). May be repeated.",
+                AllowMultipleArgumentsPerToken = true,
+                Arity = ArgumentArity.ZeroOrMore
+            };
+
+            buildCommand.Arguments.Add(buildInputArgument);
+            buildCommand.Arguments.Add(buildOutputArgument);
+            buildCommand.Options.Add(buildQuietOption);
+            buildCommand.Options.Add(buildCaseSensitiveOption);
+            buildCommand.Options.Add(buildCaseInsensitiveOption);
+            buildCommand.Options.Add(buildIncludePathOption);
+            buildCommand.Options.Add(buildTraceRoutinesOption);
+            buildCommand.Options.Add(buildDebugInfoOption);
+            buildCommand.Options.Add(buildGlulxOption);
+            buildCommand.Options.Add(buildEnableAllWarningsOption);
+            buildCommand.Options.Add(buildWarningsAsErrorsOption);
+            buildCommand.Options.Add(buildSuppressWarningsOption);
+            buildCommand.Options.Add(buildStopAfterCompileOption);
+            buildCommand.Options.Add(buildZapfPassThroughOption);
+
+            buildCommand.Validators.Add(commandResult =>
+            {
+                bool hasCaseSensitive = commandResult.GetResult(buildCaseSensitiveOption) is not null;
+                bool hasCaseInsensitive = commandResult.GetResult(buildCaseInsensitiveOption) is not null;
+
+                if (hasCaseSensitive && hasCaseInsensitive)
+                {
+                    commandResult.AddError("Options --case-sensitive and --case-insensitive cannot be used together.");
+                }
+            });
+
+            root.Subcommands.Add(buildCommand);
 
             // REPL subcommand
             var replCommand = new Command("repl", "Start an interactive read-eval-print loop.");
@@ -205,15 +244,34 @@ namespace Zilf
             replCommand.Options.Add(replCaseSensitiveOption);
             replCommand.Options.Add(replCaseInsensitiveOption);
             replCommand.Options.Add(replIncludePathOption);
+
+            replCommand.Validators.Add(commandResult =>
+            {
+                bool hasCaseSensitive = commandResult.GetResult(replCaseSensitiveOption) is not null;
+                bool hasCaseInsensitive = commandResult.GetResult(replCaseInsensitiveOption) is not null;
+
+                if (hasCaseSensitive && hasCaseInsensitive)
+                {
+                    commandResult.AddError("Options --case-sensitive and --case-insensitive cannot be used together.");
+                }
+            });
+
             root.Subcommands.Add(replCommand);
 
             // Exec subcommand
-            var execCommand = new Command("exec", "Execute a ZIL file without generating output.");
+            var execCommand = new Command("exec", "Execute a ZIL file or expression without generating output.");
 
-            var execInputArgument = new Argument<string>("input")
+            var execInputArgument = new Argument<string?>("input")
             {
                 Description = "Input ZIL source file to execute.",
-                HelpName = "input.zil"
+                HelpName = "input.zil",
+                Arity = ArgumentArity.ZeroOrOne
+            };
+
+            var execExprOption = new Option<string?>("--expr", "-e")
+            {
+                Description = "Evaluate a ZIL expression instead of executing a file.",
+                Arity = ArgumentArity.ZeroOrOne
             };
 
             var execQuietOption = new Option<bool>("--quiet", "-q")
@@ -255,6 +313,7 @@ namespace Zilf
             execSuppressWarningsOption.Aliases.Add("-Wno");
 
             execCommand.Arguments.Add(execInputArgument);
+            execCommand.Options.Add(execExprOption);
             execCommand.Options.Add(execQuietOption);
             execCommand.Options.Add(execCaseSensitiveOption);
             execCommand.Options.Add(execCaseInsensitiveOption);
@@ -262,25 +321,49 @@ namespace Zilf
             execCommand.Options.Add(execEnableAllWarningsOption);
             execCommand.Options.Add(execWarningsAsErrorsOption);
             execCommand.Options.Add(execSuppressWarningsOption);
+
+            execCommand.Validators.Add(commandResult =>
+            {
+                bool hasCaseSensitive = commandResult.GetResult(execCaseSensitiveOption) is not null;
+                bool hasCaseInsensitive = commandResult.GetResult(execCaseInsensitiveOption) is not null;
+
+                if (hasCaseSensitive && hasCaseInsensitive)
+                {
+                    commandResult.AddError("Options --case-sensitive and --case-insensitive cannot be used together.");
+                }
+
+                var inputFile = commandResult.GetValue(execInputArgument);
+                var expression = commandResult.GetValue(execExprOption);
+
+                if (string.IsNullOrEmpty(inputFile) && string.IsNullOrEmpty(expression))
+                {
+                    commandResult.AddError("Either an input file or an expression (--expr/-e) must be provided.");
+                }
+                else if (!string.IsNullOrEmpty(inputFile) && !string.IsNullOrEmpty(expression))
+                {
+                    commandResult.AddError("Cannot specify both an input file and an expression (--expr/-e).");
+                }
+            });
+
             root.Subcommands.Add(execCommand);
 
             var spec = new ZilfCommandSpec(
                 root,
-                inputArgument,
-                outputArgument,
-                quietOption,
-                caseSensitiveOption,
-                caseInsensitiveOption,
-                includePathOption,
-                traceRoutinesOption,
-                debugInfoOption,
-                glulxOption,
-                enableAllWarningsOption,
-                warningsAsErrorsOption,
-                suppressWarningsOption,
-                stopAfterCompileOption,
-                zapfPassThroughOption,
-                expressionOption,
+                buildCommand,
+                buildInputArgument,
+                buildOutputArgument,
+                buildQuietOption,
+                buildCaseSensitiveOption,
+                buildCaseInsensitiveOption,
+                buildIncludePathOption,
+                buildTraceRoutinesOption,
+                buildDebugInfoOption,
+                buildGlulxOption,
+                buildEnableAllWarningsOption,
+                buildWarningsAsErrorsOption,
+                buildSuppressWarningsOption,
+                buildStopAfterCompileOption,
+                buildZapfPassThroughOption,
                 replCommand,
                 replQuietOption,
                 replCaseSensitiveOption,
@@ -288,6 +371,7 @@ namespace Zilf
                 replIncludePathOption,
                 execCommand,
                 execInputArgument,
+                execExprOption,
                 execQuietOption,
                 execCaseSensitiveOption,
                 execCaseInsensitiveOption,
@@ -296,75 +380,68 @@ namespace Zilf
                 execWarningsAsErrorsOption,
                 execSuppressWarningsOption);
 
-            // Set up validators
-            root.Validators.Add(commandResult =>
+            // Set up handler - root with no subcommand shows help
+            root.SetAction(_ =>
             {
-                bool hasCaseSensitive = commandResult.GetResult(spec.CaseSensitiveOption) is not null;
-                bool hasCaseInsensitive = commandResult.GetResult(spec.CaseInsensitiveOption) is not null;
-
-                if (hasCaseSensitive && hasCaseInsensitive)
-                {
-                    commandResult.AddError("Options --case-sensitive and --case-insensitive cannot be used together.");
-                }
-
-                bool hasExpression = commandResult.GetResult(spec.ExpressionOption) is not null;
-                bool hasInput = commandResult.GetResult(spec.InputArgument) is not null;
-
-                if (hasExpression && hasInput)
-                {
-                    commandResult.AddError("Cannot specify both -e and an input file.");
-                }
+                Console.Error.WriteLine("Error: A subcommand is required. Use 'zilf --help' for usage information.");
+                return 1;
             });
 
-            // Set up handlers
-            root.SetAction(parseResult =>
+            buildCommand.SetAction(parseResult => 
             {
-                var expr = parseResult.GetValue(spec.ExpressionOption);
-                if (expr != null)
+                var inputFile = parseResult.GetValue(spec.BuildInputArgument);
+                
+                // If no input file specified, try to find one based on current directory name
+                if (string.IsNullOrEmpty(inputFile))
                 {
-                    return ExecuteExpressionMode(parseResult, expr);
+                    var currentDir = Directory.GetCurrentDirectory();
+                    var dirName = Path.GetFileName(currentDir);
+                    var candidateFile = Path.Combine(currentDir, dirName + ".zil");
+                    
+                    if (File.Exists(candidateFile))
+                    {
+                        inputFile = candidateFile;
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine($"Error: No input file specified and '{dirName}.zil' not found in current directory.");
+                        return 1;
+                    }
                 }
-
-                var input = parseResult.GetValue(spec.InputArgument);
-                if (string.IsNullOrEmpty(input))
-                {
-                    // No input file and no -e option means interactive mode
-                    return ExecuteReplMode(parseResult);
-                }
-
-                return ExecuteCompileMode(parseResult, input);
+                
+                return ExecuteCompileMode(parseResult, inputFile);
             });
-
             replCommand.SetAction(ExecuteReplMode);
-            execCommand.SetAction(parseResult => ExecuteExecMode(parseResult, parseResult.GetValue(spec.ExecInputArgument)!));
+            execCommand.SetAction(parseResult => ExecuteExecMode(parseResult, parseResult.GetValue(spec.ExecInputArgument), parseResult.GetValue(spec.ExecExprOption)));
 
             return spec;
         }
 
         private sealed record class ZilfCommandSpec(
             RootCommand RootCommand,
-            Argument<string?> InputArgument,
-            Argument<string?> OutputArgument,
-            Option<bool> QuietOption,
-            Option<bool?> CaseSensitiveOption,
-            Option<bool?> CaseInsensitiveOption,
-            Option<string[]> IncludePathOption,
-            Option<bool> TraceRoutinesOption,
-            Option<bool> DebugInfoOption,
-            Option<bool> GlulxOption,
-            Option<bool> EnableAllWarningsOption,
-            Option<bool> WarningsAsErrorsOption,
-            Option<string[]> SuppressWarningsOption,
-            Option<bool> StopAfterCompileOption,
-            Option<string[]> ZapfPassThroughOption,
-            Option<string> ExpressionOption,
+            Command BuildCommand,
+            Argument<string?> BuildInputArgument,
+            Argument<string?> BuildOutputArgument,
+            Option<bool> BuildQuietOption,
+            Option<bool?> BuildCaseSensitiveOption,
+            Option<bool?> BuildCaseInsensitiveOption,
+            Option<string[]> BuildIncludePathOption,
+            Option<bool> BuildTraceRoutinesOption,
+            Option<bool> BuildDebugInfoOption,
+            Option<bool> BuildGlulxOption,
+            Option<bool> BuildEnableAllWarningsOption,
+            Option<bool> BuildWarningsAsErrorsOption,
+            Option<string[]> BuildSuppressWarningsOption,
+            Option<bool> BuildStopAfterCompileOption,
+            Option<string[]> BuildZapfPassThroughOption,
             Command ReplCommand,
             Option<bool> ReplQuietOption,
             Option<bool?> ReplCaseSensitiveOption,
             Option<bool?> ReplCaseInsensitiveOption,
             Option<string[]> ReplIncludePathOption,
             Command ExecCommand,
-            Argument<string> ExecInputArgument,
+            Argument<string?> ExecInputArgument,
+            Option<string?> ExecExprOption,
             Option<bool> ExecQuietOption,
             Option<bool?> ExecCaseSensitiveOption,
             Option<bool?> ExecCaseInsensitiveOption,
@@ -394,8 +471,13 @@ namespace Zilf
                 Console.WriteLine(GetBuildTimestamp());
             }
 
+            // Determine which argument/option set to use based on command
+            Argument<string?> outputArgument = spec.BuildOutputArgument;
+            Option<bool> stopAfterCompileOption = spec.BuildStopAfterCompileOption;
+            Option<string[]> zapfPassThroughOption = spec.BuildZapfPassThroughOption;
+
             // TODO: reorder front-end processing so <VERSION GLULX> can affect the output file extension
-            var output = parseResult.GetValue(spec.OutputArgument);
+            var output = parseResult.GetValue(outputArgument);
             var outFile = string.IsNullOrEmpty(output) ? Path.ChangeExtension(inputFile, ctx.IsGlulx ? ".asm" : ".zap") : output;
 
             // Perform compilation, then optionally invoke ZAPF
@@ -442,7 +524,7 @@ namespace Zilf
 
             // If requested, stop after compile
             // Also stop for Glulx since we don't have an integrated assembler
-            var stopAfter = parseResult.GetValue(spec.StopAfterCompileOption);
+            var stopAfter = parseResult.GetValue(stopAfterCompileOption);
 
             if (stopAfter || ctx.IsGlulx)
             {
@@ -450,7 +532,7 @@ namespace Zilf
             }
 
             // Prepare Zapf invocation
-            var zapfArgsRaw = parseResult.GetValue(spec.ZapfPassThroughOption) ?? Array.Empty<string>();
+            var zapfArgsRaw = parseResult.GetValue(zapfPassThroughOption) ?? Array.Empty<string>();
             var zapfArgsExpanded = new List<string>();
             foreach (var token in zapfArgsRaw)
             {
@@ -528,30 +610,6 @@ namespace Zilf
             }
         }
 
-        static int ExecuteExpressionMode(CommandParseResult parseResult, string expression)
-        {
-            var ctx = BuildContextFromParseResult(parseResult, RunMode.Expression, expression);
-
-            if (ctx == null)
-                return 1;
-
-            if (!ctx.Quiet)
-            {
-                Console.Write(GetBanner());
-                Console.Write(" built ");
-                Console.WriteLine(GetBuildTimestamp());
-            }
-
-            using (ctx.PushFileContext("<cmdline>"))
-            {
-                Console.WriteLine(Evaluate(ctx, expression));
-                if (ctx.ErrorCount > 0)
-                    return 2;
-            }
-
-            return 0;
-        }
-
         static int ExecuteReplMode(CommandParseResult parseResult)
         {
             var ctx = BuildContextFromParseResult(parseResult, RunMode.Interactive, null);
@@ -570,21 +628,50 @@ namespace Zilf
             return 0;
         }
 
-        static int ExecuteExecMode(CommandParseResult parseResult, string inputFile)
+        static int ExecuteExecMode(CommandParseResult parseResult, string? inputFile, string? expression)
         {
-            var ctx = BuildContextFromParseResult(parseResult, RunMode.Interpreter, inputFile);
-
-            if (ctx == null)
-                return 1;
-
-            if (!ctx.Quiet)
+            // Determine mode based on what was provided
+            if (!string.IsNullOrEmpty(expression))
             {
-                Console.Write(GetBanner());
-                Console.Write(" built ");
-                Console.WriteLine(GetBuildTimestamp());
-            }
+                // Expression mode
+                var ctx = BuildContextFromParseResult(parseResult, RunMode.Expression, expression);
 
-            return WrapInFrontEnd(frontEnd => frontEnd.Interpret(ctx, inputFile));
+                if (ctx == null)
+                    return 1;
+
+                if (!ctx.Quiet)
+                {
+                    Console.Write(GetBanner());
+                    Console.Write(" built ");
+                    Console.WriteLine(GetBuildTimestamp());
+                }
+
+                using (ctx.PushFileContext("<cmdline>"))
+                {
+                    Console.WriteLine(Evaluate(ctx, expression));
+                    if (ctx.ErrorCount > 0)
+                        return 2;
+                }
+
+                return 0;
+            }
+            else
+            {
+                // File mode
+                var ctx = BuildContextFromParseResult(parseResult, RunMode.Interpreter, inputFile);
+
+                if (ctx == null)
+                    return 1;
+
+                if (!ctx.Quiet)
+                {
+                    Console.Write(GetBanner());
+                    Console.Write(" built ");
+                    Console.WriteLine(GetBuildTimestamp());
+                }
+
+                return WrapInFrontEnd(frontEnd => frontEnd.Interpret(ctx, inputFile!));
+            }
         }
 
         static int WrapInFrontEnd(Func<FrontEnd, FrontEndResult> func)
@@ -644,17 +731,36 @@ namespace Zilf
             Option<bool> enableAllWarningsOption;
             Option<bool> warningsAsErrorsOption;
             Option<string[]> suppressWarningsOption;
+            Option<bool> traceRoutinesOption;
+            Option<bool> debugInfoOption;
+            Option<bool> glulxOption;
 
             var commandResult = parseResult.CommandResult;
-            if (commandResult.Command == spec.ReplCommand)
+            if (commandResult.Command == spec.BuildCommand)
+            {
+                quietOption = spec.BuildQuietOption;
+                caseSensitiveOption = spec.BuildCaseSensitiveOption;
+                caseInsensitiveOption = spec.BuildCaseInsensitiveOption;
+                includePathOption = spec.BuildIncludePathOption;
+                enableAllWarningsOption = spec.BuildEnableAllWarningsOption;
+                warningsAsErrorsOption = spec.BuildWarningsAsErrorsOption;
+                suppressWarningsOption = spec.BuildSuppressWarningsOption;
+                traceRoutinesOption = spec.BuildTraceRoutinesOption;
+                debugInfoOption = spec.BuildDebugInfoOption;
+                glulxOption = spec.BuildGlulxOption;
+            }
+            else if (commandResult.Command == spec.ReplCommand)
             {
                 quietOption = spec.ReplQuietOption;
                 caseSensitiveOption = spec.ReplCaseSensitiveOption;
                 caseInsensitiveOption = spec.ReplCaseInsensitiveOption;
                 includePathOption = spec.ReplIncludePathOption;
-                enableAllWarningsOption = spec.EnableAllWarningsOption; // Not available in REPL
-                warningsAsErrorsOption = spec.WarningsAsErrorsOption; // Not available in REPL
-                suppressWarningsOption = spec.SuppressWarningsOption; // Not available in REPL
+                enableAllWarningsOption = default!; // Not available in REPL
+                warningsAsErrorsOption = default!; // Not available in REPL
+                suppressWarningsOption = default!; // Not available in REPL
+                traceRoutinesOption = default!; // Not available in REPL
+                debugInfoOption = default!; // Not available in REPL
+                glulxOption = default!; // Not available in REPL
             }
             else if (commandResult.Command == spec.ExecCommand)
             {
@@ -665,17 +771,13 @@ namespace Zilf
                 enableAllWarningsOption = spec.ExecEnableAllWarningsOption;
                 warningsAsErrorsOption = spec.ExecWarningsAsErrorsOption;
                 suppressWarningsOption = spec.ExecSuppressWarningsOption;
+                traceRoutinesOption = default!; // Not available in Exec
+                debugInfoOption = default!; // Not available in Exec
+                glulxOption = default!; // Not available in Exec
             }
             else
             {
-                // Root command (compile or expression mode)
-                quietOption = spec.QuietOption;
-                caseSensitiveOption = spec.CaseSensitiveOption;
-                caseInsensitiveOption = spec.CaseInsensitiveOption;
-                includePathOption = spec.IncludePathOption;
-                enableAllWarningsOption = spec.EnableAllWarningsOption;
-                warningsAsErrorsOption = spec.WarningsAsErrorsOption;
-                suppressWarningsOption = spec.SuppressWarningsOption;
+                throw new InvalidOperationException($"Unknown command: {commandResult.Command.Name}");
             }
 
             var quiet = parseResult.GetValue(quietOption);
@@ -701,13 +803,13 @@ namespace Zilf
                 };
             }
 
-            var traceRoutines = parseResult.GetValue(spec.TraceRoutinesOption);
-            var debugInfo = parseResult.GetValue(spec.DebugInfoOption);
-            var suppressNoisyWarnings = !parseResult.GetValue(enableAllWarningsOption);
-            var warningsAsErrors = parseResult.GetValue(warningsAsErrorsOption);
+            var traceRoutines = traceRoutinesOption != null ? parseResult.GetValue(traceRoutinesOption) : false;
+            var debugInfo = debugInfoOption != null ? parseResult.GetValue(debugInfoOption) : false;
+            var suppressNoisyWarnings = enableAllWarningsOption != null ? !parseResult.GetValue(enableAllWarningsOption) : true;
+            var warningsAsErrors = warningsAsErrorsOption != null ? parseResult.GetValue(warningsAsErrorsOption) : false;
 
             var includePaths = parseResult.GetValue(includePathOption) ?? [];
-            var suppressedCodes = parseResult.GetValue(suppressWarningsOption) ?? [];
+            var suppressedCodes = suppressWarningsOption != null ? parseResult.GetValue(suppressWarningsOption) ?? [] : [];
 
             var ctx = new Context(!caseSensitive)
             {
@@ -730,7 +832,7 @@ namespace Zilf
                 }
             }
 
-            var useGlulx = parseResult.GetValue(spec.GlulxOption);
+            var useGlulx = glulxOption != null && parseResult.GetValue(glulxOption);
             if (useGlulx)
             {
                 ctx.SetZVersion(ZEnvironment.GLULX_ZVERSION);

@@ -64,7 +64,8 @@ and this project adheres to
 ### Changed
 
 - Overhauled the command-line syntax. See `zapf --help` and `zilf --help` for
-  details.
+  details. Among other things, you can now type `zilf build` to rebuild your
+  project if the main .zil file has the same name as the directory.
 
 - Split the unhelpfully generic errors MDL0113 and MDL0122 into more specific
   errors: MDL0131, MDL0228, MDL0229, MDL0230, MDL0231, MDL0232, MDL0319,
