@@ -8,7 +8,7 @@
     <!-- Allowed: alpha,beta,candidate,final -->
     <ReleaseLevel>candidate</ReleaseLevel>
     <!-- If ReleaseLevel is "final", ReleaseSerial should be 0 -->
-    <ReleaseSerial>1</ReleaseSerial>
+    <ReleaseSerial>2</ReleaseSerial>
 
     <AssemblyRevision>0</AssemblyRevision>
   </PropertyGroup>
