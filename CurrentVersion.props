@@ -2,13 +2,13 @@
 <!-- Copied from IronPython and modified. See Build/IronPython-License.txt. -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <MajorVersion>0</MajorVersion>
-    <MinorVersion>11</MinorVersion>
-    <MicroVersion>1</MicroVersion>
+    <MajorVersion>1</MajorVersion>
+    <MinorVersion>0</MinorVersion>
+    <MicroVersion>0</MicroVersion>
     <!-- Allowed: alpha,beta,candidate,final -->
-    <ReleaseLevel>final</ReleaseLevel>
+    <ReleaseLevel>candidate</ReleaseLevel>
     <!-- If ReleaseLevel is "final", ReleaseSerial should be 0 -->
-    <ReleaseSerial>0</ReleaseSerial>
+    <ReleaseSerial>1</ReleaseSerial>
 
     <AssemblyRevision>0</AssemblyRevision>
   </PropertyGroup>
