@@ -23,6 +23,7 @@ namespace Zilf.Emit
     public interface IProvideLowCoreEmulation
     {
         bool TryEmitLowCoreRead(string field, IVariable resultStorage);
+        bool TryEmitLowCoreWrite(string field, IOperand newValue);
         bool TryEmitLowCoreGetTable(string field, IVariable resultStorage);
     }
 }

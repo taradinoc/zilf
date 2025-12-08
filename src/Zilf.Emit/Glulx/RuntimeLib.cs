@@ -140,6 +140,7 @@ namespace Zilf.Emit.Glulx
             glk_window_get_parent = 0x29
             glk_window_clear = 0x2A
             glk_window_move_cursor = 0x2B
+            glk_window_set_echo_stream = 0x2D
             glk_set_window = 0x2F
             glk_stream_iterate = 0x40
             glk_stream_open_file = 0x42
@@ -150,6 +151,7 @@ namespace Zilf.Emit.Glulx
             glk_stream_get_current = 0x48
             glk_fileref_create_by_prompt = 0x62
             glk_fileref_destroy = 0x63
+            glk_fileref_iterate = 0x64
             glk_put_char_stream = 0x81
             glk_put_buffer = 0x84
             glk_put_buffer_stream = 0x85
@@ -231,6 +233,8 @@ namespace Zilf.Emit.Glulx
             GG_SAVE_STREAM_ROCK = 58979
             GG_COMMAND_INPUT_STREAM_ROCK = 32384
             GG_COMMAND_OUTPUT_STREAM_ROCK = 62643
+            GG_TRANSCRIPT_STREAM_ROCK = 38327
+            GG_TRANSCRIPT_FILEREF_ROCK = 95028
 
             section .data
             gg_main_window_id: dd 0
@@ -238,7 +242,10 @@ namespace Zilf.Emit.Glulx
             gg_save_stream_id: dd 0
             gg_command_input_stream_id: dd 0
             gg_command_output_stream_id: dd 0
+            gg_transcript_stream_id: dd 0
+            gg_transcript_fileref_id: dd 0
             gg_status_height: dd 0
+            gg_current_style: dd style_Normal
             gg_prev_stream_sp: dd 0
 
             section .bss
@@ -302,6 +309,11 @@ namespace Zilf.Emit.Glulx
             ; Clear all stored Glk IDs
             copy 0 -> [gg_main_window_id]
             copy 0 -> [gg_status_window_id]
+            copy 0 -> [gg_save_stream_id]
+            copy 0 -> [gg_command_input_stream_id]
+            copy 0 -> [gg_command_output_stream_id]
+            copy 0 -> [gg_transcript_stream_id]
+            copy 0 -> [gg_transcript_fileref_id]
             ; Look for windows we recognize
             copy 0 -> id
         .next_window:
@@ -338,13 +350,15 @@ namespace Zilf.Emit.Glulx
             push id
             glk glk_stream_iterate 2 -> id
             ; Are we done?
-            jz id -> rfalse
+            jz id -> .streams_done
             ; Is it the save stream?
             jeq [gg_temp_word] GG_SAVE_STREAM_ROCK -> .found_save
             ; Is it the command input stream?
             jeq [gg_temp_word] GG_COMMAND_INPUT_STREAM_ROCK -> .found_command_input
             ; Is it the command output stream?
             jeq [gg_temp_word] GG_COMMAND_OUTPUT_STREAM_ROCK -> .found_command_output
+            ; Is it the transcript stream?
+            jeq [gg_temp_word] GG_TRANSCRIPT_STREAM_ROCK -> .found_transcript_stream
             ; Keep looking
             jump .next_stream
         .found_save:
@@ -359,7 +373,29 @@ namespace Zilf.Emit.Glulx
             ; Save command output stream ID
             copy id -> [gg_command_output_stream_id]
             jump .next_stream
-            ; No return needed, function is exited with rfalse above";
+        .found_transcript_stream:
+            ; Save transcript stream ID
+            copy id -> [gg_transcript_stream_id]
+            jump .next_stream
+        .streams_done:
+            ; Look for filerefs we recognize
+            copy 0 -> id
+        .next_fileref:
+            push gg_temp_word
+            push id
+            glk glk_fileref_iterate 2 -> id
+            ; Are we done?
+            jz id -> .filerefs_done
+            ; Is it the transcript fileref?
+            jeq [gg_temp_word] GG_TRANSCRIPT_FILEREF_ROCK -> .found_transcript_fileref
+            ; Keep looking
+            jump .next_fileref
+        .found_transcript_fileref:
+            ; Save transcript fileref ID
+            copy id -> [gg_transcript_fileref_id]
+            jump .next_fileref
+        .filerefs_done:
+            return";
 
         [RuntimeFunc(nameof(glk_defines))]
         public const string split_window = @"
@@ -485,6 +521,7 @@ namespace Zilf.Emit.Glulx
              the first char is still at <GETB ,OUTPUT-BUF ,WORD-SIZE>
          */
         [RuntimeFunc(
+            nameof(enable_output_stream_2), nameof(disable_output_stream_2),
             nameof(enable_output_stream_3), nameof(disable_output_stream_3),
             nameof(enable_output_stream_4), nameof(disable_output_stream_4))]
         public const string direct_output = @"
@@ -492,6 +529,10 @@ namespace Zilf.Emit.Glulx
             local stream
             local table
             local width
+            ; Enabling stream 2 (transcript)?
+            jeq stream 2 -> .enable_2
+            ; Disabling stream 2?
+            jeq stream -2 -> .disable_2
             ; Enabling stream 3 (memory)?
             jeq stream 3 -> .enable_3
             ; Disabling stream 3?
@@ -501,6 +542,12 @@ namespace Zilf.Emit.Glulx
             ; Disabling stream 4?
             jeq stream -4 -> .disable_4
             ; TODO: implement other output streams
+            return
+        .enable_2:
+            callf _rt_enable_output_stream_2
+            return
+        .disable_2:
+            callf _rt_disable_output_stream_2
             return
         .enable_3:
             callfii _rt_enable_output_stream_3 table width
@@ -513,6 +560,43 @@ namespace Zilf.Emit.Glulx
             return
         .disable_4:
             callf _rt_disable_output_stream_4
+            return";
+
+        [RuntimeFunc(nameof(glk_defines))]
+        public const string enable_output_stream_2 = @"
+            function
+            ; Are we already rolling?
+            jnz [gg_transcript_stream_id] -> rfalse
+            ; Do we already have a fileref?
+            jnz [gg_transcript_fileref_id] -> .got_fileref
+            ; No, prompt player to select a file
+            push GG_TRANSCRIPT_FILEREF_ROCK
+            push filemode_WriteAppend
+            push (fileusage_Transcript | fileusage_TextMode)
+            glk glk_fileref_create_by_prompt 3 -> [gg_transcript_fileref_id]
+            jz [gg_transcript_fileref_id] -> rfalse
+        .got_fileref:
+            ; Open stream
+            push GG_TRANSCRIPT_STREAM_ROCK
+            push filemode_WriteAppend
+            push [gg_transcript_fileref_id]
+            glk glk_stream_open_file 3 -> [gg_transcript_stream_id]
+            jz [gg_transcript_stream_id] -> rfalse
+            push [gg_transcript_stream_id]
+            push [gg_main_window_id]
+            glk glk_window_set_echo_stream 2
+            return";
+
+        [RuntimeFunc(nameof(glk_defines))]
+        public const string disable_output_stream_2 = @"
+            function
+            ; Are we rolling?
+            jz [gg_transcript_stream_id] -> rfalse
+            ; Close stream
+            push 0
+            push [gg_transcript_stream_id]
+            glk glk_stream_close 2
+            copy 0 -> [gg_transcript_stream_id]
             return";
 
         [RuntimeFunc(nameof(glk_defines))]
@@ -561,6 +645,8 @@ namespace Zilf.Emit.Glulx
         public const string enable_output_stream_4 = @"
             function
             local fref
+            ; Are we already rolling?
+            jnz [gg_command_output_stream_id] -> rfalse
             ; Prompt player to select a file
             push 0
             push filemode_Write
@@ -858,20 +944,21 @@ namespace Zilf.Emit.Glulx
             bitand style 1 -> push
             jnz pop -> .reverse
             ; Roman
-            push style_Normal
+            copy style_Normal -> [gg_current_style]
             jump .set_style
         .fixed:
-            push style_Preformatted
+            copy style_Preformatted -> [gg_current_style]
             jump .set_style
         .italic:
-            push style_User2
+            copy style_User2 -> [gg_current_style]
             jump .set_style
         .bold:
-            push style_Emphasized
+            copy style_Emphasized -> [gg_current_style]
             jump .set_style
         .reverse:
-            push style_User1
+            copy style_User1 -> [gg_current_style]
         .set_style:
+            push [gg_current_style]
             glk glk_set_style 1
             return";
 
@@ -932,6 +1019,54 @@ namespace Zilf.Emit.Glulx
             glk glk_stream_close 2
             copy 0 -> [gg_save_stream_id]
             return res";
+
+        [RuntimeFunc(nameof(glk_defines))]
+        public const string get_lowcore_flags = @"
+            function
+            local result
+            copy 0 -> result
+            ; Bit 0: Set when transcripting is on
+            jz [gg_transcript_stream_id] -> .no_transcript
+            bitor result 1 -> result
+        .no_transcript:
+            ; Bit 1: Set when fixed-pitch printing is on
+            jne [gg_current_style] style_Preformatted -> .no_fixed_pitch
+            bitor result 2 -> result
+        .no_fixed_pitch:
+            ; Bit 4: Set when UNDO is available
+            gestalt 3 0 -> push
+            jz pop -> .no_undo
+            bitor result 16 -> result
+        .no_undo:
+            return result";
+
+        [RuntimeFunc(nameof(glk_defines), nameof(direct_output))]
+        public const string set_lowcore_flags = @"
+            function
+            local value
+            ; Bit 0: Set to enable transcripting
+            bitand value 1 -> push
+            jz pop -> .disable_transcript
+            callfi _rt_direct_output 2
+            jump .bit_0_done
+        .disable_transcript:
+            callfi _rt_direct_output -2
+        .bit_0_done:
+            ; Bit 1: Set to enable fixed-pitch printing
+            bitand value 2 -> push
+            jz pop -> .disable_fixed_pitch
+            copy style_Preformatted -> [gg_current_style]
+            push style_Preformatted
+            glk glk_set_style 1
+            jump .bit_1_done
+        .disable_fixed_pitch:
+            jne [gg_current_style] style_Preformatted -> .bit_1_done
+            copy style_Normal -> [gg_current_style]
+            push style_Normal
+            glk glk_set_style 1
+        .bit_1_done:
+            ; Bit 4: Ignore (game can't enable/disable UNDO)
+            return";
 
         #endregion
 

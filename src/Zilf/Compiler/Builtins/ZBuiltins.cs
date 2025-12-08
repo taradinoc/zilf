@@ -2650,6 +2650,27 @@ namespace Zilf.Compiler.Builtins
                 fieldSpec);
         }
 
+        /// <summary>
+        /// Writes a value to a field in the low memory area (header and extension table).
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="fieldSpec">The name of a header field to write, or a list consisting of the header field name and either 0 or 1 to write the high or low byte.</param>
+        /// <param name="newValue"></param>
+        [Builtin("LOWCORE", Platform = BuiltinPlatform.GlulxOnly)]
+        public static void LowCoreWriteOp_Glulx(VoidCall c, ZilAtom fieldSpec, IOperand newValue)
+        {
+            if (c.rb is IProvideLowCoreEmulation emulator)
+            {
+                if (emulator.TryEmitLowCoreWrite(fieldSpec.Text, newValue))
+                    return;
+            }
+
+            throw new CompilerError(
+                CompilerMessages._0_Field_1_Is_Not_Supported_When_Targeting_Glulx,
+                "LOWCORE",
+                fieldSpec);
+        }
+
         [Builtin("LOWCORE-TABLE")]
         public static void LowCoreTableOp_Glulx(VoidCall c, ZilAtom fieldSpec, int length, ZilAtom handler)
         {

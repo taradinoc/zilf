@@ -869,8 +869,19 @@ namespace Zilf.Emit.Glulx
                     Emit($"getmemsize -> {FormatStore(resultStorage)}", "getmemsize");
                     return true;
                 case "FLAGS":
-                    // TODO: implement FLAGS emulation for transcriptions and monospace?
-                    Emit($"copy 0 -> {FormatStore(resultStorage)}", "copy");
+                    Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_lowcore_flags))} -> {FormatStore(resultStorage)}", "callf");
+                    return true;
+            }
+
+            return false;
+        }
+
+        public bool TryEmitLowCoreWrite(string field, IOperand value)
+        {
+            switch (field)
+            {
+                case "FLAGS":
+                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.set_lowcore_flags))} {FormatLoad(value)}", "callfi");
                     return true;
             }
 
