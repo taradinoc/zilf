@@ -12,17 +12,15 @@ Visit [zilf.io](https://zilf.io/) or the [releases page](https://foss.heptapod.n
 
 Visit [the wiki](https://foss.heptapod.net/zilf/zilf/-/wikis/Getting-Started) to learn how to use ZILF to build and run ZIL games. Several sample games are included as a demonstration of ZILF's capabilities, such as Advent (Colossal Cave).
 
-Once ZILF is installed, you can compile a ZIL game by running the compiler and assembler like so:
+Once ZILF is installed, you can compile a ZIL game by running it like so:
 
     zilf mygame.zil
-
-    zapf mygame.zap
 
 That will produce a file called something like `mygame.z3`, which you can then run with a [Z-code interpreter](https://www.ifwiki.org/Z-code_interpreters).
 
 ## Contribution guidelines
 
-To build ZILF from source, you'll need the .NET 9 SDK. With that installed, clone this repository and run:
+To build ZILF from source, you'll need the .NET 10 SDK. With that installed, clone this repository and run:
 
     dotnet build Zilf.sln
 
@@ -36,7 +34,7 @@ To run only the fast tests (skipping the ZILF library tests and full game tests)
 
     dotnet test Zilf.sln --filter "Category!=Slow"
 
-If you'd like to contribute code, please fork the repository on [Heptapod](https://foss.heptapod.net/zilf/zilf/) and submit a merge request. Alternatively, you may create an issue on [JIRA](https://vaporware.atlassian.net/projects/ZILF) and submit a patch.
+If you'd like to contribute code, please request to join the project on [Heptapod](https://foss.heptapod.net/zilf/zilf/), commit your work to a topic branch, and submit a merge request. Alternatively, you may create an issue on [JIRA](https://vaporware.atlassian.net/projects/ZILF) and submit a patch.
 
 ## Who do I talk to?
 
