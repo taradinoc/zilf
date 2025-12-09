@@ -65,9 +65,7 @@
     <IncludeBuildTimestamp>false</IncludeBuildTimestamp>
     <GeneratedBuildInfo>$(IntermediateOutputPath)BuildInfo.g.cs</GeneratedBuildInfo>
   </PropertyGroup>
-  <Target Name="GenerateBuildInfo"
-          BeforeTargets="Publish"
-          Condition="'$(IncludeBuildTimestamp)' == 'true'">
+  <Target Name="GenerateBuildInfo" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <!-- Use reproducible UTC time if provided by CI; otherwise current UTC -->
       <_BuildTimeUtc>$([System.DateTime]::UtcNow.ToString('o'))</_BuildTimeUtc>
