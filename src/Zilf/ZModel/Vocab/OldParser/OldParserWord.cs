@@ -491,6 +491,9 @@ namespace Zilf.ZModel.Vocab.OldParser
 
         public void Merge(Context ctx, OldParserWord other)
         {
+            if (other == this)
+                return;
+
             if ((other.PartOfSpeech & PartOfSpeech.Adjective) != 0)
             {
                 UnsetPartOfSpeech(ctx, PartOfSpeech.Adjective);

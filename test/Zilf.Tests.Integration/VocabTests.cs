@@ -239,6 +239,15 @@ namespace Zilf.Tests.Integration
                     "<==? ,A?ABCDEFGHI ,A?ABCDEF>");
         }
 
+        [TestMethod]
+        public async Task Making_A_Word_Its_Own_Synonym_Should_Not_Crash()
+        {
+            await AssertGlobals(
+                "<VOC \"FOO\" VERB>",
+                "<SYNONYM FOO FOO>")
+                .CompilesAsync();
+        }
+
         #endregion
 
         #region New Parser

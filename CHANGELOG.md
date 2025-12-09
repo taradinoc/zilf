@@ -96,6 +96,8 @@ and this project adheres to
 - When the assembly output files have an extension other than `.zap`, the
   extension is now properly included in the generated `.INSERT` directives.
 
+- Fixed a bug where ZILF would crash when trying to make a word its own synonym.
+
 ## [0.11.1] (October 31, 2025)
 
 ### Fixed
