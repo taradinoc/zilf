@@ -66,6 +66,14 @@ function New-TempScript([string]$Content) {
   return $file
 }
 
+function New-TempDirectory() {
+  $tmpDir = $env:RUNNER_TEMP
+  if ([string]::IsNullOrWhiteSpace($tmpDir)) { $tmpDir = [System.IO.Path]::GetTempPath() }
+  $dir = Join-Path $tmpDir ("fpm-root-" + [System.Guid]::NewGuid().ToString('N'))
+  New-Item -ItemType Directory -Path $dir | Out-Null
+  return $dir
+}
+
 # Resolve and validate paths
 $Source = Resolve-AbsolutePath $Source
 $Destination = Resolve-AbsolutePath $Destination
@@ -77,6 +85,14 @@ $versionParts = Split-Version -LongVersion $Version
 # Output filename must match aggregator: zilf-<version>-<os>-<arch>.pkg
 $os = 'osx'
 $pkgOut = Join-Path $Destination ("$Name-$Version-$os-$Arch.pkg")
+
+# Build a temporary payload rooted at opt/zilf. We intentionally avoid fpm's
+# --prefix for osxpkg because it is applied both to staging and install
+# location, which would double-prefix the final path (/opt/zilf/opt/zilf/bin).
+$payloadRoot = New-TempDirectory
+$payloadZilf = Join-Path (Join-Path $payloadRoot 'opt') 'zilf'
+New-Item -ItemType Directory -Path $payloadZilf -Force | Out-Null
+Copy-Item -Path (Join-Path $Source '*') -Destination $payloadZilf -Recurse -Force
 
 # Post-install and pre-remove scripts: manage /usr/local/bin symlinks
 $postInstall = @'
@@ -113,7 +129,6 @@ $common = @(
     '-s','dir',
     '-n', $Name,
     '-v', $versionParts.base,
-    '--prefix','/opt/zilf',
     '--description','ZILF tools (compiler and assembler) for the Z-machine and ZIL.',
     '--license','Custom',
     '--vendor','ZILF Project',
@@ -121,13 +136,20 @@ $common = @(
     '--after-install', $postInstallFile,
     '--before-remove', $preRemoveFile,
     '--osxpkg-identifier-prefix', 'io.zilf',
-    '-C', $Source
+    '-C', $payloadRoot
 )
 if ($versionParts.iteration) { $common += @('--iteration', $versionParts.iteration) }
 
-Write-Host "Building macOS PKG: $pkgOut" -ForegroundColor Cyan
-$fpmArgs = $common + @('-t','osxpkg','-p', $pkgOut, '.')
-& fpm @fpmArgs
-if ($LASTEXITCODE -ne 0) { throw "fpm failed creating osxpkg with exit code $LASTEXITCODE" }
+try {
+    Write-Host "Building macOS PKG: $pkgOut" -ForegroundColor Cyan
+    $fpmArgs = $common + @('-t','osxpkg','-p', $pkgOut, '.')
+    & fpm @fpmArgs
+    if ($LASTEXITCODE -ne 0) { throw "fpm failed creating osxpkg with exit code $LASTEXITCODE" }
 
-Write-Host "Package created: $pkgOut" -ForegroundColor Green
+    Write-Host "Package created: $pkgOut" -ForegroundColor Green
+}
+finally {
+    foreach ($tempPath in @($payloadRoot, $postInstallFile, $preRemoveFile)) {
+        try { Remove-Item -LiteralPath $tempPath -Recurse -Force -ErrorAction SilentlyContinue } catch { Write-Warning "Failed to remove temp path '$tempPath': $_" }
+    }
+}
