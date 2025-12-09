@@ -57,7 +57,7 @@ namespace Zilf.Emit.Glulx
             var shouldTrace = TracedRoutines.Contains(name.Replace("__", "-").Replace("_Q_", "?"));
             peep = new PeepholeBuffer<GlulxCode>
             {
-                Combiner = new PeepholeCombiner(),
+                Combiner = new PeepholeCombiner(LocalExists),
                 LabelFactory = DefineLabel,
                 TracingEnabled = shouldTrace,
                 TracingName = shouldTrace ? name : null

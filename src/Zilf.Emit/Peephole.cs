@@ -265,7 +265,7 @@ namespace Zilf.Emit
 #endif
 
         /// <summary>
-        /// Gets or sets the delegate that will be used to combine adjacent instructions.
+        /// Gets or sets the object that will be used to combine adjacent instructions.
         /// </summary>
         public IPeepholeCombiner<TCode>? Combiner { get; set; }
 

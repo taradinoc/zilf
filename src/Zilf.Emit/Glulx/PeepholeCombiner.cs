@@ -29,6 +29,7 @@ namespace Zilf.Emit.Glulx
     /// </summary>
     class PeepholeCombiner : IPeepholeCombiner<GlulxCode>, IPeepholeCombinerWithStats
     {
+        private readonly Func<string, bool> localExists;
         private readonly CombinerOptimizationDescriptor[] optimizationPipeline;
 #if DEBUG
         private readonly OptimizationStats[] optimizationStats;
@@ -60,8 +61,9 @@ namespace Zilf.Emit.Glulx
         }
 #endif
 
-        public PeepholeCombiner()
+        public PeepholeCombiner(Func<string, bool> localExists)
         {
+            this.localExists = localExists;
             optimizationPipeline = BuildOptimizationPipeline();
 #if DEBUG
             optimizationStats = optimizationPipeline.Select(d => new OptimizationStats(d.Name)).ToArray();
@@ -164,6 +166,7 @@ namespace Zilf.Emit.Glulx
         private CombinerOptimizationDescriptor[] BuildOptimizationPipeline() =>
         [
             new("fold push/return pair", TrySimplifyPushReturn),
+            new("fold copy local/return pair", TrySimplifyCopyLocalReturn),
             new("eliminate copy to same", TryEliminateCopyToSame),
             new("eliminate redundant push/pop", TryEliminatePushPop),
         ];
@@ -183,8 +186,8 @@ namespace Zilf.Emit.Glulx
                 {
                     // Extract the value from "push X"
                     var pushText = matches![0].Code.Text;
-                    var value = pushText.Substring(5).Trim(); // Skip "push "
-                    
+                    var value = pushText[5..].Trim(); // Skip "push "
+
                     // For push 0/1, create BranchAlways to Label.RFALSE/Label.RTRUE for further optimization
                     if (value == "0")
                     {
@@ -196,9 +199,57 @@ namespace Zilf.Emit.Glulx
                         result = Combine2To1("return 1", "return", PeepholeLineType.BranchAlways, Label.RTRUE);
                         return true;
                     }
-                    
+
                     result = Combine2To1($"return {value}", "return", PeepholeLineType.Terminator);
                     return true;
+                }
+
+                result = default;
+                return false;
+            }
+            finally
+            {
+                EndMatch();
+            }
+        }
+
+        /// <summary>
+        /// Optimizes copy X -> Y followed by return Y, when Y is a local variable, to return X.
+        /// </summary>
+        bool TrySimplifyCopyLocalReturn(IEnumerable<CombinableLine<GlulxCode>> lines, out CombinerResult<GlulxCode> result)
+        {
+            BeginMatch(lines);
+            try
+            {
+                if (Match(a => a.Code.Opcode == "copy", b => b.Code.Opcode == "return"))
+                {
+                    // Extract destination from "copy SRC -> DEST"
+                    var copyText = matches![0].Code.Text;
+                    var arrowIndex = copyText.IndexOf(" -> ", StringComparison.Ordinal);
+                    if (arrowIndex > 0)
+                    {
+                        var dest = copyText[(arrowIndex + 4)..].Trim();   // Skip " -> "
+
+                        // Extract source from "return SRC"
+                        var returnText = matches[1].Code.Text;
+                        var returnSrc = returnText[7..].Trim(); // Skip "return "
+
+                        // Check if DEST is a local variable and matches returnSrc
+                        if (dest == returnSrc && localExists(dest))
+                        {
+                            // Extract source from "copy SRC -> DEST"
+                            var src = copyText[5..arrowIndex].Trim(); // Skip "copy "
+
+                            // Mark combined instruction as a BranchAlways if the source is 0 or 1
+                            if (src == "0")
+                                result = Combine2To1("return 0", "return", PeepholeLineType.BranchAlways, Label.RFALSE);
+                            else if (src == "1")
+                                result = Combine2To1("return 1", "return", PeepholeLineType.BranchAlways, Label.RTRUE);
+                            else
+                                result = Combine2To1($"return {src}", "return", PeepholeLineType.Terminator);
+                            return true;
+                        }
+                    }
                 }
 
                 result = default;
@@ -225,9 +276,9 @@ namespace Zilf.Emit.Glulx
                     var arrowIndex = text.IndexOf(" -> ", StringComparison.Ordinal);
                     if (arrowIndex > 0)
                     {
-                        var src = text.Substring(5, arrowIndex - 5).Trim(); // Skip "copy "
-                        var dest = text.Substring(arrowIndex + 4).Trim();   // Skip " -> "
-                        
+                        var src = text[5..arrowIndex].Trim(); // Skip "copy "
+                        var dest = text[(arrowIndex + 4)..].Trim();   // Skip " -> "
+
                         if (src == dest)
                         {
                             result = Consume(1);
@@ -260,14 +311,14 @@ namespace Zilf.Emit.Glulx
                 {
                     var pushText = matches![0].Code.Text;
                     var popText = matches[1].Code.Text;
-                    
+
                     // Extract source from "copy SRC -> push"
                     var srcEnd = pushText.IndexOf(" -> ", StringComparison.Ordinal);
-                    var src = pushText.Substring(5, srcEnd - 5).Trim();
-                    
+                    var src = pushText[5..srcEnd].Trim();
+
                     // Extract destination from "copy pop -> DEST"
-                    var dest = popText.Substring(12).Trim(); // Skip "copy pop -> "
-                    
+                    var dest = popText[12..].Trim(); // Skip "copy pop -> "
+
                     result = Combine2To1($"copy {src} -> {dest}", "copy");
                     return true;
                 }
@@ -314,21 +365,21 @@ namespace Zilf.Emit.Glulx
         {
             // For conditional branches, check if they test the same condition
             // This is a simplified implementation; can be extended for more cases
-            
+
             // If either instruction consumes from the stack (uses 'pop'), they can't be
             // considered the same test because each pop consumes a separate stack value.
             // This prevents incorrect optimization of sequences like:
             //     push value1
-            //     push value2  
+            //     push value2
             //     jnz pop -> target  ; consumes value2
             //     jz pop -> elsewhere ; consumes value1
             // where both pops are needed to balance the stack.
             var aOperands = ExtractOperands(a.Text);
             var bOperands = ExtractOperands(b.Text);
-            
+
             if (aOperands.Contains("pop") || bOperands.Contains("pop"))
                 return SameTestResult.Unrelated;
-            
+
             // If the instructions are identical, they test the same condition
             if (a.Text == b.Text && a.Opcode == b.Opcode)
                 return SameTestResult.SameTest;
@@ -367,17 +418,17 @@ namespace Zilf.Emit.Glulx
             if (arrowIndex > 0)
             {
                 // Target is embedded in text, extract everything between opcode and " -> "
-                operandPart = text.Substring(0, arrowIndex);
+                operandPart = text[..arrowIndex];
             }
             else
             {
                 // Target is not embedded (passed separately), use full text
                 operandPart = text;
             }
-            
+
             // Extract operands: everything after the first space (the opcode)
             var spaceIndex = operandPart.IndexOf(' ');
-            return spaceIndex > 0 ? operandPart.Substring(spaceIndex + 1) : "";
+            return spaceIndex > 0 ? operandPart[(spaceIndex + 1)..] : "";
         }
 
         public ControlsConditionResult ControlsConditionalBranch(GlulxCode a, GlulxCode b)
@@ -387,8 +438,8 @@ namespace Zilf.Emit.Glulx
             {
                 // Extract the value being pushed
                 var arrowIndex = a.Text.IndexOf(" -> ", StringComparison.Ordinal);
-                var value = a.Text.Substring(5, arrowIndex - 5).Trim();
-                
+                var value = a.Text[5..arrowIndex].Trim();
+
                 // Check if 'b' is testing the stack for zero
                 if (b.Opcode == "jz" && b.Text.StartsWith("jz pop "))
                 {
