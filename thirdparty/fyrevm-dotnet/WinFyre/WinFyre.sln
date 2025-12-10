@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30723.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinFyre", "WinFyre\WinFyre.csproj", "{0B8A465D-066C-44DF-BC0C-CADB4A11439C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FyreVM", "FyreVM\FyreVM.csproj", "{E38AA41F-2CCD-4609-8820-95161669E18A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{76CDA133-5C03-4AF6-8173-EEDB37E7054D}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0B8A465D-066C-44DF-BC0C-CADB4A11439C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B8A465D-066C-44DF-BC0C-CADB4A11439C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B8A465D-066C-44DF-BC0C-CADB4A11439C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B8A465D-066C-44DF-BC0C-CADB4A11439C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E38AA41F-2CCD-4609-8820-95161669E18A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E38AA41F-2CCD-4609-8820-95161669E18A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E38AA41F-2CCD-4609-8820-95161669E18A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E38AA41F-2CCD-4609-8820-95161669E18A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
