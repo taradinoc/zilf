@@ -37,6 +37,7 @@ namespace Zilf.Tests.Integration
         protected readonly List<(Predicate<ZlrHelperRunResult>, string message)> warningChecks = [];
         protected bool wantCompileOutput;
         protected bool wantDebugInfo;
+        protected bool useGlulx;
 
         public TThis InV3()
         {
@@ -71,6 +72,13 @@ namespace Zilf.Tests.Integration
         public TThis InV8()
         {
             versionDirective = "<VERSION 8>";
+            return (TThis)this;
+        }
+
+        public TThis InGlulx()
+        {
+            useGlulx = true;
+            versionDirective = "";
             return (TThis)this;
         }
 
@@ -173,6 +181,22 @@ namespace Zilf.Tests.Integration
                 if (!check(res))
                     Assert.Fail(message);
         }
+
+        protected Task<ZlrHelperRunResult> RunHelperAsync(string code, string? input, bool compileOnly = false, bool wantDebugInfo = false)
+        {
+            return useGlulx
+                ? FyreHelper.RunAsync(code, input, compileOnly, wantDebugInfo)
+                : ZlrHelper.RunAsync(code, input, compileOnly, wantDebugInfo);
+        }
+
+        protected Task RunAndAssertHelperAsync(string code, string? input, string expectedOutput,
+            IEnumerable<(Predicate<ZlrHelperRunResult>, string message)>? warningChecks = null,
+            bool wantCompileOutput = false)
+        {
+            return useGlulx
+                ? FyreHelper.RunAndAssertAsync(code, input, expectedOutput, warningChecks, wantCompileOutput)
+                : ZlrHelper.RunAndAssertAsync(code, input, expectedOutput, warningChecks, wantCompileOutput);
+        }
     }
 
     public sealed class EntryPointAssertionHelper(string argSpec, string body) : AbstractAssertionHelper<EntryPointAssertionHelper>
@@ -184,7 +208,7 @@ namespace Zilf.Tests.Integration
                            $"\t{body}\r\n" +
                            "\t<QUIT>>";
 
-            var result = await ZlrHelper.RunAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+            var result = await RunHelperAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.Finished, result.Status);
 
             CheckWarnings(result);
@@ -197,7 +221,7 @@ namespace Zilf.Tests.Integration
                            $"\t{body}\r\n" +
                            "\t<QUIT>>";
 
-            var result = await ZlrHelper.RunAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+            var result = await RunHelperAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
 
             CheckWarnings(result);
@@ -214,7 +238,7 @@ namespace Zilf.Tests.Integration
 
             try
             {
-                result = await ZlrHelper.RunAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+                result = await RunHelperAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             }
             catch (Exception ex)
             {
@@ -288,7 +312,7 @@ namespace Zilf.Tests.Integration
                 $"\t<SETG DUMMY?VAR {Expression()}>\r\n" +
                 "\t<QUIT>>";
 
-            var result = await ZlrHelper.RunAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+            var result = await RunHelperAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.AreEqual(ZlrTestStatus.CompilationFailed, result.Status);
 
             CheckWarnings(result);
@@ -318,7 +342,7 @@ namespace Zilf.Tests.Integration
                 $"\t<SETG DUMMY?VAR {Expression()}>\r\n" +
                 "\t<QUIT>>";
 
-            var result = await ZlrHelper.RunAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
+            var result = await RunHelperAsync(testCode, null, compileOnly: true, wantDebugInfo: wantDebugInfo);
             Assert.IsTrue(result.Status > ZlrTestStatus.CompilationFailed,
                 "Failed to compile");
 
@@ -455,9 +479,19 @@ namespace Zilf.Tests.Integration
 
     public sealed class RawAssertionHelper(string code)
     {
+        private bool useGlulx;
+
+        public RawAssertionHelper InGlulx()
+        {
+            useGlulx = true;
+            return this;
+        }
+
         public Task OutputsAsync(string expectedValue)
         {
-            return ZlrHelper.RunAndAssertAsync(code, null, expectedValue);
+            return useGlulx
+                ? FyreHelper.RunAndAssertAsync(code, null, expectedValue)
+                : ZlrHelper.RunAndAssertAsync(code, null, expectedValue);
         }
     }
 }

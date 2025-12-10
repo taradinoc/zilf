@@ -24,7 +24,7 @@ namespace FyreVM
         /// <summary>
         /// Gets or sets the line of input that was read, or <b>null</b> to cancel.
         /// </summary>
-        public string Line
+        public string? Line
         {
             get { return line; }
             set { line = value; }

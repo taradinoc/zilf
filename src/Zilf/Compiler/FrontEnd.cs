@@ -273,7 +273,6 @@ namespace Zilf.Compiler
                         if (ctx.IsGlulx)
                         {
                             var streamFactory = new GlulxStreamFactory(this, outputFileName);
-
                             using var gameBuilder = new Emit.Glulx.GameBuilder(streamFactory, (GlulxGameOptions)gameOptions);
                             Compilation.Compile(ctx, gameBuilder);
                         }

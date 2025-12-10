@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="$(RootDir)src\Zapf\Zapf.csproj" />
     <ProjectReference Include="$(RootDir)src\Zilf\Zilf.csproj" />
+    <ProjectReference Include="$(RootDir)thirdparty\fyrevm-dotnet\FyreVM\FyreVM.csproj" />
   </ItemGroup>
 
   <!-- only use the analyzer if it's been built for this target -->
