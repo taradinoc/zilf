@@ -23,6 +23,14 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Install build tools for Glazer
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+        shell: bash
+
+      - name: Setup Glazer
+        run: pwsh ./tools/setup-glazer.ps1
+        shell: bash
+
       - name: Restore
         run: dotnet restore Zilf.sln
 

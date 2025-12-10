@@ -92,6 +92,8 @@ stages:
 #
 # Learn more about GitLab cache: https://docs.gitlab.com/ee/ci/caching/index.html
 before_script:
+  - 'apt-get update && apt-get install -y build-essential'
+  - 'pwsh ./tools/setup-glazer.ps1'
   - 'dotnet restore Zilf.sln --packages $NUGET_PACKAGES_DIRECTORY'
 
 debug:build:
