@@ -499,16 +499,19 @@ namespace Zilf.Emit.Glulx
             writer.WriteLine();
 
             // property defaults
-            writer.WriteLine("property_defaults:");
+            var propDefaultQuery = from p in props
+                                   where p.Value.DefaultValue is not (null or INumericOperand { Value: 0})
+                                   orderby p.Value.Number
+                                   select new {
+                                       num = p.Value.Number,
+                                       name = p.Key,
+                                       def = p.Value.DefaultValue?.StripIndirect()
+                                   };
+            var propDefaults = propDefaultQuery.ToArray();
 
-            var propNums = Enumerable.Range(1, MaxProperties);
-            var propDefaults = from p in props
-                               orderby p.Value.Number
-                               select new {
-                                   num = p.Value.Number,
-                                   name = p.Key,
-                                   def = p.Value.DefaultValue?.StripIndirect()
-                               };
+            writer.WriteLine(INDENT + "; Property defaults");
+            writer.WriteLine(INDENT + "property_defaults_count: dd {0}", propDefaults.Length);
+            writer.WriteLine("property_defaults_table:");
 
             foreach (var row in propDefaults)
             {
@@ -518,6 +521,7 @@ namespace Zilf.Emit.Glulx
                     writer.WriteLine(INDENT + "; Unused property #{0}", row.num);
 
                 writer.WriteLine(INDENT + "dd {0}", (object?)row.def ?? "0");
+                writer.WriteLine(INDENT + "dw {0}", row.num);
             }
 
             // object structures

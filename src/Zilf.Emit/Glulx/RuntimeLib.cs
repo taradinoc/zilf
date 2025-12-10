@@ -1219,8 +1219,14 @@ namespace Zilf.Emit.Glulx
             local addr
             ; Get property address
             callfii _rt_get_property_address obj prop -> addr
-            jz addr -> rfalse       ; Not found
+            jz addr -> .not_found
             ; Read value
+            aload addr 0 -> push
+            return pop
+        .not_found:
+            ; Look for default value
+            binarysearch prop 2 property_defaults_table 6 [property_defaults_count] 4 0 -> addr
+            jz addr -> rfalse       ; Default to zero
             aload addr 0 -> push
             return pop";
 

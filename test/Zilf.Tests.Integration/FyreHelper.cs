@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -246,6 +247,22 @@ namespace Zilf.Tests.Integration
 
             compileOutput = channel.String;
             return compiled;
+        }
+
+        public string GetAsmCode()
+        {
+            var sb = new StringBuilder();
+
+            foreach (var content in from path in fileSystem.Paths
+                                    where path.EndsWith(".asm")
+                                    orderby path
+                                    select fileSystem.GetText(path))
+            {
+                sb.Append(content);
+                sb.AppendLine();
+            }
+
+            return sb.ToString();
         }
 
         public bool Assemble()

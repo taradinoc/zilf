@@ -17,6 +17,7 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Threading.Tasks;
 
 namespace Zilf.Tests.Integration
 {
@@ -24,7 +25,7 @@ namespace Zilf.Tests.Integration
     public class GlulxTests : IntegrationTestClass
     {
         [TestMethod]
-        public async System.Threading.Tasks.Task HelloGlulxWorldAsync()
+        public async Task HelloGlulxWorldAsync()
         {
             string code = $@"
 <ROUTINE GREET (WHOM)
@@ -41,6 +42,16 @@ namespace Zilf.Tests.Integration
             await AssertRaw(code)
                 .InGlulx()
                 .OutputsAsync(expectedOutput);
+        }
+
+        [TestMethod]
+        public async Task TestGlulxPropertyDefaultsAsync()
+        {
+            await AssertRoutine("", @"<TELL N <GETP ,OBJ ,P?FOO>>")
+                .InGlulx()
+                .WithGlobal("<PROPDEF FOO 123>")
+                .WithGlobal("<OBJECT OBJ>")
+                .OutputsAsync("123");
         }
     }
 }

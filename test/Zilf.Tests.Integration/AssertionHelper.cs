@@ -265,7 +265,7 @@ namespace Zilf.Tests.Integration
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () <PRINTN {Expression()}>>";
 
-            return ZlrHelper.RunAndAssertAsync(testCode, input.ToString(), expectedValue, warningChecks);
+            return RunAndAssertHelperAsync(testCode, input.ToString(), expectedValue, warningChecks);
         }
 
         public Task OutputsAsync(string expectedValue)
@@ -273,7 +273,7 @@ namespace Zilf.Tests.Integration
             var testCode = $"{GlobalCode()}\r\n" +
                            $"<ROUTINE GO () {Expression()}>";
 
-            return ZlrHelper.RunAndAssertAsync(testCode, input.ToString(), expectedValue, warningChecks, wantCompileOutput);
+            return RunAndAssertHelperAsync(testCode, input.ToString(), expectedValue, warningChecks, wantCompileOutput);
         }
 
         public Task ImpliesAsync(params string[] conditions)
@@ -299,7 +299,7 @@ namespace Zilf.Tests.Integration
                 $"<ROUTINE TEST-IMPLIES (\"AUX\" FAILS) {sb} .FAILS>\r\n" +
                 "<ROUTINE GO () <OR <TEST-IMPLIES> <PRINTI \"PASS\">>>";
 
-            return ZlrHelper.RunAndAssertAsync(testCode, input.ToString(), "PASS", warningChecks);
+            return RunAndAssertHelperAsync(testCode, input.ToString(), "PASS", warningChecks);
         }
 
         public async Task DoesNotCompileAsync(Predicate<ZlrHelperRunResult>? resultFilter = null,
@@ -380,18 +380,38 @@ namespace Zilf.Tests.Integration
                            $"\t{Expression()}\r\n" +
                            "\t<QUIT>>";
 
-            var helper = new ZlrHelper(testCode, null);
-            Assert.IsTrue(helper.Compile(wantDebugInfo: wantDebugInfo), "Failed to compile");
+            string? output;
 
-            var output = helper.GetZapCode();
-            checkGeneratedCode(output);
-
-            CheckWarnings(new ZlrHelperRunResult
+            if (useGlulx)
             {
-                WarningCount = helper.WarningCount,
-                Diagnostics = helper.Diagnostics,
-                SuppressedWarningCount = helper.SuppressedWarningCount,
-            });
+                var helper = new FyreHelper(testCode, null);
+                Assert.IsTrue(helper.Compile(wantDebugInfo: wantDebugInfo), "Failed to compile");
+
+                output = helper.GetAsmCode();
+                checkGeneratedCode(output);
+
+                CheckWarnings(new ZlrHelperRunResult
+                {
+                    WarningCount = helper.WarningCount,
+                    Diagnostics = helper.Diagnostics,
+                    SuppressedWarningCount = helper.SuppressedWarningCount,
+                });
+            }
+            else
+            {
+                var helper = new ZlrHelper(testCode, null);
+                Assert.IsTrue(helper.Compile(wantDebugInfo: wantDebugInfo), "Failed to compile");
+
+                output = helper.GetZapCode();
+                checkGeneratedCode(output);
+
+                CheckWarnings(new ZlrHelperRunResult
+                {
+                    WarningCount = helper.WarningCount,
+                    Diagnostics = helper.Diagnostics,
+                    SuppressedWarningCount = helper.SuppressedWarningCount,
+                });
+            }
 
             return Task.FromResult(new CodeMatchingResult(output));
         }

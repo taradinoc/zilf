@@ -303,6 +303,16 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Unicode_Characters_Should_Work_In_TELL_In_Glulx()
+        {
+            // U+2014: em dash, U+2019: right single quotation mark
+            await AssertRoutine("", "<TELL \"the em dash\u2014nature\u2019s most dramatic symbol\">")
+                .InGlulx()
+                .WithoutWarnings()
+                .OutputsAsync("the em dash\u2014nature\u2019s most dramatic symbol");
+        }
+
+        [TestMethod]
         public async Task Unicode_Characters_Outside_Standard_Should_Error_In_V3()
         {
             await AssertRoutine("", "<TELL \"bad\u2014news\">")
