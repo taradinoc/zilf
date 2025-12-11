@@ -643,10 +643,7 @@ namespace Zilf
             proc.StartInfo.ArgumentList.Add(zapInputPath);
 
             if (!string.IsNullOrEmpty(finalOutput))
-            {
-                proc.StartInfo.ArgumentList.Add("-o");
                 proc.StartInfo.ArgumentList.Add(finalOutput);
-            }
 
             try
             {
@@ -689,7 +686,10 @@ namespace Zilf
             proc.StartInfo.ArgumentList.Add(asmInputPath);
 
             if (!string.IsNullOrEmpty(finalOutput))
+            {
+                proc.StartInfo.ArgumentList.Add("-o");
                 proc.StartInfo.ArgumentList.Add(finalOutput);
+            }
 
             try
             {

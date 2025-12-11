@@ -4,6 +4,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to
 [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] (Unreleased)
+
+### Fixed
+
+- Fixed a bug where passing an output filename to ZILF resulted in the wrong
+  arguments being passed to ZAPF or Glazer.
+
 ## [1.0] (December 9, 2025)
 
 ### Added
