@@ -16,19 +16,10 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 namespace Zilf.Emit.Glulx
 {
-    public class GlulxGameOptions : IGameOptions
+    class PackedStringOperand(int number) : ConstantLiteralOperand($"(STR_{number} / PACKING_FACTOR)")
     {
-        /// <summary>
-        /// Enables Z-machine compatible 16-bit layout when targeting Glulx.
-        /// </summary>
-        public bool ZCompatibilityMode { get; init; }
-
-        /// <summary>
-        /// Z-machine version to emulate when <see cref="ZCompatibilityMode"/> is enabled.
-        /// </summary>
-        public int ZMachineVersion { get; init; } = 3;
+        public string Name => $"STR_{number}";
     }
 }

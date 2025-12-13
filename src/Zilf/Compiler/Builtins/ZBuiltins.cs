@@ -725,14 +725,35 @@ namespace Zilf.Compiler.Builtins
         public static IOperand ArithmeticOp_Glulx(
             ValueCall c, [Data] BinaryOp op, params IOperand[] args)
         {
-            GetArithmeticInfo_Glulx(op, out var initialValue, out var operation, out var compileUnary);
+            int initialValue;
+            Func<int, int, int> operation;
+            Func<ValueCall, IOperand, IOperand, IOperand> compileUnary;
 
             // can we evaluate the whole operation at compile time?
-            if (args.Length > 0)
+            if (c.cc.Context.IsGlulx16)
             {
-                var folded = FoldConstantArithmetic_Glulx(c.cc, initialValue, operation, args);
-                if (folded != null)
-                    return folded;
+                // 16-bit arithmetic
+                GetArithmeticInfo_Z(op, out var initialValue16, out var operation16, out compileUnary);
+                initialValue = initialValue16;
+
+                if (args.Length > 0)
+                {
+                    var folded = FoldConstantArithmetic_Z(c.cc, initialValue16, operation16, args);
+                    if (folded != null)
+                        return folded;
+                }
+            }
+            else
+            {
+                // 32-bit arithmetic
+                GetArithmeticInfo_Glulx(op, out initialValue, out operation, out compileUnary);
+
+                if (args.Length > 0)
+                {
+                    var folded = FoldConstantArithmetic_Glulx(c.cc, initialValue, operation, args);
+                    if (folded != null)
+                        return folded;
+                }
             }
 
             // nope, compile it

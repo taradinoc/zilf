@@ -572,7 +572,7 @@ namespace Zilf.ZModel.Values
                     return 1;
 
                 case OutputElementType.Global:
-                    if (ctx.IsGlulx)
+                    if (ctx.IsGlulx && !ctx.IsGlulx16)
                         return ctx.ZWordSize;
 
                     return 1;
@@ -584,7 +584,7 @@ namespace Zilf.ZModel.Values
                     return ctx.ZWordSize;
 
                 case OutputElementType.Object:
-                    if (!ctx.IsGlulx &&
+                    if (!(ctx.IsGlulx && !ctx.IsGlulx16) &&
                         (ctx.ZEnvironment.ZVersion == 3 ||
                          ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsLast))
                     {
@@ -594,7 +594,7 @@ namespace Zilf.ZModel.Values
                     return ctx.ZWordSize;
 
                 case OutputElementType.Room:
-                    if (!ctx.IsGlulx &&
+                    if (!(ctx.IsGlulx && !ctx.IsGlulx16) &&
                         (ctx.ZEnvironment.ZVersion == 3 ||
                          ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsFirst ||
                          ctx.ZEnvironment.ObjectOrdering == ObjectOrdering.RoomsAndLocalGlobalsFirst))

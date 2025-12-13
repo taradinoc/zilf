@@ -38,6 +38,7 @@ namespace Zilf.Tests.Integration
         protected bool wantCompileOutput;
         protected bool wantDebugInfo;
         protected bool useGlulx;
+        protected bool useGlulx16;
 
         public TThis InV3()
         {
@@ -78,6 +79,15 @@ namespace Zilf.Tests.Integration
         public TThis InGlulx()
         {
             useGlulx = true;
+            useGlulx16 = false;
+            versionDirective = "";
+            return (TThis)this;
+        }
+
+        public TThis InGlulx16()
+        {
+            useGlulx = true;
+            useGlulx16 = true;
             versionDirective = "";
             return (TThis)this;
         }
@@ -185,7 +195,7 @@ namespace Zilf.Tests.Integration
         protected Task<ZlrHelperRunResult> RunHelperAsync(string code, string? input, bool compileOnly = false, bool wantDebugInfo = false)
         {
             return useGlulx
-                ? FyreHelper.RunAsync(code, input, compileOnly, wantDebugInfo)
+                ? FyreHelper.RunAsync(code, input, compileOnly, wantDebugInfo, useGlulx16)
                 : ZlrHelper.RunAsync(code, input, compileOnly, wantDebugInfo);
         }
 
@@ -194,7 +204,7 @@ namespace Zilf.Tests.Integration
             bool wantCompileOutput = false)
         {
             return useGlulx
-                ? FyreHelper.RunAndAssertAsync(code, input, expectedOutput, warningChecks, wantCompileOutput)
+                ? FyreHelper.RunAndAssertAsync(code, input, expectedOutput, warningChecks, wantCompileOutput, useGlulx16)
                 : ZlrHelper.RunAndAssertAsync(code, input, expectedOutput, warningChecks, wantCompileOutput);
         }
     }

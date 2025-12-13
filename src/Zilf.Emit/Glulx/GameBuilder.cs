@@ -25,7 +25,7 @@ using System.Text;
 
 namespace Zilf.Emit.Glulx
 {
-    public sealed class GameBuilder : IGameBuilder
+    public class GameBuilder : IGameBuilder
     {
         internal const string INDENT = "\t";
 
@@ -35,47 +35,68 @@ namespace Zilf.Emit.Glulx
 
         static readonly ConstantLiteralOperand VOCAB = new("VOCAB");
 
-        internal RuntimeLib RuntimeLib { get; } = new();
+        internal RuntimeLib RuntimeLib { get; }
 
         // all global names go in here
-        readonly Dictionary<string, string> symbols = new(250);
+        private protected readonly Dictionary<string, string> symbols = new(250);
 
-        readonly List<ObjectBuilder> objects = new(100);
-        readonly Dictionary<string, PropertyBuilder> props = new(32);
-        readonly Dictionary<string, FlagBuilder> flags = new(32);
-        readonly Dictionary<string, IOperand> constants = new(100);
-        readonly HashSet<string> transparentConstants = new(100);
-        readonly List<GlobalBuilder> globals = new(100);
-        readonly List<TableBuilder> impureTables = new(10);
-        readonly List<TableBuilder> pureTables = new(10);
-        readonly List<(TableBuilder Table, string OriginalName)> tracedTables = new(10);
-        readonly List<WordBuilder> vocabulary = new(100);
-        readonly HashSet<char> siBreaks = new();
-        readonly Dictionary<string, IOperand> stringPool = new(100);
-        readonly Dictionary<int, NumericOperand> numberPool = new(50);
+        private protected readonly List<IObjectBuilder> objects = new(100);
+        private protected readonly Dictionary<string, PropertyBuilder> props = new(32);
+        private protected readonly Dictionary<string, FlagBuilder> flags = new(32);
+        private protected readonly Dictionary<string, IOperand> constants = new(100);
+        private protected readonly HashSet<string> transparentConstants = new(100);
+        private protected readonly List<GlobalBuilder> globals = new(100);
+        private protected readonly List<TableBuilder> impureTables = new(10);
+        private protected readonly List<TableBuilder> pureTables = new(10);
+        private protected readonly List<(TableBuilder Table, string OriginalName)> tracedTables = new(10);
+        private protected readonly List<WordBuilder> vocabulary = new(100);
+        private protected readonly HashSet<char> siBreaks = new();
+        private protected readonly Dictionary<string, IOperand> stringPool = new(100);
+        private protected readonly Dictionary<int, NumericOperand> numberPool = new(50);
 
-        readonly IGlulxStreamFactory streamFactory;
-        readonly GlulxGameOptions options;
+        private protected readonly IGlulxStreamFactory streamFactory;
+        private protected readonly GlulxGameOptions options;
+        private protected readonly bool zCompatibilityMode;
+        private protected readonly int zCompatVersion;
 
 #if DEBUG
         readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
 #endif
 
-        IRoutineBuilder? entryRoutine;
+        protected IRoutineBuilder? entryRoutine;
         IOperand? updateStatusLineHook;     // IRoutineBuilder or IGlobalBuilder
         ITableBuilder? terminatingCharsTable;
 
-        Stream? stream;
-        TextWriter writer;
+        protected Stream? stream;
+        protected TextWriter writer;
+
+        protected readonly StringWriter headerWriter = new();
+        protected readonly StringWriter entryRoutineWriter = new();
+        protected readonly StringWriter routineWriter = new();
+        protected readonly StringWriter dataWriter = new();
+        protected readonly StringWriter bssWriter = new();
+        protected readonly StringWriter textWriter = new();
+
+        protected StringWriter EntryRoutineWriter => entryRoutineWriter;
+        protected StringWriter RoutineWriter => routineWriter;
+        protected StringWriter DataWriter => dataWriter;
+        protected StringWriter BssWriter => bssWriter;
+        protected StringWriter TextSegmentWriter => textWriter;
+
+        readonly Stack<TextWriter> writerStack = new();
 
         /// <exception cref="ArgumentException"><paramref name="gameOptions"/> is the wrong type for this target.</exception>
-        public GameBuilder(IGlulxStreamFactory streamFactory, GlulxGameOptions? gameOptions = null)
+        public GameBuilder(IGlulxStreamFactory streamFactory, GlulxGameOptions? gameOptions = null, RuntimeLib? runtimeLib = null)
         {
             this.streamFactory = streamFactory ?? throw new ArgumentNullException(nameof(streamFactory));
             this.options = gameOptions ?? new();
+            zCompatibilityMode = this.options.ZCompatibilityMode;
+            zCompatVersion = this.options.ZMachineVersion;
+
+            RuntimeLib = runtimeLib ?? new RuntimeLib();
 
             stream = streamFactory.CreateMainStream();
-            writer = new StreamWriter(stream);
+            writer = headerWriter;
 
             Begin();
         }
@@ -91,8 +112,6 @@ namespace Zilf.Emit.Glulx
         void Begin()
         {
             writer.WriteLine(INDENT + "; Main assembly file for {0}", streamFactory.GetMainFileName(true));
-            writer.WriteLine();
-            writer.WriteLine(INDENT + "section .text");
             writer.WriteLine();
         }
 
@@ -121,18 +140,6 @@ namespace Zilf.Emit.Glulx
             };
         }
 
-        internal bool TryGetNumericConstantValue(string name, out int value)
-        {
-            if (constants.TryGetValue(name, out var operand) && operand is INumericOperand numeric)
-            {
-                value = numeric.Value;
-                return true;
-            }
-
-            value = default;
-            return false;
-        }
-
         /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
         public IGlobalBuilder DefineGlobal(string name)
         {
@@ -142,7 +149,7 @@ namespace Zilf.Emit.Glulx
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
-            var gb = new GlobalBuilder(name);
+            var gb = (GlobalBuilder)CreateGlobalBuilder(name);
             globals.Add(gb);
             symbols.Add(name, "global");
 
@@ -150,6 +157,11 @@ namespace Zilf.Emit.Glulx
                 updateStatusLineHook = gb;
 
             return gb;
+        }
+
+        protected virtual IGlobalBuilder CreateGlobalBuilder(string name)
+        {
+            return new GlobalBuilder(name);
         }
 
         /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
@@ -163,13 +175,18 @@ namespace Zilf.Emit.Glulx
             if (symbols.ContainsKey(name))
                 throw new ArgumentException("Global symbol already defined: " + name, nameof(name));
 
-            var tb = new TableBuilder(name);
+            var tb = (TableBuilder)CreateTableBuilder(name);
             if (pure)
                 pureTables.Add(tb);
             else
                 impureTables.Add(tb);
             symbols.Add(name, "table");
             return tb;
+        }
+
+        protected virtual ITableBuilder CreateTableBuilder(string name)
+        {
+            return new TableBuilder(name);
         }
 
         public IOperand DefineUnicodeTranslationTable(IEnumerable<char> characters)
@@ -208,7 +225,7 @@ namespace Zilf.Emit.Glulx
             if (entryPoint && entryRoutine != null)
                 throw new ArgumentException("Entry routine already defined");
 
-            var result = new RoutineBuilder(this, name, entryPoint);
+            var result = CreateRoutineBuilder(name, entryPoint, cleanStack);
             symbols.Add(name, "routine");
 
             if (entryPoint)
@@ -219,8 +236,13 @@ namespace Zilf.Emit.Glulx
             return result;
         }
 
+        protected virtual IRoutineBuilder CreateRoutineBuilder(string name, bool entryPoint, bool cleanStack)
+        {
+            return new RoutineBuilder(this, name, entryPoint);
+        }
+
         /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
-        public IObjectBuilder DefineObject(string name)
+        public virtual IObjectBuilder DefineObject(string name)
         {
             name = SanitizeSymbol(name);
             if (symbols.ContainsKey(name))
@@ -380,7 +402,7 @@ namespace Zilf.Emit.Glulx
             }
         }
 
-        public IOperand MakeOperand(string value)
+        public virtual IOperand MakeOperand(string value)
         {
             if (stringPool.TryGetValue(value, out var result) == false)
             {
@@ -390,12 +412,12 @@ namespace Zilf.Emit.Glulx
             return result;
         }
 
-        // arbitrary limits
-        public int MaxPropertyLength => 65536;
-        public int MaxProperties => 65535;
+        // arbitrary limits (overridden in Z-compat mode)
+        public int MaxPropertyLength => zCompatibilityMode ? (zCompatVersion > 3 ? 64 : 8) : 65536;
+        public int MaxProperties => zCompatibilityMode ? (zCompatVersion > 3 ? 63 : 31) : 65535;
         // NOTE: keep MaxFlags in sync with the object structure constants and codegen
-        public int MaxFlags => 56;     // number fits in a byte for syntax lines
-        public int MaxCallArguments => 65536;
+        public int MaxFlags => zCompatibilityMode ? (zCompatVersion > 3 ? 48 : 32) : 56;     // number fits in a byte for syntax lines
+        public int MaxCallArguments => zCompatibilityMode ? (zCompatVersion > 3 ? 7 : 3) : 65536;
 
         public INumericOperand Zero => ZERO;
         public INumericOperand One => ONE;
@@ -405,49 +427,150 @@ namespace Zilf.Emit.Glulx
 
         public void Finish()
         {
-            // finish main file
 #if DEBUG
-            writer.WriteLine();
-            WritePeepholeStats();
+            using (UseWriter(TextSegmentWriter))
+            {
+                WritePeepholeStats();
+            }
 #endif
 
-            // write data
-            writer.WriteLine();
-            writer.WriteLine(INDENT + "section .data");
+            using (UseWriter(DataWriter))
+            {
+                FinishSymbols();
+                FinishGlobals();
+                FinishObjects();
+                FinishImpureTables();
+            }
 
-            // assembly constants
-            FinishSymbols();
-
-            // impure data
-            FinishGlobals();
-            FinishObjects();
-            FinishImpureTables();
             FinishTerminatingChars();
 
-            // pure data
-            writer.WriteLine();
-            writer.WriteLine(INDENT + "section .text");
-            writer.WriteLine();
+            using (UseWriter(PureTablesGoToData ? DataWriter : TextSegmentWriter))
+            {
+                FinishSyntax();
+                FinishPureTables();
+                FinishTracedTablesMetadata();
+            }
 
-            FinishSyntax();
-            FinishPureTables();
-            FinishTracedTablesMetadata();
-            FinishHooks();
+            using (UseWriter(TextSegmentWriter))
+            {
+                FinishHooks();
+                RuntimeLib.DefineUsed(TextSegmentWriter, RuntimeCodeSectionDirective);
+                FinishStrings();
+                FinishMetadata();
+            }
 
-            writer.WriteLine();
-            RuntimeLib.DefineUsed(writer);
+            EmitFinalOutput();
+        }
 
-            // end of resident memory
+        protected virtual void EmitFinalOutput()
+        {
+            if (stream == null)
+                return;
 
-            // write strings
-            writer.WriteLine();
+            using var mainWriter = new StreamWriter(stream);
 
-            FinishStrings();
-            FinishMetadata();
+            // Header
+            mainWriter.Write(headerWriter.ToString());
 
-            // done
-            writer.Close();
-            stream?.Close();
+            // Ensure entry point lives in executable text and pad ROM to spec
+            if (EntryRoutineWriter.GetStringBuilder().Length > 0)
+            {
+                mainWriter.WriteLine(INDENT + EntryRoutineSectionDirective);
+                mainWriter.Write(EntryRoutineWriter.ToString());
+                mainWriter.WriteLine();
+
+                if (AlignAfterEntry)
+                {
+                    mainWriter.WriteLine(INDENT + "align 256");
+                    mainWriter.WriteLine();
+                }
+            }
+
+            if (RoutinesBeforeData)
+            {
+                EmitRoutines(mainWriter);
+            }
+
+            // Data (tables first)
+            if (DataWriter.GetStringBuilder().Length > 0)
+            {
+                mainWriter.WriteLine(INDENT + DataSectionDirective);
+                mainWriter.Write(DataWriter.ToString());
+                mainWriter.WriteLine();
+            }
+
+            if (!RoutinesBeforeData)
+            {
+                EmitRoutines(mainWriter);
+            }
+
+            // BSS if any
+            if (BssWriter.GetStringBuilder().Length > 0)
+            {
+                mainWriter.WriteLine(INDENT + BssSectionDirective);
+                mainWriter.Write(BssWriter.ToString());
+                mainWriter.WriteLine();
+            }
+
+            // Remaining text (pure tables, hooks, RTL, strings, metadata)
+            if (TextSegmentWriter.GetStringBuilder().Length > 0)
+            {
+                mainWriter.WriteLine(INDENT + TextSectionDirective);
+                mainWriter.Write(TextSegmentWriter.ToString());
+            }
+
+            mainWriter.Flush();
+
+            writer = null!;
+            stream = null;
+        }
+
+        protected void EmitRoutines(TextWriter mainWriter)
+        {
+            if (RoutineWriter.GetStringBuilder().Length == 0)
+                return;
+
+            mainWriter.WriteLine(INDENT + RoutineSectionDirective);
+            mainWriter.Write(RoutineWriter.ToString());
+            mainWriter.WriteLine();
+        }
+
+        protected virtual string RoutineSectionDirective => "section .text";
+        protected virtual string DataSectionDirective => "section .data";
+        protected virtual string BssSectionDirective => "section .bss";
+        protected virtual string TextSectionDirective => "section .text";
+        protected virtual string RuntimeCodeSectionDirective => INDENT + "section .text";
+        protected virtual bool PureTablesGoToData => false;
+        protected virtual bool RoutinesBeforeData => true;
+        protected virtual string EntryRoutineSectionDirective => "section .text";
+        protected virtual bool AlignAfterEntry => true;
+
+        IDisposable UseWriter(TextWriter newWriter)
+        {
+            writerStack.Push(writer);
+            writer = newWriter;
+            return new WriterScope(writerStack, w => writer = w);
+        }
+
+        readonly struct WriterScope : IDisposable
+        {
+            readonly Stack<TextWriter> stack;
+            readonly Action<TextWriter> apply;
+
+            public WriterScope(Stack<TextWriter> stack, Action<TextWriter> apply)
+            {
+                this.stack = stack;
+                this.apply = apply;
+            }
+
+            public void Dispose()
+            {
+                if (stack.Count > 0)
+                {
+                    var previous = stack.Pop();
+                    apply(previous);
+                }
+            }
         }
 
         void FinishSymbols()
@@ -494,7 +617,7 @@ namespace Zilf.Emit.Glulx
             }
         }
 
-        void FinishObjects()
+        protected virtual void FinishObjects()
         {
             writer.WriteLine();
 
@@ -530,7 +653,7 @@ namespace Zilf.Emit.Glulx
 
             var numFlagBytes = (MaxFlags + 7) / 8;
             ObjectBuilder? previous = null;
-            foreach (var ob in objects)
+            foreach (var ob in objects.OfType<ObjectBuilder>())
             {
                 writer.WriteLine("{0}:", ob.SymbolicName);
                 writer.WriteLine(INDENT + "db 0x70");   // type ID
@@ -551,7 +674,7 @@ namespace Zilf.Emit.Glulx
             }
 
             // hardware names and property tables
-            foreach (var ob in objects)
+            foreach (var ob in objects.OfType<ObjectBuilder>())
             {
                 // abbrevs?.AddText(ob.DescriptiveName);
                 writer.WriteLine();
@@ -562,10 +685,11 @@ namespace Zilf.Emit.Glulx
             }
         }
 
-        void FinishGlobals()
+        protected virtual void FinishGlobals()
         {
             writer.WriteLine();
             writer.WriteLine(INDENT + "; Global variables");
+            writer.WriteLine("global_variables:");
 
             // global variables
             foreach (var gb in globals)
@@ -595,13 +719,15 @@ namespace Zilf.Emit.Glulx
             {
                 terminatingCharsTable = tcharsTable;
 
-                writer.WriteLine();
-                writer.WriteLine(INDENT + "section .bss");
-                writer.WriteLine(INDENT + "terminating_chars_translations: resd {0}", tcharsTable.Size);
+                using (UseWriter(BssWriter))
+                {
+                    writer.WriteLine();
+                    writer.WriteLine(INDENT + "terminating_chars_translations: resd {0}", tcharsTable.Size);
+                }
             }
         }
 
-        void FinishSyntax()
+        protected virtual void FinishSyntax()
         {
             // vocabulary table
             writer.WriteLine();
@@ -625,7 +751,7 @@ namespace Zilf.Emit.Glulx
             writer.WriteLine();
             writer.WriteLine("; vocabulary");
 
-            const int wordBytes = 10;        // TODO: configurable vocab resolution for Glulx
+            var wordBytes = zCompatibilityMode ? (zCompatVersion >= 4 ? 9 : 6) : 10;        // TODO: configurable vocab resolution for Glulx
 
             writer.WriteLine(INDENT + "VOCAB_RESOLUTION = {0}", wordBytes);
             writer.WriteLine(INDENT + "VOCAB:");
@@ -783,7 +909,7 @@ namespace Zilf.Emit.Glulx
             writer.WriteLine("_trace_msg_prefix: huffstr \"[TRACE] Write to \"");
         }
 
-        void FinishStrings()
+        protected virtual void FinishStrings()
         {
             // strings
             writer.WriteLine();
@@ -807,9 +933,16 @@ namespace Zilf.Emit.Glulx
             writer.WriteLine(INDENT + "db \"{0}\"", DateTime.Now.ToString("yyMMdd"));
         }
 
-        internal void WriteOutput(string str)
+        internal void WriteRoutineOutput(string str, bool isEntry)
         {
-            writer.WriteLine(str);
+            if (isEntry)
+            {
+                EntryRoutineWriter.WriteLine(str);
+            }
+            else
+            {
+                RoutineWriter.WriteLine(str);
+            }
         }
 
 #if DEBUG

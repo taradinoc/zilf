@@ -528,7 +528,9 @@ namespace Zilf.Compiler
                 }
 
                 // does this clause match?
-                if (condVersion != Context.ZEnvironment.ZVersion && condVersion != 0)
+                if (condVersion != Context.ZEnvironment.ZVersion &&
+                    !(condVersion == ZModel.ZEnvironment.GLULX_ZVERSION && Context.IsGlulx && !Context.IsGlulx16) &&
+                    condVersion != 0)
                     continue;
 
                 // emit code for clause

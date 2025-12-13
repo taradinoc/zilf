@@ -155,6 +155,11 @@ namespace Zilf
                 Description = "Target Glulx VM instead of Z-machine (experimental)."
             };
 
+            var buildGlulx16Option = new Option<bool>("--glulx16")
+            {
+                Description = "Target Glulx with Z-machine-compatible 16-bit layout."
+            };
+
             var buildEnableAllWarningsOption = new Option<bool>("--warn-all", "-W")
             {
                 Description = "Enable all warnings (even noisy ones)."
@@ -194,6 +199,7 @@ namespace Zilf
             buildCommand.Options.Add(buildTraceRoutinesOption);
             buildCommand.Options.Add(buildDebugInfoOption);
             buildCommand.Options.Add(buildGlulxOption);
+            buildCommand.Options.Add(buildGlulx16Option);
             buildCommand.Options.Add(buildEnableAllWarningsOption);
             buildCommand.Options.Add(buildWarningsAsErrorsOption);
             buildCommand.Options.Add(buildSuppressWarningsOption);
@@ -208,6 +214,14 @@ namespace Zilf
                 if (hasCaseSensitive && hasCaseInsensitive)
                 {
                     commandResult.AddError("Options --case-sensitive and --case-insensitive cannot be used together.");
+                }
+
+                bool hasGlulx = commandResult.GetResult(buildGlulxOption) is not null;
+                bool hasGlulx16 = commandResult.GetResult(buildGlulx16Option) is not null;
+
+                if (hasGlulx && hasGlulx16)
+                {
+                    commandResult.AddError("Options --glulx and --glulx16 cannot be used together.");
                 }
             });
 
@@ -358,6 +372,7 @@ namespace Zilf
                 buildTraceRoutinesOption,
                 buildDebugInfoOption,
                 buildGlulxOption,
+                buildGlulx16Option,
                 buildEnableAllWarningsOption,
                 buildWarningsAsErrorsOption,
                 buildSuppressWarningsOption,
@@ -428,6 +443,7 @@ namespace Zilf
             Option<bool> BuildTraceRoutinesOption,
             Option<bool> BuildDebugInfoOption,
             Option<bool> BuildGlulxOption,
+            Option<bool> BuildGlulx16Option,
             Option<bool> BuildEnableAllWarningsOption,
             Option<bool> BuildWarningsAsErrorsOption,
             Option<string[]> BuildSuppressWarningsOption,
@@ -838,6 +854,7 @@ namespace Zilf
             Option<bool> traceRoutinesOption;
             Option<bool> debugInfoOption;
             Option<bool> glulxOption;
+            Option<bool> glulx16Option;
 
             var commandResult = parseResult.CommandResult;
             if (commandResult.Command == spec.BuildCommand)
@@ -852,6 +869,7 @@ namespace Zilf
                 traceRoutinesOption = spec.BuildTraceRoutinesOption;
                 debugInfoOption = spec.BuildDebugInfoOption;
                 glulxOption = spec.BuildGlulxOption;
+                glulx16Option = spec.BuildGlulx16Option;
             }
             else if (commandResult.Command == spec.ReplCommand)
             {
@@ -865,6 +883,7 @@ namespace Zilf
                 traceRoutinesOption = default!; // Not available in REPL
                 debugInfoOption = default!; // Not available in REPL
                 glulxOption = default!; // Not available in REPL
+                glulx16Option = default!; // Not available in REPL
             }
             else if (commandResult.Command == spec.ExecCommand)
             {
@@ -878,6 +897,7 @@ namespace Zilf
                 traceRoutinesOption = default!; // Not available in Exec
                 debugInfoOption = default!; // Not available in Exec
                 glulxOption = default!; // Not available in Exec
+                glulx16Option = default!; // Not available in Exec
             }
             else
             {
@@ -937,9 +957,23 @@ namespace Zilf
             }
 
             var useGlulx = glulxOption != null && parseResult.GetValue(glulxOption);
+            var useGlulx16 = glulx16Option != null && parseResult.GetValue(glulx16Option);
+
+            if (useGlulx && useGlulx16)
+            {
+                throw new InvalidOperationException("Cannot select both Glulx and Glulx16 targets.");
+            }
+
             if (useGlulx)
             {
+                ctx.SetTargetPlatform(TargetPlatform.Glulx32);
                 ctx.SetZVersion(ZEnvironment.GLULX_ZVERSION);
+            }
+            else if (useGlulx16)
+            {
+                ctx.SetTargetPlatform(TargetPlatform.Glulx16);
+                // keep ZVersion at current Z-machine default (3) unless changed in source
+                ctx.SetZVersion(ctx.ZEnvironment.ZVersion);
             }
 
             return ctx;

@@ -16,19 +16,19 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System;
 
 namespace Zilf.Emit.Glulx
 {
-    public class GlulxGameOptions : IGameOptions
+    class GlobalBuilder16(string name) : GlobalBuilder(name)
     {
-        /// <summary>
-        /// Enables Z-machine compatible 16-bit layout when targeting Glulx.
-        /// </summary>
-        public bool ZCompatibilityMode { get; init; }
+        public override IIndirectOperand Indirect => new IndirectGlobalOperand16(this);
+    }
 
-        /// <summary>
-        /// Z-machine version to emulate when <see cref="ZCompatibilityMode"/> is enabled.
-        /// </summary>
-        public int ZMachineVersion { get; init; } = 3;
+    class IndirectGlobalOperand16(GlobalBuilder16 global) : ConstantOperandBase, IIndirectOperand
+    {
+        public IVariable Variable => global;
+
+        public override string ToString() => $"global_{global.Name}_num";
     }
 }

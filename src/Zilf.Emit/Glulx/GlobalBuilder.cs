@@ -30,7 +30,7 @@ namespace Zilf.Emit.Glulx
             set => defaultValue = value;
         }
 
-        public IIndirectOperand Indirect => new IndirectGlobalOperand(this);
+        public virtual IIndirectOperand Indirect => new IndirectGlobalOperand(this);
 
         public string Name => name;
 

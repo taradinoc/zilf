@@ -79,7 +79,7 @@ namespace Zilf.Compiler
             bool sawDotSpace = false;
 
             var zversion = ctx.ZEnvironment.ZVersion;
-            var isGlulx = zversion == ZEnvironment.GLULX_ZVERSION;
+            var isGlulx = ctx.IsGlulx;
             var unicodeUsage = ctx.ZEnvironment.UnicodeUsage;
 
             static bool IsStandardZsciiChar(char c, out bool isDefaultExtra)

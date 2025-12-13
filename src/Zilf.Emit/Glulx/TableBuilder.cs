@@ -18,6 +18,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace Zilf.Emit.Glulx
 {
@@ -37,6 +39,8 @@ namespace Zilf.Emit.Glulx
         const byte T_OP_WORD = OPERAND_FLAG | WORD_FLAG;
 
         protected const string INDENT = "\t";
+
+        protected virtual int WordSize => 4;
 
         public TableBuilder(string name)
         {
@@ -65,20 +69,22 @@ namespace Zilf.Emit.Glulx
         {
             types.Add(T_NUM_WORD);
             numericValues.Add(value);
-            size += 4;
+            size += WordSize;
         }
 
         public void AddWord(IOperand value)
         {
             types.Add(T_OP_WORD);
             operandValues.Add(value);
-            size += 4;
+            size += WordSize;
         }
 
         public override string ToString()
         {
             return Name;
         }
+
+        protected virtual string WordDataDirective => "dd ";
 
         public void WriteTo(TextWriter writer)
         {
@@ -93,7 +99,7 @@ namespace Zilf.Emit.Glulx
                 {
                     if (ni + oi != 0)
                         writer.WriteLine();
-                    writer.Write(isWord ? INDENT + "dd " : INDENT + "db ");
+                    writer.Write(isWord ? INDENT + WordDataDirective : INDENT + "db ");
                     lineCount = 0;
                 }
                 else
@@ -117,5 +123,11 @@ namespace Zilf.Emit.Glulx
 
             writer.WriteLine();
         }
+    }
+
+    class TableBuilder16(string name) : TableBuilder(name)
+    {
+        protected override int WordSize => 2;
+        protected override string WordDataDirective => "dw ";
     }
 }

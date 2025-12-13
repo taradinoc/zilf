@@ -216,3 +216,21 @@ MDL is not LISP, although it has some LISP-like syntax. It is a distinct languag
 The embedded language implemented by the compiler (i.e. available inside a `ROUTINE`), is similar to but not the same as the language implemented by the interpreter (i.e. available outside a `ROUTINE`). The features of the embedded language are implemented in ZILF as methods in `ZBuiltins.cs` marked with the `[Builtin]` attribute, which emit assembly code to perform the operations. The features of the interpreted language are implemented in `Subrs.*.cs` files marked with the `[Subr]` or `[FSubr]` attribute, which perform the operations directly in C# code.
 
 The interpreted language is dynamically typed, and all values which can be accessed by interpreted code are implemented as subclasses of `ZilObject`. The embedded language is untyped, and all values exist at runtime as 16-bit words; the compiler does some static typing to facilitate optimizations, but the Z-machine itself does not enforce types. The compiler represents values as `IOperand` instances, which translate directly to Z-machine instruction operands and can represent constants, local or global variables, or the stack.
+
+## 21. Glulx16 work in progress
+
+Now that Glulx support is working pretty well in ZILF, we're implementing a second Glulx mode which has a goal of near-perfect Z-machine compatibility. That is, we'll be able to take unmodified ZIL code for a game targeting the Z-machine and compile it for Glulx, and ideally the game won't even be able to detect that it's running on Glulx. This has several implications, including:
+
+- We need to use all the same table formats as the Z-machine.
+- Arithmetic operations need to use sign extension (sexs opcode) and/or truncation as appropriate to emulate a 16-bit word size.
+- All pointers that the game could pass around need to be 16-bit.
+- Tables, and any other data the game might access through a pointer, have to be written before static data (to ensure they're in the first 64k of address space). Because Glulx's memory model puts ROM before RAM, this means almost the entire game needs to be in RAM.
+- Routines and strings need to be aligned, and their labels divided by a constant when used, in order to fit their (packed) addresses in 16 bits. Routine calls and string printing have to go through an unpacking step (or for vocab words, an indirection step: see below).
+- The "encoded text" space at the beginning of each vocab entry needs to hold a pointer into a table of strings (which can be located anywhere) rather than encoded text.
+- We may need to intercept memory access to the header in order to emulate the Z-machine's header flags.
+
+We can use some of the Glulx emission code and RTL that was previously written, but not all of it. We've used subclassing (Glulx16GameBuilder, Glulx16ObjectBuilder, RuntimeLib16) rather than littering the code with if statements.
+
+This new "glulx16" mode will work with multiple Z-machine versions: we will be able to compile V3, V4, and V5 games unmodified, with the compiler/RTL doing the necessary work to "emulate" the approprate version.
+
+All choices between implementations (Glulx16 for V3, Glulx16 for V5, Glulx32, etc.) must be made at compile time, without conditional logic at runtime. That is, rather than checking the format of a table at runtime, we'll only emit the code that's tailored for the table format we actually used.

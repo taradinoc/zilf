@@ -37,13 +37,14 @@ using Zilf.ZModel;
 
 namespace Zilf.Tests.Integration
 {
-    sealed partial class FyreHelper(string code, string? input)
+    sealed partial class FyreHelper(string code, string? input, bool useGlulx16 = false)
     {
         public static async Task RunAndAssertAsync(string code, string? input, string expectedOutput,
             IEnumerable<(Predicate<ZlrHelperRunResult>, string message)>? warningChecks = null,
-            bool wantCompileOutput = false)
+            bool wantCompileOutput = false,
+            bool useGlulx16 = false)
         {
-            var helper = new FyreHelper(code, input);
+            var helper = new FyreHelper(code, input, useGlulx16);
             bool compiled;
             string compileOutput;
             if (wantCompileOutput)
@@ -75,9 +76,9 @@ namespace Zilf.Tests.Integration
             Assert.AreEqual(expectedOutput, actualOutput, "Actual output differs from expected");
         }
 
-        public static async Task<ZlrHelperRunResult> RunAsync(string code, string? input, bool compileOnly = false, bool wantDebugInfo = false)
+        public static async Task<ZlrHelperRunResult> RunAsync(string code, string? input, bool compileOnly = false, bool wantDebugInfo = false, bool useGlulx16 = false)
         {
-            var helper = new FyreHelper(code, input);
+            var helper = new FyreHelper(code, input, useGlulx16);
             var result = new ZlrHelperRunResult();
 
             bool compiled = helper.Compile(wantDebugInfo);
@@ -215,7 +216,9 @@ namespace Zilf.Tests.Integration
             PrintZilCode();
 
             var ctx = new Interpreter.Context();
-            ctx.ZEnvironment.ZVersion = ZEnvironment.GLULX_ZVERSION;
+            ctx.SetTargetPlatform(useGlulx16 ? TargetPlatform.Glulx16 : TargetPlatform.Glulx32);
+            if (!useGlulx16)
+                ctx.ZEnvironment.ZVersion = ZEnvironment.GLULX_ZVERSION;
 
             var result = frontEnd.Compile(ctx, SZilFileName, SMainZapFileName, wantDebugInfo);
             ErrorCount = result.ErrorCount;
@@ -382,7 +385,8 @@ namespace Zilf.Tests.Integration
             };
             engine.OutputReady += (sender, e) =>
             {
-                collectedOutput.Append(e.Package["MAIN"]);
+                var mainOutput = e.Package.TryGetValue("MAIN", out var s) ? s : "";
+                collectedOutput.Append(mainOutput);
             };
 
             engine.Run();

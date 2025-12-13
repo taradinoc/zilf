@@ -232,9 +232,16 @@ namespace Zilf.Interpreter
 
         public ZEnvironment ZEnvironment { get; }
 
-        public bool IsGlulx => ZEnvironment.ZVersion == ZEnvironment.GLULX_ZVERSION;
+        public bool IsGlulx => ZEnvironment.TargetPlatform != TargetPlatform.ZMachine || ZEnvironment.ZVersion == ZEnvironment.GLULX_ZVERSION;
 
-        public int ZWordSize => IsGlulx ? 4 : 2;
+        public bool IsGlulx16 => ZEnvironment.TargetPlatform == TargetPlatform.Glulx16;
+
+        public int ZWordSize => IsGlulx16 ? 2 : IsGlulx ? 4 : 2;
+
+        /// <summary>
+        /// Gets the effective Z-machine version for feature checks. Glulx32 targets emulate V5 feature gates.
+        /// </summary>
+        public int ApparentZVersion => IsGlulx && !IsGlulx16 ? 5 : ZEnvironment.ZVersion;
 
         public FileContext CurrentFile { get; set; }
 
@@ -339,7 +346,7 @@ namespace Zilf.Interpreter
             SetGlobalVal(GetStdAtom(StdAtom.PREDGEN), TRUE);
             SetGlobalVal(GetStdAtom(StdAtom.PLUS_MODE), ZEnvironment.ZVersion > 3 ? TRUE : FALSE);
             SetGlobalVal(GetStdAtom(StdAtom.SIBREAKS), ZilString.FromString(",.\""));
-            SetGlobalVal(GetStdAtom(StdAtom.GLULX), ZEnvironment.ZVersion == ZEnvironment.GLULX_ZVERSION ? TRUE : FALSE);
+            SetGlobalVal(GetStdAtom(StdAtom.GLULX), IsGlulx ? TRUE : FALSE);
 
             // runtime constants
             AddZConstant(GetStdAtom(StdAtom.TRUE_VALUE), TRUE);
@@ -777,9 +784,25 @@ namespace Zilf.Interpreter
         public void SetZVersion(int newVersion)
         {
             ZEnvironment.ZVersion = newVersion;
+
+            if (newVersion == ZEnvironment.GLULX_ZVERSION && ZEnvironment.TargetPlatform == TargetPlatform.ZMachine)
+            {
+                ZEnvironment.TargetPlatform = TargetPlatform.Glulx32;
+            }
+            else if (newVersion != ZEnvironment.GLULX_ZVERSION && ZEnvironment.TargetPlatform == TargetPlatform.Glulx32)
+            {
+                ZEnvironment.TargetPlatform = TargetPlatform.ZMachine;
+            }
+
             SetGlobalVal(GetStdAtom(StdAtom.PLUS_MODE), newVersion > 3 ? TRUE : FALSE);
-            SetGlobalVal(GetStdAtom(StdAtom.GLULX), newVersion == ZEnvironment.GLULX_ZVERSION ? TRUE : FALSE);
+            SetGlobalVal(GetStdAtom(StdAtom.GLULX), ZEnvironment.TargetPlatform == TargetPlatform.Glulx32 ? TRUE : FALSE);
             InitPropDefs();
+        }
+
+        public void SetTargetPlatform(TargetPlatform platform)
+        {
+            ZEnvironment.TargetPlatform = platform;
+            SetGlobalVal(GetStdAtom(StdAtom.GLULX), platform == TargetPlatform.Glulx32 ? TRUE : FALSE);
         }
 
         public void RegisterType(ZilAtom atom, PrimType primType)
@@ -1229,7 +1252,7 @@ B * <PRINTB .X>
 
             InitPropDef(
                 StdAtom.DIRECTIONS,
-                IsGlulx ? SDirectionsPropDef_Glulx :ZEnvironment.ZVersion == 3 ? SDirectionsPropDef_V3 : SDirectionsPropDef_V4_Plus);
+                (IsGlulx && !IsGlulx16) ? SDirectionsPropDef_Glulx : ZEnvironment.ZVersion == 3 ? SDirectionsPropDef_V3 : SDirectionsPropDef_V4_Plus);
         }
 
         void InitPropDef(StdAtom propName, string def)

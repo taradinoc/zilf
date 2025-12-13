@@ -35,7 +35,7 @@ namespace Zilf.Emit.Glulx
     {
     }
 
-    class RuntimeLib
+    public class RuntimeLib
     {
         private readonly Dictionary<string, (string, string[])> functions = [];
         private readonly Dictionary<string, string> definitionSets = [];
@@ -44,14 +44,21 @@ namespace Zilf.Emit.Glulx
 
         public RuntimeLib()
         {
-            foreach (var field in typeof(RuntimeLib).GetFields(BindingFlags.Public | BindingFlags.Static))
+            var definitionFields = GetType()
+                .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
+                .OrderBy(static f => ReferenceEquals(f.DeclaringType, typeof(RuntimeLib)) ? 1 : 0);
+
+            foreach (var field in definitionFields)
             {
                 var funcAttr = field.GetCustomAttribute<RuntimeFuncAttribute>();
                 if (funcAttr != null)
                 {
                     var funcName = field.Name;
                     var funcBody = (string)field.GetValue(this)!;
-                    functions[funcName] = (funcBody, funcAttr.Dependencies);
+                    if (!functions.ContainsKey(funcName))
+                    {
+                        functions[funcName] = (funcBody, funcAttr.Dependencies);
+                    }
                 }
                 else
                 {
@@ -60,7 +67,10 @@ namespace Zilf.Emit.Glulx
                     {
                         var constSetName = field.Name;
                         var constSetBody = (string)field.GetValue(this)!;
-                        definitionSets[constSetName] = constSetBody;
+                        if (!definitionSets.ContainsKey(constSetName))
+                        {
+                            definitionSets[constSetName] = constSetBody;
+                        }
                     }
                 }
             }
@@ -96,8 +106,10 @@ namespace Zilf.Emit.Glulx
 
         private static readonly char[] lineDelimiters = ['\r', '\n'];
 
-        public void DefineUsed(TextWriter writer)
+        public void DefineUsed(TextWriter writer, string? codeSectionDirective = null)
         {
+            codeSectionDirective ??= GameBuilder.INDENT + "section .text";
+
             foreach (var name in usedDefinitionSets.Order())
             {
                 writer.WriteLine();
@@ -112,7 +124,7 @@ namespace Zilf.Emit.Glulx
             if (usedFunctions.Count > 0)
             {
                 writer.WriteLine();
-                writer.WriteLine(GameBuilder.INDENT + "section .text");
+                writer.WriteLine(codeSectionDirective);
             }
 
             foreach (var name in usedFunctions.Order())

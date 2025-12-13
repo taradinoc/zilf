@@ -997,8 +997,8 @@ namespace Zilf.Interpreter
              ZilObject versionExpr,
              [Decl("'TIME")] ZilAtom? time = null)
         {
-            // silently ignore the change if we're already in Glulx mode
-            if (ctx.IsGlulx)
+            // silently ignore the change if we're already in Glulx32 mode
+            if (ctx.IsGlulx && !ctx.IsGlulx16)
                 return new ZilFix(ZEnvironment.GLULX_ZVERSION);
 
             var newVersion = ParseZVersion("VERSION", versionExpr);

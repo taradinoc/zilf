@@ -958,7 +958,7 @@ namespace ZilfSourceGenerators
                     ? attr.MaxVersion.Value.ToString(CultureInfo.InvariantCulture)
                     : "infinity";
                 sb.AppendLine($"// Version guard: applies to versions {minVerLiteral}..{maxVerComment}");
-                sb.AppendLine($"if (!Zilf.ZModel.ZEnvironment.VersionMatches(c.cc.Context.IsGlulx ? 5 : c.cc.Context.ZEnvironment.ZVersion, {minVerLiteral}, {maxVerLiteral}))");
+                sb.AppendLine($"if (!Zilf.ZModel.ZEnvironment.VersionMatches(c.cc.Context.ApparentZVersion, {minVerLiteral}, {maxVerLiteral}))");
                 sb.AppendLine("{");
                 sb.Indent();
                 if (callType == "ValueCall")

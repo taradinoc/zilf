@@ -273,7 +273,9 @@ namespace Zilf.Compiler
                         if (ctx.IsGlulx)
                         {
                             var streamFactory = new GlulxStreamFactory(this, outputFileName);
-                            using var gameBuilder = new Emit.Glulx.GameBuilder(streamFactory, (GlulxGameOptions)gameOptions);
+                            using var gameBuilder = ctx.ZEnvironment.TargetPlatform == TargetPlatform.Glulx16
+                                ? new Emit.Glulx.GameBuilder16(streamFactory, (GlulxGameOptions)gameOptions)
+                                : new Emit.Glulx.GameBuilder(streamFactory, (GlulxGameOptions)gameOptions);
                             Compilation.Compile(ctx, gameBuilder);
                         }
                         else
@@ -308,6 +310,20 @@ namespace Zilf.Compiler
         static IGameOptions MakeGameOptions(Context ctx)
         {
             var zenv = ctx.ZEnvironment;
+
+            if (zenv.TargetPlatform == TargetPlatform.Glulx16)
+            {
+                return new GlulxGameOptions
+                {
+                    ZCompatibilityMode = true,
+                    ZMachineVersion = zenv.ZVersion
+                };
+            }
+
+            if (zenv.TargetPlatform == TargetPlatform.Glulx32 || zenv.ZVersion == ZEnvironment.GLULX_ZVERSION)
+            {
+                return new GlulxGameOptions();
+            }
 
             switch (zenv.ZVersion)
             {
@@ -366,9 +382,6 @@ namespace Zilf.Compiler
                     }
 
                     return v5Plus;
-
-                case ZEnvironment.GLULX_ZVERSION:
-                    return new GlulxGameOptions();
 
                 default:
                     throw new ArgumentException("Unsupported Z-machine version", nameof(ctx));

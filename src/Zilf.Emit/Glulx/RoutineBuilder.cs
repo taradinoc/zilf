@@ -28,7 +28,7 @@ namespace Zilf.Emit.Glulx
     {
         const string INDENT = "\t";
 
-        readonly GameBuilder gameBuilder;
+        protected readonly GameBuilder gameBuilder;
         readonly string name;
         readonly bool entryPoint;
 
@@ -160,7 +160,7 @@ namespace Zilf.Emit.Glulx
             peep.MarkLabel(label);
         }
 
-        void AddLine(string instruction, string? opcode, ILabel? target, PeepholeLineType type)
+        protected void AddLine(string instruction, string? opcode, ILabel? target, PeepholeLineType type)
         {
             GlulxCode gc;
             gc.Text = instruction;
@@ -170,7 +170,7 @@ namespace Zilf.Emit.Glulx
             peep.AddLine(gc, target, type);
         }
 
-        void Emit(string instruction, string? opcode = null)
+        protected void Emit(string instruction, string? opcode = null)
         {
             AddLine(instruction, opcode, null, PeepholeLineType.Plain);
         }
@@ -226,15 +226,16 @@ namespace Zilf.Emit.Glulx
             return code.Text;
         }
 
-        static string FormatLoad(IOperand operand)
+        protected static string FormatLoad(IOperand operand)
         {
             return operand is StackOperand ? "pop" : operand.ToString()!;
         }
 
-        static string FormatStore(IOperand? operand)
+        protected static string FormatStore(IOperand? operand)
         {
             return operand == null ? "drop" : operand is StackOperand ? "push" : operand.ToString()!;
         }
+
 
         public void Branch(ILabel label)
         {
@@ -253,7 +254,7 @@ namespace Zilf.Emit.Glulx
             }
         }
 
-        public void Branch(Condition cond, IOperand? left, IOperand? right, ILabel label, bool polarity)
+        public virtual void Branch(Condition cond, IOperand? left, IOperand? right, ILabel label, bool polarity)
         {
             string cmp;
             // For Glulx, always use BranchPositive because the opcode itself encodes the branch direction.
@@ -411,7 +412,7 @@ namespace Zilf.Emit.Glulx
                 Emit($"copy {FormatLoad(src)} -> {FormatStore(dest)}", "copy");
         }
 
-        public void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable? result)
+        public virtual void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable? result)
         {
             switch (op)
             {
@@ -473,7 +474,7 @@ namespace Zilf.Emit.Glulx
             }
         }
 
-        public void EmitUnary(UnaryOp op, IOperand value, IVariable? result)
+        public virtual void EmitUnary(UnaryOp op, IOperand value, IVariable? result)
         {
             switch (op)
             {
@@ -543,7 +544,7 @@ namespace Zilf.Emit.Glulx
             }
         }
 
-        public void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right, IVariable? result)
+        public virtual void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right, IVariable? result)
         {
             switch (op)
             {
@@ -591,7 +592,7 @@ namespace Zilf.Emit.Glulx
             }
         }
 
-        public void EmitNullary(NullaryOp op, IVariable? result)
+        public virtual void EmitNullary(NullaryOp op, IVariable? result)
         {
             switch (op)
             {
@@ -626,6 +627,8 @@ namespace Zilf.Emit.Glulx
             }
         }
 
+        protected virtual string FormatDirectCall(IOperand routine) => FormatLoad(routine);
+
         public void EmitCall(IOperand routine, IOperand[] args, IVariable? result)
         {
             string dest = result == null ? "drop" : FormatStore(result);
@@ -651,16 +654,16 @@ namespace Zilf.Emit.Glulx
                 switch (args.Length)
                 {
                     case 0:
-                        Emit($"callf {FormatLoad(routine)} -> {dest}", "callf");
+                        Emit($"callf {FormatDirectCall(routine)} -> {dest}", "callf");
                         return;
                     case 1:
-                        Emit($"callfi {FormatLoad(routine)} {FormatLoad(args[0])} -> {dest}", "callfi");
+                        Emit($"callfi {FormatDirectCall(routine)} {FormatLoad(args[0])} -> {dest}", "callfi");
                         return;
                     case 2:
-                        Emit($"callfii {FormatLoad(routine)} {FormatLoad(args[0])} {FormatLoad(args[1])} -> {dest}", "callfii");
+                        Emit($"callfii {FormatDirectCall(routine)} {FormatLoad(args[0])} {FormatLoad(args[1])} -> {dest}", "callfii");
                         return;
                     case 3:
-                        Emit($"callfiii {FormatLoad(routine)} {FormatLoad(args[0])} {FormatLoad(args[1])} {FormatLoad(args[2])} -> {dest}", "callfiii");
+                        Emit($"callfiii {FormatDirectCall(routine)} {FormatLoad(args[0])} {FormatLoad(args[1])} {FormatLoad(args[2])} -> {dest}", "callfiii");
                         return;
                 }
             }
@@ -728,7 +731,7 @@ namespace Zilf.Emit.Glulx
             Emit("pull -> drop", "pull");
         }
 
-        public void EmitPrint(string text, bool crlfRtrue)
+        public virtual void EmitPrint(string text, bool crlfRtrue)
         {
             var strOperand = gameBuilder.MakeOperand(text);
             Emit($"streamstr {FormatLoad(strOperand)}", "streamstr");
@@ -739,7 +742,7 @@ namespace Zilf.Emit.Glulx
             }
         }
 
-        public void EmitPrint(PrintOp op, IOperand value)
+        public virtual void EmitPrint(PrintOp op, IOperand value)
         {
             switch (op)
             {
@@ -900,9 +903,16 @@ namespace Zilf.Emit.Glulx
             return false;
         }
 
+        protected virtual void WriteOptionalPreamble(StringBuilder sb)
+        {
+            // nada
+        }
+
         public void Finish()
         {
             var sb = new StringBuilder();
+
+            WriteOptionalPreamble(sb);
 
             // Function header
             if (entryPoint)
@@ -978,6 +988,8 @@ namespace Zilf.Emit.Glulx
                     new GlulxCode { Text = $"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.initialize_glk))}", Opcode = "callf" },
                     null,
                     PeepholeLineType.Plain);
+
+                WriteOptionalGlkSetup(preamble);
             }
 
             peep.InsertBufferFirst(preamble);
@@ -1041,7 +1053,12 @@ namespace Zilf.Emit.Glulx
                 sb.AppendLine();
             });
 
-            gameBuilder.WriteOutput(sb.ToString());
+            gameBuilder.WriteRoutineOutput(sb.ToString(), entryPoint);
+        }
+
+        protected virtual void WriteOptionalGlkSetup(PeepholeBuffer<GlulxCode> peep)
+        {
+            // nada
         }
     }
 }

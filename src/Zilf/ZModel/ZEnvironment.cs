@@ -46,6 +46,8 @@ namespace Zilf.ZModel
         /// </summary>
         public const int GLULX_ZVERSION = 1000;
 
+        public TargetPlatform TargetPlatform { get; set; } = TargetPlatform.ZMachine;
+
         readonly Context ctx;
         IVocabFormat? vocabFormat;
 
@@ -169,7 +171,7 @@ namespace Zilf.ZModel
             {
                 if (vocabFormat == null)
                 {
-                    if (ZVersion == GLULX_ZVERSION)
+                    if (TargetPlatform == TargetPlatform.Glulx32 || ZVersion == GLULX_ZVERSION)
                         vocabFormat = new GlulxVocabFormat(ctx);
                     else if (ctx.GetGlobalOption(StdAtom.NEW_PARSER_P))
                         vocabFormat = new NewParserVocabFormat(ctx);
