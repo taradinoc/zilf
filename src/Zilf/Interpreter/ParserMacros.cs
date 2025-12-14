@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using System.Text;
 using Zilf.Interpreter.Values;
 using Zilf.Language.Parsing;
@@ -69,5 +70,7 @@ namespace Zilf.Interpreter
             prefixMacros.TryGetValue(prefix, out var result);
             return result;
         }
+
+        public IEnumerable<char> GetInstalledPrefixMacros() => prefixMacros.Keys.OrderBy(c => c);
     }
 }

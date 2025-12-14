@@ -25,6 +25,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.CommandLine;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Zilf.Common;
 using Zilf.Compiler;
 using Zilf.Diagnostics;
@@ -33,6 +35,7 @@ using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Language.Parsing;
 using Zilf.ZModel;
+using Zilf.Ide;
 using CommandParseResult = System.CommandLine.ParseResult;
 
 namespace Zilf
@@ -190,6 +193,12 @@ namespace Zilf
                 Arity = ArgumentArity.ZeroOrMore
             };
 
+            var buildIdeInfoOption = new Option<string?>("--ide-info")
+            {
+                Description = "Emit machine-readable workspace data to the provided file (or stdout). Implies --stop-after-compile.",
+                Arity = ArgumentArity.ZeroOrOne
+            };
+
             buildCommand.Arguments.Add(buildInputArgument);
             buildCommand.Arguments.Add(buildOutputArgument);
             buildCommand.Options.Add(buildQuietOption);
@@ -205,6 +214,7 @@ namespace Zilf
             buildCommand.Options.Add(buildSuppressWarningsOption);
             buildCommand.Options.Add(buildStopAfterCompileOption);
             buildCommand.Options.Add(buildZapfPassThroughOption);
+            buildCommand.Options.Add(buildIdeInfoOption);
 
             buildCommand.Validators.Add(commandResult =>
             {
@@ -378,6 +388,7 @@ namespace Zilf
                 buildSuppressWarningsOption,
                 buildStopAfterCompileOption,
                 buildZapfPassThroughOption,
+                buildIdeInfoOption,
                 replCommand,
                 replQuietOption,
                 replCaseSensitiveOption,
@@ -449,6 +460,7 @@ namespace Zilf
             Option<string[]> BuildSuppressWarningsOption,
             Option<bool> BuildStopAfterCompileOption,
             Option<string[]> BuildZapfPassThroughOption,
+            Option<string?> BuildIdeInfoOption,
             Command ReplCommand,
             Option<bool> ReplQuietOption,
             Option<bool?> ReplCaseSensitiveOption,
@@ -479,7 +491,10 @@ namespace Zilf
             if (ctx == null)
                 return 1;
 
-            if (!ctx.Quiet)
+            var hasIdeInfo = parseResult.GetResult(spec.BuildIdeInfoOption) is not null;
+            var ideInfoPath = parseResult.GetValue(spec.BuildIdeInfoOption);
+
+            if (!ctx.Quiet && !hasIdeInfo)
             {
                 Console.Write(GetBanner());
                 Console.Write(" built ");
@@ -494,6 +509,11 @@ namespace Zilf
             // TODO: reorder front-end processing so <VERSION GLULX> can affect the output file extension
             var output = parseResult.GetValue(outputArgument);
             var stopAfter = parseResult.GetValue(stopAfterCompileOption);
+
+            // IDE info needs a full compilation to discover all entities created during compilation.
+            // Treat --ide-info as "compile only" (skip external assembly).
+            if (hasIdeInfo)
+                stopAfter = true;
 
             // Determine the intermediate assembly filename and the final assembler output filename
             string intermediateFile;
@@ -542,6 +562,24 @@ namespace Zilf
             {
                 Console.Error.WriteLine("I/O error: " + ex.Message);
                 return 1;
+            }
+
+            if (hasIdeInfo)
+            {
+                var report = IdeInfoReport.Build(ctx, inputFile);
+                var json = report.ToJsonString(new JsonSerializerOptions
+                {
+                    WriteIndented = false
+                });
+
+                if (string.IsNullOrEmpty(ideInfoPath) || ideInfoPath == "-")
+                {
+                    Console.Out.WriteLine(json);
+                }
+                else
+                {
+                    File.WriteAllText(ideInfoPath, json, Encoding.UTF8);
+                }
             }
 
             if (result.WarningCount > 0)

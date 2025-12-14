@@ -84,6 +84,9 @@ namespace Zilf.Interpreter
         readonly ObList compilationFlagsObList, hooksObList;
         public ParserMacros ParserMacros { get; }
 
+        readonly List<string> sourceFilesReadInOrder = new();
+        readonly HashSet<string> sourceFilesReadSet;
+
         readonly Stack<ZilObject> previousObPaths;
         LocalEnvironment localEnvironment;
         readonly Dictionary<ZilAtom, Binding> globalValues;
@@ -117,6 +120,8 @@ namespace Zilf.Interpreter
         public Context(bool ignoreCase)
         {
             this.IgnoreCase = ignoreCase;
+
+            sourceFilesReadSet = new HashSet<string>(ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
             this.ParserMacros = new ParserMacros(this);
 
@@ -561,10 +566,18 @@ namespace Zilf.Interpreter
         /// <returns>The new file context.</returns>
         public FileContext PushFileContext(string path)
         {
+            if (!string.IsNullOrEmpty(path) && !path.StartsWith('<'))
+            {
+                if (sourceFilesReadSet.Add(path))
+                    sourceFilesReadInOrder.Add(path);
+            }
+
             var result = new FileContext(this, path);
             CurrentFile = result;
             return result;
         }
+
+        public IReadOnlyList<string> GetSourceFilesRead() => new ReadOnlyCollection<string>(sourceFilesReadInOrder);
 
         /// <summary>
         /// Pops the current file context off the stack, restoring the previous file context.
@@ -1140,6 +1153,23 @@ B * <PRINTB .X>
         {
             var atom = compilationFlagsObList[name];
             return GetGlobalVal(atom);
+        }
+
+        public IEnumerable<(ZilAtom Name, ZilObject? Value)> EnumerateCompilationFlags()
+        {
+            foreach (var bucket in compilationFlagsObList.BucketList)
+            {
+                if (bucket is not ZilListoidBase b)
+                    continue;
+
+                foreach (var item in b)
+                {
+                    if (item is not ZilAtom atom)
+                        continue;
+
+                    yield return (atom, GetGlobalVal(atom));
+                }
+            }
         }
 
         void SetCompilationFlagValue(ZilAtom name, ZilObject? value)
