@@ -11,6 +11,17 @@ and this project adheres to
 - Added the `--ide-info` switch to emit data for the VS Code extension (or
   similar) to use to guide and augment code analysis.
 
+### Changed
+
+- The parser now takes the syntax flags (search flags, `HAVE`/`TAKE`, and
+  `FIND`) into account when deciding which syntax line to use and which objects
+  to consider for replacing a missing noun. For example, if both SHOW PAULINE
+  THE GUN and SHOW THE GUN TO PAULINE are possible, the parser can know that
+  SHOW PAULINE (with the other object omitted) should match the first syntax and
+  SHOW GUN should match the second, because you need to be holding something to
+  show it (`HAVE`), and you usually only show things to people
+  (`FIND PERSONBIT`).
+
 ### Fixed
 
 - Fixed a bug where a misleading source line was shown when a call to a

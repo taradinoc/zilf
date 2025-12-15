@@ -1,13 +1,10 @@
 @echo off
 if "%1" == "" goto :Usage
 if not exist test-%1.zil goto :TestMissing
-if not exist ..\..\Zilf\bin\Debug\zilf.exe goto :ZilfMissing
-if not exist ..\..\Zapf\bin\Debug\zapf.exe goto :ZapfMissing
+if not exist ..\..\bin\Debug\net10.0\zilf.exe goto :ZilfMissing
 if not exist .\ConsoleZLR.exe goto :CzlrMissing
 
-..\..\Zilf\bin\Debug\zilf.exe -ip .. test-%1.zil
-if errorlevel 1 goto :EOF
-..\..\Zapf\bin\Debug\zapf.exe test-%1.zap
+..\..\bin\Debug\net10.0\zilf.exe -I .. test-%1.zil
 if errorlevel 1 goto :EOF
 .\ConsoleZLR.exe test-%1.z3
 goto :EOF
@@ -21,12 +18,8 @@ echo Couldn't find test-%1.zil.
 goto :EOF
 
 :ZilfMissing
-echo Couldn't find zilf.exe under ..\..\Zilf\bin\Debug.
-echo Build the solution first.
-goto :EOF
-
-:ZapfMissing
-echo Couldn't find zapf.exe under ..\..\Zapf\bin\Debug.
+echo Couldn't find zilf.exe under ..\..\Zilf\bin\Debug\net10.0.
+cd
 echo Build the solution first.
 goto :EOF
 

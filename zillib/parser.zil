@@ -7,7 +7,7 @@
 <USE "LIBMSG">
 <USE "LIBMSG-DEFAULTS">
 
-<SETG ZILLIB-VERSION "T2">
+<SETG ZILLIB-VERSION "T3">
 
 <VERSION?
     (ZIP)
@@ -1624,6 +1624,88 @@ Returns:
 <CONSTANT SF-CARRIED 64>
 <CONSTANT SF-HELD 128>
 
+;"Silently checks whether an object could satisfy HAVE/TAKE constraints.
+  Unlike HAVE-TAKE-CHECK, this never prints messages and never performs an
+  implicit TAKE; it only answers whether the object is already held or could
+  plausibly be made held via implicit take.
+
+Args:
+  OBJ: An object.
+  OPTS: Search options for the slot.
+
+Returns:
+  True if the object passes or could plausibly pass HAVE/TAKE, otherwise false."
+<ROUTINE HAVE-TAKE-POSSIBLE? (OBJ OPTS)
+    <COND (<BTST .OPTS ,SF-HAVE>
+           <COND (<NOT <FAILS-HAVE-CHECK? .OBJ>> <RTRUE>)
+                 (<AND <BTST .OPTS ,SF-TAKE>
+                       <SHOULD-IMPLICIT-TAKE? .OBJ>>
+                  <RTRUE>)
+                 (ELSE <RFALSE>)>)
+          (ELSE <RTRUE>)>>
+
+;"Silently probes whether the (already-parsed) noun phrase could match objects
+  in scope for a particular syntax slot, and returns a score delta.
+
+This is used only for choosing between competing syntax lines; it must not print
+messages, orphan, or take side effects.
+
+Soft preferences:
+  - FIND is a preference for explicit nouns: if at least one candidate match has
+    the FIND bit, prefer it; if none do, penalize it.
+  - Scope-stage flags in OPTS (IN-ROOM/ON-GROUND/etc.) are also preferences; we
+    widen to 'reasonable scope' so they don't become disqualifiers.
+
+Harder signal:
+  - HAVE/TAKE is enforced later; here we treat 'no candidate can plausibly pass
+    HAVE/TAKE' as a strong negative signal, but not an outright rejection.
+
+Returns:
+  A small integer to add to the syntax-line score (positive is better)."
+<ROUTINE TRIAL-MATCH-NOUN-PHRASE (NP FIND OPTS "AUX" NY NN MODE SPEC BITS (CNT 0) Q HAS-FIND HAS-HAVE)
+    <SET NY <NP-YCNT .NP>>
+    <SET NN <NP-NCNT .NP>>
+    <SET MODE <NP-MODE .NP>>
+        ;"Don't try to outsmart complex modes (ALL/ANY, multiple YSPECs, etc.)."
+        <COND (<OR <0? .NY> <NOT <0? .MODE>> <G? .NY 1>>
+          <RETURN 0>)>
+    <SET SPEC <NP-YSPEC .NP 1>>
+    <SET BITS <ENCODE-NOUN-BITS .FIND .OPTS>>
+    ;"Widen the scope-stage preferences to the usual 'reasonable scope' so we
+      don't treat missing IN-ROOM/ON-GROUND/etc. as disqualifying."
+    <PROG ()
+        <SET HAS-FIND 0>
+        <SET HAS-HAVE 0>
+        <SET CNT 0>
+        <MAP-SCOPE (I [BITS <ORB .BITS ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>])
+            <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
+                        <NOT <AND .NN <NP-EXCLUDES? .NP .I>>>
+                        <SET Q <REFERS? .SPEC .I>>
+                        <G? .Q 0>>
+                   ;"Count matches."
+                   <SET CNT <+ .CNT 1>>
+                   ;"Track whether any match satisfies FIND (preference)."
+                   <COND (<AND <G? .FIND 0> <FSET? .I .FIND>>
+                          <SET HAS-FIND 1>)>
+                   ;"Track whether any match plausibly satisfies HAVE/TAKE if required."
+                   <COND (<HAVE-TAKE-POSSIBLE? .I .OPTS>
+                          <SET HAS-HAVE 1>)>)>>
+        ;"No matches at all."
+        <COND (<0? .CNT> <RETURN -30>)>
+        ;"Base: prefer unique over ambiguous slightly."
+        <SET Q <COND (<1? .CNT> 2) (ELSE 0)>>
+        ;"FIND is a soft preference for explicit nouns: reward if any match has it,
+          penalize if none do (only when FIND was specified)."
+        <COND (<G? .FIND 0>
+               <COND (.HAS-FIND <SET Q <+ .Q 15>>)
+                     (ELSE <SET Q <- .Q 15>>)>)>
+        ;"HAVE/TAKE is a strong signal: if HAVE is required but none of the matches
+          could plausibly satisfy it, penalize heavily."
+        <COND (<BTST .OPTS ,SF-HAVE>
+               <COND (.HAS-HAVE <SET Q <+ .Q 10>>)
+                     (ELSE <SET Q <- .Q 10>>)>)>
+        <RETURN .Q>>>
+
 ;"Attempts to match a syntax line for the current verb.
 
 Uses:
@@ -1653,7 +1735,7 @@ Returns:
         <COND (<AND .S <G? .S .BEST-SCORE>>
                <SET BEST-SCORE .S>
                <SET BEST .PTR>
-               <COND (<G? .S 0> <RETURN>)>)>
+         <COND (<==? .S 100> <RETURN>)>)>
         <SET PTR <+ .PTR ,SYN-REC-SIZE>>>
     <TRACE-OUT>
     <COND (.BEST
@@ -1687,10 +1769,10 @@ Args:
   PTR: The syntax line.
 
 Returns:
-  1 if it matches exactly, 0 if it cannot match, or a negative number
+  100 if it matches exactly, 0 if it cannot match, or a negative number
   if it partially matches (i.e. if it could match after inference).
   Negative numbers further below 0 indicate worse matches needing more inference."
-<ROUTINE MATCH-SYNTAX-LINE? (PTR "AUX" NOBJ PREP1 PREP2 R)
+<ROUTINE MATCH-SYNTAX-LINE? (PTR "AUX" NOBJ PREP1 PREP2 R BONUS F1 O1 F2 O2)
     <TRACE 2 "[attempting syntax line at " N .PTR ": " SYNTAX-LINE .PTR "]" CR>
     <TRACE-IN>
     <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
@@ -1698,10 +1780,10 @@ Returns:
     <SET PREP2 <GETB .PTR ,SYN-PREP2>>
     <COND ;"If the object count and prepositions are all as expected,
             this is an exact match."
-          (<AND <=? ,P-NOBJ .NOBJ> <=? ,P-P1 .PREP1> <=? ,P-P2 .PREP2>>
+          (<AND <==? ,P-NOBJ .NOBJ> <==? ,P-P1 .PREP1> <==? ,P-P2 .PREP2>>
            <TRACE 2 "[exact match]" CR>
            <TRACE-OUT>
-           <RTRUE>)
+           <RETURN 100>)
           ;"If object count >= expected count, this can't match."
           (<G=? ,P-NOBJ .NOBJ>
            <TRACE 2 "[DQ, no objects left to infer]" CR>
@@ -1734,20 +1816,35 @@ Returns:
            <TRACE 2 "[DQ, kludge bit]" CR>
            <TRACE-OUT>
            <RFALSE>)>
-    ;"We have a possible match; now score how well it matches.
-      Dock one point for each object we have to infer."
-    <SET R <- ,P-NOBJ .NOBJ>>
+    ;"We have a possible (partial) match; now score how well it matches.
+      Dock points for each object we have to infer. Scale by 10 so we
+      can apply small tie-break deltas from trial noun matching."
+    <SET R <* <- ,P-NOBJ .NOBJ> 10>>
     <TRACE 3 "[base score " N .R "]" CR>
-    ;"Dock an extra two points for PRSO if we have to infer a preposition also."
+    ;"Dock an extra 20 points for PRSO if we have to infer a preposition also."
     <COND (<AND <NOT ,P-P1> .PREP1>
-           <TRACE 3 "[-2, needs preposition on PRSO]" CR>
-           <SET R <- .R 2>>)>
-    ;"Dock an extra point for PRSI if we have to infer *no* preposition.
+           <TRACE 3 "[-20, needs preposition on PRSO]" CR>
+           <SET R <- .R 20>>)>
+    ;"Dock an extra 10 points for PRSI if we have to infer *no* preposition.
       This makes us prefer syntaxes with the direct object first
       (GIVE OBJECT TO OBJECT instead of GIVE OBJECT OBJECT)."
     <COND (<AND <=? .NOBJ 2> <NOT <OR ,P-P2 .PREP2>>>
-           <TRACE 3 "[-1, no preposition on PRSI]" CR>
-           <SET R <- .R 1>>)>
+           <TRACE 3 "[-10, no preposition on PRSI]" CR>
+           <SET R <- .R 10>>)>
+    ;"Trial-match any provided noun phrases against this syntax line to avoid
+      choosing a line that can't possibly match the player's words."
+    <COND (<AND <G=? ,P-NOBJ 1> <G=? .NOBJ 1>>
+           <SET F1 <GETB .PTR ,SYN-FIND1>>
+           <SET O1 <GETB .PTR ,SYN-OPTS1>>
+           <SET BONUS <TRIAL-MATCH-NOUN-PHRASE ,P-NP-DOBJ .F1 .O1>>
+           <TRACE 3 "[" IF <G? .BONUS 0> !\+ N .BONUS " from trial PRSO match]" CR>
+           <SET R <+ .R .BONUS>>)>
+    <COND (<AND <G=? ,P-NOBJ 2> <G=? .NOBJ 2>>
+           <SET F2 <GETB .PTR ,SYN-FIND2>>
+           <SET O2 <GETB .PTR ,SYN-OPTS2>>
+           <SET BONUS <TRIAL-MATCH-NOUN-PHRASE ,P-NP-IOBJ .F2 .O2>>
+           <TRACE 3 "[" IF <G? .BONUS 0> !\+ N .BONUS " from trial PRSI match]" CR>
+           <SET R <+ .R .BONUS>>)>
     <TRACE-OUT>
     .R>
 
@@ -2053,30 +2150,41 @@ Returns:
           (<VERB? WALK>
            <TRACE 4 "[GWIM: refusing, verb is WALK]" CR>
            <RFALSE>)>
-    ;"Look for exactly one matching object, excluding WINNER"
-    <TRACE 4 "[GWIM: searching scope for flag " N .BIT " opts " N .OPTS "]" CR>
+        ;"Look for exactly one matching object, excluding WINNER"
+        <TRACE 4 "[GWIM: searching scope for flag " N .BIT " opts " N .OPTS "]" CR>
     <TRACE-IN>
-    <MAP-SCOPE (I [BITS .OPTS])
-        <COND (<AND <N=? .I ,WINNER>
-                    <OR <0? .BIT> <FSET? .I .BIT>>>
-               <TRACE 4 "[considering " D .I "]" CR>
-               <COND (.O
-                      <TRACE 4 "[too many, bailing]" CR>
-                      <TRACE-OUT>
-                      <RFALSE>)
-                     (ELSE
-                      <TRACE 4 "[updating preference]" CR>
-                      <SET O .I>)>)>>
+    <BIND ((SOPTS .OPTS))
+        ;"If no scope-stage preferences were specified, default to full scope."
+        <COND (<0? .SOPTS> <SET SOPTS -1>)>
+        ;"If HAVE is required, ensure we search inventory stages."
+        <COND (<BTST .OPTS ,SF-HAVE>
+               <SET SOPTS <ORB .SOPTS ,SF-HELD ,SF-CARRIED>>)>
+        ;"If TAKE is allowed, include room stages so we can infer takeable objects
+         and let HAVE/TAKE checks handle the implicit TAKE later."
+        <COND (<BTST .OPTS ,SF-TAKE>
+               <SET SOPTS <ORB .SOPTS ,SF-ON-GROUND ,SF-IN-ROOM>>)>
+        <MAP-SCOPE (I [BITS .SOPTS])
+                   <COND (<AND <N=? .I ,WINNER>
+                               <OR <0? .BIT> <FSET? .I .BIT>>
+                               <HAVE-TAKE-POSSIBLE? .I .OPTS>>
+                          <TRACE 4 "[considering " D .I "]" CR>
+                          <COND (.O
+                                 <TRACE 4 "[too many, bailing]" CR>
+                                 <TRACE-OUT>
+                                 <RFALSE>)
+                                (ELSE
+                                 <TRACE 4 "[updating preference]" CR>
+                                 <SET O .I>)>)>>>
     <TRACE-OUT>
     ;"Print inference message"
     <COND (.O
            <TELL <LIBRARY-MESSAGE PARSER GWIM-1>>
            ;"TODO: use LONG-WORDS table for preposition word"
-           <COND (<SET PW <GET-PREP-WORD .PREP>>
-                  <TELL B .PW " ">)>
+           <COND (<SET PW <GET-PREP-WORD .PREP>> <TELL B .PW " ">)>
            <TELL T .O <LIBRARY-MESSAGE PARSER GWIM-2> CR>
            <RETURN .O>)
-          (ELSE <RFALSE>)>>
+          (ELSE <RFALSE>)>
+>
 
 <ROUTINE GET-PREP-WORD GPW (PREP "AUX" MAX)
     <SET MAX <- <* <GET ,PREPOSITIONS 0> 2> 1>>
