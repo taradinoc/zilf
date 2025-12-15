@@ -251,11 +251,8 @@ namespace Zilf.Interpreter
             if (!defaults.SuppressDefaultCtor)
             {
                 var ctorMacroDef = MakeDefstructCtorMacro(ctx, name, baseType, fields, initArgs, defaults.StartOffset);
-
-                using (ctx.PushFileContext($"<constructor for DEFSTRUCT {name}>"))
-                {
-                    ctorMacroDef.Eval(ctx);
-                }
+                RewriteSourceInfo(ctorMacroDef, new StringSourceLine($"<constructor for DEFSTRUCT {name}>"));
+                ctorMacroDef.Eval(ctx);
             }
 
             if (defaults.CustomCtorSpec != null)
@@ -274,21 +271,16 @@ namespace Zilf.Interpreter
                 var argspec = ArgSpec.Parse("DEFSTRUCT", ctorName, null, argspecList);
                 var ctorMacroDef = MakeDefstructCustomCtorMacro(ctx, ctorName, name, baseType, fields, initArgs, defaults.StartOffset, argspec);
 
-                using (ctx.PushFileContext($"<constructor {ctorName} for DEFSTRUCT {name}>"))
-                {
-                    ctorMacroDef.Eval(ctx);
-                }
+                RewriteSourceInfo(ctorMacroDef, new StringSourceLine($"<constructor {ctorName} for DEFSTRUCT {name}>"));
+                ctorMacroDef.Eval(ctx);
             }
 
             // define field access macros
             foreach (var field in fields)
             {
                 var accessMacroDef = MakeDefstructAccessMacro(ctx, name, defaults, field);
-
-                using (ctx.PushFileContext($"<accessor for field {field.Name} of DEFSTRUCT {name}>"))
-                {
-                    accessMacroDef.Eval(ctx);
-                }
+                RewriteSourceInfo(accessMacroDef, new StringSourceLine($"<accessor for field {field.Name} of DEFSTRUCT {name}>"));
+                accessMacroDef.Eval(ctx);
             }
 
             // ReSharper disable once PatternAlwaysOfType
@@ -306,10 +298,24 @@ namespace Zilf.Interpreter
                         name).Single();
                 }
 
+                RewriteSourceInfo(handler, new StringSourceLine($"<PRINTTYPE handler for DEFSTRUCT {name}>"));
                 ctx.SetPrintType(name, handler);
             }
 
             return name;
+
+            // helper
+            static void RewriteSourceInfo(ZilObject zo, ISourceLine src)
+            {
+                zo.SourceLine = src;
+                if (zo is IEnumerable<ZilObject> seq)
+                {
+                    foreach (var child in seq)
+                    {
+                        RewriteSourceInfo(child, src);
+                    }
+                }
+            }
         }
 
         static ZilSegment MakeDefstructDecl(Context ctx, ZilAtom baseType, List<DefStructField> fields)

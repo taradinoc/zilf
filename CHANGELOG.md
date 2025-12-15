@@ -11,6 +11,11 @@ and this project adheres to
 - Added the `--ide-info` switch to emit data for the VS Code extension (or
   similar) to use to guide and augment code analysis.
 
+### Fixed
+
+- Fixed a bug where a misleading source line was shown when a call to a
+  generated DEFSTRUCT constructor caused it to throw an error.
+
 ## [1.0.1] (December 10, 2025)
 
 ### Fixed

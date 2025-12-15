@@ -17,7 +17,6 @@
  */
 
 using System.IO;
-using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Common;
 using Zilf.Diagnostics;
@@ -387,6 +386,24 @@ namespace Zilf.Tests.Interpreter
 
         // TODO: test 0-based field offsets
         // <DEFSTRUCT POINT (TABLE ('START-OFFSET 0) ('NTH ZGET) ('PUT ZPUT)) (POINT-X FIX 123) (POINT-Y FIX 456) (POINT-ID FIX <ALLOCATE-ID>)>
+
+        [TestMethod]
+        public void Errors_In_DEFSTRUCT_Constructor_Call_Should_Have_Correct_Source_Info()
+        {
+            var fs = new InMemoryFileSystem();
+            fs.SetText(Path.Combine("lib", "a.zil"), @";line-1
+;line-2 <DEFSTRUCT POINT VECTOR (POINT-X FIX 'OFFSET 1) (POINT-Y FIX 'OFFSET 2)>");
+            fs.SetText(Path.Combine("lib", "b.zil"), @";line-1
+;line-2 <FLOAD ""a""> <DEFINE FOO () <MAKE-POINT 'POINT [0] 'POINT-X 123 'POINT-Y 456>>");
+
+            var ctx = new Context { FileSystem = fs };
+            ctx.IncludePaths.Add("lib");
+
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, @"<FLOAD ""b""> <FOO>", e =>
+                e.Message.Contains("writing past end", System.StringComparison.Ordinal) &&
+                e.Message.Contains("DEFSTRUCT", System.StringComparison.Ordinal) &&
+                !e.Message.Contains(".zil", System.StringComparison.Ordinal));
+        }
 
         [TestMethod]
         public void REST_Of_One_Character_String_Should_Be_Empty_String()
