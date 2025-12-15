@@ -208,5 +208,20 @@ namespace Zilf.Emit.Glulx
                 _ => base.FormatDirectCall(routine)
             };
         }
+
+        public override bool TryEmitLowCoreGetTable(string field, IVariable resultStorage)
+        {
+            switch (field)
+            {
+                case "SERIAL":
+                    // The serial data will be loaded through Glulx16's checked array load function,
+                    // which masks addresses to 16 bits and traps access to the Z-machine header,
+                    // so this is just the usual Z-machine location of the serial number.
+                    Emit($"copy 18 -> {FormatStore(resultStorage)}", "copy");
+                    return true;
+            }
+
+            return base.TryEmitLowCoreGetTable(field, resultStorage);
+        }
     }
 }

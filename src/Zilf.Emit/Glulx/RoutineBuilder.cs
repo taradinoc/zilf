@@ -891,7 +891,7 @@ namespace Zilf.Emit.Glulx
             return false;
         }
 
-        public bool TryEmitLowCoreGetTable(string field, IVariable resultStorage)
+        public virtual bool TryEmitLowCoreGetTable(string field, IVariable resultStorage)
         {
             switch (field)
             {

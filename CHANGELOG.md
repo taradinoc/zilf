@@ -11,6 +11,15 @@ and this project adheres to
 - Added the `--ide-info` switch to emit data for the VS Code extension (or
   similar) to use to guide and augment code analysis.
 
+- Added an even more experimental feature to compile to Glulx without needing to
+  modify the game source code, enabled with the `--glulx16` command-line switch.
+  Unlike regular `--glulx` mode, this isn't treated as a separate "version" of
+  the VM, so it won't run code inside `<VERSION? (GLULX ...)>` blocks, nor does
+  it lift any of the Z-machine's limitations: the game will run as if it were
+  compiled for Z-machine, using the existing `VERSION` directive if present.
+  This is most likely to work with V3 games at the moment, and some very
+  low-level Z-machine tricks may not work as expected.
+
 ### Changed
 
 - The parser now takes the syntax flags (search flags, `HAVE`/`TAKE`, and
