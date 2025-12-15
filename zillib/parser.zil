@@ -1616,13 +1616,40 @@ Returns:
 <CONSTANT SYN-OPTS2 6>
 <CONSTANT SYN-ACTION 7>
 
-<CONSTANT SF-HAVE 2>
-<CONSTANT SF-MANY 4>
-<CONSTANT SF-TAKE 8>
-<CONSTANT SF-ON-GROUND 16>
-<CONSTANT SF-IN-ROOM 32>
-<CONSTANT SF-CARRIED 64>
-<CONSTANT SF-HELD 128>
+;"By default, the search flags have these values:"
+;<CONSTANT SF-HAVE 2>
+;<CONSTANT SF-MANY 4>
+;<CONSTANT SF-TAKE 8>
+;<CONSTANT SF-ON-GROUND 16>
+;<CONSTANT SF-IN-ROOM 32>
+;<CONSTANT SF-CARRIED 64>
+;<CONSTANT SF-HELD 128>
+
+;"But this library has always treated ON-GROUND and IN-ROOM the same anyway, and
+  likewise with CARRIED and HELD, so we can use NEW-SFLAGS to make them aliases
+  and reuse those bits for something else."
+
+<CONSTANT SF-HAVE 1>
+<CONSTANT SF-MANY 2>
+<CONSTANT SF-TAKE 4>
+<CONSTANT SF-IN-ROOM 8>
+<CONSTANT SF-ON-GROUND ,SF-IN-ROOM>
+<CONSTANT SF-CARRIED 16>
+<CONSTANT SF-HELD ,SF-CARRIED>
+<CONSTANT SF-EVERYWHERE 32>
+
+;"The TAKE, HAVE, and MANY flags are always available, and constants with these
+  names have to be defined in order to use NEW-SFLAGS."
+<CONSTANT SEARCH-DO-TAKE ,SF-TAKE>
+<CONSTANT SEARCH-MUST-HAVE ,SF-HAVE>
+<CONSTANT SEARCH-MANY ,SF-MANY>
+
+;"SEARCH-ALL also has to be defined as the default set of flags."
+<CONSTANT SEARCH-ALL <+ ,SF-IN-ROOM ,SF-CARRIED>>
+
+<SETG NEW-SFLAGS ["IN-ROOM" ,SF-IN-ROOM "ON-GROUND" ,SF-IN-ROOM
+                  "CARRIED" ,SF-CARRIED "HELD" ,SF-CARRIED
+                  "EVERYWHERE" ,SF-EVERYWHERE]>
 
 ;"Silently checks whether an object could satisfy HAVE/TAKE constraints.
   Unlike HAVE-TAKE-CHECK, this never prints messages and never performs an
@@ -2257,8 +2284,8 @@ Returns:
     <SET NN <NP-NCNT .NP>>
     <SET MODE <NP-MODE .NP>>
     <SET OBITS .BITS>
-    <COND (<0? .MODE>
-           <SET .BITS <ORB .BITS ;"<ORB" ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM ;">" >>)>
+    <COND (<AND <0? .MODE> <NOT <BTST .BITS ,SF-EVERYWHERE>>>
+           <SET .BITS <ORB .BITS ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>)>
     <TRACE 3 "[MATCH-NOUN-PHRASE: NY=" N .NY " NN=" N .NN " MODE=" N .MODE
              " BITS=" N .BITS " OBITS=" N .OBITS "]" CR>
     <TRACE-IN>
@@ -2349,7 +2376,7 @@ Returns:
         <COND (<0? .NOUT>
                ;"This means ALL matched nothing, or BUT excluded everything.
                  Try expanding the search if we can."
-               <SET F <ORB .BITS ;"<ORB" ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM ;">" >>
+               <SET F <ORB .BITS ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>
                <COND (<=? .BITS .F>
                       <TELL <LIBRARY-MESSAGE PARSER NONE-AVAILABLE> CR>
                       <TRACE-OUT>

@@ -10,11 +10,16 @@
 
 ;"Defining and checking scope stages"
 <SETG SCOPE-STAGES ()>
+<SETG EXPLICIT-SCOPE-STAGES ()>
 
 <DEFINE SCOPE-STAGE (NAME STATE-WORDS 'INIT-CODE 'NEXT-CODE)
     <SETG SCOPE-STAGES
           <LIST !,SCOPE-STAGES
                 <VECTOR .NAME .STATE-WORDS .INIT-CODE .NEXT-CODE>>>>
+
+<DEFINE SCOPE-STAGE-EXPLICIT (NAME "ARGS" A)
+    <EVAL `<SCOPE-STAGE .NAME ~!.A>>
+    <SETG EXPLICIT-SCOPE-STAGES (.NAME !,EXPLICIT-SCOPE-STAGES)>>
 
 <DEFMAC SCOPE-STAGE? ("ARGS" NAMES "AUX" SSS)
     <SET SSS
@@ -32,6 +37,11 @@
           <RETURN -1 .SCOPE-STAGE-ACTIVATION>>>
 
 "Scope stages"
+
+<SCOPE-STAGE-EXPLICIT EVERYWHERE 2
+    (<PUT SCOPE-STATE 0 <FIRST? ,ROOMS>>
+     <PUT SCOPE-STATE 1 ,ROOMS>)
+    (<SCOPE-CRAWL>)>
 
 <SCOPE-STAGE INVENTORY 2
     (<PUT SCOPE-STATE 0 <FIRST? ,WINNER>>
@@ -105,7 +115,7 @@
         [STAGES (INVENTORY LOCATION)]
       Or set them from search bits:
         [BITS .B]
-      Or default to all stages in definition order (or use [BITS -1]).
+      Or default to all non-explicit stages in definition order (or use [BITS -1]).
 
       To turn off the light requirement:
         [NO-LIGHT]"
@@ -138,9 +148,9 @@
                <SET INIT-STAGES
                     <MAPF ,LIST
                           <FUNCTION (S)
+                              <COND (<MEMQ .S ,EXPLICIT-SCOPE-STAGES> <RETURN>)>
                               <SET I <+ .I 1>>
-                              `<PUT
-                                    ,SCOPE-CURRENT-STAGES
+                              `<PUT ,SCOPE-CURRENT-STAGES
                                     ~.I
                                     ~<PARSE <STRING <SPNAME .S> "-SCOPE-STAGE">>>>
                           .STAGES>>>
@@ -158,26 +168,31 @@
                 ~!.BODY>>>
 
 <ROUTINE MAP-SCOPE-INIT-STAGES-FROM-BITS (BITS "AUX" (CNT 0))
-    ;"Special case: -1 means all stages in definition order."
+    ;"Special case: -1 means all non-explicit stages in definition order."
     <COND (<=? -1 .BITS>
            <PUT ,SCOPE-CURRENT-STAGES 0 ,SCOPE-CURRENT-STAGES-SIZE>
            %<FORM PROG '()
                   !<MAPF ,LIST
                       <FUNCTION (I "AUX" (S <1 .I>))
+                          <COND (<MEMQ .S ,EXPLICIT-SCOPE-STAGES> <MAPRET>)>
                           `<PUT ,SCOPE-CURRENT-STAGES
                                 <SET CNT <+ .CNT 1>>
                                 ~<PARSE <STRING <SPNAME .S> "-SCOPE-STAGE">>>>
                       ,SCOPE-STAGES>>
            <RETURN>)>
-    ;"We don't distinguish between HELD and CARRIED, or ON-GROUND and IN-ROOM."
-    <COND (<OR <BTST .BITS ,SF-HELD>
-               <BTST .BITS ,SF-CARRIED>>
-           <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,INVENTORY-SCOPE-STAGE>)>
-    <COND (<OR <BTST .BITS ,SF-ON-GROUND>
-               <BTST .BITS ,SF-IN-ROOM>>
-           <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,LOCATION-SCOPE-STAGE>
+    <COND (<BTST .BITS ,SF-EVERYWHERE>
+           <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,EVERYWHERE-SCOPE-STAGE>
            <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,GLOBALS-SCOPE-STAGE>
-           <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,LOCAL-GLOBALS-SCOPE-STAGE>)>
+           <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,LOCAL-GLOBALS-SCOPE-STAGE>)
+          (ELSE
+           ;"We don't distinguish between HELD and CARRIED, or ON-GROUND and IN-ROOM.
+            parser.zil uses NEW-SFLAGS to make them identical."
+           <COND (<BTST .BITS ,SF-CARRIED>
+               <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,INVENTORY-SCOPE-STAGE>)>
+           <COND (<BTST .BITS ,SF-IN-ROOM>
+               <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,LOCATION-SCOPE-STAGE>
+               <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,GLOBALS-SCOPE-STAGE>
+               <PUT ,SCOPE-CURRENT-STAGES <SET CNT <+ .CNT 1>> ,LOCAL-GLOBALS-SCOPE-STAGE>)>)>
     <PUT ,SCOPE-CURRENT-STAGES 0 .CNT>>
 
 <ROUTINE MAP-SCOPE-START ("AUX" V (LEN <GET ,SCOPE-CURRENT-STAGES 0>) (NEED-LIGHT <>))
@@ -222,7 +237,7 @@
     <OR .O <RFALSE>>
     <SET C <GET ,SCOPE-STATE 1>>
     <COND (<AND <SET N <FIRST? .O>>
-                <SEE-INSIDE? .O>>
+                <OR <SEE-INSIDE? .O> <IN? .O ,ROOMS>>>
            ;"Next is O's child")
           (<SET N <NEXT? .O>>
            ;"Next is O's sibling")

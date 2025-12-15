@@ -20,6 +20,11 @@ and this project adheres to
   This is most likely to work with V3 games at the moment, and some very
   low-level Z-machine tricks may not work as expected.
 
+- Added the search flag `EVERYWHERE`, which causes the parser to look for the
+  object in every room, not just the current one. (However, only the current
+  room's `LOCAL-GLOBALS` are included.) For example:
+  `<SYNTAX FOLLOW OBJECT (EVERYWHERE) = V-FOLLOW>`.
+
 ### Changed
 
 - The parser now takes the syntax flags (search flags, `HAVE`/`TAKE`, and
