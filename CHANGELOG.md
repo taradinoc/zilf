@@ -30,6 +30,13 @@ and this project adheres to
   of how to use it, see the teleportation system in `advent.zil`, which uses
   topics to parse room names.
 
+- Added a replaceable definition section, `PROVIDE-MISSING-VERB?`, which can be
+  used to allow commands with no verb. If the routine (or macro)
+  `PROVIDE-MISSING-VERB?` returns a vocab word, it will be used in place of the
+  missing verb. If you replace the section, you also need to provide a
+  `PRINT-MISSING-VERB` to print a suitable action name for parser messages like
+  "What do you want to [missing verb] the [noun] with?"
+
 ### Changed
 
 - The parser now takes the syntax flags (search flags, `HAVE`/`TAKE`, and

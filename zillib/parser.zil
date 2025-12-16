@@ -770,6 +770,11 @@ These extensions will be respected by other code that simulates the main loop, e
 <DEFAULT-DEFINITION HOOK-END-OF-ITERATION
     <DEFMAC HOOK-END-OF-ITERATION () <>>>
 
+;"The game can replace this to provide a missing verb."
+<DEFAULT-DEFINITION PROVIDE-MISSING-VERB?
+    <DEFMAC PROVIDE-MISSING-VERB? () '<>>
+    <DEFMAC PRINT-MISSING-VERB () '<>>>
+
 ;"Reads and parses a command.
 
 The primary outputs are PRSA, PRSO (+ PRSO-DIR), and PRSI, suitable
@@ -1098,6 +1103,11 @@ Sets:
                          <SAVE-PARSER-RESULT ,AGAIN-STORAGE>)>
                   <TRACE-OUT>
                   <RTRUE>)>
+           ;"If we don't have a verb, give the game a chance to substitute one."
+           <COND (<NOT ,P-V>
+                  <SETG P-V-WORD <PROVIDE-MISSING-VERB?>>
+                  <SETG P-V <WORD? ,P-V-WORD VERB>>
+                  <SETG P-V-WORDN -1>)>
            ;"Otherwise, a verb is required and a direction is forbidden."
            <COND (<NOT ,P-V>
                   <SETG P-CONT 0>
@@ -2190,7 +2200,8 @@ Returns:
         <TELL <LIBRARY-MESSAGE ORPHANING WHAT-DO-YOU-WANT-4> CR>>>
 
 <ROUTINE PRINT-VERB ()
-    <COND (,P-V-WORDN <PRINT-WORD ,P-V-WORDN>)
+    <COND (<L? ,P-V-WORDN 0> <PRINT-MISSING-VERB>)
+          (,P-V-WORDN <PRINT-WORD ,P-V-WORDN>)
           (ELSE <PRINTB ,P-V-WORD>)>>
 
 <DEFMAC PRINT-IF ('CONDITION 'MSG)
@@ -2218,6 +2229,8 @@ Returns:
                 <NOT <BTST .OPTS ,SF-MANY>>>
            <COND (<VERB? TELL>
                   <TELL <LIBRARY-MESSAGE PARSER MANY-WINNERS-NOT-ALLOWED>>)
+                 (<L? ,P-V-WORDN 0>
+                  <TELL <LIBRARY-MESSAGE PARSER MANY-OBJECTS-NOT-ALLOWED-NO-VERB ((INDIRECT? .INDIRECT?))>>)
                  (ELSE
                   <TELL <LIBRARY-MESSAGE PARSER MANY-OBJECTS-NOT-ALLOWED ((INDIRECT? .INDIRECT?))>>)>
            <CRLF>

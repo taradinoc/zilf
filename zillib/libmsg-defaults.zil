@@ -27,6 +27,7 @@
     (NO-MATCHING-SYNTAX "I don't understand that sentence.")
     (MANY-WINNERS-NOT-ALLOWED "You can only address one person at a time.")
     (MANY-OBJECTS-NOT-ALLOWED "You can't use multiple " IF .INDIRECT? "in" "direct objects with \"" VERB-WORD "\".")
+    (MANY-OBJECTS-NOT-ALLOWED-NO-VERB "You can't use multiple " IF .INDIRECT? "in" "direct objects like that.")
     (DONT-SEE-THAT-HERE "You don't see that here.")
     (TOO-MANY-NUMBERS "You can't use more than one number in a command.")
     (TOO-MANY-MANY "You can't use multiple direct and indirect objects together.")
