@@ -107,6 +107,9 @@ namespace Zilf.Emit.Glulx
                 case TernaryOp.PutWord:
                     EmitTernary16(nameof(RuntimeLib16.putword16), left, center, right);
                     return;
+                case TernaryOp.PutByte:
+                    EmitTernary16(nameof(RuntimeLib16.putbyte16), left, center, right);
+                    return;
             }
 
             base.EmitTernary(op, left, center, right, result);

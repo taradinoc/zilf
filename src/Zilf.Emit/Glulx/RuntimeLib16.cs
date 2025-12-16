@@ -138,14 +138,22 @@ namespace Zilf.Emit.Glulx
             callfi _rt_get_header_word address -> push
             return pop";
 
-        [RuntimeFunc]
+        [RuntimeFunc(nameof(put_header_word))]
         public const string putword16 = @"
             function
             local table
             local offset
             local value
+            local address
             sexs offset -> offset       ; offsets are signed
+            ; Trap header writes
+            mul offset 2 -> push
+            add table pop -> address
+            jlt address 64 -> .header
             astores table offset value
+            return
+        .header:
+            callfii _rt_put_header_word address value
             return";
 
         [RuntimeFunc(nameof(get_header_byte))]
@@ -164,6 +172,23 @@ namespace Zilf.Emit.Glulx
             callfi _rt_get_header_byte address -> push
             return pop";
 
+        [RuntimeFunc(nameof(put_header_byte))]
+        public const string putbyte16 = @"
+            function
+            local table
+            local offset
+            local value
+            local address
+            sexs offset -> offset
+            ; Trap header writes
+            add table offset -> address
+            jlt address 64 -> .header
+            astoreb table offset value
+            return
+        .header:
+            callfii _rt_put_header_byte address value
+            return";
+
         [RuntimeFunc]
         public const string get_header_byte = @"
             function
@@ -177,16 +202,46 @@ namespace Zilf.Emit.Glulx
         .not_serial:
             return 0";
 
-        [RuntimeFunc]
+        [RuntimeFunc(nameof(get_lowcore_flags))]
         public const string get_header_word = @"
             function
             local address
-            ; Release number in bytes 2-3
+            ; Release number in bytes 2-3?
             jne address 2 -> .not_release
             aloads metadata_releaseid 0 -> push
             return pop
         .not_release:
-            return 0";
+            ; FLAGS word at 0x10?
+            jne address 0x10 -> rfalse
+            callf _rt_get_lowcore_flags -> push
+            return pop";
+
+        [RuntimeFunc]
+        public const string put_header_byte = @"
+            function
+            local address
+            local value
+            ; Nothing yet
+            return";
+
+        [RuntimeFunc(nameof(put_header_byte), nameof(set_lowcore_flags))]
+        public const string put_header_word = @"
+            function
+            local address
+            local value
+            ; FLAGS word at 0x10?
+            jeq address 0x10 -> .write_flags
+            ; No, convert to 2 byte writes
+            ushiftr value 8 -> push
+            bitand pop 0xFF -> push
+            callfii _rt_put_header_byte address pop
+            bitand value 0xFF -> push
+            add address 1 -> address
+            callfii _rt_put_header_byte address pop
+            return
+        .write_flags:
+            callfi _rt_set_lowcore_flags value
+            return";
 
         #endregion
 
@@ -770,13 +825,11 @@ namespace Zilf.Emit.Glulx
             ; Did we run out of recorded input?
             jz nchars -> .eof
             ; Trim trailing newline
-            add nchars 1 -> push
-            aloadb textbuf pop -> push
+            aloadb textbuf nchars -> push
             jne pop 10 -> .trim_done
             sub nchars 1 -> nchars
         .trim_done:
             ; Store null terminator
-            astoreb textbuf 1 nchars
             add nchars 1 -> push
             astoreb textbuf pop 0
             ; Echo command to window
