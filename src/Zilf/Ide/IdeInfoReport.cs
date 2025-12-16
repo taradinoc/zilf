@@ -67,7 +67,7 @@ namespace Zilf.Ide
             {
                 ["code"] = diag.Code,
                 ["severity"] = diag.Severity.ToString(),
-                ["noisy"] = diag.Noisy,
+                ["noisy"] = diag.IsNoisy,
                 ["message"] = diag.GetFormattedMessage(),
                 ["origin"] = Origin(diag.Location),
             };
@@ -79,6 +79,9 @@ namespace Zilf.Ide
                 obj["subDiagnostics"] = new JsonArray(diag.SubDiagnostics.Select(DiagnosticToJson).ToArray());
             else
                 obj["subDiagnostics"] = new JsonArray();
+
+            if (diag.IsSuppressed)
+                obj["suppressed"] = true;
 
             return obj;
         }

@@ -38,7 +38,7 @@ namespace Zilf.Diagnostics
         public Severity Severity { get; }
         public string CodePrefix { get; }
         public int CodeNumber { get; }
-        public bool Noisy { get; }
+        public bool IsNoisy { get; }
 
         public static string FormatCode(string prefix, int number) => $"{prefix}{number:0000}";
 
@@ -46,6 +46,7 @@ namespace Zilf.Diagnostics
 
         public string? StackTrace { get; }
         public IReadOnlyList<Diagnostic> SubDiagnostics { get; }
+        public bool IsSuppressed { get; internal set; }
 
         string MessageFormat { get; }
         object[] MessageArgs { get; }
@@ -67,7 +68,7 @@ namespace Zilf.Diagnostics
             MessageArgs = messageArgs ?? NoArguments;
             StackTrace = stackTrace;
             SubDiagnostics = subDiagnostics ?? NoDiagnostics;
-            Noisy = noisy;
+            IsNoisy = noisy;
         }
 
         public Diagnostic WithSubDiagnostics(params Diagnostic[] newSubDiagnostics)
@@ -81,7 +82,7 @@ namespace Zilf.Diagnostics
                 MessageArgs,
                 StackTrace,
                 newSubDiagnostics,
-                Noisy);
+                IsNoisy);
         }
 
         public Diagnostic WithSeverity(Severity newSeverity)
@@ -95,7 +96,7 @@ namespace Zilf.Diagnostics
                 MessageArgs,
                 StackTrace,
                 SubDiagnostics,
-                Noisy);
+                IsNoisy);
         }
 
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]

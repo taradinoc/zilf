@@ -96,6 +96,7 @@ namespace Zilf.Diagnostics
 
             if (IsSuppressed(diag))
             {
+                diag.IsSuppressed = true;
                 suppressedDiagnostics.Add(diag);
             }
             else
@@ -109,7 +110,7 @@ namespace Zilf.Diagnostics
             if (diag.Severity >= Severity.Error)
                 return false;
 
-            if (SuppressNoisyWarnings && diag.Severity == Severity.Warning && diag.Noisy)
+            if (SuppressNoisyWarnings && diag.Severity == Severity.Warning && diag.IsNoisy)
                 return true;
 
             return suppressAllTheThings || suppressions.Contains(diag.Code);
