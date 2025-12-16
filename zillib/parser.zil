@@ -1061,7 +1061,21 @@ Sets:
                       ;"Unexpected word type. If the verb's syntax indicates the next
                         noun phrase is a TOPIC slot, treat the rest of the command as a
                         topic instead of rejecting it here."
-                      <COND (<AND <L? .NOBJ 2> <TOPIC-NP-POSSIBLE? <+ .NOBJ 1>>>
+                      <COND (<AND <NOT ,P-V>
+                                  <0? .NOBJ>
+                                  <NOT ,P-P1>
+                                  <NOT ,P-P2>
+                                  <NOT .DIR>>
+                             ;"We haven't recognized a verb yet, and we can't classify this
+                                 word as any normal part of speech. Give the game a chance to
+                                 provide a missing verb early so we can determine whether a
+                                 TOPIC slot is legal here."
+                             <SET V <PROVIDE-MISSING-VERB?>>
+                             <COND (<SET VAL <WORD? .V VERB>>
+                                    <SETG P-V-WORD .V>
+                                    <SETG P-V .VAL>
+                                    <SETG P-V-WORDN -1>)>)>
+                        <COND (<AND <L? .NOBJ 2> <TOPIC-NP-POSSIBLE? <+ .NOBJ 1>>>
                              <SET NOBJ <+ .NOBJ 1>>
                              <COND (<==? .NOBJ 1> <SETG P-NP1-WN .I>)
                                    (<==? .NOBJ 2> <SETG P-NP2-WN .I>)>

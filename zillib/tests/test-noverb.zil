@@ -1,15 +1,19 @@
 <VERSION ZIP>
 
 <GLOBAL PROVOKE? <>>
+<GLOBAL EXCLAIM? <>>
 
 <REPLACE-DEFINITION PROVIDE-MISSING-VERB?
     <ROUTINE PROVIDE-MISSING-VERB? ()
-        <COND (<0? ,P-NOBJ> <RFALSE>)
+        <COND (,EXCLAIM? ,W?\,EXCLAIM)
+              (<0? ,P-NOBJ> <RFALSE>)
               (,PROVOKE? ,W?\,PROVOKE)
               (ELSE ,W?\,INVOKE)>>
 
     <ROUTINE PRINT-MISSING-VERB ()
-        <TELL IFELSE ,PROVOKE? "provoke" "invoke">>>
+        <COND (,EXCLAIM? <TELL "exclaim">)
+              (,PROVOKE? <TELL "provoke">)
+              (ELSE <TELL "invoke">)>>>
 
 <INSERT-FILE "testing">
 
@@ -40,6 +44,7 @@
 
 <SYNTAX \,INVOKE OBJECT = V-INVOKE>
 <SYNTAX \,PROVOKE OBJECT (MANY) WITH OBJECT = V-PROVOKE>
+<SYNTAX \,EXCLAIM TOPIC = V-EXCLAIM>
 
 <ROUTINE V-INVOKE ()
     <TELL "You invoke " T ,PRSO "." CR>>
@@ -47,8 +52,14 @@
 <ROUTINE V-PROVOKE ()
     <TELL "You provoke " T ,PRSO "." CR>>
 
+<ROUTINE V-EXCLAIM ()
+    <TELL "You exclaim:">
+    <DO (I ,P-TOPIC-START ,P-TOPIC-END) <TELL " " WORD .I>>
+    <TELL "!" CR>>
+
 <TEST-SETUP ()
     <SETG PROVOKE? <>>
+    <SETG EXCLAIM? <>>
     <MOVE ,RED-BOX ,STARTROOM>
     <MOVE ,RED-APPLE ,STARTROOM>>
 
@@ -80,5 +91,17 @@
 <TEST-CASE ("No object")
     <COMMAND [THEN]>
     <EXPECT "That sentence has no verb.|">>
+
+<TEST-CASE ("Topic")
+    <SETG EXCLAIM? T>
+    <COMMAND [O FRABJOUS DAY]>
+    <EXPECT "You exclaim: o frabjous day!|">>
+
+<TEST-CASE ("Empty command")
+    <COMMAND []>
+    <EXPECT "...|">
+    <SETG EXCLAIM? T>
+    <COMMAND []>
+    <EXPECT "...|">>
 
 <TEST-GO ,STARTROOM>
