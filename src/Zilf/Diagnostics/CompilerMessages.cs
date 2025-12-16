@@ -156,6 +156,8 @@ namespace Zilf.Diagnostics
         public const int Vocab_Collision_0_And_1_Are_Indistinguishable_And_Will_Be_Merged = 310;
         [Info("they would be distinguishable in Z-machine V4 or above")]
         public const int They_Would_Be_Distinguishable_In_Zmachine_V4_Or_Above = 311;
+        [Error("TOPIC in SYNTAX requires non-compact old parser syntax tables")]
+        public const int TOPIC_In_SYNTAX_Requires_Noncompact_Old_Parser_Syntax_Tables = 312;
 
 
         // Platform Limits - 0400

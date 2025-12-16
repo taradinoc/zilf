@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2025 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -33,6 +33,12 @@ namespace Zilf.Compiler
     {
         void BuildEarlySyntaxTables()
         {
+            if (Context.ZEnvironment.Syntaxes.Any(s => s.IsTopic1 || s.IsTopic2) &&
+                (Context.GetGlobalOption(StdAtom.NEW_PARSER_P) || Context.GetGlobalOption(StdAtom.COMPACT_SYNTAXES_P)))
+            {
+                Context.HandleError(new CompilerError(CompilerMessages.TOPIC_In_SYNTAX_Requires_Noncompact_Old_Parser_Syntax_Tables));
+            }
+
             var dict = new Dictionary<string, ITableBuilder>();
 
             // TODO: encapsulate this in the VocabFormat classes
@@ -101,6 +107,9 @@ namespace Zilf.Compiler
                         {
                             if (compact)
                             {
+                                if (line.IsTopic1 || line.IsTopic2)
+                                    throw new CompilerError(CompilerMessages.TOPIC_In_SYNTAX_Requires_Noncompact_Old_Parser_Syntax_Tables);
+
                                 if (line.Preposition1 != null)
                                 {
                                     var pn = vf.GetPrepositionValue(line.Preposition1);
@@ -136,13 +145,38 @@ namespace Zilf.Compiler
                             }
                             else
                             {
-                                stbl.AddByte((byte)line.NumObjects);
+                                /* ZILF 1.1 extended syntax line format
+                                 * 8 bytes: nobj prep1 prep2 find1 find2 opts1 opts2 action
+                                 *
+                                 * nobj:
+                                 *   bits 0-1: number of objects (0, 1, or 2; 3 is invalid)
+                                 *   bit 2: 1 if object 1 is special
+                                 *   bit 4: 1 if object 2 is special
+                                 *   all other bits: reserved
+                                 *
+                                 * prep1/prep2: preposition number expected before this object, or zero if no prep
+                                 *
+                                 * if NOT special:
+                                 *   find1/find2: FIND flag, or zero if no FIND (flag 0 cannot be a FIND flag)
+                                 *   opts1/opts2: search options, meaning can vary per game (NEW-SFLAGS)
+                                 *
+                                 * if special:
+                                 *   if find1/find2 is 0 and opts1/opts2 is 0: object is a TOPIC
+                                 *   all other combinations: reserved
+                                 */
+
+                                var nobj = line.NumObjects |
+                                           (line.IsTopic1 ? 4 : 0) |
+                                           (line.IsTopic2 ? 16 : 0);
+
+                                stbl.AddByte((byte)nobj);
                                 stbl.AddByte(GetPreposition(line.Preposition1) ?? Game.Zero);
                                 stbl.AddByte(GetPreposition(line.Preposition2) ?? Game.Zero);
-                                stbl.AddByte((IOperand?)GetFlag(line.FindFlag1) ?? Game.Zero);
-                                stbl.AddByte((IOperand?)GetFlag(line.FindFlag2) ?? Game.Zero);
-                                stbl.AddByte(line.Options1);
-                                stbl.AddByte(line.Options2);
+
+                                stbl.AddByte(line.IsTopic1 ? Game.Zero : (IOperand?)GetFlag(line.FindFlag1) ?? Game.Zero);
+                                stbl.AddByte(line.IsTopic2 ? Game.Zero : (IOperand?)GetFlag(line.FindFlag2) ?? Game.Zero);
+                                stbl.AddByte(line.IsTopic1 ? (byte)0 : line.Options1);
+                                stbl.AddByte(line.IsTopic2 ? (byte)0 : line.Options2);
                                 stbl.AddByte(act.Constant);
                             }
                         }

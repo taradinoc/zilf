@@ -6,7 +6,7 @@
 ;----------------------------------------------------------------------
 
 <VERSION ZIP>
-<CONSTANT RELEASEID 2>
+<CONSTANT RELEASEID 3>
 <CONSTANT IFID-ARRAY <PTABLE (STRING) "UUID://0E123F50-20A2-4F5B-8F01-264678ED419D//">>
 
 <COMPILATION-FLAG DEBUG <>>
@@ -4077,7 +4077,155 @@ At your feet is a large steel grate, next to which is a sign which reads,
 "Teleportation system"
 ;----------------------------------------------------------------------
 
-;"TODO: Implement keyword navigation for the above-ground rooms"
+<SYNTAX WALK (GO) TO TOPIC = V-GO-TO-ROOM>
+
+<ROUTINE TOPIC-IGNORABLE? (W)
+    <T? <==? .W ,W?A ,W?AN ,W?THE ,W?AT ,W?IN ,W?ON>>>
+
+<ROUTINE TOPIC-MATCHES? (TOKTBL "AUX" (LEN <GET .TOKTBL 0>) I J TW W)
+    <SET I ,P-TOPIC-START>
+    <SET J 1>
+    <REPEAT ()
+        <COND (<G? .J .LEN>
+               ;"No more tokens; ensure no remaining significant topic words."
+               <REPEAT ()
+                   <COND (<G? .I ,P-TOPIC-END> <RTRUE>)>
+                   <SET W <GETWORD? .I>>
+                   <COND (<AND .W <TOPIC-IGNORABLE? .W>>
+                          <SET I <+ .I 1>>
+                          <AGAIN>)
+                         (ELSE <RFALSE>)>>)
+              (<G? .I ,P-TOPIC-END>
+               <RFALSE>)>
+
+        <SET TW <GET .TOKTBL .J>>
+
+        ;"Skip ignorable topic words."
+        <REPEAT ()
+            <COND (<G? .I ,P-TOPIC-END> <RFALSE>)>
+            <SET W <GETWORD? .I>>
+            <COND (<AND .W <TOPIC-IGNORABLE? .W>>
+                   <SET I <+ .I 1>>
+                   <AGAIN>)
+                  (ELSE <RETURN>)>>
+
+        <SET W <GETWORD? .I>>
+        <COND (<N=? .W .TW> <RFALSE>)>
+        <SET I <+ .I 1>>
+        <SET J <+ .J 1>>>>
+
+<DEFINE TOPIC-TABLE ("ARGS" A)
+    <MAPF ,LTABLE ,VOC .A>>
+
+<CONSTANT TELEPORT-ROOMS-TABLE
+    <TABLE
+        AT-BREATH-TAKING-VIEW <TOPIC-TABLE "BREATH-TAKING" "VIEW">
+        AT-BRINK-OF-PIT <TOPIC-TABLE "BRINK" "OF" "PIT">
+        AT-COMPLEX-JUNCTION <TOPIC-TABLE "COMPLEX" "JUNCTION">
+        AT-EAST-END-OF-LONG-HALL <TOPIC-TABLE "EAST" "END" "OF" "LONG" "HALL">
+        AT-EAST-END-OF-TWOPIT-ROOM <TOPIC-TABLE "EAST" "END" "OF" "TWOPIT" "ROOM">
+        AT-END-OF-ROAD <TOPIC-TABLE "END" "OF" "ROAD">
+        AT-FORK-IN-PATH <TOPIC-TABLE "FORK" "PATH">
+        AT-HILL-IN-ROAD <TOPIC-TABLE "HILL" "ROAD">
+        AT-JUNCTION-OF-THREE <TOPIC-TABLE "JUNCTION" "OF" "THREE" "SECRET" "CANYONS">
+        AT-JUNCTION-WITH-WARM-WALLS <TOPIC-TABLE "JUNCTION" "WITH" "WARM" "WALLS">
+        AT-NE-END <TOPIC-TABLE "NE" "END" "OF" "REPOSITORY">
+        AT-RECENT-CAVE-IN <TOPIC-TABLE "RECENT" "CAVE-IN">
+        AT-RESERVOIR <TOPIC-TABLE "RESERVOIR">
+        AT-SLIT-IN-STREAMBED <TOPIC-TABLE "SLIT" "STREAMBED">
+        AT-STEEP-INCLINE <TOPIC-TABLE "STEEP" "INCLINE" "ABOVE" "LARGE" "ROOM">
+        AT-SW-END <TOPIC-TABLE "SW" "END" "OF" "REPOSITORY">
+        AT-TOP-OF-SMALL-PIT <TOPIC-TABLE "TOP" "OF" "SMALL" "PIT">
+        AT-WEST-END-OF-HALL-OF-MISTS <TOPIC-TABLE "WEST" "END" "OF" "HALL" "OF" "MISTS">
+        AT-WEST-END-OF-LONG-HALL <TOPIC-TABLE "WEST" "END" "OF" "LONG" "HALL">
+        AT-WEST-END-OF-TWOPIT-ROOM <TOPIC-TABLE "WEST" "END" "OF" "TWOPIT" "ROOM">
+        AT-WINDOW-ON-PIT-1 <TOPIC-TABLE "WINDOW" "PIT">
+        AT-WINDOW-ON-PIT-2 <TOPIC-TABLE "WINDOW" "PIT">
+        AT-WITTS-END <TOPIC-TABLE "WITT'S" "END">
+        AT-Y2 <TOPIC-TABLE "Y2">
+        ATOP-STALACTITE <TOPIC-TABLE "ATOP" "STALACTITE">
+        BELOW-THE-GRATE <TOPIC-TABLE "BELOW" "GRATE">
+        BOULDERS-DEAD-END <TOPIC-TABLE "DEAD" "END">
+        CANYON-DEAD-END <TOPIC-TABLE "CANYON" "DEAD" "END">
+        CROSSOVER <TOPIC-TABLE "N/S" "AND" "E/W" "CROSSOVER">
+        DEAD-END-CRAWL <TOPIC-TABLE "DEAD" "END" "CRAWL">
+        IN-A-CUL-DE-SAC <TOPIC-TABLE "CUL-DE-SAC">
+        IN-A-VALLEY <TOPIC-TABLE "VALLEY">
+        IN-ALCOVE <TOPIC-TABLE "ALCOVE">
+        IN-ANTEROOM <TOPIC-TABLE "ANTEROOM">
+        IN-ARCHED-HALL <TOPIC-TABLE "ARCHED" "HALL">
+        IN-AWKWARD-SLOPING-E/W-CANYON <TOPIC-TABLE "SLOPING" "E/W" "CANYON">
+        IN-BARREN-ROOM <TOPIC-TABLE "BARREN" "ROOM">
+        IN-BEDQUILT <TOPIC-TABLE "BEDQUILT">
+        IN-BIRD-CHAMBER <TOPIC-TABLE "ORANGE" "RIVER" "CHAMBER">
+        IN-CAVERN-WITH-WATERFALL <TOPIC-TABLE "CAVERN" "WITH" "WATERFALL">
+        IN-CHAMBER-OF-BOULDERS <TOPIC-TABLE "CHAMBER" "OF" "BOULDERS">
+        IN-COBBLE-CRAWL <TOPIC-TABLE "COBBLE" "CRAWL">
+        IN-CORRIDOR <TOPIC-TABLE "CORRIDOR">
+        IN-DARK-ROOM <TOPIC-TABLE "DARK" "ROOM">
+        IN-DEBRIS-ROOM <TOPIC-TABLE "DEBRIS" "ROOM">
+        IN-DIRTY-PASSAGE <TOPIC-TABLE "DIRTY" "PASSAGE">
+        IN-DUSTY-ROCK-ROOM <TOPIC-TABLE "DUSTY" "ROCK" "ROOM">
+        IN-EAST-PIT <TOPIC-TABLE "EAST" "PIT">
+        IN-FOREST-1 <TOPIC-TABLE "FOREST">
+        IN-FOREST-2 <TOPIC-TABLE "FOREST">
+        IN-FRONT-OF-BARREN-ROOM <TOPIC-TABLE "FRONT" "OF" "BARREN" "ROOM">
+        IN-GIANT-ROOM <TOPIC-TABLE "GIANT" "ROOM">
+        IN-HALL-OF-MISTS <TOPIC-TABLE "HALL" "OF" "MISTS">
+        IN-HALL-OF-MT-KING <TOPIC-TABLE "HALL" "OF" "MOUNTAIN" "KING">
+        IN-IMMENSE-N/S-PASSAGE <TOPIC-TABLE "IMMENSE" "N/S" "PASSAGE">
+        IN-LARGE-LOW-ROOM <TOPIC-TABLE "LARGE" "LOW" "ROOM">
+        IN-LIMESTONE-PASSAGE <TOPIC-TABLE "LIMESTONE" "PASSAGE">
+        IN-MIRROR-CANYON <TOPIC-TABLE "MIRROR" "CANYON">
+        IN-MISTY-CAVERN <TOPIC-TABLE "MISTY" "CAVERN">
+        IN-N/S-CANYON <TOPIC-TABLE "N/S" "CANYON">
+        IN-NARROW-CORRIDOR <TOPIC-TABLE "NARROW" "CORRIDOR">
+        IN-NUGGET-OF-GOLD-ROOM <TOPIC-TABLE "LOW" "ROOM">
+        IN-ORIENTAL-ROOM <TOPIC-TABLE "ORIENTAL" "ROOM">
+        IN-PIT <TOPIC-TABLE "PIT">
+        IN-PLOVER-ROOM <TOPIC-TABLE "PLOVER" "ROOM">
+        IN-RAGGED-CORRIDOR <TOPIC-TABLE "RAGGED" "CORRIDOR">
+        IN-SECRET-CANYON <TOPIC-TABLE "SECRET" "CANYON">
+        IN-SECRET-E/W-CANYON <TOPIC-TABLE "SECRET" "E/W" "CANYON" "ABOVE" "TIGHT" "CANYON">
+        IN-SECRET-N/S-CANYON-0 <TOPIC-TABLE "SECRET" "N/S" "CANYON">
+        IN-SECRET-N/S-CANYON-1 <TOPIC-TABLE "SECRET" "N/S" "CANYON">
+        IN-SHELL-ROOM <TOPIC-TABLE "SHELL" "ROOM">
+        IN-SLAB-ROOM <TOPIC-TABLE "SLAB" "ROOM">
+        IN-SLOPING-CORRIDOR <TOPIC-TABLE "SLOPING" "CORRIDOR">
+        IN-SOFT-ROOM <TOPIC-TABLE "SOFT" "ROOM">
+        IN-SOUTH-SIDE-CHAMBER <TOPIC-TABLE "SOUTH" "SIDE" "CHAMBER">
+        IN-SWISS-CHEESE-ROOM <TOPIC-TABLE "SWISS" "CHEESE" "ROOM">
+        IN-TALL-E/W-CANYON <TOPIC-TABLE "TALL" "E/W" "CANYON">
+        IN-WEST-PIT <TOPIC-TABLE "WEST" "PIT">
+        IN-WEST-SIDE-CHAMBER <TOPIC-TABLE "WEST" "SIDE" "CHAMBER">
+        INSIDE-BUILDING <TOPIC-TABLE "INSIDE" "BUILDING">
+        JUMBLE-OF-ROCK <TOPIC-TABLE "JUMBLE" "OF" "ROCK">
+        LOW-N/S-PASSAGE <TOPIC-TABLE "LOW" "N/S" "PASSAGE">
+        ON-BRINK-OF-PIT <TOPIC-TABLE "BRINK" "OF" "PIT">
+        ON-EAST-BANK-OF-FISSURE <TOPIC-TABLE "EAST" "BANK" "OF" "FISSURE">
+        ON-NE-SIDE-OF-CHASM <TOPIC-TABLE "NE" "SIDE" "OF" "CHASM">
+        ON-SW-SIDE-OF-CHASM <TOPIC-TABLE "SW" "SIDE" "OF" "CHASM">
+        OUTSIDE-GRATE <TOPIC-TABLE "OUTSIDE" "GRATE">
+        PIRATE-DEAD-END <TOPIC-TABLE "DEAD" "END">
+        VENDING-DEAD-END <TOPIC-TABLE "DEAD" "END" "NEAR" "VENDING" "MACHINE">
+        WEST-SIDE-OF-FISSURE <TOPIC-TABLE "WEST" "SIDE" "OF" "FISSURE">
+        0 0>>
+
+<ROUTINE FIND-TELEPORT-ROOM ("AUX" PTR RM TOKTBL)
+    <SET PTR 0>
+    <REPEAT ()
+        <SET RM <GET ,TELEPORT-ROOMS-TABLE .PTR>>
+        <COND (<0? .RM>
+               <TELL "I don't know where that is." CR>
+               <RFALSE>)>
+        <SET TOKTBL <GET ,TELEPORT-ROOMS-TABLE <+ .PTR 1>>>
+        <COND (<AND <FSET? .RM ,TOUCHBIT> <TOPIC-MATCHES? .TOKTBL>>
+               <RETURN .RM>)>
+        <SET PTR <+ .PTR 2>>>>
+
+<ROUTINE V-GO-TO-ROOM ("AUX" RM)
+    <SET RM <FIND-TELEPORT-ROOM>>
+    <COND (.RM <GOTO .RM>)>>
 
 ;----------------------------------------------------------------------
 "Resurrection"
@@ -4303,7 +4451,7 @@ across the walls of the room.">)>>
            <TELL "Blasting requires dynamite." CR>)
           (ELSE
            <TELL "Been eating those funny brownies again?" CR>)>>
-          
+
 ;----------------------------------------------------------------------
 
 <SYNTAX XYZZY = V-XYZZY>
@@ -4592,6 +4740,8 @@ Usually people having trouble moving just need to try a few more words. Usually 
 unsuccessfully to manipulate an object are attempting something beyond their (or my!)
 capabilities and should try a completely different tack. Also, note that cave passages turn a
 lot, and that leaving a room to the north does not guarantee entering the next from the south.|
+|
+Once you've been to a location, you can go back there by typing GO TO followed by its name.|
 |
 Good luck!" CR>>
 
