@@ -271,6 +271,7 @@ namespace Zilf.Language
         [Atom("TEMP-TABLE")]
         TEMP_TABLE,
         TOBJECT,
+        TOPIC,
         TPREP,
         [Atom("TRUE-VALUE")]
         TRUE_VALUE,

@@ -38,6 +38,7 @@ namespace Zilf.ZModel
         public readonly IWord? Preposition2;
         public readonly byte Options1, Options2;
         public readonly ZilAtom? FindFlag1, FindFlag2;
+        public readonly bool IsTopic1, IsTopic2;
         public readonly ZilAtom Action;
         public readonly ZilAtom? Preaction;
         public readonly ZilAtom ActionName;
@@ -47,8 +48,9 @@ namespace Zilf.ZModel
 
         public Syntax(ISourceLine? src, IWord verb, int numObjects, IWord? prep1, IWord? prep2,
             byte options1, byte options2, ZilAtom? findFlag1, ZilAtom? findFlag2,
-             ZilAtom action, ZilAtom? preaction, ZilAtom actionName,
-              IEnumerable<ZilAtom>? synonyms = null)
+            bool isTopic1, bool isTopic2,
+            ZilAtom action, ZilAtom? preaction, ZilAtom actionName,
+            IEnumerable<ZilAtom>? synonyms = null)
         {
             SourceLine = src;
 
@@ -60,6 +62,8 @@ namespace Zilf.ZModel
             Options2 = options2;
             FindFlag1 = findFlag1;
             FindFlag2 = findFlag2;
+            IsTopic1 = isTopic1;
+            IsTopic2 = isTopic2;
             Action = action;
             Preaction = preaction;
             ActionName = actionName;
@@ -77,6 +81,7 @@ namespace Zilf.ZModel
             ZilAtom? verb = null, prep1 = null, prep2 = null;
             ZilAtom? action = null, preaction = null, actionName = null;
             ZilList? bits1 = null, find1 = null, bits2 = null, find2 = null, syns = null;
+            bool topic1 = false, topic2 = false;
             bool rightSide = false;
             int rhsCount = 0;
 
@@ -183,6 +188,17 @@ namespace Zilf.ZModel
                             throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "OBJECTs");
                         break;
 
+                    case StdAtom.TOPIC:
+                        numObjects++;
+                        if (numObjects > 2)
+                            throw new InterpreterError(InterpreterMessages.Too_Many_0_In_Syntax_Definition, "TOPICs");
+
+                        if (numObjects == 1)
+                            topic1 = true;
+                        else
+                            topic2 = true;
+                        break;
+
                     case StdAtom.Eq:
                         rightSide = true;
                         break;
@@ -271,10 +287,15 @@ namespace Zilf.ZModel
                 var verbWord = ctx.ZEnvironment.GetVocabVerb(verb, src);
                 var word1 = prep1 == null ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep1, src);
                 var word2 = prep2 == null ? null : ctx.ZEnvironment.GetVocabSyntaxPreposition(prep2, src);
-                var flags1 = ScopeFlags.Parse(bits1, ctx);
-                var flags2 = ScopeFlags.Parse(bits2, ctx);
-                var findFlag1 = ParseFindFlag(find1);
-                var findFlag2 = ParseFindFlag(find2);
+                if (topic1 && (bits1 != null || find1 != null))
+                    throw new InterpreterError(src, InterpreterMessages.TOPIC_In_Syntax_Definition_Must_Not_Specify_FIND_Or_Scope_Flags);
+                if (topic2 && (bits2 != null || find2 != null))
+                    throw new InterpreterError(src, InterpreterMessages.TOPIC_In_Syntax_Definition_Must_Not_Specify_FIND_Or_Scope_Flags);
+
+                var flags1 = topic1 ? (byte)0 : ScopeFlags.Parse(bits1, ctx);
+                var flags2 = topic2 ? (byte)0 : ScopeFlags.Parse(bits2, ctx);
+                var findFlag1 = topic1 ? null : ParseFindFlag(find1);
+                var findFlag2 = topic2 ? null : ParseFindFlag(find2);
                 IEnumerable<ZilAtom>? synAtoms = null;
 
                 if (syns != null)
@@ -317,6 +338,7 @@ namespace Zilf.ZModel
                     src,
                     verbWord, numObjects,
                     word1, word2, flags1, flags2, findFlag1, findFlag2,
+                    topic1, topic2,
                     action, preaction, actionName, synAtoms);
             }
         }
@@ -351,15 +373,24 @@ namespace Zilf.ZModel
                 (prep: Preposition2, find: FindFlag2, opts: Options2)
             };
 
+            var slot = 0;
             foreach (var (prep, find, opts) in items.Take(NumObjects))
             {
+                slot++;
                 if (prep != null)
                 {
                     sb.Append(' ');
                     sb.Append(prep.Atom);
                 }
 
-                sb.Append(" OBJECT");
+                var isTopic = slot switch
+                {
+                    1 => IsTopic1,
+                    2 => IsTopic2,
+                    _ => false
+                };
+
+                sb.Append(isTopic ? " TOPIC" : " OBJECT");
 
                 if (find != null)
                 {

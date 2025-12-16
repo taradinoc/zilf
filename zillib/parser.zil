@@ -378,6 +378,18 @@ Args:
 <GLOBAL P-CONT 0>           ;"Word number in held buffer where next parse should resume;
                               0 or less = get fresh input"
 
+"Word-position tracking (for features like TOPIC parsing)"
+<GLOBAL P-P1-WN 0>          ;"Word number where P-P1 occurred"
+<GLOBAL P-P2-WN 0>          ;"Word number where P-P2 occurred"
+<GLOBAL P-NP1-WN 0>         ;"Word number where first noun phrase started"
+<GLOBAL P-NP2-WN 0>         ;"Word number where second noun phrase started"
+<GLOBAL P-CMD-END-WN 0>     ;"Last word number in this command (excludes THEN/.)"
+
+"Topic capture"
+<GLOBAL P-TOPIC-SLOT 0>     ;"1 or 2 when a TOPIC slot is present"
+<GLOBAL P-TOPIC-START 0>    ;"Start word number of topic span"
+<GLOBAL P-TOPIC-END 0>      ;"End word number of topic span"
+
 "Structure type for OOPS"
 
 <DEFSTRUCT OOPS-RECORD (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
@@ -407,8 +419,7 @@ Args:
    The helper macros NP-YSPEC and NP-NSPEC return an OBJSPEC by 1-based index.
 
  OBJSPEC:
-   OBJSPEC-ADJ contains an adjective (number or voc word, depending on version)
-   or special flag (TBD).
+   OBJSPEC-ADJ contains an adjective (number or voc word, depending on version).
    OBJSPEC-NOUN contains a noun (voc word).
    Either field may be 0, but not both."
 <CONSTANT P-MAX-OBJSPECS 10>
@@ -797,6 +808,14 @@ Sets:
     <SET VAL <>>
     <SET DIR <>>
     <SET DIR-WN <>>
+    <SETG P-P1-WN 0>
+    <SETG P-P2-WN 0>
+    <SETG P-NP1-WN 0>
+    <SETG P-NP2-WN 0>
+    <SETG P-CMD-END-WN 0>
+    <SETG P-TOPIC-SLOT 0>
+    <SETG P-TOPIC-START 0>
+    <SETG P-TOPIC-END 0>
     ;"Fill READBUF and LEXBUF"
     <COND (<L? ,P-CONT 0> <SETG P-CONT 0>)>
     <COND (,P-CONT
@@ -935,6 +954,7 @@ Sets:
                      (<=? .W ,W?THEN ,W?\.>
                       ;"End of command, maybe start of a new one"
                       <TRACE 3 "['then' word " N .I "]" CR>
+                      <SETG P-CMD-END-WN <- .I 1>>
                       <SETG P-CONT <+ .I 1>>
                       <COND (<G? ,P-CONT ,P-LEN> <SETG P-CONT 0>)
                             (ELSE <COPY-TO-BUFS "CONT">)>
@@ -947,6 +967,26 @@ Sets:
                       <SETG P-V-WORDN .I>
                       <SETG P-V .V>
                       <TRACE 3 "[verb word " N ,P-V-WORDN " '" B ,P-V-WORD "' = " N ,P-V "]" CR>)
+                     (<AND <TOPIC-NP-POSSIBLE? <+ .NOBJ 1>>
+                           <OR <AND <0? .NOBJ>
+                                    ,P-P1
+                                    ,P-P1-WN
+                                    <==? .I <+ ,P-P1-WN 1>>>
+                               <AND <1? .NOBJ>
+                                    ,P-P2
+                                    ,P-P2-WN
+                                    <==? .I <+ ,P-P2-WN 1>>>>>
+                      ;"If the verb's syntax indicates the next slot is TOPIC and we've
+                        already seen the required preposition for that slot, treat the
+                        remainder of the command as the topic span. This must happen
+                        before direction and noun-phrase handling."
+                      <SET DIR <>>
+                      <SET DIR-WN <>>
+                      <SET NOBJ <+ .NOBJ 1>>
+                      <COND (<==? .NOBJ 1> <SETG P-NP1-WN .I>)
+                            (<==? .NOBJ 2> <SETG P-NP2-WN .I>)>
+                      <TRACE 3 "[treating word " N .I " as TOPIC NP start (after prep), consuming to end]" CR>
+                      <SET I ,P-LEN>)
                      (<AND <NOT .DIR>
                            <EQUAL? ,P-V <> ,ACT?WALK>
                            <SET VAL <WORD? .W DIRECTION>>>
@@ -962,10 +1002,26 @@ Sets:
                              <SETG P-P1 .VAL>)
                             (<AND <==? .NOBJ 1> <NOT ,P-P2>>
                              <TRACE 3 "[P2 word " N .I " '" B .W "' = " N .VAL "]" CR>
-                             <SETG P-P2 .VAL>)>)
+                       <SETG P-P2 .VAL>)>
+                      <COND (<AND <==? .NOBJ 0> ,P-P1 <NOT ,P-P1-WN>>
+                             <SETG P-P1-WN .I>)
+                            (<AND <==? .NOBJ 1> ,P-P2 <NOT ,P-P2-WN>>
+                             <SETG P-P2-WN .I>)>)
+                     (<AND <STARTS-NOUN-PHRASE? .W>
+                           <TOPIC-NP-REQUIRED? <+ .NOBJ 1>>>
+                      ;"If the next slot can only be TOPIC (no object-slot alternatives),
+                        treat even normal noun-phrase starters (like 'THE') as the
+                        start of the topic span."
+                      <SET NOBJ <+ .NOBJ 1>>
+                      <COND (<==? .NOBJ 1> <SETG P-NP1-WN .I>)
+                            (<==? .NOBJ 2> <SETG P-NP2-WN .I>)>
+                      <TRACE 3 "[treating word " N .I " as TOPIC NP start (required), consuming to end]" CR>
+                      <SET I ,P-LEN>)
                      (<STARTS-NOUN-PHRASE? .W>
                       ;"Found a noun phrase"
                       <SET NOBJ <+ .NOBJ 1>>
+                      <COND (<==? .NOBJ 1> <SETG P-NP1-WN .I>)
+                            (<==? .NOBJ 2> <SETG P-NP2-WN .I>)>
                       <TRACE 3 "[NP start word " N .I ", now NOBJ=" N .NOBJ "]" CR>
                       <TRACE-IN>
                       <COND (<==? .NOBJ 1>
@@ -997,15 +1053,26 @@ Sets:
                              <SETG P-CONT 0>
                              <RFALSE>)>)
                      (ELSE
-                      ;"Unexpected word type"
-                      <STORE-OOPS .I>
-                      <SETG P-CONT 0>
-                      <TELL <LIBRARY-MESSAGE PARSER UNEXPECTED-WORD ((WN .I))> CR>
-                      <TRACE-OUT>
-                      <RFALSE>)>
+                      ;"Unexpected word type. If the verb's syntax indicates the next
+                        noun phrase is a TOPIC slot, treat the rest of the command as a
+                        topic instead of rejecting it here."
+                      <COND (<AND <L? .NOBJ 2> <TOPIC-NP-POSSIBLE? <+ .NOBJ 1>>>
+                             <SET NOBJ <+ .NOBJ 1>>
+                             <COND (<==? .NOBJ 1> <SETG P-NP1-WN .I>)
+                                   (<==? .NOBJ 2> <SETG P-NP2-WN .I>)>
+                             <TRACE 3 "[treating word " N .I " as TOPIC NP start, consuming to end]" CR>
+                             <SET I ,P-LEN>)
+                            (ELSE
+                             <STORE-OOPS .I>
+                             <SETG P-CONT 0>
+                             <TELL <LIBRARY-MESSAGE PARSER UNEXPECTED-WORD ((WN .I))> CR>
+                             <TRACE-OUT>
+                             <RFALSE>)>)>
                <SET I <+ .I 1>>>
 
            <SETG P-NOBJ .NOBJ>
+           <COND (<NOT ,P-CMD-END-WN>
+                  <SETG P-CMD-END-WN ,P-LEN>)>
 
            <TRACE-OUT>
            <TRACE 1 "[sentence: V=" MATCHING-WORD ,P-V ,PS?VERB ,P1?VERB "(" N ,P-V ") NOBJ=" N ,P-NOBJ
@@ -1616,6 +1683,20 @@ Returns:
 <CONSTANT SYN-OPTS2 6>
 <CONSTANT SYN-ACTION 7>
 
+"SYN-NOBJ is primarily a count (0-2) but may contain reserved extension bits."
+<CONSTANT SYN-NOBJ-MASK 3>
+<CONSTANT SYN-SPECIAL1 4>
+<CONSTANT SYN-SPECIAL2 16>
+
+<DEFMAC SYN-NOBJ-COUNT ('PTR)
+    `<BAND <GETB ~.PTR ,SYN-NOBJ> ,SYN-NOBJ-MASK>>
+
+<DEFMAC SYN-OBJ1-SPECIAL? ('PTR)
+    `<BTST <GETB ~.PTR ,SYN-NOBJ> ,SYN-SPECIAL1>>
+
+<DEFMAC SYN-OBJ2-SPECIAL? ('PTR)
+    `<BTST <GETB ~.PTR ,SYN-NOBJ> ,SYN-SPECIAL2>>
+
 ;"By default, the search flags have these values:"
 ;<CONSTANT SF-HAVE 2>
 ;<CONSTANT SF-MANY 4>
@@ -1775,19 +1856,76 @@ Returns:
            <TELL <LIBRARY-MESSAGE PARSER NO-MATCHING-SYNTAX> CR>
            <RFALSE>)>>
 
+;"Checks whether the *next* noun phrase could be a TOPIC slot for the current verb,
+  based on the verb's syntax table and the prepositions we've already parsed.
+
+  This is used during initial word classification so that TOPIC slots can accept
+  arbitrary vocab words without requiring them to be flagged as OBJECT/ADJ."
+<ROUTINE TOPIC-NP-POSSIBLE? (SLOT "AUX" PTR CNT NOBJ PREP1 PREP2)
+    <COND (<NOT ,P-V> <RFALSE>)>
+    <SET PTR <GET ,VERBS <- 255 ,P-V>>>
+    <SET CNT <GETB .PTR 0>>
+    <SET PTR <+ .PTR 1>>
+    <REPEAT ()
+        <COND (<DLESS? CNT 0>
+               <RFALSE>)>
+        <SET NOBJ <SYN-NOBJ-COUNT .PTR>>
+        <SET PREP1 <GETB .PTR ,SYN-PREP1>>
+        <SET PREP2 <GETB .PTR ,SYN-PREP2>>
+        <COND (<AND <G=? .NOBJ .SLOT>
+                    <COND (<==? .SLOT 1> <SYN-OBJ1-SPECIAL? .PTR>)
+                          (ELSE <SYN-OBJ2-SPECIAL? .PTR>)>
+                    <OR <0? ,P-P1> <==? ,P-P1 .PREP1>>
+                    <OR <0? ,P-P2> <==? ,P-P2 .PREP2>>>
+               <RTRUE>)>
+        <SET PTR <+ .PTR ,SYN-REC-SIZE>>>>
+
+;"Checks whether the next noun phrase must be a TOPIC slot for the current verb,
+  based on the verb's syntax table and the prepositions we've already parsed.
+
+  Returns true only if at least one matching syntax line uses a TOPIC slot for this
+  position, and no matching syntax line uses a normal OBJECT slot for this position.
+
+  This is used so TOPIC slots can accept normal noun-phrase starters like 'THE'
+  without accidentally invoking the object noun-phrase parser."
+<ROUTINE TOPIC-NP-REQUIRED? (SLOT "AUX" PTR CNT NOBJ PREP1 PREP2 SAW-TOPIC SAW-OBJECT)
+    <COND (<NOT ,P-V> <RFALSE>)>
+    <SET PTR <GET ,VERBS <- 255 ,P-V>>>
+    <SET CNT <GETB .PTR 0>>
+    <SET PTR <+ .PTR 1>>
+    <SET SAW-TOPIC <>>
+    <SET SAW-OBJECT <>>
+    <REPEAT ()
+        <COND (<DLESS? CNT 0> <RETURN <AND .SAW-TOPIC <NOT .SAW-OBJECT>>>)>
+        <SET NOBJ <SYN-NOBJ-COUNT .PTR>>
+        <SET PREP1 <GETB .PTR ,SYN-PREP1>>
+        <SET PREP2 <GETB .PTR ,SYN-PREP2>>
+        <COND (<AND <G=? .NOBJ .SLOT>
+                    <OR <0? ,P-P1> <==? ,P-P1 .PREP1>>
+                    <OR <0? ,P-P2> <==? ,P-P2 .PREP2>>>
+               <COND (<==? .SLOT 1>
+                      <COND (<SYN-OBJ1-SPECIAL? .PTR> <SET SAW-TOPIC 1>)
+                            (ELSE <SET SAW-OBJECT 1>)>)
+                     (ELSE
+                      <COND (<SYN-OBJ2-SPECIAL? .PTR> <SET SAW-TOPIC 1>)
+                            (ELSE <SET SAW-OBJECT 1>)>)>)>
+        <SET PTR <+ .PTR ,SYN-REC-SIZE>>>>
+
 <IF-DEBUG
     <ROUTINE PRINT-SYNTAX-LINE (PTR "AUX" NOBJ PREP1 PREP2 ACT)
-        <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
+        <SET NOBJ <SYN-NOBJ-COUNT .PTR>>
         <SET PREP1 <GETB .PTR ,SYN-PREP1>>
         <SET PREP2 <GETB .PTR ,SYN-PREP2>>
         <SET ACT <GETB .PTR ,SYN-ACTION>>
         <TELL "*">
         <COND (<G=? .NOBJ 1>
                <COND (.PREP1 <TELL " " MATCHING-WORD .PREP1 ,PS?PREPOSITION 0>)>
-               <TELL " object">)>
+               <COND (<SYN-OBJ1-SPECIAL? .PTR> <TELL " topic">)
+                     (ELSE <TELL " object">)>)>
         <COND (<G=? .NOBJ 2>
                <COND (.PREP2 <TELL " " MATCHING-WORD .PREP2 ,PS?PREPOSITION 0>)>
-               <TELL " object">)>
+               <COND (<SYN-OBJ2-SPECIAL? .PTR> <TELL " topic">)
+                     (ELSE <TELL " object">)>)>
         <TELL " (" N .NOBJ ", " N .PREP1 ", " N .PREP2 ") = " N .ACT>>>
 
 ;"Scores how well the parsed command matches a syntax line.
@@ -1802,7 +1940,7 @@ Returns:
 <ROUTINE MATCH-SYNTAX-LINE? (PTR "AUX" NOBJ PREP1 PREP2 R BONUS F1 O1 F2 O2)
     <TRACE 2 "[attempting syntax line at " N .PTR ": " SYNTAX-LINE .PTR "]" CR>
     <TRACE-IN>
-    <SET NOBJ <GETB .PTR ,SYN-NOBJ>>
+    <SET NOBJ <SYN-NOBJ-COUNT .PTR>>
     <SET PREP1 <GETB .PTR ,SYN-PREP1>>
     <SET PREP2 <GETB .PTR ,SYN-PREP2>>
     <COND ;"If the object count and prepositions are all as expected,
@@ -1860,18 +1998,27 @@ Returns:
            <SET R <- .R 10>>)>
     ;"Trial-match any provided noun phrases against this syntax line to avoid
       choosing a line that can't possibly match the player's words."
-    <COND (<AND <G=? ,P-NOBJ 1> <G=? .NOBJ 1>>
+    <COND (<AND <G=? ,P-NOBJ 1>
+                <G=? .NOBJ 1>
+                <NOT <AND <SYN-OBJ1-SPECIAL? .PTR>
+                          <0? <GETB .PTR ,SYN-FIND1>>
+                          <0? <GETB .PTR ,SYN-OPTS1>>>>>
            <SET F1 <GETB .PTR ,SYN-FIND1>>
            <SET O1 <GETB .PTR ,SYN-OPTS1>>
            <SET BONUS <TRIAL-MATCH-NOUN-PHRASE ,P-NP-DOBJ .F1 .O1>>
            <TRACE 3 "[" IF <G? .BONUS 0> !\+ N .BONUS " from trial PRSO match]" CR>
            <SET R <+ .R .BONUS>>)>
-    <COND (<AND <G=? ,P-NOBJ 2> <G=? .NOBJ 2>>
+    <COND (<AND <G=? ,P-NOBJ 2>
+                <G=? .NOBJ 2>
+                <NOT <AND <SYN-OBJ2-SPECIAL? .PTR>
+                          <0? <GETB .PTR ,SYN-FIND2>>
+                          <0? <GETB .PTR ,SYN-OPTS2>>>>>
            <SET F2 <GETB .PTR ,SYN-FIND2>>
            <SET O2 <GETB .PTR ,SYN-OPTS2>>
            <SET BONUS <TRIAL-MATCH-NOUN-PHRASE ,P-NP-IOBJ .F2 .O2>>
            <TRACE 3 "[" IF <G? .BONUS 0> !\+ N .BONUS " from trial PRSI match]" CR>
            <SET R <+ .R .BONUS>>)>
+
     <TRACE-OUT>
     .R>
 
@@ -1903,7 +2050,7 @@ Sets:
 Returns:
   True if all required objects were found, or false if not."
 <ROUTINE FIND-OBJECTS (KEEP "AUX" F)
-    <TRACE 2 "[FIND-OBJECTS: KEEP=" N .KEEP ", syntax expects " N <GETB ,P-SYNTAX ,SYN-NOBJ> ", we have " N ,P-NOBJ "]" CR>
+    <TRACE 2 "[FIND-OBJECTS: KEEP=" N .KEEP ", syntax expects " N <SYN-NOBJ-COUNT ,P-SYNTAX> ", we have " N ,P-NOBJ "]" CR>
     <TRACE-IN>
     <COND (<MATCH-PRSI-FIRST?>
            <SET F <AND <FIND-PRSI .KEEP> <FIND-PRSO .KEEP>>>)
@@ -1915,8 +2062,33 @@ Returns:
 <DEFMAC MATCH-PRSI-FIRST? ()
     '<VERB? TAKE-FROM>>
 
-<ROUTINE FIND-PRSO (KEEP "AUX" F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
+"Captures the word span for a TOPIC slot (slot 1=PRSO, 2=PRSI)."
+<ROUTINE SET-TOPIC-SPAN (SLOT "AUX" START END)
+    <SET START 0>
+    <SET END <OR ,P-CMD-END-WN ,P-LEN>>
+    <COND (<==? .SLOT 1>
+           <COND (<GETB ,P-SYNTAX ,SYN-PREP1> <SET START <+ ,P-P1-WN 1>>)
+                 (ELSE <SET START ,P-NP1-WN>)>
+           <COND (<AND ,P-P2-WN <G? ,P-P2-WN 0>> <SET END <- ,P-P2-WN 1>>)
+                 (<AND ,P-NP2-WN <G? ,P-NP2-WN 0>> <SET END <- ,P-NP2-WN 1>>)>)
+          (ELSE
+           <COND (<GETB ,P-SYNTAX ,SYN-PREP2> <SET START <+ ,P-P2-WN 1>>)
+                 (ELSE <SET START ,P-NP2-WN>)>)>
+    <COND (<0? .START> <SET START <+ ,P-V-WORDN 1>>)>
+    <SETG P-TOPIC-SLOT .SLOT>
+    <SETG P-TOPIC-START .START>
+    <SETG P-TOPIC-END .END>
+    <RTRUE>>
+
+<ROUTINE FIND-PRSO (KEEP "AUX" F O (SNOBJ <SYN-NOBJ-COUNT ,P-SYNTAX>))
     ;"Direct object (PRSO)"
+    <COND (<AND <SYN-OBJ1-SPECIAL? ,P-SYNTAX>
+            <0? <GETB ,P-SYNTAX ,SYN-FIND1>>
+            <0? <GETB ,P-SYNTAX ,SYN-OPTS1>>>
+       <TRACE 3 "[capturing TOPIC as PRSO]" CR>
+       <SET-TOPIC-SPAN 1>
+       <SETG PRSO <>>
+       <RTRUE>)>
     <SET O <GETB ,P-SYNTAX ,SYN-OPTS1>>
     <COND (<L? .SNOBJ 1> <SETG PRSO <>>)
           (<L? .KEEP 1>
@@ -1951,8 +2123,15 @@ Returns:
           <RFALSE>)>
     <RTRUE>>
 
-<ROUTINE FIND-PRSI (KEEP "AUX" F O (SNOBJ <GETB ,P-SYNTAX ,SYN-NOBJ>))
+<ROUTINE FIND-PRSI (KEEP "AUX" F O (SNOBJ <SYN-NOBJ-COUNT ,P-SYNTAX>))
     ;"Indirect object (PRSI)"
+    <COND (<AND <SYN-OBJ2-SPECIAL? ,P-SYNTAX>
+                <0? <GETB ,P-SYNTAX ,SYN-FIND2>>
+                <0? <GETB ,P-SYNTAX ,SYN-OPTS2>>>
+           <TRACE 3 "[capturing TOPIC as PRSI]" CR>
+           <SET-TOPIC-SPAN 2>
+           <SETG PRSI <>>
+           <RTRUE>)>
     <SET O <GETB ,P-SYNTAX ,SYN-OPTS2>>
     <COND (<L? .SNOBJ 2>
            <SETG PRSI <>>)
@@ -1988,7 +2167,7 @@ Returns:
 
 <DEFAULT-DEFINITION WHAT-DO-YOU-WANT
     <ROUTINE WHAT-DO-YOU-WANT ("AUX" SN SP1 SP2 F)
-        <SET SN <GETB ,P-SYNTAX ,SYN-NOBJ>>
+        <SET SN <SYN-NOBJ-COUNT ,P-SYNTAX>>
         <SET SP1 <GETB ,P-SYNTAX ,SYN-PREP1>>
         <SET SP2 <GETB ,P-SYNTAX ,SYN-PREP2>>
         ;"TODO: use LONG-WORDS table for preposition words"

@@ -25,6 +25,11 @@ and this project adheres to
   room's `LOCAL-GLOBALS` are included.) For example:
   `<SYNTAX FOLLOW OBJECT (EVERYWHERE) = V-FOLLOW>`.
 
+- Added a way for players to enter an arbitrary series of words as part of a
+  command: replace `OBJECT` in a syntax definition with `TOPIC`. For an example
+  of how to use it, see the teleportation system in `advent.zil`, which uses
+  topics to parse room names.
+
 ### Changed
 
 - The parser now takes the syntax flags (search flags, `HAVE`/`TAKE`, and

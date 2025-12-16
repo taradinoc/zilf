@@ -312,6 +312,8 @@ namespace Zilf.Diagnostics
         public const int _0_Unrecognized_Language_1 = 437;
         [Error("{0}: unrecognized part of speech: {1}")]
         public const int _0_Unrecognized_Part_Of_Speech_1 = 438;
+        [Error("TOPIC in syntax definition must not specify FIND or scope flags")]
+        public const int TOPIC_In_Syntax_Definition_Must_Not_Specify_FIND_Or_Scope_Flags = 439;
 
         // Modularity (package system, definitions sections) - 0500
 
