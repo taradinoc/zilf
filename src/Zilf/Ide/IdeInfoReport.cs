@@ -95,7 +95,7 @@ namespace Zilf.Ide
             var versionQueryNames = new JsonArray();
             void AddVersionQueryNames(bool active, params string[] names)
             {
-                versionQueryNames.Add(new JsonObject
+                versionQueryNames.Add((JsonNode)new JsonObject
                 {
                     ["names"] = new JsonArray(names.Select(n => (JsonNode)n).ToArray()),
                     ["active"] = active
@@ -372,7 +372,7 @@ namespace Zilf.Ide
                         break;
                 }
 
-                arr.Add(obj);
+                arr.Add((JsonNode)obj);
             }
 
             return arr;
@@ -396,7 +396,7 @@ namespace Zilf.Ide
                 if ((parts & part) == 0)
                     continue;
 
-                arr.Add(new JsonObject
+                arr.Add((JsonNode)new JsonObject
                 {
                     ["part"] = part.ToString(),
                     ["origin"] = Origin(getDefinition(part))
