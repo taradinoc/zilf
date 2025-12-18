@@ -172,4 +172,8 @@
     <CHECK <IN? ,PLAYER ,HALLWAY>>
     <CHECK <IN? ,ROBOT ,STARTROOM>>>
 
+<TEST-CASE ("Bypassing HAVE/TAKE check")
+    <COMMAND [ROBOT \, GIVE ME THE CAT]>
+    <EXPECT "The robot doesn't respond.|">>
+
 <TEST-GO ,STARTROOM>

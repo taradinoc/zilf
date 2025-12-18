@@ -2142,7 +2142,7 @@ Returns:
           <COND (<NOT ,PRSO> <RFALSE>)>)>
     <COND (<AND ,PRSO
                 <NOT <OR ,PRSO-DIR
-                        <AND <MANY-CHECK ,PRSO .O <>>
+                         <AND <MANY-CHECK ,PRSO .O <>>
                               <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>>>>>
           <RFALSE>)>
     <RTRUE>>
@@ -2328,13 +2328,14 @@ Returns:
 ;"The game can override these to change the precise conditions for TAKE and HAVE."
 <DEFAULT-DEFINITION SHOULD-IMPLICIT-TAKE?
     <ROUTINE SHOULD-IMPLICIT-TAKE? (OBJ)
-        <T? <AND <NOT <IN? .OBJ ,WINNER>>
+        <T? <AND <NOT <ORDERING?>>
+                 <NOT <IN? .OBJ ,WINNER>>
                  <FSET? .OBJ ,TAKEBIT>
                  <NOT <FSET? .OBJ ,TRYTAKEBIT>>>>>>
 
 <DEFAULT-DEFINITION FAILS-HAVE-CHECK?
     <ROUTINE FAILS-HAVE-CHECK? (OBJ)
-        <NOT <HELD? .OBJ>>>>
+        <NOT <OR <ORDERING?> <HELD? .OBJ>>>>>
 
 ;"Checks whether the objects listed in a table, which were part of a previous
   command, are still available to the player, and prints an error message if not.
