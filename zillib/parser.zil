@@ -396,9 +396,9 @@ Args:
     (OOPS-O-REASON FIX)     ;"Value of P-O-REASON before parsing the failed command"
     (OOPS-WINNER <OR OBJECT FALSE>)
                             ;"Value of WINNER before parsing the failed command"
-    (OOPS-WN FIX 'OFFSET 4 'NTH GETB 'PUT PUTB)
+    (OOPS-WN FIX 'OFFSET %<* ,WORD-SIZE 2> 'NTH GETB 'PUT PUTB)
                             ;"Word number in EDIT buffer to be corrected by OOPS"
-    (OOPS-CONT FIX 'OFFSET 5 'NTH GETB 'PUT PUTB)
+    (OOPS-CONT FIX 'OFFSET %<+ <* ,WORD-SIZE 2> 1> 'NTH GETB 'PUT PUTB)
                             ;"Value of P-CONT before parsing the failed command">
 
 <CONSTANT P-OOPS-DATA
