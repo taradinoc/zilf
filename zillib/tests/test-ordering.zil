@@ -61,6 +61,9 @@
            <COND (<AND <VERB? TAKE> <FSET? ,PRSO ,TAKEBIT>>
                   <COND (<IN? ,PRSO ,ROBOT>
                          <TELL CT ,ROBOT " already has " T ,PRSO "." CR>)
+                        (<HELD? ,PRSO ,PLAYER>
+                         <MOVE ,PRSO ,ROBOT>
+                         <TELL CT ,ROBOT " takes " T ,PRSO " from you." CR>)
                         (ELSE
                          <MOVE ,PRSO ,ROBOT>
                          <TELL CT ,ROBOT " picks up " T ,PRSO "." CR>)>)
@@ -175,5 +178,10 @@
 <TEST-CASE ("Bypassing HAVE/TAKE check")
     <COMMAND [ROBOT \, GIVE ME THE CAT]>
     <EXPECT "The robot doesn't respond.|">>
+
+<TEST-CASE ("Referring to the player's possessions")
+    <MOVE ,BLUE-CUBE ,WINNER>
+    <COMMAND [ROBOT \, TAKE THE BLUE CUBE]>
+    <EXPECT "The robot takes the blue cube from you.|">>
 
 <TEST-GO ,STARTROOM>

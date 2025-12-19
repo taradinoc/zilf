@@ -4,6 +4,22 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to
 [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The player object is now called `PLAYER-OBJECT`, and `PLAYER` is a global
+  variable with `PLAYER-OBJECT` as its default value. This obviates the need
+  to replace `ORDERING?` and `RESET-WINNER` in order to have multiple
+  player characters. Note: `PLAYER` (the character being directly controlled by
+  the human at the keyboard) is still distinct from `WINNER` (the character
+  performing the current action).
+
+### Fixed
+
+- Fixed NPCs being unable to respond to orders involving the player's
+  possessions. Anything held by `PLAYER` is now in scope as long as `PLAYER` is.
+
 ## [1.1] (December 16, 2025)
 
 ### Added

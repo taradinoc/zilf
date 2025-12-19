@@ -2455,13 +2455,14 @@ Args:
 Returns:
   True if the object's contents are in scope, otherwise false."
 <ROUTINE SEE-INSIDE? (OBJ)
-    ;"The T? should be unnecessary, but ZILF generates ugly code without it"
-    <T? <OR ;"We can always see the contents of surfaces"
-            <FSET? .OBJ ,SURFACEBIT>
-            ;"We can see inside containers if they're open or transparent"
-            <AND <FSET? .OBJ ,CONTBIT>
-                 <OR <FSET? .OBJ ,OPENBIT>
-                     <FSET? .OBJ ,TRANSBIT>>>>>>
+    <OR ;"The player's possessions are always in scope"
+        <==? .OBJ ,PLAYER>
+        ;"We can always see the contents of surfaces"
+        <FSET? .OBJ ,SURFACEBIT>
+        ;"We can see inside containers if they're open or transparent"
+        <AND <FSET? .OBJ ,CONTBIT>
+             <OR <FSET? .OBJ ,OPENBIT>
+                 <FSET? .OBJ ,TRANSBIT>>>>>
 
 ;"Attempts to find one or more objects in scope, given a noun phrase that
 describes them and a set of search options.
@@ -3570,7 +3571,7 @@ or reveal a light source."
 
 <OBJECT LOCAL-GLOBALS>
 
-<OBJECT PLAYER
+<OBJECT PLAYER-OBJECT
     (DESC "you")
     (SYNONYM ME MYSELF)
     (FLAGS NARTICLEBIT PLURALBIT PERSONBIT TOUCHBIT)
@@ -3583,3 +3584,5 @@ or reveal a light source."
            <RFALSE>)
           (<VERB? EXAMINE>
            <TELL <LIBRARY-MESSAGE EXAMINE PLAYER> CR>)>>
+
+<GLOBAL PLAYER PLAYER-OBJECT>
