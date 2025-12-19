@@ -8,12 +8,11 @@ and this project adheres to
 
 ### Changed
 
-- The player object is now called `PLAYER-OBJECT`, and `PLAYER` is a global
-  variable with `PLAYER-OBJECT` as its default value. This obviates the need
-  to replace `ORDERING?` and `RESET-WINNER` in order to have multiple
-  player characters. Note: `PLAYER` (the character being directly controlled by
-  the human at the keyboard) is still distinct from `WINNER` (the character
-  performing the current action).
+- Added a global variable `CURRENT-PLAYER` with `PLAYER` as its default value.
+  This obviates the need to replace `ORDERING?` and `RESET-WINNER` in order to
+  have multiple player characters. Note: `CURRENT-PLAYER` (the character being
+  controlled by the human at the keyboard) is still distinct from `WINNER` (the
+  character performing an action).
 
 ### Fixed
 

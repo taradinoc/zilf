@@ -1161,10 +1161,10 @@ Sets:
 
 <DEFAULT-DEFINITION RESET-WINNER
     <DEFMAC RESET-WINNER ()
-        '<SETG WINNER ,PLAYER>>
+        '<SETG WINNER ,CURRENT-PLAYER>>
 
     <DEFMAC ORDERING? ()
-        '<N=? ,WINNER ,PLAYER>>>
+        '<N=? ,WINNER ,CURRENT-PLAYER>>>
 
 ;"Stores WN and P-CONT in P-OOPS-WN/CONT, and copies LEXBUF/READBUF to EDIT-LEXBUF/READBUF if needed."
 <ROUTINE STORE-OOPS (WN)
@@ -2455,8 +2455,8 @@ Args:
 Returns:
   True if the object's contents are in scope, otherwise false."
 <ROUTINE SEE-INSIDE? (OBJ)
-    <OR ;"The player's possessions are always in scope"
-        <==? .OBJ ,PLAYER>
+    <OR ;"The player's possessions are in scope while ordering an NPC"
+        <AND <==? .OBJ ,CURRENT-PLAYER> <ORDERING?>>
         ;"We can always see the contents of surfaces"
         <FSET? .OBJ ,SURFACEBIT>
         ;"We can see inside containers if they're open or transparent"
@@ -3571,7 +3571,7 @@ or reveal a light source."
 
 <OBJECT LOCAL-GLOBALS>
 
-<OBJECT PLAYER-OBJECT
+<OBJECT PLAYER
     (DESC "you")
     (SYNONYM ME MYSELF)
     (FLAGS NARTICLEBIT PLURALBIT PERSONBIT TOUCHBIT)
@@ -3585,4 +3585,4 @@ or reveal a light source."
           (<VERB? EXAMINE>
            <TELL <LIBRARY-MESSAGE EXAMINE PLAYER> CR>)>>
 
-<GLOBAL PLAYER PLAYER-OBJECT>
+<GLOBAL CURRENT-PLAYER PLAYER>
