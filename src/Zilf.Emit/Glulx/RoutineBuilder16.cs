@@ -59,6 +59,9 @@ namespace Zilf.Emit.Glulx
                 case BinaryOp.GetWord when PotentialHeaderAccess(left):
                     EmitBinary16(nameof(RuntimeLib16.getword16), left, right, result);
                     return;
+                case BinaryOp.GetWord:
+                    Emit($"aloads {FormatLoad(left)} {FormatLoad(right)} -> {FormatStore(result)}");
+                    return;
                 case BinaryOp.GetByte when PotentialHeaderAccess(left):
                     EmitBinary16(nameof(RuntimeLib16.getbyte16), left, right, result);
                     return;
@@ -195,12 +198,15 @@ namespace Zilf.Emit.Glulx
 
         protected override void WriteOptionalGlkSetup(PeepholeBuffer<GlulxCode> peep)
         {
-            GlulxCode gc;
-            gc.Text = $"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib16V3.init_status_line))}";
-            gc.Opcode = "callf";
-            gc.OriginalType = PeepholeLineType.Plain;
+            if (gameBuilder.Options is GlulxGameOptions { ZCompatibilityMode: true, ZMachineVersion: 3 })
+            {
+                GlulxCode gc;
+                gc.Text = $"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib16V3.init_status_line))}";
+                gc.Opcode = "callf";
+                gc.OriginalType = PeepholeLineType.Plain;
 
-            peep.AddLine(gc, null, PeepholeLineType.Plain);
+                peep.AddLine(gc, null, PeepholeLineType.Plain);
+            }
         }
 
         protected override string FormatDirectCall(IOperand routine)

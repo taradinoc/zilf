@@ -442,7 +442,7 @@ namespace Zilf.Emit.Glulx
     {
         #region V3 Objects
 
-        // TODO: replace gl16_load_field/gl16_store_field with aloadb/astoreb
+        // TODO: replace gl16_load_field/gl16_store_field with aloadb/astoreb? (it's overridden for V4+)
         [RuntimeFunc(nameof(object_defines))]
         public const string gl16_load_field = @"
             function
@@ -815,7 +815,7 @@ namespace Zilf.Emit.Glulx
             callfi convert_terminating_char_hook tchar -> tchar
             return tchar
         .got_arrange_event:
-            callf _rt_update_status_line
+            callf update_status_line_hook
             jump .select
         .read_from_stream:
             aloadb textbuf 0 -> push    ; size of buffer
@@ -1204,11 +1204,15 @@ namespace Zilf.Emit.Glulx
             add pt 1 -> pt
             add pt len -> pt
         .scan:
+            ; Get property number/length header
             aloadb pt 0 -> hdr
             jz hdr -> rfalse
+            ; Get property number
             bitand hdr 0x3F -> pnum
-            bitand hdr 0xC0 -> len
-            jeq len 0xC0 -> .ext
+            ; Is the top header bit set?
+            bitand hdr 0x80 -> len
+            jnz len -> .ext
+            ; No, get length from the header byte
             copy hdr -> len
             div len 64 -> len
             add len 1 -> len
@@ -1219,8 +1223,12 @@ namespace Zilf.Emit.Glulx
         .found:
             return data
         .ext:
+            ; Top bit of header is set, get length from the next byte
             aloadb pt 1 -> len
-            jz len -> copy 64 -> len
+            bitand len 0x3F -> len
+            jnz len -> .not_64
+            copy 64 -> len
+        .not_64:
             add pt 2 -> data
             jeq pnum prop -> .found
             add data len -> pt
@@ -1236,17 +1244,22 @@ namespace Zilf.Emit.Glulx
             local pnum
             local len
             local data
+            ; Get property table
             callfi _rt_gl16_get_proptable obj -> pt
             jz pt -> .default
             aloadb pt 0 -> len
             add pt 1 -> pt
             add pt len -> pt
         .scan:
+            ; Get property number/length header
             aloadb pt 0 -> hdr
             jz hdr -> .default
+            ; Get property number
             bitand hdr 0x3F -> pnum
-            bitand hdr 0xC0 -> len
-            jeq len 0xC0 -> .ext
+            ; Is the top header bit set?
+            bitand hdr 0x80 -> len
+            jnz len -> .ext
+            ; No, get length from the header byte
             copy hdr -> len
             div len 64 -> len
             add len 1 -> len
@@ -1255,8 +1268,12 @@ namespace Zilf.Emit.Glulx
             add data len -> pt
             jump .scan
         .ext:
+            ; Top bit of header is set, get length from the next byte
             aloadb pt 1 -> len
-            jz len -> copy 64 -> len
+            bitand len 0x3F -> len
+            jnz len -> .not_64
+            copy 64 -> len
+        .not_64:
             add pt 2 -> data
             jeq pnum prop -> .found
             add data len -> pt
@@ -1286,18 +1303,17 @@ namespace Zilf.Emit.Glulx
             local hdr
             local len
             jz addr -> rfalse
-            sub addr 2 -> hdr
-            aloadb hdr 0 -> hdr
-            bitand hdr 0xC0 -> len
-            jeq len 0xC0 -> .ext
-            add addr -1 -> hdr
-            aloadb hdr 0 -> hdr
+            aloadb addr -1 -> hdr
+            bitand hdr 0x80 -> len
+            jnz len -> .ext
             div hdr 64 -> len
             add len 1 -> len
             return len
         .ext:
-            aloadb addr -1 -> len
-            jz len -> copy 64 -> len
+            bitand hdr 0x3F -> len
+            jnz len -> .not_64
+	        copy 64 -> len
+        .not_64:
             return len";
 
         [RuntimeFunc(nameof(object_defines), nameof(gl16_get_proptable))]
@@ -1317,11 +1333,15 @@ namespace Zilf.Emit.Glulx
             add pt 1 -> pt
             add pt len -> pt
         .scan:
+            ; Get property number/length header
             aloadb pt 0 -> hdr
             jz hdr -> rfalse
+            ; Get property number
             bitand hdr 0x3F -> pnum
-            bitand hdr 0xC0 -> len
-            jeq len 0xC0 -> .ext
+            ; Is the top header bit set?
+            bitand hdr 0x80 -> len
+            jnz len -> .ext
+            ; No, get length from the header byte
             copy hdr -> len
             div len 64 -> len
             add len 1 -> len
@@ -1330,8 +1350,12 @@ namespace Zilf.Emit.Glulx
             add data len -> pt
             jump .scan
         .ext:
+            ; Top bit of header is set, get length from the next byte
             aloadb pt 1 -> len
-            jz len -> copy 64 -> len
+            bitand len 0x3F -> len
+            jnz len -> .not_64
+            copy 64 -> len
+        .not_64:
             add pt 2 -> data
             jeq pnum prop -> .found
             add data len -> pt
@@ -1362,30 +1386,37 @@ namespace Zilf.Emit.Glulx
             add pt len -> pt
             jz prop -> .first
         .scan:
+            ; Get property number/length header
             aloadb pt 0 -> hdr
             jz hdr -> rfalse
+            ; Get property number
             bitand hdr 0x3F -> pnum
-            bitand hdr 0xC0 -> len
-            jeq len 0xC0 -> .ext
+            ; Is the top header bit set?
+            bitand hdr 0x80 -> len
+            jnz len -> .ext
+            ; No, get length from the header byte
             copy hdr -> len
             div len 64 -> len
             add len 1 -> len
             add pt 1 -> data
-            jeq pnum prop -> .after_match
+            jeq pnum prop -> .found
             add data len -> pt
             jump .scan
         .ext:
+            ; Top bit of header is set, get length from the next byte
             aloadb pt 1 -> len
-            jz len -> copy 64 -> len
+            bitand len 0x3F -> len
+            jnz len -> .not_64
+            copy 64 -> len
+        .not_64:
             add pt 2 -> data
-            jeq pnum prop -> .after_match
+            jeq pnum prop -> .found
             add data len -> pt
             jump .scan
-        .after_match:
+        .found:
             add data len -> pt
         .first:
             aloadb pt 0 -> hdr
-            jz hdr -> rfalse
             bitand hdr 0x3F -> pnum
             return pnum";
 
@@ -1396,7 +1427,7 @@ namespace Zilf.Emit.Glulx
         [RuntimeFunc(nameof(glk_defines), nameof(tokenize_line), nameof(check_call))]
         public new const string read_line = RuntimeLib16V3.read_line_inner;
 
-        [RuntimeFunc(nameof(glk_defines), nameof(vocab_defines))]
+        [RuntimeFunc(nameof(glk_defines), nameof(vocab_defines), nameof(strlen))]
         public new const string tokenize_line = RuntimeLib16V3.tokenize_line;
 
         #endregion

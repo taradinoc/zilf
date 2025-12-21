@@ -843,6 +843,10 @@ namespace Zilf.Emit.Glulx
             {
                 writer.WriteLine(INDENT + $"callfi {RuntimeLib.Use(nameof(RuntimeLib.check_call))} {updateStatusLineHook}");
             }
+            else if (options.ZCompatibilityMode == true && options.ZMachineVersion == 3)
+            {
+                writer.WriteLine(INDENT + $"callf {RuntimeLib.Use(nameof(RuntimeLib16V3.update_status_line))}");
+            }
 
             writer.WriteLine(INDENT + "return");
 
