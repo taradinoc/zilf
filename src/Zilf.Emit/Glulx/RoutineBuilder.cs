@@ -806,7 +806,7 @@ namespace Zilf.Emit.Glulx
             throw new NotSupportedException();
         }
 
-        public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form, IVariable result)
+        public virtual void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form, IVariable result)
         {
             // Use Glulx's binarysearch or linearsearch opcode
             form ??= gameBuilder.MakeOperand(0x84);     // word key, 4 byte structs

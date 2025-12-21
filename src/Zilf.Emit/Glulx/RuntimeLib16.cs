@@ -431,6 +431,25 @@ namespace Zilf.Emit.Glulx
             sub argc 1 -> argc
             tailcall func argc";
 
+        [RuntimeFunc]
+        public new const string scan_table = @"
+            function
+            local value
+            local table
+            local length
+            local form
+            local keysize
+            local structsize
+            ; form has the $80 bit set for words, clear for bytes
+            copy 2 -> keysize
+            bitand form 0x80 -> push
+            jnz pop -> .size_done
+            copy 1 -> keysize
+        .size_done:
+            bitand form 0x7F -> structsize
+            linearsearch value keysize table structsize length 0 0 -> push
+            return pop";
+
         #endregion
     }
 

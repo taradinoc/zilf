@@ -17,7 +17,6 @@
  */
 
 using System;
-using System.Security.AccessControl;
 using System.Text;
 
 namespace Zilf.Emit.Glulx
@@ -231,6 +230,12 @@ namespace Zilf.Emit.Glulx
             }
 
             return base.TryEmitLowCoreGetTable(field, resultStorage);
+        }
+
+        public override void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form, IVariable result)
+        {
+            form ??= gameBuilder.MakeOperand(0x82);     // word key, 2 byte structs
+            base.EmitScanTable(value, table, length, form, result);
         }
     }
 }
