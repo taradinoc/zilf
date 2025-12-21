@@ -24,7 +24,7 @@ using System.Text;
 namespace Zilf.Emit.Glulx
 {
     class RoutineBuilder : ConstantOperandBase, IRoutineBuilder, INonzeroConstantOperand,
-        IProvideLowCoreEmulation, IProvideNoValuePredEmit
+        IProvideLowCoreEmulation, IProvideNoValuePredEmit, IProvideGlkFromStackEmit
     {
         const string INDENT = "\t";
 
@@ -1059,6 +1059,11 @@ namespace Zilf.Emit.Glulx
         protected virtual void WriteOptionalGlkSetup(PeepholeBuffer<GlulxCode> peep)
         {
             // nada
+        }
+
+        public virtual void EmitGlkFromStack(IOperand operation, int argCount, IVariable? resultStorage)
+        {
+            Emit($"glk {FormatLoad(operation)} {argCount} -> {FormatStore(resultStorage)}", "glk");
         }
     }
 }

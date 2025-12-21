@@ -21,8 +21,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Net;
-using System.Runtime.InteropServices;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -2066,7 +2064,7 @@ namespace Zilf.Compiler.Builtins
 
         #endregion
 
-        #region Sound Opcodes
+        #region Multimedia Opcodes
 
         /// <summary>
         /// Controls a sound effect.
@@ -2096,6 +2094,58 @@ namespace Zilf.Compiler.Builtins
              [Routine] IOperand? routine = null)
         {
             c.rb.EmitPlaySound(number, effect, volume, routine);
+        }
+
+        [Builtin("GLK", HasSideEffect = true, Platform = BuiltinPlatform.GlulxOnly)]
+        public static IOperand GlkValueOp(ValueCall c, ZilObject operation, params ZilObject[] args)
+        {
+            if (c.rb is IProvideGlkFromStackEmit emitter)
+            {
+                var constantOperation = c.cc.CompileConstant(operation);
+
+                if (constantOperation is not null)
+                {
+                    using var operands = c.cc.CompileOperandsToStack(c.rb, c.form.SourceLine, args);
+                    emitter.EmitGlkFromStack(constantOperation, args.Length, c.resultStorage);
+                }
+                else
+                {
+                    // make sure the operation is evaluated first and pushed last
+                    using var operands = c.cc.CompileOperandsToStack(c.rb, c.form.SourceLine, [operation, ..args]);
+                    emitter.EmitGlkFromStack(operands[0], args.Length, c.resultStorage);
+                }
+
+                return c.resultStorage;
+            }
+            else
+            {
+                throw new NotSupportedException("GLK is not supported for this target");
+            }
+        }
+
+        [Builtin("GLK", HasSideEffect = true, Platform = BuiltinPlatform.GlulxOnly)]
+        public static void GlkVoidOp(VoidCall c, ZilObject operation, params ZilObject[] args)
+        {
+            if (c.rb is IProvideGlkFromStackEmit emitter)
+            {
+                var constantOperation = c.cc.CompileConstant(operation);
+
+                if (constantOperation is not null)
+                {
+                    using var operands = c.cc.CompileOperandsToStack(c.rb, c.form.SourceLine, args);
+                    emitter.EmitGlkFromStack(constantOperation, args.Length);
+                }
+                else
+                {
+                    // make sure the operation is evaluated first and pushed last
+                    using var operands = c.cc.CompileOperandsToStack(c.rb, c.form.SourceLine, [operation, .. args]);
+                    emitter.EmitGlkFromStack(operands[0], args.Length);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException("GLK is not supported for this target");
+            }
         }
 
         #endregion

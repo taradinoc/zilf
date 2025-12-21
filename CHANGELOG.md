@@ -6,6 +6,11 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Glulx games can now use the `GLK` builtin function to call Glk directly. This
+  is supported even for `--glulx16`, but 32-bit parameters may be tricky to use.
+
 ### Changed
 
 - Added a global variable `CURRENT-PLAYER` with `PLAYER` as its default value.

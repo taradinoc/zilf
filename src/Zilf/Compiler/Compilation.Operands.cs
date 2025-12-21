@@ -116,6 +116,99 @@ namespace Zilf.Compiler
             return new Operands(this, values, temps, tempAtom);
         }
 
+        /// <summary>
+        /// Compiles a series of expressions, leaving all results on the stack in such a way that they can be popped
+        /// left-to-right.
+        /// </summary>
+        /// <remarks>
+        /// Evaluation is performed in a way that preserves left-to-right ordering up to and including the last expression
+        /// that is detected to have side effects. The final stack order is such that the first expression's value is on
+        /// top of the stack.
+        /// </remarks>
+        /// <exception cref="CompilerError">Local variables are not allowed here, or an error occurred while compiling a subexpression.</exception>
+        public IOperands CompileOperandsToStack(IRoutineBuilder rb, ISourceLine src, params ZilObject[] exprs)
+        {
+            int length = exprs.Length;
+            var values = new IOperand[length];
+            var temps = new bool[length];
+            var tempAtom = ZilAtom.Parse("?TMP", Context);
+
+            for (int i = 0; i < length; i++)
+                values[i] = rb.Stack;
+
+            if (length == 0)
+                return new Operands(this, values, temps, tempAtom);
+
+            // Find the index of the last expr with side effects (or -1).
+            int marker = -1;
+            for (int i = length - 1; i >= 0; i--)
+            {
+                if (HasSideEffects(exprs[i]))
+                {
+                    marker = i;
+                    break;
+                }
+            }
+
+            // Values that must be preserved after being evaluated left-to-right.
+            var saved = new IOperand[marker + 1];
+
+            // Evaluate arguments up to and including the marker, left to right.
+            // Since we ultimately need to push these values in reverse order, we preserve each computed value
+            // somewhere safe (constant, unmodified variable, or temporary local).
+            for (int i = 0; i <= marker; i++)
+            {
+                var value = CompileConstant(exprs[i], AmbiguousConstantMode.Pessimistic);
+                if (value == null)
+                    value = CompileAsOperand(rb, exprs[i], src);
+
+                bool needTemp = value == rb.Stack;
+
+                if (!needTemp)
+                {
+                    if (exprs[i].IsLocalVariableRef())
+                    {
+                        needTemp = LocalIsLaterModified(exprs, i);
+                    }
+                    else if (exprs[i].IsGlobalVariableRef())
+                    {
+                        needTemp = GlobalCouldBeLaterModified(exprs, i);
+                    }
+                }
+
+                if (!needTemp)
+                {
+                    saved[i] = value;
+                }
+                else
+                {
+                    PushInnerLocal(rb, tempAtom, LocalBindingType.CompilerTemporary, src);
+                    var tempLocal = Locals[tempAtom].LocalBuilder;
+                    rb.EmitStore(tempLocal, value);
+                    temps[i] = true;
+                    saved[i] = tempLocal;
+                }
+            }
+
+            // Evaluate the remaining arguments (which have no detected side effects) right-to-left, pushing each result
+            // as we go. This produces the desired push order for the tail of the list.
+            for (int i = length - 1; i > marker; i--)
+            {
+                var value = CompileConstant(exprs[i], AmbiguousConstantMode.Pessimistic);
+                if (value == null)
+                    value = CompileAsOperand(rb, exprs[i], src);
+
+                if (value != rb.Stack)
+                    rb.EmitStore(rb.Stack, value);
+            }
+
+            // Push the preserved values in reverse, so expr[0] ends up on top of the stack.
+            for (int i = marker; i >= 0; i--)
+                rb.EmitStore(rb.Stack, saved[i]);
+
+            return new Operands(this, values, temps, tempAtom);
+        }
+
         [System.Diagnostics.Contracts.Pure]
         static bool LocalIsLaterModified(ZilObject[] exprs, int localIdx)
         {
