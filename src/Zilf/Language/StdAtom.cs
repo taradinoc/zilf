@@ -111,6 +111,7 @@ namespace Zilf.Language
         GET,
         [Atom("GET-CLASSIFICATION")]
         GET_CLASSIFICATION,
+        GLK,
         GLOBAL,
         [Atom("GLOBAL-VARS-TABLE")]
         GLOBAL_VARS_TABLE,

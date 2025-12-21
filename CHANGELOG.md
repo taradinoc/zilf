@@ -10,6 +10,8 @@ and this project adheres to
 
 - Glulx games can now use the `GLK` builtin function to call Glk directly. This
   is supported even for `--glulx16`, but 32-bit parameters may be tricky to use.
+  You can determine whether Glk is available (i.e., if either `--glulx` or
+  `--glulx16` are enabled) by checking the value of `,GLK` at compile time.
 
 ### Changed
 
