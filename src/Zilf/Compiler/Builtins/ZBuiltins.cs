@@ -553,6 +553,13 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
+        [Builtin("FONT", Data = BinaryOp.SetFont, MinVersion = 6, HasSideEffect = true, Summary = "Selects a font for the given window.")]
+        public static IOperand SetFontOp_V6(ValueCall c, IOperand font, IOperand window)
+        {
+            c.rb.EmitBinary(BinaryOp.SetFont, font, window, c.resultStorage);
+            return c.resultStorage;
+        }
+
         /// <summary>
         /// Computes the bitwise XOR of two numbers, where one operand must be the constant -1.
         /// </summary>

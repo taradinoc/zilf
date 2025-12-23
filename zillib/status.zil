@@ -52,26 +52,26 @@
     (5) for each section, call the appropriate PRINT- function
     (6) select the lower window and normal video"
     <SET SECTION-FORMS <MAPF ,LIST
-                            <FUNCTION (PROP "AUX" RSEC R J W F)
-                                <COND (<N==? <1 .PROP> SECTION> <MAPRET>)>
-                                <SET RSEC <RESOLVE-SECTION <REST .PROP>>>
-                                <SET R <RSEC-RTN .RSEC>>
-                                <SET J <RSEC-JUSTIFY .RSEC>>
-                                <SET W <RSEC-WIDTH .RSEC>>
-                                <COND (<==? .W *>
-                                       <SET W '.STAR-WIDTH>
-                                       <SET HAS-STAR? T>)
-                                      (ELSE <SET TOTAL-WIDTH <+ .TOTAL-WIDTH .W>>)>
-                                <SET F <COND (<==? .J LEFT>
-                                              `<PRINT-LEFT 1 .COL ~.W ~.R>)
-                                             (<==? .J CENTER>
-                                              <SET NEED-BUFFER? T>
-                                              `<PRINT-CENTER 1 .COL ~.W ~.R>)
-                                             (<==? .J RIGHT>
-                                              <SET NEED-BUFFER? T>
-                                              `<PRINT-RIGHT 1 .COL ~.W ~.R>)>>
-                                <MAPRET .F `<SET COL <+ .COL ~.W>>>>
-                            .PROPERTIES>>
+                             <FUNCTION (PROP "AUX" RSEC R J W F)
+                                 <COND (<N==? <1 .PROP> SECTION> <MAPRET>)>
+                                 <SET RSEC <RESOLVE-SECTION <REST .PROP>>>
+                                 <SET R <RSEC-RTN .RSEC>>
+                                 <SET J <RSEC-JUSTIFY .RSEC>>
+                                 <SET W <RSEC-WIDTH .RSEC>>
+                                 <COND (<==? .W *>
+                                        <SET W '.STAR-WIDTH>
+                                        <SET HAS-STAR? T>)
+                                       (ELSE <SET TOTAL-WIDTH <+ .TOTAL-WIDTH .W>>)>
+                                 <SET F <COND (<==? .J LEFT>
+                                               `<PRINT-LEFT 1 .COL ~.W ~.R>)
+                                              (<==? .J CENTER>
+                                               <SET NEED-BUFFER? T>
+                                               `<PRINT-CENTER 1 .COL ~.W ~.R>)
+                                              (<==? .J RIGHT>
+                                               <SET NEED-BUFFER? T>
+                                               `<PRINT-RIGHT 1 .COL ~.W ~.R>)>>
+                                 <MAPRET .F `<SET COL <+ .COL ~.W>>>>
+                             .PROPERTIES>>
     <COND (.HAS-STAR?
            <SET EXTRAS '(STAR-WIDTH)>
            <SET MEASURE-STAR `(<SET STAR-WIDTH <- <LOWCORE SCRH> ~.TOTAL-WIDTH>>)>)>
@@ -87,6 +87,16 @@
                ~!.SECTION-FORMS
                <SCREEN 0>
                <HLIGHT ,H-NORMAL>>>>
+
+<DEFMAC YZIP-FONT-WIDTH () '<GETB 0 39>>
+<DEFMAC YZIP-FONT-HEIGHT () '<GETB 0 38>>
+
+<VERSION?
+    (YZIP
+     <ROUTINE YZIP-CURSET (ROW COL)
+        <SET ROW <+ 1 <* <- .ROW 1> <YZIP-FONT-HEIGHT>>>>
+        <SET COL <+ 1 <* <- .COL 1> <YZIP-FONT-WIDTH>>>>
+        <CURSET .ROW .COL>>)>
 
 <DEFINE DEFINE-STATUS-LINE-SECTION-ROUTINE (PROPERTIES RTN "AUX" (CONTENT <>))
     #DECL ((PROPERTIES) <LIST [REST <LIST ATOM ANY>]>
@@ -119,9 +129,13 @@
     <CHTYPE [.RTN .WIDTH .JUSTIFY .CONTENT] RSEC>>
 
 <DEFMAC PRINT-LEFT ('ROW 'COL 'WIDTH 'CONTENT-RTN)
-    `<PROG ()
-        <CURSET ~.ROW ~.COL>
-        <APPLY ~.CONTENT-RTN>>>
+    <VERSION? (YZIP
+               `<PROG ()
+                    <YZIP-CURSET ~.ROW ~.COL>
+                    <APPLY ~.CONTENT-RTN>>)
+              (`<PROG ()
+                    <CURSET ~.ROW ~.COL>
+                    <APPLY ~.CONTENT-RTN>>)>>
 
 <ROUTINE PRINT-CENTER (ROW COL WIDTH CONTENT-RTN "AUX" CWID SLACK LPAD)
     <DIROUT 3 ,SL-CONTENT-BUFFER>
@@ -129,9 +143,12 @@
     <DIROUT -3>
     <SET CWID <GET ,SL-CONTENT-BUFFER 0>>
     <COND (<G? .CWID .WIDTH> <SET CWID .WIDTH>)>
-    <CURSET .ROW .COL>
+    <VERSION? (YZIP <YZIP-CURSET .ROW .COL>)
+              (ELSE <CURSET .ROW .COL>)>
     <SET SLACK <- .WIDTH .CWID>>
     <SET LPAD </ .SLACK 2>>
+    <VERSION? (YZIP <YZIP-CURSET .ROW <+ .COL .LPAD>>)
+              (ELSE <CURSET .ROW <+ .COL .LPAD>>)>
     <CURSET .ROW <+ .COL .LPAD>>
     <SET CWID <+ .CWID 1>>
     <DO (I 2 .CWID) <PRINTC <GETB ,SL-CONTENT-BUFFER .I>>>>
@@ -142,10 +159,12 @@
     <DIROUT -3>
     <SET CWID <GET ,SL-CONTENT-BUFFER 0>>
     <COND (<G? .CWID .WIDTH> <SET CWID .WIDTH>)>
-    <CURSET .ROW .COL>
+    <VERSION? (YZIP <YZIP-CURSET .ROW .COL>)
+              (ELSE <CURSET .ROW .COL>)>
     <SET SLACK <- .WIDTH .CWID>>
     ;<COND (.SLACK <DO (I 1 .LPAD) <PRINTC !\ >>)>
-    <CURSET .ROW <+ .COL .SLACK>>
+    <VERSION? (YZIP <YZIP-CURSET .ROW <+ .COL .SLACK>>)
+              (ELSE <CURSET .ROW <+ .COL .SLACK>>)>
     <SET CWID <+ .CWID 1>>
     <DO (I 2 .CWID) <PRINTC <GETB ,SL-CONTENT-BUFFER .I>>>>
 

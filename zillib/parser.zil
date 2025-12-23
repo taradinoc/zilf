@@ -3268,6 +3268,10 @@ Returns:
                 `<PROG ()
                     <SPLIT 1>
                     <CLEAR 1>
+                    <VERSION? (YZIP
+                               ;"Select fixed pitch font and turn off buffering"
+                               <FONT 4 1>
+                               <WINATTR 1 8 2>)>
                     <USE-STATUS-LINE ~.NAME>>>
 
             ;"Writes the location name, score, and turn count in the status line.

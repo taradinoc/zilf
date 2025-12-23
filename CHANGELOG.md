@@ -13,6 +13,8 @@ and this project adheres to
   You can determine whether Glk is available (i.e., if either `--glulx` or
   `--glulx16` are enabled) by checking the value of `,GLK` at compile time.
 
+- Implemented the two-argument form of `FONT` (for V6).
+
 ### Changed
 
 - Added a global variable `CURRENT-PLAYER` with `PLAYER` as its default value.
@@ -25,6 +27,8 @@ and this project adheres to
 
 - Fixed NPCs being unable to respond to orders involving the player's
   possessions. Anything held by `PLAYER` is now in scope as long as `PLAYER` is.
+
+- Fixed status line display for V6.
 
 ## [1.1] (December 16, 2025)
 

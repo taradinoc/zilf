@@ -454,6 +454,11 @@ namespace Zilf.Emit
         /// Scrolls window left by the number of pixels given by right.
         /// </summary>
         ScrollWindow,
+
+        /// <summary>
+        /// Selects a new font in the given window and returns the previous one.
+        /// </summary>
+        SetFont,
     }
 
     public enum UnaryOp

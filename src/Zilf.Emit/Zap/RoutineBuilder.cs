@@ -502,6 +502,7 @@ namespace Zilf.Emit.Zap
                 BinaryOp.FlushUserStack => "FSTACK",
                 BinaryOp.GetWindowProperty => "WINGET",
                 BinaryOp.ScrollWindow => "SCROLL",
+                BinaryOp.SetFont => "FONT",
                 _ => throw UnhandledCaseException.FromEnum(op, "binary operation")
             };
 
