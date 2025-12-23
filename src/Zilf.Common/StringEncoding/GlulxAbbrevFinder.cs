@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2025 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -18,17 +18,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Zilf.Common.StringEncoding
 {
-    public sealed class AbbrevFinder
+    public sealed class GlulxAbbrevFinder : IAbbrevFinder
     {
-        public readonly record struct Result(int Score, int Count, string Text);
-
         readonly List<string> allTexts = new();
-        readonly StringEncoder encoder = new();
 
         /// <summary>
         /// Adds some text to the accumulator.
@@ -59,7 +55,7 @@ namespace Zilf.Common.StringEncoding
         /// </summary>
         /// <param name="max">The maximum number of abbreviations to return.</param>
         /// <returns>A sequence of abbreviations, in descending order of overall savings.</returns>
-        public IEnumerable<Result> GetResults(int max)
+        public IEnumerable<AbbrevResult> GetResults(int max)
         {
 #if DEBUG_ABBREV
             Console.Error.WriteLine("Indexing {0} strings", allTexts.Count);
@@ -69,32 +65,26 @@ namespace Zilf.Common.StringEncoding
 #endif
 
             var isc = new IndexedStringCollection(allTexts);
-            var charsetMap = encoder.GetCharsetMap();
+
+            // Because Glulx uses Huffman coding, we can't precisely calculate
+            // the cost of a substring before all the strings are encoded.
+            // Instead, we estimate that Huffman coding will result in about 40%
+            // savings, and assume that every symbol (character or abbreviation)
+            // costs about 0.6 bytes.
 
             int CostFunction(ReadOnlySpan<char> s)
             {
-                int result = 0;
-
-                foreach (var c in s)
-                {
-                    result += charsetMap.GetValueOrDefault(c) switch
-                    {
-                        // characters in alphabet 0 cost one Z-char each
-                        0 => 1,
-                        // characters in alphabet 1 or 2 cost two Z-chars each
-                        1 or 2 => 2,
-                        // characters in no alphabet cost four Z-chars each
-                        _ => 4,
-                    };
-                }
-
-                return result;
+                return s.Length;
             }
 
             int EvaluationFunction(int cost, int count, ReadOnlySpan<char> word)
             {
-                var savings = cost - 2;
-                return (count - 1) * savings - 2;
+                const int abbrRefCost = 10;
+                const int abbrDefCost = 14;     // branch node + indirect node
+
+                int savingsPerOccurrence = cost - abbrRefCost;
+                int overhead = abbrDefCost + cost;
+                return savingsPerOccurrence * count - overhead;
             }
 
             while (max > 0)
@@ -130,7 +120,7 @@ namespace Zilf.Common.StringEncoding
                 });
 
                 foreach (var abbrev in indexedResults)
-                    yield return new Result(scores[abbrev], isc.CountOccurrences(abbrev), abbrev);
+                    yield return new AbbrevResult(scores[abbrev], isc.CountOccurrences(abbrev), abbrev);
 
                 foreach (var abbrev in indexedResults)
                     isc.Split(abbrev);

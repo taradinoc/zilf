@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2025 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -67,7 +67,7 @@ namespace Zapf
         public bool EncodedTextStarted;
         internal bool WritingAbbreviationString { get; set; }
 
-        public readonly AbbrevFinder AbbrevFinder;
+        public readonly ZAbbrevFinder AbbrevFinder;
 
         public readonly Dictionary<string, Symbol> LocalSymbols;
 
@@ -163,7 +163,7 @@ namespace Zapf
         public Context()
         {
             StringEncoder = new StringEncoder();
-            AbbrevFinder = new AbbrevFinder();
+            AbbrevFinder = new ZAbbrevFinder();
 
             LocalSymbols = new Dictionary<string, Symbol>(25);
             GlobalSymbols = new Dictionary<string, Symbol>(200);

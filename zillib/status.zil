@@ -133,7 +133,8 @@
                `<PROG ()
                     <YZIP-CURSET ~.ROW ~.COL>
                     <APPLY ~.CONTENT-RTN>>)
-              (`<PROG ()
+              (ELSE
+               `<PROG ()
                     <CURSET ~.ROW ~.COL>
                     <APPLY ~.CONTENT-RTN>>)>>
 

@@ -18,10 +18,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Zilf.Common.StringEncoding;
 
 namespace Zilf.Emit.Glulx
 {
@@ -84,6 +86,8 @@ namespace Zilf.Emit.Glulx
         protected StringWriter TextSegmentWriter => textWriter;
 
         readonly Stack<TextWriter> writerStack = new();
+
+        readonly GlulxAbbrevFinder? abbrevs = new();
 
         /// <exception cref="ArgumentException"><paramref name="gameOptions"/> is the wrong type for this target.</exception>
         public GameBuilder(IGlulxStreamFactory streamFactory, GlulxGameOptions? gameOptions = null, RuntimeLib? runtimeLib = null)
@@ -676,7 +680,7 @@ namespace Zilf.Emit.Glulx
             // hardware names and property tables
             foreach (var ob in objects.OfType<ObjectBuilder>())
             {
-                // abbrevs?.AddText(ob.DescriptiveName);
+                abbrevs?.AddText(ob.DescriptiveName);
                 writer.WriteLine();
                 writer.WriteLine("objdesc_{0}:", ob.SymbolicName);
                 writer.WriteLine(INDENT + "huffstr \"{0}\"", ob.DescriptiveName);
@@ -915,16 +919,168 @@ namespace Zilf.Emit.Glulx
 
         protected virtual void FinishStrings()
         {
+            List<AbbrevEntry> abbrevEntries = [];
+
+            if (abbrevs != null)
+            {
+                const int MAX_ABBREVS = 96;
+
+                // find abbreviations
+                foreach (var text in stringPool.Keys)
+                {
+                    abbrevs?.AddText(text);
+                }
+
+                writer.WriteLine();
+                writer.WriteLine(INDENT + "; Abbreviations");
+
+                Debug.Assert(abbrevs != null);
+
+                int i = 0;
+                foreach (var result in abbrevs.GetResults(MAX_ABBREVS))
+                {
+                    writer.WriteLine("ABBREV_{0}: huffstr \"{1}\"", i++, SanitizeString(result.Text));
+                    abbrevEntries.Add(new AbbrevEntry(result.Text, (byte)i));
+                }
+            }
+
             // strings
             writer.WriteLine();
             writer.WriteLine(INDENT + "; Strings");
 
             foreach (var (text, symbol) in stringPool.OrderBy(p => p.Key))
             {
-                // abbrevs?.AddText(text);
-                writer.WriteLine("{0}: huffstr \"{1}\"", symbol, SanitizeString(text));
+                var parts = AbbreviateString(text, abbrevEntries);
+                if (parts.Count == 0)
+                {
+                    writer.WriteLine("{0}: huffstr \"\"", symbol);
+                }
+                else if (parts.Count == 1 && parts[0] is StringCStrPart sp)
+                {
+                    writer.WriteLine("{0}: huffstr \"{1}\"", symbol, SanitizeString(sp.Text));
+                }
+                else
+                {
+                    writer.WriteLine("{0}: huffstr {{", symbol);
+                    foreach (var p in parts)
+                    {
+                        switch (p)
+                        {
+                            case StringCStrPart sp2:
+                                writer.WriteLine(INDENT + "\"{0}\"", SanitizeString(sp2.Text));
+                                break;
+                            case AbbrevCStrPart ap:
+                                writer.WriteLine(INDENT + "[ABBREV_{0}]\t; \"{1}\"", ap.Number, SanitizeString(abbrevEntries[ap.Number].Pattern.Text));
+                                break;
+                        }
+                    }
+                    writer.WriteLine("}");
+                }
             }
         }
+
+#region Abbreviations
+
+        private abstract record CStrPart;
+        private sealed record StringCStrPart(string Text) : CStrPart;
+        private sealed record AbbrevCStrPart(int Number) : CStrPart;
+
+        readonly struct AbbrevEntry
+        {
+            public readonly Horspool Pattern;
+            public readonly byte Number;
+
+            public AbbrevEntry(string text, byte number)
+            {
+                Pattern = new Horspool(text);
+                Number = number;
+            }
+        }
+
+        class AbbrevComparer : IComparer<AbbrevEntry>
+        {
+            public int Compare(AbbrevEntry x, AbbrevEntry y)
+            {
+                int d = y.Pattern.Text.Length - x.Pattern.Text.Length;
+                return d != 0 ? d : string.Compare(x.Pattern.Text, y.Pattern.Text, StringComparison.Ordinal);
+            }
+        }
+
+        private static List<CStrPart> AbbreviateString(string text, List<AbbrevEntry> entries)
+        {
+            if (entries.Count == 0)
+            {
+                return [new StringCStrPart(text)];
+            }
+
+            var abbrLocs = new List<int>?[text.Length];
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var idx = entries[i].Pattern.FindIn(text);
+                while (idx >= 0)
+                {
+                    (abbrLocs[idx] ??= []).Add(i);
+                    idx = entries[i].Pattern.FindIn(text, idx + 1);
+                }
+            }
+
+            var minRemainingCost = new int[text.Length + 1]; // Wagner's 'f' or 'F'
+            var chosenAbbr = new int[text.Length]; // -1 for "no abbreviation"
+            minRemainingCost[text.Length] = 0;
+            const int abbrRefCost = 1; // An abbreviation reference is 1 character, always.
+
+            for (int idx = text.Length - 1; idx >= 0; idx--)
+            {
+                int charCost = 1;
+                minRemainingCost[idx] = minRemainingCost[idx + 1] + charCost;
+                chosenAbbr[idx] = -1;
+                var locs = abbrLocs[idx];
+                if (locs != null)
+                {
+                    foreach (int abbrNo in locs)
+                    {
+                        int abbrLen = entries[abbrNo].Pattern.Text.Length;
+                        int costWithPattern = abbrRefCost + minRemainingCost[idx + abbrLen];
+                        if (costWithPattern < minRemainingCost[idx])
+                        {
+                            chosenAbbr[idx] = abbrNo;
+                            minRemainingCost[idx] = costWithPattern;
+                        }
+                    }
+                }
+            }
+
+            var result = new List<CStrPart>();
+
+            int lastAbbrEnd = 0;
+            for (int idx = 0; idx < text.Length;)
+            {
+                if (chosenAbbr[idx] == -1)
+                {
+                    idx++;
+                }
+                else
+                {
+                    if (lastAbbrEnd < idx)
+                    {
+                        result.Add(new StringCStrPart(text[lastAbbrEnd..idx]));
+                    }
+
+                    result.Add(new AbbrevCStrPart(chosenAbbr[idx]));
+                    idx += entries[chosenAbbr[idx]].Pattern.Text.Length;
+                    lastAbbrEnd = idx;
+                }
+            }
+
+            if (lastAbbrEnd < text.Length)
+            {
+                result.Add(new StringCStrPart(text[lastAbbrEnd..]));
+            }
+
+            return result;
+        }
+
+#endregion
 
         void FinishMetadata()
         {

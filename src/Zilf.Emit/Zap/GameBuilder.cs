@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2025 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -67,7 +67,7 @@ namespace Zilf.Emit.Zap
         readonly IZapStreamFactory streamFactory;
         internal readonly int zversion;
         internal readonly DebugFileBuilder? debug;
-        internal readonly AbbrevFinder? abbrevs;
+        internal readonly ZAbbrevFinder? abbrevs;
         readonly GameOptions options;
 
 #if DEBUG
@@ -110,7 +110,7 @@ namespace Zilf.Emit.Zap
             }
 
             debug = builderOptions.HasFlag(GameBuilderOptions.WantDebugInfo) ? new DebugFileBuilder() : null;
-            abbrevs = builderOptions.HasFlag(GameBuilderOptions.WantFrequentWords) ? new AbbrevFinder() : null;
+            abbrevs = builderOptions.HasFlag(GameBuilderOptions.WantFrequentWords) ? new ZAbbrevFinder() : null;
 
             stream = streamFactory.CreateMainStream();
             writer = new StreamWriter(stream);
