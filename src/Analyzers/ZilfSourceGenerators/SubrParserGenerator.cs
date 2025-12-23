@@ -35,8 +35,6 @@ namespace ZilfSourceGenerators
     [Generator]
     public class SubrParserGenerator : IIncrementalGenerator
     {
-        private readonly List<string> debugLog = [];
-
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             // Find methods with Subr or FSubr attributes
@@ -48,24 +46,66 @@ namespace ZilfSourceGenerators
                 .ForAttributeWithMetadataName("Zilf.Interpreter.Subrs+FSubrAttribute",
                     predicate: static (node, _) => node is MethodDeclarationSyntax,
                     transform: static (context, _) => GetSubrMethodInfo(context));
-            var subrMethods = subrProvider.Collect().Combine(fsubrProvider.Collect()).SelectMany((t, _) => t.Left.AddRange(t.Right));
+
+            // Merge the two streams in a way compatible with older Roslyn incremental APIs.
+            // This collects each provider once and combines the results into a single immutable array.
+            var subrMethods = subrProvider.Collect()
+                .Combine(fsubrProvider.Collect())
+                .Select(static (t, _) => t.Left.AddRange(t.Right));
 
             // Generate parsers for Subrs
-            var compilationAndSubrs = context.CompilationProvider.Combine(subrMethods.Collect());
-            context.RegisterSourceOutput(compilationAndSubrs, (spc, source) =>
+            var compilationAndSubrs = context.CompilationProvider.Combine(subrMethods);
+            context.RegisterSourceOutput(compilationAndSubrs, static (spc, source) =>
             {
-                var nonNullMethods = source.Right.Where(m => m != null).ToImmutableArray();
-                GenerateSubrParsers(spc, source.Left, nonNullMethods!, debugLog);
-                GenerateSubrSignatureMetadata(spc, nonNullMethods!);
+                var nonNullMethods = source.Right
+                    .Where(static m => m != null)
+                    .Select(static m => m!)
+                    .ToImmutableArray();
+                var debugLog = new List<string>();
+                GenerateSubrParsers(spc, source.Left, nonNullMethods, debugLog);
+                GenerateSubrSignatureMetadata(spc, source.Left, nonNullMethods);
             });
         }
 
         /// <summary>
         /// Generates signature metadata for all SUBR/FSUBR methods, similar to ZBuiltinParserGenerator.
         /// </summary>
-        private static void GenerateSubrSignatureMetadata(SourceProductionContext context, ImmutableArray<SubrMethodInfo> methods)
+        private static void GenerateSubrSignatureMetadata(SourceProductionContext context, Compilation compilation, ImmutableArray<SubrMethodInfo> methods)
         {
             if (methods.Length == 0) return;
+
+            // Cache key type symbols for fast SymbolEqualityComparer checks.
+            var applicableType = compilation.GetTypeByMetadataName("Zilf.Interpreter.IApplicable");
+            var localEnvironmentType = compilation.GetTypeByMetadataName("Zilf.Interpreter.LocalEnvironment");
+            var structureType = compilation.GetTypeByMetadataName("Zilf.Interpreter.IStructure");
+            var zilObjectType = compilation.GetTypeByMetadataName("Zilf.Interpreter.Values.ZilObject");
+
+            static bool IsInInterpreterNamespace(ITypeSymbol t)
+            {
+                var ns = t.ContainingNamespace;
+                while (ns != null && !ns.IsGlobalNamespace)
+                {
+                    if (ns.Name == "Interpreter" && ns.ContainingNamespace?.Name == "Zilf")
+                        return true;
+                    ns = ns.ContainingNamespace;
+                }
+                return false;
+            }
+
+            static bool InheritsFromOrEquals(ITypeSymbol t, INamedTypeSymbol baseType)
+            {
+                // Walk base types for named types; for other symbols, just compare directly.
+                if (t is INamedTypeSymbol named)
+                {
+                    for (INamedTypeSymbol? cur = named; cur != null; cur = cur.BaseType)
+                    {
+                        if (SymbolEqualityComparer.Default.Equals(cur, baseType))
+                            return true;
+                    }
+                    return false;
+                }
+                return SymbolEqualityComparer.Default.Equals(t, baseType);
+            }
 
             var sb = new IndentedStringBuilder();
             sb.AppendLine("/* This file is part of ZILF. Generated SUBR signature metadata - do not edit. */");
@@ -106,40 +146,41 @@ namespace ZilfSourceGenerators
                     var paramSummaries = XmlDocHelper.ExtractParamSummaries(method.MethodSymbol);
 
                     // Local helpers to inspect parameter types
-                    static bool IsZilObjectType(ITypeSymbol t)
+                    bool IsZilObjectType(ITypeSymbol t)
                     {
-                        var full = t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                        return full == "global::Zilf.Interpreter.ZilObject" || full == "global::Zilf.Interpreter.IStructure" || full.StartsWith("global::Zilf.Interpreter.");
+                        if (structureType != null && SymbolEqualityComparer.Default.Equals(t, structureType))
+                            return true;
+                        if (zilObjectType != null && InheritsFromOrEquals(t, zilObjectType))
+                            return true;
+
+                        // Preserve prior behavior: treat most types in Zilf.Interpreter.* as “any object”.
+                        return IsInInterpreterNamespace(t);
                     }
 
-                    static bool IsApplicableType(ITypeSymbol t)
+                    bool IsApplicableType(ITypeSymbol t)
                     {
-                        return t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == "global::Zilf.Interpreter.IApplicable";
+                        if (applicableType != null && SymbolEqualityComparer.Default.Equals(t, applicableType))
+                            return true;
+                        return t.Name == "IApplicable" && IsInInterpreterNamespace(t);
                     }
 
                     static bool TryPrimTypeFor(ITypeSymbol t, out string primName)
                     {
                         primName = "";
-                        var s = t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                        // map common CLR types used in SUBR signatures to PrimType
-                        return s switch
+                        return t.SpecialType switch
                         {
-                            "int" or "System.Int32" or "global::System.Int32" => (primName = "FIX") != null,
-                            "string" or "System.String" or "global::System.String" => (primName = "STRING") != null,
+                            SpecialType.System_Int32 => (primName = "FIX") != null,
+                            SpecialType.System_String => (primName = "STRING") != null,
                             _ => false,
                         };
                     }
 
-                    static bool TryStdAtomFor(ITypeSymbol t, out string atomName)
+                    bool TryStdAtomFor(ITypeSymbol t, out string atomName)
                     {
                         atomName = "";
-                        // Map a few well-known interpreter types to StdAtom names if possible
-                        var s = t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                        return s switch
-                        {
-                            "global::Zilf.Interpreter.LocalEnvironment" => (atomName = "ENVIRONMENT") != null,
-                            _ => false,
-                        };
+                        if (localEnvironmentType != null && SymbolEqualityComparer.Default.Equals(t, localEnvironmentType))
+                            return (atomName = "ENVIRONMENT") != null;
+                        return t.Name == "LocalEnvironment" && IsInInterpreterNamespace(t) && (atomName = "ENVIRONMENT") != null;
                     }
 
                     // Build expressions for each parameter using SignatureBuilder helpers
@@ -148,12 +189,16 @@ namespace ZilfSourceGenerators
                     // then EitherAttribute.DefaultParamDesc (named argument), then fall back to the parameter name.
                     static string GetParamDescription(IParameterSymbol p)
                     {
+                        static bool IsParamDescAttribute(INamedTypeSymbol cls) =>
+                            cls.Name == "ParamDescAttribute" &&
+                            cls.ContainingNamespace is { Name: "Interpreter", ContainingNamespace: { Name: "Zilf" } };
+
                         // 1) ParamDescAttribute on the parameter
                         foreach (var a in p.GetAttributes())
                         {
                             var cls = a.AttributeClass;
                             if (cls == null) continue;
-                            if (cls.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).EndsWith("Zilf.Interpreter.ParamDescAttribute", StringComparison.Ordinal))
+                            if (IsParamDescAttribute(cls))
                             {
                                 if (a.ConstructorArguments.Length > 0 && a.ConstructorArguments[0].Value is string s && !string.IsNullOrWhiteSpace(s))
                                     return s;
@@ -169,7 +214,7 @@ namespace ZilfSourceGenerators
                         {
                             var cls = a.AttributeClass;
                             if (cls == null) continue;
-                            if (cls.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).EndsWith("Zilf.Interpreter.ParamDescAttribute", StringComparison.Ordinal))
+                            if (IsParamDescAttribute(cls))
                             {
                                 if (a.ConstructorArguments.Length > 0 && a.ConstructorArguments[0].Value is string s && !string.IsNullOrWhiteSpace(s))
                                     return s;
@@ -181,7 +226,7 @@ namespace ZilfSourceGenerators
                         {
                             var cls = a.AttributeClass;
                             if (cls == null) continue;
-                            if (cls.Name == "EitherAttribute" || cls.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).EndsWith("EitherAttribute", StringComparison.Ordinal))
+                            if (cls.Name == "EitherAttribute")
                             {
                                 // look for named argument DefaultParamDesc
                                 foreach (var kv in a.NamedArguments)
@@ -350,8 +395,7 @@ namespace ZilfSourceGenerators
         private static MdlZilRedirectInfo? GetMdlZilRedirectAttribute(IMethodSymbol methodSymbol)
         {
             var redirectAttr = methodSymbol.GetAttributes().FirstOrDefault(attr =>
-                attr.AttributeClass?.Name == "MdlZilRedirectAttribute" ||
-                attr.AttributeClass?.ToDisplayString() == "Zilf.Interpreter.Subrs.MdlZilRedirectAttribute");
+                attr.AttributeClass?.Name == "MdlZilRedirectAttribute");
 
             if (redirectAttr == null || redirectAttr.ConstructorArguments.Length < 2)
             {

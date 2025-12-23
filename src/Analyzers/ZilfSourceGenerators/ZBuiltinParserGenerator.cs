@@ -66,11 +66,38 @@ namespace ZilfSourceGenerators
             var builtinAttrs = GetBuiltinAttributes(context.Attributes);
             if (builtinAttrs.Length == 0) return null;
 
+            // Cache parameter classification (data vs argument) once per method.
+            var argsBuilder = ImmutableArray.CreateBuilder<IParameterSymbol>();
+            var dataBuilder = ImmutableArray.CreateBuilder<IParameterSymbol>();
+            if (methodSymbol.Parameters.Length > 1)
+            {
+                for (int i = 1; i < methodSymbol.Parameters.Length; i++)
+                {
+                    var p = methodSymbol.Parameters[i];
+                    bool isData = false;
+                    foreach (var a in p.GetAttributes())
+                    {
+                        if (a.AttributeClass?.Name == "DataAttribute")
+                        {
+                            isData = true;
+                            break;
+                        }
+                    }
+
+                    if (isData)
+                        dataBuilder.Add(p);
+                    else
+                        argsBuilder.Add(p);
+                }
+            }
+
             return new BuiltinMethodInfo
             {
                 Method = method,
                 MethodSymbol = methodSymbol,
-                AttributeInfos = builtinAttrs
+                AttributeInfos = builtinAttrs,
+                ArgumentParameters = argsBuilder.ToImmutable(),
+                DataParameters = dataBuilder.ToImmutable(),
             };
         }
 
@@ -642,10 +669,22 @@ namespace ZilfSourceGenerators
 
                 foreach (var overload in group.Overloads)
                 {
-                    var argsParams = overload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
-                    int requiredCount = argsParams.Count(p => !p.IsOptional && !p.IsParams);
-                    int optionalCount = argsParams.Count(p => p.IsOptional && !p.IsParams);
-                    bool hasParams = argsParams.Any(p => p.IsParams);
+                    var argsParams = overload.Method.ArgumentParameters;
+                    int requiredCount = 0;
+                    int optionalCount = 0;
+                    bool hasParams = false;
+                    foreach (var p in argsParams)
+                    {
+                        if (p.IsParams)
+                        {
+                            hasParams = true;
+                            continue;
+                        }
+                        if (p.IsOptional)
+                            optionalCount++;
+                        else
+                            requiredCount++;
+                    }
                     var minVersionExpr = overload.Attribute.MinVersion.HasValue ? overload.Attribute.MinVersion.Value.ToString() : "1";
                     var maxVersionExpr = overload.Attribute.MaxVersion.HasValue ? overload.Attribute.MaxVersion.Value.ToString() : "6";
 
@@ -700,10 +739,22 @@ namespace ZilfSourceGenerators
                         var methodSummary = XmlDocHelper.ExtractSummary(methodSymbol);
                         var paramSummaries = XmlDocHelper.ExtractParamSummaries(methodSymbol);
 
-                        var argsParams = methodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
-                        int requiredCount = argsParams.Count(p => !p.IsOptional && !p.IsParams);
-                        int optionalCount = argsParams.Count(p => p.IsOptional && !p.IsParams);
-                        bool hasParams = argsParams.Any(p => p.IsParams);
+                        var argsParams = ov.Method.ArgumentParameters;
+                        int requiredCount = 0;
+                        int optionalCount = 0;
+                        bool hasParams = false;
+                        foreach (var p in argsParams)
+                        {
+                            if (p.IsParams)
+                            {
+                                hasParams = true;
+                                continue;
+                            }
+                            if (p.IsOptional)
+                                optionalCount++;
+                            else
+                                requiredCount++;
+                        }
                         var minVersionExpr = ov.Attribute.MinVersion.HasValue ? ov.Attribute.MinVersion.Value.ToString() : "1";
                         var maxVersionExpr = ov.Attribute.MaxVersion.HasValue ? ov.Attribute.MaxVersion.Value.ToString() : "6";
 
@@ -1206,10 +1257,22 @@ namespace ZilfSourceGenerators
 
         private static List<int> GetValidArgumentCounts(OverloadInfo overload)
         {
-            var argsParams = overload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
-            var requiredCount = argsParams.Count(p => !p.IsOptional && !p.IsParams);
-            var optionalCount = argsParams.Count(p => p.IsOptional);
-            var hasParamsArray = argsParams.Any(p => p.IsParams);
+            var argsParams = overload.Method.ArgumentParameters;
+            int requiredCount = 0;
+            int optionalCount = 0;
+            bool hasParamsArray = false;
+            foreach (var p in argsParams)
+            {
+                if (p.IsParams)
+                {
+                    hasParamsArray = true;
+                    continue;
+                }
+                if (p.IsOptional)
+                    optionalCount++;
+                else
+                    requiredCount++;
+            }
 
             var validCounts = new List<int>();
 
@@ -1443,19 +1506,19 @@ namespace ZilfSourceGenerators
 
         private static bool HasSoftGlobalParameter(OverloadInfo overload)
         {
-            var argsParams = overload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var argsParams = overload.Method.ArgumentParameters;
             return argsParams.Any(p => HasVariableAttribute(p) && p.Type.Name == "SoftGlobal");
         }
 
         private static bool HasIVariableParameter(OverloadInfo overload)
         {
-            var argsParams = overload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var argsParams = overload.Method.ArgumentParameters;
             return argsParams.Any(p => HasVariableAttribute(p) && IsIVariableType(p.Type));
         }
 
         private static bool HasIOperandParameter(OverloadInfo overload)
         {
-            var argsParams = overload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var argsParams = overload.Method.ArgumentParameters;
             // Consider IOperand parameters that have [Variable] attribute - these expect variable.Hard.Indirect
             return argsParams.Any(p => HasVariableAttribute(p) && IsIOperandType(p.Type));
         }
@@ -1937,11 +2000,11 @@ namespace ZilfSourceGenerators
 
             // Look for overloads that have the same signature except for variable parameter types
             var firstOverload = overloads[0];
-            var firstParams = firstOverload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var firstParams = firstOverload.Method.ArgumentParameters;
 
             foreach (var otherOverload in overloads.Skip(1))
             {
-                var otherParams = otherOverload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+                var otherParams = otherOverload.Method.ArgumentParameters;
 
                 if (firstParams.Length != otherParams.Length) continue;
 
@@ -2006,24 +2069,21 @@ namespace ZilfSourceGenerators
 
             // Look for IVariable overload
             var iVariableOverload = group.Overloads.FirstOrDefault(o =>
-                o.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p))
-                    .Any(p => IsIVariableType(p.Type)));
+                o.Method.ArgumentParameters.Any(p => IsIVariableType(p.Type)));
 
             // Look for IOperand with [Variable] overload
             var iOperandVariableOverload = group.Overloads.FirstOrDefault(o =>
-                o.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p))
-                    .Any(p => IsIOperandType(p.Type) && HasVariableAttribute(p)));
+                o.Method.ArgumentParameters.Any(p => IsIOperandType(p.Type) && HasVariableAttribute(p)));
 
             // Look for SoftGlobal overload
             var softGlobalOverload = group.Overloads.FirstOrDefault(o =>
-                o.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p))
-                    .Any(p => p.Type.Name == "SoftGlobal"));
+                o.Method.ArgumentParameters.Any(p => p.Type.Name == "SoftGlobal"));
 
             // Look for plain IOperand overload (where the FIRST operand/variable-like parameter is plain IOperand without [Variable])
             // This is to distinguish fallback overloads like SET(IOperand, IOperand) from variable-specific ones like SET(IVariable, ZilObject)
             var plainOperandOverload = group.Overloads.FirstOrDefault(o =>
             {
-                var params_ = o.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+                var params_ = o.Method.ArgumentParameters;
                 // Find first parameter that could be a variable or operand
                 var firstVarOrOpParam = params_.FirstOrDefault(p =>
                     IsIVariableType(p.Type) || p.Type.Name == "SoftGlobal" || IsIOperandType(p.Type));
@@ -2067,7 +2127,7 @@ namespace ZilfSourceGenerators
         {
             // Three-way dispatch for cases like SET: IVariable + SoftGlobal + IOperand fallback
             // Find the variable parameter index
-            var varParams = iVariableOverload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var varParams = iVariableOverload.Method.ArgumentParameters;
             var variableParamIndex = -1;
             string? variableParamQuirks = null;
 
@@ -2144,7 +2204,7 @@ namespace ZilfSourceGenerators
         private static void GenerateIVariableVsIOperandDispatch(IndentedStringBuilder sb, OverloadGroup group, OverloadInfo iVariableOverload, OverloadInfo iOperandVariableOverload)
         {
             // Find the variable parameter index
-            var varParams = iVariableOverload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var varParams = iVariableOverload.Method.ArgumentParameters;
             var variableParamIndex = -1;
             string? variableParamQuirks = null;
 
@@ -2207,7 +2267,7 @@ namespace ZilfSourceGenerators
         private static void GenerateVariableVsSoftGlobalDispatch(IndentedStringBuilder sb, OverloadGroup group, OverloadInfo variableOverload, OverloadInfo softGlobalOverload)
         {
             // Find the variable parameter index
-            var varParams = variableOverload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var varParams = variableOverload.Method.ArgumentParameters;
             var variableParamIndex = -1;
             string? variableParamQuirks = null;
 
@@ -2244,7 +2304,7 @@ namespace ZilfSourceGenerators
             sb.Indent();
 
             // Check if the variable overload uses IOperand with [Variable] - if so, it supports operand expressions as fallback
-            var variableParams = variableOverload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var variableParams = variableOverload.Method.ArgumentParameters;
             var variableParam = variableParams[variableParamIndex];
 
             if (IsIOperandType(variableParam.Type) && HasVariableAttribute(variableParam))
@@ -2301,8 +2361,8 @@ namespace ZilfSourceGenerators
         private static void GenerateVariableVsOperandDispatch(IndentedStringBuilder sb, OverloadGroup group, OverloadInfo variableOverload, OverloadInfo operandOverload)
         {
             // Find the parameter that differs (variable vs operand)
-            var varParams = variableOverload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
-            var operandParams = operandOverload.Method.MethodSymbol.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var varParams = variableOverload.Method.ArgumentParameters;
+            var operandParams = operandOverload.Method.ArgumentParameters;
             var variableParamIndex = -1;
             string? variableParamQuirks = null;
 
@@ -2423,12 +2483,12 @@ namespace ZilfSourceGenerators
         {
             var method = overload.Method.MethodSymbol;
             var methodName = $"ZBuiltins.{method.Name}";
-            var parameters = method.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var parameters = overload.Method.ArgumentParameters;
 
             var callArgs = new List<string> { "c" };
 
             // Add data parameters (like BinaryOp enum values)
-            foreach (var param in method.Parameters.Skip(1).Where(HasDataAttribute))
+            foreach (var param in overload.Method.DataParameters)
             {
                 var dataAttr = param.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "DataAttribute");
                 if (dataAttr != null && overload.Attribute.Data != null)
@@ -2502,12 +2562,12 @@ namespace ZilfSourceGenerators
         {
             var method = overload.Method.MethodSymbol;
             var methodName = method.ContainingType.ToDisplayString() + "." + method.Name;
-            var parameters = method.Parameters.Skip(1).Where(p => !HasDataAttribute(p)).ToArray();
+            var parameters = overload.Method.ArgumentParameters;
 
             var callArgs = new List<string> { "c" };
 
             // Add data parameters (like BinaryOp enum values)
-            foreach (var param in method.Parameters.Skip(1).Where(HasDataAttribute))
+            foreach (var param in overload.Method.DataParameters)
             {
                 var dataAttr = param.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "DataAttribute");
                 if (dataAttr != null && overload.Attribute.Data != null)
@@ -2657,6 +2717,8 @@ namespace ZilfSourceGenerators
         public MethodDeclarationSyntax Method { get; set; } = null!;
         public IMethodSymbol MethodSymbol { get; set; } = null!;
         public BuiltinAttributeInfo[] AttributeInfos { get; set; } = null!;
+        public ImmutableArray<IParameterSymbol> ArgumentParameters { get; set; } = ImmutableArray<IParameterSymbol>.Empty;
+        public ImmutableArray<IParameterSymbol> DataParameters { get; set; } = ImmutableArray<IParameterSymbol>.Empty;
     }
 
     public class BuiltinAttributeInfo
