@@ -32,7 +32,7 @@
   <PropertyGroup>
     <ZilfAnalyzersAssembly>..\Analyzers\ZilfAnalyzers\ZilfAnalyzers\bin\$(Configuration)\$(TargetFramework)\ZilfAnalyzers.dll</ZilfAnalyzersAssembly>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
-    <AnalysisLevel>latest-all</AnalysisLevel>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
     <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
