@@ -316,52 +316,89 @@ namespace Zilf.Language.Parsing
                             c,
                             zo =>
                             {
-                                switch (zo)
+                                return zo switch
                                 {
-                                    case ZilFix fix when fix.Value == 2:
-                                        if (!SkipWhitespace(chars))
-                                            throw new ExpectedButFound("binary number after '#2'", "<EOF>");
+                                    ZilFix fix when fix.Value == 2 => ParseBinary(chars),
+                                    ZilFix fix when fix.Value == 16 => ParseHex(chars),
+                                    ZilAtom atom => ParsePrefixed(chars, atom.Text, zo2 => ParserOutput.FromObject(site.ChangeType(zo2, atom))),
+                                    _ => throw new ExpectedButFound($"atom, '2', or '16' after '{c.Rebang()}'", site.GetTypeAtom(zo).ToString()),
+                                };
+                                ParserOutput ParseBinary(CharBuffer chars)
+                                {
+                                    if (!SkipWhitespace(chars))
+                                        throw new ExpectedButFound("binary number after '#2'", "<EOF>");
 
-                                        var sb = new StringBuilder();
+                                    var sb = new StringBuilder();
 
-                                        bool run = true;
-                                        do
+                                    bool run = true;
+                                    do
+                                    {
+                                        var c2 = chars.Current;
+                                        switch (c2)
                                         {
-                                            var c2 = chars.Current;
-                                            switch (c2)
-                                            {
-                                                case '0':
-                                                case '1':
-                                                    sb.Append(c2);
-                                                    break;
+                                            case '0':
+                                            case '1':
+                                                sb.Append(c2);
+                                                break;
 
-                                                case var _ when c2.IsTerminator():
-                                                    chars.PushBack(c2);
-                                                    run = false;
-                                                    break;
+                                            case var _ when c2.IsTerminator():
+                                                chars.PushBack(c2);
+                                                run = false;
+                                                break;
 
-                                                default:
-                                                    throw new ExpectedButFound("binary number after '#2'", $"{sb}{c2}");
-                                            }
-                                        } while (run && chars.MoveNext());
-
-                                        try
-                                        {
-                                            return ParserOutput.FromObject(new ZilFix(Convert.ToInt32(sb.ToString(), 2)));
+                                            default:
+                                                throw new ExpectedButFound("binary number after '#2'", $"{sb}{c2}");
                                         }
-                                        catch (OverflowException ex)
-                                        {
-                                            throw new ParsedNumberOverflowed(sb.ToString(), "binary", ex);
-                                        }
+                                    } while (run && chars.MoveNext());
 
-                                    case ZilAtom atom:
-                                        return ParsePrefixed(
-                                            chars,
-                                            atom.Text,
-                                            zo2 => ParserOutput.FromObject(site.ChangeType(zo2, atom)));
+                                    try
+                                    {
+                                        return ParserOutput.FromObject(new ZilFix(Convert.ToInt32(sb.ToString(), 2)));
+                                    }
+                                    catch (OverflowException ex)
+                                    {
+                                        throw new ParsedNumberOverflowed(sb.ToString(), "binary", ex);
+                                    }
                                 }
 
-                                throw new ExpectedButFound($"atom or '2' after '{c.Rebang()}'", site.GetTypeAtom(zo).ToString());
+                                ParserOutput ParseHex(CharBuffer chars)
+                                {
+                                    if (!SkipWhitespace(chars))
+                                        throw new ExpectedButFound("hexadecimal number after '#16'", "<EOF>");
+
+                                    var sb = new StringBuilder();
+
+                                    bool run = true;
+                                    do
+                                    {
+                                        var c2 = chars.Current;
+                                        switch (c2)
+                                        {
+                                            case >= '0' and <= '9':
+                                            case >= 'a' and <= 'f':
+                                            case >= 'A' and <= 'F':
+                                                sb.Append(c2);
+                                                break;
+
+                                            case var _ when c2.IsTerminator():
+                                                chars.PushBack(c2);
+                                                run = false;
+                                                break;
+
+                                            default:
+                                                throw new ExpectedButFound("hexadecimal number after '#16'", $"{sb}{c2}");
+                                        }
+                                    } while (run && chars.MoveNext());
+
+                                    try
+                                    {
+                                        return ParserOutput.FromObject(new ZilFix(Convert.ToInt32(sb.ToString(), 16)));
+                                    }
+                                    catch (OverflowException ex)
+                                    {
+                                        throw new ParsedNumberOverflowed(sb.ToString(), "hexadecimal", ex);
+                                    }
+                                }
                             });
 
                     case ';':

@@ -133,6 +133,12 @@ namespace Zilf.Tests.Interpreter
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilFix(10), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
+
+            result = [.. parser.Parse("#16 2051A")];
+            Assert.AreEqual(2, result.Length);
+            Assert.AreEqual(ParserOutputType.Object, result[0].Type);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(0x2051A), result[0].Object);
+            Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
         }
 
         [TestMethod]
