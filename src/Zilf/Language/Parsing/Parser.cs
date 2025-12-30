@@ -341,7 +341,7 @@ namespace Zilf.Language.Parsing
                                                 sb.Append(c2);
                                                 break;
 
-                                            case var _ when c2.IsTerminator():
+                                            case var _ when c2.IsTerminator() || char.IsWhiteSpace(c2):
                                                 chars.PushBack(c2);
                                                 run = false;
                                                 break;
@@ -380,7 +380,7 @@ namespace Zilf.Language.Parsing
                                                 sb.Append(c2);
                                                 break;
 
-                                            case var _ when c2.IsTerminator():
+                                            case var _ when c2.IsTerminator() || char.IsWhiteSpace(c2):
                                                 chars.PushBack(c2);
                                                 run = false;
                                                 break;

@@ -134,11 +134,27 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.AssertStructurallyEqual(new ZilFix(10), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
 
+            result = [.. parser.Parse("#2 1010 #2 1111")];
+            Assert.AreEqual(3, result.Length);
+            Assert.AreEqual(ParserOutputType.Object, result[0].Type);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(10), result[0].Object);
+            Assert.AreEqual(ParserOutputType.Object, result[1].Type);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(15), result[1].Object);
+            Assert.AreEqual(ParserOutputType.EndOfInput, result[2].Type);
+
             result = [.. parser.Parse("#16 2051A")];
             Assert.AreEqual(2, result.Length);
             Assert.AreEqual(ParserOutputType.Object, result[0].Type);
             TestHelpers.AssertStructurallyEqual(new ZilFix(0x2051A), result[0].Object);
             Assert.AreEqual(ParserOutputType.EndOfInput, result[1].Type);
+
+            result = [.. parser.Parse("#16 2051A #16 FACE")];
+            Assert.AreEqual(3, result.Length);
+            Assert.AreEqual(ParserOutputType.Object, result[0].Type);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(0x2051A), result[0].Object);
+            Assert.AreEqual(ParserOutputType.Object, result[1].Type);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(0xFACE), result[1].Object);
+            Assert.AreEqual(ParserOutputType.EndOfInput, result[2].Type);
         }
 
         [TestMethod]

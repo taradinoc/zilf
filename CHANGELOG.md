@@ -11,6 +11,10 @@ and this project adheres to
 - Similar to the `#2 101010` syntax for binary numbers, hexadecimal numbers can
   now be entered like `#16 ABC123`.
 
+### Fixed
+
+- Fixed binary syntax being parsed incorrectly when followed by whitespace.
+
 ## [1.2] (December 24, 2025)
 
 ### Added
