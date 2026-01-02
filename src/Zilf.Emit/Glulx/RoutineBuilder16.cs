@@ -21,8 +21,10 @@ using System.Text;
 
 namespace Zilf.Emit.Glulx
 {
-    internal sealed class RoutineBuilder16 : RoutineBuilder
+    internal sealed class RoutineBuilder16 : RoutineBuilder, IProvideWideContext
     {
+        private bool inWideContext = false;
+
         public RoutineBuilder16(GameBuilder gameBuilder, string name, bool entryPoint)
             : base(gameBuilder, name, entryPoint)
         {
@@ -30,40 +32,55 @@ namespace Zilf.Emit.Glulx
 
         public override string ToString() => $"({Name} / PACKING_FACTOR)";
 
+        public IDisposable EnterWideContext()
+        {
+            var disposer = new WideContextDisposer(this, inWideContext);
+            inWideContext = true;
+            return disposer;
+        }
+
+        private class WideContextDisposer(RoutineBuilder16 rb16, bool oldValue) : IDisposable
+        {
+            public void Dispose() => rb16.inWideContext = oldValue;
+        }
+
         public override void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable? result)
         {
-            switch (op)
+            if (!inWideContext)
             {
-                case BinaryOp.Add:
-                    EmitBinary16(nameof(RuntimeLib16.add16), left, right, result);
-                    return;
-                case BinaryOp.Sub:
-                    EmitBinary16(nameof(RuntimeLib16.sub16), left, right, result);
-                    return;
-                case BinaryOp.Mul:
-                    EmitBinary16(nameof(RuntimeLib16.mul16), left, right, result);
-                    return;
-                case BinaryOp.Div:
-                    EmitBinary16(nameof(RuntimeLib16.div16), left, right, result);
-                    return;
-                case BinaryOp.Mod:
-                    EmitBinary16(nameof(RuntimeLib16.mod16), left, right, result);
-                    return;
-                case BinaryOp.And:
-                    EmitBinary16(nameof(RuntimeLib16.band16), left, right, result);
-                    return;
-                case BinaryOp.Or:
-                    EmitBinary16(nameof(RuntimeLib16.bor16), left, right, result);
-                    return;
-                case BinaryOp.GetWord when PotentialHeaderAccess(left):
-                    EmitBinary16(nameof(RuntimeLib16.getword16), left, right, result);
-                    return;
-                case BinaryOp.GetWord:
-                    Emit($"aloads {FormatLoad(left)} {FormatLoad(right)} -> {FormatStore(result)}");
-                    return;
-                case BinaryOp.GetByte when PotentialHeaderAccess(left):
-                    EmitBinary16(nameof(RuntimeLib16.getbyte16), left, right, result);
-                    return;
+                switch (op)
+                {
+                    case BinaryOp.Add:
+                        EmitBinary16(nameof(RuntimeLib16.add16), left, right, result);
+                        return;
+                    case BinaryOp.Sub:
+                        EmitBinary16(nameof(RuntimeLib16.sub16), left, right, result);
+                        return;
+                    case BinaryOp.Mul:
+                        EmitBinary16(nameof(RuntimeLib16.mul16), left, right, result);
+                        return;
+                    case BinaryOp.Div:
+                        EmitBinary16(nameof(RuntimeLib16.div16), left, right, result);
+                        return;
+                    case BinaryOp.Mod:
+                        EmitBinary16(nameof(RuntimeLib16.mod16), left, right, result);
+                        return;
+                    case BinaryOp.And:
+                        EmitBinary16(nameof(RuntimeLib16.band16), left, right, result);
+                        return;
+                    case BinaryOp.Or:
+                        EmitBinary16(nameof(RuntimeLib16.bor16), left, right, result);
+                        return;
+                    case BinaryOp.GetWord when PotentialHeaderAccess(left):
+                        EmitBinary16(nameof(RuntimeLib16.getword16), left, right, result);
+                        return;
+                    case BinaryOp.GetWord:
+                        Emit($"aloads {FormatLoad(left)} {FormatLoad(right)} -> {FormatStore(result)}");
+                        return;
+                    case BinaryOp.GetByte when PotentialHeaderAccess(left):
+                        EmitBinary16(nameof(RuntimeLib16.getbyte16), left, right, result);
+                        return;
+                }
             }
 
             base.EmitBinary(op, left, right, result);
@@ -84,19 +101,22 @@ namespace Zilf.Emit.Glulx
 
         public override void EmitUnary(UnaryOp op, IOperand value, IVariable? result)
         {
-            switch (op)
+            if (!inWideContext)
             {
-                case UnaryOp.Not:
-                    EmitUnary16(nameof(RuntimeLib16.bcom16), value, result);
-                    return;
-                case UnaryOp.Neg:
-                    EmitUnary16(nameof(RuntimeLib16.neg16), value, result);
-                    return;
-                case UnaryOp.LoadIndirect:
-                    Emit($"sub {FormatLoad(value)} 1 -> push", "mul");
-                    Emit($"aload global_variables pop -> push", "aload");
-                    Emit($"bitand pop 0xFFFF -> {FormatStore(result!)}");
-                    return;
+                switch (op)
+                {
+                    case UnaryOp.Not:
+                        EmitUnary16(nameof(RuntimeLib16.bcom16), value, result);
+                        return;
+                    case UnaryOp.Neg:
+                        EmitUnary16(nameof(RuntimeLib16.neg16), value, result);
+                        return;
+                    case UnaryOp.LoadIndirect:
+                        Emit($"sub {FormatLoad(value)} 1 -> push", "mul");
+                        Emit($"aload global_variables pop -> push", "aload");
+                        Emit($"bitand pop 0xFFFF -> {FormatStore(result!)}");
+                        return;
+                }
             }
 
             base.EmitUnary(op, value, result);
@@ -104,14 +124,17 @@ namespace Zilf.Emit.Glulx
 
         public override void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right, IVariable? result)
         {
-            switch (op)
+            if (!inWideContext)
             {
-                case TernaryOp.PutWord:
-                    EmitTernary16(nameof(RuntimeLib16.putword16), left, center, right);
-                    return;
-                case TernaryOp.PutByte:
-                    EmitTernary16(nameof(RuntimeLib16.putbyte16), left, center, right);
-                    return;
+                switch (op)
+                {
+                    case TernaryOp.PutWord:
+                        EmitTernary16(nameof(RuntimeLib16.putword16), left, center, right);
+                        return;
+                    case TernaryOp.PutByte:
+                        EmitTernary16(nameof(RuntimeLib16.putbyte16), left, center, right);
+                        return;
+                }
             }
 
             base.EmitTernary(op, left, center, right, result);
@@ -146,7 +169,7 @@ namespace Zilf.Emit.Glulx
 
         public override void Branch(Condition cond, IOperand? left, IOperand? right, ILabel label, bool polarity)
         {
-            if (cond == Condition.Less || cond == Condition.Greater)
+            if (!inWideContext && (cond == Condition.Less || cond == Condition.Greater))
             {
                 string opcode = cond switch
                 {
@@ -178,7 +201,7 @@ namespace Zilf.Emit.Glulx
         {
             switch (op)
             {
-                case PrintOp.Number:
+                case PrintOp.Number when !inWideContext:
                     Emit($"sexs {FormatLoad(value)} -> push");
                     Emit($"streamnum pop", "streamnum");
                     return;

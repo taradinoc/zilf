@@ -2971,6 +2971,63 @@ namespace Zilf.Compiler.Builtins
 
         #endregion
 
+        #region Glulx16 Widening
+
+        [Builtin("WIDE", Platform = BuiltinPlatform.GlulxOnly, Summary = "Evaluates an expression using the native word size.")]
+        public static IOperand WideValueOp(ValueCall c, ZilObject expr)
+        {
+            if (c.rb is IProvideWideContext pwc)
+            {
+                using (pwc.EnterWideContext())
+                {
+                    return c.cc.CompileAsOperand(c.rb, expr, expr.SourceLine, c.resultStorage);
+                }
+            }
+
+            throw new CompilerError(
+                CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx,
+                "WIDE");
+        }
+
+        [Builtin("WIDE", Platform = BuiltinPlatform.GlulxOnly, Summary = "Evaluates an expression using the native word size.")]
+        public static void WidePredOp(PredCall c, ZilObject expr)
+        {
+            if (c.rb is IProvideWideContext pwc)
+            {
+                using (pwc.EnterWideContext())
+                {
+                    c.cc.CompileCondition(c.rb, expr, expr.SourceLine, c.label, c.polarity);
+                    return;
+                }
+            }
+
+            throw new CompilerError(
+                CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx,
+                "WIDE");
+        }
+
+        [Builtin("WIDE", Platform = BuiltinPlatform.GlulxOnly, Summary = "Evaluates an expression using the native word size.")]
+        public static void WideVoidOp(VoidCall c, ZilObject expr)
+        {
+            if (c.rb is IProvideWideContext pwc)
+            {
+                if (expr is ZilForm form)
+                {
+                    using (pwc.EnterWideContext())
+                    {
+                        c.cc.CompileForm(c.rb, form, false, null);
+                        return;
+                    }
+                }
+            }
+
+            throw new CompilerError(
+                CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx,
+                "WIDE");
+        }
+
+        #endregion
+
         [Builtin("CHTYPE", Summary = "Does nothing.")]
         public static IOperand ChtypeValueOp(ValueCall c, IOperand value, ZilAtom type)
         {
