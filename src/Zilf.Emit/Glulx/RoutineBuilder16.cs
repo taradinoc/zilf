@@ -77,7 +77,7 @@ namespace Zilf.Emit.Glulx
                         EmitBinary16(nameof(RuntimeLib16.getword16), left, right, result);
                         return;
                     case BinaryOp.GetWord:
-                        Emit($"aloads {FormatLoad(left)} {FormatLoad(right)} -> {FormatStore(result)}");
+                        Emit($"aloads {FormatLoad(left)} {FormatLoad(right)} -> {FormatStore(result)}", "aloads");
                         return;
                     case BinaryOp.GetByte when PotentialHeaderAccess(left):
                         EmitBinary16(nameof(RuntimeLib16.getbyte16), left, right, result);
@@ -116,7 +116,7 @@ namespace Zilf.Emit.Glulx
                     case UnaryOp.LoadIndirect:
                         Emit($"sub {FormatLoad(value)} 1 -> push", "mul");
                         Emit($"aload global_variables pop -> push", "aload");
-                        Emit($"bitand pop 0xFFFF -> {FormatStore(result!)}");
+                        Emit($"bitand pop 0xFFFF -> {FormatStore(result!)}", "bitand");
                         return;
                 }
             }
@@ -204,7 +204,7 @@ namespace Zilf.Emit.Glulx
             switch (op)
             {
                 case PrintOp.Number when !inWideContext:
-                    Emit($"sexs {FormatLoad(value)} -> push");
+                    Emit($"sexs {FormatLoad(value)} -> push", "sexs");
                     Emit($"streamnum pop", "streamnum");
                     return;
                 case PrintOp.PackedAddr:
