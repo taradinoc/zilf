@@ -28,5 +28,7 @@ namespace Zilf.Emit
         /// </summary>
         /// <returns>An object that, when disposed, will end the wide context.</returns>
         IDisposable EnterWideContext();
+
+        bool IsInWideContext { get; }
     }
 }

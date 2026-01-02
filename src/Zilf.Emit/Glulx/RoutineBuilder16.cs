@@ -44,6 +44,8 @@ namespace Zilf.Emit.Glulx
             public void Dispose() => rb16.inWideContext = oldValue;
         }
 
+        public bool IsInWideContext => inWideContext;
+
         public override void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable? result)
         {
             if (!inWideContext)

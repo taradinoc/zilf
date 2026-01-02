@@ -589,7 +589,7 @@ namespace Zilf.Compiler.Builtins
 
             if (storage is INumericOperand num)
             {
-                if (c.cc.Context.IsGlulx)
+                if (c.cc.Context.IsGlulx && !c.cc.Context.IsGlulx16)
                     return c.cc.Game.MakeOperand(~num.Value);
                 else
                     return c.cc.Game.MakeOperand((short)(~num.Value));
@@ -735,7 +735,7 @@ namespace Zilf.Compiler.Builtins
             Func<ValueCall, IOperand, IOperand, IOperand> compileUnary;
 
             // can we evaluate the whole operation at compile time?
-            if (c.cc.Context.IsGlulx16)
+            if (c.cc.Context.IsGlulx16 && c.rb is not IProvideWideContext { IsInWideContext: true })
             {
                 // 16-bit arithmetic
                 GetArithmeticInfo_Z(op, out var initialValue16, out var operation16, out compileUnary);
@@ -1211,7 +1211,7 @@ namespace Zilf.Compiler.Builtins
         {
             if (op == UnaryOp.Not && value is INumericOperand num)
             {
-                if (c.cc.Context.IsGlulx)
+                if (c.cc.Context.IsGlulx && !c.cc.Context.IsGlulx16)
                     return c.cc.Game.MakeOperand(~num.Value);
                 else
                     return c.cc.Game.MakeOperand((short)(~num.Value));
