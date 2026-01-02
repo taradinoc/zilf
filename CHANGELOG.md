@@ -11,6 +11,14 @@ and this project adheres to
 - Similar to the `#2 101010` syntax for binary numbers, hexadecimal numbers can
   now be entered like `#16 ABC123`.
 
+- Added Blorb generation. `<BLORB-PICTURE "path/to/image.png">` returns a unique
+  resource number for the image (PNG or JPEG). If any images are added this way,
+  ZILF will write them to a `.blorb` file after compilation. The story file
+  isn't added to the Blorb, so if you want to distribute your game as a single
+  file, you'll need to use something like
+  [BlorbTool](https://eblong.com/zarf/blorb/blorbtool/run.html) to add it
+  afterward. This is most likely only useful when compiling to Glulx or V6.
+
 ### Fixed
 
 - Fixed binary syntax being parsed incorrectly when followed by whitespace.

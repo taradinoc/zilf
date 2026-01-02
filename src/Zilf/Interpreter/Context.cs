@@ -34,6 +34,7 @@ using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
 using Zilf.Language.Parsing;
 using System.Collections.ObjectModel;
+using Zilf.Blorb;
 
 namespace Zilf.Interpreter
 {
@@ -155,6 +156,7 @@ namespace Zilf.Interpreter
             subrDelegates = new Dictionary<string, (SubrDelegate, bool)>();
 
             ZEnvironment = new ZEnvironment(this);
+            Blorb = new BlorbFile();
 
             IncludePaths = new List<string>();
 
@@ -236,6 +238,8 @@ namespace Zilf.Interpreter
         public IReadOnlyCollection<Diagnostic> Diagnostics => DiagnosticManager.Diagnostics;
 
         public ZEnvironment ZEnvironment { get; }
+
+        public BlorbFile Blorb { get; }
 
         public bool IsGlulx => ZEnvironment.TargetPlatform != TargetPlatform.ZMachine || ZEnvironment.ZVersion == ZEnvironment.GLULX_ZVERSION;
 
@@ -763,6 +767,21 @@ namespace Zilf.Interpreter
                     }
                 }
             }
+        }
+
+        /// <summary>Like <see cref="FindIncludeFile"/>, but doesn't change the extension.</summary>
+        /// <exception cref="FileNotFoundException">The file wasn't found in any include path.</exception>
+        public string FindExactIncludeFile(string name)
+        {
+            foreach (var path in IncludePaths)
+            {
+                var combined = Path.Combine(path, name);
+
+                if (FileSystem.Exists(combined))
+                    return combined;
+            }
+
+            throw new FileNotFoundException();
         }
 
         static ReadOnlyDictionary<StdAtom, TypeMapEntry> StaticTypeMap { get; } = GetGeneratedStaticTypeMap();

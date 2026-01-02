@@ -606,6 +606,14 @@ namespace Zilf
                 return 2;
             }
 
+            // Write Blorb file if needed
+            if (!ctx.Blorb.IsEmpty)
+            {
+                string blorbFile = Path.ChangeExtension(finalAssemblerOutput ?? inputFile, ".blorb");
+                using var stream = new FileStream(blorbFile, FileMode.Create, FileAccess.Write);
+                ctx.Blorb.WriteTo(stream);
+            }
+
             if (stopAfter)
             {
                 return 0;

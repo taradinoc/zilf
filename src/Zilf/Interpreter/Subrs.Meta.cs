@@ -643,5 +643,31 @@ namespace Zilf.Interpreter
         }
 
         #endregion
+
+        #region Blorb
+
+        [Subr("BLORB-PICTURE")]
+        public static ZilObject BLORB_PICTURE(Context ctx, string path)
+        {
+            byte[] data;
+            try
+            {
+                string newPath = ctx.FindExactIncludeFile(path);
+                data = File.ReadAllBytes(newPath);
+            }
+            catch (FileNotFoundException ex)
+            {
+                throw new InterpreterError(InterpreterMessages._0_File_Not_Found_1, "BLORB-PICTURE", path, ex);
+            }
+            catch (IOException ex)
+            {
+                throw new InterpreterError(InterpreterMessages._0_Error_Loading_File_1, "BLORB-PICTURE", ex.Message, ex);
+            }
+
+            int id = ctx.Blorb.AddPicture(data);
+            return new ZilFix(id);
+        }
+
+        #endregion
     }
 }
