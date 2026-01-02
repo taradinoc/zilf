@@ -144,8 +144,8 @@ namespace Zilf.Emit.Glulx
         {
             switch (op)
             {
-                case NullaryOp.ShowStatus:
-                    Emit("; TODO: draw status line");
+                case NullaryOp.ShowStatus when gameBuilder.Options is GlulxGameOptions { ZCompatibilityMode: true, ZMachineVersion: 3 }:
+                    Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib16V3.update_status_line))}", "callf");
                     return;
             }
 

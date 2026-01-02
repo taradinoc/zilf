@@ -835,9 +835,9 @@ namespace Zilf.Emit.Glulx
             writer.WriteLine("update_status_line_hook:");
             writer.WriteLine(INDENT + "function");
 
-            if (updateStatusLineHook is IRoutineBuilder)
+            if (updateStatusLineHook is RoutineBuilder rb)
             {
-                writer.WriteLine(INDENT + $"callf {updateStatusLineHook}");
+                writer.WriteLine(INDENT + $"callf {rb.Name}");
             }
             else if (updateStatusLineHook is IGlobalBuilder)
             {
