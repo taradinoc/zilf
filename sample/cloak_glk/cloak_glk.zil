@@ -6,7 +6,7 @@
 "Main loop"
 
 <CONSTANT GAME-BANNER
-"Cloak of Darkness|
+"Cloak of Darkness (illustrated)|
 A basic IF demonstration.|
 Original game by Roger Firth|
 ZIL conversion by Tara McGrew, Jayson Smith, and Josh Lawrence">
@@ -17,6 +17,7 @@ ZIL conversion by Tara McGrew, Jayson Smith, and Josh Lawrence">
 bright lights of the Opera House. It's surprising that there aren't more
 people about but, hey, what do you expect in a cheap demo game...?" CR CR>
     <INIT-STATUS-LINE>
+    <INIT-GLK>
     <V-VERSION> <CRLF>
     <SETG HERE ,FOYER>
     <MOVE ,PLAYER ,HERE>
@@ -26,6 +27,7 @@ people about but, hey, what do you expect in a cheap demo game...?" CR CR>
 <DELAY-DEFINITION PRINT-GAME-OVER>
 
 <INSERT-FILE "parser">
+<INSERT-FILE "glk">
 
 "Objects"
 
@@ -55,6 +57,7 @@ lying around." CR>)>)
 
 <ROOM FOYER
     (DESC "Foyer of the Opera House")
+    (PICTURE <BLORB-PICTURE "images/foyer.jpg">)
     (IN ROOMS)
     (LDESC "You are standing in a spacious hall, splendidly decorated in red
 and gold, with glittering chandeliers overhead. The entrance from
@@ -67,6 +70,7 @@ seems to be getting worse.")
 
 <ROOM BAR
     (DESC "Foyer Bar")
+    (PICTURE <BLORB-PICTURE "images/bar.jpg">)
     (IN ROOMS)
     (LDESC "The bar, much rougher than you'd have guessed after the opulence
 of the foyer to the north, is completely empty.")
@@ -122,9 +126,17 @@ though now only one remains. The exit is a door to the east.")
     (FLAGS LIGHTBIT)
     (ACTION CLOAKROOM-R)>
 
+<CONSTANT CLOAKROOM-PIC <BLORB-PICTURE "images/cloakroom.jpg">>
+<CONSTANT CLOAKROOM-HANGING-CLOAK-PIC <BLORB-PICTURE "images/cloakroom_hanging-cloak.png">>
+<CONSTANT CLOAKROOM-DROPPED-CLOAK-PIC <BLORB-PICTURE "images/cloakroom_dropped-cloak.png">>
+
 <ROUTINE CLOAKROOM-R (RARG)
     <COND (<==? .RARG ,M-FLASH>
-           <COND (<IN? ,CLOAK ,HOOK> <TELL CR "Your cloak is hanging on the hook." CR>)>)>>
+           <COND (<IN? ,CLOAK ,HOOK> <TELL CR "Your cloak is hanging on the hook." CR>)>)
+          (<==? .RARG ,M-PICTURE>
+           <DRAW-PICTURE ,CLOAKROOM-PIC>
+           <COND (<IN? ,CLOAK ,HOOK> <DRAW-PICTURE ,CLOAKROOM-HANGING-CLOAK-PIC>)
+                 (<IN? ,CLOAK ,CLOAKROOM> <DRAW-PICTURE ,CLOAKROOM-DROPPED-CLOAK-PIC>)>)>>
 
 <OBJECT HOOK
     (DESC "small brass hook")
