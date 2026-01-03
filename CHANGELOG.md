@@ -19,6 +19,9 @@ and this project adheres to
   [BlorbTool](https://eblong.com/zarf/blorb/blorbtool/run.html) to add it
   afterward. This is most likely only useful when compiling to Glulx or V6.
 
+- The `--ide-info` JSON report now includes diagnostic source spans (start/end
+  line and column) for file-backed origins, and `formatVersion` is now `2`.
+
 ### Fixed
 
 - Fixed binary syntax being parsed incorrectly when followed by whitespace.

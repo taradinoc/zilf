@@ -42,7 +42,7 @@ namespace Zilf.Ide
             var result = new JsonObject
             {
                 ["format"] = "zilf-ide-info",
-                ["formatVersion"] = 1,
+                ["formatVersion"] = 2,
                 ["inputFile"] = inputFile,
                 ["success"] = ctx.ErrorCount == 0,
                 ["errorCount"] = ctx.ErrorCount,
@@ -295,9 +295,9 @@ namespace Zilf.Ide
                     return candidate;
 
                 // Prefer file-based origins when available.
-                if (current is FileSourceLine)
+                if (current is FileSourceLine or ISourceSpan)
                     return current;
-                if (candidate is FileSourceLine)
+                if (candidate is FileSourceLine or ISourceSpan)
                     return candidate;
 
                 return current;
@@ -514,6 +514,28 @@ namespace Zilf.Ide
 
         static JsonObject Origin(ISourceLine? src, string? fallbackKind = null)
         {
+            if (src is ISourceSpan span)
+            {
+                if (IsInternalName(span.FileName))
+                {
+                    return new JsonObject
+                    {
+                        ["kind"] = "internal"
+                    };
+                }
+
+                return new JsonObject
+                {
+                    ["kind"] = "file",
+                    ["file"] = span.FileName,
+                    ["line"] = span.StartLine,
+                    ["startLine"] = span.StartLine,
+                    ["startColumn"] = span.StartColumn,
+                    ["endLine"] = span.EndLine,
+                    ["endColumn"] = span.EndColumn,
+                };
+            }
+
             if (src is FileSourceLine fsl)
             {
                 if (IsInternalName(fsl.FileName))
@@ -528,7 +550,11 @@ namespace Zilf.Ide
                 {
                     ["kind"] = "file",
                     ["file"] = fsl.FileName,
-                    ["line"] = fsl.Line
+                    ["line"] = fsl.Line,
+                    ["startLine"] = fsl.Line,
+                    ["startColumn"] = 1,
+                    ["endLine"] = fsl.Line,
+                    ["endColumn"] = 1,
                 };
             }
 

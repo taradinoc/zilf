@@ -1223,12 +1223,12 @@ namespace Zilf
 
                     case ParserOutputType.SyntaxError:
                         throw new InterpreterError(
-                            src ?? new FileSourceLine(ctx.CurrentFile.Path, parser.Line),
+                            src ?? new FileSourceSpan(ctx.CurrentFile.Path, parser.Line, parser.Column, parser.Line, parser.Column),
                             InterpreterMessages.Syntax_Error_0, po.Exception.Message);
 
                     case ParserOutputType.Terminator:
                         throw new InterpreterError(
-                            src ?? new FileSourceLine(ctx.CurrentFile.Path, parser.Line),
+                            src ?? new FileSourceSpan(ctx.CurrentFile.Path, parser.Line, parser.Column, parser.Line, parser.Column),
                             InterpreterMessages.Syntax_Error_0, "misplaced terminator");
 
                     default:

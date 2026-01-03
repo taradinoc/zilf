@@ -1338,6 +1338,12 @@ B * <PRINTB .X>
                 Debug.Assert(dir != null);
                 path = Path.Combine(dir, path);
             }
+            else if (TopFrame.SourceLine is ISourceSpan fileSourceSpan)
+            {
+                var dir = Path.GetDirectoryName(fileSourceSpan.FileName);
+                Debug.Assert(dir != null);
+                path = Path.Combine(dir, path);
+            }
 
             var mode = fileAccess switch
             {

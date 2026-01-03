@@ -296,12 +296,33 @@ namespace Zilf.Compiler
 
         void MarkSequencePoint(IRoutineBuilder rb, IProvideSourceLine node)
         {
-            if (!WantDebugInfo || node.SourceLine is not FileSourceLine fileSourceLine)
+            if (!WantDebugInfo)
+                return;
+
+            string? fileName = null;
+            int line = 0;
+            int column = 1;
+
+            switch (node.SourceLine)
+            {
+                case FileSourceLine fileSourceLine:
+                    fileName = fileSourceLine.FileName;
+                    line = fileSourceLine.Line;
+                    break;
+
+                case ISourceSpan fileSourceSpan:
+                    fileName = fileSourceSpan.FileName;
+                    line = fileSourceSpan.StartLine;
+                    column = Math.Max(1, fileSourceSpan.StartColumn);
+                    break;
+            }
+
+            if (string.IsNullOrEmpty(fileName) || line <= 0)
                 return;
 
             Debug.Assert(Game.DebugFile != null);
             Game.DebugFile.MarkSequencePoint(rb,
-                new DebugLineRef(fileSourceLine.FileName, fileSourceLine.Line, 1));
+                new DebugLineRef(fileName, line, column));
         }
 
         /// <summary>

@@ -35,6 +35,8 @@ namespace Zilf.Language.Parsing
         readonly ZilObject[]? templateParams;
         readonly Queue<ZilObject> heldObjects = new();
 
+        CharBuffer? currentChars;
+
         public Parser(IParserSite site)
             : this(site, (ISourceLine?)null, null)
         {
@@ -52,12 +54,18 @@ namespace Zilf.Language.Parsing
             this.templateParams = templateParams;
         }
 
-        public int Line { get; private set; } = 1;
+        public int Line => currentChars?.Line > 0 ? currentChars.Line : 1;
+
+        public int Column => currentChars?.Column > 0 ? currentChars.Column : 1;
 
         public IEnumerable<ParserOutput> Parse(IEnumerable<char> chars) => Parse(new CharBuffer(chars));
 
         IEnumerable<ParserOutput> Parse(CharBuffer chars)
         {
+            currentChars = chars;
+
+            try
+            {
             while (true)
             {
                 var po = ParseOne(chars, out var src);
@@ -81,6 +89,11 @@ namespace Zilf.Language.Parsing
                         yield return po;
                         break;
                 }
+            }
+            }
+            finally
+            {
+                currentChars = null;
             }
         }
 
@@ -146,7 +159,7 @@ namespace Zilf.Language.Parsing
             }
             catch (ParserException ex)
             {
-                sourceLine = srcOverride ?? new FileSourceLine(site.CurrentFilePath, Line);
+                sourceLine = srcOverride ?? new FileSourceSpan(site.CurrentFilePath, Line, Column, Line, Column);
                 return ParserOutput.FromException(ex);
             }
         }
@@ -158,11 +171,13 @@ namespace Zilf.Language.Parsing
                 // handle whitespace
                 if (!SkipWhitespace(chars))
                 {
-                    sourceLine = srcOverride ?? new FileSourceLine(site.CurrentFilePath, Line);
+                    sourceLine = srcOverride ?? new FileSourceSpan(site.CurrentFilePath, Line, Column, Line, Column);
                     return ParserOutput.EndOfInput;
                 }
 
-                sourceLine = srcOverride ?? new FileSourceLine(site.CurrentFilePath, Line);
+                var startLine = chars.Line;
+                var startColumn = chars.Column;
+
                 var c = chars.Current;
 
                 // '!' adds 128 to the next character (assuming it's below 128)
@@ -181,64 +196,84 @@ namespace Zilf.Language.Parsing
                         c += (char)128;
                 }
 
+                ParserOutput result;
+                int endLine;
+                int endColumn;
+
                 switch (c)
                 {
                     case '(':
-                        return ParserOutput.FromObject(
+                        result = ParserOutput.FromObject(
                             ParseCurrentStructure(
                                 chars,
                                 ')', Bang.RightParen,
-                                zos => new ZilList(zos)));
+                                zos => new ZilList(zos),
+                                out endLine, out endColumn));
+                        break;
 
                     case '<':
-                        return ParserOutput.FromObject(
+                        result = ParserOutput.FromObject(
                             ParseCurrentStructure(
                                 chars,
                                 '>', Bang.RightAngle,
-                                zos => new ZilForm(zos)));
+                                zos => new ZilForm(zos),
+                                out endLine, out endColumn));
+                        break;
 
                     case '[':
-                        return ParserOutput.FromObject(
+                        result = ParserOutput.FromObject(
                             ParseCurrentStructure(
                                 chars,
                                 ']', Bang.RightBracket,
-                                zos => new ZilVector(zos.ToArray())));
+                                zos => new ZilVector(zos.ToArray()),
+                                out endLine, out endColumn));
+                        break;
 
                     case Bang.LeftParen:
                         // !(foo!) is identical to (foo)
-                        return ParserOutput.FromObject(
+                        result = ParserOutput.FromObject(
                             ParseCurrentStructure(
                                 chars,
                                 ')', Bang.RightParen,
-                                zos => new ZilList(zos)));
+                                zos => new ZilList(zos),
+                                out endLine, out endColumn));
+                        break;
 
                     case Bang.LeftAngle:
                         // !<foo!> is a segment
-                        return ParserOutput.FromObject(
+                        result = ParserOutput.FromObject(
                             ParseCurrentStructure(
                                 chars,
                                 '>', Bang.RightAngle,
-                                zos => new ZilSegment(new ZilForm(zos))));
+                                zos => new ZilSegment(new ZilForm(zos)),
+                                out endLine, out endColumn));
+                        break;
 
                     case Bang.LeftBracket:
                         // ![foo!] is a uvector, but we alias it to vector
-                        return ParserOutput.FromObject(
+                        result = ParserOutput.FromObject(
                             ParseCurrentStructure(
                                 chars,
                                 ']', Bang.RightBracket,
-                                zos => new ZilVector(zos.ToArray())));
+                                zos => new ZilVector(zos.ToArray()),
+                                out endLine, out endColumn));
+                        break;
 
                     case Bang.Dot:
                     case Bang.Comma:
                     case Bang.SingleQuote:
+                    {
                         // !.X is equivalent to !<LVAL X>, and so on
                         chars.PushBack((char)(c - 128));
-                        return ParsePrefixed(chars, c,
-                            zo => ParserOutput.FromObject(new ZilSegment(zo)));
+                        var po = ParsePrefixed(chars, c, zo => ParserOutput.FromObject(new ZilSegment(zo)), out var innerSrc);
+                        (endLine, endColumn) = GetEnd(innerSrc, startLine, startColumn);
+                        result = po;
+                        break;
+                    }
 
                     case '{':
                     case Bang.LeftCurly:
-                        return ParseCurrentStructure(
+                        result = ParseCurrentStructure(
                             chars,
                             '}', Bang.RightCurly,
                             zos =>
@@ -255,25 +290,46 @@ namespace Zilf.Language.Parsing
                                 return heldObjects.Count == 0
                                     ? ParserOutput.EmptySplice
                                     : ParserOutput.FromObject(heldObjects.Dequeue());
-                            });
+                            },
+                            out endLine, out endColumn);
+                        break;
 
                     case '.':
-                        return ParsePrefixed(chars, c,
+                    {
+                        var po = ParsePrefixed(chars, c,
                             zo => ParserOutput.FromObject(
-                                new ZilForm(new[] { site.ParseAtom("LVAL"), zo })));
+                                new ZilForm(new[] { site.ParseAtom("LVAL"), zo })),
+                            out var innerSrc);
+                        (endLine, endColumn) = GetEnd(innerSrc, startLine, startColumn);
+                        result = po;
+                        break;
+                    }
 
                     case ',':
-                        return ParsePrefixed(chars, c,
+                    {
+                        var po = ParsePrefixed(chars, c,
                             zo => ParserOutput.FromObject(
-                                new ZilForm(new[] { site.ParseAtom("GVAL"), zo })));
+                                new ZilForm(new[] { site.ParseAtom("GVAL"), zo })),
+                            out var innerSrc);
+                        (endLine, endColumn) = GetEnd(innerSrc, startLine, startColumn);
+                        result = po;
+                        break;
+                    }
 
                     case '\'':
-                        return ParsePrefixed(chars, c,
+                    {
+                        var po = ParsePrefixed(chars, c,
                             zo => ParserOutput.FromObject(
-                                new ZilForm(new[] { site.ParseAtom("QUOTE"), zo })));
+                                new ZilForm(new[] { site.ParseAtom("QUOTE"), zo })),
+                            out var innerSrc);
+                        (endLine, endColumn) = GetEnd(innerSrc, startLine, startColumn);
+                        result = po;
+                        break;
+                    }
 
                     case '%':
                     case Bang.Percent:
+                    {
                         bool drop = false;
                         if (chars.MoveNext())
                         {
@@ -289,29 +345,46 @@ namespace Zilf.Language.Parsing
                         }
 
                         var po = ParsePrefixed(chars, c,
-                            zo => ParserOutput.FromObject(site.Evaluate(zo)));
+                            zo => ParserOutput.FromObject(site.Evaluate(zo)),
+                            out var innerSrc);
+
+                        (endLine, endColumn) = GetEnd(innerSrc, startLine, startColumn);
 
                         if (po.Type != ParserOutputType.Object)
-                            return po;
+                        {
+                            result = po;
+                            break;
+                        }
 
                         if (drop)
-                            return ParserOutput.EmptySplice;
+                        {
+                            result = ParserOutput.EmptySplice;
+                            break;
+                        }
 
                         if (po.Object is ZilSplice splice)
                         {
                             foreach (var zo in splice)
                                 heldObjects.Enqueue(zo);
 
-                            return heldObjects.Count == 0
+                            result = heldObjects.Count == 0
                                 ? ParserOutput.EmptySplice
                                 : ParserOutput.FromObject(heldObjects.Dequeue());
+                            break;
                         }
 
-                        return po;
+                        result = po;
+                        break;
+                    }
 
                     case '#':
                     case Bang.Hash:
-                        return ParsePrefixed(
+                    {
+                        var endSet = false;
+                        var computedEndLine = startLine;
+                        var computedEndColumn = startColumn;
+
+                        var po = ParsePrefixed(
                             chars,
                             c,
                             zo =>
@@ -320,7 +393,7 @@ namespace Zilf.Language.Parsing
                                 {
                                     ZilFix fix when fix.Value == 2 => ParseBinary(chars),
                                     ZilFix fix when fix.Value == 16 => ParseHex(chars),
-                                    ZilAtom atom => ParsePrefixed(chars, atom.Text, zo2 => ParserOutput.FromObject(site.ChangeType(zo2, atom))),
+                                    ZilAtom atom => ParseTyped(chars, atom),
                                     _ => throw new ExpectedButFound($"atom, '2', or '16' after '{c.Rebang()}'", site.GetTypeAtom(zo).ToString()),
                                 };
                                 ParserOutput ParseBinary(CharBuffer chars)
@@ -329,7 +402,8 @@ namespace Zilf.Language.Parsing
                                         throw new ExpectedButFound("binary number after '#2'", "<EOF>");
 
                                     var sb = new StringBuilder();
-
+                                    var lastLine = chars.Line;
+                                    var lastColumn = chars.Column;
                                     bool run = true;
                                     do
                                     {
@@ -339,6 +413,8 @@ namespace Zilf.Language.Parsing
                                             case '0':
                                             case '1':
                                                 sb.Append(c2);
+                                                lastLine = chars.Line;
+                                                lastColumn = chars.Column;
                                                 break;
 
                                             case var _ when c2.IsTerminator() || char.IsWhiteSpace(c2):
@@ -353,6 +429,9 @@ namespace Zilf.Language.Parsing
 
                                     try
                                     {
+                                        endSet = true;
+                                        computedEndLine = lastLine;
+                                        computedEndColumn = lastColumn;
                                         return ParserOutput.FromObject(new ZilFix(Convert.ToInt32(sb.ToString(), 2)));
                                     }
                                     catch (OverflowException ex)
@@ -367,7 +446,8 @@ namespace Zilf.Language.Parsing
                                         throw new ExpectedButFound("hexadecimal number after '#16'", "<EOF>");
 
                                     var sb = new StringBuilder();
-
+                                    var lastLine = chars.Line;
+                                    var lastColumn = chars.Column;
                                     bool run = true;
                                     do
                                     {
@@ -378,6 +458,8 @@ namespace Zilf.Language.Parsing
                                             case >= 'a' and <= 'f':
                                             case >= 'A' and <= 'F':
                                                 sb.Append(c2);
+                                                lastLine = chars.Line;
+                                                lastColumn = chars.Column;
                                                 break;
 
                                             case var _ when c2.IsTerminator() || char.IsWhiteSpace(c2):
@@ -392,6 +474,9 @@ namespace Zilf.Language.Parsing
 
                                     try
                                     {
+                                        endSet = true;
+                                        computedEndLine = lastLine;
+                                        computedEndColumn = lastColumn;
                                         return ParserOutput.FromObject(new ZilFix(Convert.ToInt32(sb.ToString(), 16)));
                                     }
                                     catch (OverflowException ex)
@@ -399,24 +484,57 @@ namespace Zilf.Language.Parsing
                                         throw new ParsedNumberOverflowed(sb.ToString(), "hexadecimal", ex);
                                     }
                                 }
-                            });
+
+                                ParserOutput ParseTyped(CharBuffer chars, ZilAtom atom)
+                                {
+                                    var result = ParsePrefixed(
+                                        chars,
+                                        atom.Text,
+                                        zo2 => ParserOutput.FromObject(site.ChangeType(zo2, atom)),
+                                        out var typedArgSrc);
+
+                                    var (eLine, eCol) = GetEnd(typedArgSrc, startLine, startColumn);
+                                    endSet = true;
+                                    computedEndLine = eLine;
+                                    computedEndColumn = eCol;
+                                    return result;
+                                }
+                            },
+                            out var innerSrc);
+
+                        (endLine, endColumn) = endSet
+                            ? (computedEndLine, computedEndColumn)
+                            : GetEnd(innerSrc, startLine, startColumn);
+                        result = po;
+                        break;
+                    }
 
                     case ';':
                     case Bang.Semicolon:
-                        return ParsePrefixed(chars, c, ParserOutput.FromComment);
+                    {
+                        var po = ParsePrefixed(chars, c, ParserOutput.FromComment, out var innerSrc);
+                        (endLine, endColumn) = GetEnd(innerSrc, startLine, startColumn);
+                        result = po;
+                        break;
+                    }
 
                     case '"':
-                        return ParserOutput.FromObject(ParseCurrentString(chars));
+                        result = ParserOutput.FromObject(ParseCurrentString(chars, out endLine, out endColumn));
+                        break;
 
                     case var _ when c.IsTerminator():
                         chars.PushBack(c);
+                        sourceLine = srcOverride ?? new FileSourceSpan(site.CurrentFilePath, startLine, startColumn, startLine, startColumn);
                         return ParserOutput.Terminator;
 
                     case Bang.Backslash:
                     case Bang.DoubleQuote:
                         if (chars.MoveNext())
                         {
-                            return ParserOutput.FromObject(new ZilChar(chars.Current));
+                            endLine = chars.Line;
+                            endColumn = chars.Column;
+                            result = ParserOutput.FromObject(new ZilChar(chars.Current));
+                            break;
                         }
                         throw new ExpectedButFound("character after '!\\'", "<EOF>");
 
@@ -424,20 +542,29 @@ namespace Zilf.Language.Parsing
                         throw new ExpectedButFound("atom", $"'{c.Rebang()}'");
 
                     case var _ when site.GetPrefixMacro(c) is SimplePrefixMacroHandler handler:
-                        return ParsePrefixed(chars, c, handler);
+                    {
+                        var po = ParsePrefixed(chars, c, handler, out var innerSrc);
+                        (endLine, endColumn) = GetEnd(innerSrc, startLine, startColumn);
+                        result = po;
+                        break;
+                    }
 
                     default:
-                        return ParserOutput.FromObject(ParseCurrentAtomOrNumber(chars));
+                        result = ParserOutput.FromObject(ParseCurrentAtomOrNumber(chars, out endLine, out endColumn));
+                        break;
                 }
+
+                sourceLine = srcOverride ?? new FileSourceSpan(site.CurrentFilePath, startLine, startColumn, endLine, endColumn);
+                return result;
             }
             catch (ParserException ex)
             {
-                sourceLine = srcOverride ?? new FileSourceLine(site.CurrentFilePath, Line);
+                sourceLine = srcOverride ?? new FileSourceSpan(site.CurrentFilePath, Line, Column, Line, Column);
                 return ParserOutput.FromException(ex);
             }
         }
 
-        bool SkipWhitespace(CharBuffer chars)
+        static bool SkipWhitespace(CharBuffer chars)
         {
             while (true)
             {
@@ -456,8 +583,7 @@ namespace Zilf.Language.Parsing
                         continue;
 
                     case '\n':
-                        // count line breaks
-                        Line++;
+                        // ignore whitespace
                         continue;
 
                     case '!':
@@ -478,15 +604,12 @@ namespace Zilf.Language.Parsing
                                 continue;
 
                             case '\n':
-                                // count line breaks
-                                Line++;
+                                // ignore whitespace
                                 continue;
 
                             default:
-                                //chars.PushBack((char)(chars.Current | 128));
-                                chars.PushBack('!');
-                                chars.MoveNext();
-                                chars.PushBack(c);
+                                // Restore '!' as the current character and keep the next character queued.
+                                chars.UnreadCurrent();
                                 return true;
                         }
 
@@ -496,12 +619,15 @@ namespace Zilf.Language.Parsing
             }
         }
 
-        ZilObject ParseCurrentAtomOrNumber(CharBuffer chars)
+        ZilObject ParseCurrentAtomOrNumber(CharBuffer chars, out int endLine, out int endColumn)
         {
             var sb = new StringBuilder();
 
             bool run = true, backslash = false;
             int digits = 0, octalDigits = 0;
+
+            int lastLine = chars.Line;
+            int lastColumn = chars.Column;
 
             do
             {
@@ -520,11 +646,9 @@ namespace Zilf.Language.Parsing
                         if (chars.MoveNext())
                         {
                             c = chars.Current;
-
-                            if (c == '\n')
-                                Line++;
-
                             sb.Append(c);
+                            lastLine = chars.Line;
+                            lastColumn = chars.Column;
                         }
                         else
                         {
@@ -541,6 +665,8 @@ namespace Zilf.Language.Parsing
                             if (c == '-')
                             {
                                 sb.Append("!-");
+                                lastLine = chars.Line;
+                                lastColumn = chars.Column;
                             }
                             else
                             {
@@ -556,6 +682,8 @@ namespace Zilf.Language.Parsing
                     default:
                         // can be part of an atom
                         sb.Append(c);
+                        lastLine = chars.Line;
+                        lastColumn = chars.Column;
                         if (char.IsDigit(c))
                         {
                             digits++;
@@ -585,6 +713,8 @@ namespace Zilf.Language.Parsing
                     // decimal
                     try
                     {
+                        endLine = lastLine;
+                        endColumn = lastColumn;
                         return new ZilFix(Convert.ToInt32(sb.ToString(), CultureInfo.InvariantCulture));
                     }
                     catch (OverflowException ex)
@@ -600,6 +730,8 @@ namespace Zilf.Language.Parsing
                     sb.Length = length - 2;
                     try
                     {
+                        endLine = lastLine;
+                        endColumn = lastColumn;
                         return new ZilFix(Convert.ToInt32(sb.ToString(), 8));
                     }
                     catch (OverflowException ex)
@@ -611,10 +743,12 @@ namespace Zilf.Language.Parsing
 
             // must be an atom
             var atom = site.ParseAtom(sb.ToString());
+            endLine = lastLine;
+            endColumn = lastColumn;
             return atom is ZilLink && site.GetGlobalVal(atom) is ZilObject zo ? zo : atom;
         }
 
-        ZilString ParseCurrentString(CharBuffer chars)
+        static ZilString ParseCurrentString(CharBuffer chars, out int endLine, out int endColumn)
         {
             var sb = new StringBuilder();
 
@@ -625,16 +759,14 @@ namespace Zilf.Language.Parsing
                 switch (c)
                 {
                     case '"':
+                        endLine = chars.Line;
+                        endColumn = chars.Column;
                         return ZilString.FromString(sb.ToString());
 
                     case '\\':
                         if (chars.MoveNext())
                         {
                             c = chars.Current;
-
-                            if (c == '\n')
-                                Line++;
-
                             sb.Append(c);
                         }
                         else
@@ -644,7 +776,6 @@ namespace Zilf.Language.Parsing
                         break;
 
                     case '\n':
-                        Line++;
                         goto default;
 
                     default:
@@ -663,7 +794,8 @@ namespace Zilf.Language.Parsing
                 : $"'{ket1.Rebang()}' or '{((char)ket2).Rebang()}'";
         }
 
-        T ParseCurrentStructure<T>(CharBuffer chars, char ket1, char? ket2, Func<IList<ZilObject>, T> build)
+        T ParseCurrentStructure<T>(CharBuffer chars, char ket1, char? ket2, Func<IList<ZilObject>, T> build,
+            out int endLine, out int endColumn)
         {
             var items = new List<ZilObject>();
 
@@ -698,6 +830,9 @@ namespace Zilf.Language.Parsing
                         if (c != ket1 && c != ket2)
                             throw new ExpectedButFound($"object or {KetWanted(ket1, ket2)}", $"'{c.Rebang()}'");
 
+                        endLine = chars.Line;
+                        endColumn = chars.Column;
+
                         var result = build(items);
 
                         if (result is ISettableSourceLine asSettableSource)
@@ -711,12 +846,25 @@ namespace Zilf.Language.Parsing
             }
         }
 
-        ParserOutput ParsePrefixed(CharBuffer chars, char prefix, SimplePrefixMacroHandler convert)
+        static (int Line, int Column) GetEnd(ISourceLine? src, int fallbackLine, int fallbackColumn)
         {
-            return ParsePrefixed(chars, prefix.Rebang(), convert);
+            switch (src)
+            {
+                case ISourceSpan span:
+                    return (span.EndLine, span.EndColumn);
+                case FileSourceLine fsl:
+                    return (fsl.Line, 1);
+                default:
+                    return (fallbackLine, fallbackColumn);
+            }
         }
 
-        ParserOutput ParsePrefixed(CharBuffer chars, string prefix, SimplePrefixMacroHandler convert)
+        ParserOutput ParsePrefixed(CharBuffer chars, char prefix, SimplePrefixMacroHandler convert, out ISourceLine parsedSourceLine)
+        {
+            return ParsePrefixed(chars, prefix.Rebang(), convert, out parsedSourceLine);
+        }
+
+        ParserOutput ParsePrefixed(CharBuffer chars, string prefix, SimplePrefixMacroHandler convert, out ISourceLine parsedSourceLine)
         {
             ParserOutput po;
             ISourceLine src;
@@ -731,6 +879,7 @@ namespace Zilf.Language.Parsing
             {
                 case ParserOutputType.Object:
                     po.Object.SourceLine = src;
+                    parsedSourceLine = src;
                     return convert(po.Object);
 
                 case ParserOutputType.EndOfInput:
@@ -741,6 +890,7 @@ namespace Zilf.Language.Parsing
                     throw new ExpectedButFound($"object after '{prefix}'", $"'{chars.Current.Rebang()}'");
 
                 case ParserOutputType.SyntaxError:
+                    parsedSourceLine = src;
                     return po;
 
                 default:
