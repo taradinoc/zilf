@@ -22,6 +22,9 @@ and this project adheres to
 - The `--ide-info` JSON report now includes diagnostic source spans (start/end
   line and column) for file-backed origins, and `formatVersion` is now `2`.
 
+- Added `WIDE`, which `--glulx16` games can use to perform 32-bit operations in
+  limited contexts. (Under `--glulx`, it's a no-op.)
+
 ### Fixed
 
 - Fixed binary syntax being parsed incorrectly when followed by whitespace.

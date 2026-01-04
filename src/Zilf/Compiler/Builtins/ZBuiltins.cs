@@ -2976,54 +2976,64 @@ namespace Zilf.Compiler.Builtins
         [Builtin("WIDE", Platform = BuiltinPlatform.GlulxOnly, Summary = "Evaluates an expression using the native word size.")]
         public static IOperand WideValueOp(ValueCall c, ZilObject expr)
         {
+            IDisposable? disposer = null;
+
             if (c.rb is IProvideWideContext pwc)
             {
-                using (pwc.EnterWideContext())
-                {
-                    return c.cc.CompileAsOperand(c.rb, expr, expr.SourceLine, c.resultStorage);
-                }
+                disposer = pwc.EnterWideContext();
             }
 
-            throw new CompilerError(
-                CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx,
-                "WIDE");
+            try
+            {
+                return c.cc.CompileAsOperand(c.rb, expr, expr.SourceLine, c.resultStorage);
+            }
+            finally
+            {
+                disposer?.Dispose();
+            }
         }
 
         [Builtin("WIDE", Platform = BuiltinPlatform.GlulxOnly, Summary = "Evaluates an expression using the native word size.")]
         public static void WidePredOp(PredCall c, ZilObject expr)
         {
+            IDisposable? disposer = null;
+
             if (c.rb is IProvideWideContext pwc)
             {
-                using (pwc.EnterWideContext())
-                {
-                    c.cc.CompileCondition(c.rb, expr, expr.SourceLine, c.label, c.polarity);
-                    return;
-                }
+                disposer = pwc.EnterWideContext();
             }
 
-            throw new CompilerError(
-                CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx,
-                "WIDE");
+            try
+            {
+                c.cc.CompileCondition(c.rb, expr, expr.SourceLine, c.label, c.polarity);
+            }
+            finally
+            {
+                disposer?.Dispose();
+            }
         }
 
         [Builtin("WIDE", Platform = BuiltinPlatform.GlulxOnly, Summary = "Evaluates an expression using the native word size.")]
         public static void WideVoidOp(VoidCall c, ZilObject expr)
         {
-            if (c.rb is IProvideWideContext pwc)
+            if (expr is ZilForm form)
             {
-                if (expr is ZilForm form)
+                IDisposable? disposer = null;
+
+                if (c.rb is IProvideWideContext pwc)
                 {
-                    using (pwc.EnterWideContext())
-                    {
-                        c.cc.CompileForm(c.rb, form, false, null);
-                        return;
-                    }
+                    disposer = pwc.EnterWideContext();
+                }
+
+                try
+                {
+                    c.cc.CompileForm(c.rb, form, false, null);
+                }
+                finally
+                {
+                    disposer?.Dispose();
                 }
             }
-
-            throw new CompilerError(
-                CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx,
-                "WIDE");
         }
 
         #endregion
