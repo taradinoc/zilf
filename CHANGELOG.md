@@ -25,9 +25,17 @@ and this project adheres to
 - Added `WIDE`, which `--glulx16` games can use to perform 32-bit operations in
   limited contexts. (Under `--glulx`, it's a no-op.)
 
+### Changed
+
+- The Cloak of Darkness sample has been updated to be more faithful to the
+  original. There's also an illustrated version for Glulx, cloak_glk, included
+  as an example of using Glk.
+
 ### Fixed
 
 - Fixed binary syntax being parsed incorrectly when followed by whitespace.
+
+- Fixed bug where failing to give something to an actor would turn them plural.
 
 ## [1.2] (December 24, 2025)
 
