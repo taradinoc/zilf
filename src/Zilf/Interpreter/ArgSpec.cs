@@ -643,7 +643,7 @@ namespace Zilf.Interpreter
                 throw ArgumentCountError.WrongCount(
                     new FunctionCallSite(Name?.ToString() ?? "user-defined function"),
                     MinArgCount,
-                    auxArgsStart);
+                    VarargsAtom == null ? auxArgsStart : null);
             }
 
             try

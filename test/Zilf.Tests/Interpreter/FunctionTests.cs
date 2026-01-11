@@ -482,6 +482,14 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.EvalAndCatch<ArgumentCountError>(ctx, "<FOO 1 2 3 4>");
         }
 
+        [TestMethod]
+        public void FUNCTION_Argument_Count_Error_Should_Count_Varargs_Correctly()
+        {
+            var ctx = new Context();
+            TestHelpers.Evaluate(ctx, "<DEFINE BAR (X \"ARGS\" Y \"AUX\" (Z .Y)) .Z>");
+            TestHelpers.EvalAndCatch<ArgumentCountError>(ctx, "<BAR>",
+                e => e.Message.Contains("1 or more", System.StringComparison.InvariantCulture));
+        }
 
         [TestMethod]
         public void FUNCTION_ADECL_Parameters_Should_Set_Binding_DECLs()
