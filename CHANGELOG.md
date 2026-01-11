@@ -25,6 +25,8 @@ and this project adheres to
 - Added `WIDE`, which `--glulx16` games can use to perform 32-bit operations in
   limited contexts. (Under `--glulx`, it's a no-op.)
 
+- Implemented `POP` for Z-machine versions below 6.
+
 ### Changed
 
 - The Cloak of Darkness sample has been updated to be more faithful to the

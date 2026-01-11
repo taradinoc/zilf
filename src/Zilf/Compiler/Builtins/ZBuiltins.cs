@@ -1745,19 +1745,29 @@ namespace Zilf.Compiler.Builtins
         }
 
         /// <summary>
-        /// Pops a value from the evaluation stack or a user-defined stack.
+        /// Pops a value from the evaluation stack.
         /// </summary>
         /// <param name="c"></param>
-        /// <param name="stack">The address of the user-defined stack to pop from. If omitted, pops from the evaluation stack.</param>
+        /// <returns>The popped value.</returns>
+        [Builtin("POP", HasSideEffect = true)]
+        public static IOperand PopValueOp(ValueCall c)
+        {
+            if (c.resultStorage != c.rb.Stack)
+                c.rb.EmitStore(c.resultStorage, c.rb.Stack);
+
+            return c.resultStorage;
+        }
+
+        /// <summary>
+        /// Pops a value from a user-defined stack.
+        /// </summary>
+        /// <param name="c"></param>
+        /// <param name="stack">The address of the user-defined stack to pop from.</param>
         /// <returns>The popped value.</returns>
         [Builtin("POP", MinVersion = 6, HasSideEffect = true)]
-        public static IOperand PopValueOp(ValueCall c, IOperand? stack = null)
+        public static IOperand PopValueOp_V6(ValueCall c, IOperand stack)
         {
-            if (stack == null)
-                c.rb.EmitStore(c.resultStorage, c.rb.Stack);
-            else
-                c.rb.EmitUnary(UnaryOp.PopUserStack, stack, c.resultStorage);
-
+            c.rb.EmitUnary(UnaryOp.PopUserStack, stack, c.resultStorage);
             return c.resultStorage;
         }
 

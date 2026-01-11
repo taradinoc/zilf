@@ -1499,17 +1499,21 @@ namespace Zilf.Tests.Integration
             Assert.Inconclusive("This test was automatically generated.");
         }
 
-        // only the V6 version of POP is supported in ZIL
+        [TestMethod]
+        public async System.Threading.Tasks.Task TestPOPAsync()
+        {
+            // V1 to V6
+            // 0 to 0 operands
+            await AssertRoutine("\"AUX\" X", "<PUSH 123> <SET X <POP>> .X")
+                .InV3()
+                .GivesNumberAsync("123");
+        }
 
         [TestMethod]
         public async System.Threading.Tasks.Task TestPOP_V6Async()
         {
             // V6 to V6
             // 0 to 1 operands
-            await AssertRoutine("\"AUX\" X", "<PUSH 123> <SET X <POP>> .X")
-                .InV6()
-                .GivesNumberAsync("123");
-
             await AssertExpr("<POP ,MY-STACK>")
                 .WithGlobal("<GLOBAL MY-STACK <TABLE 3 0 0 0 123>>")
                 .InV6()
@@ -1519,11 +1523,10 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public async System.Threading.Tasks.Task TestPOP_ErrorAsync()
         {
-            // only exists in V6+
-            await AssertExpr("<POP>").InV5().DoesNotCompileAsync();
-
-            // V6 to V6
+            // V1 to V6
             // 0 to 1 operands
+            await AssertExpr("<POP 0>").InV3().DoesNotCompileAsync();
+
             await AssertExpr("<POP 0 0>").InV6().DoesNotCompileAsync();
         }
 
