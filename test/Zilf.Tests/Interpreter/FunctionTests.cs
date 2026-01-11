@@ -465,6 +465,9 @@ namespace Zilf.Tests.Interpreter
             TestHelpers.Evaluate(ctx, "<DEFINE PAIR2 (A \"OPT\" (B .A) \"AUX\" (C .B)) <LIST .A .B .C>>");
             TestHelpers.EvalAndAssert(ctx, "<PAIR2 FOO>", new ZilList([foo, foo, foo]));
             TestHelpers.EvalAndAssert(ctx, "<PAIR2 FOO BAR>", new ZilList([foo, bar, bar]));
+
+            TestHelpers.Evaluate(ctx, "<DEFINE BAR (X \"ARGS\" Y \"AUX\" (Z .Y)) .Z>");
+            TestHelpers.EvalAndAssert(ctx, "<BAR 1 2 3>", new ZilList([new ZilFix(2), new ZilFix(3)]));
         }
 
         [TestMethod]
