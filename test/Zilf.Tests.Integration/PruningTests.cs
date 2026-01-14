@@ -95,5 +95,55 @@ namespace Zilf.Tests.Integration
                 .WithoutWarnings()
                 .GeneratesCodeMatchingAsync(@"\.FUNCT\s+FOO\b");
         }
+
+        [TestMethod]
+        public async Task Routine_References_Inside_Failed_Version_Checks_Should_Not_Count_As_Uses()
+        {
+            await AssertRoutine("", "<VERSION? (ZIP <FOO>) (ELSE <>)>")
+                .InV5()
+                .WithGlobal("<ROUTINE FOO () <RTRUE>>")
+                .GeneratesCodeNotMatchingAsync(@"\.FUNCT\s+FOO\b");
+
+            await AssertRoutine("", "<MAYBE <FOO>>")
+                .WithGlobal("<DEFMAC MAYBE ('A) <FORM VERSION? <LIST ZIP .A>>>")
+                .WithGlobal("<ROUTINE FOO () <RTRUE>>")
+                .GeneratesCodeNotMatchingAsync(@"\.FUNCT \s+FOO\b");
+        }
+
+        [TestMethod]
+        public async Task Routine_References_Inside_Failed_Compilation_Flag_Checks_Should_Not_Count_As_Uses()
+        {
+            await AssertRoutine("", "<IFFLAG (WANT-FOO <FOO>) (ELSE <>)>")
+                .WithGlobal("<COMPILATION-FLAG WANT-FOO <>>")
+                .WithGlobal("<ROUTINE FOO () <RTRUE>>")
+                .GeneratesCodeNotMatchingAsync(@"\.FUNCT\s+FOO\b");
+
+            await AssertRoutine("", "<IF-WANT-FOO <FOO>>")
+                .WithGlobal("<COMPILATION-FLAG WANT-FOO <>>")
+                .WithGlobal("<ROUTINE FOO () <RTRUE>>")
+                .GeneratesCodeNotMatchingAsync(@"\.FUNCT\s+FOO\b");
+
+            await AssertRoutine("", "<MAYBE <FOO>>")
+                .WithGlobal("<DEFMAC MAYBE ('A) <FORM IFFLAG <LIST WANT-FOO .A>>>")
+                .WithGlobal("<ROUTINE FOO () <RTRUE>>")
+                .GeneratesCodeNotMatchingAsync(@"\.FUNCT \s+FOO\b");
+        }
+
+        [TestMethod]
+        public async Task Routine_References_Ignored_By_Macros_Should_Not_Count_As_Uses()
+        {
+            // a macro that takes code at the call site but does nothing with it
+            await AssertRoutine("", "<PROB 25 <FOO>>")
+                .WithGlobal("<DEFMAC PROB ('A 'B) <FORM L? '<RANDOM 100> .A>>")
+                .WithGlobal("<ROUTINE FOO () 0>")
+                .GeneratesCodeNotMatchingAsync(@"\.FUNCT\s+FOO\b");
+
+            // a macro that mentions a routine in its definition but doesn't compile it
+            await AssertRoutine("", "<PROB 25>")
+                .WithGlobal("<DEFMAC PROB ('A) <COND (,LUCKY T) (ELSE <FORM L? '<FOO> .A>)>>")
+                .WithGlobal("<ROUTINE FOO () <RANDOM 100>>")
+                .WithGlobal("<SETG LUCKY T>")
+                .GeneratesCodeNotMatchingAsync(@"\.FUNCT\s+FOO\b");
+        }
     }
 }

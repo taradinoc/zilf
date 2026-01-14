@@ -45,6 +45,9 @@ and this project adheres to
 - Fixed incorrect error message when calling a varargs function with too few
   arguments.
 
+- Fixed bug where an otherwise unused routine would still be compiled if it was
+  referenced within an unselected branch of a `VERSION?` or `IFFLAG` check.
+
 ## [1.2] (December 24, 2025)
 
 ### Added

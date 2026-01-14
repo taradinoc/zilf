@@ -121,6 +121,7 @@ namespace Zilf.Language
         HAVE,
         HELD,
         HERE,
+        IFFLAG,
         [Atom("IGRTR?")]
         IGRTR_P,
         IN,
@@ -302,6 +303,8 @@ namespace Zilf.Language
         [Atom("VERB-STUFF-ID")]
         VERB_STUFF_ID,
         VERBS,
+        [Atom("VERSION?")]
+        VERSION_P,
         VOC,
         VOCAB,
         VTBL,

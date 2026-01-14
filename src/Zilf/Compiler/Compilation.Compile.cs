@@ -382,40 +382,16 @@ namespace Zilf.Compiler
 
                 var refs = new HashSet<ZilAtom>(comparer);
 
+                foreach (var argInfo in r.ArgSpec)
+                {
+                    if (argInfo.DefaultValue != null)
+                        CollectRoutineConstants(argInfo.DefaultValue, refs, suppressGlobalReads: false);
+                }
+
                 foreach (var bodyItem in r.Body)
                 {
                     CollectRoutineConstants(bodyItem, refs, suppressGlobalReads: false);
                 }
-
-                // Walk all FORMs in the routine body to find calls and nested constants
-                r.WalkRoutineForms(f =>
-                {
-                    // Detect routine calls via head resolution
-                    if (f.First is ZilAtom head)
-                    {
-                        var interned = Context.ZEnvironment.InternGlobalName(head);
-                        var obj = Context.GetZVal(interned);
-                        while (obj is ZilConstant c)
-                            obj = c.Value;
-                        if (obj is ZilRoutine called && called.Name != null)
-                        {
-                            refs.Add(called.Name);
-                        }
-                        else if (allRoutineNames.Contains(interned))
-                        {
-                            refs.Add(interned);
-                        }
-                    }
-
-                    // Recursively scan arguments for routine constants
-                    if (f.Rest != null)
-                    {
-                        foreach (var arg in f.Rest)
-                        {
-                            CollectRoutineConstants(arg, refs, suppressGlobalReads: false);
-                        }
-                    }
-                });
 
                 adjacency[r.Name] = refs;
             }
@@ -511,6 +487,18 @@ namespace Zilf.Compiler
                     unwrapped = zmr.Inner;
                 }
 
+                if (unwrapped is ZilForm { First: ZilAtom { StdAtom: StdAtom.VERSION_P }, Rest: ZilListoidBase versionClauses })
+                {
+                    CollectRoutineConstantsFromVersionClauses(versionClauses, output, suppressGlobalReads);
+                    return;
+                }
+
+                if (unwrapped is ZilForm { First: ZilAtom { StdAtom: StdAtom.IFFLAG }, Rest: ZilListoidBase ifflagClauses })
+                {
+                    CollectRoutineConstantsFromIfflagClauses(ifflagClauses, output, suppressGlobalReads);
+                    return;
+                }
+
                 if (unwrapped is ZilRoutine routine && routine.Name != null)
                 {
                     output.Add(routine.Name);
@@ -580,6 +568,127 @@ namespace Zilf.Compiler
                     {
                         CollectRoutineConstants(item, output, suppressGlobalReads);
                     }
+                }
+            }
+
+            void CollectRoutineConstantsFromVersionClauses(ZilListoidBase clauses, HashSet<ZilAtom> output, bool suppressGlobalReads)
+            {
+                while (!clauses.IsEmpty)
+                {
+                    ZilObject clause;
+                    (clause, clauses) = clauses;
+
+                    if (clause is not ZilListoidBase list || list.IsEmpty)
+                        break;
+
+                    var (condition, body) = list;
+
+                    int condVersion;
+                    switch (condition)
+                    {
+                        case ZilAtom atom:
+                            // ReSharper disable once SwitchStatementMissingSomeCases
+                            condVersion = atom.StdAtom switch
+                            {
+                                StdAtom.ZIP => 3,
+                                StdAtom.EZIP => 4,
+                                StdAtom.XZIP => 5,
+                                StdAtom.YZIP => 6,
+                                StdAtom.GLULX => ZModel.ZEnvironment.GLULX_ZVERSION,
+                                StdAtom.ELSE or StdAtom.T => 0,
+                                _ => int.MinValue,
+                            };
+                            break;
+
+                        case ZilFix fix:
+                            condVersion = fix.Value;
+                            break;
+
+                        default:
+                            condVersion = int.MinValue;
+                            break;
+                    }
+
+                    if (condVersion == int.MinValue)
+                        continue;
+
+                    if (condVersion != Context.ZEnvironment.ZVersion &&
+                        !(condVersion == ZModel.ZEnvironment.GLULX_ZVERSION && Context.IsGlulx && !Context.IsGlulx16) &&
+                        condVersion != 0)
+                        continue;
+
+                    while (!body.IsEmpty)
+                    {
+                        ZilObject bodyExpr;
+                        (bodyExpr, body) = body;
+                        CollectRoutineConstants(bodyExpr, output, suppressGlobalReads);
+                    }
+
+                    return;
+                }
+            }
+
+            void CollectRoutineConstantsFromIfflagClauses(ZilListoidBase clauses, HashSet<ZilAtom> output, bool suppressGlobalReads)
+            {
+                while (!clauses.IsEmpty)
+                {
+                    ZilObject clause;
+                    (clause, clauses) = clauses;
+
+                    if (clause is not ZilListoidBase list || list.IsEmpty)
+                        break;
+
+                    var (flag, body) = list;
+
+                    bool match;
+
+                    switch (flag)
+                    {
+                        case ZilAtom atom when Context.GetCompilationFlagValue(atom) is ZilObject value:
+                            match = value.IsTrue;
+                            break;
+
+                        case ZilString str when Context.GetCompilationFlagValue(str.Text) is ZilObject value:
+                            match = value.IsTrue;
+                            break;
+
+                        case ZilForm form:
+                            try
+                            {
+                                form = Subrs.SubstituteIfflagForm(Context, form);
+                                var zr = form.Eval(Context);
+                                match = zr.ShouldPass() || ((ZilObject)zr).IsTrue;
+                            }
+                            catch (ZilError)
+                            {
+                                // Compilation will report this later when the clause is actually compiled.
+                                // For pruning, keep things conservative.
+                                match = true;
+                            }
+                            break;
+
+                        case ZilAtom { StdAtom: StdAtom.ELSE or StdAtom.T }:
+                            match = true;
+                            break;
+
+                        default:
+                            // If the condition isn't a known compilation flag, the compiler treats it as an ELSE clause.
+                            // For pruning, keep things conservative.
+                            match = true;
+                            break;
+                    }
+
+                    if (!match)
+                        continue;
+
+                    while (!body.IsEmpty)
+                    {
+                        ZilObject bodyExpr;
+                        (bodyExpr, body) = body;
+                        CollectRoutineConstants(bodyExpr, output, suppressGlobalReads);
+                    }
+
+                    return;
                 }
             }
         }
