@@ -1798,9 +1798,9 @@ Returns:
     <SET NY <NP-YCNT .NP>>
     <SET NN <NP-NCNT .NP>>
     <SET MODE <NP-MODE .NP>>
-        ;"Don't try to outsmart complex modes (ALL/ANY, multiple YSPECs, etc.)."
-        <COND (<OR <0? .NY> <NOT <0? .MODE>> <G? .NY 1>>
-          <RETURN 0>)>
+    ;"Don't try to outsmart complex modes (ALL/ANY, multiple YSPECs, etc.)."
+    <COND (<OR <0? .NY> <NOT <0? .MODE>> <G? .NY 1>>
+           <RETURN 0>)>
     <SET SPEC <NP-YSPEC .NP 1>>
     <SET BITS <ENCODE-NOUN-BITS .FIND .OPTS>>
     ;"Widen the scope-stage preferences to the usual 'reasonable scope' so we
@@ -1838,6 +1838,44 @@ Returns:
                      (ELSE <SET Q <- .Q 10>>)>)>
         <RETURN .Q>>>
 
+;"Silently probes whether GWIM would be able to infer a missing object for a
+  particular syntax slot, and returns a score delta.
+
+This is used only for choosing between competing syntax lines when the player
+omitted an object (e.g. PUT GUN). It must not print messages or have side effects.
+
+Returns:
+  +29 if exactly one object in scope matches (GWIM would succeed)
+  +9 if multiple objects match (GWIM would fail with ambiguity)
+  -29 if no objects match (GWIM would fail outright)
+
+Notes:
+  The result intentionally avoids multiples of 10 so it can't exactly cancel
+  MATCH-SYNTAX-LINE?'s base score (which is scaled by 10)."
+<ROUTINE TRIAL-GWIM-SLOT (BIT OPTS "AUX" CNT)
+    ;"Mirror GWIM's special-case behavior."
+    <COND (<==? .BIT ,KLUDGEBIT> <RETURN 29>)
+          (<VERB? WALK> <RETURN -29>)>
+    <SET CNT 0>
+    <BIND ((SOPTS .OPTS))
+        ;"If no scope-stage preferences were specified, default to full scope."
+        <COND (<0? .SOPTS> <SET SOPTS -1>)>
+        ;"If HAVE is required, ensure we search inventory stages."
+        <COND (<BTST .OPTS ,SF-HAVE>
+               <SET SOPTS <ORB .SOPTS ,SF-HELD ,SF-CARRIED>>)>
+        ;"If TAKE is allowed, include room stages so we can infer takeable objects
+         and let HAVE/TAKE checks handle the implicit TAKE later."
+        <COND (<BTST .OPTS ,SF-TAKE>
+               <SET SOPTS <ORB .SOPTS ,SF-ON-GROUND ,SF-IN-ROOM>>)>
+        <MAP-SCOPE (I [BITS .SOPTS])
+            <COND (<AND <N=? .I ,WINNER>
+                        <OR <0? .BIT> <FSET? .I .BIT>>
+                        <HAVE-TAKE-POSSIBLE? .I .OPTS>>
+                   <SET CNT <+ .CNT 1>>)>>
+        <COND (<0? .CNT> <RETURN -29>)
+              (<1? .CNT> <RETURN 29>)
+              (ELSE <RETURN 9>)>>>
+
 ;"Attempts to match a syntax line for the current verb.
 
 Uses:
@@ -1866,8 +1904,7 @@ Returns:
         <SET S <MATCH-SYNTAX-LINE? .PTR>>
         <COND (<AND .S <G? .S .BEST-SCORE>>
                <SET BEST-SCORE .S>
-               <SET BEST .PTR>
-         <COND (<==? .S 100> <RETURN>)>)>
+               <SET BEST .PTR>)>
         <SET PTR <+ .PTR ,SYN-REC-SIZE>>>
     <TRACE-OUT>
     <COND (.BEST
@@ -2020,6 +2057,28 @@ Returns:
     <COND (<AND <=? .NOBJ 2> <NOT <OR ,P-P2 .PREP2>>>
            <TRACE 3 "[-10, no preposition on PRSI]" CR>
            <SET R <- .R 10>>)>
+    ;"If the player supplied at least one noun phrase but omitted exactly one
+      additional object, prefer syntaxes where GWIM would be able to infer it
+      (unique > multiple > none). Don't apply this to bare-verb commands like
+      TAKE, which should orphan the direct object instead of biasing toward a
+      different syntax line."
+    <COND (<AND <G? ,P-NOBJ 0>
+                <==? <- .NOBJ ,P-NOBJ> 1>
+                <NOT <SYN-OBJ1-SPECIAL? .PTR>>>
+           <SET F1 <GETB .PTR ,SYN-FIND1>>
+           <SET O1 <GETB .PTR ,SYN-OPTS1>>
+           <SET BONUS <TRIAL-GWIM-SLOT .F1 .O1>>
+           <TRACE 3 "[" IF <G? .BONUS 0> !\+ N .BONUS " from trial PRSO GWIM]" CR>
+           <SET R <+ .R .BONUS>>)>
+    <COND (<AND <G? ,P-NOBJ 0>
+                <==? <- .NOBJ ,P-NOBJ> 1>
+                <1? ,P-NOBJ>
+                <NOT <SYN-OBJ2-SPECIAL? .PTR>>>
+           <SET F2 <GETB .PTR ,SYN-FIND2>>
+           <SET O2 <GETB .PTR ,SYN-OPTS2>>
+           <SET BONUS <TRIAL-GWIM-SLOT .F2 .O2>>
+           <TRACE 3 "[" IF <G? .BONUS 0> !\+ N .BONUS " from trial PRSI GWIM]" CR>
+           <SET R <+ .R .BONUS>>)>
     ;"Trial-match any provided noun phrases against this syntax line to avoid
       choosing a line that can't possibly match the player's words."
     <COND (<AND <G=? ,P-NOBJ 1>

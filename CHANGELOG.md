@@ -33,6 +33,15 @@ and this project adheres to
   original. There's also an illustrated version for Glulx, cloak_glk, included
   as an example of using Glk.
 
+- Swapped the definition order of PUT ON and PUT IN, so that the parser will
+  infer PUT ON instead of PUT IN if both are equally applicable (e.g. if only
+  a surface is available).
+
+- If a missing object has to be inferred, but that inference would fail for some
+  of the candidate syntax lines, the parser now prefers the line(s) where it
+  would succeed. For example, PUT IN will be preferred over PUT ON if only a
+  container is available.
+
 ### Fixed
 
 - Fixed binary syntax being parsed incorrectly when followed by whitespace.
