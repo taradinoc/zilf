@@ -110,10 +110,10 @@ namespace Zilf.Interpreter
                     InterpreterMessages._0_Too_Many_Routine_Arguments_Only_1_Allowed_In_V2, "ROUTINE", maxArgsAllowed, ctx.ZEnvironment.ZVersion);
             }
 
-            if (rtn.ArgSpec.EnvironmentAtom != null || rtn.ArgSpec.VarargsAtom != null)
+            if (rtn.ArgSpec.EnvironmentAtom != null || rtn.ArgSpec.VarargsAtom != null || rtn.ArgSpec.CallAtom != null)
             {
                 throw new InterpreterError(ctx.TopFrame.SourceLine,
-                    InterpreterMessages._0_Routines_May_Not_Define_BIND_TUPLE_Or_ARGS_Arguments,
+                    InterpreterMessages._0_Routines_May_Not_Define_BIND_TUPLE_ARGS_Or_CALL_Arguments,
                     "ROUTINE");
             }
 

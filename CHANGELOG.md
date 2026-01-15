@@ -27,6 +27,9 @@ and this project adheres to
 
 - Implemented `POP` for Z-machine versions below 6.
 
+- Implemented the `"CALL"` binding, which lets a function bind the `FORM` that
+  was used to call it (in place of all other argument bindings), as in MDL.
+
 ### Changed
 
 - The Cloak of Darkness sample has been updated to be more faithful to the

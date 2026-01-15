@@ -33,8 +33,10 @@ namespace Zilf.Interpreter
         // name of the function to which this spec belongs
         // reference to the "QUOTE" atom used for any quoted args
         readonly ZilAtom? quoteAtom;
-
         // "BIND"
+
+        // "CALL"
+        readonly ZilObject? callDecl;
 
         // regular args, "OPT", and "AUX"
         readonly ZilAtom[] argAtoms;
@@ -55,6 +57,7 @@ namespace Zilf.Interpreter
         ArgSpec(ZilAtom? name, ZilAtom? activationAtom, int optArgsStart, int auxArgsStart,
             ZilAtom? varargsAtom, bool varargsQuoted, ZilObject? varargsDecl,
             ZilAtom? environmentAtom, ZilObject? valueDecl, ZilAtom? quoteAtom,
+            ZilAtom? callAtom, ZilObject? callDecl,
             ZilAtom[] argAtoms,
             ZilObject?[] argDecls, bool[] argQuoted, ZilObject?[] argDefaults)
         {
@@ -68,6 +71,8 @@ namespace Zilf.Interpreter
             this.EnvironmentAtom = environmentAtom;
             this.valueDecl = valueDecl;
             this.quoteAtom = quoteAtom;
+            this.CallAtom = callAtom;
+            this.callDecl = callDecl;
             this.argAtoms = argAtoms;
             this.argDecls = argDecls;
             this.argQuoted = argQuoted;
@@ -86,6 +91,9 @@ namespace Zilf.Interpreter
             bool varargsQuoted = false;
             ZilObject? varargsDecl = null, valueDecl = null;
 
+            ZilAtom? callAtom = null;
+            ZilObject? callDecl = null;
+
             var argAtoms = new List<ZilAtom>();
             var argDecls = new List<ZilObject?>();
             var argQuoted = new List<bool>();
@@ -96,6 +104,7 @@ namespace Zilf.Interpreter
             const int OO_Activation = 2;
             const int OO_Value = 3;
             const int OO_Environment = 4;
+            const int OO_Call = 5;
 
             int cur = 0;
             int oneOffMode = OO_None;
@@ -110,6 +119,8 @@ namespace Zilf.Interpreter
                     {
                         case "OPT":
                         case "OPTIONAL":
+                            if (callAtom != null)
+                                throw new InterpreterError(InterpreterMessages._0_CALL_Clause_Must_Not_Be_Combined_With_Other_Argument_Bindings, caller);
                             if (optArgsStart != -1)
                                 throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"OPT\"");
                             if (auxArgsStart != -1)
@@ -118,17 +129,31 @@ namespace Zilf.Interpreter
                             continue;
                         case "AUX":
                         case "EXTRA":
+                            if (callAtom != null)
+                                throw new InterpreterError(InterpreterMessages._0_CALL_Clause_Must_Not_Be_Combined_With_Other_Argument_Bindings, caller);
                             if (auxArgsStart != -1)
                                 throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"AUX\"");
                             auxArgsStart = cur;
                             continue;
                         case "ARGS":
+                            if (callAtom != null)
+                                throw new InterpreterError(InterpreterMessages._0_CALL_Clause_Must_Not_Be_Combined_With_Other_Argument_Bindings, caller);
                             varargsQuoted = true;
                             goto case "TUPLE";
                         case "TUPLE":
+                            if (callAtom != null)
+                                throw new InterpreterError(InterpreterMessages._0_CALL_Clause_Must_Not_Be_Combined_With_Other_Argument_Bindings, caller);
                             if (varargsAtom != null)
                                 throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"ARGS\" or \"TUPLE\"");
                             oneOffMode = OO_Varargs;
+                            oneOffTag = arg;
+                            continue;
+                        case "CALL":
+                            if (callAtom != null)
+                                throw new InterpreterError(InterpreterMessages._0_Multiple_1_Clauses, caller, "\"CALL\"");
+                            if (cur != 0 || optArgsStart != -1 || auxArgsStart != -1 || varargsAtom != null)
+                                throw new InterpreterError(InterpreterMessages._0_CALL_Clause_Must_Not_Be_Combined_With_Other_Argument_Bindings, caller);
+                            oneOffMode = OO_Call;
                             oneOffTag = arg;
                             continue;
                         case "NAME":
@@ -200,9 +225,31 @@ namespace Zilf.Interpreter
                         valueDecl = arg;
                         oneOffMode = OO_None;
                         continue;
+
+                    case OO_Call:
+                        switch (arg)
+                        {
+                            case ZilAtom atom:
+                                callAtom = atom;
+                                break;
+
+                            case ZilAdecl adecl:
+                                callDecl = adecl.Second;
+                                callAtom = (ZilAtom)adecl.First;
+                                break;
+
+                            default:
+                                throw new InterpreterError(InterpreterMessages._0_Expected_1_After_2, caller, "an atom", oneOffTag!);
+                        }
+
+                        oneOffMode = OO_None;
+                        continue;
                 }
 
                 // it's a real arg
+                if (callAtom != null)
+                    throw new InterpreterError(InterpreterMessages._0_CALL_Clause_Must_Not_Be_Combined_With_Other_Argument_Bindings, caller);
+
                 cur++;
 
                 bool quoted = false;
@@ -291,6 +338,11 @@ namespace Zilf.Interpreter
                         prev = varargsDecl;
                         varargsDecl = decl;
                     }
+                    else if (atom == callAtom)
+                    {
+                        prev = callDecl;
+                        callDecl = decl;
+                    }
                     else if (argIndex.Contains(atom))
                     {
                         prev = null;
@@ -315,6 +367,7 @@ namespace Zilf.Interpreter
 
             return new ArgSpec(targetName, activationAtom, optArgsStart, auxArgsStart,
                 varargsAtom, varargsQuoted, varargsDecl, environmentAtom, valueDecl, quoteAtom,
+                callAtom, callDecl,
                 argAtoms.ToArray(), argDecls.ToArray(), argQuoted.ToArray(), argDefaults.ToArray());
         }
 
@@ -377,7 +430,8 @@ namespace Zilf.Interpreter
                 other.MinArgCount != MinArgCount ||
                 other.auxArgsStart != auxArgsStart ||
                 other.VarargsAtom != VarargsAtom ||
-                other.varargsQuoted != varargsQuoted)
+                other.varargsQuoted != varargsQuoted ||
+                other.CallAtom != CallAtom)
             {
                 return false;
             }
@@ -408,6 +462,9 @@ namespace Zilf.Interpreter
             if (VarargsAtom != null)
                 result ^= VarargsAtom.GetHashCode();
 
+            if (CallAtom != null)
+                result ^= CallAtom.GetHashCode();
+
             result ^= varargsQuoted.GetHashCode();
 
             for (int i = 0; i < argAtoms.Length; i++)
@@ -422,6 +479,9 @@ namespace Zilf.Interpreter
                 if (argDefaults[i] != null)
                     result ^= argDefaults[i]!.GetHashCode();
             }
+
+            if (callDecl != null)
+                result ^= callDecl.GetHashCode();
 
             return result;
         }
@@ -657,6 +717,31 @@ namespace Zilf.Interpreter
                         ctx.GetStdAtom(StdAtom.ENVIRONMENT));
                 }
 
+                if (CallAtom != null)
+                {
+                    CallFrame? callFrame = null;
+                    for (Frame? frame = ctx.TopFrame; frame != null; frame = frame.Parent)
+                    {
+                        if (frame is CallFrame cf)
+                        {
+                            callFrame = cf;
+                            break;
+                        }
+                    }
+
+                    if (callFrame != null)
+                    {
+                        var callingForm = callFrame.CallingForm;
+                        ctx.MaybeCheckDecl(callingForm, callingForm, callDecl, "argument {0}", CallAtom);
+                        innerEnv.Rebind(CallAtom, callingForm, callDecl);
+                    }
+                    else
+                    {
+                        // No calling FORM is available (e.g. native invocation). Bind as unassigned.
+                        innerEnv.Rebind(CallAtom, null, callDecl);
+                    }
+                }
+
                 IProvideSourceLine? src;
 
                 for (int i = 0; i < MinArgCount; i++)
@@ -778,6 +863,19 @@ namespace Zilf.Interpreter
                 yield return EnvironmentAtom;
             }
 
+            if (CallAtom != null)
+            {
+                yield return ZilString.FromString("CALL");
+                if (callDecl == null)
+                {
+                    yield return CallAtom;
+                }
+                else
+                {
+                    yield return new ZilAdecl(CallAtom, callDecl);
+                }
+            }
+
             for (int i = 0; i < argAtoms.Length; i++)
             {
                 if (i == auxArgsStart)
@@ -858,5 +956,7 @@ namespace Zilf.Interpreter
         public ZilAtom? EnvironmentAtom { get; }
 
         public ZilAtom? VarargsAtom { get; }
+
+        public ZilAtom? CallAtom { get; }
     }
 }

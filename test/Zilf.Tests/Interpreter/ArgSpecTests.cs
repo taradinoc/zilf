@@ -186,6 +186,31 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        public void CALL_Is_Included_In_ZilListBody()
+        {
+            var ctx = new Context();
+
+            var args = Program.Parse(ctx, @"""CALL"" CF").ToArray();
+
+            var spec = ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, args);
+
+            TestHelpers.AssertStructurallyEqual(args, [.. spec.AsZilListBody()]);
+        }
+
+        [TestMethod]
+        public void CALL_Cannot_Be_Combined_With_Normal_Arguments()
+        {
+            var ctx = new Context();
+
+            var args = Program.Parse(ctx, @"""CALL"" CF A").ToArray();
+
+            Assert.ThrowsException<InterpreterError>(() =>
+            {
+                ArgSpec.Parse("test", ZilAtom.Parse("FOO", ctx), null, args);
+            });
+        }
+
+        [TestMethod]
         public void Extra_Elements_In_Binding_Should_Throw()
         {
             var ctx = new Context();

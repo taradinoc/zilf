@@ -134,6 +134,16 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        public void CALL_Binding_Binds_To_Calling_Form()
+        {
+            var ctx = new Context();
+
+            TestHelpers.Evaluate(ctx, @"<DEFINE FOO (""CALL"" CF) .CF>");
+            TestHelpers.Evaluate(ctx, @"<SETG FOO-CALL '<FOO>>");
+            TestHelpers.EvalAndAssert(ctx, "<==? <EVAL ,FOO-CALL> ,FOO-CALL>", ctx.TRUE);
+        }
+
+        [TestMethod]
         public void DEFINE_Requires_A_Body()
         {
             TestHelpers.EvalAndCatch<InterpreterError>("<DEFINE FOO ()>");

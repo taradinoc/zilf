@@ -113,6 +113,9 @@ namespace Zilf.Diagnostics
         [Error("unrecognized token in syntax pattern: {0}")]
         public const int Unrecognized_Token_In_Syntax_Pattern_0 = 132;
 
+        [Error("{0}: \"CALL\" clause must not be combined with other argument bindings")]
+        public const int _0_CALL_Clause_Must_Not_Be_Combined_With_Other_Argument_Bindings = 133;
+
         // Type/Format/DECL - 0200
 
         [Error("calling unassigned atom: {0}")]
@@ -288,8 +291,8 @@ namespace Zilf.Diagnostics
         public const int _0_Word_Would_Be_Overloaded = 425;
         [Error("too many {0}: only {1} allowed in this vocab format")]
         public const int Too_Many_0_Only_1_Allowed_In_This_Vocab_Format = 426;
-        [Error("{0}: routines may not define \"BIND\", \"TUPLE\", or \"ARGS\" arguments")]
-        public const int _0_Routines_May_Not_Define_BIND_TUPLE_Or_ARGS_Arguments = 427;
+        [Error("{0}: routines may not define \"BIND\", \"TUPLE\", \"ARGS\", or \"CALL\" arguments")]
+        public const int _0_Routines_May_Not_Define_BIND_TUPLE_ARGS_Or_CALL_Arguments = 427;
         [Warning("{0}: LEXV table initializer is not a multiple of 3 elements")]
         public const int _0_LEXV_Table_Initializer_Is_Not_A_Multiple_Of_3_Elements = 428;
         [Warning("{0}'{1} is parsed as two separate words, {0} and {1}; did you mean {0}\\'{1}?")]
