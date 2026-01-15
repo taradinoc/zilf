@@ -30,6 +30,8 @@ and this project adheres to
 - Implemented the `"CALL"` binding, which lets a function bind the `FORM` that
   was used to call it (in place of all other argument bindings), as in MDL.
 
+- `REMOVE` can now be used as a synonym for `TAKE OFF`.
+
 ### Changed
 
 - The Cloak of Darkness sample has been updated to be more faithful to the
