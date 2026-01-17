@@ -697,6 +697,15 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async System.Threading.Tasks.Task TestFSET_As_Condition_WarnsAsync()
+        {
+            await AssertExpr("<COND (<FSET ,MYOBJECT ,FOOBIT> <PRINTI \"yes\">) (T <PRINTI \"no\">)>")
+                .WithGlobal("<OBJECT MYOBJECT (FLAGS FOOBIT)>")
+                .WithWarnings("ZIL0509")
+                .OutputsAsync("yes");
+        }
+
+        [TestMethod]
         public async System.Threading.Tasks.Task TestFSET_ErrorAsync()
         {
             await AssertExpr("<FSET>").DoesNotCompileAsync();

@@ -123,6 +123,13 @@ namespace Zilf.Compiler
             }
             if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount, isGlulx))
             {
+                if (head.Text == "FSET")
+                {
+                    Context.HandleError(new CompilerError(
+                        form,
+                        CompilerMessages.FSET_Always_Returns_True_FSET_May_Have_Been_Intended));
+                }
+
                 ZBuiltins.CompileVoidCall(head.Text, this, rb, form);
 
                 // void calls return true

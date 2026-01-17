@@ -43,7 +43,6 @@ namespace Zilf.Diagnostics
         [Fatal("too many errors, stopping")]
         public const int Too_Many_Errors = 1;
 
-
         // Syntax - 0100
 
         [Error("all clauses in {0} must be lists")]
@@ -213,7 +212,9 @@ namespace Zilf.Diagnostics
         public const int Undeclared_Compilation_Flag_0 = 506;
         [Warning("{0}: condition is always {1}")]
         public const int _0_Condition_Is_Always_1 = 507;
-    [Error("argument must be a literal string")]
-    public const int Argument_Must_Be_Literal_String = 508;
+        [Error("argument must be a literal string")]
+        public const int Argument_Must_Be_Literal_String = 508;
+        [Warning("FSET always returns true, FSET? may have been intended")]
+        public const int FSET_Always_Returns_True_FSET_May_Have_Been_Intended = 509;
     }
 }

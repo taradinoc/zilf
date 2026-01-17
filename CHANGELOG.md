@@ -32,6 +32,8 @@ and this project adheres to
 
 - `REMOVE` can now be used as a synonym for `TAKE OFF`.
 
+- Added warning ZIL0509 when `FSET` is used as a condition rather than `FSET?`.
+
 ### Changed
 
 - The Cloak of Darkness sample has been updated to be more faithful to the
