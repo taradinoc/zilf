@@ -1,4 +1,4 @@
-ZILF Library Copyright (C) 2010-2025 Tara McGrew and Josh Lawrence
+ZILF Library Copyright (C) 2010-2026 Tara McGrew and Josh Lawrence
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
