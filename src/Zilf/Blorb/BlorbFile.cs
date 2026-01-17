@@ -22,7 +22,7 @@ using System.IO;
 
 namespace Zilf.Blorb
 {
-    class BlorbFile
+    sealed class BlorbFile
     {
         private List<byte[]> pictures = [];
         private List<PictureType> pictureTypes = [];
