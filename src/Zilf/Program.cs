@@ -26,7 +26,6 @@ using System.Reflection;
 using System.Text;
 using System.CommandLine;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using Zilf.Common;
 using Zilf.Compiler;
 using Zilf.Diagnostics;
@@ -193,6 +192,13 @@ namespace Zilf
                 Arity = ArgumentArity.ZeroOrMore
             };
 
+            var buildDefineFlagOption = new Option<string[]>("--define-flag", "-D")
+            {
+                Description = "Define compilation flag(s) (comma-separated) as T. May be repeated.",
+                AllowMultipleArgumentsPerToken = false,
+                Arity = ArgumentArity.OneOrMore
+            };
+
             var buildIdeInfoOption = new Option<string?>("--ide-info")
             {
                 Description = "Emit machine-readable workspace data to the provided file (or stdout). Implies --stop-after-compile.",
@@ -215,6 +221,7 @@ namespace Zilf
             buildCommand.Options.Add(buildStopAfterCompileOption);
             buildCommand.Options.Add(buildZapfPassThroughOption);
             buildCommand.Options.Add(buildIdeInfoOption);
+            buildCommand.Options.Add(buildDefineFlagOption);
 
             buildCommand.Validators.Add(commandResult =>
             {
@@ -389,6 +396,7 @@ namespace Zilf
                 buildStopAfterCompileOption,
                 buildZapfPassThroughOption,
                 buildIdeInfoOption,
+                buildDefineFlagOption,
                 replCommand,
                 replQuietOption,
                 replCaseSensitiveOption,
@@ -461,6 +469,7 @@ namespace Zilf
             Option<bool> BuildStopAfterCompileOption,
             Option<string[]> BuildZapfPassThroughOption,
             Option<string?> BuildIdeInfoOption,
+            Option<string[]> BuildDefineFlagOption,
             Command ReplCommand,
             Option<bool> ReplQuietOption,
             Option<bool?> ReplCaseSensitiveOption,
@@ -901,6 +910,7 @@ namespace Zilf
             Option<bool> debugInfoOption;
             Option<bool> glulxOption;
             Option<bool> glulx16Option;
+            Option<string[]> defineFlagOption;
 
             var commandResult = parseResult.CommandResult;
             if (commandResult.Command == spec.BuildCommand)
@@ -916,6 +926,7 @@ namespace Zilf
                 debugInfoOption = spec.BuildDebugInfoOption;
                 glulxOption = spec.BuildGlulxOption;
                 glulx16Option = spec.BuildGlulx16Option;
+                defineFlagOption = spec.BuildDefineFlagOption;
             }
             else if (commandResult.Command == spec.ReplCommand)
             {
@@ -930,6 +941,7 @@ namespace Zilf
                 debugInfoOption = default!; // Not available in REPL
                 glulxOption = default!; // Not available in REPL
                 glulx16Option = default!; // Not available in REPL
+                defineFlagOption = default!; // Not available in REPL
             }
             else if (commandResult.Command == spec.ExecCommand)
             {
@@ -944,6 +956,7 @@ namespace Zilf
                 debugInfoOption = default!; // Not available in Exec
                 glulxOption = default!; // Not available in Exec
                 glulx16Option = default!; // Not available in Exec
+                defineFlagOption = default!; // Not available in Exec
             }
             else
             {
@@ -1020,6 +1033,26 @@ namespace Zilf
                 ctx.SetTargetPlatform(TargetPlatform.Glulx16);
                 // keep ZVersion at current Z-machine default (3) unless changed in source
                 ctx.SetZVersion(ctx.ZEnvironment.ZVersion);
+            }
+
+            if (defineFlagOption != null)
+            {
+                var rawTokens = parseResult.GetValue(defineFlagOption) ?? [];
+                foreach (var token in rawTokens)
+                {
+                    if (string.IsNullOrWhiteSpace(token))
+                        continue;
+
+                    foreach (var part in token.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var flagName = part.Trim();
+                        if (flagName.Length == 0)
+                            continue;
+
+                        var atom = ZilAtom.Parse(flagName, ctx);
+                        ctx.DefineCompilationFlag(atom, ctx.TRUE, true);
+                    }
+                }
             }
 
             return ctx;

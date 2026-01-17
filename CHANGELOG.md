@@ -34,6 +34,10 @@ and this project adheres to
 
 - Added warning ZIL0509 when `FSET` is used as a condition rather than `FSET?`.
 
+- Added `-D` command line option to define one or more compilation flags. For
+  example, instead of adding `<COMPILATION-FLAG DEBUG T>` to the source code,
+  you can run `zilf -D DEBUG`.
+
 ### Changed
 
 - The Cloak of Darkness sample has been updated to be more faithful to the
@@ -48,6 +52,9 @@ and this project adheres to
   of the candidate syntax lines, the parser now prefers the line(s) where it
   would succeed. For example, PUT IN will be preferred over PUT ON if only a
   container is available.
+
+- Debugging verbs are now enabled by default when the `DEBUG` flag is enabled.
+  They can be disabled with an explicit `<COMPILATION-FLAG DEBUGGING-VERBS <>>`.
 
 ### Fixed
 
