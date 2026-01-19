@@ -1307,8 +1307,8 @@ This assumes that if the objects have a common parent, it's within HERE."
 <ROUTINE V-UNWEAR ()
     <COND (<AND <IN? ,PRSO ,WINNER> <FSET? ,PRSO ,WORNBIT>>
            <FCLEAR ,PRSO ,WORNBIT>
-           <TELL "You take off " T ,PRSO "." CR>)
-          (ELSE <TELL "You aren't wearing that." CR>)>>
+           <TELL <LIBRARY-MESSAGE UNWEAR SUCCESS ((OBJ ,PRSO))> CR>)
+          (ELSE <TELL <LIBRARY-MESSAGE UNWEAR NOT-WORN> CR>)>>
 
 <ROUTINE V-EAT ()
     <COND (<PRSO? ,WINNER> <TELL <LIBRARY-MESSAGE EAT EAT-ME> CR> <RTRUE> ;"FIXME: impossible?")
@@ -1532,7 +1532,7 @@ This assumes that if the objects have a common parent, it's within HERE."
            <TELL <LIBRARY-MESSAGE TELL DEFAULT-3> CR>)>>
 
 <ROUTINE V-TELL-ABOUT ()
-    <TELL CT ,PRSO " doesn't seem interested." CR>>
+    <TELL <LIBRARY-MESSAGE TELL DEFAULT-PERSON ((WHOM ,PRSO))> CR>>
 
 ;"TELL is a game verb, but it's defined here because it shares PRE-TELL"
 <ROUTINE V-TELL ()

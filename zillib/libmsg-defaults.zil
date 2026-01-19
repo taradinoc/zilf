@@ -332,7 +332,8 @@
     (DEFAULT-1 "Talking to ")
     (DEFAULT-2-YOURSELF "yourself")
     (DEFAULT-2-OBJECT A .OBJ)
-    (DEFAULT-3 ", huh?")>
+    (DEFAULT-3 ", huh?")
+    (DEFAULT-PERSON CT .WHOM " doesn't seem interested.")>
 
 <DEFAULT-LIBRARY-MESSAGES SING
     (DEFAULT "You give a stirring performance of \"MacArthur Park\". Bravo!")>
