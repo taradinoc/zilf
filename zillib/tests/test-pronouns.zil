@@ -33,6 +33,18 @@
     (SYNONYM WALLET)
     (FLAGS TAKEBIT)>
 
+<OBJECT TARZAN
+    (IN STARTROOM)
+    (DESC "Tarzan")
+    (SYNONYM TARZAN)
+    (FLAGS PERSONBIT NARTICLEBIT)>
+
+<OBJECT JANE
+    (IN STARTROOM)
+    (DESC "Jane")
+    (SYNONYM JANE)
+    (FLAGS PERSONBIT NARTICLEBIT FEMALEBIT)>
+
 <TEST-SETUP ()
     ;"In case a test leaves it in the wrong place..."
     <MOVE ,WINNER ,STARTROOM>
@@ -56,5 +68,16 @@ apple: Dropped.|">
     <COMMAND [WEST]>
     <COMMAND [EXAMINE IT]>
     <EXPECT "The wallet is no longer here.|">>
+
+<TEST-CASE ("EXAMINE HIM AND HER")
+    <COMMAND [EXAMINE TARZAN]>
+    <COMMAND [EXAMINE JANE]>
+    <COMMAND [TAKE HIM AND HER]>
+    <EXPECT "Tarzan: I don't think Tarzan would appreciate that.|Jane: I don't think Jane would appreciate that.|">>
+
+<TEST-CASE ("Pronoun with adjective")
+    <COMMAND [EXAMINE NAIL]>
+    <COMMAND [EXAMINE RUSTY IT]>
+    <EXPECT "You don't see that here.|">>
 
 <TEST-GO ,STARTROOM>

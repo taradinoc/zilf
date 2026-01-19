@@ -568,6 +568,21 @@ Args:
 <DEFMAC COPY-PRSTBL ('SRC 'DEST)
     `<~<VERSION? (ZIP COPY-TABLE-B) (ELSE COPY-TABLE)> ~.SRC ~.DEST <+ 1 ,P-MAX-OBJECTS>>>
 
+;"Adds the contents of SRC to DEST, up to a total of P-MAX-OBJECTS.
+
+Returns:
+  True if all objects were copied.
+  False if the combined contents would exceed P-MAX-OBJECTS."
+<ROUTINE MERGE-PRSTBL (SRC DEST "AUX" (SCNT <GET/B .SRC 0>) (DCNT <GET/B .DEST 0>) (RES 1))
+    <COND (<G? <+ .DCNT .SCNT> ,P-MAX-OBJECTS>
+           <SET RES 0>
+           <SET SCNT <- P-MAX-OBJECTS .DCNT>>)>
+    <COND (<L=? .SCNT 0> <RFALSE>)>
+    <VERSION? (ZIP <COPY-TABLE-B <+ .SRC 1> <+ .DEST .DCNT 1> .SCNT>)
+              (ELSE <COPY-TABLE <+ .SRC ,WORD-SIZE> <* <+ .DEST .DCNT 1> ,WORD-SIZE> .SCNT>)>
+    <PUT/B .DEST 0 <+ .DCNT .SCNT>>
+    .RES>
+
 "Structured type for backing up a complete parsed command"
 <DEFSTRUCT PARSER-RESULT (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
     (PST-V-WORD FIX)
@@ -2190,15 +2205,7 @@ Returns:
                         <PUTB ,P-PRSOS 0 1>)>)
                 (ELSE
                   <TRACE 3 "[matching PRSO]" CR>
-                  <SETG PRSO
-                      <OR <AND <1? <NP-YCNT ,P-NP-DOBJ>>
-                              <EXPAND-PRONOUN <OBJSPEC-NOUN <NP-YSPEC ,P-NP-DOBJ
-                                                                      1>>
-                                              ,P-PRSOS>>
-                          <MATCH-NOUN-PHRASE ,P-NP-DOBJ
-                                            ,P-PRSOS
-                                            <ENCODE-NOUN-BITS .F .O>>>>
-                  <COND (<=? ,PRSO ,EXPAND-PRONOUN-FAILED> <RFALSE>)>)>
+                  <SETG PRSO <MATCH-NOUN-PHRASE ,P-NP-DOBJ ,P-PRSOS <ENCODE-NOUN-BITS .F .O>>>)>
           <COND (<NOT ,PRSO> <RFALSE>)>)>
     <COND (<AND ,PRSO
                 <NOT <OR ,PRSO-DIR
@@ -2235,12 +2242,7 @@ Returns:
                          <PUTB ,P-PRSIS 0 1>)>)
                  (ELSE
                   <TRACE 3 "[matching PRSI]" CR>
-                  <SETG PRSI
-                      <OR <AND <1? <NP-YCNT ,P-NP-IOBJ>>
-                               <EXPAND-PRONOUN <OBJSPEC-NOUN <NP-YSPEC ,P-NP-IOBJ 1>> ,P-PRSIS>>
-                          <MATCH-NOUN-PHRASE ,P-NP-IOBJ ,P-PRSIS <ENCODE-NOUN-BITS .F .O>>>>
-                  <COND (<=? ,PRSI ,EXPAND-PRONOUN-FAILED>
-                         <RFALSE>)>)>
+                  <SETG PRSI <MATCH-NOUN-PHRASE ,P-NP-IOBJ ,P-PRSIS <ENCODE-NOUN-BITS .F .O>>>)>
            <COND (<NOT ,PRSI>
                   <RFALSE>)>)>
     <COND (<AND ,PRSI
@@ -2585,29 +2587,50 @@ Returns:
                    <TRACE 4 "[SPEC=" OBJSPEC .SPEC "]" CR>
                    <SET F <>>
                    <SET ONOUT .NOUT>
-                   <SET BEST 1>
-                   <MAP-SCOPE (I [BITS .BITS])
-                       <TRACE 5 "[considering " T .I "]" CR>
-                       <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
-                                   <SET Q <REFERS? .SPEC .I>>
-                                   <G=? .Q .BEST>>
-                              <TRACE 4 "[matches " T .I "(" N .I "), Q=" N .Q "]" CR>
-                              <SET F T>
-                              ;"Erase previous matches if this is better"
-                              <COND (<G? .Q .BEST>
-                                     <TRACE 4 "[clearing match list]" CR>
-                                     <SET NOUT .ONOUT>
-                                     <SET BEST .Q>)>
-                              <COND (<AND .NN <NP-EXCLUDES? .NP .I>>
-                                     <TRACE 4 "[excluded]" CR>)
-                                    (<G=? .NOUT ,P-MAX-OBJECTS>
-                                     <TELL "[too many objects!]" CR>
-                                     <TRACE-OUT>
-                                     <RETURN>)
-                                    (ELSE
-                                     <TRACE 4 "[accepted]" CR>
-                                     <SET NOUT <+ .NOUT 1>>
-                                     <PUT/B .OUT .NOUT .I>)>)>>
+                   ;"Check for a pronoun first"
+                   <COND (<AND <NOT <OBJSPEC-ADJ .SPEC>>
+                               <SET Q <OBJSPEC-NOUN .SPEC>>
+                               <SET F <EXPAND-PRONOUN .Q ,P-XOBJS>>>
+                          ;"Exit if EXPAND-PRONOUN printed an error message"
+                          <COND (<=? .F ,EXPAND-PRONOUN-FAILED>
+                                 <TRACE-OUT>
+                                 <RFALSE>)>
+                          <TRACE 4 "[matched pronoun]" CR>
+                          ;"Copy the pronoun's expansion"
+                          <PUT/B .OUT 0 .NOUT>
+                          <COND (<NOT <MERGE-PRSTBL ,P-XOBJS .OUT>>
+                                 <TELL "[too many objects!]" CR>
+                                 <TRACE-OUT>
+                                 <RETURN>)>
+                          ;"Avoid orphaning if it expanded to multiple objects"
+                          <COND (<AND <=? .F ,MANY-OBJECTS> <NOT .MODE>>
+                                 <SET MODE ,MCM-ALL>)>
+                          <SET NOUT <GET/B .OUT 0>>)>
+                   ;"Check objects in scope"
+                   <COND (<NOT .F>
+                          <SET BEST 1>
+                          <MAP-SCOPE (I [BITS .BITS])
+                              <TRACE 5 "[considering " T .I "]" CR>
+                              <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
+                                          <SET Q <REFERS? .SPEC .I>>
+                                          <G=? .Q .BEST>>
+                                      <TRACE 4 "[matches " T .I "(" N .I "), Q=" N .Q "]" CR>
+                                      <SET F T>
+                                      ;"Erase previous matches if this is better"
+                                      <COND (<G? .Q .BEST>
+                                              <TRACE 4 "[clearing match list]" CR>
+                                              <SET NOUT .ONOUT>
+                                              <SET BEST .Q>)>
+                                      <COND (<AND .NN <NP-EXCLUDES? .NP .I>>
+                                              <TRACE 4 "[excluded]" CR>)
+                                              (<G=? .NOUT ,P-MAX-OBJECTS>
+                                              <TELL "[too many objects!]" CR>
+                                              <TRACE-OUT>
+                                              <RETURN>)
+                                              (ELSE
+                                              <TRACE 4 "[accepted]" CR>
+                                              <SET NOUT <+ .NOUT 1>>
+                                              <PUT/B .OUT .NOUT .I>)>)>>)>
                    ;"Look for a pseudo-object if we didn't find a real one."
                    <COND (<AND <NOT .F>
                                <BTST .BITS ,SF-ON-GROUND>
