@@ -2553,7 +2553,7 @@ Returns:
     <SET MODE <NP-MODE .NP>>
     <SET OBITS .BITS>
     <COND (<AND <0? .MODE> <NOT <BTST .BITS ,SF-EVERYWHERE>>>
-           <SET .BITS <ORB .BITS ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>)>
+           <SET BITS <ORB .BITS ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>)>
     <TRACE 3 "[MATCH-NOUN-PHRASE: NY=" N .NY " NN=" N .NN " MODE=" N .MODE
              " BITS=" N .BITS " OBITS=" N .OBITS "]" CR>
     <TRACE-IN>
@@ -2597,7 +2597,7 @@ Returns:
                               <COND (<G? .Q .BEST>
                                      <TRACE 4 "[clearing match list]" CR>
                                      <SET NOUT .ONOUT>
-                                     <SET .BEST .Q>)>
+                                     <SET BEST .Q>)>
                               <COND (<AND .NN <NP-EXCLUDES? .NP .I>>
                                      <TRACE 4 "[excluded]" CR>)
                                     (<G=? .NOUT ,P-MAX-OBJECTS>
