@@ -653,7 +653,7 @@ namespace Zilf.Interpreter
             try
             {
                 string newPath = ctx.FindExactIncludeFile(path);
-                data = File.ReadAllBytes(newPath);
+                data = ctx.FileSystem.GetBytes(newPath);
             }
             catch (FileNotFoundException ex)
             {
