@@ -4,6 +4,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to
 [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Pronouns can now be used with AND.
+
+- Fixed `V-UNWEAR` and `V-TELL-ABOUT` not using the library message system.
+
 ## [1.3] (January 17, 2026)
 
 ### Added
