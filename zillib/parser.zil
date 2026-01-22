@@ -580,13 +580,13 @@ Args:
 Returns:
   True if all objects were copied.
   False if the combined contents would exceed P-MAX-OBJECTS."
-<ROUTINE MERGE-PRSTBL (SRC DEST "AUX" (SCNT <GET/B .SRC 0>) (DCNT <GET/B .DEST 0>) (RES 1))
+<ROUTINE MERGE-PRSTBL (SRC DEST "AUX" (SCNT <GETB .SRC 0>) (DCNT <GETB .DEST 0>) (RES 1))
     <COND (<G? <+ .DCNT .SCNT> ,P-MAX-OBJECTS>
            <SET RES 0>
            <SET SCNT <- P-MAX-OBJECTS .DCNT>>)>
     <COND (<L=? .SCNT 0> <RFALSE>)>
     <VERSION? (ZIP <COPY-TABLE-B <+ .SRC 1> <+ .DEST .DCNT 1> .SCNT>)
-              (ELSE <COPY-TABLE <+ .SRC ,WORD-SIZE> <* <+ .DEST .DCNT 1> ,WORD-SIZE> .SCNT>)>
+              (ELSE <COPY-TABLE <+ .SRC ,WORD-SIZE> <+ .DEST <* <+ .DCNT 1> ,WORD-SIZE>> .SCNT>)>
     <PUT/B .DEST 0 <+ .DCNT .SCNT>>
     .RES>
 
