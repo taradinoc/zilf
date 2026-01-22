@@ -457,6 +457,16 @@ namespace Zilf.Compiler
                     reachable.Add(syn.Preaction);
             }
 
+            // Glulx16 (Z-machine compatibility) invokes UPDATE-STATUS-LINE via the generated
+            // update_status_line_hook, so the routine must be compiled even if never called
+            // directly from other ZIL code.
+            if (Context.IsGlulx16 && Context.ZEnvironment.ZVersion == 3)
+            {
+                var updateStatusLine = Context.ZEnvironment.InternGlobalName(ZilAtom.Parse("UPDATE-STATUS-LINE", Context));
+                if (allRoutineNames.Contains(updateStatusLine))
+                    reachable.Add(updateStatusLine);
+            }
+
             // Traverse call graph to find all routines reachable from the seeds
             var stack = new Stack<ZilAtom>(reachable);
             while (stack.Count > 0)
