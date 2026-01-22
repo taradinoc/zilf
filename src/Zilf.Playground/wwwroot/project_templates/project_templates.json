@@ -76,6 +76,7 @@
     "zillib": {
       "files": [
         "zillib/events.zil",
+        "zillib/hooks.zil",
         "zillib/libmsg.zil",
         "zillib/libmsg-defaults.zil",
         "zillib/orphan.zil",
@@ -84,6 +85,7 @@
         "zillib/pseudo.zil",
         "zillib/qq.mud",
         "zillib/scope.zil",
+        "zillib/scoring.zil",
         "zillib/status.zil",
         "zillib/template.zil",
         "zillib/verbs.zil"

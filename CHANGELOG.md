@@ -6,6 +6,21 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Added a scoring system, which can be enabled with `<SETG USE-SCORING? T>`
+  before inserting the parser. If enabled, you must also define the `MAX-SCORE`
+  constant. This gets you score notifications (controlled by the command
+  `NOTIFY [ON/OFF]`) and `<AWARD-POINTS 10>` (which simply adds to `SCORE`).
+  If you replace the `PRINT-RANK` definition section, you can define a
+  `PRINT-RANK` routine to give the player a rating based on their score. You can
+  also classify the points you award, using `SCORING-ACHIEVEMENTS` and a second
+  argument to `AWARD-POINTS`; see `advent.zil` for an example. The player can
+  see the classification with `FULL SCORE`.
+
+- Added `hooks.zil` to keep track of multiple features that need to run "finish"
+  functions before compilation starts.
+
 ### Fixed
 
 - Pronouns can now be used with AND.

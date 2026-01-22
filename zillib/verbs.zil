@@ -944,6 +944,7 @@ Returns:
           (ELSE <>)>>
 
 <ROUTINE V-QUIT ()
+    <IF-SCORING <V-SCORE>>
     <TELL <LIBRARY-MESSAGE QUIT PROMPT>>
     <COND (<YES?>
            <TELL CR <LIBRARY-MESSAGE QUIT GOODBYE> CR>

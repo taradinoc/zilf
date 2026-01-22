@@ -1,5 +1,7 @@
 "Adaptive hint system for Advent"
 
+<USE "HOOKS">
+
 <DEFSTRUCT HINT VECTOR
     (HINT-NAME ATOM)
     (HINT-PENALTY FIX)
@@ -69,12 +71,16 @@
     <CONSTANT HINT-TEXT-TBL
         <PLTABLE !<MAPF ,LIST ,HINT-TEXT ,HINT-DEFINITIONS>>>>
 
+<ADD-FINISHER
+    <FUNCTION ()
+        <COND (<NOT <EMPTY? ,HINT-DEFINITIONS>> <FINISH-HINTS>)>>>
+
 ;"Displays a specific hint, deducting points and awarding battery power if this is
   the first time it's been shown."
 <ROUTINE SHOW-HINT (N "AUX" P)
     <TELL <GET ,HINT-TEXT-TBL .N> CR>
     <COND (<SET P <GET ,HINT-PENALTY-TBL .N>>
-           <SETG SCORE <- ,SCORE .P>>
+           <AWARD-POINTS <- .P> ,ACH?RECEIVING-HINTS>
            <COND (<G=? ,LANTERN-POWER 30>
                   <SETG LANTERN-POWER <+ ,LANTERN-POWER <GET ,HINT-EXTENSION-TBL .N>>>)>
            <PUT ,HINT-PENALTY-TBL .N 0>)>>

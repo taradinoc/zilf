@@ -9,10 +9,13 @@
 <CONSTANT RELEASEID 3>
 <CONSTANT IFID-ARRAY <PTABLE (STRING) "UUID://0E123F50-20A2-4F5B-8F01-264678ED419D//">>
 
+<SETG USE-SCORING? T>
+<CONSTANT MAX-SCORE 350>
+
 ;"BETA and DBMAZE are defined by this game. Do not comment out these lines -- that will
   leave the options stuck *on*."
-<COMPILATION-FLAG BETA <>>     ;"Transcript prompt, lucky number, beta title/credits"
-<COMPILATION-FLAG DBMAZE <>>   ;"Gives the maze rooms unique names"
+<COMPILATION-FLAG-DEFAULT BETA <>>     ;"Transcript prompt, lucky number, beta title/credits"
+<COMPILATION-FLAG-DEFAULT DBMAZE <>>   ;"Gives the maze rooms unique names"
 
 <CONSTANT GAME-BANNER
     <STRING
@@ -28,7 +31,7 @@ Adapted once more by Tara McGrew (2015)">>
 
 <ROUTINE GO ()
     <SETG HERE ,AT-END-OF-ROAD>
-    <SETG SCORE 36>
+    <AWARD-POINTS 36 ,ACH?STARTING>
     <INIT-STATUS-LINE>
     <IF-BETA <SEED-RANDOM>>
     <SETG MODE ,VERBOSE>
@@ -117,18 +120,17 @@ Adapted once more by Tara McGrew (2015)">>
                  <AND <VERB? DROP>
                       <PRSO? ,LITTLE-BIRD ,BEAR>>>>>>
 
-;"Hook into the main loop to call UPDATE-SCORE-AND-NOTIFY directly instead of using
-  the interrupt queue: first, because we need to make sure it runs after all other interrupts,
-  since they might affect the score. Second, because we want it to run even on GAME-VERB turns,
-  since debugging verbs can move treasures and affect the score."
-<REPLACE-DEFINITION HOOK-END-OF-COMMAND
-    <DEFMAC HOOK-END-OF-COMMAND ()
-        '<UPDATE-SCORE-AND-NOTIFY>>>
+;"Hook into the main loop to update the score instead of using the interrupt
+  queue: first, because we need to make sure it runs after all other interrupts,
+  since they might affect the score. Second, because we want it to run even on
+  GAME-VERB turns, since debugging verbs can move treasures and affect the score."
+<DELAY-DEFINITION HOOK-BEFORE-NOTIFY-SCORE>
 
 ;"We replace a few more library sections below."
 <DELAY-DEFINITION DARKNESS-F>
 <DELAY-DEFINITION PRINT-GAME-OVER>
 <DELAY-DEFINITION RESURRECT?>
+<DELAY-DEFINITION PRINT-RANK>
 
 <INSERT-FILE "parser">
 
@@ -179,9 +181,6 @@ Adapted once more by Tara McGrew (2015)">>
         RARE-SPICES       TR-UNFOUND
         GOLDEN-CHAIN      TR-UNFOUND>>
         
-<CONSTANT MAX-SCORE 350>
-<GLOBAL PREV-SCORE 0>
-
 <CONSTANT RANKS
     <PLTABLE
         349 "All of adventuredom gives tribute to you, Adventurer Grandmaster!"
@@ -194,72 +193,62 @@ Adapted once more by Tara McGrew (2015)">>
         35  "Your score qualifies you as a Novice Class Adventurer."
         10  "You are obviously a Rank Amateur. Better luck next time.">>
 
-<SYNTAX SCORE = V-SCORE>
+<ROUTINE PRINT-RANK (DEAD "AUX" MAX NR)
+    <COND (<NOT .DEAD> <RFALSE>)>
+    ;"Announce the player's rating based on their score."
+    <SET MAX <GET ,RANKS 0>>
+    <DO (I 1 .MAX 2)
+        (END
+        ;"Too low for any rating."
+        <TELL "Wow." CR>
+        <SET NR <- .MAX 1>>)
+        <COND (<G=? ,SCORE <GET ,RANKS .I>>
+                <TELL <GET ,RANKS <+ .I 1>> CR>
+                <SET I <- .I 2>>
+                <COND (<L? .I 1> <SET NR 0>) (ELSE <SET NR .I>)>
+                <RETURN>)>>
+    <TELL "To achieve the next higher rating">
+    <COND (.NR
+            <SET NR <+ <- <GET ,RANKS .NR> ,SCORE> 1>>
+            <TELL ", you need " N .NR " more point">
+            <COND (<1? .NR> <TELL "." CR>) (ELSE <TELL "s." CR>)>)
+          (ELSE <TELL " would be a neat trick!|Congratulations!!" CR>)>>
 
-<ROUTINE V-SCORE ("OPT" DEAD "AUX" MAX NR)
-    <TELL "In ">
-    <COND (<1? ,MOVES> <TELL "1 turn">) (ELSE <TELL N ,MOVES " turns">)>
-    <TELL ", you">
-    <COND (<NOT .DEAD> <TELL "'ve">)>
-    <TELL " scored ">
-    <COND (<1? ,SCORE> <TELL "1 point">) (ELSE <TELL N ,SCORE " points">)>
-    <TELL " out of a possible " N ,MAX-SCORE "." CR>
-    <COND (.DEAD
-           ;"Announce the player's rating based on their score."
-           <SET MAX <GET ,RANKS 0>>
-           <DO (I 1 .MAX 2)
-               (END ;"Too low for any rating."
-                <TELL "Wow." CR>
-                <SET NR <- .MAX 1>>)
-               <COND (<G? ,SCORE <GET ,RANKS .I>>
-                      <TELL <GET ,RANKS <+ .I 1>> CR>
-                      <SET I <- .I 2>>
-                      <COND (<L? .I 1> <SET NR 0>)
-                            (ELSE <SET NR .I>)>
-                      <RETURN>)>>
-           <TELL "To achieve the next higher rating">
-           <COND (.NR
-                  <SET NR <+ <- <GET ,RANKS .NR> ,SCORE> 1>>
-                  <TELL ", you need " N .NR " more point">
-                  <COND (<1? .NR> <TELL "." CR>) (ELSE <TELL "s." CR>)>)
-                 (ELSE
-                  <TELL " would be a neat trick!|Congratulations!!" CR>)>)>>
+<SCORING-ACHIEVEMENTS
+    (STARTING "initial points")
+    (RECEIVING-HINTS "for receiving hints" 'REPEATABLE)
+    (FINDING-LOCATIONS "for exploring the caves" 'REPEATABLE)
+    (FINDING-TREASURES "for finding treasure" 'REPEATABLE)
+    (CARRYING-TREASURES "for carrying treasure" 'REPEATABLE)
+    (DEPOSITING-TREASURES "for safely depositing treasure" 'REPEATABLE)
+    (STAYING-TIL-CLOSING "for staying until closing time")
+    (STAYING-PAST-CLOSING "for staying past closing time")
+    (ALMOST-SURVIVING-EXPLOSION "for almost surviving an explosion")
+    (SURVIVING-EXPLOSION "for surviving an explosion")
+    (RESURRECTING "for wasting my orange smoke" 'REPEATABLE)>
 
-<ROUTINE UPDATE-SCORE-AND-NOTIFY ("AUX" D T OS NS)
-    ;"Note any changes in treasure status"
-    <DO (I 0 %<* <- ,MAX-TREASURES 1> 2> 2)
-        <SET T <GET/B ,ALL-TREASURES .I>>
-        <SET OS <GET/B ,ALL-TREASURES <+ .I 1>>>
-        <COND (<IN? .T ,INSIDE-BUILDING> <SET NS ,TR-DEPOSITED>)
-              (<IN? .T ,PLAYER> <SET NS ,TR-CARRIED>)
-              (<FSET? .T ,TOUCHBIT> <SET NS ,TR-TOUCHED>)
-              (ELSE <SET NS ,TR-UNFOUND>)>
-        <COND (<N=? .OS .NS>
-               ;"A permanent 2 points for taking it in the first place"
-               <COND (<=? .OS ,TR-UNFOUND> <SETG SCORE <+ ,SCORE 2>>)>
-               ;"A revocable 5 points for carrying it"
-               <COND (<=? .NS ,TR-CARRIED> <SETG SCORE <+ ,SCORE 5>>)
-                     (<=? .OS ,TR-CARRIED> <SETG SCORE <- ,SCORE 5>>)>
-               ;"A revocable ${DEPOSIT-POINTS} points for placing it in INSIDE-BUILDING"
-               <COND (<=? .NS ,TR-DEPOSITED>
-                      <SETG SCORE <+ ,SCORE <GETP .T ,P?DEPOSIT-POINTS>>>)
-                     (<=? .OS ,TR-DEPOSITED>
-                      <SETG SCORE <- ,SCORE <GETP .T ,P?DEPOSIT-POINTS>>>)>
-               <PUT/B ,ALL-TREASURES <+ .I 1> .NS>)>>
-    ;"Notify player if score has changed"
-    <SET D <- ,SCORE ,PREV-SCORE>>
-    <COND (.D
-           <TELL CR "[Your score has gone">
-           <COND (<G? .D 0>
-                  <TELL " up">)
-                 (ELSE
-                  <SET D <- .D>>
-                  <TELL " down">)>
-           <TELL " by " N .D " point">
-           <COND (<NOT <1? .D>> <TELL !\s>)>
-           <TELL ".]" CR>)>
-    <SETG PREV-SCORE ,SCORE>
-    <T? .D>>
+<REPLACE-DEFINITION HOOK-BEFORE-NOTIFY-SCORE
+    <ROUTINE HOOK-BEFORE-NOTIFY-SCORE ("AUX" T NS OS)
+        ;"Note any changes in treasure status"
+        <DO (I 0 %<* <- ,MAX-TREASURES 1> 2> 2)
+            <SET T <GET/B ,ALL-TREASURES .I>>
+            <SET OS <GET/B ,ALL-TREASURES <+ .I 1>>>
+            <COND (<IN? .T ,INSIDE-BUILDING> <SET NS ,TR-DEPOSITED>)
+                (<IN? .T ,PLAYER> <SET NS ,TR-CARRIED>)
+                (<FSET? .T ,TOUCHBIT> <SET NS ,TR-TOUCHED>)
+                (ELSE <SET NS ,TR-UNFOUND>)>
+            <COND (<N=? .OS .NS>
+                ;"A permanent 2 points for taking it in the first place"
+                <COND (<=? .OS ,TR-UNFOUND> <AWARD-POINTS 2 ,ACH?FINDING-TREASURES>)>
+                ;"A revocable 5 points for carrying it"
+                <COND (<=? .NS ,TR-CARRIED> <AWARD-POINTS 5 ,ACH?CARRYING-TREASURES>)
+                      (<=? .OS ,TR-CARRIED> <AWARD-POINTS -5 ,ACH?CARRYING-TREASURES>)>
+                ;"A revocable ${DEPOSIT-POINTS} points for placing it in INSIDE-BUILDING"
+                <COND (<=? .NS ,TR-DEPOSITED>
+                       <AWARD-POINTS <GETP .T ,P?DEPOSIT-POINTS> ,ACH?DEPOSITING-TREASURES>)
+                      (<=? .OS ,TR-DEPOSITED>
+                       <AWARD-POINTS <- <GETP .T ,P?DEPOSIT-POINTS>> ,ACH?DEPOSITING-TREASURES>)>
+                <PUT/B ,ALL-TREASURES <+ .I 1> .NS>)>>>>
 
 ;----------------------------------------------------------------------
 "The outside world"
@@ -1086,7 +1075,7 @@ It can be found anywhere but is frequently a sign of a deep pit leading down to 
 <ROUTINE IN-HALL-OF-MISTS-F (RARG)
     <COND (<AND <=? .RARG ,M-ENTER>
                 <NOT <FSET? ,IN-HALL-OF-MISTS ,TOUCHBIT>>>
-           <SETG SCORE <+ ,SCORE 25>>)
+           <AWARD-POINTS 25 ,ACH?FINDING-LOCATIONS>)
           (<=? .RARG ,M-LOOK>
            <TELL "You are at one end of a vast hall stretching forward out of sight to the west.
 There are openings to either side. Nearby, a wide stone staircase leads downward.
@@ -3832,7 +3821,7 @@ He snatches your treasure and vanishes into the gloom." CR>>
         <COND (<NOT <FSET? .T ,TOUCHBIT>> <RFALSE>)>>
     <DEQUEUE I-CAVE-CLOSER>
     <SETG CAVES-CLOSED T>
-    <SETG SCORE <+ ,SCORE 25>>
+    <AWARD-POINTS 25 ,ACH?STAYING-TIL-CLOSING>
     <FSET CRYSTAL-BRIDGE ,INVISIBLE>
     <REMOVE ,SET-OF-KEYS>
     <DEQUEUE I-DWARF>
@@ -3846,7 +3835,7 @@ He snatches your treasure and vanishes into the gloom." CR>>
 
 <ROUTINE I-ENDGAME ("AUX" F)
     <DEQUEUE I-ENDGAME>
-    <SETG SCORE <+ ,SCORE 10>>
+    <AWARD-POINTS 10 ,ACH?STAYING-PAST-CLOSING>
     <MAP-CONTENTS (I N ,PLAYER) <REMOVE .I>>
     <MOVE ,BOTTLE ,AT-NE-END>
     <FSET ,BOTTLE ,NDESCBIT>
@@ -4236,8 +4225,7 @@ At your feet is a large steel grate, next to which is a sign which reads,
         <COND (,LAMP-RAN-OUT
                <TELL "    ****  Better luck next time  ****||">)
               (ELSE
-               <TELL "    ****  You have died  ****||">)>
-        <V-SCORE T>>>
+               <TELL "    ****  You have died  ****||">)>>>
 
 <CONSTANT RESURRECT-PROMPT
     <TABLE
@@ -4277,7 +4265,7 @@ Everything disappears in a dense cloud of orange smoke."
         <TELL CR <GET ,RESURRECT-YES ,DEATHS> CR CR>
         <COND (<G=? ,DEATHS 2> <RFALSE>)>
         <SETG DEATHS <+ ,DEATHS 1>>
-        <SETG SCORE <- ,SCORE 10>>
+        <AWARD-POINTS -10 ,ACH?RESURRECTING>
         <ROB ,WINNER ,HERE>
         <MOVE ,BRASS-LANTERN ,AT-END-OF-ROAD>
         <FCLEAR ,BRASS-LANTERN ,ONBIT>
@@ -4428,14 +4416,14 @@ Everything disappears in a dense cloud of orange smoke."
     <COND (<N=? ,HERE ,AT-SW-END ,AT-NE-END>
            <TELL "Frustrating, isn't it?" CR>)
           (<AND <=? ,HERE ,AT-SW-END> <IN? ,BLACK-MARK-ROD ,AT-NE-END>>
-           <SETG SCORE <+ ,SCORE 35>>
+           <AWARD-POINTS 35 ,ACH?SURVIVING-EXPLOSION>
            <TELL "There is a loud explosion, and a twenty-foot hole appears in the far wall,
 burying the dwarves in the rubble.
 You march through the hole and find yourself in the main office,
 where a cheering band of friendly elves carry the conquering adventurer off into the sunset." CR>
            <FINISH>)
           (<AND <=? ,HERE ,AT-NE-END> <IN? ,BLACK-MARK-ROD ,AT-SW-END>>
-           <SETG SCORE <+ ,SCORE 20>>
+           <AWARD-POINTS 20 ,ACH?ALMOST-SURVIVING-EXPLOSION>
            <JIGS-UP "There is a loud explosion, and a twenty-foot hole appears in the far wall,
 burying the snakes in the rubble.
 A river of molten lava pours in through the hole, destroying everything in its path, including you!">)
@@ -4882,8 +4870,6 @@ into a pit. None of the objects available is immediately useful in discovering t
     (LOCATION AT-WITTS-END)
     (PROMPT "Do you need help getting out of here?")
     (TEXT "Don't go west.")>
-
-<FINISH-HINTS>
 
 ;----------------------------------------------------------------------
 "Debug/beta/cheat verbs"

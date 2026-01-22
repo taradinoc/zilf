@@ -83,11 +83,20 @@
     (FAILED "That didn't narrow it down at all.")>
 
 <DEFAULT-LIBRARY-MESSAGES JIGS-UP
-    (GAME-OVER "    ****  The game is over  ****")
-    (PROMPT-WITH-UNDO "Would you like to RESTART, UNDO, RESTORE, or QUIT? >")
-    (PROMPT-WITHOUT-UNDO "Would you like to RESTART, RESTORE, or QUIT? >")
-    (REPROMPT-WITH-UNDO "(Please type RESTART, UNDO, RESTORE, or QUIT) >")
-    (REPROMPT-WITHOUT-UNDO "(Please type RESTART, RESTORE, or QUIT) >")>
+    (GAME-OVER "    ****  The game is over  ****")>
+
+<IFN-SCORING
+    <DEFAULT-LIBRARY-MESSAGES JIGS-UP
+        (PROMPT-WITH-UNDO "Would you like to RESTART, UNDO, RESTORE, or QUIT? >")
+        (PROMPT-WITHOUT-UNDO "Would you like to RESTART, RESTORE, or QUIT? >")
+        (REPROMPT-WITH-UNDO "(Please type RESTART, UNDO, RESTORE, or QUIT) >")
+        (REPROMPT-WITHOUT-UNDO "(Please type RESTART, RESTORE, or QUIT) >")>>
+<IF-SCORING
+    <DEFAULT-LIBRARY-MESSAGES JIGS-UP
+        (PROMPT-WITH-UNDO "Would you like to see your FULL score, RESTART, UNDO, RESTORE, or QUIT? >")
+        (PROMPT-WITHOUT-UNDO "Would you like to see your FULL score, RESTART, RESTORE, or QUIT? >")
+        (REPROMPT-WITH-UNDO "(Please type FULL, RESTART, UNDO, RESTORE, or QUIT) >")
+        (REPROMPT-WITHOUT-UNDO "(Please type FULL, RESTART, RESTORE, or QUIT) >")>>
 
 <DEFAULT-LIBRARY-MESSAGES YES?
     (PROMPT " (y/n) >")
@@ -419,5 +428,22 @@
     (ALREADY-OFF "Transcript already off.")
     (SUCCESS "End of transcript.")
     (FAILED "Failed.")>
+
+<DEFAULT-LIBRARY-MESSAGES NOTIFY-ON
+    (SUCCESS "Score notifications on.")>
+
+<DEFAULT-LIBRARY-MESSAGES NOTIFY-OFF
+    (SUCCESS "Score notifications off.")>
+
+<DEFAULT-LIBRARY-MESSAGES SCORE
+    (DEFAULT "In " N .MOVES " turn" IF <NOT <1? .MOVES>> !\s
+             ", you" IF <NOT .DEAD?> "'ve" " scored "
+             N .POINTS " point" IF <NOT <1? .POINTS>> !\s
+             " out of a possible " N .MAX ".")
+    (NOTIFICATION "[Your score has gone " IFELSE .DOWN? "down" "up"
+                  " by " N .POINTS " point" IF <NOT <1? .POINTS>> !\s ".]")>
+
+<DEFAULT-LIBRARY-MESSAGES FULLSCORE
+    (HEADER "Your score includes:")>
 
 <ENDPACKAGE>

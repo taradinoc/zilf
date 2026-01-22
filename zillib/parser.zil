@@ -4,8 +4,6 @@
 <FILE-FLAGS UNUSED-ROUTINES?>
 
 <USE "QQ">
-<USE "LIBMSG">
-<USE "LIBMSG-DEFAULTS">
 
 <SETG ZILLIB-VERSION "T5">
 
@@ -57,6 +55,15 @@
      <DEFMAC TRACE-DO ("ARGS" A) T>
      <DEFMAC TRACE-IN () T>
      <DEFMAC TRACE-OUT () T>)>
+
+;"Enables scoring system"
+<COND (<AND <GASSIGNED? USE-SCORING?> ,USE-SCORING?>
+       <COMPILATION-FLAG-DEFAULT SCORING T>)
+      (ELSE
+       <COMPILATION-FLAG-DEFAULT SCORING <>>)>
+
+<USE "LIBMSG">
+<USE "LIBMSG-DEFAULTS">
 
 "Global variables"
 
@@ -716,6 +723,7 @@ These extensions will be respected by other code that simulates the main loop, e
 
 <DEFMAC MAIN-LOOP-ITERATION ()
     '<BIND ()
+        <MAIN-LOOP-SAVE-SCORE>
         <COND (<MAIN-LOOP-PARSER>
                <MAIN-LOOP-HANDLE-COMMAND>)>
         <MAIN-LOOP-END-OF-ITERATION>>>
@@ -727,6 +735,10 @@ These extensions will be respected by other code that simulates the main loop, e
         <~<PARSE <STRING "HOOK-AFTER-" <SPNAME .NAME>>> ~.RA>
         .~.RA>>
 
+<DEFAULT-DEFINITION MAIN-LOOP-SAVE-SCORE
+    <DEFMAC MAIN-LOOP-SAVE-SCORE ()
+        '<IF-SCORING <SETG PREV-SCORE ,SCORE>>>>
+
 <DEFAULT-DEFINITION MAIN-LOOP-PARSER
     <DEFMAC MAIN-LOOP-PARSER ()
         '<WITH-HOOK PARSER <PARSER>>>>
@@ -736,6 +748,7 @@ These extensions will be respected by other code that simulates the main loop, e
         '<BIND ()
            <MAIN-LOOP-PERFORM>
            <MAIN-LOOP-ADVANCE-TIME>
+           <MAIN-LOOP-NOTIFY-SCORE>
            <MAIN-LOOP-END-OF-COMMAND>>>>
 
 <DEFAULT-DEFINITION MAIN-LOOP-PERFORM
@@ -747,6 +760,10 @@ These extensions will be respected by other code that simulates the main loop, e
         '<COND (<NOT <GAME-VERB?>>
                 <WITH-HOOK M-END <APPLY <GETP ,HERE ,P?ACTION> ,M-END>>
                 <WITH-HOOK CLOCKER <CLOCKER>>)>>>
+
+<DEFAULT-DEFINITION MAIN-LOOP-NOTIFY-SCORE
+    <DEFMAC MAIN-LOOP-NOTIFY-SCORE ()
+        '<IF-SCORING <WITH-HOOK NOTIFY-SCORE <NOTIFY-SCORE>>>>>
 
 <DEFAULT-DEFINITION MAIN-LOOP-END-OF-COMMAND
     <DEFMAC MAIN-LOOP-END-OF-COMMAND ()
@@ -767,6 +784,8 @@ These extensions will be respected by other code that simulates the main loop, e
     <DEFMAC HOOK-BEFORE-M-END () <>>>
 <DEFAULT-DEFINITION HOOK-BEFORE-CLOCKER
     <DEFMAC HOOK-BEFORE-CLOCKER () <>>>
+<DEFAULT-DEFINITION HOOK-BEFORE-NOTIFY-SCORE
+    <DEFMAC HOOK-BEFORE-NOTIFY-SCORE () <>>>
 
 ;"Dummy implementations of MAIN-LOOP's AFTER hooks.
   These take a single parameter, an atom naming the local variable that stores the
@@ -779,6 +798,8 @@ These extensions will be respected by other code that simulates the main loop, e
     <DEFMAC HOOK-AFTER-M-END (R-ATOM) <>>>
 <DEFAULT-DEFINITION HOOK-AFTER-CLOCKER
     <DEFMAC HOOK-AFTER-CLOCKER (R-ATOM) <>>>
+<DEFAULT-DEFINITION HOOK-AFTER-NOTIFY-SCORE
+    <DEFMAC HOOK-AFTER-NOTIFY-SCORE (R-ATOM) <>>>
 
 ;"Dummy implementations of miscellaneous MAIN-LOOP hooks."
 <DEFAULT-DEFINITION HOOK-END-OF-COMMAND
@@ -3399,6 +3420,7 @@ Returns:
     <SETG P-CONT 0>
     <TELL .TEXT CR CR>
     <PRINT-GAME-OVER>
+    <IF-SCORING <V-SCORE T>>
     <CRLF>
     <COND (<RESURRECT?> <RTRUE>)>
     <REPEAT PROMPT ()
@@ -3422,6 +3444,12 @@ Returns:
                    <V-UNDO>   ;"only returns on failure"
                    <TELL <LIBRARY-MESSAGE UNDO FAILED> CR>
                    <AGAIN .PROMPT>)
+                  <IF-SCORING
+                      (<EQUAL? .W ,W?FULL ,W?FULLSCORE>
+                       <CRLF>
+                       <V-FULLSCORE T>
+                       <CRLF>
+                       <AGAIN .PROMPT>)>
                   (T
                    <IFFLAG (UNDO
                             <TELL CR <LIBRARY-MESSAGE JIGS-UP REPROMPT-WITH-UNDO>>)
@@ -3641,6 +3669,8 @@ or reveal a light source."
 <INSERT-FILE "events">
 
 <INSERT-FILE "verbs">
+
+<IF-SCORING <INSERT-FILE "scoring">>
 
 "Objects"
 
