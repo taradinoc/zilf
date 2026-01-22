@@ -11,6 +11,9 @@ A basic IF demonstration.|
 Original game by Roger Firth|
 ZIL conversion by Tara McGrew, Jayson Smith, and Josh Lawrence">
 
+<SETG USE-SCORING? T>
+<CONSTANT MAX-SCORE 2>
+
 <ROUTINE GO ()
     <CRLF> <CRLF>
     <TELL "Hurrying through the rainswept November night, you're glad to see the
@@ -28,6 +31,10 @@ people about but, hey, what do you expect in a cheap demo game...?" CR CR>
 
 <INSERT-FILE "parser">
 <INSERT-FILE "glk">
+
+<SCORING-ACHIEVEMENTS
+    (PUTTING-ON-HOOK "for putting the cloak away")
+    (WINNING "for not trampling the message")>
 
 "Objects"
 
@@ -108,6 +115,7 @@ of the foyer to the north, is completely empty.")
                   <JIGS-UP "The message has been carelessly trampled, making it
 difficult to read. You can just distinguish the words...">)
                  (ELSE
+                  <AWARD-POINTS 1 ,ACH?WINNING>
                   <JIGS-UP "The message, neatly marked in the sawdust, reads...">)>)>>
 
 <REPLACE-DEFINITION PRINT-GAME-OVER
@@ -150,4 +158,7 @@ though now only one remains. The exit is a door to the east.")
     <COND (<VERB? EXAMINE>
            <TELL "It's just a small brass hook, ">
            <COND (<IN? ,CLOAK ,HOOK> <TELL "with a cloak hanging on it." CR>)
-                 (ELSE <TELL "screwed to the wall." CR>)>)>>
+                 (ELSE <TELL "screwed to the wall." CR>)>)
+          (<AND <VERB? PUT-ON> <PRSO? ,CLOAK>>
+           <AWARD-POINTS 1 ,ACH?PUTTING-ON-HOOK>
+           <RFALSE>)>>
