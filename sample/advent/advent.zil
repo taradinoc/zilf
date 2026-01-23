@@ -4293,18 +4293,18 @@ Everything disappears in a dense cloud of orange smoke."
         <CRLF>
         <TELL <LIBRARY-MESSAGE QUIT PROMPT>>
         <COND (<YES?>
-            <TELL CR <LIBRARY-MESSAGE QUIT GOODBYE> CR>
-            <QUIT>)
-            (ELSE
-            <TELL CR <LIBRARY-MESSAGE QUIT ABORTED> CR>)>>
+               <TELL CR <LIBRARY-MESSAGE QUIT GOODBYE> CR>
+               <QUIT>)
+              (ELSE
+               <TELL CR <LIBRARY-MESSAGE QUIT ABORTED> CR>)>>
 
     ;"Prompt for hints before showing default message"
     <ROUTINE V-THINK-ABOUT ()
         <COND (<RESPOND-TO-HINT-REQUEST?>)
-            (<PRSO? ,WINNER>
-            <TELL <LIBRARY-MESSAGE THINK-ABOUT THINK-ABOUT-ME> CR>)
-            (ELSE
-            <TELL <LIBRARY-MESSAGE THINK-ABOUT DEFAULT ((OBJ ,PRSO))> CR>)>>>
+              (<PRSO? ,WINNER>
+               <TELL <LIBRARY-MESSAGE THINK-ABOUT THINK-ABOUT-ME> CR>)
+              (ELSE
+               <TELL <LIBRARY-MESSAGE THINK-ABOUT DEFAULT ((OBJ ,PRSO))> CR>)>>>
 
 
 ;----------------------------------------------------------------------
