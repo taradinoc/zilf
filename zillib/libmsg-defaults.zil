@@ -430,10 +430,10 @@
     (FAILED "Failed.")>
 
 <DEFAULT-LIBRARY-MESSAGES NOTIFY-ON
-    (SUCCESS "Score notifications on.")>
+    (SUCCESS "Score notification on.")>
 
 <DEFAULT-LIBRARY-MESSAGES NOTIFY-OFF
-    (SUCCESS "Score notifications off.")>
+    (SUCCESS "Score notification off.")>
 
 <DEFAULT-LIBRARY-MESSAGES SCORE
     (DEFAULT "In " N .MOVES " turn" IF <NOT <1? .MOVES>> !\s
