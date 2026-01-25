@@ -71,16 +71,19 @@ namespace Zilf.Tests.Integration
                     "<CONSTANT SEARCH-MANY 4>",
                     "<CONSTANT SEARCH-STANDARD 8>",
                     "<CONSTANT SEARCH-OPTIONAL 16>",
+                    "<CONSTANT SEARCH-ADDITIVE 32>",
                     "<CONSTANT SEARCH-ALL ,SEARCH-STANDARD>",
-                    @"<SETG NEW-SFLAGS [""STANDARD"" ,SEARCH-STANDARD ""OPTIONAL"" ,SEARCH-OPTIONAL]>",
+                    @"<SETG NEW-SFLAGS [""STANDARD"" ,SEARCH-STANDARD ""OPTIONAL"" ,SEARCH-OPTIONAL ""ADDITIVE"" (+ ,SEARCH-ADDITIVE)]>",
                     "<ROUTINE V-DUMMY () <>>",
                     "<SYNTAX FOO OBJECT (OPTIONAL) = V-DUMMY>",
                     "<SYNTAX BAR OBJECT (HAVE) = V-DUMMY>",
-                    "<SYNTAX BAZ OBJECT (HAVE OPTIONAL) = V-DUMMY>")
+                    "<SYNTAX BAZ OBJECT (HAVE OPTIONAL) = V-DUMMY>",
+                    "<SYNTAX QUUX OBJECT (HAVE ADDITIVE) = V-DUMMY>")
                 .ImpliesAsync(
                     "<=? <GET-OPTS1 ,ACT?FOO> ,SEARCH-OPTIONAL>",
                     "<=? <GET-OPTS1 ,ACT?BAR> <+ ,SEARCH-STANDARD ,SEARCH-MUST-HAVE>>",
-                    "<=? <GET-OPTS1 ,ACT?BAZ> <+ ,SEARCH-OPTIONAL ,SEARCH-MUST-HAVE>>");
+                    "<=? <GET-OPTS1 ,ACT?BAZ> <+ ,SEARCH-OPTIONAL ,SEARCH-MUST-HAVE>>",
+                    "<=? <GET-OPTS1 ,ACT?QUUX> <+ ,SEARCH-STANDARD ,SEARCH-MUST-HAVE ,SEARCH-ADDITIVE>>");
         }
 
         [TestMethod]

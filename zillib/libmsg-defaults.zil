@@ -42,6 +42,8 @@
     (FAILED-HAVE-CHECK-MANY-2 ".")
     (FAILED-HAVE-CHECK-SINGLE "You aren't holding " T .OBJ ".")
 
+    (FAILED-TOUCH-CHECK "You can't reach " T .OBJ ".")
+
     ;"This is used when 'ALL' matches no objects, either because there are none
       or because 'BUT' excluded all of them."
     (NONE-AVAILABLE "There are none at all available!")

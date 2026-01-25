@@ -13,13 +13,29 @@ and this project adheres to
   constant. This gets you score notifications (controlled by the command
   `NOTIFY [ON/OFF]`) and `<AWARD-POINTS 10>` (which simply adds to `SCORE`).
   If you replace the `PRINT-RANK` definition section, you can define a
-  `PRINT-RANK` routine to give the player a rating based on their score. You can
-  also classify the points you award, using `SCORING-ACHIEVEMENTS` and a second
-  argument to `AWARD-POINTS`; see `advent.zil` for an example. The player can
-  see the classification with `FULL SCORE`.
+  `PRINT-RANK` routine to give the player a rating based on their score.
+
+  You can also classify the points you award, using `SCORING-ACHIEVEMENTS` and a
+  second argument to `AWARD-POINTS`; see `advent.zil` for an example. The player
+  can see the classification with `FULL SCORE`.
 
 - Added `hooks.zil` to keep track of multiple features that need to run "finish"
   functions before compilation starts.
+
+- Added touchability checks. Many of the standard syntax lines now have the
+  `TOUCH` flag on one of their objects, which means the player must be able to
+  touch the object for the action to proceed. Specifically, there must not be
+  a closed container between the player and the object, even a transparent one.
+  The touch check happens after the `HAVE`/`TAKE` check, and before preactions.
+
+  When the touch check fails, before blocking the action, the parser calls the
+  `CONTFCN` on every closed container between the player and the object, with
+  `M-BLOCKER` as the argument. The `CONTFCN` can return -1 to let the action
+  proceed anyway, 0 to block the action, or 1 if it handles the action itself.
+
+- Added a `NEW-SFLAGS` syntax to define new additive search flags that don't
+  replace the defaults. `HAVE`, `TAKE`, and `MANY` already worked this way; the
+  library uses the new syntax to define `TOUCH`.
 
 ### Fixed
 

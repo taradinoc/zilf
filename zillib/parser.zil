@@ -1771,14 +1771,15 @@ Returns:
   likewise with CARRIED and HELD, so we can use NEW-SFLAGS to make them aliases
   and reuse those bits for something else."
 
-<CONSTANT SF-HAVE 1>
-<CONSTANT SF-MANY 2>
-<CONSTANT SF-TAKE 4>
+<CONSTANT SF-HAVE 1>        ;"additive"
+<CONSTANT SF-MANY 2>        ;"additive"
+<CONSTANT SF-TAKE 4>        ;"additive"
 <CONSTANT SF-IN-ROOM 8>
 <CONSTANT SF-ON-GROUND ,SF-IN-ROOM>
 <CONSTANT SF-CARRIED 16>
 <CONSTANT SF-HELD ,SF-CARRIED>
 <CONSTANT SF-EVERYWHERE 32>
+<CONSTANT SF-TOUCH 64>      ;"additive"
 
 ;"The TAKE, HAVE, and MANY flags are always available, and constants with these
   names have to be defined in order to use NEW-SFLAGS."
@@ -1791,7 +1792,7 @@ Returns:
 
 <SETG NEW-SFLAGS ["IN-ROOM" ,SF-IN-ROOM "ON-GROUND" ,SF-IN-ROOM
                   "CARRIED" ,SF-CARRIED "HELD" ,SF-CARRIED
-                  "EVERYWHERE" ,SF-EVERYWHERE]>
+                  "EVERYWHERE" ,SF-EVERYWHERE "TOUCH" (+ ,SF-TOUCH)]>
 
 ;"Silently checks whether an object could satisfy HAVE/TAKE constraints.
   Unlike HAVE-TAKE-CHECK, this never prints messages and never performs an
@@ -2231,7 +2232,8 @@ Returns:
     <COND (<AND ,PRSO
                 <NOT <OR ,PRSO-DIR
                          <AND <MANY-CHECK ,PRSO .O <>>
-                              <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>>>>>
+                              <HAVE-TAKE-CHECK-TBL ,P-PRSOS .O>
+                              <TOUCH-CHECK-TBL ,P-PRSOS .O <>>>>>>
           <RFALSE>)>
     <RTRUE>>
 
@@ -2268,7 +2270,8 @@ Returns:
                   <RFALSE>)>)>
     <COND (<AND ,PRSI
                 <NOT <AND <MANY-CHECK ,PRSI .O T>
-                          <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>>>>
+                          <HAVE-TAKE-CHECK-TBL ,P-PRSIS .O>
+                          <TOUCH-CHECK-TBL ,P-PRSIS .O T>>>>
            <RFALSE>)>
     <RTRUE>>
 
@@ -2419,6 +2422,79 @@ Returns:
 <DEFAULT-DEFINITION FAILS-HAVE-CHECK?
     <ROUTINE FAILS-HAVE-CHECK? (OBJ)
         <NOT <OR <ORDERING?> <HELD? .OBJ>>>>>
+
+<ROUTINE TOUCH-CHECK-TBL (TBL OPTS PRSI? "AUX" MAX O (OPRSO ,PRSO) (OPRSI ,PRSI))
+    <SET MAX <GETB .TBL 0>>
+    <COND (<BTST .OPTS ,SF-TOUCH>
+           <DO (I 1 .MAX)
+               <SET O <GET/B .TBL .I>>
+               <COND (.PRSI? <SETG PRSI .O>) (ELSE <SETG PRSO .O>)>
+               <COND (<NOT <TOUCH-CHECK .O>>
+                      <SETG PRSO .OPRSO>
+                      <SETG PRSI .OPRSI>
+                      <RFALSE>)>>
+           <SETG PRSO .OPRSO>
+           <SETG PRSI .OPRSI>)>
+    <RTRUE>>
+
+;"Applies the rules for the TOUCH syntax flag to an object.
+
+Args:
+  OBJ: An object.
+
+Returns:
+  True if the check passed, i.e. either the object doesn't need to be touchable,
+  or it is touchable, or all of the blockers between WINNER and the object allowed
+  the action to proceed anyway. False if the action should be blocked."
+<ROUTINE TOUCH-CHECK (OBJ "AUX" V)
+    <COND (<FAILS-TOUCH-CHECK? .OBJ>
+           <SET V <QUERY-TOUCH-BLOCKERS .OBJ ,WINNER>>
+           <COND (<0? .V>
+                  ;"0 to block action: just fall through"
+                  <SETG P-CONT 0>
+                  <TELL <LIBRARY-MESSAGE PARSER FAILED-TOUCH-CHECK ((OBJ .OBJ))> CR>
+                  <RFALSE>)
+                 (<==? .V -1>
+                  ;"-1 to allow action"
+                  <RTRUE>)
+                 (ELSE
+                  ;"action was intercepted"
+                  <RFALSE>)>)
+          (ELSE <RTRUE>)>>
+
+<DEFAULT-DEFINITION FAILS-TOUCH-CHECK?
+    <DEFMAC FAILS-TOUCH-CHECK? ('OBJ)
+        `<NOT <ACCESSIBLE? ~.OBJ>>>>
+
+;"Calls the CONTFCN of (potentially) every closed container between OBJ1 and OBJ2
+  to query whether they allow the current action.
+
+Returns:
+  0 if any CONTFCN returned 0, or if OBJ1 and OBJ2 have no common parent.
+  -1 if every CONTFCN returned -1.
+  1 if any CONTFCN returned 1."
+<ROUTINE QUERY-TOUCH-BLOCKERS QTB (OBJ1 OBJ2 "AUX" CEIL V)
+    <SET CEIL <COMMON-PARENT? .OBJ1 .OBJ2>>
+    <COND (<0? .CEIL> <RFALSE>)>
+    ;"Walk up the tree from OBJ1 to CEIL"
+    <COND (<N=? .OBJ1 .CEIL>
+        <DO (L <LOC .OBJ1> <0? .L> <SET L <LOC .L>>)
+            <COND (<==? .L .CEIL>
+                   <RETURN>)
+                  (<BLOCKS-TAKE? .L>
+                   <TRACE 4 "[calling blocker (" N .L " CONTFCN)]" CR>
+                   <SET V <APPLY <GETP .L ,P?CONTFCN> ,M-BLOCKER>>
+                   <COND (<N==? .V -1> <RETURN .V .QTB>)>)>>)>
+    ;"Walk up the tree from OBJ2 to CEIL"
+    <COND (<N=? .OBJ2 .CEIL>
+        <DO (L <LOC .OBJ2> <0? .L> <SET L <LOC .L>>)
+            <COND (<==? .L .CEIL>
+                   <RETURN>)
+                  (<BLOCKS-TAKE? .L>
+                   <TRACE 4 "[calling blocker (" N .L " CONTFCN)]" CR>
+                   <SET V <APPLY <GETP .L ,P?CONTFCN> ,M-BLOCKER>>
+                   <COND (<N==? .V -1> <RETURN .V .QTB>)>)>>)>
+    <RETURN -1>>
 
 ;"Checks whether the objects listed in a table, which were part of a previous
   command, are still available to the player, and prints an error message if not.

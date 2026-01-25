@@ -125,6 +125,14 @@ namespace Zilf.ZModel.Vocab
                                 "strings or atoms")
                         };
 
+                        bool additive = false;
+
+                        if (value is ZilList { First: ZilAtom { StdAtom: StdAtom.Plus } } add && add.GetLength(2) == 2)
+                        {
+                            additive = true;
+                            value = add[1];
+                        }
+
                         if (value is ZilFix fix && (fix.Value & ~255) == 0)
                         {
                             entry.Dict[nameStr] = (byte)fix.Value;
@@ -135,6 +143,11 @@ namespace Zilf.ZModel.Vocab
                                 InterpreterMessages._0_Must_Be_1,
                                 "NEW-SFLAGS values",
                                 "FIXes between 0 and 255");
+                        }
+
+                        if (additive)
+                        {
+                            entry.Additive.Add(nameStr);
                         }
                     }
                 }
