@@ -281,7 +281,7 @@ namespace Zilf.Tests.Integration
             // initialize ZilfCompiler
             var compiler = new FrontEnd
             {
-                FileSystem = new OverlayFileSystem(fileSystem, new LimitedFileSystem(includeDirs))
+                FileSystem = new OverlayFileSystem(fileSystem, new LimitedFileSystem(includeDirs, ".zil", ".mud"))
             };
 
             compiler.IncludePaths.Add("");

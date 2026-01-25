@@ -308,6 +308,7 @@ namespace Zilf.Common
     {
         private readonly IFileSystem underlyingFileSystem;
         private readonly string[] searchDirs;
+        private readonly HashSet<string>? allowedExtensions;
 
         private readonly Dictionary<string, string?> cachedPaths = new() { [""] = null, ["."] = null, [".."] = null };
 
@@ -316,10 +317,51 @@ namespace Zilf.Common
         {
         }
 
+        public LimitedFileSystem(string[] searchDirs, params string[] allowedExtensions)
+            : this(PhysicalFileSystem.Instance, searchDirs, allowedExtensions)
+        {
+        }
+
         public LimitedFileSystem(IFileSystem underlyingFileSystem, string[] searchDirs)
         {
             this.underlyingFileSystem = underlyingFileSystem;
             this.searchDirs = Array.ConvertAll(searchDirs, Path.GetFullPath);
+            allowedExtensions = null;
+        }
+
+        public LimitedFileSystem(IFileSystem underlyingFileSystem, string[] searchDirs, params string[] allowedExtensions)
+        {
+            this.underlyingFileSystem = underlyingFileSystem;
+            this.searchDirs = Array.ConvertAll(searchDirs, Path.GetFullPath);
+
+            if (allowedExtensions.Length == 0)
+            {
+                this.allowedExtensions = null;
+            }
+            else
+            {
+                this.allowedExtensions = new HashSet<string>(
+                    allowedExtensions.Select(NormalizeExtension),
+                    StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private static string NormalizeExtension(string ext)
+        {
+            if (string.IsNullOrWhiteSpace(ext))
+                return string.Empty;
+
+            ext = ext.Trim();
+            return ext.StartsWith(".", StringComparison.Ordinal) ? ext : "." + ext;
+        }
+
+        private bool IsAllowedFileName(string filename)
+        {
+            if (allowedExtensions == null)
+                return true;
+
+            var ext = Path.GetExtension(filename);
+            return allowedExtensions.Contains(ext);
         }
 
         private string? GetFullPath(string path)
@@ -331,6 +373,12 @@ namespace Zilf.Common
                 return null;
 
             var filename = Path.GetFileName(path);
+
+            if (!IsAllowedFileName(filename))
+            {
+                cachedPaths.Add(path, null);
+                return null;
+            }
 
             foreach (var d in searchDirs)
             {
