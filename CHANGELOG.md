@@ -50,6 +50,10 @@ and this project adheres to
 - Optimized code generation for arithmetic operations when multiple consecutive
   arguments, but not all, are constants.
 
+- The words "me" and "myself" are now implemented as pronouns in `pronoun.zil`
+  rather than synonyms of the `PLAYER` object. They expand to the value of
+  `CURRENT-PLAYER`.
+
 ### Fixed
 
 - Pronouns can now be used with AND.

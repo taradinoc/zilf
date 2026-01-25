@@ -74,6 +74,10 @@
     <SET RTN
         `<ROUTINE EXPAND-PRONOUN (W OBJS "AUX" CNT)
             <COND
+                  (<=? .W ~<VOC "ME" OBJECT> ~<VOC "MYSELF" OBJECT>>
+                   <PUTB .OBJS 0 1>
+                   <PUT/B .OBJS 1 ,CURRENT-PLAYER>
+                   <RETURN ,CURRENT-PLAYER>)
                   ~!<MAPF ,LIST
                           <FUNCTION (P "AUX" N V OBJS-TBL-NAME)
                               <SET N <PRO-NAME .P>>
