@@ -678,6 +678,9 @@ namespace Zilf.Tests.Interpreter
             // predicate must be applicable if not FALSE
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT FOO '[4 2 1 3]>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT '(1 2 3 4) '[4 2 1 3]>");
+
+            // key primtype is restricted if no predicate passed
+            TestHelpers.EvalAndCatch<InterpreterError>(ctx, "<SORT <> [(A 1) (B 0)]>");
         }
 
         [TestMethod]

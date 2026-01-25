@@ -607,6 +607,10 @@ namespace Zilf.Interpreter
             {
                 return ex.ZilResult;
             }
+            catch (Exception wrapper) when (wrapper.InnerException is InterpreterError ex)
+            {
+                throw ex;
+            }
         }
 
         static void RearrangeVector(ZilVector vector, int recordSize, int[] desiredIndexOrder)
