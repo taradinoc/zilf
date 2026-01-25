@@ -20,15 +20,9 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class LangDirective : Directive
+    public sealed class LangDirective(AsmExpr langId, AsmExpr escapeChar) : Directive
     {
-        public LangDirective(AsmExpr langId, AsmExpr escapeChar)
-        {
-            LanguageId = langId;
-            EscapeChar = escapeChar;
-        }
-
-        public AsmExpr LanguageId { get; }
-        public AsmExpr EscapeChar { get; }
+        public AsmExpr LanguageId { get; } = langId;
+        public AsmExpr EscapeChar { get; } = escapeChar;
     }
 }

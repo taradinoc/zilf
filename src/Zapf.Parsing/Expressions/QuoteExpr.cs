@@ -18,14 +18,9 @@
 
 namespace Zapf.Parsing.Expressions
 {
-    public sealed class QuoteExpr : AsmExpr
+    public sealed class QuoteExpr(AsmExpr inner) : AsmExpr
     {
-        public QuoteExpr(AsmExpr inner)
-        {
-            Inner = inner;
-        }
-
-        public AsmExpr Inner { get; }
+        public AsmExpr Inner { get; } = inner;
 
         public override string ToString()
         {

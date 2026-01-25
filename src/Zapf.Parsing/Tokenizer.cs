@@ -25,7 +25,7 @@ using Zapf.Parsing.Diagnostics;
 
 namespace Zapf.Parsing
 {
-    class Tokenizer : IDisposable
+    class Tokenizer(Stream stream, string filename) : IDisposable
     {
         static readonly Dictionary<char, TokenType> CharTokens = new()
         {
@@ -38,8 +38,8 @@ namespace Zapf.Parsing
             { '\'', TokenType.Apostrophe },
         };
 
-        readonly StreamReader rdr;
-        readonly string filename;
+        readonly StreamReader rdr = new StreamReader(stream);
+        readonly string filename = filename;
         int line = 1;
         Token? heldToken;
         char? heldChar;
@@ -47,12 +47,6 @@ namespace Zapf.Parsing
         readonly record struct BasicSourceLine(int LineNum, string? SourceFile) : ISourceLine;
 
         ISourceLine CurrentSourceLine => new BasicSourceLine(line, filename);
-
-        public Tokenizer(Stream stream, string filename)
-        {
-            rdr = new StreamReader(stream);
-            this.filename = filename;
-        }
 
         char? PeekChar()
         {

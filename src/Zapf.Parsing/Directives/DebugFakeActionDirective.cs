@@ -23,10 +23,8 @@ namespace Zapf.Parsing.Directives
 {
 #nullable enable
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-    public sealed class DebugFakeActionDirective : NumberAndNameDebugDirective
+    public sealed class DebugFakeActionDirective(AsmExpr number, string name) : NumberAndNameDebugDirective(number, name)
     {
-        public DebugFakeActionDirective(AsmExpr number, string name)
-            : base(number, name) { }
     }
 #nullable restore
 }

@@ -20,14 +20,8 @@ using System.Collections.Generic;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class FunctDirective : NamedDirective
+    public sealed class FunctDirective(string name) : NamedDirective(name)
     {
-        public FunctDirective(string name)
-            : base(name)
-        {
-            Locals = new List<FunctLocal>();
-        }
-
-        public IList<FunctLocal> Locals { get; }
+        public IList<FunctLocal> Locals { get; } = new List<FunctLocal>();
     }
 }

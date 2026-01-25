@@ -18,11 +18,7 @@
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class UnichrDirective : TextDirective
+    public sealed class UnichrDirective(string text) : TextDirective(text)
     {
-        public UnichrDirective(string text)
-            : base(text)
-        {
-        }
     }
 }

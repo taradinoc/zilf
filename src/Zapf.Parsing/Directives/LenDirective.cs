@@ -18,9 +18,7 @@
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class LenDirective : TextDirective
+    public sealed class LenDirective(string text) : TextDirective(text)
     {
-        public LenDirective(string text)
-            : base(text) { }
     }
 }

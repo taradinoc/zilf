@@ -27,15 +27,10 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Instructions
 {
-    public sealed class Instruction : AsmLine
+    public sealed class Instruction(string name) : AsmLine
     {
         public const string BranchTrue = "TRUE";
         public const string BranchFalse = "FALSE";
-
-        public Instruction(string name)
-        {
-            Name = name;
-        }
 
         public Instruction(string name, IEnumerable<AsmExpr> operands)
             : this(name)
@@ -67,7 +62,7 @@ namespace Zapf.Parsing.Instructions
             Operands.Add(operand4);
         }
 
-        public string Name { get; }
+        public string Name { get; } = name;
 
         public IList<AsmExpr> Operands { get; } = new List<AsmExpr>();
 

@@ -20,29 +20,17 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class ObjectDirective : NamedDirective
+    public sealed class ObjectDirective(string name,
+         AsmExpr flags1, AsmExpr flags2, AsmExpr? flags3,
+         AsmExpr parent, AsmExpr sibling, AsmExpr child,
+         AsmExpr propTable) : NamedDirective(name)
     {
-        public ObjectDirective(string name,
-             AsmExpr flags1, AsmExpr flags2, AsmExpr? flags3,
-             AsmExpr parent, AsmExpr sibling, AsmExpr child,
-             AsmExpr propTable)
-            : base(name)
-        {
-            Flags1 = flags1;
-            Flags2 = flags2;
-            Flags3 = flags3;
-            Parent = parent;
-            Sibling = sibling;
-            Child = child;
-            PropTable = propTable;
-        }
-
-        public AsmExpr Flags1 { get; }
-        public AsmExpr Flags2 { get; }
-        public AsmExpr? Flags3 { get; }
-        public AsmExpr Parent { get; }
-        public AsmExpr Sibling { get; }
-        public AsmExpr Child { get; }
-        public AsmExpr PropTable { get; }
+        public AsmExpr Flags1 { get; } = flags1;
+        public AsmExpr Flags2 { get; } = flags2;
+        public AsmExpr? Flags3 { get; } = flags3;
+        public AsmExpr Parent { get; } = parent;
+        public AsmExpr Sibling { get; } = sibling;
+        public AsmExpr Child { get; } = child;
+        public AsmExpr PropTable { get; } = propTable;
     }
 }

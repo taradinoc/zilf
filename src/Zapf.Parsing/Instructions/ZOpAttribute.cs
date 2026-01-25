@@ -21,26 +21,17 @@ using System;
 namespace Zapf.Parsing.Instructions
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
-    public class ZOpAttribute : Attribute
+    public class ZOpAttribute(string classicName, string informName, int minVer, int maxVer, ZOpFlags flags) : Attribute
     {
-        public ZOpAttribute(string classicName, string informName, int minVer, int maxVer, ZOpFlags flags)
-        {
-            ClassicName = classicName;
-            InformName = informName;
-            MinVer = minVer;
-            MaxVer = maxVer;
-            Flags = flags;
-        }
+        public string ClassicName { get; } = classicName;
 
-        public string ClassicName { get; }
+        public string InformName { get; } = informName;
 
-        public string InformName { get; }
+        public int MinVer { get; } = minVer;
 
-        public int MinVer { get; }
+        public int MaxVer { get; } = maxVer;
 
-        public int MaxVer { get; }
-
-        public ZOpFlags Flags { get; }
+        public ZOpFlags Flags { get; } = flags;
 
         public string? WhenExtra { get; set; }
     }

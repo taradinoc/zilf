@@ -21,13 +21,8 @@ namespace Zapf.Parsing.Directives
     /// <summary>
     /// Represents a .FORM directive that forces the encoding form of the next instruction.
     /// </summary>
-    public sealed class FormDirective : Directive
+    public sealed class FormDirective(string formSpecifier) : Directive
     {
-        public FormDirective(string formSpecifier)
-        {
-            FormSpecifier = formSpecifier;
-        }
-
-        public string FormSpecifier { get; }
+        public string FormSpecifier { get; } = formSpecifier;
     }
 }

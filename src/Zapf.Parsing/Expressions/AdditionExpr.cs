@@ -18,16 +18,10 @@
 
 namespace Zapf.Parsing.Expressions
 {
-    public sealed class AdditionExpr : AsmExpr
+    public sealed class AdditionExpr(AsmExpr left, AsmExpr right) : AsmExpr
     {
-        public AdditionExpr(AsmExpr left, AsmExpr right)
-        {
-            Left = left;
-            Right = right;
-        }
-
-        public AsmExpr Left { get; }
-        public AsmExpr Right { get; }
+        public AsmExpr Left { get; } = left;
+        public AsmExpr Right { get; } = right;
 
         public override string ToString()
         {

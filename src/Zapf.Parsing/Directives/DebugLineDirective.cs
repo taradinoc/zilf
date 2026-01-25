@@ -20,9 +20,7 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class DebugLineDirective : LineDebugDirective
+    public sealed class DebugLineDirective(AsmExpr file, AsmExpr line, AsmExpr column) : LineDebugDirective(file, line, column)
     {
-        public DebugLineDirective(AsmExpr file, AsmExpr line, AsmExpr column)
-            : base(file, line, column) { }
     }
 }

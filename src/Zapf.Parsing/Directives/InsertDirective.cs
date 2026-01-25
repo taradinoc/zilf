@@ -18,13 +18,8 @@
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class InsertDirective : Directive
+    public sealed class InsertDirective(string filename) : Directive
     {
-        public InsertDirective(string filename)
-        {
-            InsertFileName = filename;
-        }
-
-        public string InsertFileName { get; }
+        public string InsertFileName { get; } = filename;
     }
 }

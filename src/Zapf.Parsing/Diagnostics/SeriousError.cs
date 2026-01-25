@@ -24,11 +24,7 @@ namespace Zapf.Parsing.Diagnostics
     /// Thrown when a serious (but not totally unrecoverable) error occurs.
     /// </summary>
     [Serializable]
-    public class SeriousError : AssemblerError
+    public class SeriousError(ISourceLine? node, string message) : AssemblerError(node, message)
     {
-        public SeriousError(ISourceLine? node, string message)
-            : base(node, message)
-        {
-        }
     }
 }

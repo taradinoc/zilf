@@ -18,13 +18,8 @@
 
 namespace Zapf.Parsing.Directives
 {
-    public abstract class TextDirective : Directive
+    public abstract class TextDirective(string text) : Directive
     {
-        protected TextDirective(string text)
-        {
-            Text = text;
-        }
-
-        public string Text { get; }
+        public string Text { get; } = text;
     }
 }

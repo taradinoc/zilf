@@ -20,11 +20,8 @@ using System.Text;
 
 namespace Zapf.Parsing.Expressions
 {
-    public sealed class StringLiteral : TextAsmExpr
+    public sealed class StringLiteral(string text) : TextAsmExpr(text)
     {
-        public StringLiteral(string text)
-            : base(text) { }
-
         public override string ToString()
         {
             // escape '"' as '""'

@@ -24,11 +24,7 @@ namespace Zapf.Parsing.Diagnostics
     /// Not thrown, but passed around to report warnings.
     /// </summary>
     [Serializable]
-    public class Warning : AssemblerError
+    public class Warning(ISourceLine? node, string message) : AssemblerError(node, message)
     {
-        public Warning(ISourceLine? node, string message)
-            : base(node, message)
-        {
-        }
     }
 }

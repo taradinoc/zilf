@@ -20,13 +20,8 @@ using Zapf.Parsing.Directives;
 
 namespace Zapf.Parsing.Instructions
 {
-    public sealed class LocalLabel : AsmLine
+    public sealed class LocalLabel(string name) : AsmLine
     {
-        public LocalLabel(string name)
-        {
-            Name = name;
-        }
-
-        public string Name { get; }
+        public string Name { get; } = name;
     }
 }

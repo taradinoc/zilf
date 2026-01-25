@@ -20,13 +20,8 @@ using Zapf.Parsing.Directives;
 
 namespace Zapf.Parsing
 {
-    public sealed class GlobalLabel : AsmLine
+    public sealed class GlobalLabel(string name) : AsmLine
     {
-        public GlobalLabel(string name)
-        {
-            Name = name;
-        }
-
-        public string Name { get; }
+        public string Name { get; } = name;
     }
 }

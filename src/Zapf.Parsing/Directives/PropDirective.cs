@@ -20,15 +20,9 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class PropDirective : Directive
+    public sealed class PropDirective(AsmExpr size, AsmExpr prop) : Directive
     {
-        public PropDirective(AsmExpr size, AsmExpr prop)
-        {
-            Size = size;
-            Prop = prop;
-        }
-
-        public AsmExpr Size { get; }
-        public AsmExpr Prop { get; }
+        public AsmExpr Size { get; } = size;
+        public AsmExpr Prop { get; } = prop;
     }
 }

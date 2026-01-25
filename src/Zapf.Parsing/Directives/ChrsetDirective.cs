@@ -21,15 +21,9 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class ChrsetDirective : Directive
+    public sealed class ChrsetDirective(AsmExpr alphabetNum, IEnumerable<AsmExpr> characters) : Directive
     {
-        public ChrsetDirective(AsmExpr alphabetNum, IEnumerable<AsmExpr> characters)
-        {
-            CharsetNum = alphabetNum;
-            Characters = new List<AsmExpr>(characters);
-        }
-
-        public AsmExpr CharsetNum { get; }
-        public IList<AsmExpr> Characters { get; }
+        public AsmExpr CharsetNum { get; } = alphabetNum;
+        public IList<AsmExpr> Characters { get; } = [.. characters];
     }
 }

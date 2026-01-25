@@ -20,13 +20,8 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class TableDirective : Directive
+    public sealed class TableDirective(AsmExpr? size) : Directive
     {
-        public TableDirective(AsmExpr? size)
-        {
-            Size = size;
-        }
-
-        public AsmExpr? Size { get; }
+        public AsmExpr? Size { get; } = size;
     }
 }

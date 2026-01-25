@@ -20,15 +20,9 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class EqualsDirective : Directive
+    public sealed class EqualsDirective(string left, AsmExpr right) : Directive
     {
-        public EqualsDirective(string left, AsmExpr right)
-        {
-            Left = left;
-            Right = right;
-        }
-
-        public string Left { get; }
-        public AsmExpr Right { get; }
+        public string Left { get; } = left;
+        public AsmExpr Right { get; } = right;
     }
 }

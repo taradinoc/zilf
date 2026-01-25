@@ -879,10 +879,10 @@ namespace Zapf
             // write creator ID
             if (ctx.Creator != null)
             {
-                if (ctx.Creator.Length != 4)
-                    ctx.Creator = ctx.Creator.PadRight(4)[..4];
+                if (ctx.Creator.Length != 8)
+                    ctx.Creator = ctx.Creator.PadRight(4, ' ').PadLeft(8, '\0')[..8];
 
-                ctx.Position = 0x3C;
+                ctx.Position = 0x38;
                 foreach (char c in ctx.Creator)
                     ctx.WriteByte((byte)c);
             }

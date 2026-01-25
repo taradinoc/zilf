@@ -24,16 +24,10 @@ namespace Zapf.Parsing.Directives
     /// Represents a .OPERAND directive that overrides the encoding of one operand
     /// of the following instruction.
     /// </summary>
-    public sealed class OperandDirective : Directive
+    public sealed class OperandDirective(AsmExpr operandIndex, string encodingSpecifier) : Directive
     {
-        public OperandDirective(AsmExpr operandIndex, string encodingSpecifier)
-        {
-            OperandIndex = operandIndex;
-            EncodingSpecifier = encodingSpecifier;
-        }
+        public AsmExpr OperandIndex { get; } = operandIndex;
 
-        public AsmExpr OperandIndex { get; }
-
-        public string EncodingSpecifier { get; }
+        public string EncodingSpecifier { get; } = encodingSpecifier;
     }
 }

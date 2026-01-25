@@ -18,9 +18,7 @@
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class StrlDirective : TextDirective
+    public sealed class StrlDirective(string text) : TextDirective(text)
     {
-        public StrlDirective(string text)
-            : base(text) { }
     }
 }

@@ -18,13 +18,8 @@
 
 namespace Zapf.Parsing.Expressions
 {
-    public abstract class TextAsmExpr : AsmExpr
+    public abstract class TextAsmExpr(string text) : AsmExpr
     {
-        protected TextAsmExpr(string text)
-        {
-            Text = text;
-        }
-
-        public string Text { get; }
+        public string Text { get; } = text;
     }
 }

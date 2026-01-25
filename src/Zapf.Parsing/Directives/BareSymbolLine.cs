@@ -18,14 +18,9 @@
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class BareSymbolLine : AsmLine
+    public sealed class BareSymbolLine(string text) : AsmLine
     {
-        public BareSymbolLine(string text)
-        {
-            Text = text;
-        }
-
-        public string Text { get; }
+        public string Text { get; } = text;
 
         public int OperandCount { get; set; }
         public bool HasStore { get; set; }

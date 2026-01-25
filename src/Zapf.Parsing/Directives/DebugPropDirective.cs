@@ -20,9 +20,7 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class DebugPropDirective : NumberAndNameDebugDirective
+    public sealed class DebugPropDirective(AsmExpr number, string name) : NumberAndNameDebugDirective(number, name)
     {
-        public DebugPropDirective(AsmExpr number, string name)
-            : base(number, name) { }
     }
 }

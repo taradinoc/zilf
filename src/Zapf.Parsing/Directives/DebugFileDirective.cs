@@ -20,17 +20,10 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class DebugFileDirective : DebugDirective
+    public sealed class DebugFileDirective(AsmExpr number, string includeName, string actualName) : DebugDirective
     {
-        public DebugFileDirective(AsmExpr number, string includeName, string actualName)
-        {
-            Number = number;
-            IncludeName = includeName;
-            ActualName = actualName;
-        }
-
-        public AsmExpr Number { get; }
-        public string IncludeName { get; }
-        public string ActualName { get; }
+        public AsmExpr Number { get; } = number;
+        public string IncludeName { get; } = includeName;
+        public string ActualName { get; } = actualName;
     }
 }

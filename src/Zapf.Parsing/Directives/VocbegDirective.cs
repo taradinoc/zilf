@@ -20,15 +20,9 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class VocbegDirective : Directive
+    public sealed class VocbegDirective(AsmExpr recordSize, AsmExpr keySize) : Directive
     {
-        public VocbegDirective(AsmExpr recordSize, AsmExpr keySize)
-        {
-            RecordSize = recordSize;
-            KeySize = keySize;
-        }
-
-        public AsmExpr RecordSize { get; }
-        public AsmExpr KeySize { get; }
+        public AsmExpr RecordSize { get; } = recordSize;
+        public AsmExpr KeySize { get; } = keySize;
     }
 }

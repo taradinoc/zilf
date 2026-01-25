@@ -20,15 +20,9 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class DebugMapDirective : DebugDirective
+    public sealed class DebugMapDirective(string key, AsmExpr? value) : DebugDirective
     {
-        public DebugMapDirective(string key, AsmExpr? value)
-        {
-            Key = key;
-            Value = value;
-        }
-
-        public string Key { get; }
-        public AsmExpr? Value { get; }
+        public string Key { get; } = key;
+        public AsmExpr? Value { get; } = value;
     }
 }

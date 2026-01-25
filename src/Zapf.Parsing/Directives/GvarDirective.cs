@@ -20,14 +20,8 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class GvarDirective : NamedDirective
+    public sealed class GvarDirective(string name, AsmExpr? initialValue) : NamedDirective(name)
     {
-        public GvarDirective(string name, AsmExpr? initialValue)
-            : base(name)
-        {
-            InitialValue = initialValue;
-        }
-
-        public AsmExpr? InitialValue { get; }
+        public AsmExpr? InitialValue { get; } = initialValue;
     }
 }

@@ -22,27 +22,16 @@ using Zapf.Parsing.Expressions;
 namespace Zapf.Parsing.Directives
 {
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-    public sealed class DebugClassDirective : DebugDirective
+    public sealed class DebugClassDirective(string name,
+         AsmExpr startFile, AsmExpr startLine, AsmExpr startColumn,
+         AsmExpr endFile, AsmExpr endLine, AsmExpr endColumn) : DebugDirective
     {
-        public DebugClassDirective(string name,
-             AsmExpr startFile, AsmExpr startLine, AsmExpr startColumn,
-             AsmExpr endFile, AsmExpr endLine, AsmExpr endColumn)
-        {
-            Name = name;
-            StartFile = startFile;
-            StartLine = startLine;
-            StartColumn = startColumn;
-            EndFile = endFile;
-            EndLine = endLine;
-            EndColumn = endColumn;
-        }
-
-        public string Name { get; }
-        public AsmExpr StartFile { get; }
-        public AsmExpr StartLine { get; }
-        public AsmExpr StartColumn { get; }
-        public AsmExpr EndFile { get; }
-        public AsmExpr EndLine { get; }
-        public AsmExpr EndColumn { get; }
+        public string Name { get; } = name;
+        public AsmExpr StartFile { get; } = startFile;
+        public AsmExpr StartLine { get; } = startLine;
+        public AsmExpr StartColumn { get; } = startColumn;
+        public AsmExpr EndFile { get; } = endFile;
+        public AsmExpr EndLine { get; } = endLine;
+        public AsmExpr EndColumn { get; } = endColumn;
     }
 }

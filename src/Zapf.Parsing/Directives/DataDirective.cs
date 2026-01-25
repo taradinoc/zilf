@@ -23,6 +23,6 @@ namespace Zapf.Parsing.Directives
 {
     public abstract class DataDirective : Directive
     {
-        public IList<AsmExpr> Elements { get; } = new List<AsmExpr>();
+        public IList<AsmExpr> Elements { get; } = [];
     }
 }

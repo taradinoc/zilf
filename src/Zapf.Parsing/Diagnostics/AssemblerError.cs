@@ -21,14 +21,8 @@ using System.Runtime.Serialization;
 
 namespace Zapf.Parsing.Diagnostics
 {
-    public abstract class AssemblerError : Exception
+    public abstract class AssemblerError(ISourceLine? node, string message) : Exception(message)
     {
-        protected AssemblerError(ISourceLine? node, string message)
-            : base(message)
-        {
-            Node = node;
-        }
-
-        public ISourceLine? Node { get; }
+        public ISourceLine? Node { get; } = node;
     }
 }

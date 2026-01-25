@@ -20,13 +20,8 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class AlignDirective : Directive
+    public sealed class AlignDirective(AsmExpr divisor) : Directive
     {
-        public AlignDirective(AsmExpr divisor)
-        {
-            Divisor = divisor;
-        }
-
-        public AsmExpr Divisor { get; }
+        public AsmExpr Divisor { get; } = divisor;
     }
 }

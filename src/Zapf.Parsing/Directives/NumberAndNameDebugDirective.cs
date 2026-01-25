@@ -21,16 +21,10 @@ using Zapf.Parsing.Expressions;
 namespace Zapf.Parsing.Directives
 {
 #nullable enable
-    public abstract class NumberAndNameDebugDirective : DebugDirective
+    public abstract class NumberAndNameDebugDirective(AsmExpr number, string name) : DebugDirective
     {
-        protected NumberAndNameDebugDirective(AsmExpr number, string name)
-        {
-            Number = number;
-            Name = name;
-        }
-
-        public AsmExpr Number { get; }
-        public string Name { get; }
+        public AsmExpr Number { get; } = number;
+        public string Name { get; } = name;
     }
 #nullable restore
 }

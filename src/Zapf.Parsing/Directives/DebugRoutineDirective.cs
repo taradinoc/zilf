@@ -21,17 +21,10 @@ using Zapf.Parsing.Expressions;
 
 namespace Zapf.Parsing.Directives
 {
-    public sealed class DebugRoutineDirective : LineDebugDirective
+    public sealed class DebugRoutineDirective(AsmExpr file, AsmExpr line, AsmExpr column,
+         string name, IEnumerable<string> locals) : LineDebugDirective(file, line, column)
     {
-        public DebugRoutineDirective(AsmExpr file, AsmExpr line, AsmExpr column,
-             string name, IEnumerable<string> locals)
-            : base(file, line, column)
-        {
-            Name = name;
-            Locals = new List<string>(locals);
-        }
-
-        public string Name { get; }
-        public IList<string> Locals { get; }
+        public string Name { get; } = name;
+        public IList<string> Locals { get; } = new List<string>(locals);
     }
 }

@@ -18,11 +18,8 @@
 
 namespace Zapf.Parsing.Expressions
 {
-    public sealed class SymbolExpr : TextAsmExpr
+    public sealed class SymbolExpr(string name) : TextAsmExpr(name)
     {
-        public SymbolExpr(string name)
-            : base(name) { }
-
         public override string ToString()
         {
             return Text;

@@ -24,11 +24,7 @@ namespace Zapf.Parsing.Diagnostics
     /// Thrown when an unrecoverable error occurs.
     /// </summary>
     [Serializable]
-    public class FatalError : AssemblerError
+    public class FatalError(ISourceLine? node, string message) : AssemblerError(node, message)
     {
-        public FatalError(ISourceLine? node, string message)
-            : base(node, message)
-        {
-        }
     }
 }
