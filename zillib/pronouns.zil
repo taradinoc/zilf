@@ -117,7 +117,11 @@
     <SET-PRONOUNS .O ,P-XOBJS>>
 
 ;"Sets the appropriate pronouns to refer to the contents of an object,
-  possibly after filtering through a routine."
+  possibly after filtering through a routine.
+
+  Args:
+     CTNR: The object whose contents will have pronouns set.
+     FILTER: A routine that returns false if an object should be skipped."
 <ROUTINE CONTENTS-ARE-IT (CTNR "OPT" FILTER "AUX" N)
     <MAP-CONTENTS (I .CTNR)
         <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
