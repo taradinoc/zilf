@@ -1927,6 +1927,36 @@ namespace Zilf.Emit.Zap
                 return ControlsConditionResult.Unrelated;
             }
 
+            public ControlsConditionResult DeterminesConditionOutcome(ZapCode a, ZapCode b)
+            {
+                /* If 'a' is SET 'VAR,constant and 'b' is ZERO? VAR, the answer depends on
+                 * the constant value. Unlike ControlsConditionalBranch, the SET has a
+                 * side effect that must be preserved. */
+                if (a.Instruction.Name == "SET" &&
+                    a.Instruction.Operands.Count == 2 &&
+                    a.Instruction.Operands[0] is QuoteExpr quote &&
+                    b.Instruction.Name == "ZERO?" &&
+                    b.Instruction.Operands.Count == 1 &&
+                    quote.Inner.Equals(b.Instruction.Operands[0]))
+                {
+                    // Check if the value being stored is a known constant
+                    if (TryGetNumericValue(a.Instruction.Operands[1], out var value))
+                    {
+                        return value == 0
+                            ? ControlsConditionResult.CausesBranchIfPositive
+                            : ControlsConditionResult.CausesNoOpIfPositive;
+                    }
+
+                    // Also handle known nonzero values (like string constants, routines, etc.)
+                    if (IsKnownNonzeroValue(a.Instruction.Operands[1]))
+                    {
+                        return ControlsConditionResult.CausesNoOpIfPositive;
+                    }
+                }
+
+                return ControlsConditionResult.Unrelated;
+            }
+
         }
     }
 }

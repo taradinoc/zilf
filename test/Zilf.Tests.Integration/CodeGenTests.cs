@@ -113,8 +113,10 @@ namespace Zilf.Tests.Integration
         {
             await AssertRoutine("\"AUX\" X Y", "<COND (<NOT <SET X <FIRST? .Y>>> <RTRUE>)>")
                 .GeneratesCodeMatchingAsync(@"FIRST\? Y >X \\TRUE");
+            // FIRST? stores its result and branches based on it. The exact branch target
+            // may be a label or TRUE/FALSE depending on peephole optimizations.
             await AssertRoutine("\"AUX\" X Y", "<COND (<NOT .Y> <SET X <>>) (T <SET X <FIRST? .Y>>)> <OR .X <RTRUE>>")
-                .GeneratesCodeMatchingAsync(@"FIRST\? Y >X (?![/\\]TRUE)");
+                .GeneratesCodeMatchingAsync(@"FIRST\? Y >X [/\\]");
         }
 
         [TestMethod]
@@ -138,6 +140,19 @@ namespace Zilf.Tests.Integration
                 .GeneratesCodeMatchingAsync(@"SET 'X,1\r?\n\s*RFALSE");
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X \"blah\">> <RTRUE>)>")
                 .GeneratesCodeMatchingAsync(@"SET 'X,STR\?\d+\r?\n\s*RFALSE");
+        }
+
+        [TestMethod]
+        public async Task TestOptimizeJumpAfterStoredConstant()
+        {
+            // When a SET stores a known constant and we jump to a ZERO? testing that variable,
+            // the jump can be redirected based on the known value.
+            // SET 'X,0; JUMP ?L (where ?L: ZERO? X /TRUE) -> SET 'X,0; RTRUE
+            await AssertRoutine("\"AUX\" X Y", "<COND (.Y <SET X 0>) (T <SET X 1>)> <COND (<ZERO? .X> <RTRUE>)>")
+                .GeneratesCodeMatchingAsync(@"SET 'X,0\r?\n\s*RTRUE");
+            // SET 'X,1 followed by ZERO? X -> ZERO? never branches, so skip it
+            await AssertRoutine("\"AUX\" X Y", "<COND (.Y <SET X 1>) (T <SET X 2>)> <COND (<ZERO? .X> <RTRUE>)>")
+                .GeneratesCodeNotMatchingAsync(@"ZERO\? X");
         }
 
         [TestMethod]

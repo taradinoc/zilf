@@ -37,6 +37,11 @@ and this project adheres to
   replace the defaults. `HAVE`, `TAKE`, and `MANY` already worked this way; the
   library uses the new syntax to define `TOUCH`.
 
+### Changed
+
+- Optimized code generation for some cases where a variable is set to a constant
+  and immediately tested for zero.
+
 ### Fixed
 
 - Pronouns can now be used with AND.

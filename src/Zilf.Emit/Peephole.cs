@@ -180,6 +180,19 @@ namespace Zilf.Emit
         [System.Diagnostics.Contracts.Pure]
         ControlsConditionResult ControlsConditionalBranch(TCode a, TCode b);
 
+        /// <summary>
+        /// Determines whether a plain instruction stores a known constant value to a variable,
+        /// and whether a conditional branch instruction tests that same variable.
+        /// Unlike <see cref="ControlsConditionalBranch"/>, the plain instruction has side effects
+        /// (the store) that must be preserved.
+        /// </summary>
+        /// <param name="a">The plain instruction (e.g., SET 'VAR,constant).</param>
+        /// <param name="b">The conditional branch instruction (e.g., ZERO? VAR).</param>
+        /// <returns>A value indicating whether the branch tests a condition
+        /// controlled by the stored constant, and if so, the outcome.</returns>
+        [System.Diagnostics.Contracts.Pure]
+        ControlsConditionResult DeterminesConditionOutcome(TCode a, TCode b);
+
     }
 
     interface IPeepholeCombinerWithStats
@@ -995,6 +1008,68 @@ namespace Zilf.Emit
             return true;
         }
 
+        /// <summary>
+        /// Optimizes a pattern where a plain instruction stores a known constant to a variable,
+        /// then jumps to a conditional that tests that variable. The jump can be redirected
+        /// based on the known value, but the store instruction must be preserved.
+        /// </summary>
+        /// <remarks>
+        /// Pattern: SET 'VAR,constant; JUMP ?L where ?L is ZERO? VAR /TARGET
+        /// If constant is nonzero, redirect JUMP to skip the ZERO? (fall through target).
+        /// If constant is zero, redirect JUMP to TARGET.
+        /// </remarks>
+        bool TryOptimizeJumpAfterStoredConstant(
+            LinkedListNode<Line> node,
+            Dictionary<ILabel, Line> labelMap,
+            Dictionary<ILabel, bool> usedLabels)
+        {
+            if (Combiner == null)
+                return false;
+
+            var line = node.Value;
+            if (line.Type != PeepholeLineType.Plain)
+                return false;
+
+            var nextNode = node.Next;
+            if (nextNode == null)
+                return false;
+
+            var jumpLine = nextNode.Value;
+            if (jumpLine.Type != PeepholeLineType.BranchAlways || jumpLine.TargetLine == null)
+                return false;
+
+            // The JUMP's target must be a conditional branch
+            if (!IsInvertibleBranch(jumpLine.TargetLine.Type))
+                return false;
+
+            var outcome = Combiner.DeterminesConditionOutcome(line.Code, jumpLine.TargetLine.Code);
+            if (outcome == ControlsConditionResult.Unrelated)
+                return false;
+
+            // Determine which way the conditional would branch based on the stored constant
+            var polarity = jumpLine.TargetLine.Type == PeepholeLineType.BranchPositive;
+            if ((outcome == ControlsConditionResult.CausesBranchIfPositive) == polarity)
+            {
+                // Redirect JUMP to the conditional's target
+                jumpLine.TargetLabel = jumpLine.TargetLine.TargetLabel;
+                jumpLine.TargetLine = jumpLine.TargetLine.TargetLine;
+            }
+            else
+            {
+                // Redirect JUMP to fall through the conditional
+                var targetNode = lines.Find(jumpLine.TargetLine);
+                Debug.Assert(targetNode?.Next != null);
+                var afterCondition = targetNode.Next.Value;
+                var newLabel = EnsureLabel(afterCondition, labelMap);
+                jumpLine.TargetLabel = newLabel;
+                jumpLine.TargetLine = afterCondition;
+                usedLabels[newLabel] = true;
+            }
+
+            Trace("optimize jump after stored constant");
+            return true;
+        }
+
         bool TryMergeAdjacentTerminators(
             LinkedListNode<Line> node,
             Dictionary<ILabel, Line> labelMap,
@@ -1291,6 +1366,9 @@ namespace Zilf.Emit
                 return OptimizationStepResult.ChangedContinue();
 
             if (TryOptimizePushedConstantJump(currentNode, labelMap, usedLabels))
+                return OptimizationStepResult.ChangedContinue();
+
+            if (TryOptimizeJumpAfterStoredConstant(currentNode, labelMap, usedLabels))
                 return OptimizationStepResult.ChangedContinue();
 
             return OptimizationStepResult.Continue();

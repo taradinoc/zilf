@@ -463,5 +463,39 @@ namespace Zilf.Emit.Glulx
 
             return ControlsConditionResult.Unrelated;
         }
+
+        public ControlsConditionResult DeterminesConditionOutcome(GlulxCode a, GlulxCode b)
+        {
+            // Check if 'a' stores a constant to a variable and 'b' tests that variable
+            // Pattern: copy constant -> local_X, followed by jz local_X or jnz local_X
+            if (a.Opcode == "copy" && a.Text.Contains(" -> ") && !a.Text.EndsWith(" -> push"))
+            {
+                var arrowIndex = a.Text.IndexOf(" -> ", StringComparison.Ordinal);
+                var value = a.Text[5..arrowIndex].Trim();
+                var dest = a.Text[(arrowIndex + 4)..].Trim();
+
+                // Check if 'b' is testing the same variable for zero
+                if (b.Opcode == "jz" && b.Text.StartsWith("jz " + dest + " "))
+                {
+                    if (int.TryParse(value, out var numValue))
+                    {
+                        return numValue == 0
+                            ? ControlsConditionResult.CausesBranchIfPositive
+                            : ControlsConditionResult.CausesNoOpIfPositive;
+                    }
+                }
+                else if (b.Opcode == "jnz" && b.Text.StartsWith("jnz " + dest + " "))
+                {
+                    if (int.TryParse(value, out var numValue))
+                    {
+                        return numValue != 0
+                            ? ControlsConditionResult.CausesBranchIfPositive
+                            : ControlsConditionResult.CausesNoOpIfPositive;
+                    }
+                }
+            }
+
+            return ControlsConditionResult.Unrelated;
+        }
     }
 }
