@@ -47,6 +47,9 @@ and this project adheres to
 
 - Changed compiled-in metadata to reflect the ZILF version number.
 
+- Optimized code generation for arithmetic operations when multiple consecutive
+  arguments, but not all, are constants.
+
 ### Fixed
 
 - Pronouns can now be used with AND.

@@ -46,6 +46,40 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Varargs_Add_Partially_Constant_Folds()
+        {
+            await AssertRoutine("\"AUX\" X", "<+ 1 2 .X>")
+                .GeneratesCodeMatchingAsync(@"ADD 3,X")
+                .AndNotMatching(@"ADD 1,2");
+        }
+
+        [TestMethod]
+        public async Task Varargs_Sub_Partially_Constant_Folds_NonPrefix_Run()
+        {
+            await AssertRoutine("", "<SETG GLOB <RANDOM 100>> <- ,GLOB 1 2>")
+                .WithGlobal("<GLOBAL GLOB 0>")
+                .GeneratesCodeMatchingAsync(@"SUB GLOB,3")
+                .AndNotMatching(@"SUB GLOB,1")
+                .AndNotMatching(@"SUB STACK,2");
+
+            await AssertRoutine("", "<SETG GLOB <RANDOM 100>> <- 10 ,GLOB 1 2>")
+                .WithGlobal("<GLOBAL GLOB 0>")
+                .GeneratesCodeMatchingAsync(@"SUB 10,GLOB")
+                .AndMatching(@"SUB STACK,3")
+                .AndNotMatching(@"SUB 1,2");
+        }
+
+        [TestMethod]
+        public async Task Varargs_Div_Does_Not_Fold_NonPrefix_Run()
+        {
+            await AssertRoutine("", "<SETG GLOB <RANDOM 100>> </ ,GLOB 2 3>")
+                .WithGlobal("<GLOBAL GLOB 0>")
+                .GeneratesCodeMatchingAsync(@"DIV GLOB,2")
+                .AndMatching(@"DIV STACK,3")
+                .AndNotMatching(@"DIV X,0");
+        }
+
+        [TestMethod]
         public async Task TestSubtractInVoidContextThenLessBecomesDLESS()
         {
             await AssertRoutine("\"AUX\" X", "<SET X <- .X 1>> <COND (<L? .X 0> <PRINTI \"blah\">)>")

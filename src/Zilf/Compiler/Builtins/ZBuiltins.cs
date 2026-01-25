@@ -615,6 +615,10 @@ namespace Zilf.Compiler.Builtins
                 var folded = FoldConstantArithmetic_Z(c.cc, initialValue, operation, args);
                 if (folded != null)
                     return folded;
+
+                // If we can't fold the whole expression, we can still fold some constant subexpressions.
+                // This MUST preserve operand order (important for stack temporaries) and semantics.
+                args = FoldConstantArithmeticPartial_Z(c.cc, op, operation, args);
             }
 
             // nope, compile it
@@ -721,6 +725,156 @@ namespace Zilf.Compiler.Builtins
             return cc.Game.MakeOperand(value);
         }
 
+        static IOperand[] FoldConstantArithmeticPartial_Z(Compilation cc, BinaryOp op, Func<short, short, short> operation, IOperand[] args)
+        {
+            return op switch
+            {
+                // Associative operations: fold any consecutive constant runs.
+                BinaryOp.Add or BinaryOp.Mul or BinaryOp.And or BinaryOp.Or => FoldConstantArithmeticRuns_Z(cc, operation, args),
+
+                // Subtraction is left-associative and non-associative, but trailing constant runs can be folded by summing.
+                BinaryOp.Sub => FoldConstantArithmeticRuns_Sub_Z(cc, args),
+
+                // Division is non-associative: only fold an initial constant prefix.
+                BinaryOp.Div => FoldConstantArithmeticPrefix_Z(cc, operation, args),
+
+                _ => args
+            };
+        }
+
+        static IOperand[] FoldConstantArithmeticPrefix_Z(Compilation cc, Func<short, short, short> op, IOperand[] args)
+        {
+            if (args.Length < 2)
+                return args;
+            if (args[0] is not INumericOperand first)
+                return args;
+
+            int j = 1;
+            var acc = (short)first.Value;
+
+            while (j < args.Length && args[j] is INumericOperand nj)
+            {
+                acc = op(acc, (short)nj.Value);
+                j++;
+            }
+
+            // Only worth doing if we collapse at least two args.
+            if (j < 2)
+                return args;
+
+            var rebuilt = new IOperand[1 + (args.Length - j)];
+            rebuilt[0] = cc.Game.MakeOperand(acc);
+            Array.Copy(args, j, rebuilt, 1, args.Length - j);
+            return rebuilt;
+        }
+
+        static IOperand[] FoldConstantArithmeticRuns_Z(Compilation cc, Func<short, short, short> op, IOperand[] args)
+        {
+            if (args.Length < 2)
+                return args;
+
+            List<IOperand>? rebuilt = null;
+
+            int i = 0;
+            while (i < args.Length)
+            {
+                if (args[i] is INumericOperand n0)
+                {
+                    int j = i + 1;
+                    var acc = (short)n0.Value;
+
+                    while (j < args.Length && args[j] is INumericOperand nj)
+                    {
+                        acc = op(acc, (short)nj.Value);
+                        j++;
+                    }
+
+                    // Only rebuild when we actually collapse 2+ constants.
+                    if (j - i >= 2)
+                    {
+                        if (rebuilt == null)
+                        {
+                            rebuilt = new List<IOperand>(args.Length);
+                            for (int k = 0; k < i; k++)
+                                rebuilt.Add(args[k]);
+                        }
+                        rebuilt.Add(cc.Game.MakeOperand(acc));
+                    }
+                    else
+                    {
+                        rebuilt?.Add(args[i]);
+                    }
+
+                    i = j;
+                    continue;
+                }
+
+                rebuilt?.Add(args[i]);
+                i++;
+            }
+
+            return rebuilt != null ? rebuilt.ToArray() : args;
+        }
+
+        static IOperand[] FoldConstantArithmeticRuns_Sub_Z(Compilation cc, IOperand[] args)
+        {
+            if (args.Length < 3)
+                return args;
+
+            List<IOperand>? rebuilt = null;
+
+            int i = 0;
+            while (i < args.Length)
+            {
+                if (args[i] is INumericOperand)
+                {
+                    int j = i;
+                    while (j < args.Length && args[j] is INumericOperand)
+                        j++;
+
+                    // only rebuild when we actually collapse 2+ constants
+                    if (j - i >= 2)
+                    {
+                        if (rebuilt == null)
+                        {
+                            rebuilt = new List<IOperand>(args.Length);
+                            for (int k = 0; k < i; k++)
+                                rebuilt.Add(args[k]);
+                        }
+
+                        if (i == 0)
+                        {
+                            // prefix: fold as normal left-associative subtraction
+                            var acc = (short)((INumericOperand)args[i]).Value;
+                            for (int k = i + 1; k < j; k++)
+                                acc = unchecked((short)(acc - (short)((INumericOperand)args[k]).Value));
+                            rebuilt.Add(cc.Game.MakeOperand(acc));
+                        }
+                        else
+                        {
+                            // non-prefix: V - c1 - c2 - ... == V - (c1 + c2 + ...)
+                            short sum = 0;
+                            for (int k = i; k < j; k++)
+                                sum = unchecked((short)(sum + (short)((INumericOperand)args[k]).Value));
+                            rebuilt.Add(cc.Game.MakeOperand(sum));
+                        }
+                    }
+                    else
+                    {
+                        rebuilt?.Add(args[i]);
+                    }
+
+                    i = j;
+                    continue;
+                }
+
+                rebuilt?.Add(args[i]);
+                i++;
+            }
+
+            return rebuilt != null ? rebuilt.ToArray() : args;
+        }
+
         [Builtin("ADD", "+", Data = BinaryOp.Add, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the sum of two or more numbers.")]
         [Builtin("SUB", "-", Data = BinaryOp.Sub, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the difference between two or more numbers.")]
         [Builtin("MUL", "*", Data = BinaryOp.Mul, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the product of two or more numbers.")]
@@ -746,6 +900,8 @@ namespace Zilf.Compiler.Builtins
                     var folded = FoldConstantArithmetic_Z(c.cc, initialValue16, operation16, args);
                     if (folded != null)
                         return folded;
+
+                    args = FoldConstantArithmeticPartial_Z(c.cc, op, operation16, args);
                 }
             }
             else
@@ -758,6 +914,8 @@ namespace Zilf.Compiler.Builtins
                     var folded = FoldConstantArithmetic_Glulx(c.cc, initialValue, operation, args);
                     if (folded != null)
                         return folded;
+
+                    args = FoldConstantArithmeticPartial_Glulx(c.cc, op, operation, args);
                 }
             }
 
@@ -863,6 +1021,145 @@ namespace Zilf.Compiler.Builtins
                 value = op(value, ((INumericOperand)args[i]).Value);
 
             return cc.Game.MakeOperand(value);
+        }
+
+        static IOperand[] FoldConstantArithmeticPartial_Glulx(Compilation cc, BinaryOp op, Func<int, int, int> operation, IOperand[] args)
+        {
+            return op switch
+            {
+                BinaryOp.Add or BinaryOp.Mul or BinaryOp.And or BinaryOp.Or => FoldConstantArithmeticRuns_Glulx(cc, operation, args),
+                BinaryOp.Sub => FoldConstantArithmeticRuns_Sub_Glulx(cc, args),
+                BinaryOp.Div => FoldConstantArithmeticPrefix_Glulx(cc, operation, args),
+                _ => args
+            };
+        }
+
+        static IOperand[] FoldConstantArithmeticPrefix_Glulx(Compilation cc, Func<int, int, int> op, IOperand[] args)
+        {
+            if (args.Length < 2)
+                return args;
+            if (args[0] is not INumericOperand first)
+                return args;
+
+            int j = 1;
+            var acc = first.Value;
+
+            while (j < args.Length && args[j] is INumericOperand nj)
+            {
+                acc = op(acc, nj.Value);
+                j++;
+            }
+
+            if (j < 2)
+                return args;
+
+            var rebuilt = new IOperand[1 + (args.Length - j)];
+            rebuilt[0] = cc.Game.MakeOperand(acc);
+            Array.Copy(args, j, rebuilt, 1, args.Length - j);
+            return rebuilt;
+        }
+
+        static IOperand[] FoldConstantArithmeticRuns_Glulx(Compilation cc, Func<int, int, int> op, IOperand[] args)
+        {
+            if (args.Length < 2)
+                return args;
+
+            List<IOperand>? rebuilt = null;
+
+            int i = 0;
+            while (i < args.Length)
+            {
+                if (args[i] is INumericOperand n0)
+                {
+                    int j = i + 1;
+                    var acc = n0.Value;
+
+                    while (j < args.Length && args[j] is INumericOperand nj)
+                    {
+                        acc = op(acc, nj.Value);
+                        j++;
+                    }
+
+                    if (j - i >= 2)
+                    {
+                        if (rebuilt == null)
+                        {
+                            rebuilt = new List<IOperand>(args.Length);
+                            for (int k = 0; k < i; k++)
+                                rebuilt.Add(args[k]);
+                        }
+                        rebuilt.Add(cc.Game.MakeOperand(acc));
+                    }
+                    else
+                    {
+                        rebuilt?.Add(args[i]);
+                    }
+
+                    i = j;
+                    continue;
+                }
+
+                rebuilt?.Add(args[i]);
+                i++;
+            }
+
+            return rebuilt != null ? rebuilt.ToArray() : args;
+        }
+
+        static IOperand[] FoldConstantArithmeticRuns_Sub_Glulx(Compilation cc, IOperand[] args)
+        {
+            if (args.Length < 3)
+                return args;
+
+            List<IOperand>? rebuilt = null;
+
+            int i = 0;
+            while (i < args.Length)
+            {
+                if (args[i] is INumericOperand)
+                {
+                    int j = i;
+                    while (j < args.Length && args[j] is INumericOperand)
+                        j++;
+
+                    if (j - i >= 2)
+                    {
+                        if (rebuilt == null)
+                        {
+                            rebuilt = new List<IOperand>(args.Length);
+                            for (int k = 0; k < i; k++)
+                                rebuilt.Add(args[k]);
+                        }
+
+                        if (i == 0)
+                        {
+                            var acc = ((INumericOperand)args[i]).Value;
+                            for (int k = i + 1; k < j; k++)
+                                acc = unchecked(acc - ((INumericOperand)args[k]).Value);
+                            rebuilt.Add(cc.Game.MakeOperand(acc));
+                        }
+                        else
+                        {
+                            int sum = 0;
+                            for (int k = i; k < j; k++)
+                                sum = unchecked(sum + ((INumericOperand)args[k]).Value);
+                            rebuilt.Add(cc.Game.MakeOperand(sum));
+                        }
+                    }
+                    else
+                    {
+                        rebuilt?.Add(args[i]);
+                    }
+
+                    i = j;
+                    continue;
+                }
+
+                rebuilt?.Add(args[i]);
+                i++;
+            }
+
+            return rebuilt != null ? rebuilt.ToArray() : args;
         }
 
         /// <summary>
