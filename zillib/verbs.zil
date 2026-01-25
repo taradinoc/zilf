@@ -1047,7 +1047,7 @@ Returns:
                   <RFALSE>)
                  (<BLOCKS-TAKE? .HOLDER>
                   <THIS-IS-IT .HOLDER>
-                  <OR .SILENT <TELL <LIBRARY-MESSAGE TAKE BLOCKED-BY-OBJECT ((HOLDER .HOLDER) (PLURAL <FSET? .HOLDER ,PLURALBIT>))> CR>>
+                  <OR .SILENT <TELL <LIBRARY-MESSAGE TAKE BLOCKED-BY-OBJECT ((HOLDER .HOLDER) (PLURAL? <FSET? .HOLDER ,PLURALBIT>))> CR>>
                   <RFALSE>)
                  (<NOT <TAKE-CAPACITY-CHECK .OBJ .SILENT>>)
                  (<AND <FSET? .HOLDER ,CONTBIT>

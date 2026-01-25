@@ -43,6 +43,8 @@ and this project adheres to
 
 - Fixed `V-UNWEAR` and `V-TELL-ABOUT` not using the library message system.
 
+- Fixed grammar of the error message when taking is blocked by a plural object.
+
 ## [1.3] (January 17, 2026)
 
 ### Added

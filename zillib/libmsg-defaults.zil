@@ -174,7 +174,7 @@
     (PERSON YOU-MASHER .WHOM)
     (ALREADY-HELD "You already have that.")
     (BLOCKED-BY-PERSON "That seems to belong to " T .HOLDER ".")
-    (BLOCKED-BY-OBJECT CT .HOLDER " is in the way.")
+    (BLOCKED-BY-OBJECT CT .HOLDER IFELSE .PLURAL? " are" " is" " in the way.")
     (TAKE-FROM-INSIDE "You can't pick up " T .OBJ " while you're " IFELSE .SURFACE? "on " "in " "it.")
     (SUCCESS "You pick up " T .OBJ ".")
     (SUCCESS-SHORT "Taken.")
