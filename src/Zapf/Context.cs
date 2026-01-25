@@ -49,6 +49,7 @@ namespace Zapf
         public bool Quiet, InformMode, ListAddresses, AbbreviateMode, XmlDebugMode;
         public string? InFile, OutFile, DebugFile;
         public string? Creator = "ZAPF";
+        internal bool CreatorSpecifiedByCommandLine;
         public string? Serial;
         public byte ZVersion, ZFlags;
         public ushort ZFlags2;

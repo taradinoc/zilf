@@ -468,10 +468,12 @@ namespace Zapf
             if (parseResult.GetResult(spec.ClearCreatorOption) is not null &&
                 parseResult.GetValue(spec.ClearCreatorOption))
             {
+                ctx.CreatorSpecifiedByCommandLine = true;
                 ctx.Creator = null;
             }
             else if (parseResult.GetResult(spec.CreatorOption) is not null)
             {
+                ctx.CreatorSpecifiedByCommandLine = true;
                 ctx.Creator = parseResult.GetValue(spec.CreatorOption);
             }
 
@@ -1287,6 +1289,11 @@ namespace Zapf
 
                     ctx.PendingOperandEncodings ??= new Dictionary<int, OperandEncoding>();
                     ctx.PendingOperandEncodings[operandIndex] = encoding;
+                    break;
+
+                case CreatorDirective creatorNode:
+                    if (!ctx.CreatorSpecifiedByCommandLine)
+                        ctx.Creator = creatorNode.Text;
                     break;
 
                 case AlignDirective alignNode:

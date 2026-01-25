@@ -49,6 +49,7 @@ namespace Zapf.Parsing
                 { ".ALIGN", ParseAlignDirective },
                 { ".BYTE", ParseByteDirective },
                 { ".CHRSET", ParseChrsetDirective },
+                { ".CREATOR", ParseCreatorDirective },
                 { ".END", ParseEndDirective },
                 { ".ENDI", ParseEndiDirective },
                 { ".ENDT", ParseEndtDirective },
@@ -715,6 +716,13 @@ namespace Zapf.Parsing
             }
             MatchEndOfDirective();
             return new ChrsetDirective(alphabetNum, characters);
+        }
+
+        AsmLine ParseCreatorDirective(Token head)
+        {
+            var creator = MatchString();
+            MatchEndOfDirective();
+            return new CreatorDirective(creator);
         }
 
         AsmLine ParseEndDirective(Token head)

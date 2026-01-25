@@ -37,6 +37,9 @@ and this project adheres to
   replace the defaults. `HAVE`, `TAKE`, and `MANY` already worked this way; the
   library uses the new syntax to define `TOUCH`.
 
+- Added a `.CREATOR` directive to ZAPF to set the creator info in the header,
+  which can now be up to 8 characters. The command line options take precedence.
+
 ### Changed
 
 - Optimized code generation for some cases where a variable is set to a constant

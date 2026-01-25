@@ -119,6 +119,84 @@ START::
             AssertWordAtOffset(buffer, 2, 222);
         }
 
+        static void AssertBytesAtOffset(ReadOnlySpan<byte> buffer, int offset, ReadOnlySpan<byte> expected)
+        {
+            for (int i = 0; i < expected.Length; i++)
+                Assert.AreEqual(expected[i], buffer[offset + i], "Wrong byte value at byte offset {0}.", offset + i);
+        }
+
+        [TestMethod]
+        public void CREATOR_Directive_Should_Set_Header_Creator_In_V3()
+        {
+            const string SCode = @"
+    .CREATOR ""ZILFabcd""
+
+WORDS::
+GLOBAL::
+OBJECT::
+VOCAB::
+IMPURE::
+ENDLOD::
+
+    .FUNCT GO
+START::
+    QUIT
+
+    .END";
+
+            Assert.IsTrue(TestHelper.Assemble(SCode, out var mstr));
+            var buffer = mstr!.ToArray();
+            AssertBytesAtOffset(buffer, 0x38, "ZILFabcd"u8);
+        }
+
+        [TestMethod]
+        public void Option_Should_Override_CREATOR_Directive_In_V3()
+        {
+            const string SCode = @"
+    .CREATOR ""ZILFabcd""
+
+WORDS::
+GLOBAL::
+OBJECT::
+VOCAB::
+IMPURE::
+ENDLOD::
+
+    .FUNCT GO
+START::
+    QUIT
+
+    .END";
+
+            Assert.IsTrue(TestHelper.Assemble(SCode, ["-C", "CMDabcd!"], out var mstr));
+            var buffer = mstr!.ToArray();
+            AssertBytesAtOffset(buffer, 0x38, "CMDabcd!"u8);
+        }
+
+        [TestMethod]
+        public void NoCreator_Option_Should_Override_CREATOR_Directive_In_V3()
+        {
+            const string SCode = @"
+    .CREATOR ""ZILFabcd""
+
+WORDS::
+GLOBAL::
+OBJECT::
+VOCAB::
+IMPURE::
+ENDLOD::
+
+    .FUNCT GO
+START::
+    QUIT
+
+    .END";
+
+            Assert.IsTrue(TestHelper.Assemble(SCode, ["-N"], out var mstr));
+            var buffer = mstr!.ToArray();
+            AssertBytesAtOffset(buffer, 0x38, new byte[8]);
+        }
+
     [TestMethod]
         public void START_Header_Should_Not_Be_Silently_Truncated_When_GO_Past_64k_In_V3()
         {
