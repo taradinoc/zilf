@@ -23,7 +23,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Zilf.Common.StringEncoding;
-using Zilf.Emit;
 
 namespace Zilf.Emit.Zap
 {
@@ -35,7 +34,7 @@ namespace Zilf.Emit.Zap
         WantFrequentWords = 2,
     }
 
-    public sealed class GameBuilder : IGameBuilder
+    public sealed partial class GameBuilder : IGameBuilder
     {
         const string INDENT = "\t";
 
@@ -236,8 +235,11 @@ namespace Zilf.Emit.Zap
                 }
             }
 
+            writer.WriteLine();
             writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetFrequentWordsFileName(false));
             writer.WriteLine(INDENT + ".INSERT \"{0}\"", streamFactory.GetDataFileName(false));
+            writer.WriteLine();
+            writer.WriteLine(INDENT + ".CREATOR \"{0}\"", Metadata.GetCreatorString());
         }
 
         static string ExpandChrSet(string? alphabet)

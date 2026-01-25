@@ -45,6 +45,8 @@ and this project adheres to
 - Optimized code generation for some cases where a variable is set to a constant
   and immediately tested for zero.
 
+- Changed compiled-in metadata to reflect the ZILF version number.
+
 ### Fixed
 
 - Pronouns can now be used with AND.

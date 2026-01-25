@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace Zilf.Emit.Glulx
@@ -928,9 +929,12 @@ namespace Zilf.Emit.Glulx
 
         void FinishMetadata()
         {
+            string version = typeof(GameBuilder).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+               ?.InformationalVersion ?? "<?.??>";
+
             writer.WriteLine();
             writer.WriteLine(INDENT + "; Metadata");
-            writer.WriteLine(INDENT + "db \"ZILF\"");
+            writer.WriteLine(INDENT + "db \"{0}\"", Metadata.GetCreatorString());
             writer.WriteLine("metadata_releaseid:");
             writer.WriteLine(INDENT + "dw RELEASEID");
             writer.WriteLine("metadata_serial:");
