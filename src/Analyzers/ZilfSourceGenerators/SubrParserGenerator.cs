@@ -677,10 +677,13 @@ namespace ZilfSourceGenerators
             "ZilDecl" => "DECL",
             "ZilEnvironment" => "ENVIRONMENT",
             "ZilFix" => "FIX",
+            "ZilForm" => "FORM",
             "ZilList" => "LIST",
             "ZilListoidBase" => "PRIMTYPE LIST",
             "ZilObject" => "any value",
+            "ZilOffset" => "OFFSET",
             "ZilString" => "STRING",
+            "ZilVector" => "VECTOR",
             _ => null,
         };
 

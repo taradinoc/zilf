@@ -58,6 +58,9 @@ and this project adheres to
 - Fixed uncaught exception when using a non-comparable type with SORT without
   providing a comparison function.
 
+- Fixed incorrect type name in some error messages when passing the wrong type
+  to a SUBR.
+
 ## [1.3] (January 17, 2026)
 
 ### Added
