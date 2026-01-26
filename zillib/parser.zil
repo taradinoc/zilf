@@ -3772,7 +3772,7 @@ or reveal a light source."
         (ACTION PLAYER-F)>
 
     ;"Action handler for the player."
-    <ROUTINE PLAYER-F ("OPT" ARG)
+    <ROUTINE PLAYER-F ()
         <COND (<NOT <=? ,PRSO ,PLAYER>> <RFALSE>)
               (<VERB? EXAMINE> <TELL <LIBRARY-MESSAGE EXAMINE PLAYER> CR>)>>
 
