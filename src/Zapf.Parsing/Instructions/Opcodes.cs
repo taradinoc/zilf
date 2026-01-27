@@ -247,6 +247,9 @@ namespace Zapf.Parsing.Instructions
         public const ushort Split = 234;
         [ZOp("SUB", "sub", 1, 6, ZOpFlags.Store)]
         public const ushort Sub = 21;
+        [ZOp("TCOLOR", "set_true_colour", 5, 5, 0)]
+        [ZOp("TCOLOR", "set_true_colour", 6, 6, 0)]
+        public const ushort Tcolor = 269;
         [ZOp("THROW", "throw", 5, 6, ZOpFlags.Terminates)]
         public const ushort Throw = 28;
         [ZOp("USL", "show_status", 1, 3, 0)]
