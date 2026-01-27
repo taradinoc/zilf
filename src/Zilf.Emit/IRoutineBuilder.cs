@@ -323,6 +323,16 @@ namespace Zilf.Emit
         /// Erases picture number left at Y-position center, X-position right.
         /// </summary>
         ErasePicture,
+
+        /// <summary>
+        /// Sets the foreground and background color of a window.
+        /// </summary>
+        SetColor,
+
+        /// <summary>
+        /// Sets the foreground and background true color of a window.
+        /// </summary>
+        SetTrueColor,
     }
 
     public enum BinaryOp
@@ -434,6 +444,11 @@ namespace Zilf.Emit
         /// Sets the foreground and background color.
         /// </summary>
         SetColor,
+
+        /// <summary>
+        /// Sets the foreground and background true color.
+        /// </summary>
+        SetTrueColor,
 
         /// <summary>
         /// Returns from the routine that produced a catch token.

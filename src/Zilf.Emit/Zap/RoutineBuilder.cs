@@ -497,6 +497,7 @@ namespace Zilf.Emit.Zap
                 BinaryOp.DirectOutput => "DIROUT",
                 BinaryOp.SetCursor => "CURSET",
                 BinaryOp.SetColor => "COLOR",
+                BinaryOp.SetTrueColor => "TCOLOR",
                 BinaryOp.Throw => "THROW",
                 BinaryOp.StoreIndirect => "SET",
                 BinaryOp.FlushUserStack => "FSTACK",
@@ -529,6 +530,8 @@ namespace Zilf.Emit.Zap
                 TernaryOp.SetCursor => "CURSET",
                 TernaryOp.DirectOutput => "DIROUT",
                 TernaryOp.ErasePicture => "DCLEAR",
+                TernaryOp.SetColor => "COLOR",
+                TernaryOp.SetTrueColor => "TCOLOR",
                 _ => throw UnhandledCaseException.FromEnum(op, "ternary operation")
             };
 

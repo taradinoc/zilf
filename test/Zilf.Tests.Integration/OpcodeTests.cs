@@ -17,6 +17,7 @@
  */
 
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Diagnostics;
 
@@ -374,14 +375,10 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public void TestCOLOR_V6()
+        public async System.Threading.Tasks.Task TestCOLOR_V6Async()
         {
-            Assert.Inconclusive();
-
             // third argument is supported in V6+
-/*
-            await AssertExpr("<COLOR 5 5 1>").InV6().Compiles();
-*/
+            await AssertExpr("<COLOR 5 5 1>").InV6().CompilesAsync();
         }
 
         [TestMethod]
@@ -2326,6 +2323,32 @@ namespace Zilf.Tests.Integration
             // alias where 2nd operand defaults to 1
             await AssertExpr("<BACK 1>").GivesNumberAsync("0");
             await AssertExpr("<BACK 1 2>").GivesNumberAsync("-1");
+        }
+
+        [TestMethod]
+        public async System.Threading.Tasks.Task TestTCOLORAsync()
+        {
+            // not implemented in ZLR
+            Assert.Inconclusive();
+
+/*
+            // only exists in V5+
+
+            // we can't really test its side-effect here
+            await AssertExpr("<TCOLOR 5 5>").InV5().GivesNumberAsync("1");
+*/
+        }
+
+        [TestMethod]
+        public async System.Threading.Tasks.Task TestTCOLOR_V6Async()
+        {
+            // not implemented in ZLR
+            Assert.Inconclusive();
+
+/*
+            // third argument is supported in V6+
+            await AssertExpr("<TCOLOR 5 5 1>").InV6().CompilesAsync();
+*/
         }
 
         [TestMethod]

@@ -446,9 +446,11 @@ namespace Zilf.Compiler.Builtins
 
         #region Ternary Opcodes
 
+        [Builtin("COLOR", Data = TernaryOp.SetColor, MinVersion = 6, HasSideEffect = true, Summary = "Sets the foreground and background colors of a window.")]
         [Builtin("DCLEAR", Data = TernaryOp.ErasePicture, MinVersion = 6, HasSideEffect = true, Summary = "Erases a picture from the screen.")]
         [Builtin("DIROUT", Data = TernaryOp.DirectOutput, MinVersion = 6, HasSideEffect = true, Summary = "Directs output to the specified stream.")]
         [Builtin("DISPLAY", Data = TernaryOp.DrawPicture, MinVersion = 6, HasSideEffect = true, Summary = "Draws a picture on the screen.")]
+        [Builtin("TCOLOR", Data = TernaryOp.SetTrueColor, MinVersion = 6, HasSideEffect = true, Summary = "Sets the foreground and background true colors of a window.")]
         [Builtin("WINPOS", Data = TernaryOp.MoveWindow, MinVersion = 6, HasSideEffect = true, Summary = "Sets the position of a window.")]
         [Builtin("WINPUT", Data = TernaryOp.PutWindowProperty, MinVersion = 6, HasSideEffect = true, Summary = "Sets a property of a window.")]
         [Builtin("WINSIZE", Data = TernaryOp.WindowSize, MinVersion = 6, HasSideEffect = true, Summary = "Sets the size of a window.")]
@@ -1320,6 +1322,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("CURSET", Data = BinaryOp.SetCursor, MinVersion = 4, MaxVersion = 5, HasSideEffect = true, Summary = "Sets the cursor row and column.")]
         [Builtin("COLOR", Data = BinaryOp.SetColor, MinVersion = 5, HasSideEffect = true, Summary = "Sets the foreground and background colors.")]
         [Builtin("DIROUT", Data = BinaryOp.DirectOutput, HasSideEffect = true, Summary = "Directs output to the specified stream.")]
+        [Builtin("TCOLOR", Data = BinaryOp.SetTrueColor, MinVersion = 5, HasSideEffect = true, Summary = "Sets the foreground and background true colors.")]
         [Builtin("THROW", Data = BinaryOp.Throw, MinVersion = 5, HasSideEffect = true, Summary = "Causes a value to be returned from an outer function call.")]
         [Builtin("SCROLL", Data = BinaryOp.ScrollWindow, MinVersion = 6, HasSideEffect = true, Summary = "Scrolls the contents of a window by a number of pixels.")]
         public static void BinaryVoidOp(
