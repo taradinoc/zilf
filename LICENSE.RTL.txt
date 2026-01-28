@@ -1,9 +1,11 @@
-ZILF LIBRARY LICENSE
-====================
+ZILF RUNTIME LIBRARY LICENSE
+============================
 
-The following license applies to the ZIL code in the `zillib` subdirectory.
+The following license applies to the runtime library code in
+src/Zilf.Emit/Glulx/RuntimeLib.cs and RuntimeLib16.cs which is copied into
+ZILF's output without substantial modification.
 
-ZILF Library Copyright (C) 2010-2026 Tara McGrew and Josh Lawrence
+ZILF Runtime Library Copyright (C) 2025-2026 Tara McGrew
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -14,13 +16,12 @@ modification, are permitted provided that the following conditions are met:
 * Redistributions in binary form must reproduce the above copyright notice,
   this list of conditions and the following disclaimer in the documentation
   and/or other materials provided with the distribution. In the case of a
-  binary z-code file compiled by the ZILF compiler, the appearance of the
-  library version number within the text of the introductory title credits of
-  your game (text that is displayed to a person who plays your z-code file
-  via a z-code interpreter) is sufficient to satisfy the requirements for
-  redistribution of said binary z-code file. (By default, using <V-VERSION>
-  in your game's source code will display the library version number to a
-  person playing your game on a z-code interpreter.)
+  binary story file compiled by the ZILF compiler, the inclusion of the
+  plaintext compiler version number within the file is sufficient to satisfy
+  the requirements for redistribution of said binary story file, provided that
+  the file is accessible to players. (By default, ZILF includes the compiler
+  version number in its output in such a way that it can be viewed by the
+  player in the binary story file using a hex editor.)
 
 * The names of the authors may not be used to endorse or promote products
   derived from this software without specific prior written permission.

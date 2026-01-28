@@ -36,6 +36,8 @@ To run only the fast tests (skipping the ZILF library tests and full game tests)
 
 If you'd like to contribute code, please request to join the project on [Heptapod](https://foss.heptapod.net/zilf/zilf/), commit your work to a topic branch, and submit a merge request. Alternatively, you may create an issue on [JIRA](https://vaporware.atlassian.net/projects/ZILF) and submit a patch.
 
+Important note: By submitting code to be incorporated into ZILF, you agree to allow its distribution under the same licensing terms as the surrounding ZILF code, i.e., the [GPLv3](COPYING.txt), the [ZILF Library License](zillib/LICENSE.txt), and/or the [ZILF Runtime Library License](LICENSE.RTL.txt).
+
 ## Who do I talk to?
 
 The primary contact is Tara McGrew (a.k.a. vaporware), who may be found on the [IntFiction forum](http://intfiction.org/forum/), [ifMUD](http://ifmud.port4000.com/), or [Discord](https://discord.gg/eR98YMN).
