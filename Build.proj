@@ -36,7 +36,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_RootDocs Include="$(RootDir)README.md;$(RootDir)CHANGELOG.md;$(RootDir)COPYING.txt" />
+      <_RootDocs Include="$(RootDir)README.md;$(RootDir)CHANGELOG.md;$(RootDir)COPYING.txt;$(RootDir)LICENSE.RTL.txt" />
       <_SampleFiles Include="$(RootDir)sample/**/*" Exclude="$(RootDir)sample/**/;$(RootDir)sample/**/bin/**;$(RootDir)sample/**/obj/**;$(RootDir)sample/**/.git/**;$(RootDir)sample/**/.hg/**" />
       <_ZilLibFiles Include="$(RootDir)zillib/**/*" Exclude="$(RootDir)zillib/**/;$(RootDir)zillib/**/bin/**;$(RootDir)zillib/**/obj/**;$(RootDir)zillib/tests/**;$(RootDir)zillib/**/.git/**;$(RootDir)zillib/**/.hg/**" />
     </ItemGroup>

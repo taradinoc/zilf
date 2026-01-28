@@ -1,7 +1,7 @@
 ZILF LIBRARY LICENSE
 ====================
 
-The following license applies to the ZIL code in the `zillib` subdirectory.
+The following license applies to the ZIL/MDL code in the zillib subdirectory.
 
 ZILF Library Copyright (C) 2010-2026 Tara McGrew and Josh Lawrence
 

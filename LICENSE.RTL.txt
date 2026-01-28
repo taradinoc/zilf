@@ -1,9 +1,10 @@
 ZILF RUNTIME LIBRARY LICENSE
 ============================
 
-The following license applies to the runtime library code in
-src/Zilf.Emit/Glulx/RuntimeLib.cs and RuntimeLib16.cs which is copied into
-ZILF's output without substantial modification.
+The following license applies to any portion of ZILF's source code that ZILF
+of its own accord copies into its output without substantial modification. At
+time of writing, this comprises the Glulx runtime routines, which are included
+as text in RuntimeLib.cs and RuntimeLib16.cs and copied when targeting Glulx.
 
 ZILF Runtime Library Copyright (C) 2025-2026 Tara McGrew
 
@@ -17,10 +18,10 @@ modification, are permitted provided that the following conditions are met:
   this list of conditions and the following disclaimer in the documentation
   and/or other materials provided with the distribution. In the case of a
   binary story file compiled by the ZILF compiler, the inclusion of the
-  plaintext compiler version number within the file is sufficient to satisfy
+  plaintext compiler version string within the file is sufficient to satisfy
   the requirements for redistribution of said binary story file, provided that
   the file is accessible to players. (By default, ZILF includes the compiler
-  version number in its output in such a way that it can be viewed by the
+  version string in its output in such a way that it can be viewed by the
   player in the binary story file using a hex editor.)
 
 * The names of the authors may not be used to endorse or promote products
