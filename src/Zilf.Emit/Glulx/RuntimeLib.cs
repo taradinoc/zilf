@@ -1,4 +1,4 @@
-/* Copyright 2010-2025 Tara McGrew
+/* Copyright 2010-2026 Tara McGrew
  *
  * This file is part of ZILF.
  *
@@ -14,6 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * ----------
+ *
+ * In addition to the permission granted under the GNU General Public License,
+ * you are also permitted to redistribute portions of this file under the terms
+ * of the ZILF Runtime Library License. See LICENSE.RTL.txt for details.
  */
 
 using System;
