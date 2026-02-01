@@ -41,7 +41,7 @@
 <SCOPE-STAGE-EXPLICIT EVERYWHERE 2
     (<PUT SCOPE-STATE 0 <FIRST? ,ROOMS>>
      <PUT SCOPE-STATE 1 ,ROOMS>)
-    (<SCOPE-CRAWL>)>
+    (<SCOPE-CRAWL T>)>
 
 <SCOPE-STAGE INVENTORY 2
     (<PUT SCOPE-STATE 0 <FIRST? ,WINNER>>
@@ -148,7 +148,6 @@
                <SET INIT-STAGES
                     <MAPF ,LIST
                           <FUNCTION (S)
-                              <COND (<MEMQ .S ,EXPLICIT-SCOPE-STAGES> <RETURN>)>
                               <SET I <+ .I 1>>
                               `<PUT ,SCOPE-CURRENT-STAGES
                                     ~.I
@@ -232,12 +231,12 @@
                <SETG SCOPE-CURRENT-STAGE <+ ,SCOPE-CURRENT-STAGE 1>>
                <SET INIT T>)>>>
 
-<ROUTINE SCOPE-CRAWL ("AUX" O N C L)
+<ROUTINE SCOPE-CRAWL ("OPT" (OMNI? <>) "AUX" O N C L)
     <SET O <GET ,SCOPE-STATE 0>>
     <OR .O <RFALSE>>
     <SET C <GET ,SCOPE-STATE 1>>
     <COND (<AND <SET N <FIRST? .O>>
-                <OR <SEE-INSIDE? .O> <IN? .O ,ROOMS>>>
+                <OR .OMNI? <SEE-INSIDE? .O> <IN? .O ,ROOMS>>>
            ;"Next is O's child")
           (<SET N <NEXT? .O>>
            ;"Next is O's sibling")

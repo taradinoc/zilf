@@ -364,6 +364,17 @@ Returns:
     <SET R <LEXBUF-W-WORD ,LEXBUF .N>>
     .R>
 
+;"Sets the word at the given index in LEXBUF.
+
+Args:
+  N: The index, starting at 1.
+  VAL: The new word.
+
+Returns:
+  T."
+<DEFMAC PUTWORD ('N 'VAL)
+    `<LEXBUF-W-WORD ,LEXBUF ~.N ~.VAL>>
+
 ;"Prints the word at the given index in LEXBUF.
 
 Args:
@@ -816,6 +827,9 @@ These extensions will be respected by other code that simulates the main loop, e
     <DEFMAC PROVIDE-MISSING-VERB? () '<>>
     <DEFMAC PRINT-MISSING-VERB () '<>>>
 
+<DEFAULT-DEFINITION HOOK-MID-PARSE-CONSUME
+    <DEFMAC HOOK-MID-PARSE-CONSUME ('WN) <>>>
+
 ;"Reads and parses a command.
 
 The primary outputs are PRSA, PRSO (+ PRSO-DIR), and PRSI, suitable
@@ -989,8 +1003,12 @@ Sets:
                <COND (<G? .I ,P-LEN>
                       ;"Reached the end of the command"
                       <SETG P-CONT 0>
-                      <RETURN>)
-                     (<NOT <OR <SET W <GETWORD? .I>>
+                      <RETURN>)>
+               <COND (<SET W <HOOK-MID-PARSE-CONSUME .I>>
+                      ;"Hook has consumed some words"
+                      <TRACE 3 "[hook consumed " N .W " words]" CR>
+                      <SET I <+ .I .W>>)>
+               <COND (<NOT <OR <SET W <GETWORD? .I>>
                                <AND <PARSE-NUMBER? .I> <SET W ,W?\,NUMBER>>>>
                       ;"Word not in vocabulary"
                       <STORE-OOPS .I>

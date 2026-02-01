@@ -16,6 +16,13 @@ and this project adheres to
 
 - Added `HOOK-BEFORE-READLINE` and `HOOK-AFTER-READLINE`.
 
+- Added `HOOK-MID-PARSE-CONSUME`, which can modify or delete words just before
+  the parser sees them.
+
+### Fixed
+
+- The `EVERYWHERE` search flag now looks inside closed containers and people.
+
 ## [1.4] (January 25, 2026)
 
 ### Added
