@@ -517,6 +517,26 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Routine_With_Too_Many_Local_Variables_For_Platform_Should_Not_Compile()
+        {
+            await AssertRoutine("\"AUX\" A B C D E F G H I J K L M N O P", "<>")
+                .DoesNotCompileAsync("MDL0440");
+
+            await AssertRoutine("A B C \"OPT\" D E F \"AUX\" G H I J K L M N O P", "<>")
+                .DoesNotCompileAsync("MDL0440");
+
+            // same limit in Glulx16
+            await AssertRoutine("\"AUX\" A B C D E F G H I J K L M N O P", "<>")
+                .InGlulx16()
+                .DoesNotCompileAsync("MDL0440");
+
+            // no limit in Glulx32
+            await AssertRoutine("\"AUX\" A B C D E F G H I J K L M N O P", "<>")
+                .InGlulx()
+                .CompilesAsync();
+        }
+
+        [TestMethod]
         public async Task Call_With_Too_Many_Arguments_Should_Not_Compile()
         {
             await AssertRoutine("", "<FOO 1 2 3>")

@@ -317,6 +317,8 @@ namespace Zilf.Diagnostics
         public const int _0_Unrecognized_Part_Of_Speech_1 = 438;
         [Error("TOPIC in syntax definition must not specify FIND or scope flags")]
         public const int TOPIC_In_Syntax_Definition_Must_Not_Specify_FIND_Or_Scope_Flags = 439;
+        [Error("{0}: too many local variables: only {1} allowed")]
+        public const int _0_Too_Many_Local_Variables_Only_1_Allowed = 440;
 
         // Modularity (package system, definitions sections) - 0500
 

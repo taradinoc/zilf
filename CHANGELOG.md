@@ -19,6 +19,8 @@ and this project adheres to
 - Added `HOOK-MID-PARSE-CONSUME`, which can modify or delete words just before
   the parser sees them.
 
+- Added error `MDL0440` when defining a routine with too many local variables.
+
 ### Fixed
 
 - The `EVERYWHERE` search flag now looks inside closed containers and people.

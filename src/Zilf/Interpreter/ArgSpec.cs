@@ -375,6 +375,11 @@ namespace Zilf.Interpreter
 
         public int? MaxArgCount => VarargsAtom != null ? null : (int?)auxArgsStart;
 
+        /// <summary>
+        /// The total number of required, optional, and auxiliary args.
+        /// </summary>
+        public int ArgCountIncludingAux => argAtoms.Length;
+
         public IEnumerator<ArgItem> GetEnumerator()
         {
             var type = ArgItem.ArgType.Required;

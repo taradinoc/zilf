@@ -183,6 +183,24 @@ namespace Zilf.ZModel
             }
         }
 
+        public int MaxRoutineArgs
+        {
+            get
+            {
+                if (TargetPlatform == TargetPlatform.Glulx32)
+                    return int.MaxValue;
+                else if (ZVersion > 3)
+                    return 7;
+                else
+                    return 3;
+            }
+        }
+
+        public int MaxRoutineLocals
+        {
+            get => TargetPlatform == TargetPlatform.Glulx32 ? int.MaxValue : 15;
+        }
+
         public string Charset0
         {
             get

@@ -88,7 +88,7 @@ namespace Zilf.Interpreter
                             prev.SourceLine,
                             InterpreterMessages.Previous_Definition_Was_Here));
                     }
-                    
+
                     throw exn;
                 }
             }
@@ -103,11 +103,18 @@ namespace Zilf.Interpreter
                 body,
                 flags);
 
-            var maxArgsAllowed = ctx.ZEnvironment.ZVersion > 3 ? 7 : 3;
+            var maxArgsAllowed = ctx.ZEnvironment.MaxRoutineArgs;
             if (rtn.ArgSpec.MinArgCount > maxArgsAllowed)
             {
                 throw new InterpreterError(
                     InterpreterMessages._0_Too_Many_Routine_Arguments_Only_1_Allowed_In_V2, "ROUTINE", maxArgsAllowed, ctx.ZEnvironment.ZVersion);
+            }
+
+            var maxLocalsAllowed = ctx.ZEnvironment.MaxRoutineLocals;
+            if (rtn.ArgSpec.ArgCountIncludingAux > maxLocalsAllowed)
+            {
+                throw new InterpreterError(
+                    InterpreterMessages._0_Too_Many_Local_Variables_Only_1_Allowed, "ROUTINE", maxLocalsAllowed);
             }
 
             if (rtn.ArgSpec.EnvironmentAtom != null || rtn.ArgSpec.VarargsAtom != null || rtn.ArgSpec.CallAtom != null)
