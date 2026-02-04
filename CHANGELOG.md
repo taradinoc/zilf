@@ -28,6 +28,9 @@ and this project adheres to
 - Zapf: Defining a function with too many local variables no longer causes
   extra "local labels not allowed outside a function" errors.
 
+- Fixed `REMOVE-SYNTAX` breaking verb numbering when removing all the syntax
+  lines for a particular verb.
+
 ## [1.4] (January 25, 2026)
 
 ### Added

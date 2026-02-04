@@ -28,10 +28,12 @@ using Zilf.ZModel;
 using Zilf.ZModel.Values;
 using Zilf.ZModel.Vocab;
 using Zilf.ZModel.Vocab.NewParser;
+using Zilf.ZModel.Vocab.OldParser;
 using Zilf.Diagnostics;
 using Zilf.Common;
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using Zilf.ZModel.Vocab.Glulx;
 
 namespace Zilf.Interpreter
 {
@@ -1411,7 +1413,91 @@ namespace Zilf.Interpreter
             //    <REMOVE-SYNTAX *>                matches all syntaxes (!)
 
             var matcher = new SyntaxMatcher(args);
+            var removed = ctx.ZEnvironment.Syntaxes.Where(s => matcher.Matches(s)).ToArray();
             ctx.ZEnvironment.Syntaxes.RemoveAll(s => matcher.Matches(s));
+
+            // If we removed all syntax lines for a verb number, clear that verb number
+            // from all words that share it. This prevents the parser from looking up
+            // a syntax table that no longer exists.
+            var vf = ctx.ZEnvironment.VocabFormat;
+            if (vf is OldParserVocabFormat or GlulxVocabFormat)
+            {
+                var removedVerbValues = removed
+                    .Select(s => vf.GetVerbValue(s.Verb))
+                    .Where(v => v != 0)
+                    .Distinct()
+                    .ToArray();
+
+                foreach (var verbValue in removedVerbValues)
+                {
+                    if (ctx.ZEnvironment.Syntaxes.Any(s => vf.GetVerbValue(s.Verb) == verbValue))
+                        continue;
+
+                    foreach (var word in ctx.ZEnvironment.Vocabulary.Values)
+                    {
+                        if (vf.IsVerb(word) && vf.GetVerbValue(word) == verbValue)
+                            vf.ClearVerb(word);
+                    }
+                }
+
+                var removedPrepValues = removed
+                    .SelectMany(s => new[] { s.Preposition1, s.Preposition2 })
+                    .Where(w => w != null)
+                    .Select(w => vf.GetPrepositionValue(w!))
+                    .Where(v => v != 0)
+                    .Distinct()
+                    .ToArray();
+
+                foreach (var prepValue in removedPrepValues)
+                {
+                    bool stillUsed = ctx.ZEnvironment.Syntaxes.Any(s =>
+                        (s.Preposition1 != null && vf.GetPrepositionValue(s.Preposition1) == prepValue) ||
+                        (s.Preposition2 != null && vf.GetPrepositionValue(s.Preposition2) == prepValue));
+
+                    if (stillUsed)
+                        continue;
+
+                    foreach (var word in ctx.ZEnvironment.Vocabulary.Values)
+                    {
+                        if (vf.IsPreposition(word) && vf.GetPrepositionValue(word) == prepValue)
+                            vf.ClearPreposition(word);
+                    }
+                }
+            }
+
+            // NEW-PARSER? uses verb-data pointers stored in vocab words; when a verb loses
+            // its last syntax line, it must no longer be classified as a verb or the
+            // vocabulary emission will still try to reference ACT? tables for it.
+            if (vf is NewParserVocabFormat npvf)
+            {
+                var removedVerbAtoms = removed
+                    .Select(s => s.Verb.Atom)
+                    .Distinct()
+                    .ToArray();
+
+                foreach (var verbAtom in removedVerbAtoms)
+                {
+                    if (ctx.ZEnvironment.Syntaxes.Any(s => s.Verb.Atom.Equals(verbAtom)))
+                        continue;
+
+                    if (!ctx.ZEnvironment.Vocabulary.TryGetValue(verbAtom, out var verbWord))
+                        continue;
+
+                    if (verbWord is not NewParserWord npVerbWord)
+                        continue;
+
+                    var verbStuff = npVerbWord.VerbStuff;
+                    if (verbStuff == null)
+                        continue;
+
+                    foreach (var word in ctx.ZEnvironment.Vocabulary.Values)
+                    {
+                        if (word is NewParserWord npw && Equals(npw.VerbStuff, verbStuff))
+                            npvf.ClearVerb(npw);
+                    }
+                }
+            }
+
             return ctx.TRUE;
         }
 

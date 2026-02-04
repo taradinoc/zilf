@@ -133,6 +133,27 @@ namespace Zilf.ZModel.Vocab.NewParser
             throw new NotSupportedException();
         }
 
+        public void ClearVerb(IWord word)
+        {
+            var nw = (NewParserWord)word;
+
+            if (!nw.HasClass(verbClass))
+                return;
+
+            nw.Classification &= ~verbClass;
+            nw.VerbStuff = ZilFix.Zero;
+        }
+
+        public void ClearPreposition(IWord word)
+        {
+            var nw = (NewParserWord)word;
+
+            if (!nw.HasClass(prepClass))
+                return;
+
+            nw.Classification &= ~prepClass;
+        }
+
         public IEnumerable<KeyValuePair<string, int>> GetVocabConstants(IWord word)
         {
             if (ctx.ZEnvironment.ZVersion < 4 &&

@@ -159,6 +159,16 @@ namespace Zilf.ZModel.Vocab.OldParser
         public int GetVerbValue(IWord word) => GetPart(word, PartOfSpeech.Verb);
         public int GetDirectionValue(IWord word) => GetPart(word, PartOfSpeech.Direction);
 
+        public void ClearVerb(IWord word)
+        {
+            ((OldParserWord)word).ClearVerb(ctx);
+        }
+
+        public void ClearPreposition(IWord word)
+        {
+            ((OldParserWord)word).ClearPreposition(ctx);
+        }
+
         public string[] GetReservedGlobalNames()
         {
             return new[] { "PREPOSITIONS", "ACTIONS", "PREACTIONS", "VERBS" };

@@ -237,6 +237,126 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task REMOVE_SYNTAX_Should_Maintain_Correct_Numbering()
+        {
+            await AssertGlobals(
+                "<SYNTAX RESTART = V-FOO>",
+                "<SYNTAX SAVE = V-BAR>",
+                "<SYNTAX BRIEF = V-BAZ>",
+                "<ROUTINE V-FOO () <>>",
+                "<ROUTINE V-BAR () <>>",
+                "<ROUTINE V-BAZ () <>>",
+                "<REMOVE-SYNTAX * = V-BAR>")
+                .ImpliesAsync(
+                    "<==? <GETB ,W?SAVE 5> 0>",                     // SAVE should have no verb number (deleting the word entirely would be tricky...)
+                    "<==? <GETB ,W?RESTART 5> ,ACT?RESTART>",       // RESTART's verb number should match the constant
+                    "<==? <GETB <GET ,VERBS <- 255 ,ACT?RESTART>> 8> ,V?FOO>",      // verb table's entry for RESTART should point to the syntax table with an entry for V?FOO
+                    "<==? <GET ,ACTIONS ,V?FOO> V-FOO>",            // action table entry for V?FOO should point to V-FOO
+                    "<==? <GETB ,W?BRIEF 5> ,ACT?BRIEF>",
+                    "<==? <GETB <GET ,VERBS <- 255 ,ACT?BRIEF>> 8> ,V?BAZ>",
+                    "<==? <GET ,ACTIONS ,V?BAZ> V-BAZ>"
+                );
+        }
+
+        [TestMethod]
+        public async Task REMOVE_SYNTAX_Should_Handle_Multiple_Verb_Number_Gaps()
+        {
+            await AssertGlobals(
+                "<SYNTAX V1 = V-FOO>",
+                "<SYNTAX V2 = V-BAR>",
+                "<SYNTAX V3 = V-BAZ>",
+                "<SYNTAX V4 = V-QUUX>",
+                "<ROUTINE V-FOO () <>>",
+                "<ROUTINE V-BAR () <>>",
+                "<ROUTINE V-BAZ () <>>",
+                "<ROUTINE V-QUUX () <>>",
+                "<REMOVE-SYNTAX * = V-BAR>",
+                "<REMOVE-SYNTAX * = V-QUUX>")
+                .ImpliesAsync(
+                    "<==? <GETB ,W?V2 5> 0>",
+                    "<==? <GETB ,W?V4 5> 0>",
+                    "<==? <GETB ,W?V1 5> ,ACT?V1>",
+                    "<==? <GETB <GET ,VERBS <- 255 ,ACT?V1>> 8> ,V?FOO>",
+                    "<==? <GET ,ACTIONS ,V?FOO> V-FOO>",
+                    "<==? <GETB ,W?V3 5> ,ACT?V3>",
+                    "<==? <GETB <GET ,VERBS <- 255 ,ACT?V3>> 8> ,V?BAZ>",
+                    "<==? <GET ,ACTIONS ,V?BAZ> V-BAZ>"
+                );
+        }
+
+        [TestMethod]
+        public async Task REMOVE_SYNTAX_Should_Clear_Verb_Synonyms_When_Last_Syntax_Removed()
+        {
+            await AssertGlobals(
+                "<SYNTAX TOSS (CHUCK) = V-TOSS>",
+                "<SYNTAX KEEP = V-KEEP>",
+                "<ROUTINE V-TOSS () <>>",
+                "<ROUTINE V-KEEP () <>>",
+                "<REMOVE-SYNTAX TOSS>")
+                .ImpliesAsync(
+                    "<==? <GETB ,W?TOSS 5> 0>",
+                    "<==? <GETB ,W?CHUCK 5> 0>",
+                    "<==? <GETB ,W?KEEP 5> ,ACT?KEEP>",
+                    "<==? <GETB <GET ,VERBS <- 255 ,ACT?KEEP>> 8> ,V?KEEP>",
+                    "<==? <GET ,ACTIONS ,V?KEEP> V-KEEP>"
+                );
+        }
+
+        [TestMethod, TestCategory("NEW-PARSER?")]
+        public async Task REMOVE_SYNTAX_Should_Not_Leave_Stale_New_Parser_Verb_Data()
+        {
+            await AssertGlobals(
+                VocabTests.SNewParserBootstrap,
+                "<COMPILATION-FLAG WORD-FLAGS-IN-TABLE T>",
+                "<COMPILATION-FLAG ONE-BYTE-PARTS-OF-SPEECH T>",
+                "<ROUTINE V-SING () <>>",
+                "<SYNTAX SING = V-SING>",
+                "<REMOVE-SYNTAX SING>")
+                .InV4()
+                .GeneratesCodeNotMatchingAsync("ACT\\?SING");
+        }
+
+        [TestMethod]
+        public async Task REMOVE_SYNTAX_Should_Clear_Prepositions_When_Last_Use_Removed()
+        {
+            await AssertGlobals(
+                "<ROUTINE V-LOOK-THROUGH () <>>",
+                "<ROUTINE V-LOOK-WITH () <>>",
+                "<ROUTINE V-LOOK-UP () <>>",
+                "<SYNTAX LOOK THROUGH OBJECT = V-LOOK-THROUGH>",
+                "<SYNTAX LOOK WITH OBJECT = V-LOOK-WITH>",
+                "<SYNTAX LOOK UP OBJECT = V-LOOK-UP>",
+                "<REMOVE-SYNTAX LOOK THROUGH OBJECT>")
+                .InV5()
+                .ImpliesAsync(
+                    "<==? <GET ,PREPOSITIONS 0> 2>",
+                    "<==? <GET <INTBL? ,W?WITH <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *204*> 1> ,PR?WITH>",
+                    "<==? <GET <INTBL? ,W?UP <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *204*> 1> ,PR?UP>",
+                    "<NOT <INTBL? ,W?THROUGH <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *204*>>"
+                );
+        }
+
+        [TestMethod]
+        public async Task REMOVE_SYNTAX_Should_Clear_Preposition_Synonyms_In_Compact_Vocab()
+        {
+            await AssertGlobals(
+                "<SETG COMPACT-VOCABULARY? T>",
+                "<ROUTINE V-LOOK-THROUGH () <>>",
+                "<ROUTINE V-LOOK-WITH () <>>",
+                "<SYNTAX LOOK THROUGH OBJECT = V-LOOK-THROUGH>",
+                "<SYNTAX LOOK WITH OBJECT = V-LOOK-WITH>",
+                "<PREP-SYNONYM THROUGH THRU>",
+                "<REMOVE-SYNTAX LOOK THROUGH OBJECT>")
+                .InV5()
+                .ImpliesAsync(
+                    "<==? <GET ,PREPOSITIONS 0> 1>",
+                    "<==? <GETB <INTBL? ,W?WITH <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *203*> 2> ,PR?WITH>",
+                    "<NOT <INTBL? ,W?THROUGH <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *203*>>",
+                    "<NOT <INTBL? ,W?THRU <+ ,PREPOSITIONS 2> <GET ,PREPOSITIONS 0> *203*>>"
+                );
+        }
+
+        [TestMethod]
         public async Task REMOVE_SYNONYM_Should_Remove_Synonyms()
         {
             await AssertGlobals(

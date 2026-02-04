@@ -90,6 +90,18 @@ namespace Zilf.ZModel.Vocab
         int GetVerbValue(IWord word);
         int GetDirectionValue(IWord word);
 
+        /// <summary>
+        /// Removes the verb classification (and any associated verb value) from a word.
+        /// Used by REMOVE-SYNTAX when a verb loses all syntax lines.
+        /// </summary>
+        void ClearVerb(IWord word);
+
+        /// <summary>
+        /// Removes the preposition classification (and any associated preposition value) from a word.
+        /// Used by REMOVE-SYNTAX when a preposition no longer appears in any remaining syntax lines.
+        /// </summary>
+        void ClearPreposition(IWord word);
+
         int MaxActionCount { get; }
     }
 }

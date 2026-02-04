@@ -70,19 +70,28 @@ namespace Zilf.Compiler
 
             var vf = Context.ZEnvironment.VocabFormat;
 
-            // verb table
+            // group by verb value rather than IWord instance, so synonyms that share
+            // a verb number also share a syntax table.
             var query = from s in Context.ZEnvironment.Syntaxes
-                        group s by s.Verb into g
-                        orderby vf.GetVerbValue(g.Key) descending
+                        let verbValue = vf.GetVerbValue(s.Verb)
+                        group s by verbValue into g
+                        orderby g.Key descending
                         select g;
 
             var actions = new Dictionary<ZilAtom, Action>();
 
+            var syntaxTablesByVerbValue = new Dictionary<int, ITableBuilder>();
+
             foreach (var verb in query)
             {
+                if (verb.Key == 0)
+                    continue;
+
+                var verbWord = verb.First().Verb;
+
                 // syntax table
-                var stbl = Game.DefineTable("ST?" + verb.Key.Atom, true);
-                verbTable.AddWord(stbl);
+                var stbl = Game.DefineTable("ST?" + verbWord.Atom, true);
+                syntaxTablesByVerbValue[verb.Key] = stbl;
 
                 stbl.AddByte((byte)verb.Count());
 
@@ -186,6 +195,18 @@ namespace Zilf.Compiler
                         Context.HandleError(ex);
                     }
                 }
+            }
+
+            // Emit VTBL with stable indexing based on verb values.
+            // The old parser indexes VERBS as (255 - verbValue), so VTBL must have one
+            // slot for every possible verb value.
+            const int MaxVerbValue = 255;
+            for (int verbValue = MaxVerbValue; verbValue >= 1; verbValue--)
+            {
+                if (syntaxTablesByVerbValue.TryGetValue(verbValue, out var stbl))
+                    verbTable.AddWord(stbl);
+                else
+                    verbTable.AddWord(0);
             }
 
             // action and preaction table

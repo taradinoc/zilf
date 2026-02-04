@@ -119,6 +119,18 @@ namespace Zilf.ZModel.Vocab.Glulx
             }
         }
 
+        public void ClearVerb(Context ctx)
+        {
+            if ((PartOfSpeech & PartOfSpeech.Verb) != 0)
+                UnsetPartOfSpeech(ctx, PartOfSpeech.Verb);
+        }
+
+        public void ClearPreposition(Context ctx)
+        {
+            if ((PartOfSpeech & PartOfSpeech.Preposition) != 0)
+                UnsetPartOfSpeech(ctx, PartOfSpeech.Preposition);
+        }
+
         public void SetAdjective(Context ctx, ISourceLine location, int value)
         {
             if ((PartOfSpeech & PartOfSpeech.Adjective) == 0)

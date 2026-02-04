@@ -160,6 +160,16 @@ namespace Zilf.ZModel.Vocab.Glulx
         public int GetVerbValue(IWord word) => GetPart(word, PartOfSpeech.Verb);
         public int GetDirectionValue(IWord word) => GetPart(word, PartOfSpeech.Direction);
 
+        public void ClearVerb(IWord word)
+        {
+            ((GlulxParserWord)word).ClearVerb(ctx);
+        }
+
+        public void ClearPreposition(IWord word)
+        {
+            ((GlulxParserWord)word).ClearPreposition(ctx);
+        }
+
         public string[] GetReservedGlobalNames()
         {
             return new[] { "PREPOSITIONS", "ACTIONS", "PREACTIONS", "VERBS" };
