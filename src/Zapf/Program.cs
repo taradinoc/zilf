@@ -1703,7 +1703,7 @@ namespace Zapf
             }
 
             if (localNames.Count > 15)
-                Errors.ThrowSerious(node, "too many local variables");
+                Errors.Serious(ctx, node, "too many local variables");
 
             AlignRoutine(ctx);
 

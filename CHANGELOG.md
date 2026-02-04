@@ -25,6 +25,9 @@ and this project adheres to
 
 - The `EVERYWHERE` search flag now looks inside closed containers and people.
 
+- Zapf: Defining a function with too many local variables no longer causes
+  extra "local labels not allowed outside a function" errors.
+
 ## [1.4] (January 25, 2026)
 
 ### Added
