@@ -11,6 +11,11 @@ and this project adheres to
 - Added support for the `TCOLOR` opcode (aka `set_true_colour`) in ZAPF and
   ZILF, and the V6 form of `COLOR` in ZILF.
 
+- New library messages under `PARSER`: `PROMPT`, `NOTHING-ENTERED`, and
+  `MANY-HEADER`.
+
+- Added `HOOK-BEFORE-READLINE` and `HOOK-AFTER-READLINE`.
+
 ## [1.4] (January 25, 2026)
 
 ### Added

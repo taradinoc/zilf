@@ -59,7 +59,11 @@
     (GWIM-2 "]")
 
     ;"This is used when 'ANY' picks a random object."
-    (INFERRED-RANDOM-OBJECT "[" T .OBJ "]")>
+    (INFERRED-RANDOM-OBJECT "[" T .OBJ "]")
+    
+    (PROMPT "> ")
+    (NOTHING-ENTERED "...")
+    (MANY-HEADER D .OBJ ": ")>
 
 <DEFAULT-LIBRARY-MESSAGES ORPHANING
     ;"These are used to build an orphaning question such as:

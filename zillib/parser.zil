@@ -778,6 +778,8 @@ These extensions will be respected by other code that simulates the main loop, e
 ;"Dummy implementations of MAIN-LOOP's BEFORE hooks."
 <DEFAULT-DEFINITION HOOK-BEFORE-PARSER
     <DEFMAC HOOK-BEFORE-PARSER () <>>>
+<DEFAULT-DEFINITION HOOK-BEFORE-READLINE
+    <DEFMAC HOOK-BEFORE-READLINE () <>>>
 <DEFAULT-DEFINITION HOOK-BEFORE-PERFORM
     <DEFMAC HOOK-BEFORE-PERFORM () <>>>
 <DEFAULT-DEFINITION HOOK-BEFORE-M-END
@@ -792,6 +794,8 @@ These extensions will be respected by other code that simulates the main loop, e
   function's result."
 <DEFAULT-DEFINITION HOOK-AFTER-PARSER
     <DEFMAC HOOK-AFTER-PARSER (R-ATOM) <>>>
+<DEFAULT-DEFINITION HOOK-AFTER-READLINE
+    <DEFMAC HOOK-AFTER-READLINE (R-ATOM) <>>>
 <DEFAULT-DEFINITION HOOK-AFTER-PERFORM
     <DEFMAC HOOK-AFTER-PERFORM (R-ATOM) <>>>
 <DEFAULT-DEFINITION HOOK-AFTER-M-END
@@ -872,7 +876,7 @@ Sets:
            <RESET-WINNER>
            <SETG HERE <META-LOC ,WINNER>>
            <SETG HERE-LIT <SEARCH-FOR-LIGHT>>
-           <READLINE T>)>
+           <WITH-HOOK READLINE <READLINE T>>)>
 
     <IF-DEBUG <SETG TRACE-INDENT 0>>
     <TRACE-DO 1 <DUMPBUFS> ;<DUMPLINE>>
@@ -880,7 +884,7 @@ Sets:
 
     <SETG P-LEN <GETB ,LEXBUF 1>>
     <COND (<0? ,P-LEN>
-           <TELL "..." CR>
+           <TELL <LIBRARY-MESSAGE PARSER NOTHING-ENTERED> CR>
            <SETG P-CONT 0>
            <RFALSE>)>
 
@@ -3042,7 +3046,7 @@ Sets (contents):
   LEXBUF"
 <DEFAULT-DEFINITION READLINE
     <ROUTINE READLINE ("OPT" PROMPT?)
-        <COND (.PROMPT? <TELL CR "> ">)>
+        <COND (.PROMPT? <TELL CR <LIBRARY-MESSAGE PARSER PROMPT>>)>
         <SETG READBUF ,KBD-READBUF>
         <SETG LEXBUF ,KBD-LEXBUF>
         <PUTB ,READBUF 0 <- ,READBUF-SIZE 2>>
@@ -3158,14 +3162,14 @@ Sets (temporarily):
                   <SET CNT <GETB ,P-PRSOS 0>>
                   <DO (I 1 .CNT)
                       <SETG PRSO <GET/B ,P-PRSOS .I>>
-                      <TELL D ,PRSO ": ">
+                      <TELL <LIBRARY-MESSAGE PARSER MANY-HEADER ((OBJ ,PRSO))>>
                       <SET WON <PERFORM-CALL-HANDLERS .PRTN .RTN>>>)>)
           (<PRSI? ,MANY-OBJECTS>
            <SETG REPORT-MODE ,SHORT-REPORT>
            <SET CNT <GETB ,P-PRSIS 0>>
            <DO (I 1 .CNT)
                <SETG PRSI <GET/B ,P-PRSIS .I>>
-               <TELL D ,PRSI ": ">
+               <TELL <LIBRARY-MESSAGE PARSER MANY-HEADER ((OBJ ,PRSI))>>
                <SET WON <PERFORM-CALL-HANDLERS .PRTN .RTN>>>)
           (ELSE <SET WON <PERFORM-CALL-HANDLERS .PRTN .RTN>>)>
     <TRACE-OUT>
