@@ -236,6 +236,22 @@ namespace Zilf.Tests.Integration
                 .CompilesAsync();
         }
 
+        [TestMethod]
+        public async Task Shady_DO_Condition_Should_Warn()
+        {
+            await AssertRoutine("\"OPT\" X", "<DO (I 1 <+ .X 1>) <TELL \"spam\">>")
+                .WithWarnings("ZIL0510")
+                .CompilesAsync();
+        }
+
+        [TestMethod]
+        public async Task Shady_DO_Increment_Should_Warn()
+        {
+            await AssertRoutine("\"OPT\" X", "<DO (I 1 10 <+ .X 1>) <TELL \"spam\">>")
+                .WithWarnings("ZIL0511")
+                .CompilesAsync();
+        }
+
         #endregion
 
         #region MAP-CONTENTS

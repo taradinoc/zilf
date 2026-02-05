@@ -26,6 +26,8 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Common;
+using Zilf.Compiler.Builtins;
+using System.Diagnostics;
 
 namespace Zilf.Compiler
 {
@@ -508,6 +510,46 @@ namespace Zilf.Compiler
                         Name,
                         "first",
                         "an atom");
+                }
+
+                if (end.IsNonVariableForm())
+                {
+                    var endCall = (((ZilForm)end).First as ZilAtom)?.Text;
+                    if (endCall is not null)
+                    {
+                        var zversion = blc.cc.Context.ZEnvironment.ZVersion;
+                        var argCount = ((ZilForm)end).Rest?.GetLength(10) ?? 10;
+                        var isGlulx = blc.cc.Context.IsGlulx;
+                        if (ZBuiltins.IsBuiltinValueCall(endCall, zversion, argCount, isGlulx) ||
+                            ZBuiltins.IsBuiltinVoidCall(endCall, zversion, argCount, isGlulx))
+                        {
+                            blc.cc.Context.HandleError(new CompilerError(
+                                end,
+                                CompilerMessages.Possibly_Unintended_Complex_DO_Loop_Condition_It_Should_Be_A_Predicate
+                            ));
+                        }
+                    }
+                }
+
+                if (inc is not null && inc.IsNonVariableForm())
+                {
+                    var incCall = (((ZilForm)inc).First as ZilAtom)?.Text;
+                    if (incCall is not null)
+                    {
+                        var zversion = blc.cc.Context.ZEnvironment.ZVersion;
+                        var argCount = ((ZilForm)inc).Rest?.GetLength(10) ?? 10;
+                        var isGlulx = blc.cc.Context.IsGlulx;
+                        if ((ZBuiltins.IsBuiltinValueCall(incCall, zversion, argCount, isGlulx) ||
+                             ZBuiltins.IsBuiltinValuePredCall(incCall, zversion, argCount, isGlulx) ||
+                             ZBuiltins.IsBuiltinPredCall(incCall, zversion, argCount, isGlulx)) &&
+                             !ZBuiltins.IsBuiltinWithSideEffects(incCall, zversion, argCount))
+                        {
+                            blc.cc.Context.HandleError(new CompilerError(
+                                inc,
+                                CompilerMessages.Possibly_Unintended_Complex_DO_Loop_Increment_It_Should_Have_Side_Effects
+                            ));
+                        }
+                    }
                 }
 
                 return new Loop(blc, atom, start, end, inc);

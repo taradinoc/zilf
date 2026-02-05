@@ -29,6 +29,9 @@ and this project adheres to
   when writing such a replacement. The parser will keep one of each set of
   indistinguishable objects and ignore the rest.
 
+- Added warnings `ZIL0510` and `ZIL0511` for suspicious complex forms in a DO
+  loop's condition and increment parts, respectively.
+
 ### Fixed
 
 - The `EVERYWHERE` search flag now looks inside closed containers and people.

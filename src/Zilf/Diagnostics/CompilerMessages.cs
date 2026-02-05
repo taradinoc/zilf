@@ -216,5 +216,9 @@ namespace Zilf.Diagnostics
         public const int Argument_Must_Be_Literal_String = 508;
         [Warning("FSET always returns true, FSET? may have been intended")]
         public const int FSET_Always_Returns_True_FSET_May_Have_Been_Intended = 509;
+        [Warning("possibly unintended complex DO loop condition (it should be a predicate)")]
+        public const int Possibly_Unintended_Complex_DO_Loop_Condition_It_Should_Be_A_Predicate = 510;
+        [Warning("possibly unintended complex DO loop increment (it should have side effects)")]
+        public const int Possibly_Unintended_Complex_DO_Loop_Increment_It_Should_Have_Side_Effects = 511;
     }
 }
