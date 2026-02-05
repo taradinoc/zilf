@@ -31,6 +31,8 @@ and this project adheres to
 - Fixed `REMOVE-SYNTAX` breaking verb numbering when removing all the syntax
   lines for a particular verb.
 
+- Fixed extended Unicode characters causing assembler errors.
+
 ## [1.4] (January 25, 2026)
 
 ### Added

@@ -296,10 +296,19 @@ namespace Zilf.Tests.Integration
         public async Task Unicode_Characters_Should_Work_In_TELL_In_V5()
         {
             // U+2014: em dash, U+2019: right single quotation mark
+            // the object definition is for ZILF-299
             await AssertRoutine("", "<TELL \"the em dash\u2014nature\u2019s most dramatic symbol\">")
+                .WithGlobal("<OBJECT FOO (DESC \"foo\")>")
                 .InV5()
                 .WithoutWarnings()
                 .OutputsAsync("the em dash\u2014nature\u2019s most dramatic symbol");
+
+            await AssertRoutine("", "<TELL ,CONSTANT-STR>")
+                .WithGlobal("<OBJECT FOO (DESC \"foo\")>")
+                .WithGlobal("<CONSTANT CONSTANT-STR \"the em dash\u2014nature\u2019s most dramatic symbol↲\">")
+                .InV5()
+                .WithoutWarnings()
+                .OutputsAsync("the em dash\u2014nature\u2019s most dramatic symbol↲");
         }
 
         [TestMethod]

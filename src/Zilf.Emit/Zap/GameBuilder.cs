@@ -535,6 +535,7 @@ namespace Zilf.Emit.Zap
             FinishSymbols();
 
             // impure data
+            FinishUnicodeTable();
             FinishGlobals();
             FinishObjects();
             FinishImpureTables();
@@ -815,6 +816,21 @@ namespace Zilf.Emit.Zap
             writer.WriteLine(INDENT + ".ENDT");
         }
 
+        void FinishUnicodeTable()
+        {
+            // this has to be encountered by ZAPF before any encoded text, including object names
+            if (unicodeTranslationTableEntries is { Count: > 0 })
+            {
+                writer.WriteLine();
+                var totalSize = 1 + unicodeTranslationTableEntries.Count * 2;
+                writer.WriteLine("{0}:: .TABLE {1}", unicodeTranslationTableName, totalSize);
+                writer.WriteLine(INDENT + ".BYTE {0}", unicodeTranslationTableEntries.Count);
+                foreach (var entry in unicodeTranslationTableEntries)
+                    writer.WriteLine(INDENT + $".UNICHR \"U+{entry:X4}\"");
+                writer.WriteLine(INDENT + ".ENDT");
+            }
+        }
+
         void FinishImpureTables()
         {
             // impure user tables
@@ -876,17 +892,6 @@ namespace Zilf.Emit.Zap
 
         void FinishPureTables()
         {
-            if (unicodeTranslationTableEntries is { Count: > 0 })
-            {
-                writer.WriteLine();
-                var totalSize = 1 + unicodeTranslationTableEntries.Count * 2;
-                writer.WriteLine("{0}:: .TABLE {1}", unicodeTranslationTableName, totalSize);
-                writer.WriteLine(INDENT + ".BYTE {0}", unicodeTranslationTableEntries.Count);
-                foreach (var entry in unicodeTranslationTableEntries)
-                    writer.WriteLine(INDENT + $".UNICHR \"U+{entry:X4}\"");
-                writer.WriteLine(INDENT + ".ENDT");
-            }
-
             if (zversion >= 5)
             {
                 var v5Options = (GameOptions.V5Plus)options;
