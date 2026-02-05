@@ -32,6 +32,11 @@ and this project adheres to
 - Added warnings `ZIL0510` and `ZIL0511` for suspicious complex forms in a DO
   loop's condition and increment parts, respectively.
 
+### Changed
+
+- Made `IN-WTBL?` and `IN-BTBL?` into macros on versions where they map directly
+  to `INTBL?`.
+
 ### Fixed
 
 - The `EVERYWHERE` search flag now looks inside closed containers and people.

@@ -3029,8 +3029,8 @@ Returns:
             <RFALSE>>)
     (EZIP
         ;"V4 only has the 3-argument (word) form of INTBL?"
-        <ROUTINE IN-WTBL? (TBL CNT V)
-            <T? <INTBL? .V .TBL .CNT>>>
+        <DEFMAC IN-WTBL? ('TBL 'CNT 'V)
+            `<T? <INTBL? ~.V ~.TBL ~.CNT>>>
 
         <ROUTINE IN-BTBL? (TBL CNT V)
             <OR .CNT <RFALSE>>
@@ -3040,11 +3040,11 @@ Returns:
             <RFALSE>>)
     (T
         ;"use built-in INTBL? in V5+"
-        <ROUTINE IN-WTBL? (TBL CNT V)
-            <T? <INTBL? .V .TBL .CNT>>>
+        <DEFMAC IN-WTBL? ('TBL 'CNT 'V)
+            `<T? <INTBL? ~.V ~.TBL ~.CNT>>>
 
-        <ROUTINE IN-BTBL? (TBL CNT V)
-            <T? <INTBL? .V .TBL .CNT 1>>>)>
+        <DEFMAC IN-BTBL? ('TBL 'CNT 'V)
+            `<T? <INTBL? ~.V ~.TBL ~.CNT 1>>>)>
 
 <IF-DEBUG
     ;"Prints the contents of LEXBUF, calling DUMPWORD for each word."
