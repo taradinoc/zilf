@@ -173,6 +173,15 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task CRLF_CHARACTER_Does_Not_Get_Added_To_The_Unicode_Table()
+        {
+            await AssertRoutine("", "<TELL \"foo\u21b2bar\">")
+                .WithGlobal("<SETG CRLF-CHARACTER !\\\u21b2>")
+                .InV5()
+                .GeneratesCodeNotMatchingAsync(@"\.UNICHR");
+        }
+
+        [TestMethod]
         public async Task Two_Spaces_After_Period_Should_Collapse_By_Default()
         {
             await AssertRoutine("", "<TELL \"Hi.  Hi.   Hi.|  Hi!  Hi?  \" CR>")

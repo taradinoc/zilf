@@ -33,6 +33,9 @@ and this project adheres to
 
 - Fixed extended Unicode characters causing assembler errors.
 
+- A Unicode character used as `CRLF-CHARACTER` no longer gets added to the
+  Unicode translation table.
+
 ## [1.4] (January 25, 2026)
 
 ### Added

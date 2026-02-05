@@ -107,7 +107,7 @@ namespace Zilf.Compiler
             for (int i = 0; i < sb.Length; i++)
             {
                 char c = sb[i];
-                if (!isGlulx)
+                if (!isGlulx && c != crlfChar)
                 {
                     bool isControl = c < 32 && c != '\r' && c != '\n';
 
