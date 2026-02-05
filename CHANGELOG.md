@@ -21,17 +21,25 @@ and this project adheres to
 
 - Added error `MDL0440` when defining a routine with too many local variables.
 
+- The parser can now remove indistinguishable objects from consideration before
+  asking the player which one they mean, to avoid nonsensical questions like
+  "Which do you mean, the cube or the cube?". By default, nothing is considered
+  indistinguishable; the game has to opt in by replacing the definition of
+  `INDISTINGUISHABLE?`. The function `DISTINGUISHABLE-BY-VOCAB?` may be useful
+  when writing such a replacement. The parser will keep one of each set of
+  indistinguishable objects and ignore the rest.
+
 ### Fixed
 
 - The `EVERYWHERE` search flag now looks inside closed containers and people.
 
-- Zapf: Defining a function with too many local variables no longer causes
+- ZAPF: Defining a function with too many local variables no longer causes
   extra "local labels not allowed outside a function" errors.
 
 - Fixed `REMOVE-SYNTAX` breaking verb numbering when removing all the syntax
   lines for a particular verb.
 
-- Fixed extended Unicode characters causing assembler errors.
+- Fixed Unicode characters causing assembler errors.
 
 - A Unicode character used as `CRLF-CHARACTER` no longer gets added to the
   Unicode translation table.

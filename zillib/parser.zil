@@ -2781,8 +2781,13 @@ Returns:
                          (<G=? .NOUT ,P-MAX-OBJECTS>
                           <TRACE-OUT>
                           <RETURN>)>>)>
-        ;"Check the number of objects"
+        ;"Narrow down indistinguishable objects if needed"
         <PUTB .OUT 0 .NOUT>
+        <COND (<AND <G? .NOUT 1> <N=? .MODE ,MCM-ALL> <L=? .NY 1>>
+               <TRACE 4 "[checking for indistinguishable objects]" CR>
+               <TRY-NARROW-INDISTINGUISHABLE .OUT>
+               <SET NOUT <GETB .OUT 0>>)>
+        ;"Check the number of objects"
         <COND (<0? .NOUT>
                ;"This means ALL matched nothing, or BUT excluded everything.
                  Try expanding the search if we can."
@@ -2837,6 +2842,68 @@ Returns:
              <AND <VERB? TAKE DROP>
                   <NOT <OR <FSET? .OBJ ,TAKEBIT>
                            <FSET? .OBJ ,TRYTAKEBIT>>>>>>>
+
+;"Tries to remove all but one of each set of indistinguishable objects from
+  a PRSTBL."
+<ROUTINE TRY-NARROW-INDISTINGUISHABLE (TBL "AUX" (CNT <GETB .TBL 0>) OBJ)
+    <TRACE-IN>
+    <DO (I 1 <G=? .I .CNT>)
+        <SET OBJ <GET/B .TBL .I>>
+        <DO (J <+ .I 1> .CNT)
+            <COND (<INDISTINGUISHABLE? .OBJ <GET/B .TBL .J>>
+                   <TRACE 4 "[removing " T <GET/B .TBL .J> ", indistinguishable from " T .OBJ "]" CR>
+                   ;"Remove item J and shift the following items up"
+                   <COND (<L? .J .CNT>
+                          <DO (K <+ .J 1> .CNT)
+                              <PUT/B .TBL <- .K 1> <GET/B .TBL .K>>>)>
+                   <SET CNT <- .CNT 1>>
+                   ;"Compare item I to the new item J next"
+                   <SET J <- .J 1>>)>>>
+    <PUTB .TBL 0 .CNT>
+    <TRACE-OUT>>
+
+;"We assume everything is distinguishable by default. The game has to opt in by replacing this definition."
+<DEFAULT-DEFINITION INDISTINGUISHABLE?
+    <DEFMAC INDISTINGUISHABLE? ('A 'B) <>>>
+
+;"Determines whether two objects can each be distinguished from the other
+  using their vocab words.
+
+  Args:
+    A: The first object.
+    B: The second object.
+
+  Returns:
+    True if A has a word (synonym or adjective) that B doesn't and
+    B also has a word that A doesn't."
+<ROUTINE DISTINGUISHABLE-BY-VOCAB? (A B)
+    ;"If A's SYNONYM or ADJECTIVE contains any word that isn't in B's,
+      *and* vice versa, they're distinguishable. This avoids a situation like
+      'Which do you mean, the clone or the evil clone?' where only one of the
+      objects can be referenced unambiguously."
+    <AND <OR <HAS-DISTINGUISHING-SYNONYM? .A .B>
+             <HAS-DISTINGUISHING-ADJECTIVE? .A .B>>
+         <OR <HAS-DISTINGUISHING-SYNONYM? .B .A>
+             <HAS-DISTINGUISHING-ADJECTIVE? .B .A>>>>
+
+<ROUTINE HAS-DISTINGUISHING-SYNONYM? (A B "AUX" PT MAX)
+    <SET PT <GETPT .A ,P?SYNONYM>>
+    <COND (.PT
+           <SET MAX <- </ <PTSIZE .PT> ,WORD-SIZE> 1>>
+           <DO (I 0 .MAX)
+               <COND (<NOT <IN-PWTBL? .B ,P?SYNONYM <GET .PT .I>>>
+                      <RTRUE>)>>)>
+    <RFALSE>>
+
+<ROUTINE HAS-DISTINGUISHING-ADJECTIVE? (A B "AUX" PT MAX)
+    <SET PT <GETPT .A ,P?ADJECTIVE>>
+    <COND (.PT
+           <VERSION? (ZIP <SET MAX <- <PTSIZE .PT> 1>>)
+                     (ELSE <SET MAX <- </ <PTSIZE .PT> ,WORD-SIZE> 1>>)>
+           <DO (I 0 .MAX)
+               <COND (<NOT <IN-PB/WTBL? .B ,P?ADJECTIVE <GET/B .PT .I>>>
+                      <RTRUE>)>>)>
+    <RFALSE>>
 
 <ROUTINE APPLY-GENERIC-FCN (TBL "AUX" (MAX <GETB .TBL 0>) F R)
     <DO (I 1 .MAX) (END <RFALSE>)
