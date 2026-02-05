@@ -84,15 +84,17 @@ Sets:
 Returns:
   One of the O-RES-* codes above to indicate what action was taken, if any."
 <CONSTANT TRY-REPHRASING-CMD <LIBRARY-MESSAGE ORPHANING TRY-REPHRASING>>
-<ROUTINE HANDLE-ORPHAN-RESPONSE ("AUX" CNT MAX TBL O OUT NY)
+<ROUTINE HANDLE-ORPHAN-RESPONSE ("AUX" (WN 1) N CNT MAX TBL O OUT NY)
+    ;"Give the game a chance to meddle with the input first"
+    <COND (<SET N <HOOK-MID-PARSE-CONSUME .WN>> <SET WN <+ .WN .N>>)>
     ;"Confirm that the command looks like a noun phrase, and parse it into P-NP-XOBJ."
-    <COND (<OR <L? ,P-LEN 1>
-               <NOT <OR <STARTS-NOUN-PHRASE? <GETWORD? 1>>
-                        <PARSE-NUMBER? 1>>>
-               <NOT <=? <PARSE-NOUN-PHRASE 1 ,P-NP-XOBJ T> <+ ,P-LEN 1>>>>
+    <COND (<OR <L? ,P-LEN .WN>
+               <NOT <OR <STARTS-NOUN-PHRASE? <GETWORD? .WN>>
+                        <PARSE-NUMBER? .WN>>>
+               <NOT <=? <PARSE-NOUN-PHRASE .WN ,P-NP-XOBJ T> <+ ,P-LEN 1>>>>
            <TRACE 1 "[HANDLE-ORPHAN-RESPONSE: doesn't look like a noun phrase]" CR>
            <RETURN ,O-RES-NOT-HANDLED>)>
-    
+
     <TRACE 1 "[HANDLE-ORPHAN-RESPONSE: REASON=" N ,P-O-REASON
              <COND (<ORPHANING-BECAUSE-MISSING?> " MISSING") (ELSE " AMBIGUOUS")>
              <COND (<ORPHANING-PRSI?> " PRSI") (ELSE " PRSO")>
@@ -133,9 +135,9 @@ Returns:
               (ELSE <TRACE 3 "[rejecting " T .O "]" CR>)>>
     <TRACE-OUT>
     <PUTB .OUT 0 .CNT>
-    
+
     <TRACE 2 "[filter kept " N .CNT " object(s)]" CR>
-    
+
     ;"Fill in PRSO/PRSI, and swap the newly created table with P-PRSOS or P-PRSIS."
     <COND (<0? .CNT>
            <SET O <>>)
