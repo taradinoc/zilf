@@ -2706,7 +2706,7 @@ namespace Zilf.Compiler.Builtins
                     if (origBlock == null ||
                         (value != c.cc.Game.Zero && value != c.cc.Game.One))
                     {
-                        c.HandleMessage(CompilerMessages.RETURN_Value_Ignored_PROGREPEAT_Block_Is_In_Void_Context);
+                        c.HandleMessage(CompilerMessages.RETURN_Value_Ignored_Enclosing_BlockLoop_Is_In_Void_Context);
                     }
                 }
 

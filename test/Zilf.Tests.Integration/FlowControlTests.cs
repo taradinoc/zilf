@@ -252,6 +252,35 @@ namespace Zilf.Tests.Integration
                 .CompilesAsync();
         }
 
+        [TestMethod]
+        public async Task RETURN_From_DO_In_Void_Context_Should_Warn()
+        {
+            await AssertRoutine("", "<DO (I 1 10) <RETURN .I>> <>")
+                .WithWarnings("ZIL0502")
+                .CompilesAsync();
+
+            await AssertRoutine("\"AUX\" X Y R COLOR TYPE PX PY DIST", @"
+                <DO (I 1 ,MAX-POTIONS)
+                    <SET COLOR <GETB ,POTION-COLOR <- .I 1>>>
+                    <COND (<G? .COLOR 0>
+                        <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>
+                        <COND (<==? .TYPE ,POTION-POISON>
+                                <SET PX <GETB ,POTION-X <- .I 1>>>
+                                <SET PY <GETB ,POTION-Y <- .I 1>>>
+                                <SET DIST <+ <ABS <- .PX .X>> <ABS <- .PY .Y>>>>
+                                <COND (<L=? .DIST .R> <RETURN .I>)>)>)>>
+                0")
+                .WithGlobal("<CONSTANT MAX-POTIONS 10>")
+                .WithGlobal("<CONSTANT POTION-COLOR <ITABLE 5>>")
+                .WithGlobal("<CONSTANT POTION-TYPE-FOR-COLOR <ITABLE 5>>")
+                .WithGlobal("<CONSTANT POTION-X <ITABLE 5>>")
+                .WithGlobal("<CONSTANT POTION-Y <ITABLE 5>>")
+                .WithGlobal("<CONSTANT POTION-POISON 7>")
+                .WithGlobal("<ROUTINE ABS (A) <>>")
+                .WithWarnings("ZIL0502")
+                .CompilesAsync();
+        }
+
         #endregion
 
         #region MAP-CONTENTS
