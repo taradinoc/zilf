@@ -65,12 +65,12 @@ CI-specific properties are centralized in `Directory.Build.props` (version stamp
 ## 3. Runtime / Modes (CLI)
 
 `zilf` modes (see `Program.BuildContext`):
-- Compile: `zilf [-c] input.zil [output.zap]`
-- Interpret (execute no output): `zilf -x input.zil`
-- Expression: `zilf -e "<expr>"`
-- REPL: `zilf -i`
+- Compile: `zilf build input.zil [output.z3]`
+- Interpret (execute no output): `zilf exec input.zil`
+- Expression: `zilf exec -e "<expr>"`
+- REPL: `zilf repl`
 
-Important switches: `-ip <dir>` (include path), `-tr` (trace routines), `-d` (debug info), `-ws code1,code2` (suppress diagnostics), `-we` (warnings as errors), `-w` (enable noisy warnings), case sensitivity `-cs/-ci`.
+Important switches: `-I <dir>` (include path), `-t` (trace routines), `-d` (debug info), `-ws code1,code2` (suppress diagnostics), `-we` (warnings as errors), `-W` (enable noisy warnings), case sensitivity `--cs/--ci`.
 Include path auto-augmentation: `Program.AddImplicitIncludePaths` heuristically adds directory of input + nearby `zillib` (searches upward, ignoring test dirs); prefer not to reimplement—call existing logic.
 
 ## 4. Compilation Pipeline Nuances
@@ -207,30 +207,12 @@ if (result.Success) new ZapfAssembler { FileSystem = fe.FileSystem }.Assemble("O
 - Do not mix braces styles in an individual flow control statement; either use braces for all clauses or none.
 - Comments on types and members should use XML documentation comments with appropriate tagged sections (`<summary>`, `<param>`, `<returns>`, `<exception>`, etc.). All public types and members that you add should have an XML doc comment with at least a `<summary>`.
 
-## 20. The ZIL Language
+## 20. The ZIL Language (Implementation)
 
-ZIL is essentially a domain-specific extension of MDL. ZILF consists of an interpreter for a fairly large subset of MDL, with some additional constructs built in, plus a compiler for an embedded language which is similar to, but distinct from, MDL. The interpreter is not a full MDL implementation; it only supports the constructs needed for ZIL. The ZIL constructs such as `ROUTINE` and `OBJECT` build structures in the interpreter's context that are then used during compilation to generate Z-machine code and data structures.
+ZILF consists of an interpreter for a fairly large subset of MDL, with some additional constructs built in, plus a compiler for an embedded language which is similar to, but distinct from, MDL.
 
-MDL is not LISP, although it has some LISP-like syntax. It is a distinct language with its own semantics and constructs. MDL has a variety of data types besides lists, and notably, it distinguishes between lists and forms. Lists, written with parentheses, are merely data structures; forms, written with angle brackets, are code expressions that can be executed. Thus, evaluating `(+ 1 2)` will simply return the same list, but evaluating `<+ 1 2>` will perform the addition and return 3.
+MDL is not LISP, although it has some LISP-like syntax. 
 
 The embedded language implemented by the compiler (i.e. available inside a `ROUTINE`), is similar to but not the same as the language implemented by the interpreter (i.e. available outside a `ROUTINE`). The features of the embedded language are implemented in ZILF as methods in `ZBuiltins.cs` marked with the `[Builtin]` attribute, which emit assembly code to perform the operations. The features of the interpreted language are implemented in `Subrs.*.cs` files marked with the `[Subr]` or `[FSubr]` attribute, which perform the operations directly in C# code.
 
 The interpreted language is dynamically typed, and all values which can be accessed by interpreted code are implemented as subclasses of `ZilObject`. The embedded language is untyped, and all values exist at runtime as 16-bit words; the compiler does some static typing to facilitate optimizations, but the Z-machine itself does not enforce types. The compiler represents values as `IOperand` instances, which translate directly to Z-machine instruction operands and can represent constants, local or global variables, or the stack.
-
-## 21. Glulx16 work in progress
-
-Now that Glulx support is working pretty well in ZILF, we're implementing a second Glulx mode which has a goal of near-perfect Z-machine compatibility. That is, we'll be able to take unmodified ZIL code for a game targeting the Z-machine and compile it for Glulx, and ideally the game won't even be able to detect that it's running on Glulx. This has several implications, including:
-
-- We need to use all the same table formats as the Z-machine.
-- Arithmetic operations need to use sign extension (sexs opcode) and/or truncation as appropriate to emulate a 16-bit word size.
-- All pointers that the game could pass around need to be 16-bit.
-- Tables, and any other data the game might access through a pointer, have to be written before static data (to ensure they're in the first 64k of address space). Because Glulx's memory model puts ROM before RAM, this means almost the entire game needs to be in RAM.
-- Routines and strings need to be aligned, and their labels divided by a constant when used, in order to fit their (packed) addresses in 16 bits. Routine calls and string printing have to go through an unpacking step (or for vocab words, an indirection step: see below).
-- The "encoded text" space at the beginning of each vocab entry needs to hold a pointer into a table of strings (which can be located anywhere) rather than encoded text.
-- We may need to intercept memory access to the header in order to emulate the Z-machine's header flags.
-
-We can use some of the Glulx emission code and RTL that was previously written, but not all of it. We've used subclassing (Glulx16GameBuilder, Glulx16ObjectBuilder, RuntimeLib16) rather than littering the code with if statements.
-
-This new "glulx16" mode will work with multiple Z-machine versions: we will be able to compile V3, V4, and V5 games unmodified, with the compiler/RTL doing the necessary work to "emulate" the approprate version.
-
-All choices between implementations (Glulx16 for V3, Glulx16 for V5, Glulx32, etc.) must be made at compile time, without conditional logic at runtime. That is, rather than checking the format of a table at runtime, we'll only emit the code that's tailored for the table format we actually used.
