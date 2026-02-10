@@ -32,6 +32,8 @@ and this project adheres to
 - Added warnings `ZIL0510` and `ZIL0511` for suspicious complex forms in a DO
   loop's condition and increment parts, respectively.
 
+- Added `rascal` sample.
+
 ### Changed
 
 - Made `IN-WTBL?` and `IN-BTBL?` into macros on versions where they map directly
@@ -51,6 +53,11 @@ and this project adheres to
 
 - A Unicode character used as `CRLF-CHARACTER` no longer gets added to the
   Unicode translation table.
+
+### Removed
+
+- Removed `dragon` sample. Those wishing to fight dragons are encouraged to try
+  `rascal` instead.
 
 ## [1.4] (January 25, 2026)
 
