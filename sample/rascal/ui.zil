@@ -1139,10 +1139,10 @@ Returns:
           (<AND <G? ,PLAYER-VISION-TURNS 0> <G? <ENEMY-AT .X .Y> 0>>
            <ENEMY-TILE-FOR-TYPE <GETP <ENEMY-AT .X .Y> ,P?R-ETYPE>>)
           (<AND <G? ,PLAYER-SHADOW-TURNS 0>
-                <OR <IF-DEBUG <NOT ,OMNISCIENT?>> <==? <TILE-AT .X .Y> ,TILE-WALL>>
+                <OR <NOT <IF-DEBUG ,OMNISCIENT?>> <==? <TILE-AT .X .Y> ,TILE-WALL>>
                 <NOT <SHADOW-VISIBLE? .X .Y>>>
            ,TILE-UNKNOWN)
-          (<AND <OR <IF-DEBUG <NOT ,OMNISCIENT?>> <==? <TILE-AT .X .Y> ,TILE-WALL>>
+          (<AND <OR <NOT <IF-DEBUG ,OMNISCIENT?>> <==? <TILE-AT .X .Y> ,TILE-WALL>>
                 <NOT <REVEALED? .X .Y>>>
            ,TILE-UNKNOWN)
           (<G? <ENEMY-AT .X .Y> 0>
