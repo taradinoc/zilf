@@ -39,6 +39,9 @@ and this project adheres to
 - Made `IN-WTBL?` and `IN-BTBL?` into macros on versions where they map directly
   to `INTBL?`.
 
+- `INVENTORY` is no longer a "game verb" by default; that is, it now causes time
+  to pass.
+
 ### Fixed
 
 - The `EVERYWHERE` search flag now looks inside closed containers and people.
