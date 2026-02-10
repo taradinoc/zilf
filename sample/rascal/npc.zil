@@ -483,16 +483,16 @@ beasts to hit you.\""
           (<==? ,BUSKER-MONKEY-SALES 2> 400)
           (ELSE 0)>>
 
-<ROUTINE INTERIOR-TAMED-MONKEY ()
+<ROUTINE INTERIOR-MONKEY? (BIT)
         ;"Return a tamed monkey object if one is present in the interior world
             (either carried or in the room)."
         <MAP-CONTENTS (O ,WINNER)
             <COND (<AND <==? <GETP .O ,P?R-ETYPE> ,ETYPE-MONKEY>
-                        <FSET? .O ,TAMEBIT>>
+                        <FSET? .O .BIT>>
                    <RETURN .O>)>>
         <MAP-CONTENTS (O ,HERE)
             <COND (<AND <==? <GETP .O ,P?R-ETYPE> ,ETYPE-MONKEY>
-                        <FSET? .O ,TAMEBIT>>
+                        <FSET? .O .BIT>>
                    <RETURN .O>)>>
         0>
 
@@ -519,7 +519,7 @@ beasts to hit you.\""
 
 <GLOBAL BUSKER-GREETS? <>>
 
-<ROUTINE BUSKERS-CORNER-R (RARG "AUX" M OFFER)
+<ROUTINE BUSKERS-CORNER-R (RARG "AUX" OFFER)
     <COND (<==? .RARG ,M-ENTER> <SETG BUSKER-GREETS? T>)
           (<==? .RARG ,M-LOOK>
            <COND (<==? ,BUSKER-MONKEY-SALES 0>
@@ -539,7 +539,7 @@ the organ with string. One of them is waving a hat in its little paw, keeping it
            <CRLF>
            <SETG BUSKER-GREETS? <>>
            <THIS-IS-IT ,BUSKER>
-           <COND (<SET M <INTERIOR-TAMED-MONKEY>>
+           <COND (<INTERIOR-MONKEY? ,TAMEBIT>
                   <COND (<G? <SET OFFER <BUSKER-OFFER>> 0>
                          <COND (<==? ,BUSKER-MONKEY-SALES 0>
                                 <TELL "The busker's eyes light up as he sees your monkey. \"Say, a monkey like that's just what I need!
@@ -553,6 +553,9 @@ the last one, OK?\"" CR>)>)
                         (ELSE
                          <TELL "The busker glances at your monkey and shakes his head. \"No more.\""
                                CR>)>)
+                 (<INTERIOR-MONKEY? ,SOLDBIT>
+                  ;"No comment from the busker"
+                  <RFALSE>)
                  (ELSE
                   <TELL "The busker sighs. \"Hard to get good tips without a monkey, you know.\""
                         CR>)>)
@@ -571,10 +574,10 @@ the last one, OK?\"" CR>)>)
 <ROUTINE BUSKER-F (ARG "AUX" M OFFER)
     <COND (<==? .ARG ,M-WINNER>
            <COND (<VERB? HELLO>
-                  <COND (<SET M <INTERIOR-TAMED-MONKEY>>
+                  <COND (<SET M <INTERIOR-MONKEY? ,TAMEBIT>>
                          <COND (<G? <SET OFFER <BUSKER-OFFER>> 0>
-                                <TELL "The busker nods toward your monkey. \"I bet that monkey would drum up some business."
-                                      CR "\"" N .OFFER " gold for it.\"" CR>)
+                                <TELL "The busker nods toward your monkey. \"I bet that monkey would drum up some business. I'll give you "
+                                      N .OFFER " gold for it.\"" CR>)
                                (ELSE
                                 <TELL "The busker says, \"I can't use another one.\""
                                       CR>)>)
