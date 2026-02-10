@@ -61,7 +61,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         /// or an empty sequence if the substring is not found.</returns>
         public IEnumerable<T> Search(string word)
         {
-            var tmpNode = SearchNode(word);
+            var tmpNode = SearchNodeInternal(word);
             if (tmpNode == null)
                 return Enumerable.Empty<T>();
             return tmpNode.GetData().Distinct();
@@ -82,7 +82,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         {
             Annotate();
 
-            var tmpNode = SearchNode(word);
+            var tmpNode = SearchNodeInternal(word);
             if (tmpNode == null)
                 return Enumerable.Empty<(T, int)>();
             return tmpNode.GetDataWithDepth().Distinct();
@@ -100,7 +100,7 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         {
             Annotate();
 
-            var tmpNode = SearchNode(word);
+            var tmpNode = SearchNodeInternal(word);
             if (tmpNode == null)
                 return 0;
             return tmpNode.ResultCount;
@@ -139,12 +139,28 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         /// Searches for the node corresponding to a given substring.
         /// </summary>
         /// <param name="word">The substring to search for.</param>
+        /// <returns>A read-only view of the node representing the end of the substring path,
+        /// or <c>null</c> if not found.</returns>
+        /// <remarks>
+        /// This method triggers annotation before searching, ensuring all metrics are available
+        /// on the returned node.
+        /// </remarks>
+        public INode<T>? SearchNode(string word)
+        {
+            Annotate();
+            return SearchNodeInternal(word);
+        }
+
+        /// <summary>
+        /// Searches for the node corresponding to a given substring.
+        /// </summary>
+        /// <param name="word">The substring to search for.</param>
         /// <returns>The node representing the end of the substring path, or <c>null</c> if not found.</returns>
         /// <remarks>
         /// This method traverses the tree following edges that match the characters in the word.
         /// It handles both exact edge label matches and partial matches within edge labels.
         /// </remarks>
-        private Node<T>? SearchNode(ReadOnlySpan<char> word)
+        private Node<T>? SearchNodeInternal(ReadOnlySpan<char> word)
         {
             var currentNode = root;
 

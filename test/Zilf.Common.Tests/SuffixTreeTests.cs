@@ -231,5 +231,75 @@ namespace Zilf.Common.Tests
 
             Assert.AreEqual(3, ssc.CountOccurrences("here"));
         }
+
+        [TestMethod]
+        public void CountNonOverlappingOccurrences_SelfOverlapping_ReturnsCorrectCount()
+        {
+            // "AAA" appears 3 times in "AAAAA" (overlapping), but only 1 non-overlapping occurrence
+            var ssc = new IndexedStringCollection { "AAAAA" };
+
+            Assert.AreEqual(3, ssc.CountOccurrences("AAA"));
+            Assert.AreEqual(1, ssc.CountNonOverlappingOccurrences("AAA"));
+        }
+
+        [TestMethod]
+        public void CountNonOverlappingOccurrences_NonOverlapping_MatchesOverlappingCount()
+        {
+            // "foo" doesn't overlap with itself in these strings
+            var ssc = new IndexedStringCollection
+            {
+                "foo bar foo",
+                "football"
+            };
+
+            Assert.AreEqual(3, ssc.CountOccurrences("foo"));
+            Assert.AreEqual(3, ssc.CountNonOverlappingOccurrences("foo"));
+        }
+
+        [TestMethod]
+        public void CountNonOverlappingOccurrences_MultipleStrings_CountsAcrossAll()
+        {
+            // "AA" overlaps: "AAAA" has 3 overlapping, 2 non-overlapping occurrences
+            // "AA" in "BAA" has 1 occurrence
+            var ssc = new IndexedStringCollection
+            {
+                "AAAA",
+                "BAA"
+            };
+
+            Assert.AreEqual(4, ssc.CountOccurrences("AA"));
+            Assert.AreEqual(3, ssc.CountNonOverlappingOccurrences("AA"));
+        }
+
+        [TestMethod]
+        public void CountNonOverlappingOccurrences_NotFound_ReturnsZero()
+        {
+            var ssc = new IndexedStringCollection { "hello world" };
+
+            Assert.AreEqual(0, ssc.CountNonOverlappingOccurrences("xyz"));
+        }
+
+        [TestMethod]
+        public void FindBestSubstrings_PrefersNonOverlappingCount()
+        {
+            // With overlapping counts, "AA" in "AAAA" would score the same
+            // as "AB" in "ABABAB", since they each have 3 occurrences.
+            // But "AA" has only 2 non-overlapping occurrences, while "AB" has 3.
+            // With non-overlapping counting, "AB" should be preferred.
+            var ssc = new IndexedStringCollection
+            {
+                "AAAA",
+                "ABABAB"
+            };
+
+            int costFunction(ReadOnlySpan<char> s) => s.Length;
+            int evaluationFunction(int cost, int occurrences, ReadOnlySpan<char> s) =>
+                s.Length == 2 ? cost * occurrences : 0;
+
+            var results = ssc.FindBestSubstrings(1, costFunction, evaluationFunction).ToList();
+
+            Assert.AreEqual(1, results.Count);
+            Assert.AreEqual("AB", results[0].substring);
+        }
     }
 }

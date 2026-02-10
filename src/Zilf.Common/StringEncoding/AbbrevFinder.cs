@@ -130,7 +130,7 @@ namespace Zilf.Common.StringEncoding
                 });
 
                 foreach (var abbrev in indexedResults)
-                    yield return new Result(scores[abbrev], isc.CountOccurrences(abbrev), abbrev);
+                    yield return new Result(scores[abbrev], isc.CountNonOverlappingOccurrences(abbrev), abbrev);
 
                 foreach (var abbrev in indexedResults)
                     isc.Split(abbrev);

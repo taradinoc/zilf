@@ -326,8 +326,10 @@ namespace Zilf.Common.StringEncoding
         /// <remarks>
         /// This method performs a depth-first traversal, evaluating the substring at each node and recursively
         /// processing child nodes. The string buffer is restored after processing each child to avoid allocations.
+        /// Non-overlapping occurrence counts are computed at each node using a greedy left-to-right strategy,
+        /// which correctly accounts for self-overlapping substrings.
         /// </remarks>
-        private static void FindBestSubstringsRecursive(
+        private void FindBestSubstringsRecursive(
             EdgeCostFunction edgeCostFunction, EvaluationFunction evaluationFunction,
             INode<int> node, int costSoFar, List<char> stringSoFar,
             Leaderboard leaderboard)
@@ -336,7 +338,8 @@ namespace Zilf.Common.StringEncoding
 
             if (originalLength > 0)
             {
-                int bestScore = evaluationFunction(costSoFar, node.ResultCount, CollectionsMarshal.AsSpan(stringSoFar));
+                int nonOverlappingCount = ComputeNonOverlappingCount(node, originalLength);
+                int bestScore = evaluationFunction(costSoFar, nonOverlappingCount, CollectionsMarshal.AsSpan(stringSoFar));
                 leaderboard.Add(bestScore, CollectionsMarshal.AsSpan(stringSoFar));
             }
 
@@ -416,10 +419,69 @@ namespace Zilf.Common.StringEncoding
         /// <returns>The number of occurrences of the substring.</returns>
         /// <remarks>
         /// This method uses the suffix tree for efficient counting in O(m) time where m is the length of the word.
+        /// Note that this counts all occurrences including overlapping ones. For non-overlapping counts,
+        /// use <see cref="CountNonOverlappingOccurrences"/>.
         /// </remarks>
         public int CountOccurrences(string word)
         {
             return BuildSuffixTree().CountOccurrences(word);
+        }
+
+        /// <summary>
+        /// Counts the number of non-overlapping occurrences of a substring across all strings in the collection.
+        /// </summary>
+        /// <param name="word">The substring to count.</param>
+        /// <returns>The number of non-overlapping occurrences of the substring, computed using a greedy
+        /// left-to-right strategy within each string.</returns>
+        /// <remarks>
+        /// Unlike <see cref="CountOccurrences"/>, this method accounts for self-overlapping substrings.
+        /// For example, "AAA" occurs 3 times in "AAAAA" but can only be used once in a non-overlapping
+        /// manner. This method uses a greedy left-to-right approach to maximize the count of non-overlapping
+        /// occurrences within each string.
+        /// </remarks>
+        public int CountNonOverlappingOccurrences(string word)
+        {
+            var tree = BuildSuffixTree();
+            var node = tree.SearchNode(word);
+            if (node == null)
+                return 0;
+
+            return ComputeNonOverlappingCount(node, word.Length);
+        }
+
+        /// <summary>
+        /// Computes the number of non-overlapping occurrences of a substring represented by a suffix tree node.
+        /// </summary>
+        /// <param name="node">The suffix tree node whose subtree contains all occurrences.</param>
+        /// <param name="substringLength">The length of the substring being counted.</param>
+        /// <returns>The number of non-overlapping occurrences.</returns>
+        private int ComputeNonOverlappingCount(INode<int> node, int substringLength)
+        {
+            // Collect all occurrence positions grouped by source string
+            var byString = new Dictionary<int, List<int>>();
+            foreach (var (stringIndex, depth) in node.GetDataWithDepth())
+            {
+                if (!byString.TryGetValue(stringIndex, out var positions))
+                    byString[stringIndex] = positions = [];
+                positions.Add(strings[stringIndex].Length - depth);
+            }
+
+            int total = 0;
+            foreach (var positions in byString.Values)
+            {
+                positions.Sort();
+                int lastEnd = int.MinValue;
+                foreach (var pos in positions)
+                {
+                    if (pos >= lastEnd)
+                    {
+                        total++;
+                        lastEnd = pos + substringLength;
+                    }
+                }
+            }
+
+            return total;
         }
 
         /// <summary>

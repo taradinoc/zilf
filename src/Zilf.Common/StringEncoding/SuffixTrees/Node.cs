@@ -351,5 +351,15 @@ namespace Zilf.Common.StringEncoding.SuffixTrees
         /// Gets a read-only view of the edges emanating from this node.
         /// </summary>
         ReadOnlyEdgeMap<T> Edges { get; }
+
+        /// <summary>
+        /// Gets all data values associated with this node and its descendants, along with their depths in the tree.
+        /// </summary>
+        /// <returns>An enumerable sequence of tuples containing data values and their corresponding depths.</returns>
+        /// <remarks>
+        /// The depth represents the number of characters from the root to the point where the data was added.
+        /// This method requires that the tree has been annotated first.
+        /// </remarks>
+        IEnumerable<(T data, int depth)> GetDataWithDepth();
     }
 }
