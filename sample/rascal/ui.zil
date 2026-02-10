@@ -1134,28 +1134,26 @@ Args:
 Returns:
   ZSCII character constant (TILE-*)."
 
-<ROUTINE SPRITE (X Y)
+<ROUTINE SPRITE (X Y "AUX" T E F)
+    <SET T <TILE-AT .X .Y>>
     <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>> ,TILE-PLAYER)
-          (<AND <G? ,PLAYER-VISION-TURNS 0> <G? <ENEMY-AT .X .Y> 0>>
-           <ENEMY-TILE-FOR-TYPE <GETP <ENEMY-AT .X .Y> ,P?R-ETYPE>>)
+          (<AND <SET E <ENEMY-AT .X .Y>> <G? ,PLAYER-VISION-TURNS 0>>
+           <ENEMY-TILE-FOR-TYPE <GETP .E ,P?R-ETYPE>>)
           (<AND <G? ,PLAYER-SHADOW-TURNS 0>
-                <OR <NOT <IF-DEBUG ,OMNISCIENT?>> <==? <TILE-AT .X .Y> ,TILE-WALL>>
+                <OR <NOT <IF-DEBUG ,OMNISCIENT?>> <==? .T ,TILE-WALL>>
                 <NOT <SHADOW-VISIBLE? .X .Y>>>
            ,TILE-UNKNOWN)
-          (<AND <OR <NOT <IF-DEBUG ,OMNISCIENT?>> <==? <TILE-AT .X .Y> ,TILE-WALL>>
+          (<AND <OR <NOT <IF-DEBUG ,OMNISCIENT?>> <==? .T ,TILE-WALL>>
                 <NOT <REVEALED? .X .Y>>>
            ,TILE-UNKNOWN)
-          (<G? <ENEMY-AT .X .Y> 0>
-           <ENEMY-TILE-FOR-TYPE <GETP <ENEMY-AT .X .Y> ,P?R-ETYPE>>)
+          (.E <ENEMY-TILE-FOR-TYPE <GETP .E ,P?R-ETYPE>>)
           (<TRADER-AT? .X .Y> ,TILE-TRADER)
-          (<G? <KEY-OBJ-AT .X .Y> 0> ,TILE-KEY)
+          (<KEY-OBJ-AT .X .Y> ,TILE-KEY)
           (<POTION-AT? .X .Y> ,TILE-POTION)
-          (<G? <TREASURE-AT? .X .Y> 0> ,TILE-TREASURE)
-          (<G? <WEAPON-OBJ-AT .X .Y> 0> ,TILE-WEAPON)
-          (<G? <FOOD-OBJ-AT .X .Y> 0>
-           <FOOD-TILE-FOR-TYPE <GETP <FOOD-OBJ-AT .X .Y> ,P?R-ITID>>)
-          (<G? <GOLD-OBJ-AT .X .Y> 0> ,TILE-GOLD)
-          (<AND <==? <TILE-AT .X .Y> ,TILE-DOOR>
-                <LOCKED-DOOR-CLOSED-AT? .X .Y>>
+          (<TREASURE-AT? .X .Y> ,TILE-TREASURE)
+          (<WEAPON-OBJ-AT .X .Y> ,TILE-WEAPON)
+          (<SET F <FOOD-OBJ-AT .X .Y>> <FOOD-TILE-FOR-TYPE <GETP .F ,P?R-ITID>>)
+          (<GOLD-OBJ-AT .X .Y> ,TILE-GOLD)
+          (<AND <==? .T ,TILE-DOOR> <LOCKED-DOOR-CLOSED-AT? .X .Y>>
            ,TILE-LOCKEDDOOR)
-          (ELSE <TILE-AT .X .Y>)>>
+          (ELSE .T)>>

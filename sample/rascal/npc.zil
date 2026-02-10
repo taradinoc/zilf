@@ -185,12 +185,12 @@ One sting would be bad. A hundred will kill you.↲↲You should leave. Immediat
 <ROUTINE BEE-HIVE-R (RARG)
     <COND (<==? .RARG ,M-BEG>
            <COND (<OR <VERB? EXIT> <AND <VERB? WALK> <PRSO? ,P?OUT>>>
-                  <THROW <> ,INTERIOR-CATCH-TOKEN>)
-                 (ELSE
-                  <TELL "The legion of bees engulfs you." CR>
-                  <SETG PLAYER-HP 0>
-                  <CHECK-END>
-                  <THROW <> ,INTERIOR-CATCH-TOKEN>)>)>>
+                  <THROW <> ,INTERIOR-CATCH-TOKEN>)>)
+          (<==? .RARG ,M-END>
+           <TELL CR "The legion of bees engulfs you." CR CR "[Press any key to continue.]">
+           <GETCHAR>
+           <SETG PLAYER-HP 0>
+           <THROW <> ,INTERIOR-CATCH-TOKEN>)>>
 
 "---------------------------------------------------------------------------"
 

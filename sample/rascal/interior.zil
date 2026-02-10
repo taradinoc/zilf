@@ -102,8 +102,8 @@ interior ID."
     <SPLIT ,UPPER-HEIGHT>
     <UI-LOG-COLOR>
     <CLEAR 0>
-    ;"If the player died inside the interior, don't print leave text or spawn hazards."
-    <COND (<L=? ,PLAYER-HP 0> <RETURN>)>
+    ;"If the player died inside the interior, log the death and don't print leave text or spawn hazards."
+    <COND (<L=? ,PLAYER-HP 0> <CHECK-END> <RETURN>)>
     <COND (.LEFT-BEES? <START-BEE-SWARM ,CURRENT-FLOOR .ENTRX .ENTRY>)>
     <COND (,PENDING-INTERIOR-TELEPORT?
            <SETG PENDING-INTERIOR-TELEPORT? <>>
@@ -180,7 +180,7 @@ interior ID."
 
 <BIND ((REDEFINE T))
     <DEFMAC GAME-VERB? ()
-        `<VERB? QUIT VERSION WAIT ;SAVE ;RESTORE RESTART INVENTORY UNDO SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT PRONOUNS TELL>>>
+        `<VERB? QUIT VERSION WAIT ;SAVE ;RESTORE RESTART UNDO SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT PRONOUNS TELL>>>
 
 <ROUTINE RASCAL-ITEM? (OBJ "AUX" K)
     <COND (<NOT .OBJ> <RFALSE>)>
