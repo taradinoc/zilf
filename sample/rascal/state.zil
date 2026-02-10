@@ -1,0 +1,1160 @@
+"Game state"
+
+<CONSTANT MAX-WEAPONS 10>
+
+<CONSTANT MAX-FOODS 10>
+
+<CONSTANT MAX-POTIONS 10>
+
+;"Trader inventory persistence:
+
+Trader stock is stored directly as child item objects under the per-floor
+trader object (see objects.zil). The trader object's R-TON property is used
+as a per-floor \"stock initialized\" flag."
+
+<GLOBAL FLOOR-ENEMY-INIT <ITABLE ,MAX-FLOORS (BYTE) 0>>
+
+<GLOBAL PENDING-SPIRIT-SPAWNS <ITABLE ,MAX-FLOORS (BYTE) 0>>
+
+<GLOBAL PLAYER-GOLD 0>
+
+;"Per-game randomized potion identification.
+
+Potion items store a color (POTCOLOR-*). The color->effect mapping is randomized
+each new game; once a color has been sampled, that color is considered
+discovered and will display by effect name instead of color name."
+
+<GLOBAL POTION-TYPE-FOR-COLOR <ITABLE ,POTION-COLOR-COUNT (BYTE) 0>>
+
+<GLOBAL POTION-COLOR-FOR-TYPE <ITABLE ,POTION-TYPE-COUNT (BYTE) 0>>
+
+<GLOBAL POTION-DISCOVERED <ITABLE ,POTION-COLOR-COUNT (BYTE) 0>>
+
+;"Per-treasure persistence. State: 0=not yet spawned, 1=on ground, 2=carried, 3=sold."
+
+;"Per-game treasure spawning: each treasure ID is assigned a unique initial
+  spawn floor at game start (see INIT-TREASURES in loot.zil). Treasures
+  themselves are live item objects and persist by being MOVEd between floors,
+  inventory, and traders."
+
+<GLOBAL TREASURE-SPAWN-FLOOR <ITABLE ,TREASURE-COUNT (BYTE) 0>>
+
+;"Per-floor treasure-room creation flag. State: 0=not yet created, 1=created."
+
+<GLOBAL TREASURE-ROOM-CREATED <ITABLE ,MAX-FLOORS (BYTE) 0>>
+
+;"Precomputed treasure-room plans (one per floor)."
+
+<CONSTANT TREASURE-LOOT-WEAPON 1>
+<CONSTANT TREASURE-LOOT-POTION 2>
+<CONSTANT TREASURE-LOOT-GOLD 3>
+
+<GLOBAL TREASURE-ROOM-DOOR-X <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-DOOR-Y <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-LOCKTYPE <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-LOOT-X <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-LOOT-Y <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-LOOT-KIND <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-LOOT-ID <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-LOOT-LVL <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-LOOT-ENCH <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-LOOT-AMT <ITABLE ,MAX-FLOORS (WORD) 0>>
+
+<GLOBAL SEED-HI 0>
+<GLOBAL SEED-LO 0>
+
+<GLOBAL CURRENT-FLOOR 1>
+<GLOBAL ROOM-COUNT 0>
+<GLOBAL CURRENT-ROOM 0>
+
+<GLOBAL PLAYER-X 2>
+<GLOBAL PLAYER-Y 2>
+
+<GLOBAL PLAYER-INVIS-TURNS 0>
+<GLOBAL PLAYER-VISION-TURNS 0>
+<GLOBAL PLAYER-SHADOW-TURNS 0>
+
+<GLOBAL GAME-OVER? <>>
+<GLOBAL YOU-WIN? <>>
+
+;"Set to avoid repeating the death message/score each turn after dying."
+<GLOBAL DEATH-LOGGED? <>>
+
+<ROUTINE LOAD-FLOOR-TRINV (F "AUX" T O)
+    <SET T <TRADER-OBJ .F>>
+    ;"If no trader is present, keep the per-floor trader object empty and uninitialized."
+    <COND (<NOT ,TRADER-ON?>
+           <FREE-RASCAL-ITEM-CHILDREN .T 0>
+           <PUTP .T ,P?R-TON 0>
+           <RTRUE>)>
+    ;"If stock is already initialized, leave it as-is."
+    <COND (<G? <GETP .T ,P?R-TON> 0> <RTRUE>)>
+    ;"Compatibility: if items already exist, mark initialized."
+    <SET O <FIRST? .T>>
+    <COND (.O <PUTP .T ,P?R-TON 1> <RTRUE>)>
+    ;"First visit: generate stock and mark initialized."
+    <INIT-TRADER-STOCK .F>
+    <PUTP .T ,P?R-TON 1>
+    <RTRUE>>
+
+;"For floors 2+, maintain stable map generation by forcing entry to the persisted
+  up-stair coordinates on every visit.
+
+Args:
+  F: Floor number (1..MAX-FLOORS).
+  X, Y: Landing coordinates; used only on first descent.
+  LANDING?: True when arriving from previous floor.
+
+Returns:
+  T."
+
+<ROUTINE ENTER-FLOOR-SET-FORCED-ENTRY (F X Y LANDING? "AUX" UPX UPY)
+    <COND (<G? .F 1>
+           <COND (<AND .LANDING? <G? .X 0> <G? .Y 0>>
+                  ;"First descent: store entry as the up-stair position."
+                  <FLOOR-SET-UP-STAIRS .F .X .Y>)>
+           <SET UPX <FLOOR-UP-X .F>>
+           <SET UPY <FLOOR-UP-Y .F>>
+           <COND (<AND <G? .UPX 0> <G? .UPY 0>>
+                  ;"Use stored up-stair coords for forced-entry on every visit."
+                  <SETG FORCED-ENTRY? T>
+                  <SETG ENTRY-X .UPX>
+                  <SETG ENTRY-Y .UPY>)
+                 (ELSE
+                  <SETG FORCED-ENTRY? <>>
+                  <SETG ENTRY-X 0>
+                  <SETG ENTRY-Y 0>)>)
+          (ELSE
+           ;"Floor 1: never use forced entry."
+           <SETG FORCED-ENTRY? <>>
+           <SETG ENTRY-X 0>
+           <SETG ENTRY-Y 0>)>
+    <RTRUE>>
+
+;"Place the up stairs for a floor, if applicable.
+
+Args:
+  F: Floor number (1..MAX-FLOORS).
+
+Returns:
+  T."
+
+<ROUTINE ENTER-FLOOR-PLACE-UP-STAIRS (F "AUX" UPX UPY)
+    <COND (<G? .F 1>
+           <SET UPX <FLOOR-UP-X .F>>
+           <SET UPY <FLOOR-UP-Y .F>>
+           <COND (<AND <G? .UPX 0> <G? .UPY 0>>
+                  <FORCE-PASSABLE .UPX .UPY>
+                  <PUTB ,MAP <MAP-INDEX .UPX .UPY> ,TILE-STAIR-UP>)>)>
+    <RTRUE>>
+
+;"If the trophy is carried back to floor 1, ensure an exit stair exists at the
+  original spawn point.
+
+Args:
+  F: Floor number (1..MAX-FLOORS).
+
+Returns:
+  T."
+
+<ROUTINE ENTER-FLOOR-ENSURE-TROPHY-EXIT (F)
+    <COND (<AND <==? .F 1>
+                <PLAYER-HAS-TROPHY?>
+                <G? ,ORIG-SPAWN-X 0>
+                <G? ,ORIG-SPAWN-Y 0>>
+           <FORCE-PASSABLE ,ORIG-SPAWN-X ,ORIG-SPAWN-Y>
+           <PUTB ,MAP <MAP-INDEX ,ORIG-SPAWN-X ,ORIG-SPAWN-Y> ,TILE-STAIR-UP>)>
+    <RTRUE>>
+
+;"Initialize per-floor reveal/room-discovery tables on first visit.
+
+Args:
+  F: Floor number (1..MAX-FLOORS).
+
+Returns:
+  T."
+
+<ROUTINE ENTER-FLOOR-INIT-VISIT (F)
+    <COND (<NOT <FSET? <FLOOR-OBJ .F> ,TOUCHBIT>>
+           <CLEAR-FLOOR-REVEAL .F>
+           <CLEAR-FLOOR-ROOMDISC .F>
+           <FSET <FLOOR-OBJ .F> ,TOUCHBIT>)>
+    <RTRUE>>
+
+;"Position the player and set CURRENT-ROOM.
+
+Args:
+  X, Y: Landing coordinates; 0/0 for initial entry.
+
+Returns:
+  T."
+
+<ROUTINE ENTER-FLOOR-PLACE-PLAYER (X Y "AUX" PR)
+    <COND (<AND <G? .X 0> <G? .Y 0>>
+           <SETG PLAYER-X .X>
+           <SETG PLAYER-Y .Y>)
+          (ELSE
+           <SETG PLAYER-X <ROOM-GET 1 ,ROOM-CX>>
+           <SETG PLAYER-Y <ROOM-GET 1 ,ROOM-CY>>)>
+    <SET PR <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
+    <COND (<AND <L=? .PR 0> <G? ,ROOM-COUNT 0>> <SET PR 1>)>
+    <SETG CURRENT-ROOM .PR>
+    <RTRUE>>
+
+;"Place (or reuse) the down stairs for a floor.
+
+Args:
+  F: Floor number (1..MAX-FLOORS).
+
+Returns:
+  T."
+
+<ROUTINE ENTER-FLOOR-TRY-REUSE-DOWN-STAIRS (F)
+    <SETG ENTRY-X <FLOOR-DOWN-X .F>>
+    <SETG ENTRY-Y <FLOOR-DOWN-Y .F>>
+    <COND (<AND <G? ,ENTRY-X 0> <G? ,ENTRY-Y 0>>
+           <FORCE-PASSABLE ,ENTRY-X ,ENTRY-Y>
+           <PUTB ,MAP <MAP-INDEX ,ENTRY-X ,ENTRY-Y> ,TILE-STAIR-DOWN>
+           <RTRUE>)>
+    <RFALSE>>
+
+<ROUTINE ENTER-FLOOR-PICK-DOWN-STAIRS-ROOMCENTER ("AUX" R)
+    <SETG ENTRY-X 0>
+    <SETG ENTRY-Y 0>
+    ;"First try: pick a different room's center."
+    <COND (<G? ,ROOM-COUNT 1>
+           <DO (I 1 40)
+               <SET R <RNG ,ROOM-COUNT>>
+               <COND (<AND <G? ,CURRENT-ROOM 0> <==? .R ,CURRENT-ROOM>>
+                      <AGAIN>)>
+               <SETG ENTRY-X <ROOM-GET .R ,ROOM-CX>>
+               <SETG ENTRY-Y <ROOM-GET .R ,ROOM-CY>>
+               <COND (<AND <G? ,ENTRY-X 0> <G? ,ENTRY-Y 0>> <RETURN>)>>)
+          (ELSE
+           <SETG ENTRY-X <ROOM-GET 1 ,ROOM-CX>>
+           <SETG ENTRY-Y <ROOM-GET 1 ,ROOM-CY>>)>
+    <RTRUE>>
+
+<ROUTINE ENTER-FLOOR-DOWN-STAIRS-NEED-FARTHEST? ()
+    <OR <==? ,ENTRY-X 0>
+        <==? ,ENTRY-Y 0>
+        <AND <G? ,CURRENT-ROOM 0>
+             <==? <ROOMID-AT ,ENTRY-X ,ENTRY-Y> ,CURRENT-ROOM>>>>
+
+<ROUTINE ENTER-FLOOR-PICK-DOWN-STAIRS-FARTHEST ("AUX" BESTD D)
+    ;"Fallback: farthest passable tile not in the entry room (or simply farthest)."
+    <SET BESTD -1>
+    <DO (YY 1 ,MAP-H)
+        <DO (XX 1 ,MAP-W)
+            <COND (<AND <FLOOR? .XX .YY>
+                        <OR <L=? ,CURRENT-ROOM 0>
+                            <N==? <ROOMID-AT .XX .YY> ,CURRENT-ROOM>>
+                        <NOT <AND <==? .XX ,PLAYER-X> <==? .YY ,PLAYER-Y>>>>
+                   <SET D <+ <ABS <- .XX ,PLAYER-X>> <ABS <- .YY ,PLAYER-Y>>>>
+                   <COND (<G? .D .BESTD>
+                          <SET BESTD .D>
+                          <SETG ENTRY-X .XX>
+                          <SETG ENTRY-Y .YY>)>)>>>
+    <RTRUE>>
+
+<ROUTINE ENTER-FLOOR-PERSIST-AND-PLACE-DOWN-STAIRS (F)
+    <COND (<AND <G? ,ENTRY-X 0> <G? ,ENTRY-Y 0>>
+           <FLOOR-SET-DOWN-STAIRS .F ,ENTRY-X ,ENTRY-Y>
+           <FORCE-PASSABLE ,ENTRY-X ,ENTRY-Y>
+           <PUTB ,MAP <MAP-INDEX ,ENTRY-X ,ENTRY-Y> ,TILE-STAIR-DOWN>)>
+    <RTRUE>>
+
+<ROUTINE ENTER-FLOOR-PLACE-DOWN-STAIRS (F)
+    <COND (<L? .F ,MAX-FLOORS>
+           ;"If exit stairs already exist for this floor, reuse them."
+           <COND (<ENTER-FLOOR-TRY-REUSE-DOWN-STAIRS .F> <RTRUE>)>
+           <ENTER-FLOOR-PICK-DOWN-STAIRS-ROOMCENTER>
+           <COND (<ENTER-FLOOR-DOWN-STAIRS-NEED-FARTHEST?>
+                  <SETG ENTRY-X 0>
+                  <SETG ENTRY-Y 0>
+                  <ENTER-FLOOR-PICK-DOWN-STAIRS-FARTHEST>)>
+           <ENTER-FLOOR-PERSIST-AND-PLACE-DOWN-STAIRS .F>)>
+    <RTRUE>>
+
+;"Load/position per-floor static features (trader/interiors/treasures) and
+  update discovery counters.
+
+Args:
+  F: Floor number (1..MAX-FLOORS).
+
+Returns:
+  T."
+
+<ROUTINE ENTER-FLOOR-LOAD-FEATURES (F)
+    <LOAD-FLOOR-TRADER .F>
+    <PLACE-INTERIOR-ENTRANCES .F>
+    <LOAD-FLOOR-TRINV .F>
+    <LOAD-FLOOR-TREASURES .F>
+    <SETG DISCOVERED-ROOMS <COUNT-FLOOR-ROOMDISC .F>>
+    <COND (<AND <G? ,CURRENT-ROOM 0> <L=? ,PLAYER-SHADOW-TURNS 0>>
+           <REVEAL-ROOM ,CURRENT-ROOM>)>
+    <RTRUE>>
+
+;"Load per-floor dynamic state and perform initial reveal.
+
+Args:
+  F: Floor number (1..MAX-FLOORS).
+
+Returns:
+  T."
+
+<ROUTINE ENTER-FLOOR-LOAD-STATE-AND-REVEAL (F FIRST-VISIT?)
+    <COND (.FIRST-VISIT?
+           <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-WEAPON>
+           <SPAWN-WEAPONS .F>
+           <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-FOOD>
+           <SPAWN-FOOD .F>
+           <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-POTION>
+           <SPAWN-POTION .F>
+           ;"Generate treasure rooms after the free/spawn passes so treasure loot
+            (which may be a weapon/potion) isn't immediately cleared."
+           <PLACE-PRECOMPUTED-TREASURE-ROOM .F>)>
+    <LOAD-FLOOR-ENEMIES .F>
+    <APPLY-PENDING-SPIRIT-SPAWNS .F>
+    <REVEAL-AROUND ,PLAYER-X ,PLAYER-Y>
+    <COND (<AND <G? <ROOMID-AT ,PLAYER-X ,PLAYER-Y> 0>
+                <N==? <ROOMID-AT ,PLAYER-X ,PLAYER-Y> ,CURRENT-ROOM>>
+           <SETG CURRENT-ROOM <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
+           <COND (<L=? ,PLAYER-SHADOW-TURNS 0> <REVEAL-ROOM ,CURRENT-ROOM>)>)>
+    <RTRUE>>
+
+;"Enters a floor: reseeds RNG to its floor seed, rebuilds the dungeon map,
+  restores per-floor state, positions stairs and player, and performs reveal.
+
+Args:
+  F: Floor number (1..MAX-FLOORS).
+  X, Y: Landing coordinates when moving between floors; 0/0 for initial entry.
+  LANDING?: True when arriving from the previous floor (used to place UP stairs).
+
+Returns:
+  T."
+
+<ROUTINE ENTER-FLOOR (F X Y LANDING? "AUX" FIRST-VISIT?)
+    <SETG CURRENT-FLOOR .F>
+    <SETG CURRENT-FLOOR-OBJ <FLOOR-OBJ .F>>
+    <COND (<G? .F ,STATS-MAX-FLOOR-REACHED> <SETG STATS-MAX-FLOOR-REACHED .F>)>
+    <SEED-RNG-32 <FLOOR-SEED-HI .F> <FLOOR-SEED-LO .F>>
+
+    <SET FIRST-VISIT? <NOT <FSET? <FLOOR-OBJ .F> ,TOUCHBIT>>>
+
+    <ENTER-FLOOR-SET-FORCED-ENTRY .F .X .Y .LANDING?>
+    <BUILD-DUNGEON>
+
+    <ENTER-FLOOR-PLACE-UP-STAIRS .F>
+    <ENTER-FLOOR-ENSURE-TROPHY-EXIT .F>
+    <ENTER-FLOOR-INIT-VISIT .F>
+    <ENTER-FLOOR-PLACE-PLAYER .X .Y>
+    <ENTER-FLOOR-PLACE-DOWN-STAIRS .F>
+    <ENTER-FLOOR-LOAD-FEATURES .F>
+    <PLACE-PENDING-KEYS .F>
+    <ENTER-FLOOR-LOAD-STATE-AND-REVEAL .F .FIRST-VISIT?>
+    <RTRUE>>
+
+;"Object-backed ground item queries"
+
+;"Find an item object on floor F at (X,Y).
+
+If KIND is 0, matches any item (R-ITKIND > 0). Otherwise matches only items
+whose R-ITKIND equals KIND.
+
+Returns the item object, or 0 if none."
+
+<ROUTINE FLOOR-ITEM-OBJ-AT (F X Y KIND "AUX" O K)
+    <SET O <FIRST? <FLOOR-OBJ .F>>>
+    <REPEAT ()
+        <COND (<NOT .O> <RETURN 0>)>
+        <SET K <GETP .O ,P?R-ITKIND>>
+        <COND (<AND <G? .K 0>
+                    <OR <L=? .KIND 0> <==? .K .KIND>>
+                    <==? <GETP .O ,P?R-X> .X>
+                    <==? <GETP .O ,P?R-Y> .Y>>
+               <RETURN .O>)>
+        <SET O <NEXT? .O>>>>
+
+<ROUTINE ITEM-OBJ-AT (X Y KIND)
+    <FLOOR-ITEM-OBJ-AT ,CURRENT-FLOOR .X .Y .KIND>>
+
+<ROUTINE GOLD-OBJ-AT (X Y)
+    <ITEM-OBJ-AT .X .Y ,ITEMKIND-GOLD>>
+
+<ROUTINE FOOD-OBJ-AT (X Y)
+    <ITEM-OBJ-AT .X .Y ,ITEMKIND-FOOD>>
+
+<ROUTINE WEAPON-OBJ-AT (X Y)
+    <ITEM-OBJ-AT .X .Y ,ITEMKIND-WEAPON>>
+
+<ROUTINE TREASURE-OBJ-AT (X Y)
+    <ITEM-OBJ-AT .X .Y ,ITEMKIND-TREASURE>>
+
+<ROUTINE POTION-OBJ-AT (X Y)
+    <ITEM-OBJ-AT .X .Y ,ITEMKIND-POTION>>
+
+<ROUTINE POTION-AT? (X Y)
+    <G? <POTION-OBJ-AT .X .Y> 0>>
+
+<ROUTINE KEY-OBJ-AT (X Y)
+    <ITEM-OBJ-AT .X .Y ,ITEMKIND-KEY>>
+
+<ROUTINE LOCKEDDOOR-OBJ-AT (X Y)
+    <ITEM-OBJ-AT .X .Y ,ITEMKIND-LOCKEDDOOR>>
+
+<ROUTINE LOCKED-DOOR-CLOSED-AT? (X Y "AUX" O)
+    <SET O <LOCKEDDOOR-OBJ-AT .X .Y>>
+    <AND <G? .O 0> <NOT <FSET? .O ,OPENBIT>>>>
+
+<ROUTINE ADD-PENDING-KEY (F LOCKTYPE "AUX" O)
+    <SET O <ALLOC-RASCAL-ITEM>>
+    <COND (<NOT .O> <RETURN 0>)>
+    <PUTP .O ,P?R-ITKIND ,ITEMKIND-KEY>
+    <PUTP .O ,P?R-ITID .LOCKTYPE>
+    <PUTP .O ,P?R-X 0>
+    <PUTP .O ,P?R-Y 0>
+    <MOVE .O <FLOOR-OBJ .F>>
+    .O>
+
+<ROUTINE ADD-LOCKEDDOOR (F X Y LOCKTYPE "AUX" O)
+    <SET O <ALLOC-RASCAL-ITEM>>
+    <COND (<NOT .O> <RETURN 0>)>
+    <PUTP .O ,P?R-ITKIND ,ITEMKIND-LOCKEDDOOR>
+    <PUTP .O ,P?R-ITID .LOCKTYPE>
+    <PUTP .O ,P?R-X .X>
+    <PUTP .O ,P?R-Y .Y>
+    <MOVE .O <FLOOR-OBJ .F>>
+    <FCLEAR .O ,OPENBIT>
+    .O>
+
+<ROUTINE PLACE-PENDING-KEY-OBJ (O "AUX" TRIES X Y)
+    <SET TRIES 0>
+    <REPEAT ()
+        <SET TRIES <+ .TRIES 1>>
+        <COND (<G? .TRIES 500> <RFALSE>)>
+        <COND (<G? .TRIES 420>
+               <SETG ENTRY-X 0>
+               <SETG ENTRY-Y 0>
+               <COND (<FIND-GROUND-ITEM-SPOT-ANYWHERE>
+                      <SET X ,ENTRY-X>
+                      <SET Y ,ENTRY-Y>)
+                     (ELSE <RFALSE>)>)
+              (ELSE
+               <SET X <RNG ,MAP-W>>
+               <SET Y <RNG ,MAP-H>>)>
+        <COND (<NOT <VALID-GROUND-ITEM-TILE? .X .Y>> <AGAIN>)>
+        <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <AGAIN>)>
+        <PUTP .O ,P?R-X .X>
+        <PUTP .O ,P?R-Y .Y>
+        <FORCE-PASSABLE .X .Y>
+        <RTRUE>>>
+
+<ROUTINE PLACE-PENDING-KEYS (F "AUX" O NXT)
+    <SET O <FIRST? <FLOOR-OBJ .F>>>
+    <REPEAT ()
+        <COND (<NOT .O> <RETURN T>)>
+        <SET NXT <NEXT? .O>>
+        <COND (<AND <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-KEY>
+                    <==? <GETP .O ,P?R-X> 0>
+                    <==? <GETP .O ,P?R-Y> 0>>
+               <PLACE-PENDING-KEY-OBJ .O>)>
+        <SET O .NXT>>
+    <RTRUE>>
+
+<ROUTINE ROOM-DEGREE (RID "AUX" DEG)
+    <SET DEG 0>
+    <DO (B 1 ,ROOM-COUNT)
+        <COND (<AND <N==? .B .RID> <CONNECTED-PAIR? .RID .B>>
+               <SET DEG <+ .DEG 1>>)>
+        .DEG>>
+
+<ROUTINE ROOM-OPENING-COUNT (RID "AUX" X Y L T R B CNT)
+    <SET L <ROOM-GET .RID ,ROOM-L>>
+    <SET T <ROOM-GET .RID ,ROOM-T>>
+    <SET R <ROOM-GET .RID ,ROOM-R>>
+    <SET B <ROOM-GET .RID ,ROOM-B>>
+    <SET CNT 0>
+
+    ;"Count any passable tile immediately outside the room bounds.
+    This is stricter than ROOM-DOOR-COUNT: it also counts openings where a
+    door tile was overwritten to corridor (e.g., by FORCE-PASSABLE)."
+
+    <SET X <- .L 1>>
+    <DO (Y .T .B)
+        <COND (<AND <IN-BOUNDS? .X .Y> <FLOOR? .X .Y>> <SET CNT <+ .CNT 1>>)>>
+
+    <SET X <+ .R 1>>
+    <DO (Y .T .B)
+        <COND (<AND <IN-BOUNDS? .X .Y> <FLOOR? .X .Y>> <SET CNT <+ .CNT 1>>)>>
+
+    <SET Y <- .T 1>>
+    <DO (X .L .R)
+        <COND (<AND <IN-BOUNDS? .X .Y> <FLOOR? .X .Y>> <SET CNT <+ .CNT 1>>)>>
+
+    <SET Y <+ .B 1>>
+    <DO (X .L .R)
+        <COND (<AND <IN-BOUNDS? .X .Y> <FLOOR? .X .Y>> <SET CNT <+ .CNT 1>>)>>
+
+    .CNT>
+
+<ROUTINE FIND-ROOM-DOOR-TILE (RID "AUX" X Y L T R B)
+    <SET L <ROOM-GET .RID ,ROOM-L>>
+    <SET T <ROOM-GET .RID ,ROOM-T>>
+    <SET R <ROOM-GET .RID ,ROOM-R>>
+    <SET B <ROOM-GET .RID ,ROOM-B>>
+    <SETG ENTRY-X 0>
+    <SETG ENTRY-Y 0>
+
+    ;"Doors are placed just outside the carved room bounds (e.g. ROOM-R+1),
+    so search the perimeter one tile beyond the room rectangle."
+
+    <SET X <- .L 1>>
+    <DO (Y .T .B)
+        <COND (<AND <IN-BOUNDS? .X .Y>
+                    <==? <TILE-AT .X .Y> ,TILE-DOOR>
+                    <==? <ROOMID-AT .X .Y> .RID>
+                    <L=? <ITEM-OBJ-AT .X .Y 0> 0>>
+               <SETG ENTRY-X .X>
+               <SETG ENTRY-Y .Y>
+               <RTRUE>)>>
+
+    <SET X <+ .R 1>>
+    <DO (Y .T .B)
+        <COND (<AND <IN-BOUNDS? .X .Y>
+                    <==? <TILE-AT .X .Y> ,TILE-DOOR>
+                    <==? <ROOMID-AT .X .Y> .RID>
+                    <L=? <ITEM-OBJ-AT .X .Y 0> 0>>
+               <SETG ENTRY-X .X>
+               <SETG ENTRY-Y .Y>
+               <RTRUE>)>>
+
+    <SET Y <- .T 1>>
+    <DO (X .L .R)
+        <COND (<AND <IN-BOUNDS? .X .Y>
+                    <==? <TILE-AT .X .Y> ,TILE-DOOR>
+                    <==? <ROOMID-AT .X .Y> .RID>
+                    <L=? <ITEM-OBJ-AT .X .Y 0> 0>>
+               <SETG ENTRY-X .X>
+               <SETG ENTRY-Y .Y>
+               <RTRUE>)>>
+
+    <SET Y <+ .B 1>>
+    <DO (X .L .R)
+        <COND (<AND <IN-BOUNDS? .X .Y>
+                    <==? <TILE-AT .X .Y> ,TILE-DOOR>
+                    <==? <ROOMID-AT .X .Y> .RID>
+                    <L=? <ITEM-OBJ-AT .X .Y 0> 0>>
+               <SETG ENTRY-X .X>
+               <SETG ENTRY-Y .Y>
+               <RTRUE>)>>
+
+    <RFALSE>>
+
+<ROUTINE ROOM-HAS-TILE? (RID TILE "AUX" X Y L T R B)
+    <SET L <ROOM-GET .RID ,ROOM-L>>
+    <SET T <ROOM-GET .RID ,ROOM-T>>
+    <SET R <ROOM-GET .RID ,ROOM-R>>
+    <SET B <ROOM-GET .RID ,ROOM-B>>
+    <SET Y .T>
+    <REPEAT ()
+        <COND (<G? .Y .B> <RFALSE>)>
+        <SET X .L>
+        <REPEAT ()
+            <COND (<G? .X .R> <SET Y <+ .Y 1>> <RETURN>)>
+            <COND (<==? <TILE-AT .X .Y> .TILE> <RTRUE>)>
+            <SET X <+ .X 1>>>>>
+
+<ROUTINE ROOM-BLOCKED-FOR-TREASURE? (RID "AUX" UPX UPY DOWNX DOWNY)
+    <SET UPX <FLOOR-UP-X ,CURRENT-FLOOR>>
+    <SET UPY <FLOOR-UP-Y ,CURRENT-FLOOR>>
+    <SET DOWNX <FLOOR-DOWN-X ,CURRENT-FLOOR>>
+    <SET DOWNY <FLOOR-DOWN-Y ,CURRENT-FLOOR>>
+    <COND (<AND <G? .UPX 0> <G? .UPY 0> <==? <ROOMID-AT .UPX .UPY> .RID>>
+            <RTRUE>)>
+    <COND (<AND <G? .DOWNX 0>
+                <G? .DOWNY 0>
+                <==? <ROOMID-AT .DOWNX .DOWNY> .RID>>
+            <RTRUE>)>
+    <COND (<AND ,TRADER-ON?
+                <G? ,TRADER-X 0>
+                <G? ,TRADER-Y 0>
+                <==? <ROOMID-AT ,TRADER-X ,TRADER-Y> .RID>>
+            <RTRUE>)>
+    ;"Stairs tiles sometimes have ROOMID=0 (forced passable), so also block
+    any room whose carved area contains stairs regardless of ROOMIDS."
+    <COND (<ROOM-HAS-TILE? .RID ,TILE-STAIR-UP> <RTRUE>)>
+    <COND (<ROOM-HAS-TILE? .RID ,TILE-STAIR-DOWN> <RTRUE>)>
+    <COND (<ROOM-HAS-TILE? .RID ,TILE-INTERIOR> <RTRUE>)>
+    <RFALSE>>
+
+<ROUTINE FIND-LEAF-ROOM-DOOR (ENTRYRID "AUX" TRIES RID DEG)
+    <SETG ENTRY-X 0>
+    <SETG ENTRY-Y 0>
+    <SET TRIES 0>
+    <REPEAT ()
+        <SET TRIES <+ .TRIES 1>>
+        <COND (<G? .TRIES 120> <RETURN 0>)>
+        <SET RID <RNG ,ROOM-COUNT>>
+        <COND (<==? .RID .ENTRYRID> <AGAIN>)>
+        <SET DEG <ROOM-DEGREE .RID>>
+        <COND (<N==? .DEG 1> <AGAIN>)>
+        <COND (<N==? <ROOM-OPENING-COUNT .RID> 1> <AGAIN>)>
+        <COND (<ROOM-BLOCKED-FOR-TREASURE? .RID> <AGAIN>)>
+        <COND (<FIND-ROOM-DOOR-TILE .RID> <RETURN .RID>)>
+        <AGAIN>>>
+
+<ROUTINE FIND-LEAF-ROOM-DOOR-ANY (ENTRYRID)
+    <SETG ENTRY-X 0>
+    <SETG ENTRY-Y 0>
+    <DO (RID 1 ,ROOM-COUNT)
+        <COND (<AND <N==? .RID .ENTRYRID>
+                    <==? <ROOM-DEGREE .RID> 1>
+                    <==? <ROOM-OPENING-COUNT .RID> 1>
+                    <NOT <ROOM-BLOCKED-FOR-TREASURE? .RID>>
+                    <FIND-ROOM-DOOR-TILE .RID>>
+                <RETURN .RID>)>>
+    0>
+
+<ROUTINE FIND-TREASURE-SPOT-IN-ROOM (RID "AUX" TRIES X Y L T R B)
+    <SET L <ROOM-GET .RID ,ROOM-L>>
+    <SET T <ROOM-GET .RID ,ROOM-T>>
+    <SET R <ROOM-GET .RID ,ROOM-R>>
+    <SET B <ROOM-GET .RID ,ROOM-B>>
+    <SET TRIES 0>
+    <REPEAT ()
+        <SET TRIES <+ .TRIES 1>>
+        <COND (<G? .TRIES 260> <RETURN 0>)>
+        <SET X <- <+ .L <RNG <+ 1 <- .R .L>>>> 1>>
+        <SET Y <- <+ .T <RNG <+ 1 <- .B .T>>>> 1>>
+        <COND (<NOT <IN-BOUNDS? .X .Y>> <AGAIN>)>
+        <COND (<==? <TILE-AT .X .Y> ,TILE-DOOR> <AGAIN>)>
+        <COND (<NOT <OR <==? <TILE-AT .X .Y> ,TILE-FLOOR>
+                        <==? <TILE-AT .X .Y> ,TILE-CORRIDOR>>>
+                <AGAIN>)>
+        <COND (<OR <==? <TILE-AT .X .Y> ,TILE-STAIR-UP>
+                    <==? <TILE-AT .X .Y> ,TILE-STAIR-DOWN>>
+                <AGAIN>)>
+        <COND (<TRADER-AT? .X .Y> <AGAIN>)>
+        <COND (<G? <ENEMY-AT .X .Y> 0> <AGAIN>)>
+        <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <AGAIN>)>
+        <RETURN <WORD16-FROM-BYTES .X .Y>>>>
+
+;"Pick a key floor relative to a locked door floor.
+
+Distribution:
+- 60%: 1-2 floors away (up or down)
+- 20%: same floor
+- 15%: 3-4 floors away
+- 5%: 5+ floors away"
+
+<ROUTINE PICK-KEY-FLOOR-FOR-LOCK (DOORF "AUX" R OFFSET SIGN FLOOR)
+    <SET R <RNG 100>>
+    <COND (<L=? .R 60> <SET OFFSET <RNG 2>>)
+          (<L=? .R 80> <SET OFFSET 0>)
+          (<L=? .R 95> <SET OFFSET <+ 2 <RNG 2>>>)
+          (ELSE
+           <COND (<L=? ,MAX-FLOORS 5> <SET OFFSET 5>)
+                 (ELSE <SET OFFSET <+ 4 <RNG <- ,MAX-FLOORS 5>>>>)>)>
+
+    <COND (<==? .OFFSET 0> <RETURN .DOORF>)>
+    <SET SIGN <COND (<==? <RNG 2> 1> -1) (ELSE 1)>>
+    <SET FLOOR <+ .DOORF <* .SIGN .OFFSET>>>
+    <COND (<OR <L? .FLOOR 1> <G? .FLOOR ,MAX-FLOORS>>
+           <SET FLOOR <+ .DOORF <* <- .SIGN> .OFFSET>>>)>
+    <COND (<L? .FLOOR 1> <SET FLOOR 1>)
+          (<G? .FLOOR ,MAX-FLOORS> <SET FLOOR ,MAX-FLOORS>)>
+    .FLOOR>
+
+;"Store the precomputed treasure loot for a floor."
+
+<ROUTINE PICK-STAT-BOOST-POTION-COLOR ("AUX" PICK TYPE COLOR)
+    <SET PICK <RNG 3>>
+    <SET TYPE
+         <COND (<==? .PICK 1> ,POTION-MUSCLE)
+               (<==? .PICK 2> ,POTION-HEALTH)
+               (ELSE ,POTION-METTLE)>>
+    <SET COLOR <GETB ,POTION-COLOR-FOR-TYPE <- .TYPE 1>>>
+    <COND (<L? .COLOR 1>
+           <SET COLOR <GETB ,POTION-COLOR-FOR-TYPE <- ,POTION-HEALTH 1>>>
+           <COND (<L? .COLOR 1>
+                  <SET COLOR
+                       <GETB ,POTION-COLOR-FOR-TYPE <- ,POTION-MUSCLE 1>>>)>
+           <COND (<L? .COLOR 1>
+                  <SET COLOR
+                       <GETB ,POTION-COLOR-FOR-TYPE <- ,POTION-METTLE 1>>>)>
+           <COND (<L? .COLOR 1> <SET COLOR 1>)>)>
+    .COLOR>
+
+<ROUTINE PRECOMPUTE-TREASURE-LOOT (F CHOICE "AUX" TYPE LVL ENCH COLOR AMT)
+    <COND (<==? .CHOICE 1>
+           <SET TYPE <RNG ,WEAPON-COUNT>>
+           <SET LVL <+ <ROLL-LOOT-WEAPON-LEVEL .F> 2>>
+           <COND (<G? .LVL 15> <SET LVL 15>)>
+           <SET ENCH <+ <ROLL-LOOT-WEAPON-ENCH> 2>>
+           <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> ,TREASURE-LOOT-WEAPON>
+           <PUTB ,TREASURE-ROOM-LOOT-ID <- .F 1> .TYPE>
+           <PUTB ,TREASURE-ROOM-LOOT-LVL <- .F 1> .LVL>
+           <PUTB ,TREASURE-ROOM-LOOT-ENCH <- .F 1> .ENCH>)
+          (<==? .CHOICE 2>
+           <SET COLOR <PICK-STAT-BOOST-POTION-COLOR>>
+           <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> ,TREASURE-LOOT-POTION>
+           <PUTB ,TREASURE-ROOM-LOOT-ID <- .F 1> .COLOR>)
+          (ELSE
+           <SET AMT <+ 200 <RNG 301>>>
+           <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> ,TREASURE-LOOT-GOLD>
+           <PUT ,TREASURE-ROOM-LOOT-AMT <- .F 1> .AMT>)>
+    <RTRUE>>
+
+;"Precompute treasure rooms and matching keys for all floors.
+
+This simulates a full descent so keys can be placed on earlier floors."
+
+<ROUTINE PRECOMPUTE-TREASURE-ROOM-PLANS ("AUX" LANDX LANDY ENTRYRID RID DOORRID DOORX DOORY LOOTXY LOOTX LOOTY LOCKTYPE CHOICE)
+    <SET LANDX 0>
+    <SET LANDY 0>
+    <DO (F 1 ,MAX-FLOORS)
+        <SETG CURRENT-FLOOR .F>
+        <SETG CURRENT-FLOOR-OBJ <FLOOR-OBJ .F>>
+        <SEED-RNG-32 <FLOOR-SEED-HI .F> <FLOOR-SEED-LO .F>>
+
+        <COND (<G? .F 1>
+               <SETG FORCED-ENTRY? T>
+               <SETG ENTRY-X .LANDX>
+               <SETG ENTRY-Y .LANDY>
+               <FLOOR-SET-UP-STAIRS .F .LANDX .LANDY>)
+              (ELSE
+               <SETG FORCED-ENTRY? <>>
+               <SETG ENTRY-X 0>
+               <SETG ENTRY-Y 0>)>
+
+        <BUILD-DUNGEON>
+        <ENTER-FLOOR-PLACE-UP-STAIRS .F>
+        <ENTER-FLOOR-PLACE-PLAYER .LANDX .LANDY>
+        <ENTER-FLOOR-PLACE-DOWN-STAIRS .F>
+
+        <SET LANDX ,ENTRY-X>
+        <SET LANDY ,ENTRY-Y>
+
+        <LOAD-FLOOR-TRADER .F>
+        <PLACE-INTERIOR-ENTRANCES .F>
+
+        <SET ENTRYRID <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
+        <COND (<L=? .ENTRYRID 0> <SET ENTRYRID ,CURRENT-ROOM>)>
+
+        <SET DOORX 0>
+        <SET DOORY 0>
+        <SET LOOTX 0>
+        <SET LOOTY 0>
+
+        <SET RID <FIND-LEAF-ROOM-DOOR .ENTRYRID>>
+        <COND (<G? .RID 0>
+               <SET DOORX ,ENTRY-X>
+               <SET DOORY ,ENTRY-Y>
+               <SET LOOTXY <FIND-TREASURE-SPOT-IN-ROOM .RID>>
+               <COND (<G? .LOOTXY 0>
+                      <SET LOOTX <WORD16-HI-BYTE .LOOTXY>>
+                      <SET LOOTY <WORD16-LO-BYTE .LOOTXY>>)>)>
+
+        ;"Deterministic fallback: if random tries missed, scan for any valid opportunity."
+        <COND (<OR <L=? .DOORX 0> <L=? .DOORY 0> <L=? .LOOTX 0> <L=? .LOOTY 0>>
+               <SET DOORX 0>
+               <SET DOORY 0>
+               <SET LOOTX 0>
+               <SET LOOTY 0>
+               <SET RID <FIND-LEAF-ROOM-DOOR-ANY .ENTRYRID>>
+               <COND (<G? .RID 0>
+                      <SET DOORX ,ENTRY-X>
+                      <SET DOORY ,ENTRY-Y>
+                      <SET LOOTXY <FIND-TREASURE-SPOT-IN-ROOM .RID>>
+                      <COND (<G? .LOOTXY 0>
+                             <SET LOOTX <WORD16-HI-BYTE .LOOTXY>>
+                             <SET LOOTY <WORD16-LO-BYTE .LOOTXY>>)>)>)>
+
+        <COND (<OR <L=? .DOORX 0> <L=? .DOORY 0> <L=? .LOOTX 0> <L=? .LOOTY 0>>
+               <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>
+               <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> 0>)
+              (ELSE
+               ;"Only lock a door that belongs to a true leaf room."
+               <SET DOORRID <ROOMID-AT .DOORX .DOORY>>
+               <COND (<OR <L=? .DOORRID 0>
+                          <==? .DOORRID .ENTRYRID>
+                          <N==? <ROOM-DEGREE .DOORRID> 1>
+                          <N==? <ROOM-OPENING-COUNT .DOORRID> 1>
+                          <ROOM-BLOCKED-FOR-TREASURE? .DOORRID>>
+                      <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>
+                      <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> 0>)
+                     (ELSE
+                      <SET LOCKTYPE <RNG ,LOCK-TYPE-COUNT>>
+                      <PUTB ,TREASURE-ROOM-DOOR-X <- .F 1> .DOORX>
+                      <PUTB ,TREASURE-ROOM-DOOR-Y <- .F 1> .DOORY>
+                      <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> .LOCKTYPE>
+                      <PUTB ,TREASURE-ROOM-LOOT-X <- .F 1> .LOOTX>
+                      <PUTB ,TREASURE-ROOM-LOOT-Y <- .F 1> .LOOTY>
+                      <SET CHOICE <RNG 3>>
+                      <PRECOMPUTE-TREASURE-LOOT .F .CHOICE>
+                      <SET CHOICE <PICK-KEY-FLOOR-FOR-LOCK .F>>
+                      <ADD-PENDING-KEY .CHOICE .LOCKTYPE>)>)>>
+    <RTRUE>>
+
+;"Place precomputed locked door and loot for a floor."
+
+<ROUTINE PLACE-PRECOMPUTED-TREASURE-ROOM (F "AUX" DOORX DOORY LOCKTYPE LOOTX LOOTY LOOTKIND ID LVL ENCH AMT)
+    <COND (<G? <GETB ,TREASURE-ROOM-CREATED <- .F 1>> 0> <RTRUE>)>
+    <SET LOCKTYPE <GETB ,TREASURE-ROOM-LOCKTYPE <- .F 1>>>
+    <COND (<L=? .LOCKTYPE 0> <RTRUE>)>
+
+    <SET DOORX <GETB ,TREASURE-ROOM-DOOR-X <- .F 1>>>
+    <SET DOORY <GETB ,TREASURE-ROOM-DOOR-Y <- .F 1>>>
+    <SET LOOTX <GETB ,TREASURE-ROOM-LOOT-X <- .F 1>>>
+    <SET LOOTY <GETB ,TREASURE-ROOM-LOOT-Y <- .F 1>>>
+    <COND (<OR <L=? .DOORX 0> <L=? .DOORY 0>> <RTRUE>)>
+
+    <COND (<NOT <ADD-LOCKEDDOOR .F .DOORX .DOORY .LOCKTYPE>> <RTRUE>)>
+    <PUTB ,TREASURE-ROOM-CREATED <- .F 1> 1>
+
+    <COND (<OR <L=? .LOOTX 0> <L=? .LOOTY 0>> <RTRUE>)>
+    <COND (<G? <ITEM-OBJ-AT .LOOTX .LOOTY 0> 0> <RTRUE>)>
+
+    <SET LOOTKIND <GETB ,TREASURE-ROOM-LOOT-KIND <- .F 1>>>
+    <SET ID <GETB ,TREASURE-ROOM-LOOT-ID <- .F 1>>>
+    <COND (<==? .LOOTKIND ,TREASURE-LOOT-WEAPON>
+           <SET LVL <GETB ,TREASURE-ROOM-LOOT-LVL <- .F 1>>>
+           <SET ENCH <GETB ,TREASURE-ROOM-LOOT-ENCH <- .F 1>>>
+           <ADD-WEAPON-PILE .LOOTX .LOOTY .ID .LVL .ENCH>)
+          (<==? .LOOTKIND ,TREASURE-LOOT-POTION>
+           <ADD-POTION-PILE .LOOTX .LOOTY .ID>)
+          (<==? .LOOTKIND ,TREASURE-LOOT-GOLD>
+           <SET AMT <GET ,TREASURE-ROOM-LOOT-AMT <- .F 1>>>
+           <ADD-GOLD-PILE .LOOTX .LOOTY .AMT>)>
+    <RTRUE>>
+
+;"Find a poison potion object at (X,Y), or 0 if none or not poison."
+
+<ROUTINE POISON-POTION-OBJ-AT (X Y "AUX" O COLOR TYPE)
+    <SET O <POTION-OBJ-AT .X .Y>>
+    <COND (<L=? .O 0> <RETURN 0>)>
+    <SET COLOR <GETP .O ,P?R-ITID>>
+    <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>
+    <COND (<==? .TYPE ,POTION-POISON> .O) (ELSE 0)>>
+
+;"Search for a poison potion within Manhattan distance R of (X,Y).
+
+Returns a potion object, or 0 if none."
+
+<ROUTINE POISON-POTION-OBJ-IN-RANGE (X Y R "AUX" O K COLOR TYPE PX PY DIST)
+    <SET O <FIRST? <FLOOR-OBJ ,CURRENT-FLOOR>>>
+    <REPEAT ()
+        <COND (<NOT .O> <RETURN 0>)>
+        <SET K <GETP .O ,P?R-ITKIND>>
+        <COND (<==? .K ,ITEMKIND-POTION>
+               <SET COLOR <GETP .O ,P?R-ITID>>
+               <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>
+               <COND (<==? .TYPE ,POTION-POISON>
+                      <SET PX <GETP .O ,P?R-X>>
+                      <SET PY <GETP .O ,P?R-Y>>
+                      <SET DIST <+ <ABS <- .PX .X>> <ABS <- .PY .Y>>>>
+                      <COND (<L=? .DIST .R> <RETURN .O>)>)>)>
+        <SET O <NEXT? .O>>>>
+
+<ROUTINE REMOVE-POTION-OBJ (O)
+    <COND (<NOT .O> <RTRUE>)>
+    <REMOVE .O>
+    <FREE-RASCAL-ITEM .O>
+    <RTRUE>>
+
+;"Checks whether the trader NPC is at (X, Y) on the current floor.
+
+Args:
+  X, Y: Map coordinates.
+
+Returns:
+  T if present; FALSE otherwise."
+
+<ROUTINE TRADER-AT? (X Y)
+    <AND ,TRADER-ON?
+         <G? ,TRADER-X 0>
+         <G? ,TRADER-Y 0>
+         <==? ,TRADER-X .X>
+         <==? ,TRADER-Y .Y>>>
+
+;"Checks whether a grounded treasure occupies (X, Y) on the current floor.
+
+Args:
+  X, Y: Map coordinates.
+
+Returns:
+  Treasure ID (1..TREASURE-COUNT), or 0 if none."
+
+<ROUTINE TREASURE-AT? (X Y "AUX" T)
+    <COND (<G? <SET T <TREASURE-OBJ-AT .X .Y>> 0> <GETP .T ,P?R-ITID>)
+          (ELSE 0)>>
+
+;"Enemies are stored directly as child enemy objects under FLOOR-OBJ."
+
+;"Forces a floor's enemies to regenerate on next entry."
+
+<ROUTINE CLEAR-FLOOR-ENEMIES (F)
+    <PUTB ,FLOOR-ENEMY-INIT <- .F 1> 0>
+    <FREE-RASCAL-ENEMY-CHILDREN <FLOOR-OBJ .F>>
+    <RTRUE>>
+
+;"Loads/spawns the floor's enemies.
+
+Args:
+    F: Floor number (1-based).
+
+Returns:
+    T."
+
+<ROUTINE SPAWN-ENEMY-OBJ-OF-TYPE (F TYPE "AUX" TRIES R PR L T RR BB X Y HP O)
+    <SET PR <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
+    <SET TRIES 0>
+    <REPEAT ()
+        <SET TRIES <+ .TRIES 1>>
+        <COND (<G? .TRIES 120> <RFALSE>)>
+        <SET R <RNG ,ROOM-COUNT>>
+        <COND (<AND <G? .PR 0> <==? .R .PR>> <AGAIN>)>
+        <SET L <ROOM-GET .R ,ROOM-L>>
+        <SET T <ROOM-GET .R ,ROOM-T>>
+        <SET RR <ROOM-GET .R ,ROOM-R>>
+        <SET BB <ROOM-GET .R ,ROOM-B>>
+        <SET X <+ .L <- <RNG <+ 1 <- .RR .L>>> 1>>>
+        <SET Y <+ .T <- <RNG <+ 1 <- .BB .T>>> 1>>>
+        <COND (<NOT <IN-BOUNDS? .X .Y>> <AGAIN>)>
+        <COND (<NOT <FLOOR? .X .Y>> <AGAIN>)>
+        <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>> <AGAIN>)>
+        <COND (<G? <GOLD-OBJ-AT .X .Y> 0> <AGAIN>)>
+        <COND (<G? <FOOD-OBJ-AT .X .Y> 0> <AGAIN>)>
+        <COND (<G? <WEAPON-OBJ-AT .X .Y> 0> <AGAIN>)>
+        <COND (<POTION-AT? .X .Y> <AGAIN>)>
+        <COND (<G? <TREASURE-AT? .X .Y> 0> <AGAIN>)>
+        <COND (<TRADER-AT? .X .Y> <AGAIN>)>
+        <COND (<G? <ENEMY-AT .X .Y> 0> <AGAIN>)>
+        <COND (<OR <==? <TILE-AT .X .Y> ,TILE-STAIR-UP>
+                   <==? <TILE-AT .X .Y> ,TILE-STAIR-DOWN>>
+               <AGAIN>)>
+        <SET HP <ENEMY-START-HP .TYPE .F>>
+        <COND (<NOT <SET O <ALLOC-RASCAL-ENEMY>>> <RFALSE>)>
+        <PUTP .O ,P?R-ETYPE .TYPE>
+        <PUTP .O ,P?R-EHP .HP>
+        <PUTP .O ,P?R-X .X>
+        <PUTP .O ,P?R-Y .Y>
+        <MOVE .O ,CURRENT-FLOOR-OBJ>
+        <RTRUE>>>
+
+<ROUTINE APPLY-PENDING-SPIRIT-SPAWNS (F "AUX" PENDING)
+    <COND (<G=? .F ,MAX-FLOORS> <RTRUE>)>
+    <SET PENDING <GETB ,PENDING-SPIRIT-SPAWNS <- .F 1>>>
+    <REPEAT ()
+        <COND (<L=? .PENDING 0> <RETURN T>)>
+        <COND (<SPAWN-ENEMY-OBJ-OF-TYPE .F ,ETYPE-SPIRIT>
+               <SET PENDING <- .PENDING 1>>
+               <PUTB ,PENDING-SPIRIT-SPAWNS <- .F 1> .PENDING>
+               <AGAIN>)>
+        <RETURN T>>>
+
+<ROUTINE LOAD-FLOOR-ENEMIES (F)
+    <SETG CURRENT-FLOOR-OBJ <FLOOR-OBJ .F>>
+    <COND (<G? <GETB ,FLOOR-ENEMY-INIT <- .F 1>> 0> <RTRUE>)>
+    <SPAWN-ENEMIES .F>
+    <PUTB ,FLOOR-ENEMY-INIT <- .F 1> 1>
+    <RTRUE>>
+
+;"Loads or chooses the per-floor trader location for floor F.
+
+This is called after dungeon generation for the floor, so it can pick a room
+center and then FORCE-PASSABLE that tile.
+
+Args:
+  F: Floor number (1-based).
+
+Returns:
+  T."
+<ROUTINE LOAD-FLOOR-TRADER (F "AUX" X Y R TRIES)
+    <SETG TRADER-ON? <>>
+    <SETG TRADER-X 0>
+    <SETG TRADER-Y 0>
+    <COND (<NOT <TRADER-ON-FLOOR? .F>>
+           <PUTP <TRADER-OBJ .F> ,P?R-X 0>
+           <PUTP <TRADER-OBJ .F> ,P?R-Y 0>
+           <RTRUE>)>
+    <SET X <GETP <TRADER-OBJ .F> ,P?R-X>>
+    <SET Y <GETP <TRADER-OBJ .F> ,P?R-Y>>
+    <COND (<AND <G? .X 0> <G? .Y 0>>
+           <SETG TRADER-ON? T>
+           <SETG TRADER-X .X>
+           <SETG TRADER-Y .Y>
+           <PUTP <TRADER-OBJ .F> ,P?R-X .X>
+           <PUTP <TRADER-OBJ .F> ,P?R-Y .Y>
+           <FORCE-PASSABLE .X .Y>
+           <RTRUE>)>
+    ;"Pick a room center for the trader and persist it."
+    <SET TRIES 0>
+    <REPEAT ()
+        <SET TRIES <+ .TRIES 1>>
+        <COND (<G? .TRIES 120> <RTRUE>)>
+        <SET R <RNG ,ROOM-COUNT>>
+        <SET X <ROOM-GET .R ,ROOM-CX>>
+        <SET Y <ROOM-GET .R ,ROOM-CY>>
+        <COND (<OR <L=? .X 1>
+                   <L=? .Y 1>
+                   <==? <TILE-AT .X .Y> ,TILE-STAIR-UP>
+                   <==? <TILE-AT .X .Y> ,TILE-STAIR-DOWN>
+                   <G? <GOLD-OBJ-AT .X .Y> 0>
+                   <G? <FOOD-OBJ-AT .X .Y> 0>
+                   <G? <WEAPON-OBJ-AT .X .Y> 0>
+                   <POTION-AT? .X .Y>
+                   <G? <TREASURE-AT? .X .Y> 0>
+                   <G? <ENEMY-AT .X .Y> 0>>
+               <AGAIN>)>
+        <FORCE-PASSABLE .X .Y>
+        <SETG TRADER-ON? T>
+        <SETG TRADER-X .X>
+        <SETG TRADER-Y .Y>
+        <PUTP <TRADER-OBJ .F> ,P?R-X .X>
+        <PUTP <TRADER-OBJ .F> ,P?R-Y .Y>
+        <RETURN>>
+    <RTRUE>>
+
+;"Spawns treasures that belong on floor F and re-hardens grounded treasures.
+
+If a treasure's assigned TREASURE-SPAWN-FLOOR equals F and no live treasure
+object with that ID exists anywhere, this chooses a room center and places it.
+
+Args:
+  F: Floor number (1-based).
+
+Returns:
+  T."
+<ROUTINE LOAD-FLOOR-TREASURES (F "AUX" SF X Y R TRIES O NXT)
+    <DO (ID 1 ,TREASURE-COUNT)
+        <SET SF <GETB ,TREASURE-SPAWN-FLOOR <- .ID 1>>>
+        <COND (<AND <==? .SF .F> <NOT <TREASURE-EXISTS? .ID>>>
+               ;"Spawn it now (exactly once) on this floor."
+               <SET TRIES 0>
+               <REPEAT ()
+                   <SET TRIES <+ .TRIES 1>>
+                   <COND (<G? .TRIES 160> <RETURN>)>
+                   <SET R <RNG ,ROOM-COUNT>>
+                   <SET X <ROOM-GET .R ,ROOM-CX>>
+                   <SET Y <ROOM-GET .R ,ROOM-CY>>
+                   <COND (<OR <NOT <FLOOR? .X .Y>>
+                              <==? <TILE-AT .X .Y> ,TILE-STAIR-UP>
+                              <==? <TILE-AT .X .Y> ,TILE-STAIR-DOWN>
+                              <G? <ITEM-OBJ-AT .X .Y 0> 0>
+                              <TRADER-AT? .X .Y>
+                              <AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>>
+                              <G? <ENEMY-AT .X .Y> 0>>
+                          <AGAIN>)>
+                   <SET O <ALLOC-RASCAL-ITEM>>
+                   <COND (<NOT .O> <RETURN>)>
+                   <PUTP .O ,P?R-ITKIND ,ITEMKIND-TREASURE>
+                   <PUTP .O ,P?R-ITID .ID>
+                   <PUTP .O ,P?R-X .X>
+                   <PUTP .O ,P?R-Y .Y>
+                   <MOVE .O <FLOOR-OBJ .F>>
+                   <FORCE-PASSABLE .X .Y>
+                   <RETURN>>)>>
+
+    ;"Ensure grounded treasures on this floor remain reachable."
+    <SET O <FIRST? <FLOOR-OBJ .F>>>
+    <REPEAT ()
+        <COND (<NOT .O> <RETURN>)>
+        <SET NXT <NEXT? .O>>
+        <COND (<AND <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-TREASURE>
+                    <G? <GETP .O ,P?R-X> 0>
+                    <G? <GETP .O ,P?R-Y> 0>>
+               <FORCE-PASSABLE <GETP .O ,P?R-X> <GETP .O ,P?R-Y>>)>
+        <SET O .NXT>>
+
+    <RTRUE>>
+
+;"True if a treasure with ID exists anywhere in the live object graph (floor,
+  inventory, or any trader)."
+
+<ROUTINE TREASURE-EXISTS? (ID)
+    <MAP-CONTENTS (O ,PLAYER-INVENTORY)
+        <COND (<AND <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-TREASURE>
+                    <==? <GETP .O ,P?R-ITID> .ID>>
+               <RTRUE>)>>
+
+    <DO (F 1 ,MAX-FLOORS)
+        <MAP-CONTENTS (O <TRADER-OBJ .F>)
+            <COND (<AND <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-TREASURE>
+                        <==? <GETP .O ,P?R-ITID> .ID>>
+                   <RTRUE>)>>>
+
+    <DO (F 1 ,MAX-FLOORS)
+        <MAP-CONTENTS (O <FLOOR-OBJ .F>)
+            <COND (<AND <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-TREASURE>
+                        <==? <GETP .O ,P?R-ITID> .ID>>
+                   <RTRUE>)>>>
+
+    <RFALSE>>
+
+;"Initializes the display, seeds the RNG, sets initial player state, and
+  enters floor 1.
+
+Returns:
+  T."
+<ROUTINE INIT ()
+    ;"Split the screen so the fixed grid UI stays in the upper window,
+      while messages print (and scroll) in the lower window."
+    <SPLIT ,UPPER-HEIGHT>
+    <SCREEN 1>
+    <UI-LOG-COLOR>
+    <CLEAR -2>
+    ;"Seeded RNG: pick (or accept) a 32-bit seed, then seed the PRNG."
+    <COND (<AND <==? ,SEED-HI 0> <==? ,SEED-LO 0>>
+           <INIT-RNG-RANDOM>
+           <SETG SEED-HI ,RNG-STATE-HI>
+           <SETG SEED-LO ,RNG-STATE-LO>)
+          (ELSE <SEED-RNG-32 ,SEED-HI ,SEED-LO>)>
+    <MAKE-FLOOR-SEEDS>
+    <DO (F 1 ,MAX-FLOORS)
+        <FCLEAR <FLOOR-OBJ .F> ,TOUCHBIT>
+        <FLOOR-SET-UP-STAIRS .F 0 0>
+        <FLOOR-SET-DOWN-STAIRS .F 0 0>
+        <PUTB ,TREASURE-ROOM-CREATED <- .F 1> 0>
+        <PUTB ,PENDING-SPIRIT-SPAWNS <- .F 1> 0>
+        <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-KEY>
+        <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-LOCKEDDOOR>
+        <PUTB ,TREASURE-ROOM-DOOR-X <- .F 1> 0>
+        <PUTB ,TREASURE-ROOM-DOOR-Y <- .F 1> 0>
+        <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>
+        <PUTB ,TREASURE-ROOM-LOOT-X <- .F 1> 0>
+        <PUTB ,TREASURE-ROOM-LOOT-Y <- .F 1> 0>
+        <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> 0>
+        <PUTB ,TREASURE-ROOM-LOOT-ID <- .F 1> 0>
+        <PUTB ,TREASURE-ROOM-LOOT-LVL <- .F 1> 0>
+        <PUTB ,TREASURE-ROOM-LOOT-ENCH <- .F 1> 0>
+        <PUT ,TREASURE-ROOM-LOOT-AMT <- .F 1> 0>>
+    <STATS-RESET>
+    <INV-CLEAR>
+    <INIT-START-WEAPON>
+    <INIT-TREASURES>
+    <INIT-POTIONS>
+    <INIT-INTERIOR-ENTRANCES>
+    <PRECOMPUTE-TREASURE-ROOM-PLANS>
+    <SETG GAME-OVER? <>>
+    <SETG YOU-WIN? <>>
+    <IF-DEBUG
+        <SETG DEBUG-DOUBLEKEY 0>
+        <SETG DEBUG-USED? <>>
+        <SETG DEBUG-OVERLAY-ONCE? <>>
+        <SETG IMMORTAL? <>>
+        <SETG OMNISCIENT? <>>
+        <SETG STAIR-FINDER? <>>>
+    <SETG PLAYER-MAX-HP ,INITIAL-PLAYER-MAX-HP>
+    <SETG PLAYER-HP ,PLAYER-MAX-HP>
+    <SETG TRADER-ON? <>>
+    <SETG TRADER-X 0>
+    <SETG TRADER-Y 0>
+    <SETG CURRENT-FLOOR 1>
+    <ENTER-FLOOR 1 0 0 0>
+    <SETG ORIG-SPAWN-X ,PLAYER-X>
+    <SETG ORIG-SPAWN-Y ,PLAYER-Y>
+    <LOG "Welcome, rascal! Get gold. Don't die. Kill beasts." CR>
+    <DRAW>
+    <RTRUE>>
