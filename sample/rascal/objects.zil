@@ -88,6 +88,7 @@
     (SYNONYM \,DUMMY-NOUN \,DUMMY-NOUN)
     (ADJECTIVE \,DUMMY-ADJ \,DUMMY-ADJ)
     (ARTICLE <>)
+    (PRONOUN IT)
     (ACTION <>)
     (DESCFCN <>)
     (GENERIC <>)
