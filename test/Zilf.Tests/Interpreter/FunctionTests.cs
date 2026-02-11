@@ -447,7 +447,7 @@ namespace Zilf.Tests.Interpreter
             var ctx = new Context();
             TestHelpers.Evaluate(ctx, "<DEFINE SPLICE-ELEMS () <ERROR FOO>>");
             TestHelpers.EvalAndCatch<InterpreterError>(ctx, "[!<SPLICE-ELEMS>]",
-                ex => SpliceElemsCalledRegex().Match(ex.Diagnostic?.StackTrace ?? "").Success);
+                ex => SpliceElemsCalledRegex().IsMatch(ex.Diagnostic?.StackTrace ?? ""));
         }
 
         [GeneratedRegex(@"^\s*in SPLICE-ELEMS called at .*:\d+$")]
