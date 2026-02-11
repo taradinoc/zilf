@@ -144,6 +144,21 @@ Returns:
                       <COND (<L=? .DIST .R> <RETURN .O>)>)>)>
         <SET O <NEXT? .O>>>>
 
+;"Approximates checking whether a monkey can see the player.
+
+Args:
+  O: The monkey.
+
+Returns:
+  T if the monkey is on a revealed tile and it has the same ROOMID as the player's tile."
+<ROUTINE MONKEY-CAN-SEE-PLAYER? (O "AUX" EX EY RID)
+    <SET EX <GETP .O ,P?R-X>>
+    <SET EY <GETP .O ,P?R-Y>>
+    <SET RID <ROOMID-AT .EX .EY>>
+    <AND <G? .RID 0>
+         <==? .RID <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
+         <REVEALED? .EX .EY>>>
+
 <ROUTINE MONKEY-STEAL-ONE (ENEMY "AUX" K PC OC PICK AMT)
     <SET PC 0>
     <SET OC 0>
@@ -677,7 +692,9 @@ Returns:
                   <PUTP .CHOICE ,P?R-X 0>
                   <PUTP .CHOICE ,P?R-Y 0>
                   <MOVE .CHOICE .O>)>)
-          (<AND <ENEMY-CARRIES-BANANA? .O> <L=? <+ .ADX .ADY> ,CHASE-RADIUS>>
+          (<AND <ENEMY-CARRIES-BANANA? .O>
+                <L=? <+ .ADX .ADY> ,CHASE-RADIUS>
+                <MONKEY-CAN-SEE-PLAYER? .O>>
            <FREE-RASCAL-ITEM <ENEMY-CARRIED-ITEM .O>>
            <FSET .O ,TAMEBIT>
            <LOG "The monkey eats the banana and seems to like you." CR>)
