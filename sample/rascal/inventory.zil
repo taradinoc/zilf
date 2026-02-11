@@ -593,7 +593,7 @@ Returns:
            <SET RID <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
            <COND (<G? .RID 0> <SETG CURRENT-ROOM .RID> <REVEAL-ROOM .RID>)>)>>
 
-"Drinks a potion given by color code, applying its effect and handling discovery.
+;"Drinks a potion given by color code, applying its effect and handling discovery.
 
 FLAGS bitmask:
     POTIONFX-FL-LOG: write to the lower window via TELL/LOG
@@ -657,7 +657,7 @@ Returns:
     <COND (<NOT <FIND-ADJACENT-DROP-TILE ,PLAYER-X
                                          ,PLAYER-Y
                                          ,DROPMODE-INVENTORY>>
-           <LOG "There's no room to drop that." CR>
+           <LOG ,NO-ROOM-TO-DROP-THAT CR>
            <RFALSE>)>
     <SET NX ,DROP-CAND-X>
     <SET NY ,DROP-CAND-Y>
@@ -678,7 +678,7 @@ Returns:
                                (ELSE <LOG "You are now unarmed." CR>)>)>
                   <RTRUE>)
                  (ELSE
-                  <LOG "There's no room to drop that." CR>
+                  <LOG ,NO-ROOM-TO-DROP-THAT CR>
                   <RFALSE>)>)
           (<==? .K ,ITEMKIND-POTION>
            <COND (<ADD-POTION-PILE .NX .NY .ID>
@@ -686,7 +686,7 @@ Returns:
                   <INV-REMOVE .SLOT>
                   <RTRUE>)
                  (ELSE
-                  <LOG "There's no room to drop that." CR>
+                  <LOG ,NO-ROOM-TO-DROP-THAT CR>
                   <RFALSE>)>)
           (<==? .K ,ITEMKIND-FOOD>
            <COND (<ADD-FOOD-PILE .NX .NY .ID>
@@ -694,10 +694,20 @@ Returns:
                   <INV-REMOVE .SLOT>
                   <RTRUE>)
                  (ELSE
-                  <LOG "There's no room to drop that." CR>
+                  <LOG ,NO-ROOM-TO-DROP-THAT CR>
+                  <RFALSE>)>)
+          (<==? .K ,ITEMKIND-KEY>
+           <COND (<ADD-KEY-PILE .NX .NY .ID>
+                  <LOG "You drop the " <KEY-NAME .ID> "." CR>
+                  <INV-REMOVE .SLOT>
+                  <RTRUE>)
+                 (ELSE
+                  <LOG ,NO-ROOM-TO-DROP-THAT CR>
                   <RFALSE>)>)
           (ELSE <RFALSE>)>
     <RTRUE>>
+
+<CONSTANT NO-ROOM-TO-DROP-THAT "There's no room to drop that.">
 
 ;"Prompts for an inventory slot and ingests that item if it is consumable.
 
