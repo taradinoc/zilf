@@ -996,7 +996,6 @@ Returns:
     <SCREEN 1>
     <COLOR 1 1>
     <CTCOLOR -1 0>
-    <CLEAR 1>
     <DRAW-HEADER>
     <DRAW-CONTROLS>
     <DRAW-MAP>
