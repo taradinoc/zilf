@@ -649,8 +649,8 @@ the last one, OK?\"" CR>)>)
            <COND (<FSET? ,PRSO ,SOLDBIT>
                   <TELL "The monkey is tied to the organ by a string, but seems happy." CR>)
                  (ELSE <TELL "The monkey is scurrying around your feet. It seems friendly." CR>)>)
-          (<OR <AND <MONKEY? ,PRSO> <VERB? GIVE ASK-ABOUT TELL-ABOUT>>
-               <AND <MONKEY? ,PRSI> <VERB? SGIVE>>>
+          (<OR <AND <MONKEY? ,PRSO> <VERB? SGIVE ASK-ABOUT TELL-ABOUT>>
+               <AND <MONKEY? ,PRSI> <VERB? GIVE>>>
            <TELL ,MONKEY-IGNORES CR>)>>
 
 <ROUTINE MONKEY-GENERIC-FCN (TBL "AUX" MAX O)
