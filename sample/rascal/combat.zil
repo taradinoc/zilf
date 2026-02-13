@@ -46,10 +46,14 @@
         <COND (<AND <G? .T 0> <==? .T .TYPE>> <RETURN .O>)>
         <SET O <NEXT? .O>>>>
 
-<ROUTINE DESPAWN-ENEMY-OBJ (O)
-    <COND (<NOT .O> <RTRUE>)>
-    <FREE-RASCAL-ENEMY .O>
-    <RTRUE>>
+<ROUTINE DESPAWN-ENEMY-OBJ (O "AUX" X Y)
+  <COND (<NOT .O> <RTRUE>)>
+  <SET X <GETP .O ,P?R-X>>
+  <SET Y <GETP .O ,P?R-Y>>
+  <FREE-RASCAL-ENEMY .O>
+  <COND (<AND <G? .X 0> <G? .Y 0> <ENEMY-VISIBLE? .X .Y>>
+       <MARK-DIRTY .X .Y>)>
+  <RTRUE>>
 
 ;"Returns a per-floor scaling bonus for an enemy type.
 
@@ -478,6 +482,8 @@ Returns:
            <SETG HIT-FLASH? T>
            <SETG HIT-FLASH-EX <GETP .O ,P?R-X>>
            <SETG HIT-FLASH-EY <GETP .O ,P?R-Y>>
+          <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+          <MARK-DIRTY ,HIT-FLASH-EX ,HIT-FLASH-EY>
            <LOG "The "
                 <ENEMY-NAME .TYPE>
                 " hits you, dealing "
@@ -591,14 +597,19 @@ Args:
 Returns:
   T if moved; FALSE otherwise."
 
-<ROUTINE TRY-ENEMY-MOVE (I NX NY)
+<ROUTINE TRY-ENEMY-MOVE (I NX NY "AUX" EX EY)
     <COND (<NOT <IN-BOUNDS? .NX .NY>> <RFALSE>)>
     <COND (<NOT <FLOOR? .NX .NY>> <RFALSE>)>
     <COND (<TRADER-AT? .NX .NY> <RFALSE>)>
     <COND (<G? <ENEMY-AT .NX .NY> 0> <RFALSE>)>
     <COND (<AND <==? .NX ,PLAYER-X> <==? .NY ,PLAYER-Y>> <RFALSE>)>
+  <SET EX <GETP .I ,P?R-X>>
+  <SET EY <GETP .I ,P?R-Y>>
     <PUTP .I ,P?R-X .NX>
     <PUTP .I ,P?R-Y .NY>
+      <COND (<AND <G? .EX 0> <G? .EY 0> <ENEMY-VISIBLE? .EX .EY>>
+        <MARK-DIRTY .EX .EY>)>
+      <COND (<ENEMY-VISIBLE? .NX .NY> <MARK-DIRTY .NX .NY>)>
     <RTRUE>>
 
 ;"Attempts to step enemy slot I one tile toward (TX, TY), using the same

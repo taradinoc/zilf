@@ -353,6 +353,7 @@ Returns:
     <ENTER-FLOOR-LOAD-FEATURES .F>
     <PLACE-PENDING-KEYS .F>
     <ENTER-FLOOR-LOAD-STATE-AND-REVEAL .F .FIRST-VISIT?>
+    <SETG FULL-REDRAW? T>
     <RTRUE>>
 
 ;"Object-backed ground item queries"
@@ -857,10 +858,13 @@ Returns a potion object, or 0 if none."
                       <COND (<L=? .DIST .R> <RETURN .O>)>)>)>
         <SET O <NEXT? .O>>>>
 
-<ROUTINE REMOVE-POTION-OBJ (O)
+<ROUTINE REMOVE-POTION-OBJ (O "AUX" X Y)
     <COND (<NOT .O> <RTRUE>)>
+    <SET X <GETP .O ,P?R-X>>
+    <SET Y <GETP .O ,P?R-Y>>
     <REMOVE .O>
     <FREE-RASCAL-ITEM .O>
+    <COND (<AND <G? .X 0> <G? .Y 0>> <MARK-DIRTY .X .Y>)>
     <RTRUE>>
 
 ;"Checks whether the trader NPC is at (X, Y) on the current floor.

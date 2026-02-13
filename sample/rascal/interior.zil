@@ -98,10 +98,12 @@ interior ID."
     <V-LOOK>
     <WRAP-PARSER-MAIN-LOOP>
     <INTERIOR-EXIT-SYNC>
+    <UI-RESET>
     <CLEAR -1>
     <SPLIT ,UPPER-HEIGHT>
     <UI-LOG-COLOR>
     <CLEAR 0>
+    <SETG FULL-REDRAW? T>
     ;"If the player died inside the interior, log the death and don't print leave text or spawn hazards."
     <COND (<L=? ,PLAYER-HP 0> <CHECK-END> <RETURN>)>
     <COND (.LEFT-BEES? <START-BEE-SWARM ,CURRENT-FLOOR .ENTRX .ENTRY>)>

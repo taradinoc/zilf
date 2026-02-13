@@ -176,6 +176,7 @@ Returns:
         <SET C <GETCHAR>>
         <COND (<==? .C !\Q !\q>
                <CLEAR 1>
+               <SETG FULL-REDRAW? T>
                <DRAW>
                <COND (<NOT ,EQUIPPED-WEAPON> <AUTO-EQUIP-WEAPON>)>
                <RTRUE>)>

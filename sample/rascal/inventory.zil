@@ -249,6 +249,7 @@ Returns:
         <PRINTC-REPEAT !\  .W>>
 
     ;"Restore the UI immediately. (Main loop may redraw again; that's fine.)"
+    <SETG FULL-REDRAW? T>
     <DRAW>
 
     .C>
@@ -369,6 +370,7 @@ Returns:
     <SET TOTAL <GETP .O ,P?R-ITAMT>>
     <REMOVE .O>
     <FREE-RASCAL-ITEM .O>
+  <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
     <SETG PLAYER-GOLD <+ ,PLAYER-GOLD .TOTAL>>
     <LOG "You pick up " N .TOTAL " gold pieces." CR>
     <RTRUE>>
@@ -389,6 +391,7 @@ Returns:
            <LOG "You pick up the " <FOOD-NAME .TYPE> "." CR>
            <REMOVE .ANY>
            <FREE-RASCAL-ITEM .ANY>
+          <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
@@ -424,6 +427,7 @@ Returns:
                        CR>)>
            <REMOVE .O>
            <FREE-RASCAL-ITEM .O>
+          <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
@@ -442,6 +446,7 @@ Returns:
              <LOG "You pick up the " <KEY-NAME .LOCKTYPE> "." CR>
              <REMOVE .O>
              <FREE-RASCAL-ITEM .O>
+              <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
              <RTRUE>)
             (ELSE
              <SETG STATS-PACKFULL-PICKUP-BLOCKED
@@ -474,6 +479,7 @@ Returns:
            <COND (<AND <NOT ,EQUIPPED-WEAPON> <G=? <+ ,PLAYER-STR .ENCH> .LVL>>
                   <SETG EQUIPPED-WEAPON .SLOT>
                   <LOG "You wield it." CR>)>
+          <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
@@ -500,6 +506,7 @@ Returns:
     <COND (<INV-TAKE-OBJ .O>
            <STATS-INC-WORD-TABLE ,STATS-TREASURES-PICKED <- .ID 1>>
            <LOG "You pick up the " <TREASURE-NAME .ID> "." CR>
+          <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
@@ -547,6 +554,7 @@ Returns:
            <TELL/LOG .LOG? "Your maximum HP is now " N ,PLAYER-MAX-HP "." CR>)
           (<==? .TYPE ,POTION-HIDING>
            <SETG PLAYER-INVIS-TURNS ,HIDING-POTION-DURATION>
+           <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <TELL/LOG .LOG? "You fade from sight." CR>)
           (<==? .TYPE ,POTION-POISON>
            <SETG PLAYER-HP <- ,PLAYER-HP 3>>
@@ -554,6 +562,7 @@ Returns:
            <CHECK-END>)
           (<==? .TYPE ,POTION-VISION>
            <SETG PLAYER-VISION-TURNS ,VISION-POTION-DURATION>
+           <MARK-ENEMY-TILES>
            <TELL/LOG .LOG? "Your vision sharpens." CR>)
           (<==? .TYPE ,POTION-MOTION>
            <TELL/LOG .LOG? "The world lurches." CR>
@@ -562,6 +571,7 @@ Returns:
                  (ELSE <TELEPORT-PLAYER>)>)
           (<==? .TYPE ,POTION-SHADOW>
            <SETG PLAYER-SHADOW-TURNS ,SHADOW-POTION-DURATION>
+           <MARK-ALL-DIRTY>
            <TELL/LOG .LOG? "A heavy darkness settles over your eyes." CR>)
           (ELSE <TELL/LOG .LOG? "Nothing seems to happen." CR>)>
     <RTRUE>>
@@ -572,23 +582,26 @@ Returns:
            <SETG PLAYER-INVIS-TURNS <- ,PLAYER-INVIS-TURNS 1>>
            <COND (<==? ,PLAYER-INVIS-TURNS ,POTION-TIMER-WARNING-TURNS>
                   <LOG "You begin to reappear." CR>)
-                 (<==? ,PLAYER-INVIS-TURNS 0>
-                  <LOG "You are fully visible again." CR>)>)>
+           (<==? ,PLAYER-INVIS-TURNS 0>
+            <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+            <LOG "You are fully visible again." CR>)>)>
     ;"potion of vision"
     <COND (<G? ,PLAYER-VISION-TURNS 0>
            <SETG PLAYER-VISION-TURNS <- ,PLAYER-VISION-TURNS 1>>
            <COND (<==? ,PLAYER-VISION-TURNS ,POTION-TIMER-WARNING-TURNS>
                   <LOG "Your vision begins to dull." CR>)
-                 (<==? ,PLAYER-VISION-TURNS 0>
-                  <LOG "Your vision returns to normal." CR>)>)>
+           (<==? ,PLAYER-VISION-TURNS 0>
+            <MARK-ALL-DIRTY>
+            <LOG "Your vision returns to normal." CR>)>)>
     ;"potion of shadow"
     <SET SHOLD ,PLAYER-SHADOW-TURNS>
     <COND (<G? ,PLAYER-SHADOW-TURNS 0>
            <SETG PLAYER-SHADOW-TURNS <- ,PLAYER-SHADOW-TURNS 1>>
            <COND (<==? ,PLAYER-SHADOW-TURNS ,POTION-TIMER-WARNING-TURNS>
                   <LOG "The darkness begins to lift." CR>)
-                 (<==? ,PLAYER-SHADOW-TURNS 0>
-                  <LOG "You can see your surroundings again." CR>)>)>
+           (<==? ,PLAYER-SHADOW-TURNS 0>
+            <MARK-ALL-DIRTY>
+            <LOG "You can see your surroundings again." CR>)>)>
     <COND (<AND <G? .SHOLD 0> <L=? ,PLAYER-SHADOW-TURNS 0>>
            <SET RID <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
            <COND (<G? .RID 0> <SETG CURRENT-ROOM .RID> <REVEAL-ROOM .RID>)>)>>

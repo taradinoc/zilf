@@ -174,6 +174,7 @@ Returns:
     <PUTP .SLOT ,P?R-X .X>
     <PUTP .SLOT ,P?R-Y .Y>
     <MOVE .SLOT <FLOOR-OBJ ,CURRENT-FLOOR>>
+    <MARK-DIRTY .X .Y>
     <RTRUE>>
 
 ;"Drops a gold pile of AMT on a random adjacent passable tile near (X, Y).
@@ -195,17 +196,23 @@ Returns:
     <ADD-GOLD-PILE ,PLAYER-X ,PLAYER-Y .AMT>
     <RTRUE>>
 
-<ROUTINE DROP-EXISTING-ITEM-NEAR (ITEM X Y)
+<ROUTINE DROP-EXISTING-ITEM-NEAR (ITEM X Y "AUX" OX OY)
     <COND (<NOT .ITEM> <RTRUE>)>
+    <SET OX <GETP .ITEM ,P?R-X>>
+    <SET OY <GETP .ITEM ,P?R-Y>>
     <REMOVE .ITEM>
     <COND (<FIND-ADJACENT-DROP-TILE .X .Y ,DROPMODE-INVENTORY>
            <PUTP .ITEM ,P?R-X ,DROP-CAND-X>
            <PUTP .ITEM ,P?R-Y ,DROP-CAND-Y>
            <MOVE .ITEM <FLOOR-OBJ ,CURRENT-FLOOR>>
+      <MARK-DIRTY .OX .OY>
+      <MARK-DIRTY ,DROP-CAND-X ,DROP-CAND-Y>
            <RTRUE>)>
     <PUTP .ITEM ,P?R-X ,PLAYER-X>
     <PUTP .ITEM ,P?R-Y ,PLAYER-Y>
     <MOVE .ITEM <FLOOR-OBJ ,CURRENT-FLOOR>>
+    <MARK-DIRTY .OX .OY>
+    <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
     <RTRUE>>
 
 "Weapon operations"
@@ -230,6 +237,7 @@ Returns:
            <PUTP .O ,P?R-X .X>
            <PUTP .O ,P?R-Y .Y>
            <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
+              <MARK-DIRTY .X .Y>
            <RTRUE>)>
     <RFALSE>>
 
@@ -353,6 +361,7 @@ Returns:
            <PUTP .O ,P?R-Y .Y>
            <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
            <SETG STATS-POTIONS-PLACED <+ ,STATS-POTIONS-PLACED 1>>
+              <MARK-DIRTY .X .Y>
            <RTRUE>)>
     <RFALSE>>
 
@@ -380,6 +389,7 @@ Returns:
            <PUTP .O ,P?R-X .X>
            <PUTP .O ,P?R-Y .Y>
            <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
+              <MARK-DIRTY .X .Y>
            <RTRUE>)>
     <RFALSE>>
 
@@ -446,6 +456,7 @@ Returns:
            <PUTP .O ,P?R-X .X>
            <PUTP .O ,P?R-Y .Y>
            <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
+              <MARK-DIRTY .X .Y>
            <RTRUE>)>
     <RFALSE>>
 

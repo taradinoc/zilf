@@ -45,6 +45,13 @@
 <CONSTANT RECOMMENDED-SCRV 30>
 <CONSTANT RECOMMENDED-SCRH 80>
 
+<CONSTANT MAX-DIRTY 2048>
+
+<GLOBAL DIRTY-COUNT 0>
+<GLOBAL DIRTY-X <ITABLE ,MAX-DIRTY (BYTE) 0>>
+<GLOBAL DIRTY-Y <ITABLE ,MAX-DIRTY (BYTE) 0>>
+<GLOBAL FULL-REDRAW? T>
+
 <CONSTANT KEY-F8 140>
 <CONSTANT KEY-F9 141>
 <CONSTANT KEY-F10 142>
@@ -103,7 +110,7 @@
                 <RETURN .I>)>>
         -1>
 
-    <ROUTINE DBG-MOVE-PLAYER-NEAR-BUSKER ("AUX" IDX EX EY NX NY)
+    <ROUTINE DBG-MOVE-PLAYER-NEAR-BUSKER ("AUX" IDX EX EY NX NY OLDX OLDY)
         <SET IDX <DBG-BUSKER-ENTRANCE-IDX ,CURRENT-FLOOR>>
         <COND (<L? .IDX 0> <RFALSE>)>
         <SET EX <GETB ,INTERIOR-ENTRANCE-X .IDX>>
@@ -113,8 +120,11 @@
             <SET NX <+ .EX <DIR8-DX .D>>>
             <SET NY <+ .EY <DIR8-DY .D>>>
             <COND (<DBG-PLAYER-TELEPORT-CANDIDATE? .NX .NY>
+                <SET OLDX ,PLAYER-X>
+                <SET OLDY ,PLAYER-Y>
                 <SETG PLAYER-X .NX>
                 <SETG PLAYER-Y .NY>
+                <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>
                 <AFTER-PLAYER-RELOCATE>
                 <RTRUE>)>>
         <RFALSE>>
@@ -275,22 +285,25 @@ Returns:
 <CONSTANT UI-RGB-MONKEY <RGB 30 26 10>>
 <CONSTANT UI-RGB-SPIRIT <RGB 20 10 28>>
 
-<DEFMAC UI-FG ('FGRGB 'BASICFG)
-  `<COND (,WANT-TCOLOR? <TCOLOR ~.FGRGB 0>) (ELSE <COLOR ~.BASICFG 0>)>>
+<DEFMAC UI-FG ('FGRGB 'BASICFG "OPT" 'ATTR "AUX" HLIGHT)
+    <SET HLIGHT <COND (<ASSIGNED? ATTR> `<HLIGHT ~.ATTR>) (ELSE T)>>
+    `<COND (,WANT-TCOLOR? <TCOLOR ~.FGRGB 0>) (ELSE <COLOR ~.BASICFG 0> ~.HLIGHT)>>
 
-<DEFMAC UI-COL ('FGRGB 'BGRGB 'BASICFG 'BASICBG)
-  `<COND (,WANT-TCOLOR? <TCOLOR ~.FGRGB ~.BGRGB>) (ELSE <COLOR ~.BASICFG ~.BASICBG>)>>
+<DEFMAC UI-COL ('FGRGB 'BGRGB 'BASICFG 'BASICBG "OPT" 'ATTR "AUX" HLIGHT)
+    <SET HLIGHT <COND (<ASSIGNED? ATTR> `<HLIGHT ~.ATTR>) (ELSE T)>>
+    `<COND (,WANT-TCOLOR? <TCOLOR ~.FGRGB ~.BGRGB>) (ELSE <COLOR ~.BASICFG ~.BASICBG> ~.HLIGHT)>>
 
 <DEFMAC UI-LOG-COLOR ()
-  `<COND (,WANT-TCOLOR? <TCOLOR ,UI-RGB-TEXT 0>) (ELSE <COLOR 1 1>)>>
+    `<COND (,WANT-TCOLOR? <TCOLOR ,UI-RGB-TEXT 0>) (ELSE <COLOR 1 1>)>>
 
 <DEFMAC UI-ALERT ()
-  `<COND (,WANT-TCOLOR? <TCOLOR ,UI-RGB-ALERT 0>) (ELSE <COLOR ,ZCOL-RED 0>)>>
+    `<COND (,WANT-TCOLOR? <TCOLOR ,UI-RGB-ALERT 0>) (ELSE <COLOR ,ZCOL-RED 0>)>>
 
 <DEFMAC UI-RESET ()
-  `<COND (,WANT-TCOLOR? <TCOLOR -1 0>) (ELSE <COLOR ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)>>
+    `<COND (,WANT-TCOLOR? <TCOLOR -1 0>) (ELSE <COLOR ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)>>
 
 <ROUTINE APPLY-SPRITE-COLOR (CH)
+    <HLIGHT ,H-NORMAL>
     <COND (<==? .CH ,TILE-PLAYER> <UI-FG ,UI-RGB-PLAYER ,ZCOL-DEFAULT>)
           (<==? .CH ,TILE-WALL>
            <UI-COL ,UI-RGB-WALLFG ,UI-RGB-WALLBG ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)
@@ -301,27 +314,27 @@ Returns:
           (<==? .CH ,TILE-FLOOR> <UI-FG ,UI-RGB-FLOOR ,ZCOL-DEFAULT>)
           (<==? .CH ,TILE-CORRIDOR> <UI-FG ,UI-RGB-CORRIDOR ,ZCOL-DEFAULT>)
           (<==? .CH ,TILE-UNKNOWN> <UI-FG ,UI-RGB-UNKNOWN ,ZCOL-DEFAULT>)
-          (<==? .CH ,TILE-INTERIOR> <UI-FG ,UI-RGB-INTERIOR ,ZCOL-MAGENTA>)
+          (<==? .CH ,TILE-INTERIOR> <UI-FG ,UI-RGB-INTERIOR ,ZCOL-MAGENTA ,H-BOLD>)
           (<==? .CH ,TILE-STAIR-UP ,TILE-STAIR-DOWN>
            <UI-FG ,UI-RGB-STAIRS ,ZCOL-GREEN>)
           (<==? .CH ,TILE-GOLD> <UI-FG ,UI-RGB-GOLD ,ZCOL-GREEN>)
           (<==? .CH ,TILE-KEY> <UI-FG ,UI-RGB-GOLD ,ZCOL-GREEN>)
-          (<==? .CH ,TILE-POTION> <UI-FG ,UI-RGB-POTION ,ZCOL-MAGENTA>)
-          (<==? .CH ,TILE-TREASURE> <UI-FG ,UI-RGB-TREASURE ,ZCOL-CYAN>)
-          (<==? .CH ,TILE-TRADER> <UI-FG ,UI-RGB-TRADER ,ZCOL-CYAN>)
-          (<==? .CH ,TILE-WEAPON> <UI-FG ,UI-RGB-WEAPON ,ZCOL-CYAN>)
+          (<==? .CH ,TILE-POTION> <UI-FG ,UI-RGB-POTION ,ZCOL-MAGENTA ,H-BOLD>)
+          (<==? .CH ,TILE-TREASURE> <UI-FG ,UI-RGB-TREASURE ,ZCOL-CYAN ,H-BOLD>)
+          (<==? .CH ,TILE-TRADER> <UI-FG ,UI-RGB-TRADER ,ZCOL-CYAN ,H-BOLD>)
+          (<==? .CH ,TILE-WEAPON> <UI-FG ,UI-RGB-WEAPON ,ZCOL-CYAN ,H-BOLD>)
           (<==? .CH ,TILE-BANANA ,TILE-CHEESE ,TILE-CARROT>
-           <UI-FG ,UI-RGB-FOOD ,ZCOL-GREEN>)
+           <UI-FG ,UI-RGB-FOOD ,ZCOL-GREEN ,H-BOLD>)
           (<==? .CH ,TILE-GRAPES ,TILE-MUFFIN ,TILE-TURKEY ,TILE-CAVIAR>
-           <UI-FG ,UI-RGB-FOOD ,ZCOL-GREEN>)
-          (<==? .CH ,TILE-GOBLIN> <UI-FG ,UI-RGB-GOBLIN ,ZCOL-GREEN>)
-          (<==? .CH ,TILE-SPHINX> <UI-FG ,UI-RGB-SPHINX ,ZCOL-MAGENTA>)
-          (<==? .CH ,TILE-KRAKEN> <UI-FG ,UI-RGB-KRAKEN ,ZCOL-CYAN>)
-          (<==? .CH ,TILE-DRAGON> <UI-FG ,UI-RGB-DRAGON ,ZCOL-RED>)
-          (<==? .CH ,TILE-WRAITH> <UI-FG ,UI-RGB-WRAITH ,ZCOL-MAGENTA>)
-          (<==? .CH ,TILE-BEES> <UI-FG ,UI-RGB-BEES ,ZCOL-MAGENTA>)
-          (<==? .CH ,TILE-MONKEY> <UI-FG ,UI-RGB-MONKEY ,ZCOL-MAGENTA>)
-          (<==? .CH ,TILE-SPIRIT> <UI-FG ,UI-RGB-SPIRIT ,ZCOL-MAGENTA>)
+           <UI-FG ,UI-RGB-FOOD ,ZCOL-GREEN ,H-BOLD>)
+          (<==? .CH ,TILE-GOBLIN> <UI-FG ,UI-RGB-GOBLIN ,ZCOL-GREEN ,H-BOLD>)
+          (<==? .CH ,TILE-SPHINX> <UI-FG ,UI-RGB-SPHINX ,ZCOL-MAGENTA ,H-BOLD>)
+          (<==? .CH ,TILE-KRAKEN> <UI-FG ,UI-RGB-KRAKEN ,ZCOL-CYAN ,H-BOLD>)
+          (<==? .CH ,TILE-DRAGON> <UI-FG ,UI-RGB-DRAGON ,ZCOL-RED ,H-BOLD>)
+          (<==? .CH ,TILE-WRAITH> <UI-FG ,UI-RGB-WRAITH ,ZCOL-MAGENTA ,H-BOLD>)
+          (<==? .CH ,TILE-BEES> <UI-FG ,UI-RGB-BEES ,ZCOL-MAGENTA ,H-BOLD>)
+          (<==? .CH ,TILE-MONKEY> <UI-FG ,UI-RGB-MONKEY ,ZCOL-MAGENTA ,H-BOLD>)
+          (<==? .CH ,TILE-SPIRIT> <UI-FG ,UI-RGB-SPIRIT ,ZCOL-MAGENTA ,H-BOLD>)
           (ELSE <UI-RESET>)>
     <RTRUE>>
 
@@ -438,9 +451,14 @@ Returns:
     <CURSET 20 .COL>
     <TELL "                         [Press any key to continue.]                         ">
     <SET C <GETCHAR>>
-    <COND (<==? .C 254 ;"mouse click"> <AGAIN>)
-          (.IN-GAME? <CLEAR 1>)
-          (ELSE <CLEAR -1>)>>
+        <COND (<==? .C 254 ;"mouse click"> <AGAIN>)
+            (.IN-GAME?
+             <UI-RESET>
+             <CLEAR 1>
+             <SETG FULL-REDRAW? T>)
+            (ELSE
+             <UI-RESET>
+             <CLEAR -1>)>>
 
 ;"Prompts the player to enter a numeric RNG seed for the upcoming game.
 
@@ -593,6 +611,8 @@ Returns:
 
 <ROUTINE RASCAL-MAIN-LOOP ("AUX" C)
     <REPEAT ()
+        <UI-RESET>
+        <CURSET ,MAP-H <+ ,MAP-W 1>>
         <SET C <GETCHAR>>
         <COND (,GAME-OVER?
                ;"After game over, Q exits and R restarts; ignore everything else."
@@ -675,6 +695,7 @@ Returns:
         <PRINTC-REPEAT !\  .W>>
 
     ;"Restore the UI immediately. (Main loop may redraw again; that's fine.)"
+    <SETG FULL-REDRAW? T>
     <DRAW>
 
     .C>
@@ -773,7 +794,7 @@ Returns:
     T if the input consumes the turn without advancing enemies (stairs/UI-only);
     FALSE if enemies should take a turn afterwards (movement/combat/wait)."
 
-<ROUTINE HANDLE-INPUT (C "AUX" DX DY NX NY ENTERTR)
+<ROUTINE HANDLE-INPUT (C "AUX" DX DY NX NY ENTERTR OLDX OLDY)
     <SET DX 0>
     <SET DY 0>
     <IF-DEBUG
@@ -867,7 +888,11 @@ Returns:
            <SETG STATS-WAITS <+ ,STATS-WAITS 1>>
            <RFALSE>)
           (<==? .C !\C !\c>
-           <COND (,HAS-TCOLOR? <SETG WANT-TCOLOR? <NOT ,WANT-TCOLOR?>>)>
+           <COND (,HAS-TCOLOR?
+              <SETG WANT-TCOLOR? <NOT ,WANT-TCOLOR?>>
+              <UI-RESET>
+              <CLEAR 1>
+              <SETG FULL-REDRAW? T>)>
            <RTRUE>)
           (ELSE <RETURN>)>
 
@@ -882,23 +907,32 @@ Returns:
            <SETG STATS-WALL-BUMPS <+ ,STATS-WALL-BUMPS 1>>
            <RETURN>)>
     <COND (<G? <ENEMY-AT .NX .NY> 0>
-           <COND (<AND <==? <GETP <ENEMY-AT .NX .NY> ,P?R-ETYPE> ,ETYPE-MONKEY>
+            <COND (<AND <==? <GETP <ENEMY-AT .NX .NY> ,P?R-ETYPE> ,ETYPE-MONKEY>
                        <FSET? <ENEMY-AT .NX .NY> ,TAMEBIT>>
                   ;"Swap places with a tamed monkey instead of attacking."
+                <SET OLDX ,PLAYER-X>
+                <SET OLDY ,PLAYER-Y>
                   <PUTP <ENEMY-AT .NX .NY> ,P?R-X ,PLAYER-X>
                   <PUTP <ENEMY-AT .NX .NY> ,P?R-Y ,PLAYER-Y>
                   <SETG PLAYER-X .NX>
                   <SETG PLAYER-Y .NY>
+                <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>
                   <AFTER-PLAYER-RELOCATE>
                   <RFALSE>)
                  (ELSE
                   <PLAYER-ATTACK <ENEMY-AT .NX .NY>>
                   <COND (<L=? <ENEMY-AT .NX .NY> 0>
-                         <SETG PLAYER-X .NX>
-                         <SETG PLAYER-Y .NY>)
+                    <SET OLDX ,PLAYER-X>
+                    <SET OLDY ,PLAYER-Y>
+                    <SETG PLAYER-X .NX>
+                    <SETG PLAYER-Y .NY>
+                    <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>)
                         (ELSE <RFALSE>)>)>)>
-    <SETG PLAYER-X .NX>
-    <SETG PLAYER-Y .NY>
+        <SET OLDX ,PLAYER-X>
+        <SET OLDY ,PLAYER-Y>
+        <SETG PLAYER-X .NX>
+        <SETG PLAYER-Y .NY>
+        <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>
     <AFTER-PLAYER-RELOCATE>
     <COND (<OR <N==? .DX 0> <N==? .DY 0>>
            <SETG STATS-MOVES <+ ,STATS-MOVES 1>>
@@ -915,11 +949,53 @@ Returns:
     <COND (<INV-CONSUME-KEY .LOCKTYPE>
            <FSET .DOOR ,OPENBIT>
            <LOG "Unlocked." CR>
+           <MARK-DIRTY .X .Y>
            <RTRUE>)>
     <LOG "The locked door requires a " <KEY-NAME .LOCKTYPE> "." CR>
     <RFALSE>>
 
 "Rendering"
+
+<ROUTINE MARK-DIRTY (X Y "AUX" IDX)
+    <COND (<NOT <IN-BOUNDS? .X .Y>> <RFALSE>)>
+    <COND (<G? ,DIRTY-COUNT <- ,MAX-DIRTY 1>>
+           <SETG FULL-REDRAW? T>
+           <RFALSE>)>
+    <SET IDX ,DIRTY-COUNT>
+    <PUTB ,DIRTY-X .IDX .X>
+    <PUTB ,DIRTY-Y .IDX .Y>
+    <SETG DIRTY-COUNT <+ ,DIRTY-COUNT 1>>
+    <RTRUE>>
+
+<ROUTINE MARK-DIRTY-3X3 (X Y)
+    <DO (DY -1 1) <DO (DX -1 1) <MARK-DIRTY <+ .X .DX> <+ .Y .DY>>>>>
+
+<ROUTINE MARK-ALL-DIRTY ()
+    <SETG FULL-REDRAW? T>
+    <SETG DIRTY-COUNT 0>
+    <RTRUE>>
+
+<ROUTINE MARK-ENEMY-TILES ("AUX" O TYPE HP X Y)
+    <SET O <FIRST? ,CURRENT-FLOOR-OBJ>>
+    <REPEAT ()
+        <COND (<NOT .O> <RETURN>)>
+        <SET TYPE <GETP .O ,P?R-ETYPE>>
+        <SET HP <GETP .O ,P?R-EHP>>
+        <COND (<AND <G? .TYPE 0> <G? .HP 0>>
+               <SET X <GETP .O ,P?R-X>>
+               <SET Y <GETP .O ,P?R-Y>>
+               <COND (<AND <G? .X 0> <G? .Y 0>>
+                      <MARK-DIRTY .X .Y>)>)>
+        <SET O <NEXT? .O>>>>
+
+<ROUTINE MARK-PLAYER-MOVE (OX OY NX NY)
+    <COND (<G? ,PLAYER-SHADOW-TURNS 0>
+           <MARK-DIRTY-3X3 .OX .OY>
+           <MARK-DIRTY-3X3 .NX .NY>)
+          (ELSE
+           <MARK-DIRTY .OX .OY>
+           <MARK-DIRTY .NX .NY>)>
+    <RTRUE>>
 
 ;"Writes a one-line status summary.
 
@@ -999,12 +1075,21 @@ Returns:
     <CTCOLOR -1 0>
     <DRAW-HEADER>
     <DRAW-CONTROLS>
-    <DRAW-MAP>
+    <COND (,FULL-REDRAW?
+           <DRAW-MAP>
+           <SETG FULL-REDRAW? <>>
+           <SETG DIRTY-COUNT 0>)
+          (<G? ,DIRTY-COUNT 0>
+           <DRAW-MAP-DIRTY>
+           <SETG DIRTY-COUNT 0>)>
     <IF-DEBUG
         <COND (,DEBUG-OVERLAY-ONCE?
                <SETG DEBUG-OVERLAY-ONCE? <>>
-               <DRAW-DEBUG-OVERLAY>)>>
+               <DRAW-DEBUG-OVERLAY>
+               <MARK-ALL-DIRTY>)>>
     <COND (,HIT-FLASH?
+           <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <MARK-DIRTY ,HIT-FLASH-EX ,HIT-FLASH-EY>
            <SETG HIT-FLASH? <>>
            <SETG HIT-FLASH-EX 0>
            <SETG HIT-FLASH-EY 0>)>>
@@ -1072,44 +1157,61 @@ Returns:
 
 ;"Draws the visible map area (MAP-H rows by MAP-W columns)."
 
-<ROUTINE DRAW-MAP ("AUX" X Y ROW COL SPR)
+<ROUTINE DRAW-MAP ("AUX" X Y)
     <SET Y 1>
     <REPEAT ()
         <COND (<G? .Y ,MAP-H> <RETURN>)>
-        <SET ROW <+ ,MAP-ROW <- .Y 1>>>
         <SET X 1>
         <REPEAT ()
             <COND (<G? .X ,MAP-W> <SET Y <+ .Y 1>> <RETURN>)>
-            <SET COL <+ ,MAP-COL <- .X 1>>>
-            <CURSET .ROW .COL>
-            <SET SPR <SPRITE .X .Y>>
-            <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>>
-                   <COND (,HIT-FLASH? <HLIGHT ,H-INVERSE>)>
-                   <COND (<G? ,PLAYER-INVIS-TURNS 0>
-                          <UI-FG ,UI-RGB-PLAYER-INVIS ,ZCOL-CYAN>
-                          <PRINTC .SPR>
-                          <UI-RESET>)
-                         (ELSE
-                          <APPLY-SPRITE-COLOR .SPR>
-                          <PRINTC .SPR>)>
-                   <COND (,HIT-FLASH? <HLIGHT ,H-NORMAL>)>)
-                  (<AND <G? ,PLAYER-VISION-TURNS 0> <G? <ENEMY-AT .X .Y> 0>>
-                   <UI-ALERT>
-                   <PRINTC .SPR>
-                   <UI-RESET>)
-                  (<AND ,HIT-FLASH?
-                        <==? .X ,HIT-FLASH-EX>
-                        <==? .Y ,HIT-FLASH-EY>
-                        <G? <ENEMY-AT .X .Y> 0>>
-                   <UI-ALERT>
-                   <HLIGHT ,H-INVERSE>
-                   <PRINTC .SPR>
-                   <HLIGHT ,H-NORMAL>
-                   <UI-RESET>)
-                  (ELSE
-                   <APPLY-SPRITE-COLOR .SPR>
-                   <PRINTC .SPR>)>
+         <DRAW-MAP-TILE .X .Y>
             <SET X <+ .X 1>>>>>
+
+<ROUTINE DRAW-MAP-DIRTY ("AUX" MAX X Y ROW COL)
+    <SET MAX <- ,DIRTY-COUNT 1>>
+    <DO (I 0 .MAX)
+        <SET X <GETB ,DIRTY-X .I>>
+        <SET Y <GETB ,DIRTY-Y .I>>
+        <COND (<AND <G? .X 0> <G? .Y 0>> <DRAW-MAP-TILE .X .Y>)>>
+    <SET ROW <+ ,MAP-ROW <- ,MAP-H 1>>>
+    <SET COL <+ ,MAP-COL <- ,MAP-W 1>>>
+    <CURSET .ROW <+ .COL 1>>
+    <RTRUE>>
+
+<ROUTINE DRAW-MAP-TILE (X Y "AUX" ROW COL SPR)
+    <SET ROW <+ ,MAP-ROW <- .Y 1>>>
+    <SET COL <+ ,MAP-COL <- .X 1>>>
+    <CURSET .ROW .COL>
+    <SET SPR <SPRITE .X .Y>>
+    <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>>
+           <COND (,HIT-FLASH? <HLIGHT ,H-INVERSE>)>
+           <COND (<G? ,PLAYER-INVIS-TURNS 0>
+                  <UI-FG ,UI-RGB-PLAYER-INVIS ,ZCOL-CYAN>
+                  <PRINTC .SPR>
+                  <UI-RESET>)
+                 (ELSE
+                  <APPLY-SPRITE-COLOR .SPR>
+                  <PRINTC .SPR>
+                  <HLIGHT ,H-NORMAL>)>
+           <COND (,HIT-FLASH? <HLIGHT ,H-NORMAL>)>)
+          (<AND <G? ,PLAYER-VISION-TURNS 0> <G? <ENEMY-AT .X .Y> 0>>
+           <UI-ALERT>
+           <PRINTC .SPR>
+           <UI-RESET>)
+          (<AND ,HIT-FLASH?
+                <==? .X ,HIT-FLASH-EX>
+                <==? .Y ,HIT-FLASH-EY>
+                <G? <ENEMY-AT .X .Y> 0>>
+           <UI-ALERT>
+           <HLIGHT ,H-INVERSE>
+           <PRINTC .SPR>
+           <HLIGHT ,H-NORMAL>
+           <UI-RESET>)
+          (ELSE
+           <APPLY-SPRITE-COLOR .SPR>
+           <PRINTC .SPR>
+           <HLIGHT ,H-NORMAL>)>
+    <RTRUE>>
 
 ;"Returns true if (X, Y) is within the player's shadow-limited vision.
 
@@ -1157,3 +1259,13 @@ Returns:
           (<AND <==? .T ,TILE-DOOR> <LOCKED-DOOR-CLOSED-AT? .X .Y>>
            ,TILE-LOCKEDDOOR)
           (ELSE .T)>>
+
+<ROUTINE ENEMY-VISIBLE? (X Y)
+    <COND (<G? ,PLAYER-VISION-TURNS 0> <RTRUE>)>
+    <IF-DEBUG
+        <COND (,OMNISCIENT? <RTRUE>)>
+        <COND (,DEBUG-OVERLAY-ONCE? <RTRUE>)>>
+    <COND (<G? ,PLAYER-SHADOW-TURNS 0>
+           <COND (<NOT <SHADOW-VISIBLE? .X .Y>> <RFALSE>)>)>
+    <COND (<REVEALED? .X .Y> <RTRUE>)
+          (ELSE <RFALSE>)>>

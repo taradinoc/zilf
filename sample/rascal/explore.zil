@@ -198,7 +198,9 @@ Returns:
 
 <ROUTINE REVEAL-TILE (X Y)
     <COND (<NOT <IN-BOUNDS? .X .Y>> <RFALSE>)>
-    <REVEAL-IDX <MAP-INDEX .X .Y>>
+  <COND (<REVEALED? .X .Y> <RTRUE>)>
+  <REVEAL-IDX <MAP-INDEX .X .Y>>
+  <MARK-DIRTY .X .Y>
     <RTRUE>>
 
 ;"Reveals a 3x3 square centered on (X, Y).
@@ -261,11 +263,13 @@ Returns:
         <REPEAT ()
             <COND (<G? .X ,MAP-W> <SET Y <+ .Y 1>> <RETURN>)>
             <SET IDX <MAP-INDEX .X .Y>>
-            <COND (<==? <GETB ,ROOMIDS .IDX> .RID>
+                 <COND (<AND <==? <GETB ,ROOMIDS .IDX> .RID>
+                   <NOT <REVEALED? .X .Y>>>
                    <REVEAL-IDX .IDX>
+                   <MARK-DIRTY .X .Y>
                    ;"If the room contains stairs whose ROOMIDS=0 (e.g. forced
-			         passable), they should still become visible when the room is
-			         revealed. Reveal any adjacent stair tiles."
+          		         passable), they should still become visible when the room is
+          		         revealed. Reveal any adjacent stair tiles."
                    <REVEAL-STAIRS-NEAR .X .Y>)>
             <SET X <+ .X 1>>>>>
 
@@ -281,7 +285,7 @@ Args:
 
 Returns:
   T."
-<ROUTINE TELEPORT-PLAYER ("AUX" TRIES X Y)
+<ROUTINE TELEPORT-PLAYER ("AUX" TRIES X Y OLDX OLDY)
     <SET TRIES 0>
     <REPEAT ()
         <SET TRIES <+ .TRIES 1>>
@@ -300,8 +304,11 @@ Returns:
                <AGAIN>)>
         <COND (<TRADER-AT? .X .Y> <AGAIN>)>
         <COND (<G? <ENEMY-AT .X .Y> 0> <AGAIN>)>
+        <SET OLDX ,PLAYER-X>
+        <SET OLDY ,PLAYER-Y>
         <SETG PLAYER-X .X>
         <SETG PLAYER-Y .Y>
+        <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>
         <AFTER-PLAYER-RELOCATE>
         <RETURN T>>>
 
@@ -313,7 +320,7 @@ Returns:
 
     Returns:
     T."
-    <ROUTINE STAIR-FINDER-TELEPORT (DOWN? "AUX" X Y TILE RID)
+    <ROUTINE STAIR-FINDER-TELEPORT (DOWN? "AUX" X Y TILE RID OLDX OLDY)
         <SETG DEBUG-USED? T>
         <COND (.DOWN?
         <SET X <FLOOR-DOWN-X ,CURRENT-FLOOR>>
@@ -343,8 +350,11 @@ Returns:
             " E=" N <TILE-AT <+ .X 1> .Y> CR>
         <COND (<N==? <TILE-AT .X .Y> .TILE>
             <LOG "Stair finder: WARNING: expected stair tile at (" N .X "," N .Y ") but map has tile " N <TILE-AT .X .Y> "." CR>)>
+        <SET OLDX ,PLAYER-X>
+        <SET OLDY ,PLAYER-Y>
         <SETG PLAYER-X .X>
         <SETG PLAYER-Y .Y>
+        <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>
         <AFTER-PLAYER-RELOCATE>
         <LOG "Stair finder: teleported to (" N .X "," N .Y ")." CR>
         <RTRUE>>>
