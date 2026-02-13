@@ -204,14 +204,21 @@ Returns:
 
 ;"Initialization screens"
 
-<GLOBAL HAS-TCOLOR? <>>
-<GLOBAL WANT-TCOLOR? <>>
+<DEFMAC HAS-TCOLOR? ()
+    ;"Check for Standard 1.1, which provides the TCOLOR opcode"
+    '<G=? <LOWCORE STDREV> #16 0101>>
+<DEFMAC HAS-COLOR? ()
+    ;"Check bit 0 of Flags 1"
+    '<BTST <LOWCORE ZVERSION> 1>>
+
+<CONSTANT COLMODE-TCOLOR 1>
+<CONSTANT COLMODE-COLOR 2>
+<CONSTANT COLMODE-DEFAULT 3>
+
+<GLOBAL COLOR-MODE ,COLMODE-DEFAULT>
 
 <ROUTINE CHECK-SCREEN ()
-    ;"Check for Standard 1.1, which provides the TCOLOR opcode"
-    <COND (<G=? <LOWCORE STDREV> #16 0101>
-           <SETG HAS-TCOLOR? T>
-           <SETG WANT-TCOLOR? T>)>
+    <SET-DEFAULT-COLOR-MODE>
     ;"Check screen dimensions"
     <COND (<OR <L? <LOWCORE SCRH> ,RECOMMENDED-SCRH>
                <L? <LOWCORE SCRV> ,RECOMMENDED-SCRV>>
@@ -222,20 +229,47 @@ Returns:
                  "[Press any key to continue.]" CR>
            <GETCHAR>)>>
 
+<ROUTINE SET-DEFAULT-COLOR-MODE ()
+    <COND (<NOT <HAS-COLOR?>> <SETG COLOR-MODE ,COLMODE-DEFAULT>)
+          (<HAS-TCOLOR?> <SETG COLOR-MODE ,COLMODE-TCOLOR>)
+          (ELSE <SETG COLOR-MODE ,COLMODE-COLOR>)>>
+
+<ROUTINE COLOR-MODE-SUPPORTED? (MODE)
+    <COND (<==? .MODE ,COLMODE-TCOLOR> <AND <HAS-TCOLOR?> <HAS-COLOR?>>)
+          (<==? .MODE ,COLMODE-COLOR> <HAS-COLOR?>)
+          (ELSE T)>>
+
+<ROUTINE NEXT-COLOR-MODE ("AUX" MODE)
+    <SET MODE ,COLOR-MODE>
+    <REPEAT ()
+        <SET MODE <COND (<==? .MODE ,COLMODE-TCOLOR> ,COLMODE-COLOR)
+                         (<==? .MODE ,COLMODE-COLOR> ,COLMODE-DEFAULT)
+                         (ELSE ,COLMODE-TCOLOR)>>
+        <COND (<COLOR-MODE-SUPPORTED? .MODE>
+               <SETG COLOR-MODE .MODE>
+               <RETURN .MODE>)>>>
+
 <ADD-TELL-TOKENS RSERIAL <PRINT-RSERIAL>>
 
 <ROUTINE PRINT-RSERIAL ()
     <TELL N ,RELEASEID !\/>
     <LOWCORE-TABLE SERIAL 6 PRINTC>>
 
+;"Changes the colors (using 15-bit RGB) if ,COLMODE-TCOLOR is selected."
 <DEFMAC CTCOLOR ('FG 'BG)
-    `<COND (,WANT-TCOLOR? <TCOLOR ~.FG ~.BG>)>>
+    `<COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR>
+            <TCOLOR ~.FG ~.BG>)>>
 
 <DEFMAC RGB (R G B)
     #DECL ((R G B) FIX)
     <+ .R <* .G 32> <* .B 32 32>>>
 
-;"UI colors (Brogue-ish). Use TCOLOR when available; fall back to COLOR."
+;"Changes the colors (using the Z-machine palette) if ,COLMODE-COLOR is selected."
+<DEFMAC CCOLOR ('FG 'BG)
+    `<COND (<==? ,COLOR-MODE ,COLMODE-COLOR>
+            <COLOR ~.FG ~.BG>)>>
+
+;"UI colors (Brogue-ish). Use TCOLOR/COLOR when enabled; otherwise defaults."
 
 <CONSTANT ZCOL-DEFAULT 1>
 <CONSTANT ZCOL-BLACK 2>
@@ -287,20 +321,38 @@ Returns:
 
 <DEFMAC UI-FG ('FGRGB 'BASICFG "OPT" 'ATTR "AUX" HLIGHT)
     <SET HLIGHT <COND (<ASSIGNED? ATTR> `<HLIGHT ~.ATTR>) (ELSE T)>>
-    `<COND (,WANT-TCOLOR? <TCOLOR ~.FGRGB 0>) (ELSE <COLOR ~.BASICFG 0> ~.HLIGHT)>>
+    `<COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR>
+            <TCOLOR ~.FGRGB 0>)
+           (<==? ,COLOR-MODE ,COLMODE-COLOR>
+            <COLOR ~.BASICFG 0> ~.HLIGHT)
+           (ELSE ~.HLIGHT)>>
 
 <DEFMAC UI-COL ('FGRGB 'BGRGB 'BASICFG 'BASICBG "OPT" 'ATTR "AUX" HLIGHT)
     <SET HLIGHT <COND (<ASSIGNED? ATTR> `<HLIGHT ~.ATTR>) (ELSE T)>>
-    `<COND (,WANT-TCOLOR? <TCOLOR ~.FGRGB ~.BGRGB>) (ELSE <COLOR ~.BASICFG ~.BASICBG> ~.HLIGHT)>>
+    `<COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR>
+            <TCOLOR ~.FGRGB ~.BGRGB>)
+           (<==? ,COLOR-MODE ,COLMODE-COLOR>
+            <COLOR ~.BASICFG ~.BASICBG> ~.HLIGHT)
+           (ELSE ~.HLIGHT)>>
 
 <DEFMAC UI-LOG-COLOR ()
-    `<COND (,WANT-TCOLOR? <TCOLOR ,UI-RGB-TEXT 0>) (ELSE <COLOR 1 1>)>>
+    `<COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR>
+            <TCOLOR ,UI-RGB-TEXT 0>)
+           (ELSE <COLOR 1 1>)>>
 
 <DEFMAC UI-ALERT ()
-    `<COND (,WANT-TCOLOR? <TCOLOR ,UI-RGB-ALERT 0>) (ELSE <COLOR ,ZCOL-RED 0>)>>
+    `<COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR>
+            <TCOLOR ,UI-RGB-ALERT 0>)
+           (<==? ,COLOR-MODE ,COLMODE-COLOR>
+            <COLOR ,ZCOL-RED 0>)
+           (ELSE <COLOR 1 1>)>>
 
 <DEFMAC UI-RESET ()
-    `<COND (,WANT-TCOLOR? <TCOLOR -1 0>) (ELSE <COLOR ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)>>
+    `<COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR>
+            <TCOLOR -1 0>)
+           (<==? ,COLOR-MODE ,COLMODE-COLOR>
+            <COLOR ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)
+           (ELSE <COLOR 1 1>)>>
 
 <ROUTINE APPLY-SPRITE-COLOR (CH)
     <HLIGHT ,H-NORMAL>
@@ -341,11 +393,12 @@ Returns:
 <ROUTINE SPLASH ("AUX" COL C)
     <SPLIT <LOWCORE SCRV>>
     <SCREEN 1>
-    <COND (,WANT-TCOLOR? <TCOLOR -1 0>) (ELSE <COLOR 1 1>)>
+    <UI-RESET>
     <CLEAR -2>
     <SET COL </ <- <LOWCORE SCRH> 58> 2>>
     <CURSET 5 .COL>
     <CTCOLOR <RGB 30 6 6> 0>
+    <CCOLOR 3 0>    ;"red"
     <TELL "@@@@@@@    @@@@@@    @@@@@@    @@@@@@@   @@@@@@   @@@     ">
     <CURSET 6 .COL>
     <CTCOLOR <RGB 27 6 8> 0>
@@ -358,6 +411,7 @@ Returns:
     <TELL "!@!  @!@  !@!  @!@  !@!       !@!       !@!  @!@  !@!     ">
     <CURSET 9 .COL>
     <CTCOLOR <RGB 19 8 14> 0>
+    <CCOLOR 7 0>    ;"magenta"
     <TELL "@!@!!@!   @!@!@!@!  !!@@!!    !@!       @!@!@!@!  @!!     ">
     <CURSET 10 .COL>
     <CTCOLOR <RGB 17 8 17> 0>
@@ -367,6 +421,7 @@ Returns:
     <TELL "!!: :!!   !!:  !!!       !:!  :!!       !!:  !!!  !!:     ">
     <CURSET 12 .COL>
     <CTCOLOR <RGB 11 9 21> 0>
+    <CCOLOR 8 0>    ;"cyan"
     <TELL ":!:  !:!  :!:  !:!      !:!   :!:       :!:  !:!   :!:    ">
     <CURSET 13 .COL>
     <CTCOLOR <RGB 9 10 23> 0>
@@ -376,6 +431,7 @@ Returns:
     <TELL " :   : :   :   : :  :: : :     :: :: :   :   : :  : :: : :">
 
     <CTCOLOR <RGB 22 22 22> 0>
+    <CCOLOR 1 0>
     <IF-DEBUG
         <CURSET 16 .COL>
         <TELL "                       DEBUG BUILD                        ">>
@@ -384,9 +440,13 @@ Returns:
           %<STRING " (" ,ZIL-VERSION ") by Tara McGrew">>
 
     <CTCOLOR <RGB 31 31 31> 0>
-    <COND (,HAS-TCOLOR?
+    <COND (<OR <HAS-TCOLOR?> <HAS-COLOR?>>
            <CURSET 19 .COL>
-           <TELL "               Press C to toggle color mode               ">)>
+           <TELL "               Press C to change color mode (currently ">
+           <COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR> <TELL "true">)
+                 (<==? ,COLOR-MODE ,COLMODE-COLOR> <TELL "classic">)
+                 (ELSE <TELL "no">)>
+           <TELL " color)">)>
     <CURSET 20 .COL>
     <TELL "               Press I for instructions                   ">
     <CURSET 21 .COL>
@@ -398,7 +458,9 @@ Returns:
            <INSTRUCTIONS>
            <AGAIN>)
           (<==? .C !\S !\s> <COND (<NOT <INPUT-SEED>> <AGAIN>)>)
-          (<==? .C !\C !\c> <COND (,HAS-TCOLOR? <SETG WANT-TCOLOR? <NOT ,WANT-TCOLOR?>>)> <AGAIN>)
+          (<==? .C !\C !\c>
+           <COND (<OR <HAS-TCOLOR?> <HAS-COLOR?>> <NEXT-COLOR-MODE>)>
+           <AGAIN>)
           (<==? .C 254 ;"mouse click"> <AGAIN>)
           (ELSE <CLEAR -1>)>>
 
@@ -888,11 +950,11 @@ Returns:
            <SETG STATS-WAITS <+ ,STATS-WAITS 1>>
            <RFALSE>)
           (<==? .C !\C !\c>
-           <COND (,HAS-TCOLOR?
-              <SETG WANT-TCOLOR? <NOT ,WANT-TCOLOR?>>
-              <UI-RESET>
-              <CLEAR 1>
-              <SETG FULL-REDRAW? T>)>
+           <COND (<OR <HAS-TCOLOR?> <HAS-COLOR?>>
+                  <NEXT-COLOR-MODE>
+                  <UI-RESET>
+                  <CLEAR 1>
+                  <SETG FULL-REDRAW? T>)>
            <RTRUE>)
           (ELSE <RETURN>)>
 
