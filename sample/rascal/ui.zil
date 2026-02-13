@@ -933,6 +933,7 @@ Returns:
 <ROUTINE DRAW-STATUS-LINE (ROW COL MODE)
     <CURSET .ROW .COL>
     <UI-RESET>
+    <ERASE 1>
     <COND (<==? .MODE 1>
            <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
            <TELL "gold=">

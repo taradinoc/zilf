@@ -175,6 +175,7 @@ Returns:
         <DRAW-TRADER-SHOP>
         <SET C <GETCHAR>>
         <COND (<==? .C !\Q !\q>
+               <CLEAR 1>
                <DRAW>
                <COND (<NOT ,EQUIPPED-WEAPON> <AUTO-EQUIP-WEAPON>)>
                <RTRUE>)>
