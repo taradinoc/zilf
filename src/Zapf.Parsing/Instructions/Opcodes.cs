@@ -38,6 +38,8 @@ namespace Zapf.Parsing.Instructions
         public const ushort Btst = 7;
         [ZOp("BUFOUT", "buffer_mode", 4, 6, 0)]
         public const ushort Bufout = 242;
+        [ZOp("BUFSCR", "buffer_screen", 6, 6, ZOpFlags.Store)]
+        public const ushort Bufscr = 285;
         [ZOp("CALL", "call_vs", 1, 6, ZOpFlags.Store | ZOpFlags.Call, WhenExtra = "XCALL")]
         public const ushort Call = 224;
         [ZOp("CALL1", "call_1s", 4, 6, ZOpFlags.Store | ZOpFlags.Call)]
