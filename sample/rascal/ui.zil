@@ -443,10 +443,10 @@ Returns:
     <COND (<OR <HAS-TCOLOR?> <HAS-COLOR?>>
            <CURSET 19 .COL>
            <TELL "               Press C to change color mode (currently ">
-           <COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR> <TELL "true">)
-                 (<==? ,COLOR-MODE ,COLMODE-COLOR> <TELL "classic">)
-                 (ELSE <TELL "no">)>
-           <TELL " color)">)>
+           <COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR> <TCOLOR ,UI-RGB-ORANGE ,UI-RGB-BROWNBG> <TELL "true color"> <TCOLOR <RGB 31 31 31> 0>)
+                 (<==? ,COLOR-MODE ,COLMODE-COLOR> <COLOR 5 6> <TELL "classic color"> <COLOR 1 1>)
+                 (ELSE <TELL "no color">)>
+           <TELL !\)>)>
     <CURSET 20 .COL>
     <TELL "               Press I for instructions                   ">
     <CURSET 21 .COL>
