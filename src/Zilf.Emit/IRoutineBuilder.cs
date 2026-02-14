@@ -109,10 +109,10 @@ namespace Zilf.Emit
         /// </summary>
         bool HasExtendedSave { get; }
 
-        void EmitSave(IOperand table, IOperand size, IOperand name,
+        void EmitSave(IOperand table, IOperand size, IOperand name, IOperand? prompt,
             IVariable result);
 
-        void EmitRestore(IOperand table, IOperand size, IOperand name,
+        void EmitRestore(IOperand table, IOperand size, IOperand name, IOperand? prompt,
             IVariable result);
 
         // form may be null
@@ -607,6 +607,11 @@ namespace Zilf.Emit
         /// Prints formatted text from the given table.
         /// </summary>
         PrintForm,
+
+        /// <summary>
+        /// Enables, disables, or flushes screen buffering.
+        /// </summary>
+        BufferScreen,
     }
 
     public enum NullaryOp

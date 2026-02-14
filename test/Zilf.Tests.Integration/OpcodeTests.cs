@@ -308,6 +308,26 @@ namespace Zilf.Tests.Integration
             await AssertExpr("<BUFOUT 0 1>").InV4().DoesNotCompileAsync();
         }
 
+        [TestMethod]
+        public async System.Threading.Tasks.Task TestBUFSCRAsync()
+        {
+            // only exists in V6
+
+            // we can't really test its side-effect here
+            await AssertExpr("<BUFSCR 0>").InV6().CompilesAsync();
+        }
+
+        [TestMethod]
+        public async System.Threading.Tasks.Task TestBUFSCR_ErrorAsync()
+        {
+            await AssertExpr("<BUFSCR 0>").InV3().DoesNotCompileAsync();
+            await AssertExpr("<BUFSCR 0>").InV4().DoesNotCompileAsync();
+            await AssertExpr("<BUFSCR 0>").InV5().DoesNotCompileAsync();
+
+            await AssertExpr("<BUFSCR>").InV6().DoesNotCompileAsync();
+            await AssertExpr("<BUFSCR 0 0>").InV6().DoesNotCompileAsync();
+        }
+
         // CALL1 and CALL2 are not supported in ZIL
 
         [TestMethod]
@@ -1965,9 +1985,10 @@ namespace Zilf.Tests.Integration
             // 0 to 0 operands
             await AssertExpr("<RESTORE>").InV4().CompilesAsync();
             // V5 to V6
-            // 0 or(!) 3 operands
+            // 0, 3, or 4 operands
             await AssertExpr("<RESTORE>").InV5().CompilesAsync();
             await AssertExpr("<RESTORE 0 0 0>").InV5().CompilesAsync();
+            await AssertExpr("<RESTORE 0 0 0 0>").InV5().CompilesAsync();
         }
 
         [TestMethod]
@@ -1980,10 +2001,9 @@ namespace Zilf.Tests.Integration
             // 0 to 0 operands
             await AssertExpr("<RESTORE 0>").InV4().DoesNotCompileAsync();
             // V5 to V6
-            // 0 or(!) 3 operands
+            // 0, 3, or 4 operands
             await AssertExpr("<RESTORE 0>").InV5().DoesNotCompileAsync();
             await AssertExpr("<RESTORE 0 0>").InV5().DoesNotCompileAsync();
-            await AssertExpr("<RESTORE 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]
@@ -2071,9 +2091,10 @@ namespace Zilf.Tests.Integration
             // 0 to 0 operands
             await AssertExpr("<SAVE>").InV4().CompilesAsync();
             // V5 to V6
-            // 0 or(!) 3 operands
+            // 0, 3, or 4 operands
             await AssertExpr("<SAVE>").InV5().CompilesAsync();
             await AssertExpr("<SAVE 0 0 0>").InV5().CompilesAsync();
+            await AssertExpr("<SAVE 0 0 0 0>").InV5().CompilesAsync();
         }
 
         [TestMethod]
@@ -2086,10 +2107,9 @@ namespace Zilf.Tests.Integration
             // 0 to 0 operands
             await AssertExpr("<SAVE 0>").InV4().DoesNotCompileAsync();
             // V5 to V6
-            // 0 or(!) 3 operands
+            // 0, 3, or 4 operands
             await AssertExpr("<SAVE 0>").InV5().DoesNotCompileAsync();
             await AssertExpr("<SAVE 0 0>").InV5().DoesNotCompileAsync();
-            await AssertExpr("<SAVE 0 0 0 0>").InV5().DoesNotCompileAsync();
         }
 
         [TestMethod]

@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Zapf.Parsing.Expressions;
@@ -417,6 +418,9 @@ namespace Zilf.Emit.Zap
                 case UnaryOp.PrintForm:
                     opcode = "PRINTF";
                     break;
+                case UnaryOp.BufferScreen:
+                    opcode = "BUFSCR";
+                    break;
                 default:
                     throw UnhandledCaseException.FromEnum(op, "unary operation");
             }
@@ -600,22 +604,28 @@ namespace Zilf.Emit.Zap
         }
 
         public bool HasExtendedSave => game.zversion >= 5;
-        public void EmitSave(IOperand table, IOperand size, IOperand filename,
+        public void EmitSave(IOperand table, IOperand size, IOperand filename, IOperand? prompt,
             IVariable result)
         {
-            AddLine(
-                new Instruction("SAVE", table.ToAsmExpr(), size.ToAsmExpr(), filename.ToAsmExpr()) { StoreTarget = result.ToString() },
-                null,
-                PeepholeLineType.Plain);
+            var inst = prompt is not null
+                ? new Instruction("SAVE", table.ToAsmExpr(), size.ToAsmExpr(), filename.ToAsmExpr(), prompt.ToAsmExpr())
+                : new Instruction("SAVE", table.ToAsmExpr(), size.ToAsmExpr(), filename.ToAsmExpr());
+
+            inst.StoreTarget = result.ToString();
+
+            AddLine(inst, null, PeepholeLineType.Plain);
         }
 
-        public void EmitRestore(IOperand table, IOperand size, IOperand filename,
+        public void EmitRestore(IOperand table, IOperand size, IOperand filename, IOperand? prompt,
             IVariable result)
         {
-            AddLine(
-                new Instruction("RESTORE", table.ToAsmExpr(), size.ToAsmExpr(), filename.ToAsmExpr()) { StoreTarget = result.ToString() },
-                null,
-                PeepholeLineType.Plain);
+            var inst = prompt is not null
+                ? new Instruction("RESTORE", table.ToAsmExpr(), size.ToAsmExpr(), filename.ToAsmExpr(), prompt.ToAsmExpr())
+                : new Instruction("RESTORE", table.ToAsmExpr(), size.ToAsmExpr(), filename.ToAsmExpr());
+
+            inst.StoreTarget = result.ToString();
+
+            AddLine(inst, null, PeepholeLineType.Plain);
         }
 
         public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form,

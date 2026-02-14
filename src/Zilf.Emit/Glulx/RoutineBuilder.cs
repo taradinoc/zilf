@@ -706,7 +706,7 @@ namespace Zilf.Emit.Glulx
             throw new NotSupportedException("Branch save not supported for Glulx");
         }
 
-        public void EmitSave(IOperand table, IOperand size, IOperand name, IVariable result)
+        public void EmitSave(IOperand table, IOperand size, IOperand name, IOperand? prompt, IVariable result)
         {
             throw new NotImplementedException("Extended save not supported for Glulx");
         }
@@ -721,7 +721,7 @@ namespace Zilf.Emit.Glulx
             throw new NotSupportedException("Branch restore not supported for Glulx");
         }
 
-        public void EmitRestore(IOperand table, IOperand size, IOperand name, IVariable result)
+        public void EmitRestore(IOperand table, IOperand size, IOperand name, IOperand? prompt, IVariable result)
         {
             throw new NotImplementedException("Extended restore not supported for Glulx");
         }

@@ -1506,6 +1506,7 @@ namespace Zilf.Compiler.Builtins
         [Builtin("RANDOM", "ZRANDOM", Data = UnaryOp.Random, HasSideEffect = true, Summary = "Computes a random number within a range, or reseeds the random number generator.")]
         [Builtin("FONT", Data = UnaryOp.SetFont, MinVersion = 5, HasSideEffect = true, Summary = "Selects a font for the current window.")]
         [Builtin("CHECKU", Data = UnaryOp.CheckUnicode, MinVersion = 5, Summary = "Determines whether the specified Unicode character can be printed and/or read as input.")]
+        [Builtin("BUFSCR", Data = UnaryOp.BufferScreen, MinVersion = 6, HasSideEffect = true, Summary = "Enables, disables, or flushes buffering for the entire screen.")]
         public static IOperand UnaryValueOp(
             ValueCall c, [Data] UnaryOp op, IOperand value)
         {
@@ -2548,15 +2549,16 @@ namespace Zilf.Compiler.Builtins
         /// <param name="table">The address of the buffer where the file contents will be stored. If omitted, restores a saved game state.</param>
         /// <param name="bytes">The number of bytes to read from the file. If omitted, restores a saved game state.</param>
         /// <param name="name">The address of the buffer containing the file name prefixed by a length byte. If omitted, restores a saved game state.</param>
+        /// <param name="prompt">Whether to prompt the user to confirm the filename. If omitted, the interpreter decides.</param>
         /// <returns>The number of bytes loaded from the file, or zero if restoring a saved game state.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
         [Builtin("RESTORE", "ZRESTORE", MinVersion = 5, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
         public static IOperand RestoreOp_V5(ValueCall c, [Table] IOperand table,
-            IOperand bytes, [Table] IOperand name)
+            IOperand bytes, [Table] IOperand name, IOperand? prompt = null)
         {
             if (c.rb.HasExtendedSave)
             {
-                c.rb.EmitRestore(table, bytes, name, c.resultStorage);
+                c.rb.EmitRestore(table, bytes, name, prompt, c.resultStorage);
                 return c.resultStorage;
             }
             throw new NotSupportedException($"{nameof(RestoreOp_V5)} without {nameof(c.rb.HasExtendedSave)}");
@@ -2612,15 +2614,16 @@ namespace Zilf.Compiler.Builtins
         /// <param name="table">The address of the buffer where the file contents are stored. If omitted, saves the game state.</param>
         /// <param name="bytes">The number of bytes to write to the file. If omitted, saves the game state.</param>
         /// <param name="name">The address of the buffer containing the file name prefixed by a length byte. If omitted, saves the game state.</param>
+        /// <param name="prompt">Whether to prompt the user to confirm the filename. If omitted, the interpreter decides.</param>
         /// <returns>Zero if the save failed, 1 if it succeeded, or 2 when the game state is being restored later.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
         [Builtin("SAVE", "ZSAVE", MinVersion = 5, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
         public static IOperand SaveOp_V5(ValueCall c, [Table] IOperand table,
-            IOperand bytes, [Table] IOperand name)
+            IOperand bytes, [Table] IOperand name, IOperand? prompt = null)
         {
             if (c.rb.HasExtendedSave)
             {
-                c.rb.EmitSave(table, bytes, name, c.resultStorage);
+                c.rb.EmitSave(table, bytes, name, prompt, c.resultStorage);
                 return c.resultStorage;
             }
             throw new NotSupportedException($"{nameof(SaveOp_V5)} without {nameof(c.rb.HasExtendedSave)}");
