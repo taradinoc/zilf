@@ -251,7 +251,7 @@ A hand-painted sign reads: \"Weapon enchantments, 100 gold\"")
                                <PERFORM ,V?ASK-ABOUT ,BLACKSMITH ,PRSI>>)
                  (ELSE <TELL "He doesn't respond." CR>)>)
           (<VERB? EXAMINE>
-           <TELL "He's wearing an apron with a small logo, depicting a pair of tongs and a hammer.">)
+           <TELL "He's wearing an apron with a small logo, depicting a pair of tongs and a hammer." CR>)
           (<AND <VERB? ASK-ABOUT TELL-ABOUT> <PRSO? ,BLACKSMITH>>
            <COND (<PRSI? ,BLACKSMITH> <TELL "\"I just work here.\"" CR>)
                (<RASCAL-ITEM? ,PRSI>
