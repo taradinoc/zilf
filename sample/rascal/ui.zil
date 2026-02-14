@@ -887,6 +887,7 @@ Returns:
                             (<==? .C ,KEY-F10>
                              <SETG DEBUG-USED? T>
                              <SETG OMNISCIENT? <NOT ,OMNISCIENT?>>
+                             <SETG FULL-REDRAW? T>
                              <LOG "Omniscient mode: "
                                   <COND (,OMNISCIENT? "ON") (ELSE "OFF")>
                                   "."
