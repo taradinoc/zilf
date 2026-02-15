@@ -84,6 +84,7 @@ interior ID."
     <SETG SCORE ,PLAYER-GOLD>
     <INTERIOR-ENTER-SYNC>
     <INIT-STATUS-LINE RASCAL>
+    <SCREEN 0>
     <CRLF>
     <CRLF>
     <TELL "You approach the " <GETP .ROOM ,P?INTERIOR-NAME> "." CR CR>
