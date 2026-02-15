@@ -1070,9 +1070,9 @@ Returns:
   (none)"
 
 <ROUTINE DRAW-STATUS-LINE (ROW COL MODE)
-    <CURSET .ROW .COL>
     <UI-RESET>
-    <ERASE 1>
+    <ERASE-STATUS-LINE .ROW>
+    <CURSET .ROW .COL>
     <COND (<==? .MODE 1>
            <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
            <TELL "gold=">
@@ -1129,6 +1129,18 @@ Returns:
            <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
            <TELL N <INV-COUNT> "/" N ,INV-SIZE>
            <UI-RESET>)>>
+
+
+<COND (,GLK
+       ;"Erases the status line with spaces, leaving the cursor position undefined.
+
+        This is a hack to avoid ERASE, which ZILF 1.5 doesn't implement for Glulx."
+       <ROUTINE ERASE-STATUS-LINE (ROW "AUX" MAX)
+           <CURSET .ROW 1>
+           <SET MAX <LOWCORE SCRH>>
+           <DO (I 1 .MAX) <PRINTC !\ >>>)
+      (ELSE
+       <DEFMAC ERASE-STATUS-LINE ('ROW) `<BIND () <CURSET ~.ROW 1> <ERASE 1>>>)>
 
 ;"Redraws the entire upper-window UI (header, controls, map, messages)."
 
