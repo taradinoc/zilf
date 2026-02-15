@@ -915,7 +915,7 @@ namespace Zilf.Emit.Glulx
             dd keycode_Unknown      ; double click
             db 254
             dd keycode_Unknown      ; single click
-            KEYCODE_MAP_COUNT = 30";
+            KEYCODE_MAP_COUNT = 32";
 
         [RuntimeFunc(nameof(glk_defines), nameof(keycode_defines))]
         public const string init_terminating_chars = @"
