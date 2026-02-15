@@ -546,7 +546,7 @@ namespace Zilf.Emit.Glulx
         protected virtual string EntryRoutineSectionDirective => "section .text";
         protected virtual bool AlignAfterEntry => true;
 
-        IDisposable UseWriter(TextWriter newWriter)
+        WriterScope UseWriter(TextWriter newWriter)
         {
             writerStack.Push(writer);
             writer = newWriter;
@@ -615,6 +615,21 @@ namespace Zilf.Emit.Glulx
             {
                 var value = constants.ContainsKey("ZORKID") ? "ZORKID" : "0";
                 writer.WriteLine(INDENT + "RELEASEID = {0}", value);
+            }
+
+            // Z-machine version and version-dependent flags
+            writer.WriteLine(INDENT + "ZMACHINE_VERSION = {0}", zCompatVersion);
+            if (zCompatVersion <= 3)
+            {
+                // 0x20 = screen-splitting available
+                byte flags = 0x20;
+                // TODO: implement TimeStatusLine (flags |= 0x2)
+                writer.WriteLine(INDENT + "ZVERSION_FLAGS = {0}", flags);
+            }
+            else
+            {
+                // 0x1C = bold available, italic available, fixed-pitch available
+                writer.WriteLine(INDENT + "ZVERSION_FLAGS = 0x1C");
             }
         }
 

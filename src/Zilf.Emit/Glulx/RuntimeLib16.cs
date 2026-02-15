@@ -245,6 +245,14 @@ namespace Zilf.Emit.Glulx
             aloadb metadata_serial address -> push
             return pop
         .not_serial:
+            ; Z-Machine version in byte 0
+            jne address 0 -> .not_version
+            return ZMACHINE_VERSION
+        .not_version:
+            ; Version-dependent flags in byte 1
+            jne address 1 -> .not_flags
+            return ZVERSION_FLAGS
+        .not_flags:
             return 0";
 
         // TODO: implement ZVERSION / Flags 1
@@ -258,9 +266,15 @@ namespace Zilf.Emit.Glulx
             return pop
         .not_release:
             ; FLAGS word at 0x10?
-            jne address 0x10 -> rfalse
+            jne address 0x10 -> .not_flags
             callf _rt_get_lowcore_flags -> push
-            return pop";
+            return pop
+        .not_flags:
+            ; ZVERSION word at 0?
+            jne address 0 -> .not_zversion
+            return ((ZMACHINE_VERSION << 8) | ZVERSION_FLAGS)
+        .not_zversion:
+            return 0";
 
         [RuntimeFunc]
         public const string put_header_byte = @"

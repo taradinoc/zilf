@@ -897,6 +897,9 @@ namespace Zilf.Emit.Glulx
                 case "FLAGS":
                     Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_lowcore_flags))} -> {FormatStore(resultStorage)}", "callf");
                     return true;
+                case "ZVERSION":
+                    Emit($"copy ((ZMACHINE_VERSION << 8) | ZVERSION_FLAGS) -> {FormatStore(resultStorage)}", "copy");
+                    return true;
             }
 
             return false;
