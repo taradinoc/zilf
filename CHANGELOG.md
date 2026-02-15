@@ -4,6 +4,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to
 [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added support for the `BUFSCR` opcode in V6 (aka `buffer_screen`) in ZAPF and
+  ZILF, and the 4-argument forms of `SAVE` and `RESTORE` in ZILF.
+
 ## [1.5] (February 10, 2026)
 
 ### Added
