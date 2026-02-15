@@ -691,10 +691,38 @@ namespace Zilf.Emit.Glulx
             }
 
             // Push arguments in reverse order
-            // TODO: need special handling for arguments that are already on the stack?
-            for (int i = args.Length - 1; i >= 0; i--)
+            if (args.Contains(Stack))
             {
-                Emit($"push {FormatLoad(args[i])}", "push");
+                // We could do some fancy stack juggling here, but instead, we use temp variables for every stack argument
+                int n = 1;
+
+                for (int i = 0; i < args.Length - 1; i++)
+                {
+                    if (args[i] == Stack)
+                    {
+                        Emit($"pull {UseTempVariable(n++)}", "pull");
+                    }
+                }
+
+                Emit($"push {FormatLoad(args[^1])}", "push");
+
+                for (int i = args.Length - 2; i >= 0; i--)
+                {
+                    if (args[i] == Stack)
+                    {
+                        Emit($"push __temp{--n}", "push");
+                    }
+                    else
+                    {
+                        Emit($"push {FormatLoad(args[i])}", "push");
+                    }
+                }
+            }
+            else
+            {
+                // Easy mode
+                for (int i = args.Length - 1; i >= 0; i--)
+                    Emit($"push {FormatLoad(args[i])}", "push");
             }
 
             if (routine is not IConstantOperand)
@@ -833,7 +861,7 @@ namespace Zilf.Emit.Glulx
         {
             // Use Glulx's binarysearch or linearsearch opcode
             form ??= gameBuilder.MakeOperand(0x84);     // word key, 4 byte structs
-            // TODO: do smarter stack juggling
+            // TODO: do smarter stack juggling?
             Emit($"copy {FormatLoad(value)} -> {UseTempVariable(1)}", "copy");
             Emit($"copy {FormatLoad(table)} -> {UseTempVariable(2)}", "copy");
             Emit($"copy {FormatLoad(length)} -> {UseTempVariable(3)}", "copy");
