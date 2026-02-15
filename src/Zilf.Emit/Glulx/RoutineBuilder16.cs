@@ -73,6 +73,12 @@ namespace Zilf.Emit.Glulx
                     case BinaryOp.Or:
                         EmitBinary16(nameof(RuntimeLib16.bor16), left, right, result);
                         return;
+                    case BinaryOp.ArtShift:
+                        EmitBinary16(nameof(RuntimeLib16.ash16), left, right, result);
+                        return;
+                    case BinaryOp.LogShift:
+                        EmitBinary16(nameof(RuntimeLib16.lsh16), left, right, result);
+                        return;
                     case BinaryOp.GetWord when PotentialHeaderAccess(left):
                         EmitBinary16(nameof(RuntimeLib16.getword16), left, right, result);
                         return;
@@ -81,6 +87,11 @@ namespace Zilf.Emit.Glulx
                         return;
                     case BinaryOp.GetByte when PotentialHeaderAccess(left):
                         EmitBinary16(nameof(RuntimeLib16.getbyte16), left, right, result);
+                        return;
+
+                    case BinaryOp.SetColor:
+                    case BinaryOp.SetTrueColor:
+                        // not supported for Glulx, silently ignore
                         return;
                 }
             }
@@ -240,6 +251,18 @@ namespace Zilf.Emit.Glulx
                 RoutineBuilder16 r => r.Name,
                 _ => base.FormatDirectCall(routine)
             };
+        }
+
+        public override bool TryEmitLowCoreRead(string field, IVariable resultStorage)
+        {
+            switch (field)
+            {
+                case "STDREV":
+                    Emit($"copy 0x101 -> {FormatStore(resultStorage)}", "copy");
+                    return true;
+            }
+
+            return base.TryEmitLowCoreRead(field, resultStorage);
         }
 
         public override bool TryEmitLowCoreGetTable(string field, IVariable resultStorage)

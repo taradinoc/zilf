@@ -344,7 +344,6 @@ namespace Zilf.Emit.Glulx
                 valueStr = FormatLoad(value);
             }
 
-            var tempLabel = DefineLabel();
             if (polarity)
             {
                 AddLine($"jeq {valueStr} {FormatLoad(option1)}", "jeq", label, PeepholeLineType.BranchPositive);
@@ -352,6 +351,7 @@ namespace Zilf.Emit.Glulx
             }
             else
             {
+                var tempLabel = DefineLabel();
                 AddLine($"jeq {valueStr} {FormatLoad(option1)}", "jeq", tempLabel, PeepholeLineType.BranchPositive);
                 AddLine($"jne {valueStr} {FormatLoad(option2)}", "jne", label, PeepholeLineType.BranchPositive);
                 MarkLabel(tempLabel);
@@ -371,7 +371,6 @@ namespace Zilf.Emit.Glulx
                 valueStr = FormatLoad(value);
             }
 
-            var tempLabel = DefineLabel();
             if (polarity)
             {
                 AddLine($"jeq {valueStr} {FormatLoad(option1)}", "jeq", label, PeepholeLineType.BranchPositive);
@@ -380,6 +379,7 @@ namespace Zilf.Emit.Glulx
             }
             else
             {
+                var tempLabel = DefineLabel();
                 AddLine($"jeq {valueStr} {FormatLoad(option1)}", "jeq", tempLabel, PeepholeLineType.BranchPositive);
                 AddLine($"jeq {valueStr} {FormatLoad(option2)}", "jeq", tempLabel, PeepholeLineType.BranchPositive);
                 AddLine($"jne {valueStr} {FormatLoad(option3)}", "jne", label, PeepholeLineType.BranchPositive);
@@ -448,6 +448,17 @@ namespace Zilf.Emit.Glulx
                     Emit($"callfii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.move_cursor))} {FormatLoad(left)} {FormatLoad(right)}", "callfii");
                     return;
 
+                case BinaryOp.ArtShift:
+                    Emit($"callfii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.art_shift))} {FormatLoad(left)} {FormatLoad(right)}", "callfii");
+                    return;
+
+                case BinaryOp.LogShift:
+                    Emit($"callfii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.log_shift))} {FormatLoad(left)} {FormatLoad(right)}", "callfii");
+                    return;
+
+                case BinaryOp.SetColor:
+                case BinaryOp.SetTrueColor:
+                    throw new NotSupportedException("Colors not supported for Glulx");
             }
 
             string opcode = op switch
@@ -461,6 +472,7 @@ namespace Zilf.Emit.Glulx
                 BinaryOp.Or => "bitor",
                 BinaryOp.GetByte => "aloadb",
                 BinaryOp.GetWord => "aload",
+                BinaryOp.Throw => "throw",
                 _ => throw new NotImplementedException($"Binary op {op} not implemented")
             };
 
@@ -608,6 +620,16 @@ namespace Zilf.Emit.Glulx
                     Emit("restoreundo -> push", "restoreundo");
                     Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.translate_save_result))} pop -> {FormatStore(result)}", "callfi");
                     return;
+
+                case NullaryOp.Catch:
+                    var catchLabel = DefineLabel();
+                    AddLine($"catch -> {UseTempVariable(1)}", "catch", catchLabel, PeepholeLineType.BranchNeutral);
+                    // if we get here, __temp1 contains the thrown value
+                    Emit("return __temp1", "return");
+                    MarkLabel(catchLabel);
+                    // if we get here, __temp1 contains the catch token
+                    Emit($"copy __temp1 -> {FormatStore(result)}", "copy");
+                    return;
             }
 
             string opcode = op switch
@@ -682,7 +704,7 @@ namespace Zilf.Emit.Glulx
             }
             else
             {
-                Emit($"call {FormatLoad(routine)} {args.Length} -> {dest}", "call");
+                Emit($"call {FormatDirectCall(routine)} {args.Length} -> {dest}", "call");
             }
         }
 
@@ -787,7 +809,8 @@ namespace Zilf.Emit.Glulx
 
         public void EmitReadChar(IOperand? interval, IOperand? routine, IVariable result)
         {
-            throw new NotImplementedException("ReadChar not implemented yet");
+            // TODO: support timed input
+            Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.read_char))} -> {FormatStore(result)}", "callfii");
         }
 
         public void EmitTokenize(IOperand text, IOperand parse, IOperand? dictionary, IOperand? flag)
@@ -854,7 +877,7 @@ namespace Zilf.Emit.Glulx
             throw new NotImplementedException("User stack not implemented yet");
         }
 
-        public bool TryEmitLowCoreRead(string field, IVariable resultStorage)
+        public virtual bool TryEmitLowCoreRead(string field, IVariable resultStorage)
         {
             switch (field)
             {
@@ -1039,6 +1062,7 @@ namespace Zilf.Emit.Glulx
                         break;
                     case PeepholeLineType.BranchPositive:
                     case PeepholeLineType.BranchNegative:
+                    case PeepholeLineType.BranchNeutral:
                         sb.Append(" -> ");
                         // Use special Glulx branch targets for rtrue/rfalse
                         if (target == Label.RTRUE)

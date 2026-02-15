@@ -181,6 +181,7 @@ namespace Zilf.Emit.Glulx
             glk_stylehint_set = 0xB0
             glk_select = 0xC0
             glk_request_line_event = 0xD0
+            glk_request_char_event = 0xD2
             glk_set_terminators_line_event = 0x151
 
             wintype_AllTypes = 0
@@ -217,6 +218,7 @@ namespace Zilf.Emit.Glulx
             fileusage_TextMode = 0x100
             fileusage_BinaryMode = 0x000
 
+            evtype_CharInput = 2
             evtype_LineInput = 3
             evtype_Arrange = 5
 
@@ -849,6 +851,12 @@ namespace Zilf.Emit.Glulx
 
             section .data
         keycode_map:
+            db 8
+            dd keycode_Delete
+            db 13
+            dd keycode_Return
+            db 27
+            dd keycode_Escape
             db 129
             dd keycode_Up
             db 130
@@ -907,7 +915,7 @@ namespace Zilf.Emit.Glulx
             dd keycode_Unknown      ; double click
             db 254
             dd keycode_Unknown      ; single click
-            KEYCODE_MAP_COUNT = 29";
+            KEYCODE_MAP_COUNT = 30";
 
         [RuntimeFunc(nameof(glk_defines), nameof(keycode_defines))]
         public const string init_terminating_chars = @"
@@ -946,6 +954,98 @@ namespace Zilf.Emit.Glulx
             return zkey
         .not_found:
             return 13";
+
+        [RuntimeFunc(nameof(keycode_defines))]
+        public const string read_char = @"
+            function
+            local evtype
+            local gkey
+            local zkey
+            local want
+            local val
+            local i
+            local digit
+            ; Are we playing back recorded input?
+            ; TODO: implement read_char from command stream
+            jnz [gg_command_input_stream_id] -> rfalse    ; -> .read_from_stream
+        .read_from_window:
+            ; Request character input in the main window
+            push [gg_main_window_id]
+            glk glk_request_char_event 1
+        .select:
+            ; Get an event
+            push gg_event
+            glk glk_select 1
+            ; Is it character input?
+            aload gg_event event_Type -> evtype
+            jeq evtype evtype_CharInput -> .got_char_event
+            ; Is it arrange?
+            jeq evtype evtype_Arrange -> .got_arrange_event
+            ; No, then we don't care
+            jump .select
+        .got_char_event:
+            aload gg_event 2 -> gkey
+            ; Convert Glk key code to Z key code
+            linearsearch gkey 4 keycode_map 5 KEYCODE_MAP_COUNT 1 0 -> zkey
+            jz zkey -> .not_in_table
+            aloadb zkey 0 -> zkey
+            jump .got_char
+        .not_in_table:
+            copy gkey -> zkey
+        .got_char:
+            ; Are we recording commands?
+            jz [gg_command_output_stream_id] -> .not_recording
+            ; Write character to stream escaped?
+            jlt zkey 32 -> .put_escaped
+            jgt zkey 127 -> .put_escaped
+            jeq zkey `\\` -> .put_escaped
+            jeq zkey ` ` -> .put_escaped
+            ; No, put it normally
+            push zkey
+            push [gg_command_output_stream_id]
+            glk glk_put_char_stream 2
+            jump .put_newline
+        .put_escaped:
+            push `\\`
+            copy 0 -> want
+            copy zkey -> val
+            copy 0 -> i
+        .next_hex_digit:
+            jge i 8 -> .put_newline
+            ushiftr val 28 -> digit
+            shiftl digit 4 -> val
+            bitand digit 0xF -> digit
+            jne digit 0 -> .set_want
+            jne i 7 -> .dont_set_want
+        .set_want:
+            copy 1 -> want
+        .dont_set_want:
+            jz want -> .advance_i
+            ; Put the hex digit
+            jlt digit 0 -> .alpha
+            jgt digit 9 -> .alpha
+            add digit `0` -> digit
+            jump .put_hex_digit
+        .alpha:
+            sub digit 10 -> push
+            add pop `A` -> digit
+        .put_hex_digit:
+            push digit
+            push [gg_command_output_stream_id]
+            glk glk_put_char_stream 2
+            jump .put_newline
+        .advance_i:
+            add i 1 -> i
+            jump .next_hex_digit
+        .put_newline:
+            push 10
+            push [gg_command_output_stream_id]
+            glk glk_put_char_stream 2
+        .not_recording:
+            return zkey
+        .got_arrange_event:
+            callf update_status_line_hook
+            jump .select";
 
         [RuntimeFunc(nameof(glk_defines))]
         public const string output_style = @"
@@ -1589,6 +1689,39 @@ namespace Zilf.Emit.Glulx
             neg range -> range
             setrandom range
             return 0";
+
+        [RuntimeFunc]
+        public const string art_shift = @"
+            function
+            local num
+            local places
+            ; Negative?
+            jlt places 0 -> .negative
+            ; No, shift left
+            shiftl num places -> push
+            return pop
+        .negative:
+            ; Negative, shift right
+            neg places -> places
+            sshiftr num places -> push
+            return pop";
+
+        [RuntimeFunc]
+        public const string log_shift = @"
+            function
+            local num
+            local places
+            ; Negative?
+            jlt places 0 -> .negative
+            ; No, shift left
+            shiftl num places -> push
+            return pop
+        .negative:
+            ; Negative, shift right
+            neg places -> places
+            ushiftr num places -> push
+            return pop";
+
 
 #endregion
 

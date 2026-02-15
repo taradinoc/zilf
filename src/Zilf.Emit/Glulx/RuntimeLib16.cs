@@ -110,6 +110,45 @@ namespace Zilf.Emit.Glulx
             return value";
 
         [RuntimeFunc]
+        public const string ash16 = @"
+            function
+            local num
+            local places
+            sexs places -> places
+            ; Negative?
+            jlt places 0 -> .negative
+            ; No, shift left
+            shiftl num places -> push
+            bitand pop 0xFFFF -> push
+            return pop
+        .negative:
+            ; Negative, shift right
+            sexs num -> num
+            neg places -> places
+            sshiftr num places -> push
+            bitand pop 0xFFFF -> push
+            return pop";
+
+        [RuntimeFunc]
+        public const string lsh16 = @"
+            function
+            local num
+            local places
+            sexs places -> places
+            ; Negative?
+            jlt places 0 -> .negative
+            ; No, shift left
+            shiftl num places -> push
+            bitand pop 0xFFFF -> push
+            return pop
+        .negative:
+            ; Negative, shift right
+            neg places -> places
+            ushiftr num places -> push
+            bitand pop 0xFFFF -> push
+            return pop";
+
+        [RuntimeFunc]
         public const string neg16 = @"
             function
             local value
@@ -208,6 +247,7 @@ namespace Zilf.Emit.Glulx
         .not_serial:
             return 0";
 
+        // TODO: implement ZVERSION / Flags 1
         [RuntimeFunc(nameof(get_lowcore_flags))]
         public const string get_header_word = @"
             function
@@ -1008,6 +1048,7 @@ namespace Zilf.Emit.Glulx
             status_score_text: huffstr ""Score: ""
             status_moves_text: huffstr ""Moves: """;
 
+        // TODO: implement TimeStatusLine
         [RuntimeFunc(
             nameof(select_window), nameof(output_style), nameof(get_screen_width),
             nameof(move_cursor), nameof(print_object), nameof(status_defines),

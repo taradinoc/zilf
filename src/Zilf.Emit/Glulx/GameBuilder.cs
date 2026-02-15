@@ -312,12 +312,12 @@ namespace Zilf.Emit.Glulx
 
         public static string SanitizeString(string text)
         {
-            // escape '"' as '\"', newline as '\n'
+            // escape '"' as '\"', '\' as '\\', newline as '\n'
             var sb = new StringBuilder(text);
 
             for (int i = sb.Length - 1; i >= 0; i--)
             {
-                if (sb[i] == '"')
+                if (sb[i] is '"' or '\\')
                 {
                     sb.Insert(i, '\\');
                 }
