@@ -20,6 +20,7 @@
     (UNKNOWN-WORD "I don't know the word \"" WORD .WN "\".")
     (TOO-MANY-OBJECTS "That sentence has too many objects.")
     (TOO-MANY-SPECS "That phrase mentions too many objects.")
+    (NO-SPECS "That phrase doesn't refer to anything.")
     (UNEXPECTED-WORD "I didn't expect the word \"" WORD .WN "\" there.")
     (NO-VERB "That sentence has no verb.")
     (UNEXPECTED-DIRECTION "I don't understand what \"" WORD .WN "\" is doing in that sentence.")

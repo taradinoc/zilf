@@ -1751,6 +1751,10 @@ Returns:
            <TRACE 4 "[finally have " N .CNT " spec(s)]" CR>)>
     ;"store phrase count and mode"
     <COND (.BUT <NP-NCNT .NP .CNT>) (ELSE <NP-YCNT .NP .CNT>)>
+    ;"catch empty noun phrases"
+    <COND (<NOT <OR .MODE <NP-YCNT .NP> <NP-NCNT .NP>>>
+           <TELL <LIBRARY-MESSAGE PARSER NO-SPECS> CR>
+           <RFALSE>)>
     <NP-MODE .NP .MODE>
     <TRACE 2 "[noun phrase parsed: " NOUN-PHRASE .NP "]" CR>
     <TRACE-OUT>

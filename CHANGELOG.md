@@ -11,6 +11,9 @@ and this project adheres to
 - Added support for the `BUFSCR` opcode in V6 (aka `buffer_screen`) in ZAPF and
   ZILF, and the 4-argument forms of `SAVE` and `RESTORE` in ZILF.
 
+- Added library message `NO-SPECS` for commands with empty noun phrases, like
+  `GET THE`.
+
 ## [1.5] (February 10, 2026)
 
 ### Added
