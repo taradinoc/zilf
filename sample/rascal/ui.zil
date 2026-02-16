@@ -205,7 +205,8 @@ Returns:
 ;"Initialization screens"
 
 <DEFMAC HAS-TCOLOR? ()
-    ;"Check for Standard 1.1, which provides the TCOLOR opcode"
+    ;"Check for Standard 1.1, which provides the TCOLOR opcode.
+      Note: We only offer true color if HAS-COLOR? also returns true."
     '<G=? <LOWCORE STDREV> #16 0101>>
 <DEFMAC HAS-COLOR? ()
     ;"Check bit 0 of Flags 1"
@@ -440,7 +441,7 @@ Returns:
           %<STRING " (" ,ZIL-VERSION ") by Tara McGrew">>
 
     <CTCOLOR <RGB 31 31 31> 0>
-    <COND (<OR <HAS-TCOLOR?> <HAS-COLOR?>>
+    <COND (<HAS-COLOR?>
            <CURSET 19 .COL>
            <TELL "               Press C to change color mode (currently ">
            <COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR> <TCOLOR ,UI-RGB-ORANGE ,UI-RGB-BROWNBG> <TELL "true color"> <TCOLOR <RGB 31 31 31> 0>)
@@ -459,7 +460,7 @@ Returns:
            <AGAIN>)
           (<==? .C !\S !\s> <COND (<NOT <INPUT-SEED>> <AGAIN>)>)
           (<==? .C !\C !\c>
-           <COND (<OR <HAS-TCOLOR?> <HAS-COLOR?>> <NEXT-COLOR-MODE>)>
+           <COND (<HAS-COLOR?> <NEXT-COLOR-MODE>)>
            <AGAIN>)
           (<==? .C 254 ;"mouse click"> <AGAIN>)
           (ELSE <CLEAR -1>)>>
@@ -1131,10 +1132,10 @@ Returns:
            <UI-RESET>)>>
 
 
-<COND (,GLK
+;<COND (,GLK
        ;"Erases the status line with spaces, leaving the cursor position undefined.
 
-        This is a hack to avoid ERASE, which ZILF 1.5 doesn't implement for Glulx."
+        This is a hack to avoid ERASE, which ZILF 1.5 didn't implement for Glulx."
        <ROUTINE ERASE-STATUS-LINE (ROW "AUX" MAX)
            <CURSET .ROW 1>
            <SET MAX <LOWCORE SCRH>>
@@ -1142,7 +1143,11 @@ Returns:
       (ELSE
        <DEFMAC ERASE-STATUS-LINE ('ROW) `<BIND () <CURSET ~.ROW 1> <ERASE 1>>>)>
 
-;"Redraws the entire upper-window UI (header, controls, map, messages)."
+;"ERASE should be working now"
+<DEFMAC ERASE-STATUS-LINE ('ROW)
+    `<BIND () <CURSET ~.ROW 1> <ERASE 1>>>
+
+;"Redraws the entire upper-window UI (header, controls, map, overlay)."
 
 <ROUTINE DRAW ()
     <SCREEN 1>
