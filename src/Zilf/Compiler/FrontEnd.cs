@@ -316,7 +316,8 @@ namespace Zilf.Compiler
                 return new GlulxGameOptions
                 {
                     ZCompatibilityMode = true,
-                    ZMachineVersion = zenv.ZVersion
+                    ZMachineVersion = zenv.ZVersion,
+                    TimeStatusLine = zenv.TimeStatusLine,
                 };
             }
 

@@ -488,6 +488,7 @@ namespace Zilf.Emit.Glulx
 
         public virtual void EmitUnary(UnaryOp op, IOperand value, IVariable? result)
         {
+            // TODO: implement UnaryOp.GetCursor and UnaryOp.EraseLine
             switch (op)
             {
                 case UnaryOp.GetPropSize:

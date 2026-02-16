@@ -623,7 +623,10 @@ namespace Zilf.Emit.Glulx
             {
                 // 0x20 = screen-splitting available
                 byte flags = 0x20;
-                // TODO: implement TimeStatusLine (flags |= 0x2)
+                if (options.TimeStatusLine)
+                {
+                    flags |= 0x2;
+                }
                 writer.WriteLine(INDENT + "ZVERSION_FLAGS = {0}", flags);
             }
             else

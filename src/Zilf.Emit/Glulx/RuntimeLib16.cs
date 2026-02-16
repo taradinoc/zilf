@@ -255,7 +255,6 @@ namespace Zilf.Emit.Glulx
         .not_flags:
             return 0";
 
-        // TODO: implement ZVERSION / Flags 1
         [RuntimeFunc(nameof(get_lowcore_flags))]
         public const string get_header_word = @"
             function
@@ -1062,7 +1061,6 @@ namespace Zilf.Emit.Glulx
             status_score_text: huffstr ""Score: ""
             status_moves_text: huffstr ""Moves: """;
 
-        // TODO: implement TimeStatusLine
         [RuntimeFunc(
             nameof(select_window), nameof(output_style), nameof(get_screen_width),
             nameof(move_cursor), nameof(print_object), nameof(status_defines),
@@ -1097,7 +1095,11 @@ namespace Zilf.Emit.Glulx
             streamchar ` `
             ; Print location
             callfi _rt_print_object here
-            ; Move over and print score
+            ; Time status bar? (V3 only)
+            jne ZMACHINE_VERSION 3 -> .score
+            jnz (ZVERSION_FLAGS & 0x2) -> .time
+        .score:
+            ; No, move over and print score
             sub width 22 -> push
             callfii _rt_move_cursor 1 pop
             streamstr status_score_text
@@ -1107,6 +1109,22 @@ namespace Zilf.Emit.Glulx
             callfii _rt_move_cursor 1 pop
             streamstr status_moves_text
             streamnum moves
+            jump .done
+        .time:
+            ; Move over
+            sub width 8 -> push
+            callfii _rt_move_cursor 1 pop
+            ; Print 24-hour time, with score as hours and moves as minutes
+            jge score 10 -> .print_hours
+            streamchar `0`
+        .print_hours:
+            streamnum score
+            streamchar `:`
+            jge moves 10 -> .print_minutes
+            streamchar `0`
+        .print_minutes:
+            streamnum moves
+        .done:
             ; Return to main window and normal video
             callfi _rt_select_window 0
             callfi _rt_output_style 0

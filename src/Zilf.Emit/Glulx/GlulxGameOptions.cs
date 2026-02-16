@@ -30,5 +30,10 @@ namespace Zilf.Emit.Glulx
         /// Z-machine version to emulate when <see cref="ZCompatibilityMode"/> is enabled.
         /// </summary>
         public int ZMachineVersion { get; init; } = 3;
+
+        /// <summary>
+        /// Enables the "time" status line when emulating V3.
+        /// </summary>
+        public bool TimeStatusLine {get; init; }
     }
 }
