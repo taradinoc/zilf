@@ -488,7 +488,6 @@ namespace Zilf.Emit.Glulx
 
         public virtual void EmitUnary(UnaryOp op, IOperand value, IVariable? result)
         {
-            // TODO: implement UnaryOp.GetCursor and UnaryOp.EraseLine
             switch (op)
             {
                 case UnaryOp.GetPropSize:
@@ -533,6 +532,14 @@ namespace Zilf.Emit.Glulx
 
                 case UnaryOp.ClearWindow:
                     Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.clear_window))} {FormatLoad(value)}", "callfi");
+                    return;
+
+                case UnaryOp.GetCursor:
+                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_cursor))} {FormatLoad(value)}", "callfi");
+                    return;
+
+                case UnaryOp.EraseLine:
+                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.erase_line))} {FormatLoad(value)}", "callfi");
                     return;
 
                 case UnaryOp.Random:
@@ -785,11 +792,16 @@ namespace Zilf.Emit.Glulx
         public virtual void EmitPrint(string text, bool crlfRtrue)
         {
             var strOperand = gameBuilder.MakeOperand(text);
-            Emit($"streamstr {FormatLoad(strOperand)}", "streamstr");
             if (crlfRtrue)
             {
-                Emit("streamchar 10", "streamchar");
+                // we can get away with calling streamstr directly here, because _rt_streamchar will move to the next line
+                Emit($"streamstr {FormatLoad(strOperand)}", "streamstr");
+                Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.streamchar))} 10", "callfi");
                 AddLine("return 1", "return", Label.RTRUE, PeepholeLineType.BranchAlways);
+            }
+            else
+            {
+                Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.streamstr))} {FormatLoad(strOperand)}", "callfi");
             }
         }
 
@@ -798,14 +810,15 @@ namespace Zilf.Emit.Glulx
             switch (op)
             {
                 case PrintOp.Character:
-                    Emit($"streamchar {FormatLoad(value)}", "streamchar");
+                    // all the printing operations have to go through RTL to update the status window cursor position
+                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.streamchar))} {FormatLoad(value)}", "callfi");
                     break;
                 case PrintOp.Number:
-                    Emit($"streamnum {FormatLoad(value)}", "streamnum");
+                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.streamnum))} {FormatLoad(value)}", "callfi");
                     break;
                 case PrintOp.PackedAddr:
                     // this really means "Glulx string"
-                    Emit($"streamstr {FormatLoad(value)}", "streamstr");
+                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.streamstr))} {FormatLoad(value)}", "callfi");
                     break;
                 case PrintOp.Address:
                     // this really means "vocab word"
@@ -821,7 +834,7 @@ namespace Zilf.Emit.Glulx
 
         public void EmitPrintNewLine()
         {
-            Emit("streamchar 10", "streamchar");
+            Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.streamchar))} 10", "callfi");
         }
 
         public void EmitPrintTable(IOperand table, IOperand width, IOperand? height, IOperand? skip)

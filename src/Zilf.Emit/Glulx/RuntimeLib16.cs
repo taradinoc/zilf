@@ -474,6 +474,14 @@ namespace Zilf.Emit.Glulx
         .done:
             return i";
 
+        [RuntimeFunc(nameof(glk_defines))]
+        public new const string get_cursor = @"
+            function
+            local array
+            astores array 0 [gg_status_window_y]
+            astores array 1 [gg_status_window_x]
+            return";
+
         #endregion
 
         #region Misc

@@ -261,6 +261,9 @@ namespace Zilf.Emit.Glulx
             section .data
             gg_main_window_id: dd 0
             gg_status_window_id: dd 0
+            gg_status_selected: dd 0        ; boolean
+            gg_status_cursor_x: dd 1        ; 1-based
+            gg_status_cursor_y: dd 1        ; 1-based
             gg_save_stream_id: dd 0
             gg_command_input_stream_id: dd 0
             gg_command_output_stream_id: dd 0
@@ -319,9 +322,12 @@ namespace Zilf.Emit.Glulx
             glk glk_window_open 5 -> [gg_status_window_id]
             copy 0 -> [gg_status_height]
         .recovered_status_window:
+            copy 1 -> [gg_status_cursor_x]
+            copy 1 -> [gg_status_cursor_y]
             ; Select the main window
             push [gg_main_window_id]
             glk glk_set_window 1
+            copy 0 -> [gg_status_selected]
             return";
 
         [RuntimeFunc(nameof(glk_defines))]
@@ -436,6 +442,22 @@ namespace Zilf.Emit.Glulx
             push (winmethod_Above | winmethod_Fixed)
             push parent
             glk glk_window_set_arrangement 4
+            ; Reset the cursor if it's now outside the status window
+            jle [gg_status_cursor_y] new_size -> .keep_cursor
+            copy 1 -> [gg_status_cursor_x]
+            copy 1 -> [gg_status_cursor_y]
+            push 0
+            push 0
+            push [gg_status_window_id]
+            glk glk_window_move_cursor 3
+            jump .done
+        .keep_cursor:
+            ; Move the cursor to the saved position, just in case
+            push [gg_status_cursor_y]
+            push [gg_status_cursor_x]
+            push [gg_status_window_id]
+            glk glk_window_move_cursor 3
+        .done:
             ; Remember the new size
             copy new_size -> [gg_status_height]
             return";
@@ -449,11 +471,13 @@ namespace Zilf.Emit.Glulx
             ; No, main window
             push [gg_main_window_id]
             glk glk_set_window 1
+            copy 0 -> [gg_status_selected]
             return
         .status:
             jz [gg_status_window_id] -> rfalse
             push [gg_status_window_id]
             glk glk_set_window 1
+            copy 1 -> [gg_status_selected]
             return";
 
         [RuntimeFunc(nameof(glk_defines), nameof(split_window))]
@@ -475,35 +499,46 @@ namespace Zilf.Emit.Glulx
             jz [gg_status_window_id] -> rfalse
             push [gg_status_window_id]
             glk glk_window_clear 1
+            ; Reset cursor
+            copy 1 -> [gg_status_cursor_x]
+            copy 1 -> [gg_status_cursor_y]
+            push 0
+            push 0
+            push [gg_status_window_id]
+            glk glk_window_move_cursor 3
             return
         .unsplit:
             callfi _rt_split_window 0
+            copy 1 -> [gg_status_cursor_x]
+            copy 1 -> [gg_status_cursor_y]
             ; Fall through to .main
         .main:
             push [gg_main_window_id]
             glk glk_window_clear 1
             return";
 
-        [RuntimeFunc(nameof(glk_defines))]
-        public const string move_cursor = @"
+        [RuntimeFunc(nameof(glk_defines), nameof(get_screen_width))]
+        public const string erase_line = @"
             function
-            local row
-            local col
-            ; Select status window
-            jz [gg_status_window_id] -> rfalse
-            push [gg_status_window_id]
-            glk glk_set_window 1
-            ; Ensure nonzero row number
-            jnz row -> .set_cursor
-            copy 1 -> row
-            copy 1 -> col
-            ; Set cursor position
-        .set_cursor:
-            sub row 1 -> push
-            sub col 1 -> push
+            local arg
+            local i
+            local width
+            ; arg must be 1 for anything to happen
+            jne arg 1 -> rfalse
+            ; Print spaces up to the right margin
+            copy [gg_status_cursor_x] -> i
+            callf _rt_get_screen_width -> width
+        .loop:
+            streamchar ` `
+            add i 1 -> i
+            jle i width -> .loop
+            ; Move cursor to original position
+            sub [gg_status_cursor_y] 1 -> push
+            sub [gg_status_cursor_x] 1 -> push
             push [gg_status_window_id]
             glk glk_window_move_cursor 3
-            return";
+            return
+        ";
 
         [RuntimeFunc(nameof(glk_defines))]
         public const string get_screen_width = @"
@@ -1190,6 +1225,158 @@ namespace Zilf.Emit.Glulx
 
         #endregion
 
+        #region Printing/Cursor
+
+        // We use RTL functions for basic print operations in order to keep
+        // track of the position of the cursor in the status window, because
+        // Glk lacks a way to read the cursor position.
+
+        [RuntimeFunc(nameof(glk_defines), nameof(clamp_status_cursor))]
+        public const string move_cursor = @"
+            function
+            local row
+            local col
+            local width
+            ; Select status window
+            jz [gg_status_window_id] -> rfalse
+            push [gg_status_window_id]
+            glk glk_set_window 1
+            copy 1 -> [gg_status_selected]
+            ; Clamp to window bounds
+            copy row -> [gg_status_cursor_y]
+            copy col -> [gg_status_cursor_x]
+            callf _rt_clamp_status_cursor
+            ; Set cursor position
+        .set_cursor:
+            sub [gg_status_cursor_y] 1 -> push
+            sub [gg_status_cursor_x] 1 -> push
+            push [gg_status_window_id]
+            glk glk_window_move_cursor 3
+            return";
+
+        [RuntimeFunc(nameof(glk_defines))]
+        public const string get_cursor = @"
+            function
+            local array
+            astore array 0 [gg_status_window_y]
+            astore array 1 [gg_status_window_x]
+            return";
+
+        [RuntimeFunc(nameof(glk_defines), nameof(get_screen_width))]
+        public const string clamp_status_cursor = @"
+            function
+            local width
+            ; Get window width
+            callf _rt_get_screen_width -> width
+            ; If row < 1 or > height, return to (1, 1)
+            jlt [gg_status_cursor_y] 1 -> .reset_cursor
+            jgt [gg_status_cursor_y] [gg_status_height] -> .reset_cursor
+            ; If col < 1, clamp to 1
+            jge [gg_status_cursor_x] 1 -> .col_not_low
+            copy 1 -> [gg_status_cursor_x]
+            return
+        .reset_cursor:
+            copy 1 -> [gg_status_cursor_y]
+            copy 1 -> [gg_status_cursor_x]
+            return
+        .col_not_low:
+            ; If col > width, clamp to width
+            jle [gg_status_cursor_x] width -> rfalse
+            copy width -> [gg_status_cursor_x]
+            return";
+
+        [RuntimeFunc(nameof(glk_defines), nameof(get_screen_width))]
+        public const string advance_cursor_x = @"
+            function
+            local count
+            local width
+            ; Advance X
+            add [gg_status_cursor_x] count -> [gg_status_cursor_x]
+            ; Clamp X to window width
+            callf _rt_get_screen_width -> width
+            jle [gg_status_cursor_x] width -> rfalse
+            copy width -> [gg_status_cursor_x]
+            return";
+
+        [RuntimeFunc(nameof(glk_defines), nameof(advance_cursor_x))]
+        public const string streamchar = @"
+            function
+            local ch
+            ; Print the character
+            streamchar ch
+            ; Status window selected?
+            jz [gg_status_selected] -> rfalse
+            ; Is it a newline?
+            jeq ch 10 -> .newline
+            ; No, advance X by 1
+            callfi _rt_advance_cursor_x 1
+            return
+        .newline:
+            ; Advance Y by 1 and reset X
+            add [gg_status_cursor_y] 1 -> [gg_status_cursor_y]
+            copy 1 -> [gg_status_cursor_x]
+            ; Clamp to window height
+            jle [gg_status_cursor_y] [gg_status_height] -> rfalse
+            copy [gg_status_height] -> [gg_status_cursor_y]
+            return";
+
+        [RuntimeFunc(nameof(glk_defines), nameof(clamp_status_cursor),
+            nameof(iofilter_advance_status_cursor))]
+        public const string streamstr = @"
+            function
+            local str
+            local iosys
+            local rock
+            ; Print the string
+            streamstr str
+            ; Status window selected?
+            jz [gg_status_selected] -> rfalse
+            ; Print the string again through a filter function
+            getiosys -> iosys -> rock
+            setiosys 1 _rt_iofilter_advance_status_cursor
+            streamstr str
+            setiosys iosys rock
+            ; Clamp cursor position
+            callf _rt_clamp_status_cursor
+            return";
+
+        [RuntimeFunc(nameof(glk_defines), nameof(clamp_status_cursor),
+            nameof(iofilter_advance_status_cursor))]
+        public const string streamnum = @"
+            function
+            local num
+            local iosys
+            local rock
+            ; Print the number
+            streamnum num
+            ; Status window selected?
+            jz [gg_status_selected] -> rfalse
+            ; Print the number again through a filter function
+            getiosys -> iosys -> rock
+            setiosys 1 _rt_iofilter_advance_status_cursor
+            streamnum num
+            setiosys iosys rock
+            ; Clamp cursor position
+            callf _rt_clamp_status_cursor
+            return";
+
+        [RuntimeFunc(nameof(glk_defines))]
+        public const string iofilter_advance_status_cursor = @"
+            function
+            local ch
+            ; Newline?
+            jeq ch 10 -> .newline
+            ; No, advance X
+            add [gg_status_cursor_x] 1 -> [gg_status_cursor_x]
+            return
+        .newline:
+            ; Advance Y and reset X
+            add [gg_status_cursor_y] 1 -> [gg_status_cursor_y]
+            copy 1 -> [gg_status_cursor_x]
+            return";
+
+        #endregion
+
         #region Objects
 
         [RuntimeDefinitionSet]
@@ -1414,12 +1601,12 @@ namespace Zilf.Emit.Glulx
             jeq pop parent -> rtrue
             return 0";
 
-        [RuntimeFunc(nameof(object_defines))]
+        [RuntimeFunc(nameof(object_defines), nameof(streamstr))]
         public const string print_object = @"
             function
             local obj
             aload obj objfield_Desc -> push
-            streamstr pop
+            callfi _rt_streamstr pop
             return";
 
         [RuntimeFunc]
@@ -1454,7 +1641,7 @@ namespace Zilf.Emit.Glulx
             section .bss
             tokenize_key_buf: resb VOCAB_RESOLUTION";
 
-        [RuntimeFunc(nameof(vocab_defines))]
+        [RuntimeFunc(nameof(vocab_defines), nameof(advance_cursor_x))]
         public const string print_vocab_word = @"
             function
             local word
@@ -1464,11 +1651,17 @@ namespace Zilf.Emit.Glulx
             copy 0 -> i
         .next_char:
             aloadb word i -> c
-            jz c -> rfalse
+            jz c -> .advance
             streamchar c
             add i 1 -> i
-            jge i VOCAB_RESOLUTION -> rfalse
-            jump .next_char";
+            jge i VOCAB_RESOLUTION -> .advance
+            jump .next_char
+        .advance:
+            ; Status window selected?
+            jz [gg_status_selected] -> rfalse
+            sub i 1 -> push
+            callfi _rt_advance_cursor_x
+            return";
 
         // Glulx textbuf/lexbuf format:
         // - textbuf is same as the Z-machine:
