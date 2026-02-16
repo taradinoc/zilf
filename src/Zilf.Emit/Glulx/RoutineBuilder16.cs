@@ -125,7 +125,7 @@ namespace Zilf.Emit.Glulx
                         EmitUnary16(nameof(RuntimeLib16.neg16), value, result);
                         return;
                     case UnaryOp.LoadIndirect:
-                        Emit($"sub {FormatLoad(value)} 1 -> push", "mul");
+                        Emit($"sub {FormatLoad(value)} 1 -> push", "sub");
                         Emit($"aload global_variables pop -> push", "aload");
                         Emit($"bitand pop 0xFFFF -> {FormatStore(result!)}", "bitand");
                         return;

@@ -1061,6 +1061,7 @@ namespace Zilf.Emit.Glulx
             status_score_text: huffstr ""Score: ""
             status_moves_text: huffstr ""Moves: """;
 
+        // TODO: include different versions of update_status_line for time and score, instead of checking the flag at runtime
         [RuntimeFunc(
             nameof(select_window), nameof(output_style), nameof(get_screen_width),
             nameof(move_cursor), nameof(print_object), nameof(status_defines),
@@ -1095,10 +1096,8 @@ namespace Zilf.Emit.Glulx
             streamchar ` `
             ; Print location
             callfi _rt_print_object here
-            ; Time status bar? (V3 only)
-            jne ZMACHINE_VERSION 3 -> .score
+            ; Time status bar?
             jnz (ZVERSION_FLAGS & 0x2) -> .time
-        .score:
             ; No, move over and print score
             sub width 22 -> push
             callfii _rt_move_cursor 1 pop
