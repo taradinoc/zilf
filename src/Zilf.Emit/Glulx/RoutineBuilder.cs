@@ -861,15 +861,53 @@ namespace Zilf.Emit.Glulx
         {
             // Use Glulx's binarysearch or linearsearch opcode
             form ??= gameBuilder.MakeOperand(0x84);     // word key, 4 byte structs
-            // TODO: do smarter stack juggling?
-            Emit($"copy {FormatLoad(value)} -> {UseTempVariable(1)}", "copy");
-            Emit($"copy {FormatLoad(table)} -> {UseTempVariable(2)}", "copy");
-            Emit($"copy {FormatLoad(length)} -> {UseTempVariable(3)}", "copy");
-            Emit($"copy {FormatLoad(form)} -> {UseTempVariable(4)}", "copy");
-            Emit("push __temp4", "push");
-            Emit("push __temp3", "push");
-            Emit("push __temp2", "push");
-            Emit("push __temp1", "push");
+
+            int n = 1;
+
+            if (value == Stack)
+            {
+                Emit($"pull {UseTempVariable(n++)}", "pull");
+            }
+
+            if (table == Stack)
+            {
+                Emit($"pull {UseTempVariable(n++)}", "pull");
+            }
+
+            if (length == Stack)
+            {
+                Emit($"pull {UseTempVariable(n++)}", "pull");
+            }
+
+            Emit($"push {FormatLoad(form)}", "push");
+
+            if (length == Stack)
+            {
+                Emit($"push __temp{--n}", "push");
+            }
+            else
+            {
+                Emit($"push {FormatLoad(length)}", "push");
+            }
+
+            if (table == Stack)
+            {
+                Emit($"push __temp{--n}", "push");
+            }
+            else
+            {
+                Emit($"push {FormatLoad(table)}", "push");
+            }
+
+            if (value == Stack)
+            {
+                Emit($"push __temp{--n}", "push");
+            }
+            else
+            {
+                Emit($"push {FormatLoad(value)}", "push");
+            }
+
             Emit($"call {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.scan_table))} 4 -> {FormatStore(result)}", "call");
         }
 

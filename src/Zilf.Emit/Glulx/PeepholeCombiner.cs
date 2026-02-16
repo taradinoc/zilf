@@ -169,6 +169,7 @@ namespace Zilf.Emit.Glulx
             new("fold copy local/return pair", TrySimplifyCopyLocalReturn),
             new("eliminate copy to same", TryEliminateCopyToSame),
             new("eliminate redundant push/pop", TryEliminatePushPop),
+            new("fold store to stack/pull pair", TrySimplifyStackStorePull),
         ];
 
         /// <summary>
@@ -298,7 +299,7 @@ namespace Zilf.Emit.Glulx
 
         /// <summary>
         /// Eliminates redundant push/pop pairs like "copy X -> push" followed by "copy pop -> Y"
-        /// becoming "copy X -> Y".
+        /// becoming "copy X -> Y", or a literal "push pop".
         /// </summary>
         bool TryEliminatePushPop(IEnumerable<CombinableLine<GlulxCode>> lines, out CombinerResult<GlulxCode> result)
         {
@@ -320,6 +321,47 @@ namespace Zilf.Emit.Glulx
                     var dest = popText[12..].Trim(); // Skip "copy pop -> "
 
                     result = Combine2To1($"copy {src} -> {dest}", "copy");
+                    return true;
+                }
+
+                if (Match(a => a.Code.Text == "push pop"))
+                {
+                    result = Consume(1);
+                    return true;
+                }
+
+                result = default;
+                return false;
+            }
+            finally
+            {
+                EndMatch();
+            }
+        }
+
+        /// <summary>
+        /// Optimizes OP -> push followed by pull X to OP -> X.
+        /// </summary>
+        bool TrySimplifyStackStorePull(IEnumerable<CombinableLine<GlulxCode>> lines, out CombinerResult<GlulxCode> result)
+        {
+            BeginMatch(lines);
+            try
+            {
+                if (Match(
+                    a => a.Code.Text.EndsWith("-> push"),
+                    b => b.Code.Opcode == "pull" || b.Code.Text.StartsWith("copy pop ->")))
+                {
+                    // Extract the instruction from "OP -> push"
+                    var line1Text = matches![0].Code.Text;
+                    var instr = line1Text[..^4]; // Remove "push"
+                    int instrSpace = instr.IndexOf(' ');
+                    var instrOp = instrSpace >= 0 ? instr[..instrSpace] : instr;
+
+                    // Extract the variable from pull or copy
+                    var line2Text = matches![1].Code.Text;
+                    var variable = line2Text[(line2Text.LastIndexOf(' ') + 1)..];
+
+                    result = Combine2To1(instr + variable, instrOp, matches![0].Type, null);
                     return true;
                 }
 
