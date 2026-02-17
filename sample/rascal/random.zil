@@ -94,12 +94,10 @@ Args:
 Returns:
   Integer in 1..N, or 0 if N<=0."
 <ROUTINE RNG (N "AUX" R)
-    <COND (<NOT ,RNG-SEEDED?>
-           <INIT-RNG-RANDOM>)>
-    <COND (<L=? .N 0>
-           0)
+    <COND (<NOT ,RNG-SEEDED?> <INIT-RNG-RANDOM>)>
+    <COND (<L=? .N 0> 0)
           (ELSE
-      <RNG-STEP>
-      ;"Project the 32-bit state to a non-negative value for MOD."
-      <SET R <LSH <RNG-XOR16 ,RNG-STATE-HI ,RNG-STATE-LO> -1>>
-      <+ 1 <MOD .R .N>>)>>
+           <RNG-STEP>
+           ;"Project the 32-bit state to a non-negative value for MOD."
+           <SET R <LSH <RNG-XOR16 ,RNG-STATE-HI ,RNG-STATE-LO> -1>>
+           <+ 1 <MOD .R .N>>)>>
