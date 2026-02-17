@@ -29,6 +29,17 @@ Returns:
 <ROUTINE CLAMP (V LO HI)
     <COND (<L? .V .LO> .LO) (<G? .V .HI> .HI) (ELSE .V)>>
 
+;"Returns the greater of A and B.
+
+Args:
+    A: A value.
+    B: Another value.
+
+Returns:
+    Higher value."
+<ROUTINE MAX (A B)
+    <COND (<G? .A .B> .A) (ELSE .B)>>
+
 ;"8-way direction delta helpers.
 
 D is 1..8 and maps to:

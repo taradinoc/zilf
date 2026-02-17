@@ -387,21 +387,51 @@ interior ID."
             <SET-ITEM-VOCAB .O>)>
         <SET O .N>>>
 
-<ROUTINE ITEM-ACTION-WEAPON ("AUX" E)
+<ROUTINE ITEM-ACTION-WEAPON ("AUX" E TYPE L)
     <COND (<VERB? EXAMINE>
-           <TELL "It's a level " N <GETP ,PRSO ,P?R-ITLVL> " "
-                 <WEAPON-NAME <GETP ,PRSO ,P?R-ITID>>>
+           <SET TYPE <GETP ,PRSO ,P?R-ITID>>
+           <COND (<==? .TYPE ,WEAPON-DAGGER>
+                  <TELL "It's called a dagger, but come to think of it, you've
+never actually seen it dag. This short blade has low base damage, above-average
+variance, and an outstanding crit chance." CR>)
+                 (<==? .TYPE ,WEAPON-WARAXE>
+                  <TELL "It's autographed by all the members of War. This
+double-bladed axe has above-average base damage, wild variance, and an
+impressive crit chance." CR>)
+                 (<==? .TYPE ,WEAPON-CUDGEL>
+                  <TELL "Metaphorically, a cudgel is an issue used to
+aggressively beat down an opponent in public discourse. Physically,
+this cudgel is a stout stick used to aggressively beat down an opponent in
+a dungeon, with average base damage, minimal variance, and an average crit
+chance." CR>)
+                 (<==? .TYPE ,WEAPON-KATANA>
+                  <TELL "This curved, single-edged blade is traditionally
+associated with samurai and ninja turtles. It has average base damage,
+high variance, and a below-average crit chance." CR>)
+                 (<==? .TYPE ,WEAPON-SCYTHE>
+                  <TELL "This curved blade on the end of a long pole
+demonstrates why it was so hard to convince people not to fear the reaper. It
+has above-average base damage, wild variance, and a low crit chance." CR>)
+                 (<==? .TYPE ,WEAPON-HAMMER>
+                  <TELL "When they sang about hammering out danger, this must've
+been what they had in mind. It has powerful base damage, average variance, and a
+minimal crit chance." CR>)
+                 (ELSE <TELL "It's a typical " <WEAPON-NAME .TYPE> "." CR>)>
            <COND (<SET E <GETP ,PRSO ,P?R-ITENCH>>
-                  <TELL ", with a +" N .E " enchantment">)>
-           <TELL "." CR>)>>
+                  <TELL CR "Because of its +" N .E
+                           " enchantment, it hits like a level "
+                           N <+ <SET L <GETP ,PRSO ,P?R-ITLVL>> .E> " "
+                           <WEAPON-NAME .TYPE> " and only requires "
+                           N <MAX 1 <- .L .E>> " strength to wield." CR>)>
+           <RTRUE>)>>
 
 <ROUTINE ITEM-ACTION-TREASURE ()
     <COND (<VERB? EXAMINE READ>
            <COND (<POSTER? ,PRSO> <POSTER-F>)
                  (<==? <GETP ,PRSO ,P?R-ITID> ,TREASURE-TROPHY>
-                  <TELL "It's a foot-long ornate cup made of yellowish metal.
+                  <TELL "It's a foot-tall ornate cup made of yellowish metal.
 Engraved on one side, you see the outline of an oval with a zigzag line running
-lengthwise inside it.">)
+lengthwise inside it and an inverted V above it.">)
                  (ELSE <TELL "It looks valuable." CR>)>)>>
 
 <ROUTINE ITEM-ACTION-POTION ("AUX" COLOR)
