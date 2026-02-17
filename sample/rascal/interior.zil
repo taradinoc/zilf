@@ -431,7 +431,7 @@ minimal crit chance." CR>)
                  (<==? <GETP ,PRSO ,P?R-ITID> ,TREASURE-TROPHY>
                   <TELL "It's a foot-tall ornate cup made of yellowish metal.
 Engraved on one side, you see the outline of an oval with a zigzag line running
-lengthwise inside it and an inverted V above it.">)
+lengthwise across it and an inverted V above it." CR>)
                  (ELSE <TELL "It looks valuable." CR>)>)>>
 
 <ROUTINE ITEM-ACTION-POTION ("AUX" COLOR)
