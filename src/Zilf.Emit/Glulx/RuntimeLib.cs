@@ -1332,7 +1332,7 @@ namespace Zilf.Emit.Glulx
             ; Status window selected?
             jz [gg_status_selected] -> rfalse
             ; Print the string again through a filter function
-            getiosys -> iosys -> rock
+            getiosys -> iosys rock
             setiosys 1 _rt_iofilter_advance_status_cursor
             streamstr str
             setiosys iosys rock
@@ -1352,7 +1352,7 @@ namespace Zilf.Emit.Glulx
             ; Status window selected?
             jz [gg_status_selected] -> rfalse
             ; Print the number again through a filter function
-            getiosys -> iosys -> rock
+            getiosys -> iosys rock
             setiosys 1 _rt_iofilter_advance_status_cursor
             streamnum num
             setiosys iosys rock
