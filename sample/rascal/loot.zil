@@ -205,8 +205,8 @@ Returns:
            <PUTP .ITEM ,P?R-X ,DROP-CAND-X>
            <PUTP .ITEM ,P?R-Y ,DROP-CAND-Y>
            <MOVE .ITEM <FLOOR-OBJ ,CURRENT-FLOOR>>
-      <MARK-DIRTY .OX .OY>
-      <MARK-DIRTY ,DROP-CAND-X ,DROP-CAND-Y>
+           <MARK-DIRTY .OX .OY>
+           <MARK-DIRTY ,DROP-CAND-X ,DROP-CAND-Y>
            <RTRUE>)>
     <PUTP .ITEM ,P?R-X ,PLAYER-X>
     <PUTP .ITEM ,P?R-Y ,PLAYER-Y>
@@ -237,7 +237,7 @@ Returns:
            <PUTP .O ,P?R-X .X>
            <PUTP .O ,P?R-Y .Y>
            <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
-              <MARK-DIRTY .X .Y>
+           <MARK-DIRTY .X .Y>
            <RTRUE>)>
     <RFALSE>>
 

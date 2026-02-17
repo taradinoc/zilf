@@ -694,7 +694,7 @@ Returns:
                              <LOG "Never mind." CR>
                              <DRAW>
                              <AGAIN>)>)>
-               <COND (<HANDLE-INPUT .C> <DRAW> <AGAIN>)>
+               <COND (<HANDLE-INPUT .C> <CHECK-END> <DRAW> <AGAIN>)>
                <STEP-ENEMIES>
                <SETG STATS-TURNS <+ ,STATS-TURNS 1>>
                <UPDATE-BEE-SWARM>
