@@ -678,6 +678,7 @@ Returns:
            <PUTP .O ,P?R-X .NX>
            <PUTP .O ,P?R-Y .NY>
            <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
+           <MARK-DIRTY .NX .NY>
            <LOG "You drop the " <TREASURE-NAME .ID> "." CR>
            <RTRUE>)
           (<==? .K ,ITEMKIND-WEAPON>
