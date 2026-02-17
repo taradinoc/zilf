@@ -142,7 +142,7 @@
   An error results if the message is not defined, or if the BINDINGS contain
   any LVALs that are not present in the EXPANSION.
   Example:
-    <TELL <LIBRARY-MESSAGE TAKE SUCCESS ((.OBJ ,PRSO))> \".\" CR>
+    <TELL <LIBRARY-MESSAGE TAKE SUCCESS ((OBJ ,PRSO))> \".\" CR>
   "
 <DEFMAC LIBRARY-MESSAGE (CATEGORY NAME "OPT" ('BINDINGS '()) "AUX" (MA <MESSAGE-ATOM .CATEGORY .NAME>) V)
     #DECL ((VALUE) SPLICE
