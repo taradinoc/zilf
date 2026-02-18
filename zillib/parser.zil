@@ -97,8 +97,10 @@
 <ADD-TELL-TOKENS
     T *                  <PRINT-DEF .X>
     A *                  <PRINT-INDEF .X>
+    P *                  <PRINT-PLURAL .X>
     CT *                 <PRINT-CDEF .X>
     CA *                 <PRINT-CINDEF .X>
+    CP *                 <PRINT-CPLURAL .X>
     NOUN-PHRASE *        <PRINT-NOUN-PHRASE .X>
     OBJSPEC *            <PRINT-OBJSPEC .X>
     SYNTAX-LINE *        <PRINT-SYNTAX-LINE .X>
@@ -171,6 +173,7 @@ other versions. These macros let us write the same code for all versions."
 <PROPDEF PRONOUN <>>
 <PROPDEF THINGS <>>
 <PROPDEF GENERIC <>>
+<PROPDEF PDESC <>>
 
 "Parser"
 
@@ -582,6 +585,12 @@ Args:
 <GLOBAL P-PRSIS <PRSTBL>>
 "Extra objects for temporary use"
 <GLOBAL P-XOBJS <PRSTBL>>
+"Data associated with extra objects for temporary use"
+<CONSTANT P-XOBJS-TAGS <ITABLE <+ 1 ,P-MAX-OBJECTS> (BYTE)>>
+"Objects being listed"
+<GLOBAL P-LOBJS <PRSTBL>>
+"Data associated with objects being listed"
+<CONSTANT P-LOBJS-TAGS <ITABLE <+ 1 ,P-MAX-OBJECTS> (BYTE)>>
 
 <DEFMAC COPY-PRSTBL ('SRC 'DEST)
     `<~<VERSION? (ZIP COPY-TABLE-B) (ELSE COPY-TABLE)> ~.SRC ~.DEST <+ 1 ,P-MAX-OBJECTS>>>

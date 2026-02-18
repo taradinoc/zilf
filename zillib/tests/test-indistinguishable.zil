@@ -12,12 +12,14 @@
 <OBJECT CLONE1
     (IN STARTROOM)
     (DESC "clone1")
+    (PDESC "clones")
     (SYNONYM CLONE)
     (FLAGS TAKEBIT)>
 
 <OBJECT CLONE2
     (IN STARTROOM)
     (DESC "clone2")
+    (PDESC "clones")
     (SYNONYM CLONE)
     (FLAGS TAKEBIT)>
 
@@ -31,6 +33,7 @@
 <OBJECT BLUE-CONE1
     (IN STARTROOM)
     (DESC "blue cone1")
+    (PDESC "blue cones")
     (SYNONYM CONE)
     (ADJECTIVE BLUE)
     (FLAGS TAKEBIT)>
@@ -38,6 +41,7 @@
 <OBJECT BLUE-CONE2
     (IN STARTROOM)
     (DESC "blue cone2")
+    (PDESC "blue cones")
     (SYNONYM CONE)
     (ADJECTIVE BLUE)
     (FLAGS TAKEBIT)>
@@ -61,5 +65,15 @@
 <TEST-CASE ("Distinguishable by vocab")
     <COMMAND [TAKE CONE]>
     <EXPECT "Which do you mean, the blue cone2 or the red cone?|">>
+
+<TEST-CASE ("Coalesce inventory listing")
+    <MOVE ,CLONE1 ,WINNER>
+    <MOVE ,CLONE2 ,WINNER>
+    <COMMAND [INVENTORY]>
+    <EXPECT "You are carrying:|    two clones|">>
+
+<TEST-CASE ("Coalesce room contents")
+    <COMMAND [LOOK]>
+    <EXPECT "Start Room||There are two blue cones, a red cone, and two clones here.|">>
 
 <TEST-GO ,STARTROOM>

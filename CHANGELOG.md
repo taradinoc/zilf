@@ -14,6 +14,12 @@ and this project adheres to
 - Added library message `NO-SPECS` for commands with empty noun phrases, like
   `GET THE`.
 
+- Indistinguishable objects are now combined in listings (contents, inventory,
+  etc.), as long as the indistinguishable objects have a `PDESC` property
+  containing their plural name. Inventory listings use `INV-INDISTINGUISHABLE?`
+  to decide whether to combine objects, accounting for their listed state (worn,
+  providing light, etc.).
+
 ## [1.5] (February 10, 2026)
 
 ### Added

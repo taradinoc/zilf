@@ -533,6 +533,11 @@ Args:
     <COND (<NOT <FSET? .OBJ ,NARTICLEBIT>> <TELL "the ">)>
     <PRINTD .OBJ>>
 
+;"Implements <TELL P .OBJ>."
+<ROUTINE PRINT-PLURAL (OBJ "AUX" P)
+    <COND (<SET P <GETP .OBJ ,P?PDESC>> <TELL .P>)
+          (ELSE <TELL D .OBJ !\s>)>>
+
 ;"Implements <TELL CA .OBJ>."
 <ROUTINE PRINT-CINDEF (OBJ "AUX" A)
     <COND (<FSET? .OBJ ,NARTICLEBIT>
@@ -551,6 +556,11 @@ Args:
            <RTRUE>)
           (ELSE <TELL "The " D .OBJ>)>>
 
+;"Implements <TELL CP .OBJ>."
+<ROUTINE PRINT-CPLURAL (OBJ "AUX" P)
+    <COND (<SET P <GETP .OBJ ,P?PDESC>> <PRINT-CAP-STR .P>)
+          (ELSE <PRINT-CAP-OBJ .OBJ> <TELL !\s>)>>
+
 ;"Prints a sentence describing the contents of a surface or container."
 <ROUTINE DESCRIBE-CONTENTS (OBJ)
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL "On">)
@@ -562,30 +572,6 @@ Args:
 
 ;"A filter routine to exclude WINNER from contents listings."
 <ROUTINE NOT-WINNER? (OBJ) <N==? .OBJ ,WINNER>>
-
-;"Prints a space followed by a parenthetical describing the contents of a
-surface or container, for use in inventory listings."
-<ROUTINE INV-DESCRIBE-CONTENTS (OBJ "AUX" N F)
-    <COND (<FSET? .OBJ ,SURFACEBIT> <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-1-SURFACE>>)
-          (ELSE <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-1-CONTAINER>>)>
-    <SET F <FIRST? .OBJ>>
-    <COND (<NOT .F>
-           <TELL <LIBRARY-MESSAGE INVENTORY NOTHING> <LIBRARY-MESSAGE INVENTORY CONTENTS-2>>
-           <RETURN>)>
-    <MAP-CONTENTS (I .OBJ)
-        <SET N <+ .N 1>>>
-    <COND (<==? .N 1>
-           <TELL A .F>)
-          (<==? .N 2>
-           <TELL A .F " and " A <NEXT? .F>>)
-          (ELSE
-           <MAP-CONTENTS (I .OBJ)
-               <TELL A .I>
-               <SET N <- .N 1>>
-               <COND (<0? .N>)
-                     (<==? .N 1> <TELL ", and ">)
-                     (ELSE <TELL ", ">)>>)>
-    <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-2>>>
 
 ;"Prints a list describing a set of objects, usually the contents of a
 surface or container.
@@ -639,6 +625,7 @@ Returns:
            <SET FLAGS <BOR .FLAGS ,L-SUFFIX>>)>
     <COND (<OR <BTST .FLAGS ,L-SUFFIX> <BTST .FLAGS ,L-ISMANY>>
            <SET FLAGS <BOR .FLAGS ,L-ISARE>>)>
+    ;"Copy filtered objects to P-LOBJS"
     <COND (<BTST .FLAGS ,L-PRSTABLE>
            <COND (<SET MAX <GETB .O 0>>
                   <DO (I 1 .MAX)
@@ -646,13 +633,15 @@ Returns:
                       <COND (<OR <NOT .FILTER> <APPLY .FILTER .J>>
                              <COND (<0? .F> <SET F .J>)
                                    (<0? .S> <SET S .J>)>
-                             <SET N <+ .N 1>>)>>)>)
+                             <SET N <+ .N 1>>
+                             <PUT/B ,P-LOBJS .N .J>)>>)>)
           (ELSE
            <MAP-CONTENTS (I .O)
                <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
                       <COND (<0? .F> <SET F .I>)
                             (<0? .S> <SET S .I>)>
-                      <SET N <+ .N 1>>)>>)>
+                      <SET N <+ .N 1>>
+                      <PUT/B ,P-LOBJS .N .I>)>>)>
     <COND (<==? .N 0>
            <COND (<BTST .FLAGS ,L-CAP>
                   <TELL "Nothing is">)
@@ -662,65 +651,60 @@ Returns:
                   <TELL "is nothing">)
                  (ELSE <TELL "nothing">)>)
           (<==? .N 1>
-           <COND (<BTST .FLAGS ,L-CAP>
-                  <LIST-OBJECTS-PRINT .F .FLAGS T>
-                  <IF-PLURAL .F <TELL " are"> <TELL " is">>)
-                 (<BTST .FLAGS ,L-SUFFIX>
-                  <LIST-OBJECTS-PRINT .F .FLAGS <>>
+           <COND (<OR <BTST .FLAGS ,L-CAP> <BTST .FLAGS ,L-SUFFIX>>
+                  <LIST-OBJECTS-PRINT .F .FLAGS>
                   <IF-PLURAL .F <TELL " are"> <TELL " is">>)
                  (ELSE
                   <AND <BTST .FLAGS ,L-ISARE>
                        <IF-PLURAL .F <TELL "are "> <TELL "is ">>>
-                  <LIST-OBJECTS-PRINT .F .FLAGS <>>)>)
+                  <LIST-OBJECTS-PRINT .F .FLAGS>)>)
           (<==? .N 2>
-           <COND (<AND <BTST .FLAGS ,L-ISARE>
-                       <NOT <BTST .FLAGS ,L-SUFFIX>>>
-                       <COND (<OR <NOT <BTST .FLAGS ,L-ISMANY>>
-                                  <FSET? .F ,PLURALBIT>>
-                              <TELL "are ">)
-                             (ELSE <TELL "is ">)>)>
-           <LIST-OBJECTS-PRINT .F .FLAGS <BAND .FLAGS ,L-CAP>>
-           <COND (<BTST .FLAGS ,L-OR> <TELL " or ">) (ELSE <TELL " and ">)>
-           <LIST-OBJECTS-PRINT .S .FLAGS <>>
-           <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)
+           <COND (<AND <GETP .F ,P?PDESC> <INDISTINGUISHABLE? .F .S>>
+                  ;"list the two objects together"
+                  <COND (<AND <BTST .FLAGS ,L-ISARE>
+                              <NOT <BTST .FLAGS ,L-SUFFIX>>>
+                         <TELL "are ">)>
+                  <LIST-OBJECTS-PRINT .F .FLAGS 2>
+                  <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)
+                 (ELSE
+                  <COND (<AND <BTST .FLAGS ,L-ISARE>
+                              <NOT <BTST .FLAGS ,L-SUFFIX>>>
+                              <COND (<OR <NOT <BTST .FLAGS ,L-ISMANY>>
+                                         <FSET? .F ,PLURALBIT>>
+                                     <TELL "are ">)
+                                    (ELSE <TELL "is ">)>)>
+                  <LIST-OBJECTS-PRINT .F .FLAGS>
+                  <COND (<BTST .FLAGS ,L-OR> <TELL " or ">) (ELSE <TELL " and ">)>
+                  <LIST-OBJECTS-PRINT .S <BAND .FLAGS <BCOM ,L-CAP>>>
+                  <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)>)
           (ELSE
+           <PUTB ,P-LOBJS 0 .N>
+           <LIST-OBJECTS-TAG-COUNTS ,P-LOBJS ,P-LOBJS-TAGS>
+           <SET MAX <GETB ,P-LOBJS 0>>
            <COND (<AND <BTST .FLAGS ,L-ISARE>
                        <NOT <BTST .FLAGS ,L-SUFFIX>>>
                   <COND (<OR <NOT <BTST .FLAGS ,L-ISMANY>>
-                             <FSET? .F ,PLURALBIT>>
+                             <FSET? .F ,PLURALBIT>
+                             <G? <GETB ,P-LOBJS-TAGS 1> 1>>
                          <TELL "are ">)
                         (ELSE <TELL "is ">)>)>
-           <COND (<BTST .FLAGS ,L-PRSTABLE>
-                  <DO (I 1 .MAX)
-                      <SET J <GET/B .O .I>>
-                      <COND (<OR <NOT .FILTER> <APPLY .FILTER .J>>
-                             <COND (<AND <BTST .FLAGS ,L-CAP> <=? .I 1>>
-                                    <LIST-OBJECTS-PRINT .J .FLAGS T>)
-                                   (ELSE
-                                    <LIST-OBJECTS-PRINT .J .FLAGS <>>)>
-                             <SET N <- .N 1>>
-                             <COND (<0? .N>)
-                                   (<==? .N 1>
-                                    <COND (<BTST .FLAGS ,L-OR> <TELL ", or ">)
-                                          (ELSE <TELL ", and ">)>)
-                                   (ELSE <TELL ", ">)>)>>)
-                 (ELSE
-                  <MAP-CONTENTS (I .O)
-                      <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
-                             <COND (<AND <BTST .FLAGS ,L-CAP> <=? .I .F>>
-                                    <LIST-OBJECTS-PRINT .I .FLAGS T>)
-                                   (ELSE
-                                    <LIST-OBJECTS-PRINT .I .FLAGS <>>)>
-                             <SET N <- .N 1>>
-                             <COND (<0? .N>)
-                                   (<==? .N 1>
-                                    <COND (<BTST .FLAGS ,L-OR> <TELL ", or ">)
-                                          (ELSE <TELL ", and ">)>)
-                                   (ELSE <TELL ", ">)>)>>)>
+           <SET F <- .MAX 1>>
+           <DO (I 1 .MAX)
+               <SET J <GET/B ,P-LOBJS .I>>
+               <SET S <GETB ,P-LOBJS-TAGS .I>>
+               <COND (<==? .I 1>
+                      <LIST-OBJECTS-PRINT .J .FLAGS .S>)
+                     (ELSE
+                      <LIST-OBJECTS-PRINT .J <BAND .FLAGS <BCOM ,L-CAP>> .S>)>
+               <COND (<==? .I .MAX>)
+                     (<==? .I .F>
+                      <COND (<BTST .FLAGS ,L-OR> <TELL ", or ">)
+                            (ELSE <TELL ", and ">)>)
+                     (ELSE <TELL ", ">)>>
            <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)>
     <RETURN .N>>
 
-<ROUTINE LIST-OBJECTS-PRINT (O FLAGS CAP?)
+<ROUTINE LIST-OBJECTS-PRINT (O FLAGS "OPT" CNT "AUX" (CAP? <BAND .FLAGS ,L-CAP>))
     <COND (<AND <=? .O ,PSEUDO-OBJECT>
                 <BTST .FLAGS ,L-SCENERY>>
            <COND (.CAP? <TELL !\S>) (ELSE <TELL !\s>)>
@@ -728,12 +712,69 @@ Returns:
            <COND (<N=? ,PSEUDO-LOC ,HERE>
                   <TELL " in " D ,PSEUDO-LOC>)>
            <RTRUE>)
+          (<G? .CNT 1>
+           <LIST-OBJECTS-PRINT-NUM .CNT .CAP?>
+           <TELL " " P .O>)
           (.CAP?
            <COND (<BTST .FLAGS ,L-THE> <TELL CT .O>)
                  (ELSE <TELL CA .O>)>)
           (ELSE
            <COND (<BTST .FLAGS ,L-THE> <TELL T .O>)
                  (ELSE <TELL A .O>)>)>>
+
+<CONSTANT ENGLISH-NUMS
+    <PLTABLE "one" "two" "three" "four" "five" "six" "seven" "eight" "nine" "ten">>
+
+<ROUTINE LIST-OBJECTS-PRINT-NUM (N CAP?)
+    <COND (<G? .N <GET ,ENGLISH-NUMS 0>> <TELL N .N>)
+          (.CAP? <PRINT-CAP-STR <GET ,ENGLISH-NUMS .N>>)
+          (ELSE <TELL <GET ,ENGLISH-NUMS .N>>)>>
+
+;"Counts indistinguishable objects in a PRSTBL, filters each set down to a
+  single object, and fills a tag table with the corresponding counts.
+
+  Args:
+    TBL: A PRSTBL containing the objects to count. Some objects may be removed
+      from this table and its count updated.
+    TAGS: A byte table with elements corresponding to TBL. It will be filled
+      in with the number of objects in each corresponding indistinguishable set
+      (1 or more). Its count (byte 0) is ignored.
+    IND-FUNC: A function to check if two objects are indistinguishable. If
+      omitted, uses INDISTINGUISHABLE?.
+
+  Returns:
+    The number of objects left in TBL."
+<ROUTINE LIST-OBJECTS-TAG-COUNTS (TBL TAGS "OPT" IND-FUNC "AUX" C MAX O P N)
+    <SET MAX <GETB .TBL 0>>
+    ;"initialize tags to 1"
+    <DO (I 1 .MAX)
+        <PUTB .TAGS .I 1>>
+    ;"increment tags of the first indistinguishable objects in each set, zero the others"
+    <DO (I 1 .MAX)
+        <COND (<SET C <GETB .TAGS .I>>
+               <SET O <GET/B .TBL .I>>
+               <COND (<AND <L? .I .MAX> <GETP .O ,P?PDESC>>
+                      <DO (J <+ .I 1> .MAX)
+                          <SET P <GET/B .TBL .J>>
+                          <COND (<COND (.IND-FUNC <APPLY .IND-FUNC .O .P>)
+                                       (ELSE <INDISTINGUISHABLE? .O .P>)>
+                                 <SET C <+ .C 1>>
+                                 <PUTB .TAGS .J 0>)>>
+                      <PUTB .TAGS .I .C>)>)>>
+    ;"remove the zeroed objects"
+    <SET C 1>
+    <SET N .MAX>
+    <DO (I 1 .MAX)
+        <SET O <GET/B .TBL .I>>
+        <SET P <GETB .TAGS .I>>
+        <COND (<0? .P>
+               <SET N <- .N 1>>)
+              (ELSE
+               <PUT/B .TBL .C .O>
+               <PUTB .TAGS .C .P>
+               <SET C <+ .C 1>>)>>
+    <PUTB .TBL 0 .N>
+    .N>
 
 ;"Direction properties have a different format on V4+, where object numbers are words."
 <VERSION?
@@ -986,25 +1027,70 @@ Returns:
            <TELL <LIBRARY-MESSAGE SEARCH EMPTY ((OBJ ,PRSO) (PLURAL? <FSET? ,PRSO PLURALBIT>))> CR>)
           (ELSE <DESCRIBE-CONTENTS ,PRSO>)>>
 
-<ROUTINE V-INVENTORY ()
+<ROUTINE V-INVENTORY ("AUX" N O)
     ;"check for light first"
     <COND (,HERE-LIT
            <COND (<FIRST? ,WINNER>
                   <TELL <LIBRARY-MESSAGE INVENTORY HEADER> CR>
+                  ;"load inventory into P-XOBJS"
+                  <SET N 0>
                   <MAP-CONTENTS (I ,WINNER)
-                      <TELL "   " A .I>
-                      <AND <FSET? .I ,WORNBIT> <TELL <LIBRARY-MESSAGE INVENTORY WORN>>>
-                      <AND <FSET? .I ,LIGHTBIT> <TELL <LIBRARY-MESSAGE INVENTORY LIGHTING>>>
-                      <COND (<FSET? .I ,CONTBIT>
-                             <COND (<FSET? .I ,OPENABLEBIT>
-                                    <COND (<FSET? .I ,OPENBIT> <TELL <LIBRARY-MESSAGE INVENTORY OPEN>>)
+                      <SET N <+ .N 1>>
+                      <PUT/B ,P-XOBJS .N .I>>
+                  <PUTB ,P-XOBJS 0 .N>
+                  ;"combine indistinguishable items"
+                  <SET N <LIST-OBJECTS-TAG-COUNTS ,P-XOBJS ,P-XOBJS-TAGS>>
+                  <DO (I 1 .N)
+                      <SET O <GET/B ,P-XOBJS .I>>
+                      <TELL "   ">
+                      <LIST-OBJECTS-PRINT .O 0 <GETB ,P-XOBJS-TAGS .I>>
+                      <AND <FSET? .O ,WORNBIT> <TELL <LIBRARY-MESSAGE INVENTORY WORN>>>
+                      <AND <FSET? .O ,LIGHTBIT> <TELL <LIBRARY-MESSAGE INVENTORY LIGHTING>>>
+                      <COND (<FSET? .O ,CONTBIT>
+                             <COND (<FSET? .O ,OPENABLEBIT>
+                                    <COND (<FSET? .O ,OPENBIT> <TELL <LIBRARY-MESSAGE INVENTORY OPEN>>)
                                           (ELSE <TELL <LIBRARY-MESSAGE INVENTORY CLOSED>>)>)>
-                             <COND (<SEE-INSIDE? .I> <INV-DESCRIBE-CONTENTS .I>)>)>
+                             <COND (<SEE-INSIDE? .O> <INV-DESCRIBE-CONTENTS .O>)>)>
                       <CRLF>>)
                  (ELSE
                   <TELL <LIBRARY-MESSAGE INVENTORY EMPTY-HANDED> CR>)>)
           (ELSE
            <TELL <LIBRARY-MESSAGE INVENTORY TOO-DARK> CR>)>>
+
+;"Prints a space followed by a parenthetical describing the contents of a
+surface or container, for use in inventory listings."
+
+<ROUTINE INV-DESCRIBE-CONTENTS (OBJ "AUX" F)
+    <COND (<FSET? .OBJ ,SURFACEBIT>
+           <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-1-SURFACE>>)
+          (ELSE <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-1-CONTAINER>>)>
+    <SET F <FIRST? .OBJ>>
+    <COND (<NOT .F>
+           <TELL <LIBRARY-MESSAGE INVENTORY NOTHING>
+                 <LIBRARY-MESSAGE INVENTORY CONTENTS-2>>
+           <RETURN>)>
+    <LIST-OBJECTS .OBJ>
+    <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-2>>>
+
+<DEFAULT-DEFINITION INV-INDISTINGUISHABLE?
+    ;"Checks whether two objects are indistinguishable for inventory purposes,
+      i.e., whether they should be combined in an inventory listing, where
+      they'd appear with attributes like (worn) or (providing light) and, for
+      open containers, their contents."
+    <ROUTINE INV-INDISTINGUISHABLE? (A B)
+        <AND <INDISTINGUISHABLE? .A .B>
+             <==? <FSET? .A ,WORNBIT> <FSET? .B ,WORNBIT>>
+             <==? <FSET? .A ,LIGHTBIT> <FSET? .B ,LIGHTBIT>>
+             ;"If neither is a container..."
+             <OR <NOT <OR <FSET? .A ,CONTBIT> <FSET? .B ,CONTBIT>>>
+                 ;"...or they're both unopenable..."
+                 <NOT <OR <FSET? .A ,OPENABLEBIT> <FSET? .B ,OPENABLEBIT>>>
+                 ;"...or they're both open or both closed, and..."
+                 <AND <==? <FSET? .A ,OPENBIT> <FSET? .B ,OPENBIT>>
+                      ;"...either we can't see the contents of either..."
+                      <OR <NOT <OR <SEE-INSIDE? .A> <SEE-INSIDE? .B>>>
+                          ;"...or they're both empty."
+                          <NOT <OR <FIRST? .A> <FIRST? .B>>>>>>>>>
 
 <ROUTINE V-TAKE ()
     <TRY-TAKE ,PRSO>
