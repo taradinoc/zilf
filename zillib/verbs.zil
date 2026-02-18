@@ -722,13 +722,10 @@ Returns:
            <COND (<BTST .FLAGS ,L-THE> <TELL T .O>)
                  (ELSE <TELL A .O>)>)>>
 
-<CONSTANT ENGLISH-NUMS
-    <PLTABLE "one" "two" "three" "four" "five" "six" "seven" "eight" "nine" "ten">>
-
 <ROUTINE LIST-OBJECTS-PRINT-NUM (N CAP?)
-    <COND (<G? .N <GET ,ENGLISH-NUMS 0>> <TELL N .N>)
-          (.CAP? <PRINT-CAP-STR <GET ,ENGLISH-NUMS .N>>)
-          (ELSE <TELL <GET ,ENGLISH-NUMS .N>>)>>
+    <COND (<G? .N <GET ,ENGLISH-NUM-STRS 0>> <TELL N .N>)
+          (.CAP? <PRINT-CAP-STR <GET ,ENGLISH-NUM-STRS .N>>)
+          (ELSE <TELL <GET ,ENGLISH-NUM-STRS .N>>)>>
 
 ;"Counts indistinguishable objects in a PRSTBL, filters each set down to a
   single object, and fills a tag table with the corresponding counts.

@@ -174,6 +174,7 @@ other versions. These macros let us write the same code for all versions."
 <PROPDEF THINGS <>>
 <PROPDEF GENERIC <>>
 <PROPDEF PDESC <>>
+<PROPDEF PLURAL <> (PLURAL "MANY" W:ATOM = "MANY" <VOC .W OBJECT>)>
 
 "Parser"
 
@@ -443,6 +444,7 @@ Args:
  OBJSPEC:
    OBJSPEC-ADJ contains an adjective (number or voc word, depending on version).
    OBJSPEC-NOUN contains a noun (voc word).
+   OBJSPEC-QUANT contains a requested count for this spec, or 0 if none.
    Either field may be 0, but not both."
 <CONSTANT P-MAX-OBJSPECS 10>
 <DEFSTRUCT NOUN-PHRASE (TABLE ('NTH GETB) ('PUT PUTB) ('START-OFFSET 0))
@@ -455,10 +457,10 @@ Args:
 <DEFINE NOUN-PHRASE ()
     <MAKE-NOUN-PHRASE
         'NOUN-PHRASE <TABLE 0 0 <BYTE 0> <BYTE 0> <BYTE 0>>
-        'NP-YTBL <ITABLE <* 2 ,P-MAX-OBJSPECS>>
-        'NP-NTBL <ITABLE <* 2 ,P-MAX-OBJSPECS>>>>
+  'NP-YTBL <ITABLE <* 3 ,P-MAX-OBJSPECS>>
+  'NP-NTBL <ITABLE <* 3 ,P-MAX-OBJSPECS>>>>
 
-<CONSTANT P-OBJSPEC-SIZE <* ,WORD-SIZE 2>>
+<CONSTANT P-OBJSPEC-SIZE <* ,WORD-SIZE 3>>
 
 <DEFMAC NP-YSPEC ('NP 'I)
     <COND (<==? .I 1>
@@ -478,7 +480,8 @@ Args:
 
 <DEFSTRUCT OBJSPEC (TABLE ('NTH ZGET) ('PUT ZPUT) ('START-OFFSET 0))
     (OBJSPEC-ADJ VOC)
-    (OBJSPEC-NOUN VOC)>
+  (OBJSPEC-NOUN VOC)
+  (OBJSPEC-QUANT FIX)>
 
 ;"Resets a noun phrase to be empty with no mode."
 <ROUTINE CLEAR-NOUN-PHRASE (NP)
@@ -522,9 +525,11 @@ Args:
             <PRINT-OBJSPEC .S>
             <SET S <REST .S ,P-OBJSPEC-SIZE>>>>
 
-    <ROUTINE PRINT-OBJSPEC (SPEC "AUX" A N)
+    <ROUTINE PRINT-OBJSPEC (SPEC "AUX" A N Q)
         <SET A <OBJSPEC-ADJ .SPEC>>
         <SET N <OBJSPEC-NOUN .SPEC>>
+       <COND (<SET Q <OBJSPEC-QUANT .SPEC>>
+         <TELL N .Q " ">)>
         <COND (<AND .A .N>
                <PRINT-ADJ .A>
                <TELL " " B .N>)
@@ -730,7 +735,7 @@ Returns:
 <FINISH-PRONOUNS>
 
 "Buzzwords"
-<BUZZ A AN AND ANY ALL EVERY EVERYTHING BOTH BUT EXCEPT OF ONE THE THEN UNDO OOPS \. \, \">
+<BUZZ A AN AND ANY ALL EVERY EVERYTHING BOTH BUT EXCEPT OF THE THEN UNDO OOPS \. \, \">
 
 "Parser entry points"
 
@@ -1594,9 +1599,48 @@ Returns:
 <ROUTINE STARTS-NOUN-PHRASE? (W)
     ;"T? forces the OR to be evaluated as a condition, since we don't
       care about the exact return value from CHKWORD?."
-    <T? <OR <EQUAL? .W ,W?A ,W?AN ,W?THE ,W?ALL ,W?EVERY ,W?EVERYTHING ,W?BOTH ,W?ANY ,W?ONE>
+    <T? <OR <EQUAL? .W ,W?A ,W?AN ,W?THE ,W?ALL ,W?EVERY ,W?EVERYTHING ,W?BOTH ,W?ANY>
             <CHKWORD? .W ,PS?ADJECTIVE>
-            <CHKWORD? .W ,PS?OBJECT>>>>
+            <CHKWORD? .W ,PS?OBJECT>
+            <IS-ENGLISH-NUM? .W>>>>
+
+;"Converts a string to lowercase."
+<DEFINE LOWERCASE (S "AUX" (A <ASCII !\A>) (Z <ASCII !\Z>))
+    <MAPF ,STRING
+          <FUNCTION (C "AUX" (AC <ASCII .C>))
+              <COND (<AND <G=? .AC .A> <L=? .AC .Z>> <ASCII <+ .AC 32>>)
+                    (ELSE .C)>>
+          .S>>
+
+<DEFINE MAKE-ENGLISH-NUMS ("ARGS" ATOMS "AUX" VOCS STRS CLAUSES RTN I)
+    <SET VOCS <MAPF ,LIST
+                    <FUNCTION (A) <VOC <SPNAME .A> BUZZ>>
+                    .ATOMS>>
+    <SET STRS <MAPF ,LIST
+                    <FUNCTION (A) <LOWERCASE <SPNAME .A>>>
+                    .ATOMS>>
+    <SET I 0>
+    <SET CLAUSES <MAPF ,LIST
+                       <FUNCTION (A)
+                           <SET I <+ .I 1>>
+                           `(<==? .W ~<VOC <SPNAME .A> BUZZ>> ~.I)>
+                       .ATOMS>>
+    <CONSTANT ENGLISH-NUM-WORDS <PLTABLE !.VOCS>>
+    <CONSTANT ENGLISH-NUM-STRS <PLTABLE !.STRS>>
+    <SET RTN
+        `<ROUTINE IS-ENGLISH-NUM? (W) <EQUAL? .W ~!.VOCS>>>
+    <EVAL .RTN>
+    <SET RTN
+        `<ROUTINE ENGLISH-NUM-VALUE? (W) <COND ~!.CLAUSES>>>
+    <EVAL .RTN>>
+
+<MAKE-ENGLISH-NUMS ONE TWO THREE FOUR FIVE SIX SEVEN EIGHT NINE TEN>
+
+<ROUTINE QUANTIFIER-VALUE? (W "AUX" V)
+    <COND (<=? .W ,W?\,NUMBER> <SET V ,P-NUMBER>)
+          (ELSE <SET V <ENGLISH-NUM-VALUE? .W>>)>
+    <COND (<L=? .V 0> <RFALSE>)>
+    <RETURN .V>>
 
 <CONSTANT MCM-ALL 1>
 <CONSTANT MCM-ANY 2>
@@ -1624,12 +1668,13 @@ Returns:
 
   If parsing fails, returns zero, prints an error message (unless SILENT? is true) and may
   leave NP in an invalid state."
-<ROUTINE PARSE-NOUN-PHRASE (WN NP "OPT" (SILENT? <>) "AUX" SPEC CNT W VAL MODE ADJ NOUN BUT SPEC-WN)
+<ROUTINE PARSE-NOUN-PHRASE (WN NP "OPT" (SILENT? <>) "AUX" SPEC CNT W VAL MODE ADJ NOUN QUANT BUT SPEC-WN NEXTW)
     <TRACE 3 "[PARSE-NOUN-PHRASE starting at word " N .WN "]" CR>
     <TRACE-IN>
 
     <SET SPEC <NP-YSPEC .NP 1>>
     <NP-NCNT .NP 0>
+    <SET QUANT <>>
     <REPEAT ()
         <COND
             ;"exit loop if we reached the end of the command"
@@ -1656,13 +1701,23 @@ Returns:
              <COND (<OR .ADJ .NOUN>
                     <OBJSPEC-ADJ .SPEC .ADJ>
                     <OBJSPEC-NOUN .SPEC .NOUN>
-                    <SET ADJ <SET NOUN <>>>
+                    <OBJSPEC-QUANT .SPEC .QUANT>
+                    <SET ADJ <SET NOUN <SET QUANT <>>>>
                     <SET CNT <+ .CNT 1>>)>
              <TRACE 4 "[saving " N .CNT " YSPEC(s)]" CR>
              <NP-YCNT .NP .CNT>
              <SET BUT T>
              <SET SPEC <NP-NSPEC .NP 1>>
              <SET CNT 0>)
+            ;"recognize per-spec quantifier words/numbers"
+            (<AND <NOT <OR .ADJ .NOUN .QUANT>>
+              <L? .WN ,P-LEN>
+              <SET VAL <QUANTIFIER-VALUE? .W>>
+              <SET NEXTW <GETWORD? <+ .WN 1>>>
+              <STARTS-NOUN-PHRASE? .NEXTW>>
+             <TRACE 4 "[quantifier " N .VAL " at word " N .WN "]" CR>
+             <SET QUANT .VAL>
+             <SET SPEC-WN .WN>)
             ;"recognize ALL/ANY/ONE"
             (<EQUAL? .W ,W?ALL ,W?EVERY ,W?EVERYTHING ,W?BOTH ,W?ANY ,W?ONE>
              <COND (<OR .MODE .ADJ .NOUN>
@@ -1676,6 +1731,26 @@ Returns:
                         (ELSE ,MCM-ANY)>>
              <TRACE 4 "[mode change at word " N .WN ", now mode=" N .MODE "]" CR>
              <SET SPEC-WN .WN>)
+            ;"recognize number-words as numeric nouns when not quantifying"
+            (<AND <SET VAL <ENGLISH-NUM-VALUE? .W>>
+                  <NOT <CHKWORD? .W ,PS?OBJECT>>
+                  <OR <==? .WN ,P-LEN>
+                      <NOT <SET NEXTW <GETWORD? <+ .WN 1>>>>
+                      <NOT <STARTS-NOUN-PHRASE? .NEXTW>>>>
+             <TRACE 4 "[number-word as numeric noun at word " N .WN "]" CR>
+             <SETG P-NUMBER .VAL>
+             <COND (.NOUN
+                    <TRACE 4 "[terminating]" CR>
+                    <RETURN>)
+                   (<==? .CNT ,P-MAX-OBJSPECS>
+                    <TRACE 4 "[already have " N .CNT " specs]" CR>
+                    <COND (<NOT .SILENT?>
+                      <TELL <LIBRARY-MESSAGE PARSER TOO-MANY-SPECS> CR>)>
+                    <TRACE-OUT>
+                    <RFALSE>)
+                   (ELSE
+                    <SET NOUN ,W?\,NUMBER>
+                    <SET SPEC-WN .WN>)>)
             ;"match adjectives, keeping only the first"
             (<VERSION?
                 (ZIP <SET VAL <WORD? .W ADJECTIVE>>)
@@ -1694,8 +1769,7 @@ Returns:
                            <==? .WN ,P-LEN>
                            ;"next word is not adj/noun"
                            <BIND ((NW <GETWORD? <+ .WN 1>>))
-                               <NOT <OR <CHKWORD? .NW ,PS?ADJECTIVE>
-                                        <CHKWORD? .NW ,PS?OBJECT>>>>>>
+                               <NOT <STARTS-NOUN-PHRASE? .NW>>>>>
                   <TRACE 4 "[treating it as a noun]" CR>
                   <SET NOUN .W>)
                  (<==? .CNT ,P-MAX-OBJSPECS>
@@ -1726,10 +1800,11 @@ Returns:
             ;"recognize AND/comma"
             (<EQUAL? .W ,W?AND ,W?COMMA>
              <TRACE 4 "[AND at word " N .WN "]" CR>
-             <COND (<OR .ADJ .NOUN>
+                  <COND (<OR .ADJ .NOUN .QUANT>
                     <OBJSPEC-ADJ .SPEC .ADJ>
                     <OBJSPEC-NOUN .SPEC .NOUN>
-                    <SET ADJ <SET NOUN <>>>
+                    <OBJSPEC-QUANT .SPEC .QUANT>
+                    <SET ADJ <SET NOUN <SET QUANT <>>>>
                     <SET SPEC <REST .SPEC ,P-OBJSPEC-SIZE>>
                     <SET CNT <+ .CNT 1>>
                     <TRACE 4 "[now have " N .CNT " spec(s)]" CR>)>)
@@ -1754,10 +1829,11 @@ Returns:
         <SET WN <+ .WN 1>>>
     ;"store final adj/noun pair"
     <COND (<OR .ADJ .NOUN>
-           <OBJSPEC-ADJ .SPEC .ADJ>
-           <OBJSPEC-NOUN .SPEC .NOUN>
-           <SET CNT <+ .CNT 1>>
-           <TRACE 4 "[finally have " N .CNT " spec(s)]" CR>)>
+       <OBJSPEC-ADJ .SPEC .ADJ>
+       <OBJSPEC-NOUN .SPEC .NOUN>
+       <OBJSPEC-QUANT .SPEC .QUANT>
+       <SET CNT <+ .CNT 1>>
+       <TRACE 4 "[finally have " N .CNT " spec(s)]" CR>)>
     ;"store phrase count and mode"
     <COND (.BUT <NP-NCNT .NP .CNT>) (ELSE <NP-YCNT .NP .CNT>)>
     ;"catch empty noun phrases"
@@ -2746,23 +2822,30 @@ Returns:
                               <COND (<AND <NOT <FSET? .I ,INVISIBLE>>
                                           <SET Q <REFERS? .SPEC .I>>
                                           <G=? .Q .BEST>>
-                                      <TRACE 4 "[matches " T .I "(" N .I "), Q=" N .Q "]" CR>
-                                      <SET F T>
-                                      ;"Erase previous matches if this is better"
-                                      <COND (<G? .Q .BEST>
-                                              <TRACE 4 "[clearing match list]" CR>
-                                              <SET NOUT .ONOUT>
-                                              <SET BEST .Q>)>
-                                      <COND (<AND .NN <NP-EXCLUDES? .NP .I>>
-                                              <TRACE 4 "[excluded]" CR>)
-                                              (<G=? .NOUT ,P-MAX-OBJECTS>
-                                              <TELL "[too many objects!]" CR>
-                                              <TRACE-OUT>
-                                              <RETURN>)
-                                              (ELSE
-                                              <TRACE 4 "[accepted]" CR>
-                                              <SET NOUT <+ .NOUT 1>>
-                                              <PUT/B .OUT .NOUT .I>)>)>>)>
+                                     <TRACE 4 "[matches " T .I "(" N .I "), Q=" N .Q "]" CR>
+                                     <SET F T>
+                                     ;"Erase previous matches if this is better"
+                                     <COND (<G? .Q .BEST>
+                                            <TRACE 4 "[clearing match list]" CR>
+                                            <SET NOUT .ONOUT>
+                                            <SET BEST .Q>)>
+                                     <COND (<AND <0? .MODE>
+                                                 <NOT <OBJSPEC-QUANT .SPEC>>
+                                                 <OBJSPEC-NOUN .SPEC>
+                                                 <IN-PWTBL? .I
+                                                            ,P?PLURAL
+                                                            <OBJSPEC-NOUN .SPEC>>>
+                                            <SET MODE ,MCM-ALL>)>
+                                     <COND (<AND .NN <NP-EXCLUDES? .NP .I>>
+                                            <TRACE 4 "[excluded]" CR>)
+                                           (<G=? .NOUT ,P-MAX-OBJECTS>
+                                            <TELL "[too many objects!]" CR>
+                                            <TRACE-OUT>
+                                            <RETURN>)
+                                           (ELSE
+                                            <TRACE 4 "[accepted]" CR>
+                                            <SET NOUT <+ .NOUT 1>>
+                                            <PUT/B .OUT .NOUT .I>)>)>>)>
                    ;"Look for a pseudo-object if we didn't find a real one."
                    <COND (<AND <NOT .F>
                                <BTST .BITS ,SF-ON-GROUND>
@@ -2793,7 +2876,19 @@ Returns:
                           <RFALSE>)
                          (<G=? .NOUT ,P-MAX-OBJECTS>
                           <TRACE-OUT>
-                          <RETURN>)>>)>
+                          <RETURN>)
+                         (ELSE
+                          <SET Q <OBJSPEC-QUANT .SPEC>>
+                          <COND (.Q
+                                 <SET BEST <- .NOUT .ONOUT>>
+                                 <COND (<L? .BEST .Q>
+                                        <TELL <LIBRARY-MESSAGE PARSER TOO-FEW-AVAILABLE ((COUNT .BEST))> CR>
+                                        <TRACE-OUT>
+                                        <RFALSE>)
+                                       (<G? .BEST .Q>
+                                   <SET NOUT <+ .ONOUT .Q>>)>
+                                 <COND (<G? .Q 1>
+                                   <SET MODE ,MCM-ALL>)>)>)>>)>
         ;"Narrow down indistinguishable objects if needed"
         <PUTB .OUT 0 .NOUT>
         <COND (<AND <G? .NOUT 1> <N=? .MODE ,MCM-ALL> <L=? .NY 1>>
@@ -2844,7 +2939,7 @@ Returns:
                <COND (<=? .NP ,P-NP-DOBJ> <ORPHAN T AMBIGUOUS PRSO>)
                      (ELSE <ORPHAN T AMBIGUOUS PRSI>)>
                <TRACE-OUT>
-               <RFALSE>)>>>
+                 <RFALSE>)>>>
 
 <ROUTINE ALL-INCLUDES? (OBJ)
     <NOT <OR <FSET? .OBJ ,INVISIBLE>
@@ -2981,21 +3076,29 @@ Args:
   O: The object.
 
 Returns:
-  A quality score. 0 means the spec didn't match at all, 1 means it matched as
-  adjective-only, 2 means it matched as noun-only, 3 means it was a two-word match."
-<ROUTINE REFERS? (SPEC O "AUX" (A <OBJSPEC-ADJ .SPEC>) (N <OBJSPEC-NOUN .SPEC>))
+  A quality score:
+  0 = no match
+  1 = adjective-only match, or noun used as adjective fallback
+  2 = noun-only match with plural property
+  3 = noun-only match with synonym property, or adjective+plural-noun match
+  4 = adjective+synonym-noun match"
+<ROUTINE REFERS? (SPEC O "AUX" (A <OBJSPEC-ADJ .SPEC>) (N <OBJSPEC-NOUN .SPEC>) Q)
     <COND (<AND .A .N>
-           <COND (<AND <IN-PB/WTBL? .O ,P?ADJECTIVE .A>
-                       <IN-PWTBL? .O ,P?SYNONYM .N>>
-                  <RETURN 3>)>)
+           <COND (<IN-PB/WTBL? .O ,P?ADJECTIVE .A>
+                  <SET Q <NOUN-MATCH-QUALITY .O .N>>
+                  <COND (.Q <RETURN <+ .Q 1>>)>)>)
           (.N
-           <COND (<IN-PWTBL? .O ,P?SYNONYM .N> <RETURN 2>)
+           <COND (<SET Q <NOUN-MATCH-QUALITY .O .N>> <RETURN .Q>)
                  (<VERSION?
                       (ZIP <SET A <CHKWORD? .N ,PS?ADJECTIVE ,P1?ADJECTIVE>>)
                       (ELSE <AND <CHKWORD? .N ,PS?ADJECTIVE> <SET A .N>>)>
                   <COND (<IN-PB/WTBL? .O ,P?ADJECTIVE .A> <RETURN 1>)>)>)
-          (.A
-           <COND (<IN-PB/WTBL? .O ,P?ADJECTIVE .A> <RETURN 1>)>)>
+          (.A <COND (<IN-PB/WTBL? .O ,P?ADJECTIVE .A> <RETURN 1>)>)>
+    <RETURN 0>>
+
+<ROUTINE NOUN-MATCH-QUALITY (O N)
+    <COND (<IN-PWTBL? .O ,P?SYNONYM .N> <RETURN 3>)
+          (<IN-PWTBL? .O ,P?PLURAL .N> <RETURN 2>)>
     <RETURN 0>>
 
 ;"Attempts to locate a word in a property table.

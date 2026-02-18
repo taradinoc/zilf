@@ -14,12 +14,35 @@
     (IN STARTROOM)
     (DESC "apple")
     (SYNONYM APPLE)
+    (PLURAL APPLES)
+    (FLAGS VOWELBIT TAKEBIT EDIBLEBIT)>
+
+<OBJECT APPLE2
+    (IN STARTROOM)
+    (DESC "apple")
+    (SYNONYM APPLE)
+    (PLURAL APPLES)
     (FLAGS VOWELBIT TAKEBIT EDIBLEBIT)>
 
 <OBJECT BANANA
     (IN STARTROOM)
     (DESC "banana")
     (SYNONYM BANANA)
+    (PLURAL BANANAS)
+    (FLAGS TAKEBIT EDIBLEBIT)>
+
+<OBJECT BANANA2
+    (IN STARTROOM)
+    (DESC "banana")
+    (SYNONYM FRUIT)
+    (PLURAL BANANAS)
+    (FLAGS TAKEBIT EDIBLEBIT)>
+
+<OBJECT BANANA3
+    (IN STARTROOM)
+    (DESC "banana")
+    (SYNONYM FRUIT)
+    (PLURAL BANANAS)
     (FLAGS TAKEBIT EDIBLEBIT)>
 
 <OBJECT HAT
@@ -46,6 +69,47 @@
     (SYNONYM BUCKET)
     (FLAGS CONTBIT OPENBIT)>
 
+<OBJECT BOW
+    (IN STARTROOM)
+    (DESC "bow")
+    (SYNONYM BOW)
+    (FLAGS TAKEBIT)>
+
+<OBJECT ARROW1
+    (IN STARTROOM)
+    (DESC "arrow")
+    (SYNONYM ARROW)
+    (PLURAL ARROWS)
+    (FLAGS TAKEBIT)>
+
+<OBJECT ARROW2
+    (IN STARTROOM)
+    (DESC "arrow")
+    (SYNONYM ARROW)
+    (PLURAL ARROWS)
+    (FLAGS TAKEBIT)>
+
+<OBJECT ARROW3
+    (IN STARTROOM)
+    (DESC "arrow")
+    (SYNONYM ARROW)
+    (PLURAL ARROWS)
+    (FLAGS TAKEBIT)>
+
+<OBJECT ARROW4
+    (IN STARTROOM)
+    (DESC "arrow")
+    (SYNONYM ARROW)
+    (PLURAL ARROWS)
+    (FLAGS TAKEBIT)>
+
+<ROUTINE COUNT-HELD-ARROWS ("AUX" C)
+    <COND (<IN? ,ARROW1 ,WINNER> <SET C <+ .C 1>>)> 
+    <COND (<IN? ,ARROW2 ,WINNER> <SET C <+ .C 1>>)> 
+    <COND (<IN? ,ARROW3 ,WINNER> <SET C <+ .C 1>>)> 
+    <COND (<IN? ,ARROW4 ,WINNER> <SET C <+ .C 1>>)> 
+    <RETURN .C>>
+
 <OBJECT RED-CUBE
     (DESC "red cube")
     (SYNONYM CUBE CUBES)
@@ -67,12 +131,20 @@
 <TEST-SETUP ()
     <MOVE ,WINNER ,STARTROOM>
     <MOVE ,APPLE ,STARTROOM>
+    <REMOVE ,APPLE2>
     <MOVE ,BANANA ,STARTROOM>
+    <REMOVE ,BANANA2>
+    <REMOVE ,BANANA3>
     <MOVE ,HAT ,STARTROOM>
     <FCLEAR ,HAT ,WORNBIT>
     <MOVE ,CAGE ,STARTROOM>
     <MOVE ,DESK ,STARTROOM>
     <MOVE ,BUCKET ,STARTROOM>
+    <REMOVE ,BOW>
+    <REMOVE ,ARROW1>
+    <REMOVE ,ARROW2>
+    <REMOVE ,ARROW3>
+    <REMOVE ,ARROW4>
     <REMOVE ,RED-CUBE>
     <REMOVE ,GREEN-CUBE>
     <REMOVE ,BLUE-CUBE>>
@@ -129,7 +201,52 @@ apple: Taken.|">
 banana: Taken.|">
     <CHECK <AND <IN? ,HAT ,WINNER> <NOT <FSET? ,HAT ,WORNBIT>>>>
     <CHECK <IN? ,BANANA ,WINNER>>
-    <CHECK <NOT <IN? APPLE ,WINNER>>>>
+    <CHECK <NOT <IN? ,APPLE ,WINNER>>>>
+
+<TEST-CASE ("Vocab collision: TAKE BANANA is singular")
+    <MOVE ,BANANA2 ,STARTROOM>
+    <MOVE ,BANANA3 ,STARTROOM>
+    <COMMAND [TAKE BANANA]>
+    <CHECK <IN? ,BANANA ,WINNER>>
+    <CHECK <NOT <IN? ,BANANA2 ,WINNER>>>
+    <CHECK <NOT <IN? ,BANANA3 ,WINNER>>>>
+
+<TEST-CASE ("Distinct plural: TAKE APPLES is all")
+    <MOVE ,APPLE2 ,STARTROOM>
+    <COMMAND [TAKE APPLES]>
+    <CHECK <IN? ,APPLE ,WINNER>>
+    <CHECK <IN? ,APPLE2 ,WINNER>>>
+
+<TEST-CASE ("Distinct singular: TAKE APPLE is single")
+    <MOVE ,APPLE2 ,STARTROOM>
+    <COMMAND [TAKE APPLE]>
+    <EXPECT "Which do you mean, the apple or the apple?|">
+    <CHECK <NOT <IN? ,APPLE ,WINNER>>>
+    <CHECK <NOT <IN? ,APPLE2 ,WINNER>>>>
+
+<TEST-CASE ("Plural noun implies all")
+    <MOVE ,APPLE2 ,STARTROOM>
+    <COMMAND [TAKE APPLES]>
+    <CHECK <IN? ,APPLE ,WINNER>>
+    <CHECK <IN? ,APPLE2 ,WINNER>>>
+
+<TEST-CASE ("Quantifier with plural noun picks any count")
+    <MOVE ,ARROW1 ,STARTROOM>
+    <MOVE ,ARROW2 ,STARTROOM>
+    <MOVE ,ARROW3 ,STARTROOM>
+    <MOVE ,ARROW4 ,STARTROOM>
+    <COMMAND [TAKE TWO ARROWS]>
+    <CHECK <=? <COUNT-HELD-ARROWS> 2>>>
+
+<TEST-CASE ("Quantifier applies per OBJSPEC")
+    <MOVE ,BOW ,STARTROOM>
+    <MOVE ,ARROW1 ,STARTROOM>
+    <MOVE ,ARROW2 ,STARTROOM>
+    <MOVE ,ARROW3 ,STARTROOM>
+    <MOVE ,ARROW4 ,STARTROOM>
+    <COMMAND [TAKE BOW AND THREE ARROWS]>
+    <CHECK <IN? ,BOW ,WINNER>>
+    <CHECK <=? <COUNT-HELD-ARROWS> 3>>>
 
 <TEST-CASE ("Drop all")
     <MOVE ,HAT ,WINNER>
@@ -185,6 +302,18 @@ apple: You see nothing special about the apple.|">>
     <MOVE ,BLUE-CUBE ,WINNER>
     <COMMAND [GET CUBE]>
     <EXPECT "Which do you mean, the green cube or the red cube?|">>
+
+<TEST-CASE ("Orphan response ANY TWO")
+    <MOVE ,RED-CUBE ,STARTROOM>
+    <MOVE ,GREEN-CUBE ,STARTROOM>
+    <REMOVE ,BLUE-CUBE>
+    <COMMAND [GET CUBE]>
+    <EXPECT "Which do you mean, the green cube or the red cube?|">
+    <COMMAND [ANY TWO]>
+    <EXPECT "green cube: Taken.|
+red cube: Taken.|">
+    <CHECK <IN? ,GREEN-CUBE ,WINNER>>
+    <CHECK <IN? ,RED-CUBE ,WINNER>>>
 
 <TEST-CASE ("GET CUBE with two matching objects in inventory")
     <MOVE ,RED-CUBE ,WINNER>

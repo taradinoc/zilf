@@ -6,7 +6,7 @@ if not exist .\ConsoleZLR.exe goto :CzlrMissing
 
 ..\..\bin\Debug\net10.0\zilf.exe -I .. test-%1.zil
 if errorlevel 1 goto :EOF
-.\ConsoleZLR.exe test-%1.z3
+.\ConsoleZLR.exe -dumb -nowait test-%1.z3
 goto :EOF
 
 :Usage

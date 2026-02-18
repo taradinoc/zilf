@@ -28,6 +28,12 @@
     <COMMAND [TURN DIAL TO "32767"]>
     <EXPECT "You set the dial to 32767.|">>
 
+<TEST-CASE ("Number words as nouns")
+    <COMMAND [TURN DIAL TO TWO]>
+    <EXPECT "You set the dial to 2.|">
+    <COMMAND [TURN DIAL TO TEN]>
+    <EXPECT "You set the dial to 10.|">>
+
 <TEST-CASE ("Negative number")
     <COMMAND [TURN DIAL TO "-10000"]>
     <EXPECT "You set the dial to -10000.|">

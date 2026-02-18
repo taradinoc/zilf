@@ -132,15 +132,6 @@ Returns:
     ;"Return both tables"
     (.READ-TABLE .LEX-TABLE)>
 
-;"Converts a string to lowercase."
-<DEFINE LOWERCASE (S "AUX" (A <ASCII !\A>) (Z <ASCII !\Z>))
-    <MAPF ,STRING
-          <FUNCTION (C "AUX" (AC <ASCII .C>))
-              <COND (<AND <G=? .AC .A> <L=? .AC .Z>>
-                     <ASCII <+ .AC 32>>)
-                    (ELSE .C)>>
-          .S>>
-
 ;"Finalizes test definitions and emits the GO routine.
 
 Args:

@@ -72,7 +72,9 @@ to recall whether we're orphaning and why, and reserve the rest for future use."
 <CONSTANT O-RES-SET-NP 3>        ;"We set P-NP-[DI]OBJ; find objects"
 <CONSTANT O-RES-SET-PRSTBL 4>    ;"We set P-PRS[OI]S and PRS[OI]; perform command"
 
-"Checks the player's command to see if it answers our orphaning question, and
+<CONSTANT TRY-REPHRASING-CMD <LIBRARY-MESSAGE ORPHANING TRY-REPHRASING>>
+
+;"Checks the player's command to see if it answers our orphaning question, and
 tries to complete the previous command if so.
 
 Sets:
@@ -83,12 +85,15 @@ Sets:
 
 Returns:
   One of the O-RES-* codes above to indicate what action was taken, if any."
-<CONSTANT TRY-REPHRASING-CMD <LIBRARY-MESSAGE ORPHANING TRY-REPHRASING>>
-<ROUTINE HANDLE-ORPHAN-RESPONSE ("AUX" (WN 1) N CNT MAX TBL O OUT NY)
+
+<ROUTINE HANDLE-ORPHAN-RESPONSE ("AUX" (WN 1) N CNT MAX TBL O OUT NY QREQ)
     ;"Give the game a chance to meddle with the input first"
     <COND (<SET N <HOOK-MID-PARSE-CONSUME .WN>> <SET WN <+ .WN .N>>)>
     ;"Confirm that the command looks like a noun phrase, and parse it into P-NP-XOBJ."
-    <COND (<OR <L? ,P-LEN .WN>
+    <COND (<SET QREQ <PARSE-ORPHAN-COUNT? .WN>>
+           <CLEAR-NOUN-PHRASE ,P-NP-XOBJ>
+           <NP-MODE ,P-NP-XOBJ ,MCM-ANY>)
+          (<OR <L? ,P-LEN .WN>
                <NOT <OR <STARTS-NOUN-PHRASE? <GETWORD? .WN>>
                         <PARSE-NUMBER? .WN>>>
                <NOT <=? <PARSE-NOUN-PHRASE .WN ,P-NP-XOBJ T> <+ ,P-LEN 1>>>>
@@ -138,12 +143,23 @@ Returns:
 
     <TRACE 2 "[filter kept " N .CNT " object(s)]" CR>
 
+    <COND (.QREQ
+           <COND (<L? .CNT .QREQ>
+                  <TELL <LIBRARY-MESSAGE PARSER TOO-FEW-AVAILABLE ((COUNT .CNT))> CR>
+                  <SETG P-CONT 0>
+                  <TRACE-OUT>
+                  <RETURN ,O-RES-FAILED>)
+                 (<G? .CNT .QREQ>
+                  <SET CNT .QREQ>
+                  <PUTB .OUT 0 .CNT>)>)>
+
     ;"Fill in PRSO/PRSI, and swap the newly created table with P-PRSOS or P-PRSIS."
     <COND (<0? .CNT>
            <SET O <>>)
           (<1? .CNT>
            <SET O <GET/B .OUT 1>>)
-          (<=? <NP-MODE ,P-NP-XOBJ> ,MCM-ANY>
+          (<AND <=? <NP-MODE ,P-NP-XOBJ> ,MCM-ANY>
+                <NOT .QREQ>>
            ;"Pick a random object"
            <PUT/B .OUT 1 <SET O <GET/B .OUT <RANDOM .CNT>>>>
            <PUTB .OUT 0 1>
@@ -163,6 +179,7 @@ Returns:
            <SETG P-CONT 0>
            <RETURN ,O-RES-FAILED>)
           (<OR <1? .CNT>
+               .QREQ
                <=? <NP-MODE ,P-NP-XOBJ> ,MCM-ALL>
                <G? .NY 1>>
            <RETURN ,O-RES-SET-PRSTBL>)
@@ -174,3 +191,17 @@ Returns:
            <TELL <LIBRARY-MESSAGE ORPHANING FAILED> ,TRY-REPHRASING-CMD CR>
            <SETG P-CONT 0>
            <RETURN ,O-RES-FAILED>)>>
+
+<ROUTINE PARSE-ORPHAN-COUNT? (WN "AUX" W C)
+    <COND (<L? ,P-LEN .WN> <RFALSE>)>
+    <SET W <GETWORD? .WN>>
+    <COND (<N=? .W ,W?ANY> <RFALSE>)>
+    <SET WN <+ .WN 1>>
+    <COND (<L? ,P-LEN .WN> <RFALSE>)>
+    <SET W <GETWORD? .WN>>
+    <COND (<NOT .W>
+           <COND (<NOT <PARSE-NUMBER? .WN>> <RFALSE>)
+                 (ELSE <SET W ,W?\,NUMBER>)>)>
+    <SET C <QUANTIFIER-VALUE? .W>>
+    <COND (<OR <NOT .C> <N=? .WN ,P-LEN>> <RFALSE>)>
+    <RETURN .C>>

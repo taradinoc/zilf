@@ -20,6 +20,15 @@ and this project adheres to
   to decide whether to combine objects, accounting for their listed state (worn,
   providing light, etc.).
 
+- The parser now understands plurals, as long as the relevant objects have
+  vocab words set in their `PLURAL` properties (using the same syntax as
+  `SYNONYM`). `TAKE BANANAS` is equivalent to `TAKE ALL BANANAS`.
+
+- The parser now understands quantifiers, i.e., numbers before parts of a noun
+  phrase. `TAKE TWO BANANAS` (equivalent to `TAKE ANY TWO BANANAS`) will cause
+  the parser to pick two bananas arbitrarily, or to give an error if fewer than
+  two are available.
+
 ## [1.5] (February 10, 2026)
 
 ### Added
