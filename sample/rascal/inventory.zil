@@ -444,6 +444,7 @@ Returns:
       <SET LOCKTYPE <GETP .O ,P?R-ITID>>
       <COND (<INV-ADD ,ITEMKIND-KEY .LOCKTYPE>
              <LOG "You pick up the " <KEY-NAME .LOCKTYPE> "." CR>
+             <SETG STATS-KEYS-FOUND <+ ,STATS-KEYS-FOUND 1>>
              <REMOVE .O>
              <FREE-RASCAL-ITEM .O>
               <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>

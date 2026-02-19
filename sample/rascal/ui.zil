@@ -1012,6 +1012,7 @@ Returns:
     <SET LOCKTYPE <GETP .DOOR ,P?R-ITID>>
     <COND (<INV-CONSUME-KEY .LOCKTYPE>
            <FSET .DOOR ,OPENBIT>
+           <SETG STATS-DOORS-OPENED <+ ,STATS-DOORS-OPENED 1>>
            <LOG "Unlocked." CR>
            <MARK-DIRTY .X .Y>
            <RTRUE>)>

@@ -20,8 +20,12 @@
 <GLOBAL STATS-GOLD-EARNED-TRADER 0>
 <GLOBAL STATS-GOLD-SPENT-BLACKSMITH 0>
 <GLOBAL STATS-GOLD-SPENT-CARROT-FARM 0>
+<GLOBAL STATS-GOLD-EARNED-BUSKER 0>
 
 <GLOBAL STATS-ROOMS-DISCOVERED-TOTAL 0>
+
+<GLOBAL STATS-KEYS-FOUND 0>
+<GLOBAL STATS-DOORS-OPENED 0>
 
 <GLOBAL STATS-WALL-BUMPS 0>
 <GLOBAL STATS-PACKFULL-PICKUP-BLOCKED 0>
@@ -58,7 +62,10 @@
     <SETG STATS-GOLD-EARNED-TRADER 0>
     <SETG STATS-GOLD-SPENT-BLACKSMITH 0>
     <SETG STATS-GOLD-SPENT-CARROT-FARM 0>
+    <SETG STATS-GOLD-EARNED-BUSKER 0>
     <SETG STATS-ROOMS-DISCOVERED-TOTAL 0>
+    <SETG STATS-KEYS-FOUND 0>
+    <SETG STATS-DOORS-OPENED 0>
     <SETG STATS-WALL-BUMPS 0>
     <SETG STATS-PACKFULL-PICKUP-BLOCKED 0>
     <SETG STATS-BIGGEST-HIT-DEALT 0>
@@ -145,6 +152,14 @@ Returns:
         <COND (<G=? .ACC .DEN> <SET ACC <- .ACC .DEN>> <SET QUOT <+ .QUOT 1>>)>>
     <RETURN <+ <* .Q 100> .QUOT>>>
 
+<ROUTINE COUNT-TOTAL-LOCKED-DOORS ("AUX" CNT)
+    ;"Count how many treasure rooms (locked doors) were actually created."
+    <SET CNT 0>
+    <DO (F 1 ,MAX-FLOORS)
+        <COND (<G? <GETB ,TREASURE-ROOM-LOCKTYPE <- .F 1>> 0>
+               <SET CNT <+ .CNT 1>>)>>
+    .CNT>
+
 <ROUTINE RJ-NUMBER (N)
     <COND (<L? .N 10000> <PRINTC !\ >)>
     <COND (<L? .N 1000> <PRINTC !\ >)>
@@ -206,21 +221,26 @@ Returns:
     <CURSET 12 1>
     <TELL "Treasures acquired: " N .TREAS-UNIQ "/" N ,TREASURE-COUNT>
     <CURSET 13 1>
+    <TELL "Keys found: " N ,STATS-KEYS-FOUND>
+    <CURSET 14 1>
+    <TELL "Locked doors opened: " N ,STATS-DOORS-OPENED "/" N <COUNT-TOTAL-LOCKED-DOORS>
+          " (" N <STATS-PCT ,STATS-DOORS-OPENED <COUNT-TOTAL-LOCKED-DOORS>> "%)">
+    <CURSET 15 1>
     <TELL "Potions found: " N ,STATS-POTIONS-FOUND "/" N ,STATS-POTIONS-PLACED
           "  Consumed: " N .POT-ALL>
-    <CURSET 14 1>
+    <CURSET 16 1>
     <TELL "   Food eaten: " N .FOOD-ALL>
 
-    <CURSET 16 1>
+    <CURSET 18 1>
     <TELL "Attacks: " N ,STATS-PLAYER-ATTACKS "  Crits: " N ,STATS-PLAYER-CRITS
           " (" N <STATS-PCT ,STATS-PLAYER-CRITS ,STATS-PLAYER-ATTACKS> "%)"
           "  Kills: " N .KILL-ALL>
-    <CURSET 17 1>
+    <CURSET 19 1>
     <TELL "Damage dealt: " N ,STATS-DMG-DEALT "  Taken: " N ,STATS-DMG-TAKEN
           " Dodged: " N ,STATS-DMG-BLOCKED-BY-DEF " (" N
           <STATS-PCT ,STATS-DMG-BLOCKED-BY-DEF <+ ,STATS-DMG-BLOCKED-BY-DEF ,STATS-DMG-TAKEN>>
           "%)">
-    <CURSET 18 1>
+    <CURSET 20 1>
     <TELL "Biggest hit dealt: " N ,STATS-BIGGEST-HIT-DEALT "  Taken: " N
           ,STATS-BIGGEST-HIT-TAKEN>
 
@@ -232,21 +252,25 @@ Returns:
     <TELL " Spent at blacksmith: " N ,STATS-GOLD-SPENT-BLACKSMITH>
     <CURSET 8 45>
     <TELL "Spent at carrot farm: " N ,STATS-GOLD-SPENT-CARROT-FARM>
+    <CURSET 9 45>
+    <TELL "  Earned from busker: " N ,STATS-GOLD-EARNED-BUSKER>
 
-    <CURSET 10 45>
-    <TELL "Turns: " N ,STATS-TURNS "  Waits: " N ,STATS-WAITS>
     <CURSET 11 45>
+    <TELL "Turns: " N ,STATS-TURNS "  Waits: " N ,STATS-WAITS>
+    <CURSET 12 45>
     <TELL "Moves: " N ,STATS-MOVES "  Diagonal: " N ,STATS-DIAG-MOVES " (" N
           <STATS-PCT ,STATS-DIAG-MOVES ,STATS-MOVES> "%)">
-    <CURSET 12 45>
+    <CURSET 13 45>
     <TELL "Stairs descended: " N ,STATS-STAIRS-DOWN>
-
     <CURSET 14 45>
+    <TELL "Monkeys sold: " N ,BUSKER-MONKEY-SALES>
+
+    <CURSET 16 45>
     <TELL "   Wall bumps: " N ,STATS-WALL-BUMPS>
-    <CURSET 15 45>
+    <CURSET 17 45>
     <TELL "Takes blocked: " N ,STATS-PACKFULL-PICKUP-BLOCKED>
 
-    <CURSET 20 1>
+    <CURSET 22 1>
     <TELL "[Press N for next, Q to quit.]">
 
     <RTRUE>>

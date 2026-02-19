@@ -624,6 +624,7 @@ the last one, OK?\"" CR>)>)
                  (ELSE
                   <SETG PLAYER-GOLD <+ ,PLAYER-GOLD .OFFER>>
                   <SETG BUSKER-MONKEY-SALES <+ ,BUSKER-MONKEY-SALES 1>>
+                  <SETG STATS-GOLD-EARNED-BUSKER <+ ,STATS-GOLD-EARNED-BUSKER .OFFER>>
                   <FCLEAR ,PRSO ,TAMEBIT>
                   <FSET ,PRSO ,SOLDBIT>
                   <FSET ,PRSO ,NDESCBIT>
