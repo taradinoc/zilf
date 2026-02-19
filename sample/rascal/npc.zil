@@ -251,15 +251,22 @@ A hand-painted sign reads: \"Weapon enchantments, 100 gold\"")
                                <PERFORM ,V?ASK-ABOUT ,BLACKSMITH ,PRSI>>)
                  (ELSE <TELL "He doesn't respond." CR>)>)
           (<VERB? EXAMINE>
-           <TELL "He's wearing an apron with a small logo, depicting a pair of tongs and a hammer." CR>)
+           <TELL "He's wearing an apron with a small logo, depicting a pair of tongs and a hammer."
+                 CR>)
           (<AND <VERB? ASK-ABOUT TELL-ABOUT> <PRSO? ,BLACKSMITH>>
            <COND (<PRSI? ,BLACKSMITH> <TELL "\"I just work here.\"" CR>)
-               (<RASCAL-ITEM? ,PRSI>
+                 (<RASCAL-ITEM? ,PRSI>
                   <TELL "\"If you give me a weapon, I'll enchant it for 100 gold.\""
                         CR>)
                  (ELSE <TELL "\"That's none of my business.\"" CR>)>)
-           (<AND <PRSI? ,BLACKSMITH> <WEAPON? ,PRSO> <VERB? GIVE>>
-           <BLACKSMITH-ENCHANT-WEAPON ,PRSO>
+          (<AND <VERB? GIVE> <PRSI? ,BLACKSMITH>>
+           <COND (<WEAPON? ,PRSO>
+                  <BLACKSMITH-ENCHANT-WEAPON ,PRSO>)
+                 (<FOOD? ,PRSO>
+                  <TELL "\"I already ate.\"" CR>)
+                 (<TREASURE? ,PRSO>
+                  <TELL "\"Nah, you keep it. I'd just melt it down.\"" CR>)
+                 (ELSE <TELL "\"I'm really more of a weapon guy.\"" CR>)>
            <RTRUE>)>>
 
 "---------------------------------------------------------------------------"
