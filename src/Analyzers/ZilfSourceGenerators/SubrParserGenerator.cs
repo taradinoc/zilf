@@ -446,23 +446,44 @@ namespace ZilfSourceGenerators
             sb.AppendLine("{");
             sb.Indent();
 
-            // First pass: determine all parser names that will be generated
-            var allParserNames = new HashSet<string>();
+            // Build a mapping from each method to a canonical parser name and its aliases
+            var methodToParserName = new Dictionary<IMethodSymbol, string>(SymbolEqualityComparer.Default);
+            var methodToAliases = new Dictionary<IMethodSymbol, List<SubrAttributeInfo>>(SymbolEqualityComparer.Default);
+
             foreach (var method in methods)
             {
-                foreach (var attrInfo in method.AttributeInfos)
+                if (!methodToAliases.ContainsKey(method.MethodSymbol))
                 {
-                    var cleanName = attrInfo.Name?.Trim() ?? "";
-                    var sanitizedName = SanitizeName(cleanName);
-                    var parserName = $"Generated_{sanitizedName}_Parser";
+                    methodToAliases[method.MethodSymbol] = new List<SubrAttributeInfo>();
 
-                    // Skip if name is invalid
-                    if (string.IsNullOrWhiteSpace(cleanName) || cleanName.Length == 0 || cleanName == "_" || sanitizedName.Length == 0)
-                        continue;
+                    // Use the first valid alias name to generate the canonical parser name
+                    string? canonicalName = null;
+                    foreach (var attrInfo in method.AttributeInfos)
+                    {
+                        var cleanName = attrInfo.Name?.Trim() ?? "";
+                        if (!string.IsNullOrWhiteSpace(cleanName) && cleanName.Length > 0 && cleanName != "_")
+                        {
+                            var sanitizedName = SanitizeName(cleanName);
+                            if (sanitizedName.Length > 0)
+                            {
+                                canonicalName = sanitizedName;
+                                break;
+                            }
+                        }
+                    }
 
-                    allParserNames.Add(parserName);
+                    if (!string.IsNullOrEmpty(canonicalName))
+                    {
+                        methodToParserName[method.MethodSymbol] = $"Generated_{canonicalName}_Parser";
+                    }
                 }
+
+                // Add all attributes of this method to its alias list
+                methodToAliases[method.MethodSymbol].AddRange(method.AttributeInfos);
             }
+
+            // First pass: determine which parser names will be generated
+            var parserNamesToGenerate = new HashSet<string>(methodToParserName.Values);
 
             var generatedParsers = new HashSet<string>();
             var skippedParsers = new HashSet<string>();
@@ -470,17 +491,22 @@ namespace ZilfSourceGenerators
             // Clear global helpers for this generation run
             TreeBasedGenerator.ClearGlobalHelpers();
 
-            // Second pass: actually generate the parsers, using allParserNames for redirect logic
+            // Second pass: generate one parser per unique method
             foreach (var method in methods)
             {
-                foreach (var attrInfo in method.AttributeInfos)
+                if (methodToParserName.TryGetValue(method.MethodSymbol, out var parserName))
                 {
-                    GenerateSubrParser(sb, method, attrInfo, generatedParsers, skippedParsers, allParserNames, compilation, debugLog);
+                    // Use the first attribute as representative for parser generation
+                    var firstAttr = method.AttributeInfos.FirstOrDefault();
+                    if (firstAttr != null)
+                    {
+                        GenerateSubrParser(sb, method, firstAttr, parserName, generatedParsers, skippedParsers, parserNamesToGenerate, compilation, debugLog);
+                    }
                 }
             }
 
             // Generate parser dictionaries
-            GenerateParserDictionaries(sb, methods, generatedParsers);
+            GenerateParserDictionaries(sb, methods, methodToParserName, methodToAliases, generatedParsers);
 
             sb.Unindent();
             sb.AppendLine("}");
@@ -502,13 +528,9 @@ namespace ZilfSourceGenerators
         }
 
         private static void GenerateSubrParser(IndentedStringBuilder sb, SubrMethodInfo method,
-            SubrAttributeInfo attrInfo, HashSet<string> generatedParsers, HashSet<string> skippedParsers, HashSet<string> allParserNames,
-            Compilation compilation, List<string> debugLog)
+            SubrAttributeInfo attrInfo, string parserName, HashSet<string> generatedParsers, HashSet<string> skippedParsers, 
+            HashSet<string> allParserNames, Compilation compilation, List<string> debugLog)
         {
-            var cleanName = attrInfo.Name?.Trim() ?? "";
-            var sanitizedName = SanitizeName(cleanName);
-            var parserName = $"Generated_{sanitizedName}_Parser";
-
             // Skip if already generated
             if (generatedParsers.Contains(parserName))
             {
@@ -516,19 +538,8 @@ namespace ZilfSourceGenerators
             }
 
             // Skip if already processed (prevents duplicate TODO comments)
-            if (skippedParsers.Contains(parserName)) // Skip if already processed
+            if (skippedParsers.Contains(parserName))
             {
-                return;
-            }
-
-            // Skip if name is invalid and add TODO comment explaining why
-            if (string.IsNullOrWhiteSpace(cleanName) ||
-                cleanName.Length == 0 ||
-                cleanName == "_" ||
-                sanitizedName.Length == 0)
-            {
-                sb.AppendLine($"// TODO: {parserName} - skipped due to invalid SUBR name: '{cleanName}'");
-                skippedParsers.Add(parserName);
                 return;
             }
 
@@ -577,7 +588,9 @@ namespace ZilfSourceGenerators
             }
         }
 
-        private static void GenerateParserDictionaries(IndentedStringBuilder sb, ImmutableArray<SubrMethodInfo> methods, HashSet<string> generatedParsers)
+        private static void GenerateParserDictionaries(IndentedStringBuilder sb, ImmutableArray<SubrMethodInfo> methods,
+            Dictionary<IMethodSymbol, string> methodToParserName, Dictionary<IMethodSymbol, List<SubrAttributeInfo>> methodToAliases,
+            HashSet<string> generatedParsers)
         {
             sb.AppendLine();
             sb.AppendLine("// Dictionary of generated SUBR parsers");
@@ -588,21 +601,28 @@ namespace ZilfSourceGenerators
             var addedNames = new HashSet<string>();
             var lines = new List<string>();
 
-            foreach (var method in methods)
+            // For each unique method, add all its non-FSubr aliases to the dictionary
+            foreach (var kvp in methodToParserName)
             {
-                foreach (var attrInfo in method.AttributeInfos.Where(a => !a.IsFSubr))
+                var methodSymbol = kvp.Key;
+                var parserName = kvp.Value;
+
+                if (!generatedParsers.Contains(parserName))
+                    continue;
+
+                if (methodToAliases.TryGetValue(methodSymbol, out var aliases))
                 {
-                    var cleanName = attrInfo.Name?.Trim() ?? "";
-                    var sanitizedName = SanitizeName(cleanName);
-                    var parserName = $"Generated_{sanitizedName}_Parser";
-
-                    if (generatedParsers.Contains(parserName) && !addedNames.Contains(cleanName))
+                    foreach (var attrInfo in aliases.Where(a => !a.IsFSubr))
                     {
-                        addedNames.Add(cleanName);
+                        var cleanName = attrInfo.Name?.Trim() ?? "";
+                        if (!string.IsNullOrWhiteSpace(cleanName) && !addedNames.Contains(cleanName))
+                        {
+                            addedNames.Add(cleanName);
 
-                        // Add parser to dictionary
-                        var fullName = string.IsNullOrEmpty(attrInfo.ObList) ? cleanName : $"{cleanName}!-{attrInfo.ObList}";
-                        lines.Add($"[\"{fullName}\"] = {parserName},");
+                            // Add parser to dictionary
+                            var fullName = string.IsNullOrEmpty(attrInfo.ObList) ? cleanName : $"{cleanName}!-{attrInfo.ObList}";
+                            lines.Add($"[\"{fullName}\"] = {parserName},");
+                        }
                     }
                 }
             }
@@ -624,21 +644,28 @@ namespace ZilfSourceGenerators
             addedNames.Clear();
             lines.Clear();
 
-            foreach (var method in methods)
+            // For each unique method, add all its FSubr aliases to the dictionary
+            foreach (var kvp in methodToParserName)
             {
-                foreach (var attrInfo in method.AttributeInfos.Where(a => a.IsFSubr))
+                var methodSymbol = kvp.Key;
+                var parserName = kvp.Value;
+
+                if (!generatedParsers.Contains(parserName))
+                    continue;
+
+                if (methodToAliases.TryGetValue(methodSymbol, out var aliases))
                 {
-                    var cleanName = attrInfo.Name?.Trim() ?? "";
-                    var sanitizedName = SanitizeName(cleanName);
-                    var parserName = $"Generated_{sanitizedName}_Parser";
-
-                    if (generatedParsers.Contains(parserName) && !addedNames.Contains(cleanName))
+                    foreach (var attrInfo in aliases.Where(a => a.IsFSubr))
                     {
-                        addedNames.Add(cleanName);
+                        var cleanName = attrInfo.Name?.Trim() ?? "";
+                        if (!string.IsNullOrWhiteSpace(cleanName) && !addedNames.Contains(cleanName))
+                        {
+                            addedNames.Add(cleanName);
 
-                        // Add parser to dictionary
-                        var fullName = string.IsNullOrEmpty(attrInfo.ObList) ? cleanName : $"{cleanName}!-{attrInfo.ObList}";
-                        lines.Add($"[\"{fullName}\"] = {parserName},");
+                            // Add parser to dictionary
+                            var fullName = string.IsNullOrEmpty(attrInfo.ObList) ? cleanName : $"{cleanName}!-{attrInfo.ObList}";
+                            lines.Add($"[\"{fullName}\"] = {parserName},");
+                        }
                     }
                 }
             }
