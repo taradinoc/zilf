@@ -3583,12 +3583,19 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                             if (ctx.PriorOptionalNodes.Length > 0)
                             {
                                 sb.AppendLine("var expectedTypes = new System.Collections.Generic.List<string>();");
+                                sb.AppendLine("var hasPriorOptionalMismatch = false;");
                                 // Include prior optional types only if they had a mismatch (failed to parse available argument)
                                 foreach (var priorOpt in ctx.PriorOptionalNodes)
                                 {
                                     var priorExpectedDisplay = BuildExpectedTypeDisplay(priorOpt.GetErrorExpectedTypes(), priorOpt.GetExpectedTypeName());
                                     var priorExpectedEscaped = priorExpectedDisplay.Replace("\"", "\\\"");
-                                    sb.AppendLine($"if (optionalMismatch_{priorOpt.ParameterId}) expectedTypes.Add(\"{priorExpectedEscaped}\");");
+                                    sb.AppendLine($"if (optionalMismatch_{priorOpt.ParameterId})");
+                                    sb.AppendLine("{");
+                                    sb.Indent();
+                                    sb.AppendLine("hasPriorOptionalMismatch = true;");
+                                    sb.AppendLine($"expectedTypes.Add(\"{priorExpectedEscaped}\");");
+                                    sb.Unindent();
+                                    sb.AppendLine("}");
                                 }
                                 sb.AppendLine($"expectedTypes.Add(\"{expectedTypeEscaped}\");");
                                 sb.AppendLine("var combinedExpected = expectedTypes.Count == 1 ? expectedTypes[0] : expectedTypes.Count == 2 ? expectedTypes[0] + \" or \" + expectedTypes[1] : string.Join(\", \", expectedTypes.GetRange(0, expectedTypes.Count - 1)) + \", or \" + expectedTypes[expectedTypes.Count - 1];");
@@ -3603,7 +3610,12 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                                 sb.AppendLine($"if (!Generated_Parse{StructureType.Name}_Helper({ctx.ArgsVar}, ref probeIndex, context, {ctx.SiteVar}, out var _, ref probeRanker) && probeRanker.HasError)");
                                 sb.AppendLine("{");
                                 sb.Indent();
+                                sb.AppendLine($"if (!hasPriorOptionalMismatch || !probeRanker.IsWrongType || probeRanker.CurrentConstraint != \"{expectedTypeEscaped}\" || probeRanker.CurrentIndex != {ctx.ArgIndexVar})");
+                                sb.AppendLine("{");
+                                sb.Indent();
                                 sb.AppendLine("probeRanker.Throw();");
+                                sb.Unindent();
+                                sb.AppendLine("}");
                                 sb.Unindent();
                                 sb.AppendLine("}");
                                 sb.Unindent();

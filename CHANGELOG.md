@@ -34,6 +34,9 @@ and this project adheres to
 - Error MDL0440 is properly issued when an expression requires temporary
   variables that cause a routine to exceed the Z-machine limit of 15.
 
+- Fixed a bug where `PROG` et al. would sometimes give the wrong error message
+  for a type mismatch.
+
 ## [1.5] (February 10, 2026)
 
 ### Added

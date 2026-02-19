@@ -92,6 +92,13 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        public void Test_PROG_ArgumentDecodingError_Message_9()
+        {
+            TestHelpers.EvalAndCatch<ArgumentDecodingError>("<PROG #DECL () 4 5>",
+                ex => ex.Message.EndsWith("PROG: arg 1: expected ATOM or LIST", StringComparison.Ordinal));
+        }
+
+        [TestMethod]
         public void Test_STRING_ArgumentDecodingError_Message_1()
         {
             TestHelpers.EvalAndCatch<ArgumentDecodingError>("<STRING 123>",
