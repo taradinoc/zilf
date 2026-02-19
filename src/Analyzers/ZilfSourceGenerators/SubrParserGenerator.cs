@@ -1468,25 +1468,9 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 sb.Unindent();
                 sb.AppendLine("}");
 
-                // If argument is present but incompatible, treat as not matched.
-                var compat = GenerateCompatibilityCheck(ctx);
-                var compatTrim = compat?.Trim() ?? "";
-                if (!string.Equals(compatTrim, "true", StringComparison.Ordinal))
-                {
-                    sb.AppendLine($"if (!({compat}))");
-                    sb.AppendLine("{");
-                    sb.Indent();
-                    sb.AppendLine("return false;");
-                    sb.Unindent();
-                    sb.AppendLine("}");
-                }
-
-                // GenerateRequiredParameterLogic now returns a boolean.
-                if (!GenerateRequiredParameterLogic(sb, ctx, $"result_{ParameterId}"))
-                {
-                    // This block is unreachable because GenerateRequiredParameterLogic now returns false instead of throwing.
-                    // The `return false` statements inside it handle the failure cases.
-                }
+                // GenerateRequiredParameterLogic handles both type checking and conversion.
+                // It returns a boolean, and the return false statements inside it handle any failures.
+                GenerateRequiredParameterLogic(sb, ctx, $"result_{ParameterId}");
 
                 sb.AppendLine("return true;");
 
