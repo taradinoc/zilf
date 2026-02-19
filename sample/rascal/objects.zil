@@ -72,6 +72,8 @@
     (SYNONYM \,DUMMY-NOUN \,DUMMY-NOUN)
     ;"The third adjective slot is used by our parser hook."
     (ADJECTIVE \,DUMMY-ADJ \,DUMMY-ADJ \,DUMMY-ADJ)
+    (PLURAL <> <>)
+    (PDESC "")  ;"provide a nonzero PDESC so the parser knows they might be indistinguishable"
     (ARTICLE <>)
     (ACTION <>)
     (FLAGS TAKEBIT TRYTAKEBIT)
@@ -87,6 +89,8 @@
     (LOC RASCAL-ENEMY-POOL)
     (SYNONYM \,DUMMY-NOUN \,DUMMY-NOUN)
     (ADJECTIVE \,DUMMY-ADJ \,DUMMY-ADJ)
+    (PLURAL <>)
+    (PDESC "")
     (ARTICLE <>)
     (PRONOUN IT)
     (ACTION <>)

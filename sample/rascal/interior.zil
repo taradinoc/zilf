@@ -245,6 +245,14 @@ interior ID."
 <CONSTANT WORD-HAMMER <VOC "HAMMER" OBJECT>>
 <CONSTANT WORD-AXE <VOC "AXE" OBJECT>>
 <CONSTANT WORD-WEAPON <VOC "WEAPON" OBJECT>>
+<CONSTANT WORD-DAGGERS <VOC "DAGGERS" OBJECT>>
+<CONSTANT WORD-KATANAS <VOC "KATANAS" OBJECT>>
+<CONSTANT WORD-WARAXES <VOC "WARAXES" OBJECT>>
+<CONSTANT WORD-SCYTHES <VOC "SCYTHES" OBJECT>>
+<CONSTANT WORD-CUDGELS <VOC "CUDGELS" OBJECT>>
+<CONSTANT WORD-HAMMERS <VOC "HAMMERS" OBJECT>>
+<CONSTANT WORD-AXES <VOC "AXES" OBJECT>>
+<CONSTANT WORD-WEAPONS <VOC "WEAPONS" OBJECT>>
 
 <CONSTANT WORD-BANANA <VOC "BANANA" OBJECT>>
 <CONSTANT WORD-CHEESE <VOC "CHEESE" OBJECT>>
@@ -254,6 +262,14 @@ interior ID."
 <CONSTANT WORD-CARROT <VOC "CARROT" OBJECT>>
 <CONSTANT WORD-CAVIAR <VOC "CAVIAR" OBJECT>>
 <CONSTANT WORD-FOOD <VOC "FOOD" OBJECT>>
+<CONSTANT WORD-BANANAS <VOC "BANANAS" OBJECT>>
+<CONSTANT WORD-CHEESES <VOC "CHEESES" OBJECT>>
+<CONSTANT WORD-GRAPESES <VOC "GRAPESES" OBJECT>>
+<CONSTANT WORD-MUFFINS <VOC "MUFFINS" OBJECT>>
+<CONSTANT WORD-TURKEYS <VOC "TURKEYS" OBJECT>>
+<CONSTANT WORD-CARROTS <VOC "CARROTS" OBJECT>>
+<CONSTANT WORD-CAVIARS <VOC "CAVIARS" OBJECT>>
+<CONSTANT WORD-FOODS <VOC "FOODS" OBJECT>>
 
 <CONSTANT WORD-MONKEY <VOC "MONKEY" OBJECT>>
 <CONSTANT WORD-MONKEYS <VOC "MONKEYS" OBJECT>>
@@ -269,8 +285,10 @@ interior ID."
 <CONSTANT WORD-TROPHY <VOC "TROPHY" OBJECT>>
 <CONSTANT WORD-SCRYRA <VOC "SCRYRA" OBJECT>>
 <CONSTANT WORD-TREASURE <VOC "TREASURE" OBJECT>>
+<CONSTANT WORD-TREASURES <VOC "TREASURES" OBJECT>>
 
 <CONSTANT WORD-POTION <VOC "POTION" OBJECT>>
+<CONSTANT WORD-POTIONS <VOC "POTIONS" OBJECT>>
 <CONSTANT WORD-HEALTH <VOC "HEALTH" OBJECT>>
 <CONSTANT WORD-MUSCLE <VOC "MUSCLE" OBJECT>>
 <CONSTANT WORD-VISION <VOC "VISION" OBJECT>>
@@ -294,6 +312,7 @@ interior ID."
 <CONSTANT ADJ-COPPER <VOC "COPPER" ADJ>>
 <CONSTANT ADJ-NICKEL <VOC "NICKEL" ADJ>>
 <CONSTANT WORD-KEY <VOC "KEY" OBJECT>>
+<CONSTANT WORD-KEYS <VOC "KEYS" OBJECT>>
 
 <ROUTINE WEAPON-NOUN1 (ID)
     <COND (<==? .ID ,WEAPON-DAGGER> ,WORD-DAGGER)
@@ -307,6 +326,18 @@ interior ID."
 <ROUTINE WEAPON-NOUN2 (ID)
     <COND (<==? .ID ,WEAPON-WARAXE> ,WORD-AXE) (ELSE ,WORD-WEAPON)>>
 
+<ROUTINE WEAPON-PLURAL1 (ID)
+    <COND (<==? .ID ,WEAPON-DAGGER> ,WORD-DAGGERS)
+          (<==? .ID ,WEAPON-KATANA> ,WORD-KATANAS)
+          (<==? .ID ,WEAPON-WARAXE> ,WORD-WARAXES)
+          (<==? .ID ,WEAPON-SCYTHE> ,WORD-SCYTHES)
+          (<==? .ID ,WEAPON-CUDGEL> ,WORD-CUDGELS)
+          (<==? .ID ,WEAPON-HAMMER> ,WORD-HAMMERS)
+          (ELSE ,WORD-WEAPONS)>>
+
+<ROUTINE WEAPON-PLURAL2 (ID)
+    <COND (<==? .ID ,WEAPON-WARAXE> ,WORD-AXES) (ELSE ,WORD-WEAPONS)>>
+
 <ROUTINE FOOD-NOUN1 (ID)
     <COND (<==? .ID ,FOOD-BANANA> ,WORD-BANANA)
           (<==? .ID ,FOOD-CHEESE> ,WORD-CHEESE)
@@ -316,6 +347,16 @@ interior ID."
           (<==? .ID ,FOOD-CARROT> ,WORD-CARROT)
           (<==? .ID ,FOOD-CAVIAR> ,WORD-CAVIAR)
           (ELSE ,W?\,DUMMY-NOUN)>>
+
+<ROUTINE FOOD-PLURAL (ID)
+    <COND (<==? .ID ,FOOD-BANANA> ,WORD-BANANAS)
+          (<==? .ID ,FOOD-CHEESE> ,WORD-CHEESES)
+          (<==? .ID ,FOOD-GRAPES> ,WORD-GRAPESES)
+          (<==? .ID ,FOOD-MUFFIN> ,WORD-MUFFINS)
+          (<==? .ID ,FOOD-TURKEY> ,WORD-TURKEYS)
+          (<==? .ID ,FOOD-CARROT> ,WORD-CARROTS)
+          (<==? .ID ,FOOD-CAVIAR> ,WORD-CAVIARS)
+          (ELSE ,WORD-FOODS)>>
 
 <ROUTINE TREASURE-NOUN1 (ID)
     <COND (<==? .ID ,TREASURE-AMULET> ,WORD-AMULET)
@@ -330,7 +371,7 @@ interior ID."
           (ELSE ,W?\,DUMMY-NOUN)>>
 
 <ROUTINE TREASURE-NOUN2 (ID)
-    <COND (<==? .ID ,TREASURE-TROPHY> ,WORD-SCRYRA) (ELSE ,W?TREASURE)>>
+    <COND (<==? .ID ,TREASURE-TROPHY> ,WORD-SCRYRA) (ELSE ,WORD-TREASURE)>>
 
 <ROUTINE POTION-ADJ1 (ID)
     <COND (<==? .ID ,POTCOLOR-ARGENT> ,ADJ-ARGENT)
@@ -486,7 +527,7 @@ lengthwise across it and an inverted V above it." CR>)
            <TELL "The " <KEY-NAME .ID> " probably opens a "
                  <KEY-BARE-METAL-DESC .ID> " lock somewhere." CR>)>>
 
-<ROUTINE SET-ITEM-VOCAB (OBJ "AUX" K ID PT N1 N2 A1 A2)
+<ROUTINE SET-ITEM-VOCAB (OBJ "AUX" K ID PT N1 N2 A1 A2 P1 P2)
     <SET K <GETP .OBJ ,P?R-ITKIND>>
     <SET ID <GETP .OBJ ,P?R-ITID>>
     <COND (<==? .K ,ITEMKIND-WEAPON>
@@ -494,19 +535,25 @@ lengthwise across it and an inverted V above it." CR>)
            <SET N1 <WEAPON-NOUN1 .ID>>
            <SET N2 <WEAPON-NOUN2 .ID>>
            <SET A1 <VERSION? (ZIP ,A?\,DUMMY-ADJ) (ELSE ,W?\,DUMMY-ADJ)>>
-           <SET A2 .A1>)
+           <SET A2 .A1>
+           <SET P1 <WEAPON-PLURAL1 .ID>>
+           <SET P2 <WEAPON-PLURAL2 .ID>>)
           (<==? .K ,ITEMKIND-FOOD>
            <PUTP .OBJ ,P?ACTION ,ITEM-ACTION-FOOD>
            <SET N1 <FOOD-NOUN1 .ID>>
            <SET N2 ,WORD-FOOD>
            <SET A1 <VERSION? (ZIP ,A?\,DUMMY-ADJ) (ELSE ,W?\,DUMMY-ADJ)>>
-           <SET A2 .A1>)
+           <SET A2 .A1>
+           <SET P1 <FOOD-PLURAL .ID>>
+           <SET P2 ,WORD-FOODS>)
           (<==? .K ,ITEMKIND-TREASURE>
            <PUTP .OBJ ,P?ACTION ,ITEM-ACTION-TREASURE>
            <SET N1 <TREASURE-NOUN1 .ID>>
            <SET N2 <TREASURE-NOUN2 .ID>>
            <SET A1 <VERSION? (ZIP ,A?\,DUMMY-ADJ) (ELSE ,W?\,DUMMY-ADJ)>>
-           <SET A2 .A1>)
+           <SET A2 .A1>
+           <SET P1 ,WORD-TREASURES>
+           <SET P2 <>>)
           (<==? .K ,ITEMKIND-POTION>
            <PUTP .OBJ ,P?ACTION ,ITEM-ACTION-POTION>
            <SET N1 ,WORD-POTION>
@@ -523,22 +570,29 @@ lengthwise across it and an inverted V above it." CR>)
                  (ELSE
                   ;"Unidentified: parse as color adjective + POTION."
                   <SET N2 ,W?\,DUMMY-NOUN>
-                  <SET A1 <POTION-ADJ1 .ID>>)>)
+                  <SET A1 <POTION-ADJ1 .ID>>)>
+           <SET P1 ,WORD-POTIONS>
+           <SET P2 <>>)
           (<==? .K ,ITEMKIND-KEY>
            <PUTP .OBJ ,P?ACTION ,ITEM-ACTION-KEY>
            <SET N1 ,WORD-KEY>
            <SET A1 <KEY-ADJ1 .ID>>
-           <SET A2 <KEY-ADJ2 .ID>>)
+           <SET A2 <KEY-ADJ2 .ID>>
+           <SET P1 ,WORD-KEYS>
+           <SET P2 <>>)
           (ELSE
            <PUTP .OBJ ,P?ACTION 0>
            <SET N1 ,W?\,DUMMY-NOUN>
            <SET N2 ,W?\,DUMMY-NOUN>
            <SET A1 <VERSION? (ZIP ,A?\,DUMMY-ADJ) (ELSE ,W?\,DUMMY-ADJ)>>
-           <SET A2 .A1>)>
+           <SET A2 .A1>
+           <SET P1 <>>
+           <SET P2 <>>)>
     <COND (<SET PT <GETPT .OBJ ,P?SYNONYM>> <PUT .PT 0 .N1> <PUT .PT 1 .N2>)>
     <COND (<SET PT <GETPT .OBJ ,P?ADJECTIVE>>
            <PUT/B .PT 0 .A1>
            <PUT/B .PT 1 .A2>)>
+    <COND (<SET PT <GETPT .OBJ ,P?PLURAL>> <PUT .PT 0 .P1> <PUT .PT 1 .P2>)>
     <COND (<==? .K ,ITEMKIND-FOOD>
            <FSET .OBJ ,EDIBLEBIT>
            <COND (<==? .ID ,FOOD-GRAPES> <FSET .OBJ ,PLURALBIT>)
@@ -557,6 +611,7 @@ lengthwise across it and an inverted V above it." CR>)
     ITEM-NAME * <PRINT-ITEM-NAME .X>>
 
 <ROUTINE PRINT-ITEM-NAME (OBJ "AUX" K ID LVL ENCH)
+    <COND (<NOT <RASCAL-ITEM? .OBJ>> <TELL D .OBJ> <RTRUE>)>
     <SET K <GETP .OBJ ,P?R-ITKIND>>
     <SET ID <GETP .OBJ ,P?R-ITID>>
     <SET LVL <GETP .OBJ ,P?R-ITLVL>>
@@ -680,7 +735,24 @@ lengthwise across it and an inverted V above it." CR>)
         <COND (<FSET? .OBJ ,NARTICLEBIT>
                <PRINT-CAP-OBJ .OBJ>
                <RTRUE>)
-              (ELSE <TELL "The " D .OBJ>)>>>
+              (ELSE <TELL "The " D .OBJ>)>>
+
+    <ROUTINE PRINT-PLURAL (OBJ "AUX" PT W E)
+        <COND (<RASCAL-ITEM? .OBJ>
+               <COND (<==? <GETP .OBJ ,P?R-ITKIND> ,ITEMKIND-WEAPON>
+                      <TELL "level " N <GETP .OBJ ,P?R-ITLVL>>
+                      <COND (<G? <SET E <GETP .OBJ ,P?R-ITENCH>> 0> <TELL "+" N .E>)>
+                      <TELL !\ >)>
+               <COND (<AND <SET PT <GETPT .OBJ ,P?PLURAL>>
+                           <SET W <GET .PT 0>>>
+                      <TELL B .W>)
+                     (ELSE <TELL "items">)>)
+              (<SET W <GETP .OBJ ,P?PDESC>>
+               <TELL .W>)
+              (ELSE <TELL D .OBJ !\s>)>>>
+
+<REPLACE-LIBRARY-MESSAGES PARSER
+    (MANY-HEADER ITEM-NAME .OBJ ": ")>
 
 "Interior parsing overrides"
 
