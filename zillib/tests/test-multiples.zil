@@ -238,6 +238,34 @@ banana: Taken.|">
     <COMMAND [TAKE TWO ARROWS]>
     <CHECK <=? <COUNT-HELD-ARROWS> 2>>>
 
+<TEST-CASE ("TAKE TWO plural objects excludes held candidates")
+    <MOVE ,ARROW1 ,WINNER>
+    <MOVE ,ARROW2 ,STARTROOM>
+    <REMOVE ,ARROW3>
+    <REMOVE ,ARROW4>
+    <COMMAND [TAKE TWO ARROWS]>
+    <EXPECT "There is only 1 available.|">
+    <CHECK <IN? ,ARROW1 ,WINNER>>
+    <CHECK <IN? ,ARROW2 ,STARTROOM>>>
+
+<TEST-CASE ("TAKE ONE plural object behaves like ANY")
+    <MOVE ,ARROW1 ,STARTROOM>
+    <MOVE ,ARROW2 ,STARTROOM>
+    <MOVE ,ARROW3 ,WINNER>
+    <REMOVE ,ARROW4>
+    <COMMAND [TAKE ONE ARROWS]>
+    <EXPECT "[the arrow]|You pick up the arrow.|">
+    <CHECK <=? <COUNT-HELD-ARROWS> 2>>>
+
+<TEST-CASE ("TAKE ONE singular object behaves like ANY")
+    <MOVE ,ARROW1 ,STARTROOM>
+    <MOVE ,ARROW2 ,STARTROOM>
+    <MOVE ,ARROW3 ,WINNER>
+    <REMOVE ,ARROW4>
+    <COMMAND [TAKE ONE ARROW]>
+    <EXPECT "[the arrow]|You pick up the arrow.|">
+    <CHECK <=? <COUNT-HELD-ARROWS> 2>>>
+
 <TEST-CASE ("Quantifier applies per OBJSPEC")
     <MOVE ,BOW ,STARTROOM>
     <MOVE ,ARROW1 ,STARTROOM>
@@ -259,6 +287,16 @@ hat: Dropped.|">
     <CHECK <NOT <IN? ,HAT ,WINNER>>>
     <CHECK <NOT <IN? ,BANANA ,WINNER>>>
     <CHECK <NOT <IN? ,APPLE ,WINNER>>>>
+
+<TEST-CASE ("DROP plural noun behaves like DROP ALL")
+    <MOVE ,ARROW1 ,WINNER>
+    <MOVE ,ARROW2 ,WINNER>
+    <MOVE ,ARROW3 ,STARTROOM>
+    <REMOVE ,ARROW4>
+    <COMMAND [DROP ARROWS]>
+    <CHECK <NOT <IN? ,ARROW1 ,WINNER>>>
+    <CHECK <NOT <IN? ,ARROW2 ,WINNER>>>
+    <CHECK <IN? ,ARROW3 ,STARTROOM>>>
 
 <TEST-CASE ("Drop all while empty-handed")
     <COMMAND [DROP ALL]>

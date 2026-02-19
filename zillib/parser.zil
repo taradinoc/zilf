@@ -101,6 +101,8 @@
     CT *                 <PRINT-CDEF .X>
     CA *                 <PRINT-CINDEF .X>
     CP *                 <PRINT-CPLURAL .X>
+    ENGLISH-NUM *        <PRINT-ENGLISH-NUM .X>
+    CENGLISH-NUM *       <PRINT-ENGLISH-NUM .X T>
     NOUN-PHRASE *        <PRINT-NOUN-PHRASE .X>
     OBJSPEC *            <PRINT-OBJSPEC .X>
     SYNTAX-LINE *        <PRINT-SYNTAX-LINE .X>
@@ -1676,6 +1678,10 @@ Returns:
     <NP-NCNT .NP 0>
     <SET QUANT <>>
     <REPEAT ()
+        <COND (<SET W <HOOK-MID-PARSE-CONSUME .WN>>
+               ;"Hook has consumed some words"
+               <TRACE 3 "[hook consumed " N .W " words]" CR>
+               <SET WN <+ .WN .W>>)>
         <COND
             ;"exit loop if we reached the end of the command"
             (<G? .WN ,P-LEN>
@@ -2762,7 +2768,13 @@ Returns:
     <SET NN <NP-NCNT .NP>>
     <SET MODE <NP-MODE .NP>>
     <SET OBITS .BITS>
-    <COND (<AND <0? .MODE> <NOT <BTST .BITS ,SF-EVERYWHERE>>>
+    <SET F <>>
+    <COND (<0? .MODE>
+           <DO (J 1 .NY)
+               <COND (<OBJSPEC-QUANT <NP-YSPEC .NP .J>>
+                      <SET F T>
+           <RETURN>)>>)>
+    <COND (<AND <0? .MODE> <NOT .F> <NOT <BTST .BITS ,SF-EVERYWHERE>>>
            <SET BITS <ORB .BITS ,SF-HELD ,SF-CARRIED ,SF-ON-GROUND ,SF-IN-ROOM>>)>
     <TRACE 3 "[MATCH-NOUN-PHRASE: NY=" N .NY " NN=" N .NN " MODE=" N .MODE
              " BITS=" N .BITS " OBITS=" N .OBITS "]" CR>
@@ -2835,7 +2847,11 @@ Returns:
                                                  <IN-PWTBL? .I
                                                             ,P?PLURAL
                                                             <OBJSPEC-NOUN .SPEC>>>
-                                            <SET MODE ,MCM-ALL>)>
+                                            <SET MODE ,MCM-ALL>
+                                            <COND (<N=? .BITS .OBITS>
+                                                   <TRACE 4 "[plural implies ALL: narrowing scope to BITS=" N .OBITS "]" CR>
+                                                   <SET BITS .OBITS>
+                                                   <AGAIN .BITS-SET>)>)>
                                      <COND (<AND .NN <NP-EXCLUDES? .NP .I>>
                                             <TRACE 4 "[excluded]" CR>)
                                            (<G=? .NOUT ,P-MAX-OBJECTS>
@@ -2885,10 +2901,10 @@ Returns:
                                         <TELL <LIBRARY-MESSAGE PARSER TOO-FEW-AVAILABLE ((COUNT .BEST))> CR>
                                         <TRACE-OUT>
                                         <RFALSE>)
-                                       (<G? .BEST .Q>
-                                   <SET NOUT <+ .ONOUT .Q>>)>
-                                 <COND (<G? .Q 1>
-                                   <SET MODE ,MCM-ALL>)>)>)>>)>
+                                       (<AND <G? .BEST .Q> <G? .Q 1>>
+                                        <SET NOUT <+ .ONOUT .Q>>)>
+                                 <COND (<G? .Q 1> <SET MODE ,MCM-ALL>)
+                                       (<1? .Q> <SET MODE ,MCM-ANY>)>)>)>>)>
         ;"Narrow down indistinguishable objects if needed"
         <PUTB .OUT 0 .NOUT>
         <COND (<AND <G? .NOUT 1> <N=? .MODE ,MCM-ALL> <L=? .NY 1>>

@@ -713,7 +713,7 @@ Returns:
                   <TELL " in " D ,PSEUDO-LOC>)>
            <RTRUE>)
           (<G? .CNT 1>
-           <LIST-OBJECTS-PRINT-NUM .CNT .CAP?>
+           <PRINT-ENGLISH-NUM .CNT .CAP?>
            <TELL " " P .O>)
           (.CAP?
            <COND (<BTST .FLAGS ,L-THE> <TELL CT .O>)
@@ -722,7 +722,7 @@ Returns:
            <COND (<BTST .FLAGS ,L-THE> <TELL T .O>)
                  (ELSE <TELL A .O>)>)>>
 
-<ROUTINE LIST-OBJECTS-PRINT-NUM (N CAP?)
+<ROUTINE PRINT-ENGLISH-NUM (N "OPT" CAP?)
     <COND (<G? .N <GET ,ENGLISH-NUM-STRS 0>> <TELL N .N>)
           (.CAP? <PRINT-CAP-STR <GET ,ENGLISH-NUM-STRS .N>>)
           (ELSE <TELL <GET ,ENGLISH-NUM-STRS .N>>)>>

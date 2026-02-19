@@ -49,7 +49,7 @@
       or because 'BUT' excluded all of them."
     (NONE-AVAILABLE "There are none at all available!")
     ;"This is used when a quantifier like TAKE TEN BANANAS cannot be satisfied."
-    (TOO-FEW-AVAILABLE "There " IFELSE <1? .COUNT> "is" "are" " only " N .COUNT " available.")
+    (TOO-FEW-AVAILABLE "There " IFELSE <1? .COUNT> "is" "are" " only " ENGLISH-NUM .COUNT " available.")
 
     ;"This is used when the player uses a pronoun to refer to an object that's
       no longer available."
