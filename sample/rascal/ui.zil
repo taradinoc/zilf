@@ -1081,7 +1081,8 @@ Returns:
            <TELL N ,PLAYER-GOLD>
            <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
            <TELL "  hp=">
-           <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
+           <COND (<L=? ,PLAYER-HP </ ,PLAYER-MAX-HP 4>> <UI-ALERT>)
+                 (ELSE <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>)>
            <TELL N ,PLAYER-HP "/" N ,PLAYER-MAX-HP>
            <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
            <TELL "  str=">
@@ -1111,7 +1112,8 @@ Returns:
            <TELL N ,CURRENT-FLOOR "/" N ,MAX-FLOORS>
            <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
            <TELL "  hp=">
-           <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
+           <COND (<L=? ,PLAYER-HP </ ,PLAYER-MAX-HP 4>> <UI-ALERT>)
+                 (ELSE <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>)>
            <TELL N ,PLAYER-HP "/" N ,PLAYER-MAX-HP>
            <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
            <TELL "  str=">
