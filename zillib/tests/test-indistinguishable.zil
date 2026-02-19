@@ -62,6 +62,13 @@
     <COMMAND [TAKE CLONE]>
     <EXPECT "You pick up the clone2.|">>
 
+<TEST-CASE ("TAKE prefers on-ground over held indistinguishable")
+    <MOVE ,CLONE1 ,WINNER>
+    <MOVE ,CLONE2 ,STARTROOM>
+    <COMMAND [TAKE CLONE]>
+    <EXPECT "You pick up the clone2.|">
+    <CHECK <IN? ,CLONE2 ,WINNER>>>
+
 <TEST-CASE ("Distinguishable by vocab")
     <COMMAND [TAKE CONE]>
     <EXPECT "Which do you mean, the blue cone2 or the red cone?|">>

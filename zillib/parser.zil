@@ -2907,7 +2907,10 @@ Returns:
                                        (<1? .Q> <SET MODE ,MCM-ANY>)>)>)>>)>
         ;"Narrow down indistinguishable objects if needed"
         <PUTB .OUT 0 .NOUT>
-        <COND (<AND <G? .NOUT 1> <N=? .MODE ,MCM-ALL> <L=? .NY 1>>
+        <COND (<AND <G? .NOUT 1>
+                    <N=? .MODE ,MCM-ALL>
+                    <L=? .NY 1>
+                    <=? .BITS .OBITS>>
                <TRACE 4 "[checking for indistinguishable objects]" CR>
                <TRY-NARROW-INDISTINGUISHABLE .OUT>
                <SET NOUT <GETB .OUT 0>>)>

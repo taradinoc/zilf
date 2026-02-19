@@ -244,7 +244,7 @@ banana: Taken.|">
     <REMOVE ,ARROW3>
     <REMOVE ,ARROW4>
     <COMMAND [TAKE TWO ARROWS]>
-    <EXPECT "There is only 1 available.|">
+    <EXPECT "There is only one available.|">
     <CHECK <IN? ,ARROW1 ,WINNER>>
     <CHECK <IN? ,ARROW2 ,STARTROOM>>>
 
