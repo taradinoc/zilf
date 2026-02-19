@@ -962,6 +962,73 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             return sb.ToString();
         }
 
+        private static string SanitizeIdentifierForVariableSuffix(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return string.Empty;
+            }
+
+            var sb = new StringBuilder(name.Length);
+            foreach (char c in name)
+            {
+                if (char.IsLetterOrDigit(c) || c == '_')
+                {
+                    sb.Append(c);
+                }
+                else
+                {
+                    sb.Append('_');
+                }
+            }
+
+            if (sb.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            if (!char.IsLetter(sb[0]) && sb[0] != '_')
+            {
+                sb.Insert(0, '_');
+            }
+
+            return sb.ToString();
+        }
+
+        private static string GetResultVariableName(int parameterId, string? parameterName)
+        {
+            var suffix = SanitizeIdentifierForVariableSuffix(parameterName);
+            if (string.IsNullOrEmpty(suffix))
+            {
+                suffix = $"arg{parameterId}";
+            }
+
+            return $"result_{parameterId}_{suffix}";
+        }
+
+        private static bool TryExtractResultVariableId(string varName, out int id)
+        {
+            id = 0;
+
+            if (!varName.StartsWith("result_", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            int idx = 7;
+            while (idx < varName.Length && char.IsDigit(varName[idx]))
+            {
+                idx++;
+            }
+
+            if (idx == 7)
+            {
+                return false;
+            }
+
+            return int.TryParse(varName.Substring(7, idx - 7), out id);
+        }
+
         // Data structures for SUBR method information
         public class SubrMethodInfo
         {
@@ -1026,6 +1093,8 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             public IFieldSymbol? Field { get; set; }
             public int ParameterIndex { get; set; }
 
+            protected string GetResultVariableName() => SubrParserGenerator.GetResultVariableName(ParameterId, ParameterName);
+
             /// <summary>
             /// Step-based API: emit a local TryParse_{Depth} helper that accepts a ref ErrorRanker and attempts to parse
             /// and sets result_{Depth} on success. Default behavior delegates to the legacy
@@ -1059,7 +1128,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.Unindent();
                     sb.AppendLine("}");
                     sb.AppendLine($"// Optional parameter '{ParameterName}' not matched, using default value");
-                    sb.AppendLine($"result_{ParameterId} = {GetDefaultValueExpression()};");
+                    sb.AppendLine($"{GetResultVariableName()} = {GetDefaultValueExpression()};");
                     sb.Unindent();
                     sb.AppendLine("}");
                 }
@@ -1233,7 +1302,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             public override void GenerateParsingStep(IndentedStringBuilder sb, GenerationContext ctx)
             {
                 var fnName = $"TryParse_{ParameterId}";
-                var resultVar = $"result_{ParameterId}";
+                var resultVar = GetResultVariableName();
 
                 sb.AppendLine($"// {nameof(LocalEnvironmentParameterNode)}: Match ENVIRONMENT or use current environment from context");
                 sb.AppendLine($"bool {fnName}({ctx.RankerParameter})");
@@ -1295,7 +1364,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             public override void GenerateInvokeStep(IndentedStringBuilder sb, GenerationContext ctx)
             {
                 var fnName = $"TryParse_{ParameterId}";
-                var resultVar = $"result_{ParameterId}";
+                var resultVar = GetResultVariableName();
 
                 if (IsOptional)
                 {
@@ -1457,7 +1526,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 sb.AppendLine("{");
                 sb.Indent();
 
-                // Note: do NOT declare a new local result_{ParameterId} here; we rely on the outer variable declared in the parser body.
+                // Note: do NOT declare a new local result variable here; we rely on the outer variable declared in the parser body.
 
                 // For any parameter, if no argument is available, it's a failure to parse.
                 // The caller (InvokeStep) will decide if this is an error or means "use default".
@@ -1470,7 +1539,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
 
                 // GenerateRequiredParameterLogic handles both type checking and conversion.
                 // It returns a boolean, and the return false statements inside it handle any failures.
-                GenerateRequiredParameterLogic(sb, ctx, $"result_{ParameterId}");
+                GenerateRequiredParameterLogic(sb, ctx, GetResultVariableName());
 
                 sb.AppendLine("return true;");
 
@@ -1509,7 +1578,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine("}");
 
                     // No arguments available or no detailed error - use default
-                    sb.AppendLine($"result_{ParameterId} = {GetDefaultValueExpression()};");
+                    sb.AppendLine($"{GetResultVariableName()} = {GetDefaultValueExpression()};");
                     sb.Unindent();
                     sb.AppendLine("}");
                 }
@@ -1621,7 +1690,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine($"if (TryParse_{ElementNode.ParameterId}({ctx.RankerArgument}) && {ctx.ArgIndexVar} > prevArgIndex)");
                     sb.AppendLine("{");
                     sb.Indent();
-                    sb.AppendLine($"list.Add(result_{ElementNode.ParameterId});");
+                    sb.AppendLine($"list.Add({SubrParserGenerator.GetResultVariableName(ElementNode.ParameterId, ElementNode.ParameterName)});");
                     sb.Unindent();
                     sb.AppendLine("}");
                     sb.AppendLine("else");
@@ -1646,7 +1715,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.Unindent();
                     sb.AppendLine("}");
 
-                    sb.AppendLine($"result_{ParameterId} = list.ToArray();");
+                    sb.AppendLine($"{GetResultVariableName()} = list.ToArray();");
 
                     // Add [Decl] constraint validation if present
                     if (HasDeclConstraint && !string.IsNullOrEmpty(DeclPattern))
@@ -1656,7 +1725,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                         sb.AppendLine("{");
                         sb.Indent();
                         sb.AppendLine($"var decl_{ParameterId} = Zilf.Program.Parse(context, \"{DeclPattern?.Replace("\"", "\\\"")}\").Single();");
-                        sb.AppendLine($"var argsList_{ParameterId} = new Zilf.Interpreter.Values.ZilList(result_{ParameterId}.Cast<Zilf.Interpreter.Values.ZilObject>());");
+                        sb.AppendLine($"var argsList_{ParameterId} = new Zilf.Interpreter.Values.ZilList({GetResultVariableName()}.Cast<Zilf.Interpreter.Values.ZilObject>());");
                         sb.AppendLine($"if (!Zilf.Language.Decl.Check(context, argsList_{ParameterId}, decl_{ParameterId}))");
                         sb.AppendLine("{");
                         sb.Indent();
@@ -1682,7 +1751,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine($"if (TryParse_{ElementNode.ParameterId}({ctx.RankerArgument}) && {ctx.ArgIndexVar} > prevArgIndex)");
                     sb.AppendLine("{");
                     sb.Indent();
-                    sb.AppendLine($"list.Add(result_{ElementNode.ParameterId});");
+                    sb.AppendLine($"list.Add({SubrParserGenerator.GetResultVariableName(ElementNode.ParameterId, ElementNode.ParameterName)});");
                     sb.Unindent();
                     sb.AppendLine("}");
                     sb.AppendLine("else");
@@ -1716,7 +1785,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                         sb.AppendLine("}");
                     }
 
-                    sb.AppendLine($"result_{ParameterId} = list.ToArray();");
+                    sb.AppendLine($"{GetResultVariableName()} = list.ToArray();");
 
                     // Add [Decl] constraint validation if present
                     if (HasDeclConstraint && !string.IsNullOrEmpty(DeclPattern))
@@ -1726,7 +1795,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                         sb.AppendLine("{");
                         sb.Indent();
                         sb.AppendLine($"var decl_{ParameterId} = Zilf.Program.Parse(context, \"{DeclPattern?.Replace("\"", "\\\"")}\").Single();");
-                        sb.AppendLine($"var argsList_{ParameterId} = new Zilf.Interpreter.Values.ZilList(result_{ParameterId}.Cast<Zilf.Interpreter.Values.ZilObject>());");
+                        sb.AppendLine($"var argsList_{ParameterId} = new Zilf.Interpreter.Values.ZilList({GetResultVariableName()}.Cast<Zilf.Interpreter.Values.ZilObject>());");
                         sb.AppendLine($"if (!Zilf.Language.Decl.Check(context, argsList_{ParameterId}, decl_{ParameterId}))");
                         sb.AppendLine("{");
                         sb.Indent();
@@ -1748,7 +1817,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             public override void GenerateInvokeStep(IndentedStringBuilder sb, GenerationContext ctx)
             {
                 var fnName = $"TryParse_{ParameterId}";
-                var varName = $"result_{ParameterId}";
+                var varName = GetResultVariableName();
 
                 // Call the parsing helper; check the result so we can surface ranked errors
                 sb.AppendLine($"if (!{fnName}({ctx.RankerArgument}))");
@@ -1836,7 +1905,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
 
                 var fnName = $"TryParse_{ParameterId}";
                 var typeName = GetCSharpTypeName(); // This will be "object" or a shared base class
-                var resultName = $"result_{ParameterId}";
+                var resultName = GetResultVariableName();
 
                 // sb.AppendLine($"// EitherParameterNode.GenerateParsingStep: {fnName} of type {typeName}, storing into {resultName}, reporting as \"{GetExpectedTypeName()}\"");
                 sb.AppendLine($"// {nameof(EitherParameterNode)}: Match {GetHybridExpectedTypeName()}");
@@ -1853,7 +1922,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 {
                     var alt = Alternatives[i];
                     var altStepName = $"TryParse_{alt.ParameterId}";
-                    var altVarName = $"result_{alt.ParameterId}";
+                    var altVarName = SubrParserGenerator.GetResultVariableName(alt.ParameterId, alt.ParameterName);
                     var altRankerVar = $"altRanker_{alt.ParameterId}";
 
                     // Attempt alternative and backtrack parser state on failure.
@@ -1898,7 +1967,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine("{");
                     sb.Indent();
                     sb.AppendLine($"// Optional parameter '{ParameterName}' not matched, using default value");
-                    sb.AppendLine($"result_{ParameterId} = {GetDefaultValueExpression()};");
+                    sb.AppendLine($"{GetResultVariableName()} = {GetDefaultValueExpression()};");
                     sb.Unindent();
                     sb.AppendLine("}");
                 }
@@ -2001,20 +2070,6 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             public GenerationContext WithDepth(int newDepth) => new()
             {
                 ArgIndexVar = ArgIndexVar,
-                ArgsVar = ArgsVar,
-                SiteVar = SiteVar,
-                RankerVar = RankerVar,
-                MethodName = MethodName,
-                Depth = newDepth,
-                ParameterCount = ParameterCount,
-                CallerArgIndexVar = CallerArgIndexVar,
-                PriorOptionalNodes = PriorOptionalNodes,
-                TrackOptionalMismatch = TrackOptionalMismatch
-            };
-
-            public GenerationContext WithArrayElement(int newDepth, string newArgIndex) => new()
-            {
-                               ArgIndexVar = newArgIndex,
                 ArgsVar = ArgsVar,
                 SiteVar = SiteVar,
                 RankerVar = RankerVar,
@@ -2308,7 +2363,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 var allVariables = new HashSet<string>();
                 for (int i = 0; i < tree.Length; i++)
                 {
-                    allVariables.Add($"result_{tree[i].ParameterId}");
+                    allVariables.Add(GetResultVariableName(tree[i].ParameterId, tree[i].ParameterName));
                     CollectNestedVariables(tree[i], i, allVariables);
                 }
 
@@ -2538,14 +2593,14 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 {
                     case ArrayParameterNode arrayNode:
                         // Array elements use result_{baseIndex + 1}
-                        variables.Add($"result_{arrayNode.ElementNode.ParameterId}");
+                        variables.Add(GetResultVariableName(arrayNode.ElementNode.ParameterId, arrayNode.ElementNode.ParameterName));
                         CollectNestedVariables(arrayNode.ElementNode, baseIndex + 1, variables);
                         break;
 
                     case EitherParameterNode eitherNode:
                         foreach (var (child, index) in eitherNode.Alternatives.Select((c, i) => (c, i)))
                         {
-                            variables.Add($"result_{child.ParameterId}");
+                            variables.Add(GetResultVariableName(child.ParameterId, child.ParameterName));
                             CollectNestedVariables(child, baseIndex + index + 1, variables);
                         }
                         break;
@@ -2554,12 +2609,9 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
 
             private int ExtractResultId(string varName)
             {
-                if (varName.StartsWith("result_"))
+                if (TryExtractResultVariableId(varName, out var id))
                 {
-                    if (int.TryParse(varName.Substring(7), out int id))
-                    {
-                        return id;
-                    }
+                    return id;
                 }
                 return 0;
             }
@@ -2587,7 +2639,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
 
             private ParameterNode? FindNestedNodeForVariable(ParameterNode node, string varName)
             {
-                if (varName == $"result_{node.ParameterId}")
+                if (varName == GetResultVariableName(node.ParameterId, node.ParameterName))
                     return node;
 
                 if (node is ArrayParameterNode arrayNode)
@@ -2620,7 +2672,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     var param = parameters[i];
-                    var paramName = $"result_{tree[i].ParameterId}";    // XXX is this right?
+                    var paramName = GetResultVariableName(tree[i].ParameterId, tree[i].ParameterName);
 
                     // If parameter is optional and reference type, add null-forgiving operator
                     // to handle cases where method signature uses = null! pattern
@@ -3046,7 +3098,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     var allVariables = new HashSet<string>();
                     for (int i = 0; i < tree.Length; i++)
                     {
-                        allVariables.Add($"result_{tree[i].ParameterId}");
+                        allVariables.Add(GetResultVariableName(tree[i].ParameterId, tree[i].ParameterName));
                         CollectNestedVariables(tree[i], i, allVariables);
                     }
 
@@ -3086,7 +3138,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine($"{fullTypeName} _constructed = new();");
                     foreach (var node in tree)
                     {
-                        sb.AppendLine($"_constructed.{node.ParameterName} = result_{node.ParameterId};");
+                        sb.AppendLine($"_constructed.{node.ParameterName} = {GetResultVariableName(node.ParameterId, node.ParameterName)};");
                     }
                     sb.AppendLine("result = _constructed;");
                     sb.AppendLine("callerArgIndex = argIndex;");
@@ -3191,7 +3243,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 // Emit parsing helper for custom structure parameter
                 // Ensure helper methods for the structure are already generated by TreeBasedGenerator.GenerateHelperMethods
                 var fnName = $"TryParse_{ParameterId}";
-                var resultVar = $"result_{ParameterId}";
+                var resultVar = GetResultVariableName();
                 var fullTypeName = StructureType.ToDisplayString();
 
                 var isArrayStr = IsArray ? "array of " : "";
@@ -3312,7 +3364,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine("{");
                     sb.Indent();
                     sb.AppendLine($"// Optional sequence-structure parameter not matched, using default value");
-                    sb.AppendLine($"result_{ParameterId} = {GetDefaultValueExpression()};");
+                    sb.AppendLine($"{GetResultVariableName()} = {GetDefaultValueExpression()};");
                     sb.Unindent();
                     sb.AppendLine("}");
                 }
@@ -3393,7 +3445,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             public override void GenerateParsingStep(IndentedStringBuilder sb, GenerationContext ctx)
             {
                 var fnName = $"TryParse_{ParameterId}";
-                var resultVar = $"result_{ParameterId}";
+                var resultVar = GetResultVariableName();
                 var fullTypeName = StructureType.ToDisplayString();
 
                 var isArrayStr = IsArray ? "array of " : "";
@@ -3462,7 +3514,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             public override void GenerateInvokeStep(IndentedStringBuilder sb, GenerationContext ctx)
             {
                 var fnName = $"TryParse_{ParameterId}";
-                var resultVar = $"result_{ParameterId}";
+                var resultVar = GetResultVariableName();
                     if (IsOptional)
                     {
                         sb.AppendLine($"if (!{fnName}({ctx.RankerArgument}))");
