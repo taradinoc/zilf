@@ -969,7 +969,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 return string.Empty;
             }
 
-            var sb = new StringBuilder(name.Length);
+            var sb = new StringBuilder(name!.Length);
             foreach (char c in name)
             {
                 if (char.IsLetterOrDigit(c) || c == '_')
@@ -1916,6 +1916,10 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                 var bestFailureFlag = $"bestFailureRecorded_{ParameterId}";
                 sb.AppendLine($"ErrorRanker {bestFailureVar} = default;");
                 sb.AppendLine($"bool {bestFailureFlag} = false;");
+                var savedArgIndexVar = $"savedArgIndex_{ParameterId}";
+                sb.AppendLine($"int {savedArgIndexVar} = argIndex;");
+                var altRankerVar = $"altRanker_{ParameterId}";
+                sb.AppendLine($"ErrorRanker {altRankerVar} = default;");
 
                 // 2. Generate a chain of calls to the alternatives' parsing steps.
                 for (int i = 0; i < Alternatives.Count; i++)
@@ -1923,11 +1927,13 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     var alt = Alternatives[i];
                     var altStepName = $"TryParse_{alt.ParameterId}";
                     var altVarName = SubrParserGenerator.GetResultVariableName(alt.ParameterId, alt.ParameterName);
-                    var altRankerVar = $"altRanker_{alt.ParameterId}";
 
                     // Attempt alternative and backtrack parser state on failure.
-                    sb.AppendLine($"int savedArgIndex_{alt.ParameterId} = argIndex;");
-                    sb.AppendLine($"var {altRankerVar} = ranker;");
+                    if (i > 0)
+                    {
+                        sb.AppendLine($"argIndex = {savedArgIndexVar};");
+                    }
+                    sb.AppendLine($"{altRankerVar} = ranker;");
                     sb.AppendLine($"if ({altStepName}(ref {altRankerVar}))");
                     sb.AppendLine("{");
                     sb.Indent();
@@ -1936,8 +1942,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine("return true;");
                     sb.Unindent();
                     sb.AppendLine("}");
-                    sb.AppendLine($"// failed -> restore arg index and try next alternative");
-                    sb.AppendLine($"argIndex = savedArgIndex_{alt.ParameterId};");
+                    sb.AppendLine($"// failed -> try next alternative from original arg index");
                     sb.AppendLine($"{altRankerVar}.UpdateBestCandidate(ref {bestFailureFlag}, ref {bestFailureVar});");
                 }
 
