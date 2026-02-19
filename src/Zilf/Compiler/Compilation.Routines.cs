@@ -66,6 +66,7 @@ namespace Zilf.Compiler
             TempLocalNames.Clear();
             SpareLocals.Clear();
             OuterLocals.Clear();
+            maxRoutineLocalsExceeded = false;
         }
 
         void BuildRoutine(ZilRoutine routine, IRoutineBuilder rb, bool entryPoint, bool traceRoutines)
@@ -357,6 +358,25 @@ namespace Zilf.Compiler
             }
             else
             {
+                var maxLocalsAllowed = Context.ZEnvironment.MaxRoutineLocals;
+                if (!maxRoutineLocalsExceeded && maxLocalsAllowed != int.MaxValue)
+                {
+                    var currentUniqueLocals = AllLocalBindingRecords
+                        .Select(r => r.LocalBuilder)
+                        .Distinct()
+                        .Count();
+
+                    if (currentUniqueLocals >= maxLocalsAllowed)
+                    {
+                        Context.HandleError(new InterpreterError(
+                            src,
+                            InterpreterMessages._0_Too_Many_Local_Variables_Only_1_Allowed,
+                            "ROUTINE",
+                            maxLocalsAllowed));
+                        maxRoutineLocalsExceeded = true;
+                    }
+                }
+
                 // allocate a new variable with a unique name
                 var tempName = MakeUniqueVariableName(atom);
 

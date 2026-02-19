@@ -29,6 +29,11 @@ and this project adheres to
   the parser to pick two bananas arbitrarily, or to give an error if fewer than
   two are available.
 
+### Fixed
+
+- Error MDL0440 is properly issued when an expression requires temporary
+  variables that cause a routine to exceed the Z-machine limit of 15.
+
 ## [1.5] (February 10, 2026)
 
 ### Added

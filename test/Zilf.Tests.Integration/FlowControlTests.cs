@@ -582,6 +582,19 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Routine_That_Exceeds_Local_Limit_After_Compiler_Temporaries_Should_Not_Compile()
+        {
+            // Define exactly 15 locals, but force the compiler to allocate a temporary local to preserve
+            // left-to-right evaluation order for the call to FOO.
+            await AssertRoutine(
+                    "\"AUX\" L1 L2 L3 L4 L5 L6 L7 L8 L9 L10 L11 L12 L13 L14 L15",
+                    "<FOO <BAR> <BAR>>")
+                .WithGlobal("<ROUTINE BAR () 0>")
+                .WithGlobal("<ROUTINE FOO (A B) .A>")
+                .DoesNotCompileAsync("MDL0440");
+        }
+
+        [TestMethod]
         public async Task Call_With_Too_Many_Arguments_Should_Not_Compile()
         {
             await AssertRoutine("", "<FOO 1 2 3>")

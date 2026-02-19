@@ -69,6 +69,8 @@ namespace Zilf.Compiler
         public readonly Stack<ILocalBuilder> SpareLocals = new();
         public readonly Dictionary<ZilAtom, Stack<LocalBindingRecord>> OuterLocals = new();
 
+        bool maxRoutineLocalsExceeded;
+
         public readonly Stack<Block> Blocks = new();
 
         public readonly Dictionary<ZilAtom, IGlobalBuilder> Globals;
