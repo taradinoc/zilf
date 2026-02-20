@@ -595,6 +595,14 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Routine_With_Suspicious_Nested_ROUTINE_Should_Warn()
+        {
+            await AssertRoutine("", "<+ 1 2> <ROUTINE FOO () <>>")
+                .WithWarnings("MDL0134")
+                .DoesNotCompileAsync();
+        }
+
+        [TestMethod]
         public async Task Call_With_Too_Many_Arguments_Should_Not_Compile()
         {
             await AssertRoutine("", "<FOO 1 2 3>")

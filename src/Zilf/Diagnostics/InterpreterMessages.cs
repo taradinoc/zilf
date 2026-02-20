@@ -115,6 +115,8 @@ namespace Zilf.Diagnostics
 
         [Error("{0}: \"CALL\" clause must not be combined with other argument bindings")]
         public const int _0_CALL_Clause_Must_Not_Be_Combined_With_Other_Argument_Bindings = 133;
+        [Warning("{0}: likely missing closing bracket before nested '{1}'")]
+        public const int _0_Likely_Missing_Closing_Bracket_Before_Nested_1 = 134;
 
         // Type/Format/DECL - 0200
 

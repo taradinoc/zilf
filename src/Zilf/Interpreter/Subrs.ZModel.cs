@@ -137,6 +137,18 @@ namespace Zilf.Interpreter
                     affectedArgCount));
             }
 
+            foreach (var zo in rtn.Body)
+            {
+                if (zo is ZilForm { First: ZilAtom { StdAtom: StdAtom.ROUTINE or StdAtom.CONSTANT or StdAtom.GLOBAL or StdAtom.OBJECT or StdAtom.ROOM } atom } form)
+                {
+                    ctx.HandleError(new InterpreterError(ctx.TopFrame.SourceLine,
+                        InterpreterMessages._0_Likely_Missing_Closing_Bracket_Before_Nested_1,
+                        "ROUTINE",
+                        atom));
+                    break;
+                }
+            }
+
             rtn.SourceLine = ctx.TopFrame.SourceLine;
             ctx.SetZVal(name, rtn);
             Debug.Assert(rtn.Name != null);

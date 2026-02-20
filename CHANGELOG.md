@@ -29,6 +29,9 @@ and this project adheres to
   the parser to pick two bananas arbitrarily, or to give an error if fewer than
   two are available.
 
+- Added warning MDL0134 for a `ROUTINE` that seems to contain nested definitions
+  like `ROUTINE` or `GLOBAL`, which typically means a close bracket is missing.
+
 ### Fixed
 
 - Error MDL0440 is properly issued when an expression requires temporary
