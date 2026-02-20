@@ -650,10 +650,11 @@ Returns:
 ;"Picks a random non-booth interior ID for procedural placement."
 
 <ROUTINE PICK-RANDOM-INTERIOR-ID ("AUX" R)
-    <SET R <RNG 5>>
+    <SET R <RNG 6>>
     <COND (<==? .R 1 2> ,INTERIOR-CARROT-FARM)
           (<==? .R 3 4> ,INTERIOR-BLACKSMITH)
-          (ELSE ,INTERIOR-BEES)>>
+          (<==? .R 5> ,INTERIOR-BEES)
+          (ELSE ,INTERIOR-ORACLE-GROTTO)>>
 
 ;"Returns true if (X,Y) is a valid passable tile for placing an interior entrance."
 

@@ -481,6 +481,187 @@ beasts to hit you.\""
 
 "---------------------------------------------------------------------------"
 
+"Grotto of the Oracle"
+
+<ROOM ORACLE-GROTTO
+    (IN ROOMS)
+    (DESC "Grotto of the Oracle")
+    (INTERIOR-NAME "grotto of the oracle")
+    (LDESC "This small, cave-like structure is home to the dungeon's Oracle. A
+sign near the entrance reads: \"Recall the Past! See the Future!\"|
+|
+The Oracle herself seems to be away at the moment, but she left behind her glassy sphere, resting atop a stone pedestal.")
+    (ACTION ORACLE-GROTTO-R)
+    (THINGS (WORN STONE) PEDESTAL "A worn stone pedestal supports the sphere."
+            <> ORACLE "The Oracle isn't here."
+            <> SIGN ([READ EXAMINE] "\"Recall the Past! See the Future!\""))
+    (FLAGS LIGHTBIT)>
+
+<ROUTINE ORACLE-GROTTO-R (RARG)
+    <COND (<==? .RARG ,M-ENTER> <THIS-IS-IT ,GLASSY-SPHERE>)
+          (<==? .RARG ,M-BEG>
+           <COND (<OR <VERB? EXIT> <AND <VERB? WALK> <PRSO? ,P?OUT>>>
+                  <THROW <> ,INTERIOR-CATCH-TOKEN>)>)>>
+
+<OBJECT GLASSY-SPHERE
+    (IN ORACLE-GROTTO)
+    (DESC "glassy sphere")
+    (SYNONYM SPHERE ORB BALL)
+    (ADJECTIVE GLASSY CRYSTAL)
+    (ACTION GLASSY-SPHERE-F)
+    (FLAGS NDESCBIT)>
+
+<GLOBAL ORACLE-VISION-FLOOR 0>
+<GLOBAL ORACLE-VISION-KIND 0>
+<GLOBAL ORACLE-VISION-LOCKTYPE 0>
+
+<ROUTINE GLASSY-SPHERE-F (ARG)
+    <COND (<VERB? EXAMINE LOOK>
+           <ORACLE-SPHERE-VISION>
+           <RTRUE>)
+          (<VERB? TAKE>
+           <SETG P-CONT 0>
+           <TELL "The sphere is fused to its pedestal." CR>
+           <RTRUE>)>
+    <RFALSE>>
+
+<ROUTINE ORACLE-MAX-VISITED-FLOOR ("AUX" MAX)
+    <SET MAX 0>
+    <DO (F 1 ,MAX-FLOORS)
+        <COND (<FSET? <FLOOR-OBJ .F> ,TOUCHBIT> <SET MAX .F>)>>
+    .MAX>
+
+<ROUTINE ORACLE-COUNT-FLOOR-VISITED (F "AUX" CNT O K X Y)
+    <SET CNT 0>
+    <SET O <FIRST? <FLOOR-OBJ .F>>>
+    <REPEAT ()
+        <COND (<NOT .O> <RETURN .CNT>)>
+        <SET K <GETP .O ,P?R-ITKIND>>
+        <COND (<==? .K ,ITEMKIND-KEY>
+               <SET X <GETP .O ,P?R-X>>
+               <SET Y <GETP .O ,P?R-Y>>
+               <COND (<AND <G? .X 0> <G? .Y 0>> <SET CNT <+ .CNT 1>>)>)
+              (<==? .K ,ITEMKIND-LOCKEDDOOR>
+               <COND (<NOT <FSET? .O ,OPENBIT>> <SET CNT <+ .CNT 1>>)>)>
+        <SET O <NEXT? .O>>>>
+
+<ROUTINE ORACLE-COUNT-VISITED-CANDIDATES ("AUX" CNT)
+    <SET CNT 0>
+    <DO (F 1 ,MAX-FLOORS)
+        <COND (<FSET? <FLOOR-OBJ .F> ,TOUCHBIT>
+               <SET CNT <+ .CNT <ORACLE-COUNT-FLOOR-VISITED .F>>>)>>
+    .CNT>
+
+<ROUTINE ORACLE-COUNT-FLOOR-FUTURE (F "AUX" CNT O K)
+    <SET CNT 0>
+    <COND (<G? <GETB ,TREASURE-ROOM-LOCKTYPE <- .F 1>> 0> <SET CNT <+ .CNT 1>>)>
+    <SET O <FIRST? <FLOOR-OBJ .F>>>
+    <REPEAT ()
+        <COND (<NOT .O> <RETURN .CNT>)>
+        <SET K <GETP .O ,P?R-ITKIND>>
+        <COND (<==? .K ,ITEMKIND-KEY> <SET CNT <+ .CNT 1>>)>
+        <SET O <NEXT? .O>>>>
+
+<ROUTINE ORACLE-PICK-IN-FLOOR-VISITED (F TARGET "AUX" O K X Y)
+    <SET O <FIRST? <FLOOR-OBJ .F>>>
+    <REPEAT ()
+        <COND (<NOT .O> <RETURN .TARGET>)>
+        <SET K <GETP .O ,P?R-ITKIND>>
+        <COND (<==? .K ,ITEMKIND-KEY>
+               <SET X <GETP .O ,P?R-X>>
+               <SET Y <GETP .O ,P?R-Y>>
+               <COND (<AND <G? .X 0> <G? .Y 0>>
+                      <SET TARGET <- .TARGET 1>>
+                      <COND (<L=? .TARGET 0>
+                             <SETG ORACLE-VISION-FLOOR .F>
+                             <SETG ORACLE-VISION-KIND ,ITEMKIND-KEY>
+                             <SETG ORACLE-VISION-LOCKTYPE <GETP .O ,P?R-ITID>>
+                             <RETURN 0>)>)>)
+              (<==? .K ,ITEMKIND-LOCKEDDOOR>
+               <COND (<NOT <FSET? .O ,OPENBIT>>
+                      <SET TARGET <- .TARGET 1>>
+                      <COND (<L=? .TARGET 0>
+                             <SETG ORACLE-VISION-FLOOR .F>
+                             <SETG ORACLE-VISION-KIND ,ITEMKIND-LOCKEDDOOR>
+                             <SETG ORACLE-VISION-LOCKTYPE <GETP .O ,P?R-ITID>>
+                             <RETURN 0>)>)>)>
+        <SET O <NEXT? .O>>>>
+
+<ROUTINE ORACLE-PICK-VISITED ("AUX" TOTAL TARGET)
+    <SET TOTAL <ORACLE-COUNT-VISITED-CANDIDATES>>
+    <COND (<L? .TOTAL 1> <RETURN 0>)>
+    <SET TARGET <RNG .TOTAL>>
+    <DO (F 1 ,MAX-FLOORS)
+        <COND (<FSET? <FLOOR-OBJ .F> ,TOUCHBIT>
+               <SET TARGET <ORACLE-PICK-IN-FLOOR-VISITED .F .TARGET>>
+               <COND (<L=? .TARGET 0> <RETURN T>)>)>>
+    0>
+
+<ROUTINE ORACLE-PICK-IN-FLOOR-FUTURE (F TARGET "AUX" LOCKTYPE O K)
+    <SET LOCKTYPE <GETB ,TREASURE-ROOM-LOCKTYPE <- .F 1>>>
+    <COND (<G? .LOCKTYPE 0>
+           <SET TARGET <- .TARGET 1>>
+           <COND (<L=? .TARGET 0>
+                  <SETG ORACLE-VISION-FLOOR .F>
+                  <SETG ORACLE-VISION-KIND ,ITEMKIND-LOCKEDDOOR>
+                  <SETG ORACLE-VISION-LOCKTYPE .LOCKTYPE>
+                  <RETURN 0>)>)>
+    <SET O <FIRST? <FLOOR-OBJ .F>>>
+    <REPEAT ()
+        <COND (<NOT .O> <RETURN .TARGET>)>
+        <SET K <GETP .O ,P?R-ITKIND>>
+        <COND (<==? .K ,ITEMKIND-KEY>
+               <SET TARGET <- .TARGET 1>>
+               <COND (<L=? .TARGET 0>
+                      <SETG ORACLE-VISION-FLOOR .F>
+                      <SETG ORACLE-VISION-KIND ,ITEMKIND-KEY>
+                      <SETG ORACLE-VISION-LOCKTYPE <GETP .O ,P?R-ITID>>
+                      <RETURN 0>)>)>
+        <SET O <NEXT? .O>>>>
+
+<ROUTINE ORACLE-PICK-FUTURE ("AUX" MAXVIS TOTAL TARGET)
+    <SET MAXVIS <ORACLE-MAX-VISITED-FLOOR>>
+    <SET TOTAL 0>
+    <DO (F <+ .MAXVIS 1> ,MAX-FLOORS)
+        <SET TOTAL <+ .TOTAL <ORACLE-COUNT-FLOOR-FUTURE .F>>>>
+    <COND (<L? .TOTAL 1> <RETURN 0>)>
+    <SET TARGET <RNG .TOTAL>>
+    <DO (F <+ .MAXVIS 1> ,MAX-FLOORS)
+        <SET TARGET <ORACLE-PICK-IN-FLOOR-FUTURE .F .TARGET>>
+        <COND (<L=? .TARGET 0> <RETURN T>)>>
+    0>
+
+<ROUTINE ORACLE-DESCRIBE-VISION (KNOWN? "AUX" KIND LOCKTYPE FLOOR)
+    <SET KIND ,ORACLE-VISION-KIND>
+    <SET LOCKTYPE ,ORACLE-VISION-LOCKTYPE>
+    <SET FLOOR ,ORACLE-VISION-FLOOR>
+    <COND (<==? .KIND ,ITEMKIND-KEY>
+           <TELL "Gazing into the sphere, you see a " <KEY-NAME .LOCKTYPE>>
+           <COND (.KNOWN? <TELL " on floor " N .FLOOR>)
+                 (ELSE <TELL " on a floor you don't recognize">)>
+           <TELL "." CR>)
+          (<==? .KIND ,ITEMKIND-LOCKEDDOOR>
+           <TELL "Gazing into the sphere, you see a locked door that requires a " <KEY-NAME .LOCKTYPE>>
+           <COND (.KNOWN? <TELL " on floor " N .FLOOR>)
+                 (ELSE <TELL " on a floor you don't recognize">)>
+           <TELL "." CR>)
+          (ELSE
+           <TELL "The sphere shows only swirling fog." CR>)>>
+
+<ROUTINE ORACLE-SPHERE-VISION ("AUX" FOUND?)
+    <SETG P-CONT 0>
+    <COND (<SET FOUND? <ORACLE-PICK-VISITED>>
+           <ORACLE-DESCRIBE-VISION T>
+           <RTRUE>)
+          (<SET FOUND? <ORACLE-PICK-FUTURE>>
+           <ORACLE-DESCRIBE-VISION <>>
+           <RTRUE>)
+          (ELSE
+           <TELL "The sphere shows only swirling fog." CR>
+           <RTRUE>)>>
+
+"---------------------------------------------------------------------------"
+
 "Busker"
 
 <GLOBAL BUSKER-MONKEY-SALES 0>
