@@ -488,8 +488,8 @@ beasts to hit you.\""
     (DESC "Grotto of the Oracle")
     (INTERIOR-NAME "grotto of the oracle")
     (LDESC "This small, cave-like structure is home to the dungeon's Oracle. A
-sign near the entrance reads: \"Recall the Past! See the Future!\"|
-|
+sign near the entrance reads: \"Recall the Past! See the Future!\"↲
+↲
 The Oracle herself seems to be away at the moment, but she left behind her glassy sphere, resting atop a stone pedestal.")
     (ACTION ORACLE-GROTTO-R)
     (THINGS (WORN STONE) PEDESTAL "A worn stone pedestal supports the sphere."
