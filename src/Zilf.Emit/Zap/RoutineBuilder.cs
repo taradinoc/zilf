@@ -1056,7 +1056,7 @@ namespace Zilf.Emit.Zap
                     $".DEBUG-ROUTINE-END {game.debug.GetFileNumber(defnEnd.File)},{defnEnd.Line},{defnEnd.Column}");
         }
 
-    class PeepholeCombiner : IPeepholeCombiner<ZapCode>, IPeepholeCombinerWithStats
+        class PeepholeCombiner : IPeepholeCombiner<ZapCode>, IPeepholeCombinerWithStats
         {
             private readonly GameBuilder gameBuilder;
             private readonly CombinerOptimizationDescriptor[] optimizationPipeline;
@@ -1235,6 +1235,51 @@ namespace Zilf.Emit.Zap
                        instruction.Operands.Count == 1 &&
                        instruction.Operands[0].Equals(operand);
             }
+            static bool IsIncOrDecOfVariable(Instruction instruction, string opcode,
+                [NotNullWhen(true)] out AsmExpr? variable)
+            {
+                if (instruction.Name == opcode &&
+                    instruction.Operands.Count == 1 &&
+                    instruction.Operands[0].IsQuote(out variable))
+                {
+                    return true;
+                }
+
+                variable = null;
+                return false;
+            }
+
+            static bool IsAddStackOne(Instruction instruction, [NotNullWhen(true)] out string? destination)
+            {
+                if (instruction.Name == "ADD" &&
+                    instruction.Operands.Count == 2 &&
+                    instruction.StoreTarget != null &&
+                    ((instruction.Operands[0].IsStack() && instruction.Operands[1] is NumericLiteral { Value: 1 }) ||
+                     (instruction.Operands[1].IsStack() && instruction.Operands[0] is NumericLiteral { Value: 1 })))
+                {
+                    destination = instruction.StoreTarget;
+                    return true;
+                }
+
+                destination = null;
+                return false;
+            }
+
+            static bool IsSubStackOne(Instruction instruction, [NotNullWhen(true)] out string? destination)
+            {
+                if (instruction.Name == "SUB" &&
+                    instruction.Operands.Count == 2 &&
+                    instruction.StoreTarget != null &&
+                    instruction.Operands[0].IsStack() &&
+                    instruction.Operands[1] is NumericLiteral { Value: 1 })
+                {
+                    destination = instruction.StoreTarget;
+                    return true;
+                }
+
+                destination = null;
+                return false;
+            }
 
             static bool IsKnownNonzeroValue(AsmExpr expr)
             {
@@ -1393,6 +1438,8 @@ namespace Zilf.Emit.Zap
                 new("eliminate stack pop pair", TryEliminateStackPopPair),
                 new("replace push+pop with set", TryReplacePushPopWithSet),
                 new("substitute pushed value", TrySubstitutePushedValue),
+                new("eliminate inc/dec pair", TryEliminateIncDecPair),
+                new("rewrite stack inc/dec arithmetic to pop", TryRewriteStackIncDecArithmeticToPop),
                 new("fold inc branch", TryFoldIncBranch),
                 new("fold dec branch", TryFoldDecBranch),
                 new("merge equal tests", TryMergeEqualTests),
@@ -1597,6 +1644,86 @@ namespace Zilf.Emit.Zap
                             result = Combine2To1(instruction);
                             return true;
                         }
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryEliminateIncDecPair(IEnumerable<CombinableLine<ZapCode>> lines, out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    AsmExpr? variable = null;
+
+                    if (Match(
+                        a => IsIncOrDecOfVariable(a.Code.Instruction, "INC", out variable),
+                        b => IsIncOrDecOfVariable(b.Code.Instruction, "DEC", out var secondVariable) &&
+                             variable != null && variable.Equals(secondVariable)))
+                    {
+                        result = Consume(2);
+                        return true;
+                    }
+
+                    variable = null;
+
+                    if (Match(
+                        a => IsIncOrDecOfVariable(a.Code.Instruction, "DEC", out variable),
+                        b => IsIncOrDecOfVariable(b.Code.Instruction, "INC", out var secondVariable) &&
+                             variable != null && variable.Equals(secondVariable)))
+                    {
+                        result = Consume(2);
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            Instruction BuildPopInstruction(string destination)
+            {
+                return gameBuilder.zversion == 6
+                    ? new Instruction("POP") { StoreTarget = destination }
+                    : new Instruction("POP", new QuoteExpr(new SymbolExpr(destination)));
+            }
+
+            bool TryRewriteStackIncDecArithmeticToPop(IEnumerable<CombinableLine<ZapCode>> lines,
+                out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    AsmExpr? variable = null;
+                    string? destination = null;
+
+                    if (Match(
+                        a => IsIncOrDecOfVariable(a.Code.Instruction, "DEC", out variable) && variable.IsStack(),
+                        b => IsAddStackOne(b.Code.Instruction, out destination)))
+                    {
+                        result = Combine2To1(BuildPopInstruction(destination!));
+                        return true;
+                    }
+
+                    variable = null;
+                    destination = null;
+
+                    if (Match(
+                        a => IsIncOrDecOfVariable(a.Code.Instruction, "INC", out variable) && variable.IsStack(),
+                        b => IsSubStackOne(b.Code.Instruction, out destination)))
+                    {
+                        result = Combine2To1(BuildPopInstruction(destination!));
+                        return true;
                     }
 
                     result = default;

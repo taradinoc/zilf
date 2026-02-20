@@ -94,6 +94,34 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Adjacent_Inc_Dec_Of_Same_Variable_Are_Eliminated()
+        {
+            await AssertRoutine("\"AUX\" X", "<INC X> <DEC X> .X")
+                .GeneratesCodeNotMatchingAsync(@"INC 'X|DEC 'X");
+
+            await AssertRoutine("\"AUX\" X", "<DEC X> <INC X> .X")
+                .GeneratesCodeNotMatchingAsync(@"INC 'X|DEC 'X");
+        }
+
+        [TestMethod]
+        public async Task Stack_Dec_Add_One_To_Variable_Becomes_POP()
+        {
+            await AssertRoutine("\"AUX\" X", "<SET X <+ <- <RANDOM 10> 1> 1>>")
+                .InV5()
+                .GeneratesCodeMatchingAsync(@"RANDOM 10 >X")
+                .AndNotMatching(@"DEC 'STACK\r?\n\s*ADD STACK,1 >X");
+        }
+
+        [TestMethod]
+        public async Task Stack_Inc_Sub_One_To_Variable_Becomes_POP()
+        {
+            await AssertRoutine("\"AUX\" X", "<SET X <- <+ <RANDOM 10> 1> 1>>")
+                .InV5()
+                .GeneratesCodeMatchingAsync(@"RANDOM 10 >X")
+                .AndNotMatching(@"INC 'STACK\r?\n\s*SUB STACK,1 >X");
+        }
+
+        [TestMethod]
         public async Task TestRoutineResultIntoVariable()
         {
             await AssertRoutine("\"AUX\" FOO", "<SET FOO <WHATEVER>>")

@@ -32,6 +32,10 @@ and this project adheres to
 - Added warning MDL0134 for a `ROUTINE` that seems to contain nested definitions
   like `ROUTINE` or `GLOBAL`, which typically means a close bracket is missing.
 
+### Changed
+
+- Optimized code generation for INC/SUB pairs, DEC/ADD pairs, and INC/DEC pairs.
+
 ### Fixed
 
 - Error MDL0440 is properly issued when an expression requires temporary
