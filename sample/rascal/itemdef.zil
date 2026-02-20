@@ -319,7 +319,7 @@ Returns:
           (<==? .ID ,TREASURE-JASPER> "jasper")
           (<==? .ID ,TREASURE-ZIRCON> "zircon")
           (<==? .ID ,TREASURE-POSTER> "poster")
-          (<==? .ID ,TREASURE-TROPHY> "trophy of scryra")
+          (<==? .ID ,TREASURE-TROPHY> "Trophy of Scryra")
           (ELSE "treasure")>>
 
 ;"Maps a treasure ID to the trader buy price.
