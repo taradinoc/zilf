@@ -470,37 +470,79 @@ Returns the item object, or 0 if none."
                <SET DEG <+ .DEG 1>>)>
         .DEG>>
 
-<ROUTINE ROOM-OPENING-COUNT (RID "AUX" L T R B CNT)
+<ROUTINE DOOR-ADJACENT-TO-ROOM? (RID X Y)
+    <OR <AND <==? <ROOMID-AT <- .X 1> .Y> .RID>
+           <N==? <TILE-AT <- .X 1> .Y> ,TILE-DOOR>>
+       <AND <==? <ROOMID-AT <+ .X 1> .Y> .RID>
+           <N==? <TILE-AT <+ .X 1> .Y> ,TILE-DOOR>>
+       <AND <==? <ROOMID-AT .X <- .Y 1>> .RID>
+           <N==? <TILE-AT .X <- .Y 1>> ,TILE-DOOR>>
+       <AND <==? <ROOMID-AT .X <+ .Y 1>> .RID>
+           <N==? <TILE-AT .X <+ .Y 1>> ,TILE-DOOR>>>>
+
+<ROUTINE ROOM-NONDOOR-OPENING-COUNT (RID "AUX" X Y L T R B CNT)
     <SET L <ROOM-GET .RID ,ROOM-L>>
     <SET T <ROOM-GET .RID ,ROOM-T>>
     <SET R <ROOM-GET .RID ,ROOM-R>>
     <SET B <ROOM-GET .RID ,ROOM-B>>
     <SET CNT 0>
 
-    ;"Count passable tiles adjacent to any tile in the room, shape-aware."
+    <SET Y .T>
+    <REPEAT ()
+     <COND (<G? .Y .B> <RETURN .CNT>)>
+     <SET X .L>
+     <REPEAT ()
+         <COND (<G? .X .R> <SET Y <+ .Y 1>> <RETURN>)>
+         <COND (<N==? <ROOMID-AT .X .Y> .RID>
+             <SET X <+ .X 1>>
+             <AGAIN>)>
 
-    <DO (Y .T .B)
-        <DO (X .L .R)
-            <COND (<N==? <ROOMID-AT .X .Y> .RID> <>)
-                  (ELSE
-                   <COND (<AND <IN-BOUNDS? <- .X 1> .Y>
-                               <N==? <ROOMID-AT <- .X 1> .Y> .RID>
-                               <FLOOR? <- .X 1> .Y>>
-                          <SET CNT <+ .CNT 1>>)>
-                   <COND (<AND <IN-BOUNDS? <+ .X 1> .Y>
-                               <N==? <ROOMID-AT <+ .X 1> .Y> .RID>
-                               <FLOOR? <+ .X 1> .Y>>
-                          <SET CNT <+ .CNT 1>>)>
-                   <COND (<AND <IN-BOUNDS? .X <- .Y 1>>
-                               <N==? <ROOMID-AT .X <- .Y 1>> .RID>
-                               <FLOOR? .X <- .Y 1>>>
-                          <SET CNT <+ .CNT 1>>)>
-                   <COND (<AND <IN-BOUNDS? .X <+ .Y 1>>
-                               <N==? <ROOMID-AT .X <+ .Y 1>> .RID>
-                               <FLOOR? .X <+ .Y 1>>>
-                          <SET CNT <+ .CNT 1>>)>)>>>
+         <COND (<AND <IN-BOUNDS? <- .X 1> .Y>
+               <N==? <ROOMID-AT <- .X 1> .Y> .RID>
+               <FLOOR? <- .X 1> .Y>
+               <N==? <TILE-AT <- .X 1> .Y> ,TILE-DOOR>>
+             <SET CNT <+ .CNT 1>>)>
+         <COND (<AND <IN-BOUNDS? <+ .X 1> .Y>
+               <N==? <ROOMID-AT <+ .X 1> .Y> .RID>
+               <FLOOR? <+ .X 1> .Y>
+               <N==? <TILE-AT <+ .X 1> .Y> ,TILE-DOOR>>
+             <SET CNT <+ .CNT 1>>)>
+         <COND (<AND <IN-BOUNDS? .X <- .Y 1>>
+               <N==? <ROOMID-AT .X <- .Y 1>> .RID>
+               <FLOOR? .X <- .Y 1>>
+               <N==? <TILE-AT .X <- .Y 1>> ,TILE-DOOR>>
+             <SET CNT <+ .CNT 1>>)>
+         <COND (<AND <IN-BOUNDS? .X <+ .Y 1>>
+               <N==? <ROOMID-AT .X <+ .Y 1>> .RID>
+               <FLOOR? .X <+ .Y 1>>
+               <N==? <TILE-AT .X <+ .Y 1>> ,TILE-DOOR>>
+             <SET CNT <+ .CNT 1>>)>
 
-    .CNT>
+         <SET X <+ .X 1>>>>
+
+        .CNT>
+
+    <ROUTINE ROOM-HAS-ONLY-TREASURE-EXIT? (RID DOORX DOORY "AUX" X Y L T R B CNT)
+        <SET L <ROOM-GET .RID ,ROOM-L>>
+        <SET T <ROOM-GET .RID ,ROOM-T>>
+        <SET R <ROOM-GET .RID ,ROOM-R>>
+        <SET B <ROOM-GET .RID ,ROOM-B>>
+        <SET CNT 0>
+
+        <SET Y <- .T 1>>
+        <REPEAT ()
+            <COND (<G? .Y <+ .B 1>> <RETURN>)>
+            <SET X <- .L 1>>
+            <REPEAT ()
+                <COND (<G? .X <+ .R 1>> <SET Y <+ .Y 1>> <RETURN>)>
+                <COND (<VALID-TREASURE-DOOR? .RID .X .Y>
+                       <SET CNT <+ .CNT 1>>
+                       <COND (<OR <N==? .X .DOORX> <N==? .Y .DOORY>> <RFALSE>)>)>
+                <SET X <+ .X 1>>>>
+
+        <COND (<N==? .CNT 1> <RFALSE>)>
+        <COND (<G? <ROOM-NONDOOR-OPENING-COUNT .RID> 0> <RFALSE>)>
+        <RTRUE>>
 
 <ROUTINE FIND-ROOM-DOOR-TILE (RID "AUX" X Y L T R B)
     <SET L <ROOM-GET .RID ,ROOM-L>>
@@ -520,7 +562,7 @@ Returns the item object, or 0 if none."
             <COND (<G? .X <+ .R 1>> <SET Y <+ .Y 1>> <RETURN>)>
             <COND (<AND <IN-BOUNDS? .X .Y>
                         <==? <TILE-AT .X .Y> ,TILE-DOOR>
-                        <==? <ROOMID-AT .X .Y> .RID>
+                        <DOOR-ADJACENT-TO-ROOM? .RID .X .Y>
                         <L=? <ITEM-OBJ-AT .X .Y 0> 0>>
                    <SETG ENTRY-X .X>
                    <SETG ENTRY-Y .Y>
@@ -578,9 +620,10 @@ Returns the item object, or 0 if none."
         <COND (<==? .RID .ENTRYRID> <AGAIN>)>
         <SET DEG <ROOM-DEGREE .RID>>
         <COND (<N==? .DEG 1> <AGAIN>)>
-        <COND (<N==? <ROOM-OPENING-COUNT .RID> 1> <AGAIN>)>
         <COND (<ROOM-BLOCKED-FOR-TREASURE? .RID> <AGAIN>)>
-        <COND (<FIND-ROOM-DOOR-TILE .RID> <RETURN .RID>)>
+         <COND (<FIND-ROOM-DOOR-TILE .RID>
+             <COND (<ROOM-HAS-ONLY-TREASURE-EXIT? .RID ,ENTRY-X ,ENTRY-Y>
+                 <RETURN .RID>)>)>
         <AGAIN>>>
 
 <ROUTINE FIND-LEAF-ROOM-DOOR-ANY (ENTRYRID)
@@ -589,9 +632,9 @@ Returns the item object, or 0 if none."
     <DO (RID 1 ,ROOM-COUNT)
         <COND (<AND <N==? .RID .ENTRYRID>
                     <==? <ROOM-DEGREE .RID> 1>
-                    <==? <ROOM-OPENING-COUNT .RID> 1>
                     <NOT <ROOM-BLOCKED-FOR-TREASURE? .RID>>
-                    <FIND-ROOM-DOOR-TILE .RID>>
+                    <FIND-ROOM-DOOR-TILE .RID>
+                    <ROOM-HAS-ONLY-TREASURE-EXIT? .RID ,ENTRY-X ,ENTRY-Y>>
                 <RETURN .RID>)>>
     0>
 
@@ -615,6 +658,55 @@ Returns the item object, or 0 if none."
         <COND (<G? <ENEMY-AT .X .Y> 0> <AGAIN>)>
         <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <AGAIN>)>
         <RETURN <WORD16-FROM-BYTES .X .Y>>>>
+
+    <ROUTINE VALID-TREASURE-DOOR? (RID X Y "AUX" NX NY HAS-IN HAS-OUT)
+        <COND (<NOT <IN-BOUNDS? .X .Y>> <RFALSE>)>
+        <COND (<N==? <TILE-AT .X .Y> ,TILE-DOOR> <RFALSE>)>
+
+        <SET HAS-IN <>>
+        <SET HAS-OUT <>>
+
+        <SET NX <- .X 1>>
+        <SET NY .Y>
+        <COND (<IN-BOUNDS? .NX .NY>
+                <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
+                      <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
+                <SET HAS-IN T>)
+               (<AND <N==? <ROOMID-AT .NX .NY> .RID>
+                  <FLOOR? .NX .NY>>
+                <SET HAS-OUT T>)>)>
+
+        <SET NX <+ .X 1>>
+        <SET NY .Y>
+        <COND (<IN-BOUNDS? .NX .NY>
+                <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
+                      <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
+                <SET HAS-IN T>)
+               (<AND <N==? <ROOMID-AT .NX .NY> .RID>
+                  <FLOOR? .NX .NY>>
+                <SET HAS-OUT T>)>)>
+
+        <SET NX .X>
+        <SET NY <- .Y 1>>
+        <COND (<IN-BOUNDS? .NX .NY>
+                <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
+                      <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
+                <SET HAS-IN T>)
+               (<AND <N==? <ROOMID-AT .NX .NY> .RID>
+                  <FLOOR? .NX .NY>>
+                <SET HAS-OUT T>)>)>
+
+        <SET NX .X>
+        <SET NY <+ .Y 1>>
+        <COND (<IN-BOUNDS? .NX .NY>
+                <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
+                      <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
+                <SET HAS-IN T>)
+               (<AND <N==? <ROOMID-AT .NX .NY> .RID>
+                  <FLOOR? .NX .NY>>
+                <SET HAS-OUT T>)>)>
+
+        <AND .HAS-IN .HAS-OUT>>
 
 ;"Pick a key floor relative to a locked door floor.
 
@@ -686,7 +778,7 @@ Distribution:
 
 This simulates a full descent so keys can be placed on earlier floors."
 
-<ROUTINE PRECOMPUTE-TREASURE-ROOM-PLANS ("AUX" LANDX LANDY ENTRYRID RID DOORRID DOORX DOORY LOOTXY LOOTX LOOTY LOCKTYPE CHOICE)
+<ROUTINE PRECOMPUTE-TREASURE-ROOM-PLANS ("AUX" LANDX LANDY ENTRYRID RID DOORX DOORY LOOTXY LOOTX LOOTY LOCKTYPE CHOICE)
     <SET LANDX 0>
     <SET LANDY 0>
     <DO (F 1 ,MAX-FLOORS)
@@ -751,13 +843,12 @@ This simulates a full descent so keys can be placed on earlier floors."
                <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>
                <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> 0>)
               (ELSE
-               ;"Only lock a door that belongs to a true leaf room."
-               <SET DOORRID <ROOMID-AT .DOORX .DOORY>>
-               <COND (<OR <L=? .DOORRID 0>
-                          <==? .DOORRID .ENTRYRID>
-                          <N==? <ROOM-DEGREE .DOORRID> 1>
-                          <N==? <ROOM-OPENING-COUNT .DOORRID> 1>
-                          <ROOM-BLOCKED-FOR-TREASURE? .DOORRID>>
+               ;"Only lock a door that is valid for the chosen leaf room."
+               <COND (<OR <L=? .RID 0>
+                          <==? .RID .ENTRYRID>
+                          <N==? <ROOM-DEGREE .RID> 1>
+                          <ROOM-BLOCKED-FOR-TREASURE? .RID>
+                          <NOT <ROOM-HAS-ONLY-TREASURE-EXIT? .RID .DOORX .DOORY>>>
                       <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>
                       <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> 0>)
                      (ELSE
@@ -769,11 +860,17 @@ This simulates a full descent so keys can be placed on earlier floors."
                       <PUTB ,TREASURE-ROOM-LOOT-Y <- .F 1> .LOOTY>
                       <SET CHOICE <RNG 3>>
                       <PRECOMPUTE-TREASURE-LOOT .F .CHOICE>
+                     <COND (<NOT <ADD-LOCKEDDOOR .F .DOORX .DOORY .LOCKTYPE>>
+                        <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>
+                        <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> 0>
+                            <AGAIN>)>
                       <SET CHOICE <PICK-KEY-FLOOR-FOR-LOCK .F>>
                       <ADD-PENDING-KEY .CHOICE .LOCKTYPE>)>)>>
     <RTRUE>>
 
-;"Place precomputed locked door and loot for a floor."
+;"Place precomputed treasure loot for a floor.
+
+Locked doors and keys are created during startup precompute."
 
 <ROUTINE PLACE-PRECOMPUTED-TREASURE-ROOM (F "AUX" DOORX DOORY LOCKTYPE LOOTX LOOTY LOOTKIND ID LVL ENCH AMT)
     <COND (<G? <GETB ,TREASURE-ROOM-CREATED <- .F 1>> 0> <RTRUE>)>
@@ -786,7 +883,11 @@ This simulates a full descent so keys can be placed on earlier floors."
     <SET LOOTY <GETB ,TREASURE-ROOM-LOOT-Y <- .F 1>>>
     <COND (<OR <L=? .DOORX 0> <L=? .DOORY 0>> <RTRUE>)>
 
-    <COND (<NOT <ADD-LOCKEDDOOR .F .DOORX .DOORY .LOCKTYPE>> <RTRUE>)>
+        ;"Door is expected to have been pre-placed during startup planning.
+            Compatibility fallback: recreate it if absent."
+        <COND (<L=? <LOCKEDDOOR-OBJ-AT .DOORX .DOORY> 0>
+                     <COND (<NOT <ADD-LOCKEDDOOR .F .DOORX .DOORY .LOCKTYPE>> <RTRUE>)>)>
+
     <PUTB ,TREASURE-ROOM-CREATED <- .F 1> 1>
 
     <COND (<OR <L=? .LOOTX 0> <L=? .LOOTY 0>> <RTRUE>)>
