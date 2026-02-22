@@ -823,7 +823,7 @@ Returns:
 Returns:
   T if spawned; FALSE otherwise."
 
-<ROUTINE SPAWN-ENEMY-OBJ (F "AUX" TRIES R PR L T RR BB X Y HP O TYPE)
+<ROUTINE SPAWN-ENEMY-OBJ (F "AUX" TRIES R PR X Y HP O TYPE)
     <SET PR <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
     <SET TRIES 0>
     <REPEAT ()
@@ -831,12 +831,9 @@ Returns:
         <COND (<G? .TRIES 120> <RFALSE>)>
         <SET R <RNG ,ROOM-COUNT>>
         <COND (<AND <G? .PR 0> <==? .R .PR>> <AGAIN>)>
-        <SET L <ROOM-GET .R ,ROOM-L>>
-        <SET T <ROOM-GET .R ,ROOM-T>>
-        <SET RR <ROOM-GET .R ,ROOM-R>>
-        <SET BB <ROOM-GET .R ,ROOM-B>>
-        <SET X <+ .L <- <RNG <+ 1 <- .RR .L>>> 1>>>
-        <SET Y <+ .T <- <RNG <+ 1 <- .BB .T>>> 1>>>
+        <COND (<NOT <RANDOM-POINT-IN-ROOM .R>> <AGAIN>)>
+        <SET X ,ENTRY-X>
+        <SET Y ,ENTRY-Y>
         <COND (<NOT <IN-BOUNDS? .X .Y>> <AGAIN>)>
         <COND (<NOT <FLOOR? .X .Y>> <AGAIN>)>
         <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>> <AGAIN>)>

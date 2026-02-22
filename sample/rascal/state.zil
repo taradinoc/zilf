@@ -470,32 +470,35 @@ Returns the item object, or 0 if none."
                <SET DEG <+ .DEG 1>>)>
         .DEG>>
 
-<ROUTINE ROOM-OPENING-COUNT (RID "AUX" X Y L T R B CNT)
+<ROUTINE ROOM-OPENING-COUNT (RID "AUX" L T R B CNT)
     <SET L <ROOM-GET .RID ,ROOM-L>>
     <SET T <ROOM-GET .RID ,ROOM-T>>
     <SET R <ROOM-GET .RID ,ROOM-R>>
     <SET B <ROOM-GET .RID ,ROOM-B>>
     <SET CNT 0>
 
-    ;"Count any passable tile immediately outside the room bounds.
-    This is stricter than ROOM-DOOR-COUNT: it also counts openings where a
-    door tile was overwritten to corridor (e.g., by FORCE-PASSABLE)."
+    ;"Count passable tiles adjacent to any tile in the room, shape-aware."
 
-    <SET X <- .L 1>>
     <DO (Y .T .B)
-        <COND (<AND <IN-BOUNDS? .X .Y> <FLOOR? .X .Y>> <SET CNT <+ .CNT 1>>)>>
-
-    <SET X <+ .R 1>>
-    <DO (Y .T .B)
-        <COND (<AND <IN-BOUNDS? .X .Y> <FLOOR? .X .Y>> <SET CNT <+ .CNT 1>>)>>
-
-    <SET Y <- .T 1>>
-    <DO (X .L .R)
-        <COND (<AND <IN-BOUNDS? .X .Y> <FLOOR? .X .Y>> <SET CNT <+ .CNT 1>>)>>
-
-    <SET Y <+ .B 1>>
-    <DO (X .L .R)
-        <COND (<AND <IN-BOUNDS? .X .Y> <FLOOR? .X .Y>> <SET CNT <+ .CNT 1>>)>>
+        <DO (X .L .R)
+            <COND (<N==? <ROOMID-AT .X .Y> .RID> <>)
+                  (ELSE
+                   <COND (<AND <IN-BOUNDS? <- .X 1> .Y>
+                               <N==? <ROOMID-AT <- .X 1> .Y> .RID>
+                               <FLOOR? <- .X 1> .Y>>
+                          <SET CNT <+ .CNT 1>>)>
+                   <COND (<AND <IN-BOUNDS? <+ .X 1> .Y>
+                               <N==? <ROOMID-AT <+ .X 1> .Y> .RID>
+                               <FLOOR? <+ .X 1> .Y>>
+                          <SET CNT <+ .CNT 1>>)>
+                   <COND (<AND <IN-BOUNDS? .X <- .Y 1>>
+                               <N==? <ROOMID-AT .X <- .Y 1>> .RID>
+                               <FLOOR? .X <- .Y 1>>>
+                          <SET CNT <+ .CNT 1>>)>
+                   <COND (<AND <IN-BOUNDS? .X <+ .Y 1>>
+                               <N==? <ROOMID-AT .X <+ .Y 1>> .RID>
+                               <FLOOR? .X <+ .Y 1>>>
+                          <SET CNT <+ .CNT 1>>)>)>>>
 
     .CNT>
 
@@ -507,49 +510,22 @@ Returns the item object, or 0 if none."
     <SETG ENTRY-X 0>
     <SETG ENTRY-Y 0>
 
-    ;"Doors are placed just outside the carved room bounds (e.g. ROOM-R+1),
-    so search the perimeter one tile beyond the room rectangle."
-
-    <SET X <- .L 1>>
-    <DO (Y .T .B)
-        <COND (<AND <IN-BOUNDS? .X .Y>
-                    <==? <TILE-AT .X .Y> ,TILE-DOOR>
-                    <==? <ROOMID-AT .X .Y> .RID>
-                    <L=? <ITEM-OBJ-AT .X .Y 0> 0>>
-               <SETG ENTRY-X .X>
-               <SETG ENTRY-Y .Y>
-               <RTRUE>)>>
-
-    <SET X <+ .R 1>>
-    <DO (Y .T .B)
-        <COND (<AND <IN-BOUNDS? .X .Y>
-                    <==? <TILE-AT .X .Y> ,TILE-DOOR>
-                    <==? <ROOMID-AT .X .Y> .RID>
-                    <L=? <ITEM-OBJ-AT .X .Y 0> 0>>
-               <SETG ENTRY-X .X>
-               <SETG ENTRY-Y .Y>
-               <RTRUE>)>>
+    ;"Doors are tagged with the room ID, so scan the expanded room box."
 
     <SET Y <- .T 1>>
-    <DO (X .L .R)
-        <COND (<AND <IN-BOUNDS? .X .Y>
-                    <==? <TILE-AT .X .Y> ,TILE-DOOR>
-                    <==? <ROOMID-AT .X .Y> .RID>
-                    <L=? <ITEM-OBJ-AT .X .Y 0> 0>>
-               <SETG ENTRY-X .X>
-               <SETG ENTRY-Y .Y>
-               <RTRUE>)>>
-
-    <SET Y <+ .B 1>>
-    <DO (X .L .R)
-        <COND (<AND <IN-BOUNDS? .X .Y>
-                    <==? <TILE-AT .X .Y> ,TILE-DOOR>
-                    <==? <ROOMID-AT .X .Y> .RID>
-                    <L=? <ITEM-OBJ-AT .X .Y 0> 0>>
-               <SETG ENTRY-X .X>
-               <SETG ENTRY-Y .Y>
-               <RTRUE>)>>
-
+    <REPEAT ()
+        <COND (<G? .Y <+ .B 1>> <RFALSE>)>
+        <SET X <- .L 1>>
+        <REPEAT ()
+            <COND (<G? .X <+ .R 1>> <SET Y <+ .Y 1>> <RETURN>)>
+            <COND (<AND <IN-BOUNDS? .X .Y>
+                        <==? <TILE-AT .X .Y> ,TILE-DOOR>
+                        <==? <ROOMID-AT .X .Y> .RID>
+                        <L=? <ITEM-OBJ-AT .X .Y 0> 0>>
+                   <SETG ENTRY-X .X>
+                   <SETG ENTRY-Y .Y>
+                   <RTRUE>)>
+            <SET X <+ .X 1>>>>
     <RFALSE>>
 
 <ROUTINE ROOM-HAS-TILE? (RID TILE "AUX" X Y L T R B)
@@ -563,7 +539,9 @@ Returns the item object, or 0 if none."
         <SET X .L>
         <REPEAT ()
             <COND (<G? .X .R> <SET Y <+ .Y 1>> <RETURN>)>
-            <COND (<==? <TILE-AT .X .Y> .TILE> <RTRUE>)>
+            <COND (<AND <==? <ROOMID-AT .X .Y> .RID>
+                        <==? <TILE-AT .X .Y> .TILE>>
+                   <RTRUE>)>
             <SET X <+ .X 1>>>>>
 
 <ROUTINE ROOM-BLOCKED-FOR-TREASURE? (RID "AUX" UPX UPY DOWNX DOWNY)
@@ -617,17 +595,14 @@ Returns the item object, or 0 if none."
                 <RETURN .RID>)>>
     0>
 
-<ROUTINE FIND-TREASURE-SPOT-IN-ROOM (RID "AUX" TRIES X Y L T R B)
-    <SET L <ROOM-GET .RID ,ROOM-L>>
-    <SET T <ROOM-GET .RID ,ROOM-T>>
-    <SET R <ROOM-GET .RID ,ROOM-R>>
-    <SET B <ROOM-GET .RID ,ROOM-B>>
+<ROUTINE FIND-TREASURE-SPOT-IN-ROOM (RID "AUX" TRIES X Y)
     <SET TRIES 0>
     <REPEAT ()
         <SET TRIES <+ .TRIES 1>>
         <COND (<G? .TRIES 260> <RETURN 0>)>
-        <SET X <- <+ .L <RNG <+ 1 <- .R .L>>>> 1>>
-        <SET Y <- <+ .T <RNG <+ 1 <- .B .T>>>> 1>>
+        <COND (<NOT <RANDOM-POINT-IN-ROOM .RID>> <AGAIN>)>
+        <SET X ,ENTRY-X>
+        <SET Y ,ENTRY-Y>
         <COND (<NOT <IN-BOUNDS? .X .Y>> <AGAIN>)>
         <COND (<==? <TILE-AT .X .Y> ,TILE-DOOR> <AGAIN>)>
         <COND (<NOT <OR <==? <TILE-AT .X .Y> ,TILE-FLOOR>
@@ -911,7 +886,7 @@ Args:
 Returns:
     T."
 
-<ROUTINE SPAWN-ENEMY-OBJ-OF-TYPE (F TYPE "AUX" TRIES R PR L T RR BB X Y HP O)
+<ROUTINE SPAWN-ENEMY-OBJ-OF-TYPE (F TYPE "AUX" TRIES R PR X Y HP O)
     <SET PR <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
     <SET TRIES 0>
     <REPEAT ()
@@ -919,12 +894,9 @@ Returns:
         <COND (<G? .TRIES 120> <RFALSE>)>
         <SET R <RNG ,ROOM-COUNT>>
         <COND (<AND <G? .PR 0> <==? .R .PR>> <AGAIN>)>
-        <SET L <ROOM-GET .R ,ROOM-L>>
-        <SET T <ROOM-GET .R ,ROOM-T>>
-        <SET RR <ROOM-GET .R ,ROOM-R>>
-        <SET BB <ROOM-GET .R ,ROOM-B>>
-        <SET X <+ .L <- <RNG <+ 1 <- .RR .L>>> 1>>>
-        <SET Y <+ .T <- <RNG <+ 1 <- .BB .T>>> 1>>>
+        <COND (<NOT <RANDOM-POINT-IN-ROOM .R>> <AGAIN>)>
+        <SET X ,ENTRY-X>
+        <SET Y ,ENTRY-Y>
         <COND (<NOT <IN-BOUNDS? .X .Y>> <AGAIN>)>
         <COND (<NOT <FLOOR? .X .Y>> <AGAIN>)>
         <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>> <AGAIN>)>

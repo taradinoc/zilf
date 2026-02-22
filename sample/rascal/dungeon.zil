@@ -8,13 +8,26 @@
 <CONSTANT MAP-SIZE <* ,MAP-W ,MAP-H>>
 
 <CONSTANT MAX-ROOMS 12>
-<CONSTANT ROOM-STRIDE 6>
+<CONSTANT ROOM-STRIDE 7>
 <CONSTANT ROOM-L 0>
 <CONSTANT ROOM-T 1>
 <CONSTANT ROOM-R 2>
 <CONSTANT ROOM-B 3>
 <CONSTANT ROOM-CX 4>
 <CONSTANT ROOM-CY 5>
+<CONSTANT ROOM-SHAPE 6>
+
+<CONSTANT ROOMSHAPE-RECT 1>
+<CONSTANT ROOMSHAPE-CIRCLE 2>
+<CONSTANT ROOMSHAPE-DIAMOND 3>
+<CONSTANT ROOMSHAPE-L-NW 4>
+<CONSTANT ROOMSHAPE-L-NE 5>
+<CONSTANT ROOMSHAPE-L-SW 6>
+<CONSTANT ROOMSHAPE-L-SE 7>
+<CONSTANT ROOMSHAPE-U-UP 8>
+<CONSTANT ROOMSHAPE-U-DOWN 9>
+<CONSTANT ROOMSHAPE-U-LEFT 10>
+<CONSTANT ROOMSHAPE-U-RIGHT 11>
 
 <GLOBAL MAP <ITABLE <* ,MAP-W ,MAP-H> (BYTE) 0>>
 <GLOBAL ROOMIDS <ITABLE <* ,MAP-W ,MAP-H> (BYTE) 0>>
@@ -69,7 +82,7 @@ Returns:
             <PUTB ,ROOMIDS .IDX 0>
             <SET X <+ .X 1>>>>>
 
-;"Attempts to place up to MAX-ROOMS non-overlapping rectangular rooms.
+;"Attempts to place up to MAX-ROOMS non-overlapping rooms.
 
 Args:
   (none)
@@ -93,11 +106,37 @@ Args:
 Returns:
   T if a room was placed; FALSE otherwise."
 
-<ROUTINE TRY-ADD-ROOM ("AUX" W H MAXX MAXY X Y R)
-    <SET W <+ 4 <RNG 8>>>
-    ;"5..12"
-    <SET H <+ 3 <RNG 6>>>
-    ;"4..9"
+<ROUTINE PICK-ROOM-SHAPE ("AUX" R)
+  <SET R <RNG 100>>
+  <COND (<L=? .R 80> ,ROOMSHAPE-RECT)
+      (<L=? .R 85> ,ROOMSHAPE-CIRCLE)
+      (<L=? .R 90> ,ROOMSHAPE-DIAMOND)
+      (<L=? .R 95> <+ ,ROOMSHAPE-L-NW <- <RNG 4> 1>>)
+      (ELSE <+ ,ROOMSHAPE-U-UP <- <RNG 4> 1>>)>>
+
+<ROUTINE TRY-ADD-ROOM ("AUX" W H MAXX MAXY X Y R SHAPE)
+  <SET SHAPE <PICK-ROOM-SHAPE>>
+  <COND (<==? .SHAPE ,ROOMSHAPE-RECT>
+       <SET W <+ 4 <RNG 8>>>
+       ;"5..12"
+       <SET H <+ 3 <RNG 6>>>)
+      (<OR <==? .SHAPE ,ROOMSHAPE-CIRCLE>
+         <==? .SHAPE ,ROOMSHAPE-DIAMOND>>
+       ;"Odd sizes: 5,7,9,11"
+       <SET W <+ 3 <* <RNG 4> 2>>>
+       <SET H .W>)
+      (<OR <==? .SHAPE ,ROOMSHAPE-L-NW>
+         <==? .SHAPE ,ROOMSHAPE-L-NE>
+         <==? .SHAPE ,ROOMSHAPE-L-SW>
+         <==? .SHAPE ,ROOMSHAPE-L-SE>>
+       <SET W <+ 5 <RNG 6>>>
+       ;"6..11"
+       <SET H <+ 5 <RNG 5>>>)
+      (ELSE
+       <SET W <+ 6 <RNG 6>>>
+       ;"7..12"
+      <SET H <+ 5 <RNG 5>>>)>
+       ;"6..10"
     <SET MAXX <- ,MAP-W <+ .W 1>>>
     ;"left <= MAP-W - W - 1"
     <SET MAXY <- ,MAP-H <+ .H 1>>>
@@ -108,7 +147,7 @@ Returns:
     <COND (<NOT <CAN-PLACE-ROOM? .X .Y .W .H>> <RFALSE>)>
     <SET R <+ ,ROOM-COUNT 1>>
     <SETG ROOM-COUNT .R>
-    <CARVE-ROOM .X .Y .W .H .R>
+    <CARVE-ROOM .X .Y .W .H .R .SHAPE>
     <RTRUE>>
 
 ;"Checks whether a room can be placed at the given location (with a 1-tile
@@ -147,17 +186,116 @@ Returns:
 <ROUTINE IN-BOUNDS? (X Y)
     <AND <G=? .X 1> <L=? .X ,MAP-W> <G=? .Y 1> <L=? .Y ,MAP-H>>>
 
-;"Carves a room into MAP/ROOMIDS, and writes its bounds/center into ROOMS.
+;"Returns interior thickness for L/U rooms from a room bounding box.
+
+Args:
+	L, T, R, B: Room bounding box.
+
+Returns:
+	Integer wall thickness >= 2."
+
+<ROUTINE ROOM-SHAPE-THICKNESS (L T R B "AUX" W H TH)
+    <SET W <+ 1 <- .R .L>>>
+    <SET H <+ 1 <- .B .T>>>
+    <SET TH </ .W 3>>
+    <COND (<L? .H .W> <SET TH </ .H 3>>)>
+    <SET TH <+ .TH 1>>
+    <COND (<L? .TH 2> <SET TH 2>)>
+    <COND (<G? .TH 3> <SET TH 3>)>
+    .TH>
+
+;"Returns true if (X,Y) should be carved for the room shape in [L..R]x[T..B].
+
+Args:
+	SHAPE: ROOMSHAPE-* value.
+	X, Y: Candidate map coordinate.
+	L, T, R, B: Room bounding box.
+
+Returns:
+	T if inside the shape; FALSE otherwise."
+
+<ROUTINE ROOM-SHAPE-FILL? (SHAPE X Y L T R B "AUX" W H RAD CX CY DX DY TH)
+    <COND (<OR <L? .X .L> <G? .X .R> <L? .Y .T> <G? .Y .B>> <RFALSE>)>
+
+    <COND (<==? .SHAPE ,ROOMSHAPE-RECT> <RTRUE>)>
+
+    <SET W <+ 1 <- .R .L>>>
+    <SET H <+ 1 <- .B .T>>>
+    <SET RAD </ <- .W 1> 2>>
+    <SET CX <+ .L .RAD>>
+    <SET CY <+ .T </ <- .H 1> 2>>>
+    <SET DX <ABS <- .X .CX>>>
+    <SET DY <ABS <- .Y .CY>>>
+
+    <COND (<==? .SHAPE ,ROOMSHAPE-CIRCLE>
+         <COND (<L=? <+ <* .DX .DX> <* .DY .DY>> <* .RAD .RAD>> <RTRUE>)>
+         <RFALSE>)>
+
+    <COND (<==? .SHAPE ,ROOMSHAPE-DIAMOND>
+         <COND (<L=? <+ .DX .DY> .RAD> <RTRUE>)>
+         <RFALSE>)>
+
+    <SET TH <ROOM-SHAPE-THICKNESS .L .T .R .B>>
+
+    <COND (<==? .SHAPE ,ROOMSHAPE-L-NW>
+         <COND (<OR <L=? .X <+ .L <- .TH 1>>>
+              <L=? .Y <+ .T <- .TH 1>>>>
+            <RTRUE>)>
+         <RFALSE>)
+     (<==? .SHAPE ,ROOMSHAPE-L-NE>
+         <COND (<OR <G=? .X <- .R <- .TH 1>>>
+              <L=? .Y <+ .T <- .TH 1>>>>
+            <RTRUE>)>
+         <RFALSE>)
+     (<==? .SHAPE ,ROOMSHAPE-L-SW>
+         <COND (<OR <L=? .X <+ .L <- .TH 1>>>
+              <G=? .Y <- .B <- .TH 1>>>>
+            <RTRUE>)>
+         <RFALSE>)
+     (<==? .SHAPE ,ROOMSHAPE-L-SE>
+         <COND (<OR <G=? .X <- .R <- .TH 1>>>
+              <G=? .Y <- .B <- .TH 1>>>>
+            <RTRUE>)>
+         <RFALSE>)
+     (<==? .SHAPE ,ROOMSHAPE-U-UP>
+         <COND (<OR <L=? .X <+ .L <- .TH 1>>>
+              <G=? .X <- .R <- .TH 1>>>
+              <G=? .Y <- .B <- .TH 1>>>>
+            <RTRUE>)>
+         <RFALSE>)
+     (<==? .SHAPE ,ROOMSHAPE-U-DOWN>
+         <COND (<OR <L=? .X <+ .L <- .TH 1>>>
+              <G=? .X <- .R <- .TH 1>>>
+              <L=? .Y <+ .T <- .TH 1>>>>
+            <RTRUE>)>
+         <RFALSE>)
+     (<==? .SHAPE ,ROOMSHAPE-U-LEFT>
+         <COND (<OR <L=? .Y <+ .T <- .TH 1>>>
+              <G=? .Y <- .B <- .TH 1>>>
+              <G=? .X <- .R <- .TH 1>>>>
+            <RTRUE>)>
+         <RFALSE>)
+     (<==? .SHAPE ,ROOMSHAPE-U-RIGHT>
+         <COND (<OR <L=? .Y <+ .T <- .TH 1>>>
+              <G=? .Y <- .B <- .TH 1>>>
+              <L=? .X <+ .L <- .TH 1>>>>
+            <RTRUE>)>
+         <RFALSE>)>
+
+    <RFALSE>>
+
+;"Carves a room into MAP/ROOMIDS, and writes its bounds/center/shape into ROOMS.
 
 Args:
 	X, Y: Room top-left.
 	W, H: Room size.
-	RID: Room ID (1-based).
+  RID: Room ID (1-based).
+  SHAPE: ROOMSHAPE-* value.
 
 Returns:
 	(none)"
 
-<ROUTINE CARVE-ROOM (X Y W H RID "AUX" XX YY RX BY CX CY)
+<ROUTINE CARVE-ROOM (X Y W H RID SHAPE "AUX" XX YY RX BY CX CY)
     <SET RX <+ .X <- .W 1>>>
     <SET BY <+ .Y <- .H 1>>>
     <SET YY .Y>
@@ -166,8 +304,9 @@ Returns:
         <SET XX .X>
         <REPEAT ()
             <COND (<G? .XX .RX> <SET YY <+ .YY 1>> <RETURN>)>
-            <PUTB ,MAP <MAP-INDEX .XX .YY> ,TILE-FLOOR>
-            <PUTB ,ROOMIDS <MAP-INDEX .XX .YY> .RID>
+          <COND (<ROOM-SHAPE-FILL? .SHAPE .XX .YY .X .Y .RX .BY>
+               <PUTB ,MAP <MAP-INDEX .XX .YY> ,TILE-FLOOR>
+               <PUTB ,ROOMIDS <MAP-INDEX .XX .YY> .RID>)>
             <SET XX <+ .XX 1>>>>
 
     <SET CX <+ .X </ .W 2>>>
@@ -177,7 +316,84 @@ Returns:
     <ROOM-SET .RID ,ROOM-R .RX>
     <ROOM-SET .RID ,ROOM-B .BY>
     <ROOM-SET .RID ,ROOM-CX .CX>
-    <ROOM-SET .RID ,ROOM-CY .CY>>
+    <ROOM-SET .RID ,ROOM-CY .CY>
+    <ROOM-SET .RID ,ROOM-SHAPE .SHAPE>>
+
+;"Picks a random carved coordinate inside room RID.
+
+Returns coordinates via ENTRY-X/ENTRY-Y and T on success; FALSE on failure."
+
+<ROUTINE RANDOM-POINT-IN-ROOM (RID "AUX" TRIES X Y L T R B)
+    <SET L <ROOM-GET .RID ,ROOM-L>>
+    <SET T <ROOM-GET .RID ,ROOM-T>>
+    <SET R <ROOM-GET .RID ,ROOM-R>>
+    <SET B <ROOM-GET .RID ,ROOM-B>>
+    <SETG ENTRY-X 0>
+    <SETG ENTRY-Y 0>
+    <SET TRIES 0>
+    <REPEAT ()
+        <SET TRIES <+ .TRIES 1>>
+        <COND (<G? .TRIES 120> <RFALSE>)>
+        <SET X <+ .L <- <RNG <+ 1 <- .R .L>>> 1>>>
+        <SET Y <+ .T <- <RNG <+ 1 <- .B .T>>> 1>>>
+        <COND (<AND <IN-BOUNDS? .X .Y>
+                    <==? <ROOMID-AT .X .Y> .RID>>
+               <SETG ENTRY-X .X>
+               <SETG ENTRY-Y .Y>
+               <RTRUE>)>
+        <AGAIN>>>
+
+;"Finds the in-room edge X for RID on row Y, searching toward DIR.
+
+Args:
+  RID: Room ID.
+  Y: Row.
+  DIR: +1 for right edge, -1 for left edge.
+
+Returns:
+  Edge X inside the room (fallback: room center X)."
+
+<ROUTINE FIND-ROOM-EDGE-X (RID Y DIR "AUX" L R X)
+    <SET L <ROOM-GET .RID ,ROOM-L>>
+    <SET R <ROOM-GET .RID ,ROOM-R>>
+    <COND (<G? .DIR 0>
+           <SET X .R>
+           <REPEAT ()
+               <COND (<L? .X .L> <RETURN <ROOM-GET .RID ,ROOM-CX>>)> 
+               <COND (<==? <ROOMID-AT .X .Y> .RID> <RETURN .X>)>
+               <SET X <- .X 1>>>)
+          (ELSE
+           <SET X .L>
+           <REPEAT ()
+               <COND (<G? .X .R> <RETURN <ROOM-GET .RID ,ROOM-CX>>)> 
+               <COND (<==? <ROOMID-AT .X .Y> .RID> <RETURN .X>)>
+               <SET X <+ .X 1>>>)>>
+
+;"Finds the in-room edge Y for RID on column X, searching toward DIR.
+
+Args:
+  RID: Room ID.
+  X: Column.
+  DIR: +1 for bottom edge, -1 for top edge.
+
+Returns:
+  Edge Y inside the room (fallback: room center Y)."
+
+<ROUTINE FIND-ROOM-EDGE-Y (RID X DIR "AUX" T B Y)
+    <SET T <ROOM-GET .RID ,ROOM-T>>
+    <SET B <ROOM-GET .RID ,ROOM-B>>
+    <COND (<G? .DIR 0>
+           <SET Y .B>
+           <REPEAT ()
+               <COND (<L? .Y .T> <RETURN <ROOM-GET .RID ,ROOM-CY>>)> 
+               <COND (<==? <ROOMID-AT .X .Y> .RID> <RETURN .Y>)>
+               <SET Y <- .Y 1>>>)
+          (ELSE
+           <SET Y .T>
+           <REPEAT ()
+               <COND (<G? .Y .B> <RETURN <ROOM-GET .RID ,ROOM-CY>>)> 
+               <COND (<==? <ROOMID-AT .X .Y> .RID> <RETURN .Y>)>
+               <SET Y <+ .Y 1>>>)>>
 "Connectivity"
 
 ;"Connects rooms with corridors/doors using a spanning tree plus a limited
@@ -381,7 +597,7 @@ Args:
 Returns:
   (none)"
 
-<ROUTINE CONNECT-H (ARID BRID "AUX" AX AY BX BY Y1 Y2 XDOOR1 XSTART1 XDOOR2 XSTART2)
+<ROUTINE CONNECT-H (ARID BRID "AUX" AX AY BX BY Y1 Y2 EDGE1 EDGE2 XDOOR1 XSTART1 XDOOR2 XSTART2)
     <SET AX <ROOM-GET .ARID ,ROOM-CX>>
     <SET AY <ROOM-GET .ARID ,ROOM-CY>>
     <SET BX <ROOM-GET .BRID ,ROOM-CX>>
@@ -390,15 +606,19 @@ Returns:
     <SET Y1 <CLAMP .AY <ROOM-GET .ARID ,ROOM-T> <ROOM-GET .ARID ,ROOM-B>>>
     <SET Y2 <CLAMP .BY <ROOM-GET .BRID ,ROOM-T> <ROOM-GET .BRID ,ROOM-B>>>
     <COND (<G? .BX .AX>
-           <SET XDOOR1 <+ <ROOM-GET .ARID ,ROOM-R> 1>>
-           <SET XSTART1 <+ <ROOM-GET .ARID ,ROOM-R> 2>>
-           <SET XDOOR2 <- <ROOM-GET .BRID ,ROOM-L> 1>>
-           <SET XSTART2 <- <ROOM-GET .BRID ,ROOM-L> 2>>)
+          <SET EDGE1 <FIND-ROOM-EDGE-X .ARID .Y1 1>>
+          <SET EDGE2 <FIND-ROOM-EDGE-X .BRID .Y2 -1>>
+          <SET XDOOR1 <+ .EDGE1 1>>
+          <SET XSTART1 <+ .EDGE1 2>>
+          <SET XDOOR2 <- .EDGE2 1>>
+          <SET XSTART2 <- .EDGE2 2>>)
           (ELSE
-           <SET XDOOR1 <- <ROOM-GET .ARID ,ROOM-L> 1>>
-           <SET XSTART1 <- <ROOM-GET .ARID ,ROOM-L> 2>>
-           <SET XDOOR2 <+ <ROOM-GET .BRID ,ROOM-R> 1>>
-           <SET XSTART2 <+ <ROOM-GET .BRID ,ROOM-R> 2>>)>
+          <SET EDGE1 <FIND-ROOM-EDGE-X .ARID .Y1 -1>>
+          <SET EDGE2 <FIND-ROOM-EDGE-X .BRID .Y2 1>>
+          <SET XDOOR1 <- .EDGE1 1>>
+          <SET XSTART1 <- .EDGE1 2>>
+          <SET XDOOR2 <+ .EDGE2 1>>
+          <SET XSTART2 <+ .EDGE2 2>>)>
     <SET XSTART1 <CLAMP .XSTART1 1 ,MAP-W>>
     <SET XSTART2 <CLAMP .XSTART2 1 ,MAP-W>>
     <PLACE-DOOR .ARID .XDOOR1 .Y1>
@@ -415,7 +635,7 @@ Args:
 Returns:
   (none)"
 
-<ROUTINE CONNECT-V (ARID BRID "AUX" AX AY BX BY X1 X2 YDOOR1 YSTART1 YDOOR2 YSTART2)
+<ROUTINE CONNECT-V (ARID BRID "AUX" AX AY BX BY X1 X2 EDGE1 EDGE2 YDOOR1 YSTART1 YDOOR2 YSTART2)
     <SET AX <ROOM-GET .ARID ,ROOM-CX>>
     <SET AY <ROOM-GET .ARID ,ROOM-CY>>
     <SET BX <ROOM-GET .BRID ,ROOM-CX>>
@@ -424,15 +644,19 @@ Returns:
     <SET X1 <CLAMP .AX <ROOM-GET .ARID ,ROOM-L> <ROOM-GET .ARID ,ROOM-R>>>
     <SET X2 <CLAMP .BX <ROOM-GET .BRID ,ROOM-L> <ROOM-GET .BRID ,ROOM-R>>>
     <COND (<G? .BY .AY>
-           <SET YDOOR1 <+ <ROOM-GET .ARID ,ROOM-B> 1>>
-           <SET YSTART1 <+ <ROOM-GET .ARID ,ROOM-B> 2>>
-           <SET YDOOR2 <- <ROOM-GET .BRID ,ROOM-T> 1>>
-           <SET YSTART2 <- <ROOM-GET .BRID ,ROOM-T> 2>>)
+          <SET EDGE1 <FIND-ROOM-EDGE-Y .ARID .X1 1>>
+          <SET EDGE2 <FIND-ROOM-EDGE-Y .BRID .X2 -1>>
+          <SET YDOOR1 <+ .EDGE1 1>>
+          <SET YSTART1 <+ .EDGE1 2>>
+          <SET YDOOR2 <- .EDGE2 1>>
+          <SET YSTART2 <- .EDGE2 2>>)
           (ELSE
-           <SET YDOOR1 <- <ROOM-GET .ARID ,ROOM-T> 1>>
-           <SET YSTART1 <- <ROOM-GET .ARID ,ROOM-T> 2>>
-           <SET YDOOR2 <+ <ROOM-GET .BRID ,ROOM-B> 1>>
-           <SET YSTART2 <+ <ROOM-GET .BRID ,ROOM-B> 2>>)>
+          <SET EDGE1 <FIND-ROOM-EDGE-Y .ARID .X1 -1>>
+          <SET EDGE2 <FIND-ROOM-EDGE-Y .BRID .X2 1>>
+          <SET YDOOR1 <- .EDGE1 1>>
+          <SET YSTART1 <- .EDGE1 2>>
+          <SET YDOOR2 <+ .EDGE2 1>>
+          <SET YSTART2 <+ .EDGE2 2>>)>
     <SET YSTART1 <CLAMP .YSTART1 1 ,MAP-H>>
     <SET YSTART2 <CLAMP .YSTART2 1 ,MAP-H>>
     <PLACE-DOOR .ARID .X1 .YDOOR1>
@@ -852,7 +1076,7 @@ Returns:
     <SET H 7>
     <SET L <CLAMP <- ,ENTRY-X </ .W 2>> 2 <- ,MAP-W .W>>>
     <SET T <CLAMP <- ,ENTRY-Y </ .H 2>> 2 <- ,MAP-H .H>>>
-    <CARVE-ROOM .L .T .W .H 1>
+    <CARVE-ROOM .L .T .W .H 1 ,ROOMSHAPE-RECT>
     <SETG ROOM-COUNT 1>
     <RTRUE>>
 
