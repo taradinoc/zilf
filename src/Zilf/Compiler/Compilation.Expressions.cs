@@ -479,6 +479,7 @@ namespace Zilf.Compiler
 
                     // literal character -> PRINTC
                     case ZilChar zch:
+                        NoteZMachineCharUsage(zch, zch.SourceLine ?? src);
                         rb.EmitPrint(PrintOp.Character, Game.MakeOperand(zch.Char));
                         index++;
                         continue;

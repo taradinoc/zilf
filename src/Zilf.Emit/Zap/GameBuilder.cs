@@ -58,6 +58,7 @@ namespace Zilf.Emit.Zap
         readonly HashSet<char> siBreaks = new();
         readonly Dictionary<string, IOperand> stringPool = new(100);
         readonly Dictionary<int, NumericOperand> numberPool = new(50);
+        readonly Dictionary<char, ConstantLiteralOperand> unicodeCharPool = new();
 
         List<ushort>? unicodeTranslationTableEntries;
         string? unicodeTranslationTableName;
@@ -340,8 +341,6 @@ namespace Zilf.Emit.Zap
             return unicodeTranslationTableOperand;
         }
 
-        public IOperand? GetUnicodeTranslationTableOperand() => unicodeTranslationTableOperand;
-
         /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined; or <paramref name="entryPoint"/> is <see langword="true"/> and an entry point routine is alrady defined.</exception>
         public IRoutineBuilder DefineRoutine(string name, bool entryPoint, bool cleanStack)
         {
@@ -489,6 +488,20 @@ namespace Zilf.Emit.Zap
                     }
                     return result;
             }
+        }
+
+        public IOperand MakeOperand(char value)
+        {
+            if (value < 127)
+                return MakeOperand((int)value);
+
+            if (unicodeCharPool.TryGetValue(value, out var operand))
+                return operand;
+
+            var symbol = $"UNICHR${(ushort)value:x4}";
+            operand = new ConstantLiteralOperand(symbol);
+            unicodeCharPool.Add(value, operand);
+            return operand;
         }
 
         public IOperand MakeOperand(string value)
@@ -712,6 +725,16 @@ namespace Zilf.Emit.Zap
                                  select pp)
                 writer.WriteLine(INDENT + "{0}={1}", pair.Key, pair.Value.Number);
 
+            // pending Unicode characters
+            if (unicodeCharPool.Count > 0)
+            {
+                writer.WriteLine();
+                foreach (var pair in unicodeCharPool.OrderBy(kvp => kvp.Value.ToString(), StringComparer.Ordinal))
+                {
+                    writer.WriteLine(INDENT + "{0}={1}", pair.Value, ResolveUnicodeCharValue(pair.Key));
+                }
+            }
+
             // constants
             if (constants.Count > 0)
                 writer.WriteLine();
@@ -728,6 +751,18 @@ namespace Zilf.Emit.Zap
                 var value = constants.ContainsKey("ZORKID") ? "ZORKID" : "0";
                 writer.WriteLine(INDENT + "RELEASEID={0}", value);
             }
+        }
+
+        int ResolveUnicodeCharValue(char value)
+        {
+            if (unicodeTranslationTableEntries is { Count: > 0 })
+            {
+                var index = unicodeTranslationTableEntries.IndexOf(value);
+                if (index >= 0)
+                    return 155 + index;
+            }
+
+            return UnicodeTranslation.ToZscii(value);
         }
 
         void FinishObjects()

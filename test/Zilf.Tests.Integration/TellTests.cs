@@ -321,6 +321,43 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Unicode_Characters_Should_Be_Translated_In_V5()
+        {
+            // U+00F6: o with diaeresis
+            await AssertGlobals("<CONSTANT TILE-SHRINE-ACTIVE !\\\u00f6>")
+                .InV5()
+                .ImpliesAsync("<==? ,TILE-SHRINE-ACTIVE 156>");
+        }
+
+        [TestMethod]
+        public async Task Unicode_Characters_Should_Stay_Unicode_In_Glulx16()
+        {
+            // U+00F6: o with diaeresis
+            await AssertGlobals("<CONSTANT TILE-SHRINE-ACTIVE !\\\u00f6>")
+                .InV5()
+                .InGlulx16()
+                .ImpliesAsync("<==? ,TILE-SHRINE-ACTIVE 156>");
+        }
+
+        [TestMethod]
+        public async Task Unicode_Characters_Should_Stay_Unicode_In_Glulx()
+        {
+            // U+00F6: o with diaeresis
+            await AssertGlobals("<CONSTANT TILE-SHRINE-ACTIVE !\\\u00f6>")
+                .InGlulx()
+                .ImpliesAsync("<==? ,TILE-SHRINE-ACTIVE 246>");
+        }
+
+        [TestMethod]
+        public async Task Unicode_Character_Constants_Should_Follow_Custom_Table_Index_In_V5()
+        {
+            await AssertGlobals("<CONSTANT TILE-SHRINE-ACTIVE !\\\u00f6>")
+                .WithGlobal("<CONSTANT FORCE-UNITBL \"\u2014\">")
+                .InV5()
+                .ImpliesAsync("<==? ,TILE-SHRINE-ACTIVE 155>");
+        }
+
+        [TestMethod]
         public async Task Unicode_Characters_Should_Work_In_TELL_In_Glulx()
         {
             // U+2014: em dash, U+2019: right single quotation mark

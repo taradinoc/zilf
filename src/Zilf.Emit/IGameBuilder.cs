@@ -123,6 +123,15 @@ namespace Zilf.Emit
         /// <returns>The operand.</returns>
         INumericOperand MakeOperand(int value);
         /// <summary>
+        /// Gets an operand representing a character constant.
+        /// </summary>
+        /// <param name="value">The character constant.</param>
+        /// <returns>The operand.</returns>
+        /// <remarks>
+        /// This may or may not be equal to the Unicode value of the character.
+        /// </remarks>
+        IOperand MakeOperand(char value);
+        /// <summary>
         /// Gets an operand representing a string constant.
         /// </summary>
         /// <param name="value">The string constant.</param>

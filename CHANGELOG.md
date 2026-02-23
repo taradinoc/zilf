@@ -44,6 +44,9 @@ and this project adheres to
 - Fixed a bug where `PROG` et al. would sometimes give the wrong error message
   for a type mismatch.
 
+- Fixed a bug where Unicode characters weren't translated to ZSCII properly when
+  used as character literals (`!\x`).
+
 ## [1.5] (February 10, 2026)
 
 ### Added

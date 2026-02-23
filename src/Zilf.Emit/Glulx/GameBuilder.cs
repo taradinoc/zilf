@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Zilf.Common.StringEncoding;
 
 namespace Zilf.Emit.Glulx
 {
@@ -401,6 +402,14 @@ namespace Zilf.Emit.Glulx
                     }
                     return result;
             }
+        }
+
+        public IOperand MakeOperand(char value)
+        {
+            if (zCompatibilityMode && UnicodeTranslation.Table.TryGetValue(value, out var zscii))
+                return MakeOperand((int)zscii);
+
+            return MakeOperand((int)value);
         }
 
         public virtual IOperand MakeOperand(string value)

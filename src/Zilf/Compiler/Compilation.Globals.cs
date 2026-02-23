@@ -282,7 +282,8 @@ namespace Zilf.Compiler
                         return Game.MakeOperand(TranslateString(str, Context));
 
                     case ZilChar ch:
-                        return Game.MakeOperand((byte)ch.Char);
+                        NoteZMachineCharUsage(ch, expr.SourceLine);
+                        return Game.MakeOperand(ch.Char);
 
                     case ZilAtom atom:
                         if (atom.StdAtom == StdAtom.T)
