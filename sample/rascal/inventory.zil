@@ -1,7 +1,5 @@
 "Inventory management"
 
-<CONSTANT INV-SIZE 10>
-
 ;"Inventory is stored as child item objects under PLAYER-INVENTORY.
   EQUIPPED-WEAPON (global, defined in objects.zil) points to the equipped
   weapon item object, or <> when unarmed."
@@ -528,10 +526,6 @@ Returns:
 
 "Set when a motion potion is drunk inside a parser interior, so we can teleport after the interior exits back to the roguelike."
 <GLOBAL PENDING-INTERIOR-TELEPORT? <>>
-
-<CONSTANT HIDING-POTION-DURATION 60>
-<CONSTANT VISION-POTION-DURATION 60>
-<CONSTANT SHADOW-POTION-DURATION 75>
 
 <CONSTANT POTION-TIMER-WARNING-TURNS 10>
 

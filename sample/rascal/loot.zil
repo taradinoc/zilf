@@ -4,8 +4,6 @@
 <CONSTANT DROP-NEAR-TRY-LIMIT 40>
 <CONSTANT TELEPORT-TRY-LIMIT 500>
 
-<CONSTANT ITEM-ON-KILL-DROP-PCT 16>
-
 <CONSTANT DROPMODE-GOLD 1>
 <CONSTANT DROPMODE-WEAPON 2>
 <CONSTANT DROPMODE-INVENTORY 3>
@@ -298,7 +296,6 @@ Returns:
     <SET WANT 0>
     <COND (<L=? <RNG 100> 20> <SET WANT 1>)>
     <COND (<L=? <RNG 100> 5> <SET WANT <+ .WANT 1>>)>
-    <COND (<G? .WANT ,MAX-WEAPONS> <SET WANT ,MAX-WEAPONS>)>
     <DO (I 1 .WANT)
         <SET LVL <ROLL-LOOT-WEAPON-LEVEL .F>>
         <SET ENCH <ROLL-LOOT-WEAPON-ENCH>>
@@ -412,7 +409,6 @@ Returns:
            ;"1/3 of the levels that have potions get two."
            <SET WANT 1>
            <COND (<==? <RNG 3> 1> <SET WANT 2>)>)>
-    <COND (<G? .WANT ,MAX-POTIONS> <SET WANT ,MAX-POTIONS>)>
     <DO (I 1 .WANT)
         <SET TRIES 0>
         <REPEAT ()
@@ -514,7 +510,6 @@ Returns:
           (<L=? .X 60> <SET WANT 1>)
           (<L=? .X 90> <SET WANT 2>)
           (ELSE <SET WANT 3>)>
-    <COND (<G? .WANT ,MAX-FOODS> <SET WANT ,MAX-FOODS>)>
     <DO (I 1 .WANT)
         <SET TRIES 0>
         <REPEAT ()

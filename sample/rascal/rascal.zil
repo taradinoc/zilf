@@ -27,6 +27,9 @@
     <INIT>
     <RASCAL-MAIN-LOOP>>
 
+;"balance.zil defines constants used elsewhere, so it has to be included first."
+<INSERT-FILE "balance">
+
 <INSERT-FILE "combat">
 <INSERT-FILE "dungeon">
 <INSERT-FILE "explore">

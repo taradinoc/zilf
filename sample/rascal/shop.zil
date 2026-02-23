@@ -1,8 +1,5 @@
 "Trader inventory management"
 
-;"Trader inventory uses the same slot semantics as player inventory (1..10)."
-<CONSTANT TRINV-SIZE 10>
-
 <GLOBAL TRADER-X 0>
 <GLOBAL TRADER-Y 0>
 <GLOBAL TRADER-ON? <>>

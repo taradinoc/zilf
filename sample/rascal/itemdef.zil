@@ -91,12 +91,12 @@ Returns:
   Positive integer base damage."
 
 <ROUTINE WEAPON-BASE-DMG (TYPE)
-    <COND (<==? .TYPE ,WEAPON-DAGGER> 2)
-          (<==? .TYPE ,WEAPON-KATANA> 3)
-          (<==? .TYPE ,WEAPON-WARAXE> 4)
-          (<==? .TYPE ,WEAPON-SCYTHE> 4)
-          (<==? .TYPE ,WEAPON-CUDGEL> 3)
-          (<==? .TYPE ,WEAPON-HAMMER> 5)
+    <COND (<==? .TYPE ,WEAPON-DAGGER> ,WEAPON-BASE-DMG-DAGGER)
+          (<==? .TYPE ,WEAPON-KATANA> ,WEAPON-BASE-DMG-KATANA)
+          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-BASE-DMG-WARAXE)
+          (<==? .TYPE ,WEAPON-SCYTHE> ,WEAPON-BASE-DMG-SCYTHE)
+          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-BASE-DMG-CUDGEL)
+          (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-BASE-DMG-HAMMER)
           (ELSE 2)>>
 
 ;"Maps a weapon type code to its crit chance.
@@ -112,12 +112,12 @@ Returns:
   Crit chance percentage (0..100)."
 
 <ROUTINE WEAPON-CRIT-PCT (TYPE)
-    <COND (<==? .TYPE ,WEAPON-DAGGER> 25)
-          (<==? .TYPE ,WEAPON-WARAXE> 22)
-          (<==? .TYPE ,WEAPON-CUDGEL> 12)
-          (<==? .TYPE ,WEAPON-KATANA> 8)
-          (<==? .TYPE ,WEAPON-SCYTHE> 6)
-          (<==? .TYPE ,WEAPON-HAMMER> 5)
+    <COND (<==? .TYPE ,WEAPON-DAGGER> ,WEAPON-CRIT-PCT-DAGGER)
+          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-CRIT-PCT-WARAXE)
+          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-CRIT-PCT-CUDGEL)
+          (<==? .TYPE ,WEAPON-KATANA> ,WEAPON-CRIT-PCT-KATANA)
+          (<==? .TYPE ,WEAPON-SCYTHE> ,WEAPON-CRIT-PCT-SCYTHE)
+          (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-CRIT-PCT-HAMMER)
           (ELSE 10)>>
 
 ;"Maps a weapon type code to its damage variance behavior.
@@ -133,12 +133,12 @@ Returns:
   Positive integer divisor (>= 1)."
 
 <ROUTINE WEAPON-VARIANCE-DIV (TYPE)
-    <COND (<==? .TYPE ,WEAPON-DAGGER> 2)
-          (<==? .TYPE ,WEAPON-KATANA> 4)
-          (<==? .TYPE ,WEAPON-WARAXE> 1)
-          (<==? .TYPE ,WEAPON-SCYTHE> 1)
-          (<==? .TYPE ,WEAPON-CUDGEL> 5)
-          (<==? .TYPE ,WEAPON-HAMMER> 3)
+    <COND (<==? .TYPE ,WEAPON-DAGGER> ,WEAPON-VARIANCE-DIV-DAGGER)
+          (<==? .TYPE ,WEAPON-KATANA> ,WEAPON-VARIANCE-DIV-KATANA)
+          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-VARIANCE-DIV-WARAXE)
+          (<==? .TYPE ,WEAPON-SCYTHE> ,WEAPON-VARIANCE-DIV-SCYTHE)
+          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-VARIANCE-DIV-CUDGEL)
+          (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-VARIANCE-DIV-HAMMER)
           (ELSE 3)>>
 
 ;"Maps a food type code to its display name.
@@ -186,13 +186,13 @@ Returns:
   Positive integer healing amount (HP)."
 
 <ROUTINE FOOD-HEAL-AMT (TYPE)
-    <COND (<==? .TYPE ,FOOD-BANANA> 2)
-          (<==? .TYPE ,FOOD-CHEESE> 3)
-          (<==? .TYPE ,FOOD-GRAPES> 1)
-          (<==? .TYPE ,FOOD-MUFFIN> 4)
-          (<==? .TYPE ,FOOD-TURKEY> 6)
-          (<==? .TYPE ,FOOD-CARROT> 4)
-          (<==? .TYPE ,FOOD-CAVIAR> 25)
+    <COND (<==? .TYPE ,FOOD-BANANA> ,FOOD-HEAL-AMT-BANANA)
+          (<==? .TYPE ,FOOD-CHEESE> ,FOOD-HEAL-AMT-CHEESE)
+          (<==? .TYPE ,FOOD-GRAPES> ,FOOD-HEAL-AMT-GRAPES)
+          (<==? .TYPE ,FOOD-MUFFIN> ,FOOD-HEAL-AMT-MUFFIN)
+          (<==? .TYPE ,FOOD-TURKEY> ,FOOD-HEAL-AMT-TURKEY)
+          (<==? .TYPE ,FOOD-CARROT> ,FOOD-HEAL-AMT-CARROT)
+          (<==? .TYPE ,FOOD-CAVIAR> ,FOOD-HEAL-AMT-CAVIAR)
           (ELSE 2)>>
 
 ;"Maps a food type code to the trader buy price.

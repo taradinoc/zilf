@@ -107,36 +107,35 @@ Returns:
   T if a room was placed; FALSE otherwise."
 
 <ROUTINE PICK-ROOM-SHAPE ("AUX" R)
-  <SET R <RNG 100>>
-  <COND (<L=? .R 80> ,ROOMSHAPE-RECT)
-      (<L=? .R 85> ,ROOMSHAPE-CIRCLE)
-      (<L=? .R 90> ,ROOMSHAPE-DIAMOND)
-      (<L=? .R 95> <+ ,ROOMSHAPE-L-NW <- <RNG 4> 1>>)
-      (ELSE <+ ,ROOMSHAPE-U-UP <- <RNG 4> 1>>)>>
+    <SET R <RNG 100>>
+    <COND (<L=? .R 80> ,ROOMSHAPE-RECT)
+          (<L=? .R 85> ,ROOMSHAPE-CIRCLE)
+          (<L=? .R 90> ,ROOMSHAPE-DIAMOND)
+          (<L=? .R 95> <+ ,ROOMSHAPE-L-NW <- <RNG 4> 1>>)
+          (ELSE <+ ,ROOMSHAPE-U-UP <- <RNG 4> 1>>)>>
 
 <ROUTINE TRY-ADD-ROOM ("AUX" W H MAXX MAXY X Y R SHAPE)
-  <SET SHAPE <PICK-ROOM-SHAPE>>
-  <COND (<==? .SHAPE ,ROOMSHAPE-RECT>
-       <SET W <+ 4 <RNG 8>>>
-       ;"5..12"
-       <SET H <+ 3 <RNG 6>>>)
-      (<OR <==? .SHAPE ,ROOMSHAPE-CIRCLE>
-         <==? .SHAPE ,ROOMSHAPE-DIAMOND>>
-       ;"Odd sizes: 5,7,9,11"
-       <SET W <+ 3 <* <RNG 4> 2>>>
-       <SET H .W>)
-      (<OR <==? .SHAPE ,ROOMSHAPE-L-NW>
-         <==? .SHAPE ,ROOMSHAPE-L-NE>
-         <==? .SHAPE ,ROOMSHAPE-L-SW>
-         <==? .SHAPE ,ROOMSHAPE-L-SE>>
-       <SET W <+ 5 <RNG 6>>>
-       ;"6..11"
-       <SET H <+ 5 <RNG 5>>>)
-      (ELSE
-       <SET W <+ 6 <RNG 6>>>
-       ;"7..12"
-      <SET H <+ 5 <RNG 5>>>)>
-       ;"6..10"
+    <SET SHAPE <PICK-ROOM-SHAPE>>
+    <COND (<==? .SHAPE ,ROOMSHAPE-RECT>
+           <SET W <+ 4 <RNG 8>>>
+           ;"5..12"
+           <SET H <+ 3 <RNG 6>>>)
+          (<OR <==? .SHAPE ,ROOMSHAPE-CIRCLE> <==? .SHAPE ,ROOMSHAPE-DIAMOND>>
+           ;"Odd sizes: 5,7,9,11"
+           <SET W <+ 3 <* <RNG 4> 2>>>
+           <SET H .W>)
+          (<OR <==? .SHAPE ,ROOMSHAPE-L-NW>
+               <==? .SHAPE ,ROOMSHAPE-L-NE>
+               <==? .SHAPE ,ROOMSHAPE-L-SW>
+               <==? .SHAPE ,ROOMSHAPE-L-SE>>
+           <SET W <+ 5 <RNG 6>>>
+           ;"6..11"
+           <SET H <+ 5 <RNG 5>>>)
+          (ELSE
+           <SET W <+ 6 <RNG 6>>>
+           ;"7..12"
+           <SET H <+ 5 <RNG 5>>>)>
+    ;"6..10"
     <SET MAXX <- ,MAP-W <+ .W 1>>>
     ;"left <= MAP-W - W - 1"
     <SET MAXY <- ,MAP-H <+ .H 1>>>
@@ -228,59 +227,55 @@ Returns:
     <SET DY <ABS <- .Y .CY>>>
 
     <COND (<==? .SHAPE ,ROOMSHAPE-CIRCLE>
-         <COND (<L=? <+ <* .DX .DX> <* .DY .DY>> <* .RAD .RAD>> <RTRUE>)>
-         <RFALSE>)>
+           <COND (<L=? <+ <* .DX .DX> <* .DY .DY>> <* .RAD .RAD>> <RTRUE>)>
+           <RFALSE>)>
 
     <COND (<==? .SHAPE ,ROOMSHAPE-DIAMOND>
-         <COND (<L=? <+ .DX .DY> .RAD> <RTRUE>)>
-         <RFALSE>)>
+           <COND (<L=? <+ .DX .DY> .RAD> <RTRUE>)>
+           <RFALSE>)>
 
     <SET TH <ROOM-SHAPE-THICKNESS .L .T .R .B>>
 
     <COND (<==? .SHAPE ,ROOMSHAPE-L-NW>
-         <COND (<OR <L=? .X <+ .L <- .TH 1>>>
-              <L=? .Y <+ .T <- .TH 1>>>>
-            <RTRUE>)>
-         <RFALSE>)
-     (<==? .SHAPE ,ROOMSHAPE-L-NE>
-         <COND (<OR <G=? .X <- .R <- .TH 1>>>
-              <L=? .Y <+ .T <- .TH 1>>>>
-            <RTRUE>)>
-         <RFALSE>)
-     (<==? .SHAPE ,ROOMSHAPE-L-SW>
-         <COND (<OR <L=? .X <+ .L <- .TH 1>>>
-              <G=? .Y <- .B <- .TH 1>>>>
-            <RTRUE>)>
-         <RFALSE>)
-     (<==? .SHAPE ,ROOMSHAPE-L-SE>
-         <COND (<OR <G=? .X <- .R <- .TH 1>>>
-              <G=? .Y <- .B <- .TH 1>>>>
-            <RTRUE>)>
-         <RFALSE>)
-     (<==? .SHAPE ,ROOMSHAPE-U-UP>
-         <COND (<OR <L=? .X <+ .L <- .TH 1>>>
-              <G=? .X <- .R <- .TH 1>>>
-              <G=? .Y <- .B <- .TH 1>>>>
-            <RTRUE>)>
-         <RFALSE>)
-     (<==? .SHAPE ,ROOMSHAPE-U-DOWN>
-         <COND (<OR <L=? .X <+ .L <- .TH 1>>>
-              <G=? .X <- .R <- .TH 1>>>
-              <L=? .Y <+ .T <- .TH 1>>>>
-            <RTRUE>)>
-         <RFALSE>)
-     (<==? .SHAPE ,ROOMSHAPE-U-LEFT>
-         <COND (<OR <L=? .Y <+ .T <- .TH 1>>>
-              <G=? .Y <- .B <- .TH 1>>>
-              <G=? .X <- .R <- .TH 1>>>>
-            <RTRUE>)>
-         <RFALSE>)
-     (<==? .SHAPE ,ROOMSHAPE-U-RIGHT>
-         <COND (<OR <L=? .Y <+ .T <- .TH 1>>>
-              <G=? .Y <- .B <- .TH 1>>>
-              <L=? .X <+ .L <- .TH 1>>>>
-            <RTRUE>)>
-         <RFALSE>)>
+           <COND (<OR <L=? .X <+ .L <- .TH 1>>> <L=? .Y <+ .T <- .TH 1>>>>
+                  <RTRUE>)>
+           <RFALSE>)
+          (<==? .SHAPE ,ROOMSHAPE-L-NE>
+           <COND (<OR <G=? .X <- .R <- .TH 1>>> <L=? .Y <+ .T <- .TH 1>>>>
+                  <RTRUE>)>
+           <RFALSE>)
+          (<==? .SHAPE ,ROOMSHAPE-L-SW>
+           <COND (<OR <L=? .X <+ .L <- .TH 1>>> <G=? .Y <- .B <- .TH 1>>>>
+                  <RTRUE>)>
+           <RFALSE>)
+          (<==? .SHAPE ,ROOMSHAPE-L-SE>
+           <COND (<OR <G=? .X <- .R <- .TH 1>>> <G=? .Y <- .B <- .TH 1>>>>
+                  <RTRUE>)>
+           <RFALSE>)
+          (<==? .SHAPE ,ROOMSHAPE-U-UP>
+           <COND (<OR <L=? .X <+ .L <- .TH 1>>>
+                      <G=? .X <- .R <- .TH 1>>>
+                      <G=? .Y <- .B <- .TH 1>>>>
+                  <RTRUE>)>
+           <RFALSE>)
+          (<==? .SHAPE ,ROOMSHAPE-U-DOWN>
+           <COND (<OR <L=? .X <+ .L <- .TH 1>>>
+                      <G=? .X <- .R <- .TH 1>>>
+                      <L=? .Y <+ .T <- .TH 1>>>>
+                  <RTRUE>)>
+           <RFALSE>)
+          (<==? .SHAPE ,ROOMSHAPE-U-LEFT>
+           <COND (<OR <L=? .Y <+ .T <- .TH 1>>>
+                      <G=? .Y <- .B <- .TH 1>>>
+                      <G=? .X <- .R <- .TH 1>>>>
+                  <RTRUE>)>
+           <RFALSE>)
+          (<==? .SHAPE ,ROOMSHAPE-U-RIGHT>
+           <COND (<OR <L=? .Y <+ .T <- .TH 1>>>
+                      <G=? .Y <- .B <- .TH 1>>>
+                      <L=? .X <+ .L <- .TH 1>>>>
+                  <RTRUE>)>
+           <RFALSE>)>
 
     <RFALSE>>
 
@@ -304,9 +299,9 @@ Returns:
         <SET XX .X>
         <REPEAT ()
             <COND (<G? .XX .RX> <SET YY <+ .YY 1>> <RETURN>)>
-          <COND (<ROOM-SHAPE-FILL? .SHAPE .XX .YY .X .Y .RX .BY>
-               <PUTB ,MAP <MAP-INDEX .XX .YY> ,TILE-FLOOR>
-               <PUTB ,ROOMIDS <MAP-INDEX .XX .YY> .RID>)>
+            <COND (<ROOM-SHAPE-FILL? .SHAPE .XX .YY .X .Y .RX .BY>
+                   <PUTB ,MAP <MAP-INDEX .XX .YY> ,TILE-FLOOR>
+                   <PUTB ,ROOMIDS <MAP-INDEX .XX .YY> .RID>)>
             <SET XX <+ .XX 1>>>>
 
     <SET CX <+ .X </ .W 2>>>
@@ -359,13 +354,13 @@ Returns:
     <COND (<G? .DIR 0>
            <SET X .R>
            <REPEAT ()
-               <COND (<L? .X .L> <RETURN <ROOM-GET .RID ,ROOM-CX>>)> 
+               <COND (<L? .X .L> <RETURN <ROOM-GET .RID ,ROOM-CX>>)>
                <COND (<==? <ROOMID-AT .X .Y> .RID> <RETURN .X>)>
                <SET X <- .X 1>>>)
           (ELSE
            <SET X .L>
            <REPEAT ()
-               <COND (<G? .X .R> <RETURN <ROOM-GET .RID ,ROOM-CX>>)> 
+               <COND (<G? .X .R> <RETURN <ROOM-GET .RID ,ROOM-CX>>)>
                <COND (<==? <ROOMID-AT .X .Y> .RID> <RETURN .X>)>
                <SET X <+ .X 1>>>)>>
 
@@ -385,13 +380,13 @@ Returns:
     <COND (<G? .DIR 0>
            <SET Y .B>
            <REPEAT ()
-               <COND (<L? .Y .T> <RETURN <ROOM-GET .RID ,ROOM-CY>>)> 
+               <COND (<L? .Y .T> <RETURN <ROOM-GET .RID ,ROOM-CY>>)>
                <COND (<==? <ROOMID-AT .X .Y> .RID> <RETURN .Y>)>
                <SET Y <- .Y 1>>>)
           (ELSE
            <SET Y .T>
            <REPEAT ()
-               <COND (<G? .Y .B> <RETURN <ROOM-GET .RID ,ROOM-CY>>)> 
+               <COND (<G? .Y .B> <RETURN <ROOM-GET .RID ,ROOM-CY>>)>
                <COND (<==? <ROOMID-AT .X .Y> .RID> <RETURN .Y>)>
                <SET Y <+ .Y 1>>>)>>
 "Connectivity"
@@ -606,19 +601,19 @@ Returns:
     <SET Y1 <CLAMP .AY <ROOM-GET .ARID ,ROOM-T> <ROOM-GET .ARID ,ROOM-B>>>
     <SET Y2 <CLAMP .BY <ROOM-GET .BRID ,ROOM-T> <ROOM-GET .BRID ,ROOM-B>>>
     <COND (<G? .BX .AX>
-          <SET EDGE1 <FIND-ROOM-EDGE-X .ARID .Y1 1>>
-          <SET EDGE2 <FIND-ROOM-EDGE-X .BRID .Y2 -1>>
-          <SET XDOOR1 <+ .EDGE1 1>>
-          <SET XSTART1 <+ .EDGE1 2>>
-          <SET XDOOR2 <- .EDGE2 1>>
-          <SET XSTART2 <- .EDGE2 2>>)
+           <SET EDGE1 <FIND-ROOM-EDGE-X .ARID .Y1 1>>
+           <SET EDGE2 <FIND-ROOM-EDGE-X .BRID .Y2 -1>>
+           <SET XDOOR1 <+ .EDGE1 1>>
+           <SET XSTART1 <+ .EDGE1 2>>
+           <SET XDOOR2 <- .EDGE2 1>>
+           <SET XSTART2 <- .EDGE2 2>>)
           (ELSE
-          <SET EDGE1 <FIND-ROOM-EDGE-X .ARID .Y1 -1>>
-          <SET EDGE2 <FIND-ROOM-EDGE-X .BRID .Y2 1>>
-          <SET XDOOR1 <- .EDGE1 1>>
-          <SET XSTART1 <- .EDGE1 2>>
-          <SET XDOOR2 <+ .EDGE2 1>>
-          <SET XSTART2 <+ .EDGE2 2>>)>
+           <SET EDGE1 <FIND-ROOM-EDGE-X .ARID .Y1 -1>>
+           <SET EDGE2 <FIND-ROOM-EDGE-X .BRID .Y2 1>>
+           <SET XDOOR1 <- .EDGE1 1>>
+           <SET XSTART1 <- .EDGE1 2>>
+           <SET XDOOR2 <+ .EDGE2 1>>
+           <SET XSTART2 <+ .EDGE2 2>>)>
     <SET XSTART1 <CLAMP .XSTART1 1 ,MAP-W>>
     <SET XSTART2 <CLAMP .XSTART2 1 ,MAP-W>>
     <PLACE-DOOR .ARID .XDOOR1 .Y1>
@@ -644,19 +639,19 @@ Returns:
     <SET X1 <CLAMP .AX <ROOM-GET .ARID ,ROOM-L> <ROOM-GET .ARID ,ROOM-R>>>
     <SET X2 <CLAMP .BX <ROOM-GET .BRID ,ROOM-L> <ROOM-GET .BRID ,ROOM-R>>>
     <COND (<G? .BY .AY>
-          <SET EDGE1 <FIND-ROOM-EDGE-Y .ARID .X1 1>>
-          <SET EDGE2 <FIND-ROOM-EDGE-Y .BRID .X2 -1>>
-          <SET YDOOR1 <+ .EDGE1 1>>
-          <SET YSTART1 <+ .EDGE1 2>>
-          <SET YDOOR2 <- .EDGE2 1>>
-          <SET YSTART2 <- .EDGE2 2>>)
+           <SET EDGE1 <FIND-ROOM-EDGE-Y .ARID .X1 1>>
+           <SET EDGE2 <FIND-ROOM-EDGE-Y .BRID .X2 -1>>
+           <SET YDOOR1 <+ .EDGE1 1>>
+           <SET YSTART1 <+ .EDGE1 2>>
+           <SET YDOOR2 <- .EDGE2 1>>
+           <SET YSTART2 <- .EDGE2 2>>)
           (ELSE
-          <SET EDGE1 <FIND-ROOM-EDGE-Y .ARID .X1 -1>>
-          <SET EDGE2 <FIND-ROOM-EDGE-Y .BRID .X2 1>>
-          <SET YDOOR1 <- .EDGE1 1>>
-          <SET YSTART1 <- .EDGE1 2>>
-          <SET YDOOR2 <+ .EDGE2 1>>
-          <SET YSTART2 <+ .EDGE2 2>>)>
+           <SET EDGE1 <FIND-ROOM-EDGE-Y .ARID .X1 -1>>
+           <SET EDGE2 <FIND-ROOM-EDGE-Y .BRID .X2 1>>
+           <SET YDOOR1 <- .EDGE1 1>>
+           <SET YSTART1 <- .EDGE1 2>>
+           <SET YDOOR2 <+ .EDGE2 1>>
+           <SET YSTART2 <+ .EDGE2 2>>)>
     <SET YSTART1 <CLAMP .YSTART1 1 ,MAP-H>>
     <SET YSTART2 <CLAMP .YSTART2 1 ,MAP-H>>
     <PLACE-DOOR .ARID .X1 .YDOOR1>
@@ -833,33 +828,34 @@ Returns:
     <PUTB ,INTERIOR-ENTRANCE-Y 2 0>
     <PUTB ,INTERIOR-ENTRANCE-ID 2 ,INTERIOR-BLACKSMITH>
 
-        ;"Guaranteed Busker on exactly one random non-guaranteed floor.
+    ;"Guaranteed Busker on exactly one random non-guaranteed floor.
           Pick from 2..(MAX-1), excluding the guaranteed carrot farm floor."
-        <SETG GUARANTEED-BUSKER-FLOOR 0>
-        <DO (I 1 20)
-       <SETG GUARANTEED-BUSKER-FLOOR <+ 1 <RNG <- ,MAX-FLOORS 2>>>>
-       <COND (<N==? ,GUARANTEED-BUSKER-FLOOR ,GUARANTEED-CARROT-FARM-FLOOR>
-         <RETURN>)>>
-        ;"Defensive: if we somehow failed to pick, fall back to floor 2 (unless it's carrot)."
-        <COND (<L=? ,GUARANTEED-BUSKER-FLOOR 0>
-          <SETG GUARANTEED-BUSKER-FLOOR 2>
-          <COND (<==? ,GUARANTEED-BUSKER-FLOOR ,GUARANTEED-CARROT-FARM-FLOOR>
-            <SETG GUARANTEED-BUSKER-FLOOR 3>)>)>
+    <SETG GUARANTEED-BUSKER-FLOOR 0>
+    <DO (I 1 20)
+        <SETG GUARANTEED-BUSKER-FLOOR <+ 1 <RNG <- ,MAX-FLOORS 2>>>>
+        <COND (<N==? ,GUARANTEED-BUSKER-FLOOR ,GUARANTEED-CARROT-FARM-FLOOR>
+               <RETURN>)>>
+    ;"Defensive: if we somehow failed to pick, fall back to floor 2 (unless it's carrot)."
+    <COND (<L=? ,GUARANTEED-BUSKER-FLOOR 0>
+           <SETG GUARANTEED-BUSKER-FLOOR 2>
+           <COND (<==? ,GUARANTEED-BUSKER-FLOOR ,GUARANTEED-CARROT-FARM-FLOOR>
+                  <SETG GUARANTEED-BUSKER-FLOOR 3>)>)>
 
-        <COND (<G=? ,INTERIOR-ENTRANCE-COUNT ,MAX-INTERIOR-ENTRANCES>
-          <RETURN>)>
-        <SETG INTERIOR-ENTRANCE-COUNT <+ ,INTERIOR-ENTRANCE-COUNT 1>>
-        <PUTB ,INTERIOR-ENTRANCE-FLOOR <- ,INTERIOR-ENTRANCE-COUNT 1> ,GUARANTEED-BUSKER-FLOOR>
-        <PUTB ,INTERIOR-ENTRANCE-X <- ,INTERIOR-ENTRANCE-COUNT 1> 0>
-        <PUTB ,INTERIOR-ENTRANCE-Y <- ,INTERIOR-ENTRANCE-COUNT 1> 0>
-        <PUTB ,INTERIOR-ENTRANCE-ID <- ,INTERIOR-ENTRANCE-COUNT 1> ,INTERIOR-BUSKER>
+    <COND (<G=? ,INTERIOR-ENTRANCE-COUNT ,MAX-INTERIOR-ENTRANCES> <RETURN>)>
+    <SETG INTERIOR-ENTRANCE-COUNT <+ ,INTERIOR-ENTRANCE-COUNT 1>>
+    <PUTB ,INTERIOR-ENTRANCE-FLOOR
+          <- ,INTERIOR-ENTRANCE-COUNT 1>
+          ,GUARANTEED-BUSKER-FLOOR>
+    <PUTB ,INTERIOR-ENTRANCE-X <- ,INTERIOR-ENTRANCE-COUNT 1> 0>
+    <PUTB ,INTERIOR-ENTRANCE-Y <- ,INTERIOR-ENTRANCE-COUNT 1> 0>
+    <PUTB ,INTERIOR-ENTRANCE-ID <- ,INTERIOR-ENTRANCE-COUNT 1> ,INTERIOR-BUSKER>
 
-    ;"Other floors: 1/3 chance of an interior.
+    ;"Other floors: chance of an interior.
       The info booth never appears beyond floor 1."
     <DO (F 2 %<- ,MAX-FLOORS 1>)
-      <COND (<AND <N==? .F ,GUARANTEED-CARROT-FARM-FLOOR>
-            <N==? .F ,GUARANTEED-BUSKER-FLOOR>
-            <==? <RNG 3> 1>>
+        <COND (<AND <N==? .F ,GUARANTEED-CARROT-FARM-FLOOR>
+                    <N==? .F ,GUARANTEED-BUSKER-FLOOR>
+                    <L=? <RNG 100> ,INTERIOR-ENTRANCE-SPAWN-PCT>>
                <COND (<G=? ,INTERIOR-ENTRANCE-COUNT ,MAX-INTERIOR-ENTRANCES>
                       <RETURN>)>
                <PUTB ,INTERIOR-ENTRANCE-FLOOR ,INTERIOR-ENTRANCE-COUNT .F>

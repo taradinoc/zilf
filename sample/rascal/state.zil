@@ -1,11 +1,5 @@
 "Game state"
 
-<CONSTANT MAX-WEAPONS 10>
-
-<CONSTANT MAX-FOODS 10>
-
-<CONSTANT MAX-POTIONS 10>
-
 ;"Trader inventory persistence:
 
 Trader stock is stored directly as child item objects under the per-floor
@@ -625,16 +619,16 @@ Returns the item object, or 0 if none."
     <SET DOWNX <FLOOR-DOWN-X ,CURRENT-FLOOR>>
     <SET DOWNY <FLOOR-DOWN-Y ,CURRENT-FLOOR>>
     <COND (<AND <G? .UPX 0> <G? .UPY 0> <==? <ROOMID-AT .UPX .UPY> .RID>>
-            <RTRUE>)>
+           <RTRUE>)>
     <COND (<AND <G? .DOWNX 0>
                 <G? .DOWNY 0>
                 <==? <ROOMID-AT .DOWNX .DOWNY> .RID>>
-            <RTRUE>)>
+           <RTRUE>)>
     <COND (<AND ,TRADER-ON?
                 <G? ,TRADER-X 0>
                 <G? ,TRADER-Y 0>
                 <==? <ROOMID-AT ,TRADER-X ,TRADER-Y> .RID>>
-            <RTRUE>)>
+           <RTRUE>)>
     ;"Stairs tiles sometimes have ROOMID=0 (forced passable), so also block
     any room whose carved area contains stairs regardless of ROOMIDS."
     <COND (<ROOM-HAS-TILE? .RID ,TILE-STAIR-UP> <RTRUE>)>
@@ -654,9 +648,9 @@ Returns the item object, or 0 if none."
         <SET DEG <ROOM-DEGREE .RID>>
         <COND (<N==? .DEG 1> <AGAIN>)>
         <COND (<ROOM-BLOCKED-FOR-TREASURE? .RID> <AGAIN>)>
-         <COND (<FIND-ROOM-DOOR-TILE .RID>
-             <COND (<ROOM-HAS-ONLY-TREASURE-EXIT? .RID ,ENTRY-X ,ENTRY-Y>
-                 <RETURN .RID>)>)>
+        <COND (<FIND-ROOM-DOOR-TILE .RID>
+               <COND (<ROOM-HAS-ONLY-TREASURE-EXIT? .RID ,ENTRY-X ,ENTRY-Y>
+                      <RETURN .RID>)>)>
         <AGAIN>>>
 
 <ROUTINE FIND-LEAF-ROOM-DOOR-ANY (ENTRYRID)
@@ -668,7 +662,7 @@ Returns the item object, or 0 if none."
                     <NOT <ROOM-BLOCKED-FOR-TREASURE? .RID>>
                     <FIND-ROOM-DOOR-TILE .RID>
                     <ROOM-HAS-ONLY-TREASURE-EXIT? .RID ,ENTRY-X ,ENTRY-Y>>
-                <RETURN .RID>)>>
+               <RETURN .RID>)>>
     0>
 
 <ROUTINE FIND-TREASURE-SPOT-IN-ROOM (RID "AUX" TRIES X Y)
@@ -683,63 +677,59 @@ Returns the item object, or 0 if none."
         <COND (<==? <TILE-AT .X .Y> ,TILE-DOOR> <AGAIN>)>
         <COND (<NOT <OR <==? <TILE-AT .X .Y> ,TILE-FLOOR>
                         <==? <TILE-AT .X .Y> ,TILE-CORRIDOR>>>
-                <AGAIN>)>
+               <AGAIN>)>
         <COND (<OR <==? <TILE-AT .X .Y> ,TILE-STAIR-UP>
-                    <==? <TILE-AT .X .Y> ,TILE-STAIR-DOWN>>
-                <AGAIN>)>
+                   <==? <TILE-AT .X .Y> ,TILE-STAIR-DOWN>>
+               <AGAIN>)>
         <COND (<TRADER-AT? .X .Y> <AGAIN>)>
         <COND (<G? <ENEMY-AT .X .Y> 0> <AGAIN>)>
         <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <AGAIN>)>
         <RETURN <WORD16-FROM-BYTES .X .Y>>>>
 
-    <ROUTINE VALID-TREASURE-DOOR? (RID X Y "AUX" NX NY HAS-IN HAS-OUT)
-        <COND (<NOT <IN-BOUNDS? .X .Y>> <RFALSE>)>
-        <COND (<N==? <TILE-AT .X .Y> ,TILE-DOOR> <RFALSE>)>
+<ROUTINE VALID-TREASURE-DOOR? (RID X Y "AUX" NX NY HAS-IN HAS-OUT)
+    <COND (<NOT <IN-BOUNDS? .X .Y>> <RFALSE>)>
+    <COND (<N==? <TILE-AT .X .Y> ,TILE-DOOR> <RFALSE>)>
 
-        <SET HAS-IN <>>
-        <SET HAS-OUT <>>
+    <SET HAS-IN <>>
+    <SET HAS-OUT <>>
 
-        <SET NX <- .X 1>>
-        <SET NY .Y>
-        <COND (<IN-BOUNDS? .NX .NY>
-                <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
-                      <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
-                <SET HAS-IN T>)
-               (<AND <N==? <ROOMID-AT .NX .NY> .RID>
-                  <FLOOR? .NX .NY>>
-                <SET HAS-OUT T>)>)>
+    <SET NX <- .X 1>>
+    <SET NY .Y>
+    <COND (<IN-BOUNDS? .NX .NY>
+           <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
+                       <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
+                  <SET HAS-IN T>)
+                 (<AND <N==? <ROOMID-AT .NX .NY> .RID> <FLOOR? .NX .NY>>
+                  <SET HAS-OUT T>)>)>
 
-        <SET NX <+ .X 1>>
-        <SET NY .Y>
-        <COND (<IN-BOUNDS? .NX .NY>
-                <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
-                      <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
-                <SET HAS-IN T>)
-               (<AND <N==? <ROOMID-AT .NX .NY> .RID>
-                  <FLOOR? .NX .NY>>
-                <SET HAS-OUT T>)>)>
+    <SET NX <+ .X 1>>
+    <SET NY .Y>
+    <COND (<IN-BOUNDS? .NX .NY>
+           <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
+                       <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
+                  <SET HAS-IN T>)
+                 (<AND <N==? <ROOMID-AT .NX .NY> .RID> <FLOOR? .NX .NY>>
+                  <SET HAS-OUT T>)>)>
 
-        <SET NX .X>
-        <SET NY <- .Y 1>>
-        <COND (<IN-BOUNDS? .NX .NY>
-                <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
-                      <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
-                <SET HAS-IN T>)
-               (<AND <N==? <ROOMID-AT .NX .NY> .RID>
-                  <FLOOR? .NX .NY>>
-                <SET HAS-OUT T>)>)>
+    <SET NX .X>
+    <SET NY <- .Y 1>>
+    <COND (<IN-BOUNDS? .NX .NY>
+           <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
+                       <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
+                  <SET HAS-IN T>)
+                 (<AND <N==? <ROOMID-AT .NX .NY> .RID> <FLOOR? .NX .NY>>
+                  <SET HAS-OUT T>)>)>
 
-        <SET NX .X>
-        <SET NY <+ .Y 1>>
-        <COND (<IN-BOUNDS? .NX .NY>
-                <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
-                      <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
-                <SET HAS-IN T>)
-               (<AND <N==? <ROOMID-AT .NX .NY> .RID>
-                  <FLOOR? .NX .NY>>
-                <SET HAS-OUT T>)>)>
+    <SET NX .X>
+    <SET NY <+ .Y 1>>
+    <COND (<IN-BOUNDS? .NX .NY>
+           <COND (<AND <==? <ROOMID-AT .NX .NY> .RID>
+                       <NOT <==? <TILE-AT .NX .NY> ,TILE-DOOR>>>
+                  <SET HAS-IN T>)
+                 (<AND <N==? <ROOMID-AT .NX .NY> .RID> <FLOOR? .NX .NY>>
+                  <SET HAS-OUT T>)>)>
 
-        <AND .HAS-IN .HAS-OUT>>
+    <AND .HAS-IN .HAS-OUT>>
 
 <ROUTINE SHRINE-NOOK-CANDIDATE? (X Y "AUX" NX NY WALLS DOORS T)
     <COND (<NOT <IN-BOUNDS? .X .Y>> <RFALSE>)>
@@ -759,15 +749,13 @@ Returns the item object, or 0 if none."
     <SET DOORS 0>
     <DO (DY -1 1)
         <DO (DX -1 1)
-             <COND (<NOT <AND <==? .DX 0> <==? .DY 0>>>
-                 <SET NX <+ .X .DX>>
-                 <SET NY <+ .Y .DY>>
-                 <COND (<NOT <IN-BOUNDS? .NX .NY>> <RFALSE>)>
-                 <SET T <TILE-AT .NX .NY>>
-                 <COND (<==? .T ,TILE-WALL>
-                     <SET WALLS <+ .WALLS 1>>)
-                    (<==? .T ,TILE-DOOR>
-                     <SET DOORS <+ .DOORS 1>>)>)>>> 
+            <COND (<NOT <AND <==? .DX 0> <==? .DY 0>>>
+                   <SET NX <+ .X .DX>>
+                   <SET NY <+ .Y .DY>>
+                   <COND (<NOT <IN-BOUNDS? .NX .NY>> <RFALSE>)>
+                   <SET T <TILE-AT .NX .NY>>
+                   <COND (<==? .T ,TILE-WALL> <SET WALLS <+ .WALLS 1>>)
+                         (<==? .T ,TILE-DOOR> <SET DOORS <+ .DOORS 1>>)>)>>>
 
     <AND <==? .WALLS 7> <==? .DOORS 1>>>
 
@@ -794,7 +782,7 @@ Returns the item object, or 0 if none."
                                   <SET CY <+ .Y .DY>>
                                   <COND (<AND <SHRINE-NOOK-CANDIDATE? .CX .CY>
                                               <L=? <SHRINE-OBJ-AT .CX .CY> 0>
-                                              <==? <RNG 10> 1>>
+                                              <L=? <RNG 100> ,SHRINE-SPAWN-PCT>>
                                          <COND (<ADD-SHRINE .F .CX .CY>
                                                 <FORCE-PASSABLE .CX .CY>)>)>)>
                            <SET DX <+ .DX 1>>>>)>
@@ -861,7 +849,7 @@ Distribution:
            <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> ,TREASURE-LOOT-POTION>
            <PUTB ,TREASURE-ROOM-LOOT-ID <- .F 1> .COLOR>)
           (ELSE
-           <SET AMT <+ 200 <RNG 55>>>
+           <SET AMT <+ ,TREASURE-LOOT-GOLD-BASE <RNG ,TREASURE-LOOT-GOLD-VARIANCE>>>
            <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> ,TREASURE-LOOT-GOLD>
            <PUT ,TREASURE-ROOM-LOOT-AMT <- .F 1> .AMT>)>
     <RTRUE>>
@@ -976,10 +964,10 @@ Locked doors and keys are created during startup precompute."
     <SET LOOTY <GETB ,TREASURE-ROOM-LOOT-Y <- .F 1>>>
     <COND (<OR <L=? .DOORX 0> <L=? .DOORY 0>> <RTRUE>)>
 
-        ;"Door is expected to have been pre-placed during startup planning.
+    ;"Door is expected to have been pre-placed during startup planning.
             Compatibility fallback: recreate it if absent."
-        <COND (<L=? <LOCKEDDOOR-OBJ-AT .DOORX .DOORY> 0>
-                     <COND (<NOT <ADD-LOCKEDDOOR .F .DOORX .DOORY .LOCKTYPE>> <RTRUE>)>)>
+    <COND (<L=? <LOCKEDDOOR-OBJ-AT .DOORX .DOORY> 0>
+           <COND (<NOT <ADD-LOCKEDDOOR .F .DOORX .DOORY .LOCKTYPE>> <RTRUE>)>)>
 
     <PUTB ,TREASURE-ROOM-CREATED <- .F 1> 1>
 
@@ -1024,7 +1012,7 @@ Locked doors and keys are created during startup precompute."
            <COND (<L? .ENCH 1> <SET ENCH 1>)>
            <SHRINE-SET-OFFER .SLOT ,ITEMKIND-WEAPON .TYPE .LVL .ENCH 0>)
           (<==? .PICK 2>
-           <SET AMT <+ 49 <RNG 101>>>
+           <SET AMT <+ ,SHRINE-OFFER-GOLD-BASE <RNG ,SHRINE-OFFER-GOLD-VARIANCE>>>
            <SHRINE-SET-OFFER .SLOT ,ITEMKIND-GOLD 0 0 0 .AMT>)
           (<==? .PICK 3>
            <SET ID <ROLL-LOOT-POTION-COLOR>>
@@ -1064,9 +1052,8 @@ Locked doors and keys are created during startup precompute."
     <SET TRIES 0>
     <REPEAT ()
         <SHRINE-ROLL-OFFER .F 2>
-           <COND (<AND <NOT <SHRINE-OFFERS-MATCH?>>
-                    <NOT <SHRINE-OFFER-CONFLICT?>>>
-                <RETURN>)>
+        <COND (<AND <NOT <SHRINE-OFFERS-MATCH?>> <NOT <SHRINE-OFFER-CONFLICT?>>>
+               <RETURN>)>
         <SET TRIES <+ .TRIES 1>>
         <COND (<G? .TRIES 16> <RETURN>)>>
 
@@ -1131,7 +1118,7 @@ Locked doors and keys are created during startup precompute."
           (<==? .KIND ,ITEMKIND-POTION>
            <SET O <INV-ADD ,ITEMKIND-POTION .ID>>)
           (<==? .KIND ,ITEMKIND-FOOD>
-           <SET O <INV-ADD ,ITEMKIND-FOOD .ID>>)> 
+           <SET O <INV-ADD ,ITEMKIND-FOOD .ID>>)>
 
     <COND (<NOT .O>
            <SETG STATS-PACKFULL-PICKUP-BLOCKED

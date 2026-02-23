@@ -1,7 +1,5 @@
 "Combat & Enemy Management"
 
-<CONSTANT MAX-ENEMIES 8>
-<CONSTANT CHASE-RADIUS 6>
 
 <CONSTANT ETYPE-GOBLIN 1>
 <CONSTANT ETYPE-SPHINX 2>
@@ -24,12 +22,8 @@
 <GLOBAL HIT-FLASH-EX 0>
 <GLOBAL HIT-FLASH-EY 0>
 
-<CONSTANT INITIAL-PLAYER-STR 2>
-<CONSTANT INITIAL-PLAYER-DEF 1>
-<CONSTANT INITIAL-PLAYER-MAX-HP 12>
-
-<GLOBAL PLAYER-MAX-HP 12>
-<GLOBAL PLAYER-HP 12>
+<GLOBAL PLAYER-MAX-HP ,INITIAL-PLAYER-MAX-HP>
+<GLOBAL PLAYER-HP ,INITIAL-PLAYER-MAX-HP>
 
 <GLOBAL PLAYER-STR ,INITIAL-PLAYER-STR>
 
@@ -47,13 +41,12 @@
         <SET O <NEXT? .O>>>>
 
 <ROUTINE DESPAWN-ENEMY-OBJ (O "AUX" X Y)
-  <COND (<NOT .O> <RTRUE>)>
-  <SET X <GETP .O ,P?R-X>>
-  <SET Y <GETP .O ,P?R-Y>>
-  <FREE-RASCAL-ENEMY .O>
-  <COND (<AND <G? .X 0> <G? .Y 0> <ENEMY-VISIBLE? .X .Y>>
-       <MARK-DIRTY .X .Y>)>
-  <RTRUE>>
+    <COND (<NOT .O> <RTRUE>)>
+    <SET X <GETP .O ,P?R-X>>
+    <SET Y <GETP .O ,P?R-Y>>
+    <FREE-RASCAL-ENEMY .O>
+    <COND (<AND <G? .X 0> <G? .Y 0> <ENEMY-VISIBLE? .X .Y>> <MARK-DIRTY .X .Y>)>
+    <RTRUE>>
 
 ;"Returns a per-floor scaling bonus for an enemy type.
 
@@ -67,10 +60,10 @@ Returns:
     Scaling bonus value (non-negative integer)."
 
 <ROUTINE ENEMY-FLOOR-BONUS (TYPE F)
-    <COND (<==? .TYPE ,ETYPE-GOBLIN> </ .F 4>)
-          (<OR <==? .TYPE ,ETYPE-SPHINX> <==? .TYPE ,ETYPE-WRAITH>> </ .F 3>)
-          (<OR <==? .TYPE ,ETYPE-KRAKEN> <==? .TYPE ,ETYPE-DRAGON>> </ .F 2>)
-          (ELSE </ .F 4>)>>
+    <COND (<==? .TYPE ,ETYPE-GOBLIN> </ .F ,ENEMY-SCALING-DIVISOR-EASY>)
+          (<==? .TYPE ,ETYPE-SPHINX ,ETYPE-WRAITH> </ .F ENEMY-SCALING-DIVISOR-MEDIUM>)
+          (<==? .TYPE ,ETYPE-KRAKEN ,ETYPE-DRAGON ,ETYPE-SPIRIT> </ .F ,ENEMY-SCALING-DIVISOR-HARD>)
+          (ELSE </ .F ,ENEMY-SCALING-DIVISOR-EASY>)>>
 
 ;"Maps an enemy type code to its display name.
 
@@ -117,7 +110,6 @@ Returns:
 
 <CONSTANT MONKEY-MIN-FLOOR 2>
 <CONSTANT MONKEY-MAX-FLOOR 24>
-<CONSTANT MONKEY-SPAWN-PCT 20>
 
 <ROUTINE MONKEY-ON-FLOOR? (F)
     <ENEMY-OBJ-OF-TYPE <FLOOR-OBJ .F> ,ETYPE-MONKEY>>
@@ -245,10 +237,8 @@ Returns:
 
 "Bee swarm (enemy)"
 
-<CONSTANT BEE-SWARM-LOSE-DIST 5>
-
 <ROUTINE BEE-ENEMY-OBJ-FOR-FLOOR (F)
-  <ENEMY-OBJ-OF-TYPE <FLOOR-OBJ .F> ,ETYPE-LEGION>>
+    <ENEMY-OBJ-OF-TYPE <FLOOR-OBJ .F> ,ETYPE-LEGION>>
 
 <ROUTINE BEE-SPAWN-CANDIDATE? (X Y)
     <AND <IN-BOUNDS? .X .Y>
@@ -351,13 +341,13 @@ Returns:
 <ROUTINE BEE-CONSUME-POISON-POTION (ENEMY-OBJ POTION-OBJ "AUX" COLOR DISC TYPE)
     <SET COLOR <GETP .POTION-OBJ ,P?R-ITID>>
     <SET DISC <G? <GETB ,POTION-DISCOVERED <- .COLOR 1>> 0>>
+    <LOG "The legion of bees swarms the potion and dies." CR>
     <COND (<NOT .DISC>
            <PUTB ,POTION-DISCOVERED <- .COLOR 1> 1>
            <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>
            <LOG "You discover it was a " <POTION-TYPE-NAME .TYPE> "." CR>)>
     <REMOVE-POTION-OBJ .POTION-OBJ>
     <DESPAWN-ENEMY-OBJ .ENEMY-OBJ>
-    <LOG "The legion of bees swarms the potion and dies." CR>
     <RTRUE>>
 
 "Combat and items (gold + food)"
@@ -372,9 +362,9 @@ Returns:
 
 <ROUTINE PLAYER-DEF-MISS-PCT (DEF "AUX" DEN NUM)
     <COND (<L=? .DEF 0> <RETURN 0>)>
-    <SET DEN <+ 10 .DEF>>
+    <SET DEN <+ ,DEFENSE-FORMULA-DENOMINATOR .DEF>>
     ;"Round to nearest percent: add half the denominator before dividing."
-    <SET NUM <+ <* 75 .DEF> </ .DEN 2>>>
+    <SET NUM <+ <* ,DEFENSE-FORMULA-NUMERATOR .DEF> </ .DEN 2>>>
     </ .NUM .DEN>>
 
 ;"Applies defense to incoming damage.
@@ -448,13 +438,13 @@ Returns:
     <COND (<L=? .DMG 1> 1) (ELSE .DMG)>>
 
 <ROUTINE ENEMY-DAMAGE (TYPE)
-    <COND (<==? .TYPE ,ETYPE-GOBLIN> 1)
-          (<==? .TYPE ,ETYPE-SPHINX> 2)
-          (<==? .TYPE ,ETYPE-WRAITH> 2)
-          (<==? .TYPE ,ETYPE-KRAKEN> 3)
-          (<==? .TYPE ,ETYPE-DRAGON> 4)
-          (<==? .TYPE ,ETYPE-SPIRIT> 3)
-          (<==? .TYPE ,ETYPE-LEGION> 12)
+    <COND (<==? .TYPE ,ETYPE-GOBLIN> ,ENEMY-BASE-DMG-GOBLIN)
+          (<==? .TYPE ,ETYPE-SPHINX> ,ENEMY-BASE-DMG-SPHINX)
+          (<==? .TYPE ,ETYPE-WRAITH> ,ENEMY-BASE-DMG-WRAITH)
+          (<==? .TYPE ,ETYPE-KRAKEN> ,ENEMY-BASE-DMG-KRAKEN)
+          (<==? .TYPE ,ETYPE-DRAGON> ,ENEMY-BASE-DMG-DRAGON)
+          (<==? .TYPE ,ETYPE-SPIRIT> ,ENEMY-BASE-DMG-SPIRIT)
+          (<==? .TYPE ,ETYPE-LEGION> ,ENEMY-BASE-DMG-LEGION)
           (ELSE 1)>>
 
 ;"Applies damage to the player and enqueues a message.
@@ -482,8 +472,8 @@ Returns:
            <SETG HIT-FLASH? T>
            <SETG HIT-FLASH-EX <GETP .O ,P?R-X>>
            <SETG HIT-FLASH-EY <GETP .O ,P?R-Y>>
-          <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
-          <MARK-DIRTY ,HIT-FLASH-EX ,HIT-FLASH-EY>
+           <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <MARK-DIRTY ,HIT-FLASH-EX ,HIT-FLASH-EY>
            <LOG "The "
                 <ENEMY-NAME .TYPE>
                 " hits you, dealing "
@@ -495,7 +485,7 @@ Returns:
     <COND (<L=? ,PLAYER-HP 0> <SETG PLAYER-HP 0> <SETG GAME-OVER? T>)>
     <RTRUE>>
 
-;"Attacks a target enemy for 1 damage. If it dies, drops gold and enqueues a
+;"Attacks a target enemy. If it dies, drops gold and enqueues a
     kill message; otherwise enqueues a hit message.
 
 Args:
@@ -603,13 +593,13 @@ Returns:
     <COND (<TRADER-AT? .NX .NY> <RFALSE>)>
     <COND (<G? <ENEMY-AT .NX .NY> 0> <RFALSE>)>
     <COND (<AND <==? .NX ,PLAYER-X> <==? .NY ,PLAYER-Y>> <RFALSE>)>
-  <SET EX <GETP .I ,P?R-X>>
-  <SET EY <GETP .I ,P?R-Y>>
+    <SET EX <GETP .I ,P?R-X>>
+    <SET EY <GETP .I ,P?R-Y>>
     <PUTP .I ,P?R-X .NX>
     <PUTP .I ,P?R-Y .NY>
-      <COND (<AND <G? .EX 0> <G? .EY 0> <ENEMY-VISIBLE? .EX .EY>>
-        <MARK-DIRTY .EX .EY>)>
-      <COND (<ENEMY-VISIBLE? .NX .NY> <MARK-DIRTY .NX .NY>)>
+    <COND (<AND <G? .EX 0> <G? .EY 0> <ENEMY-VISIBLE? .EX .EY>>
+           <MARK-DIRTY .EX .EY>)>
+    <COND (<ENEMY-VISIBLE? .NX .NY> <MARK-DIRTY .NX .NY>)>
     <RTRUE>>
 
 ;"Attempts to step enemy slot I one tile toward (TX, TY), using the same
@@ -767,8 +757,7 @@ Returns:
         <SET TYPE <GETP .O ,P?R-ETYPE>>
         <SET HP <GETP .O ,P?R-EHP>>
 
-   <COND (<AND <G? .TYPE 0> <G? .HP 0>>
-     <STEP-ENEMY-AI .O .TYPE>)>
+        <COND (<AND <G? .TYPE 0> <G? .HP 0>> <STEP-ENEMY-AI .O .TYPE>)>
 
         <SET O .NXT>>>
 
@@ -810,12 +799,12 @@ Returns:
           (ELSE .TYPE)>>
 
 <ROUTINE ENEMY-START-HP (TYPE F)
-    <COND (<==? .TYPE ,ETYPE-GOBLIN> <+ 3 <ENEMY-FLOOR-BONUS .TYPE .F>>)
-          (<==? .TYPE ,ETYPE-SPHINX> <+ 5 <ENEMY-FLOOR-BONUS .TYPE .F>>)
-          (<==? .TYPE ,ETYPE-WRAITH> <+ 4 <ENEMY-FLOOR-BONUS .TYPE .F>>)
-          (<==? .TYPE ,ETYPE-KRAKEN> <+ 7 <ENEMY-FLOOR-BONUS .TYPE .F>>)
-          (<==? .TYPE ,ETYPE-DRAGON> <+ 9 <ENEMY-FLOOR-BONUS .TYPE .F>>)
-          (<==? .TYPE ,ETYPE-SPIRIT> <+ 9 <ENEMY-FLOOR-BONUS ,ETYPE-DRAGON .F>>)
+    <COND (<==? .TYPE ,ETYPE-GOBLIN> <+ ,ENEMY-BASE-HP-GOBLIN <ENEMY-FLOOR-BONUS .TYPE .F>>)
+          (<==? .TYPE ,ETYPE-SPHINX> <+ ,ENEMY-BASE-HP-SPHINX <ENEMY-FLOOR-BONUS .TYPE .F>>)
+          (<==? .TYPE ,ETYPE-WRAITH> <+ ,ENEMY-BASE-HP-WRAITH <ENEMY-FLOOR-BONUS .TYPE .F>>)
+          (<==? .TYPE ,ETYPE-KRAKEN> <+ ,ENEMY-BASE-HP-KRAKEN <ENEMY-FLOOR-BONUS .TYPE .F>>)
+          (<==? .TYPE ,ETYPE-DRAGON> <+ ,ENEMY-BASE-HP-DRAGON <ENEMY-FLOOR-BONUS .TYPE .F>>)
+          (<==? .TYPE ,ETYPE-SPIRIT> <+ ,ENEMY-BASE-HP-SPIRIT <ENEMY-FLOOR-BONUS .TYPE .F>>)
           (ELSE <+ 3 <ENEMY-FLOOR-BONUS .TYPE .F>>)>>
 
 ;"Attempts to spawn a single enemy object on floor F.
