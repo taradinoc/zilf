@@ -176,48 +176,20 @@ MODE:
 Returns:
   ZSCII character code from GETCHAR."
 
-<ROUTINE POPUP-INVENTORY-GETCHAR (MODE "AUX" W INNERW H TOP LEFT C ROW INTERIORCNT CLEARCNT CNT O)
+<ROUTINE POPUP-INVENTORY-GETCHAR (MODE "AUX" W H C CNT O)
     ;"Size and position the box roughly centered in the upper window."
     <SET W <- <LOWCORE SCRH> 4>>
     <COND (<G? .W 60> <SET W 60>)>
     <COND (<L? .W 34> <SET W 34>)>
-    <SET INNERW <- .W 2>>
 
     ;"Top border + prompt + items + bottom border."
     <SET CNT <INV-COUNT>>
     <SET H <+ .CNT 3>>
     <COND (<G? .H ,UPPER-HEIGHT> <SET H ,UPPER-HEIGHT>)>
-    <SET TOP <+ 1 </ <- ,UPPER-HEIGHT .H> 2>>>
-    <COND (<L? .TOP 1> <SET TOP 1>)>
-    <SET LEFT <+ 1 </ <- <LOWCORE SCRH> .W> 2>>>
-    <COND (<L? .LEFT 1> <SET LEFT 1>)>
-
-    <SCREEN 1>
-    <UI-LOG-COLOR>
-
-    ;"Top border."
-    <CURSET .TOP .LEFT>
-    <PRINTC !\+>
-    <PRINTC-REPEAT !\- .INNERW>
-    <PRINTC !\+>
-
-    ;"Interior rows (blank, with side borders)."
-    <SET INTERIORCNT <- .H 2>>
-    <DO (I 1 .INTERIORCNT)
-        <SET ROW <+ .TOP .I>>
-        <CURSET .ROW .LEFT>
-        <PRINTC !\|>
-        <PRINTC-REPEAT !\  .INNERW>
-        <PRINTC !\|>>
-
-    ;"Bottom border."
-    <CURSET <+ .TOP <- .H 1>> .LEFT>
-    <PRINTC !\+>
-    <PRINTC-REPEAT !\- .INNERW>
-    <PRINTC !\+>
+  <POPUP-OPEN-BOX .W .H 34>
 
     ;"Prompt line."
-    <CURSET <+ .TOP 1> <+ .LEFT 2>>
+  <CURSET <+ ,POPUP-TOP 1> <+ ,POPUP-LEFT 2>>
     <COND (<==? .MODE 1>
            <TELL "Equip which weapon? (1-" N .CNT "; 0=10; Q cancels)">)
           (<==? .MODE 2>
@@ -227,7 +199,7 @@ Returns:
     ;"Inventory lines."
     <DO (I 1 .CNT)
         <COND (<G? .I <- .H 3>> <RETURN>)>
-        <CURSET <+ .TOP <+ .I 1>> <+ .LEFT 2>>
+    <CURSET <+ ,POPUP-TOP <+ .I 1>> <+ ,POPUP-LEFT 2>>
         <SET O <INV-NTH-OBJ .I>>
         <COND (<AND <G? .O 0> <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-WEAPON>>
                <TELL N .I ") L" N <GETP .O ,P?R-ITLVL>>
@@ -240,15 +212,7 @@ Returns:
         <SET C <GETCHAR>>
         <COND (<==? .C 254 ;"mouse click"> <AGAIN>)>>
 
-    ;"Clear the popup with spaces."
-    <SET CLEARCNT <- .H 1>>
-    <DO (I 0 .CLEARCNT)
-        <CURSET <+ .TOP .I> .LEFT>
-        <PRINTC-REPEAT !\  .W>>
-
-    ;"Restore the UI immediately. (Main loop may redraw again; that's fine.)"
-    <SETG FULL-REDRAW? T>
-    <DRAW>
+    <POPUP-CLOSE-BOX>
 
     .C>
 
@@ -266,6 +230,13 @@ Returns:
     .SUM>
 
 "Equipment operations"
+
+<ROUTINE LOG-EQUIPPED-WEAPON (W)
+    <LOG "You wield the level " N <GETP .W ,P?R-ITLVL>>
+    <COND (<G? <GETP .W ,P?R-ITENCH> 0>
+           <LOG "+" N <GETP .W ,P?R-ITENCH>>)>
+    <LOG " " <WEAPON-NAME <GETP .W ,P?R-ITID>> "." CR>
+    <RTRUE>>
 
 ;"Prompts for an inventory slot and equips that weapon if the player can wield it.
 
@@ -299,9 +270,7 @@ Returns:
                 CR>
            <RFALSE>)>
     <SETG EQUIPPED-WEAPON <INV-NTH-OBJ .SLOT>>
-    <LOG "You wield the level " N .LVL>
-    <COND (<G? .ENCH 0> <LOG "+" N .ENCH>)>
-    <LOG " " <WEAPON-NAME .ID> "." CR>
+    <LOG-EQUIPPED-WEAPON ,EQUIPPED-WEAPON>
     <RTRUE>>
 
 ;"Equips the best weapon currently carried (highest level that STR can wield).
@@ -334,22 +303,19 @@ Returns:
                              <SET BESTDMG .DMG>)>)>)>>
     <SETG EQUIPPED-WEAPON <COND (<G? .BESTS 0> <INV-NTH-OBJ .BESTS>) (ELSE <>)>>
     <COND (<G? .BESTS 0>
-           <LOG "You wield the level " N .BESTLVL>
-           <COND (<G? <GETP ,EQUIPPED-WEAPON ,P?R-ITENCH> 0>
-                  <LOG "+" N <GETP ,EQUIPPED-WEAPON ,P?R-ITENCH>>)>
-           <LOG " " <WEAPON-NAME <GETP ,EQUIPPED-WEAPON ,P?R-ITID>> "." CR>
+           <LOG-EQUIPPED-WEAPON ,EQUIPPED-WEAPON>
            <RTRUE>)>
     <RFALSE>>
 
-<ROUTINE PRINT-EQUIPPED-WEAPON ()
-    <COND (<AND ,EQUIPPED-WEAPON
-                <==? <GETP ,EQUIPPED-WEAPON ,P?R-ITKIND> ,ITEMKIND-WEAPON>
-                <G? <GETP ,EQUIPPED-WEAPON ,P?R-ITLVL> 0>
-                <G? <GETP ,EQUIPPED-WEAPON ,P?R-ITID> 0>>
-           <TELL "L" N <GETP ,EQUIPPED-WEAPON ,P?R-ITLVL>>
-           <COND (<G? <GETP ,EQUIPPED-WEAPON ,P?R-ITENCH> 0>
-                  <TELL "+" N <GETP ,EQUIPPED-WEAPON ,P?R-ITENCH>>)>
-           <TELL " " <WEAPON-NAME <GETP ,EQUIPPED-WEAPON ,P?R-ITID>>>)
+<ROUTINE PRINT-EQUIPPED-WEAPON ("AUX" O)
+    <COND (<G? <SET O <EQUIPPED-WEAPON-OBJ>> 0>
+           <COND (<AND <G? <GETP .O ,P?R-ITLVL> 0>
+                       <G? <GETP .O ,P?R-ITID> 0>>
+                  <TELL "L" N <GETP .O ,P?R-ITLVL>>
+                  <COND (<G? <GETP .O ,P?R-ITENCH> 0>
+                         <TELL "+" N <GETP .O ,P?R-ITENCH>>)>
+                  <TELL " " <WEAPON-NAME <GETP .O ,P?R-ITID>>>)
+                 (ELSE <TELL "fists">)>)
           (ELSE <TELL "fists">)>>
 
 "Pickup operations"

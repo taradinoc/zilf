@@ -715,105 +715,88 @@ Returns:
 
 Returns:
   ZSCII character code from GETCHAR."
-<ROUTINE POPUP-QUIT-CONFIRM-GETCHAR ("AUX" W INNERW H TOP LEFT C CLEARCNT)
-    ;"Size and position the box roughly centered in the upper window."
-    <SET W 50>
-    <COND (<G? .W <- <LOWCORE SCRH> 4>> <SET W <- <LOWCORE SCRH> 4>>)>
-    <COND (<L? .W 34> <SET W 34>)>
-    <SET INNERW <- .W 2>>
+<GLOBAL POPUP-W 0>
+<GLOBAL POPUP-H 0>
+<GLOBAL POPUP-TOP 0>
+<GLOBAL POPUP-LEFT 0>
+<GLOBAL POPUP-INNERW 0>
 
-    ;"Top border + prompt + bottom border."
-    <SET H 3>
+<ROUTINE POPUP-OPEN-BOX (W H MINW "AUX" TOP LEFT ROW INTERIORCNT)
+    <COND (<G? .W <- <LOWCORE SCRH> 4>> <SET W <- <LOWCORE SCRH> 4>>)>
+    <COND (<L? .W .MINW> <SET W .MINW>)>
+
     <SET TOP <+ 1 </ <- ,UPPER-HEIGHT .H> 2>>>
     <COND (<L? .TOP 1> <SET TOP 1>)>
     <SET LEFT <+ 1 </ <- <LOWCORE SCRH> .W> 2>>>
     <COND (<L? .LEFT 1> <SET LEFT 1>)>
 
+    <SETG POPUP-W .W>
+    <SETG POPUP-H .H>
+    <SETG POPUP-TOP .TOP>
+    <SETG POPUP-LEFT .LEFT>
+    <SETG POPUP-INNERW <- .W 2>>
+
     <SCREEN 1>
     <UI-LOG-COLOR>
 
-    ;"Top border."
-    <CURSET .TOP .LEFT>
+    <CURSET ,POPUP-TOP ,POPUP-LEFT>
     <PRINTC !\+>
-    <PRINTC-REPEAT !\- .INNERW>
+    <PRINTC-REPEAT !\- ,POPUP-INNERW>
     <PRINTC !\+>
 
-    ;"Prompt line."
-    <CURSET <+ .TOP 1> .LEFT>
-    <PRINTC !\|>
-    <PRINTC-REPEAT !\  .INNERW>
-    <CURSET <+ .TOP 1> <+ .LEFT 2>>
+    <SET INTERIORCNT <- ,POPUP-H 2>>
+    <DO (I 1 .INTERIORCNT)
+        <SET ROW <+ ,POPUP-TOP .I>>
+        <CURSET .ROW ,POPUP-LEFT>
+        <PRINTC !\|>
+        <PRINTC-REPEAT !\  ,POPUP-INNERW>
+        <PRINTC !\|>>
+
+    <CURSET <+ ,POPUP-TOP <- ,POPUP-H 1>> ,POPUP-LEFT>
+    <PRINTC !\+>
+    <PRINTC-REPEAT !\- ,POPUP-INNERW>
+    <PRINTC !\+>
+    <RTRUE>>
+
+<ROUTINE POPUP-CLOSE-BOX ("AUX" CLEARCNT)
+    <SET CLEARCNT <- ,POPUP-H 1>>
+    <DO (I 0 .CLEARCNT)
+        <CURSET <+ ,POPUP-TOP .I> ,POPUP-LEFT>
+        <PRINTC-REPEAT !\  ,POPUP-W>>
+    <SETG FULL-REDRAW? T>
+    <DRAW>
+    <RTRUE>>
+
+<ROUTINE POPUP-QUIT-CONFIRM-GETCHAR ("AUX" C)
+    ;"Size and position the box roughly centered in the upper window."
+    <POPUP-OPEN-BOX 50 3 34>
+
+    <CURSET <+ ,POPUP-TOP 1> <+ ,POPUP-LEFT 2>>
     <TELL "Really quit? (Y/N, R to restart)">
-    <CURSET <+ .TOP 1> <+ .LEFT <- .W 1>>>
-    <PRINTC !\|>
-
-    ;"Bottom border."
-    <CURSET <+ .TOP 2> .LEFT>
-    <PRINTC !\+>
-    <PRINTC-REPEAT !\- .INNERW>
-    <PRINTC !\+>
 
     <PROG ()
         <SET C <GETCHAR>>
         <COND (<==? .C 254 ;"mouse click"> <AGAIN>)>>
 
-    ;"Clear the popup with spaces."
-    <SET CLEARCNT <- .H 1>>
-    <DO (I 0 .CLEARCNT)
-        <CURSET <+ .TOP .I> .LEFT>
-        <PRINTC-REPEAT !\  .W>>
-
-    ;"Restore the UI immediately. (Main loop may redraw again; that's fine.)"
-    <SETG FULL-REDRAW? T>
-    <DRAW>
+    <POPUP-CLOSE-BOX>
 
     .C>
 
-<ROUTINE POPUP-SHRINE-GETCHAR ("AUX" W INNERW H TOP LEFT C ROW CLEARCNT INTERIORCNT)
-    <SET W 54>
-    <COND (<G? .W <- <LOWCORE SCRH> 4>> <SET W <- <LOWCORE SCRH> 4>>)>
-    <COND (<L? .W 40> <SET W 40>)>
-    <SET INNERW <- .W 2>>
+<ROUTINE POPUP-SHRINE-GETCHAR ("AUX" C)
+    <POPUP-OPEN-BOX 54 6 40>
 
-    <SET H 6>
-    <SET TOP <+ 1 </ <- ,UPPER-HEIGHT .H> 2>>>
-    <COND (<L? .TOP 1> <SET TOP 1>)>
-    <SET LEFT <+ 1 </ <- <LOWCORE SCRH> .W> 2>>>
-    <COND (<L? .LEFT 1> <SET LEFT 1>)>
-
-    <SCREEN 1>
-    <UI-LOG-COLOR>
-
-    <CURSET .TOP .LEFT>
-    <PRINTC !\+>
-    <PRINTC-REPEAT !\- .INNERW>
-    <PRINTC !\+>
-
-    <SET INTERIORCNT <- .H 2>>
-    <DO (I 1 .INTERIORCNT)
-        <SET ROW <+ .TOP .I>>
-        <CURSET .ROW .LEFT>
-        <PRINTC !\|>
-        <PRINTC-REPEAT !\  .INNERW>
-        <PRINTC !\|>>
-
-    <CURSET <+ .TOP <- .H 1>> .LEFT>
-    <PRINTC !\+>
-    <PRINTC-REPEAT !\- .INNERW>
-    <PRINTC !\+>
-
-    <CURSET <+ .TOP 1> <+ .LEFT 2>>
+    <CURSET <+ ,POPUP-TOP 1> <+ ,POPUP-LEFT 2>>
     <TELL "The shrine offers:">
 
-    <CURSET <+ .TOP 2> <+ .LEFT 2>>
+    <CURSET <+ ,POPUP-TOP 2> <+ ,POPUP-LEFT 2>>
     <TELL "1) ">
     <SHRINE-PRINT-OFFER-TEXT 1>
 
-    <CURSET <+ .TOP 3> <+ .LEFT 2>>
+    <CURSET <+ ,POPUP-TOP 3> <+ ,POPUP-LEFT 2>>
     <TELL "2) ">
     <SHRINE-PRINT-OFFER-TEXT 2>
 
-    <CURSET <+ .TOP 4> <+ .LEFT 2>>
+    <CURSET <+ ,POPUP-TOP 4> <+ ,POPUP-LEFT 2>>
     <TELL "(1/2, Q cancels)">
 
     <PROG ()
@@ -826,13 +809,7 @@ Returns:
                <RETURN>)>
         <AGAIN>>
 
-    <SET CLEARCNT <- .H 1>>
-    <DO (I 0 .CLEARCNT)
-        <CURSET <+ .TOP .I> .LEFT>
-        <PRINTC-REPEAT !\  .W>>
-
-    <SETG FULL-REDRAW? T>
-    <DRAW>
+    <POPUP-CLOSE-BOX>
 
     .C>
 
@@ -1144,6 +1121,25 @@ Args:
 Returns:
   (none)"
 
+<ROUTINE DRAW-STATUS-STATS ()
+        <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+        <TELL "  hp=">
+        <COND (<L=? ,PLAYER-HP </ ,PLAYER-MAX-HP 4>> <UI-ALERT>)
+                    (ELSE <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>)>
+        <TELL N ,PLAYER-HP "/" N ,PLAYER-MAX-HP>
+        <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+        <TELL "  str=">
+        <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
+        <TELL N ,PLAYER-STR>
+        <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+        <TELL "  def=">
+        <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
+        <TELL N ,PLAYER-DEF>
+        <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+        <TELL "  wpn=">
+        <UI-FG ,UI-RGB-WEAPON ,ZCOL-DEFAULT>
+        <PRINT-EQUIPPED-WEAPON>>
+
 <ROUTINE DRAW-STATUS-LINE (ROW COL MODE)
     <UI-RESET>
     <ERASE-STATUS-LINE .ROW>
@@ -1153,23 +1149,7 @@ Returns:
            <TELL "gold=">
            <UI-FG ,UI-RGB-GOLD ,ZCOL-DEFAULT>
            <TELL N ,PLAYER-GOLD>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
-           <TELL "  hp=">
-           <COND (<L=? ,PLAYER-HP </ ,PLAYER-MAX-HP 4>> <UI-ALERT>)
-                 (ELSE <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>)>
-           <TELL N ,PLAYER-HP "/" N ,PLAYER-MAX-HP>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
-           <TELL "  str=">
-           <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
-           <TELL N ,PLAYER-STR>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
-           <TELL "  def=">
-           <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
-           <TELL N ,PLAYER-DEF>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
-           <TELL "  wpn=">
-           <UI-FG ,UI-RGB-WEAPON ,ZCOL-DEFAULT>
-           <PRINT-EQUIPPED-WEAPON>
+             <DRAW-STATUS-STATS>
            <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
            <TELL "  floor=">
            <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
@@ -1184,23 +1164,7 @@ Returns:
            <TELL "  floor=">
            <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
            <TELL N ,CURRENT-FLOOR "/" N ,MAX-FLOORS>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
-           <TELL "  hp=">
-           <COND (<L=? ,PLAYER-HP </ ,PLAYER-MAX-HP 4>> <UI-ALERT>)
-                 (ELSE <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>)>
-           <TELL N ,PLAYER-HP "/" N ,PLAYER-MAX-HP>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
-           <TELL "  str=">
-           <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
-           <TELL N ,PLAYER-STR>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
-           <TELL "  def=">
-           <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
-           <TELL N ,PLAYER-DEF>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
-           <TELL "  wpn=">
-           <UI-FG ,UI-RGB-WEAPON ,ZCOL-DEFAULT>
-           <PRINT-EQUIPPED-WEAPON>
+             <DRAW-STATUS-STATS>
            <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
            <TELL "  inv=">
            <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>

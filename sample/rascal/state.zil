@@ -461,17 +461,9 @@ Returns the item object, or 0 if none."
     <REPEAT ()
         <SET TRIES <+ .TRIES 1>>
         <COND (<G? .TRIES 500> <RFALSE>)>
-        <COND (<G? .TRIES 420>
-               <SETG ENTRY-X 0>
-               <SETG ENTRY-Y 0>
-               <COND (<FIND-GROUND-ITEM-SPOT-ANYWHERE>
-                      <SET X ,ENTRY-X>
-                      <SET Y ,ENTRY-Y>)
-                     (ELSE <RFALSE>)>)
-              (ELSE
-               <SET X <RNG ,MAP-W>>
-               <SET Y <RNG ,MAP-H>>)>
-        <COND (<NOT <VALID-GROUND-ITEM-TILE? .X .Y>> <AGAIN>)>
+        <COND (<NOT <FIND-RANDOM-GROUND-ITEM-SPAWN-POINT 420>> <RFALSE>)>
+        <SET X ,ENTRY-X>
+        <SET Y ,ENTRY-Y>
         <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <AGAIN>)>
         <PUTP .O ,P?R-X .X>
         <PUTP .O ,P?R-Y .Y>
@@ -1067,17 +1059,17 @@ Locked doors and keys are created during startup precompute."
     <SET ENCH <SHRINE-GET-OFFER-ENCH .SLOT>>
     <SET AMT <SHRINE-GET-OFFER-AMT .SLOT>>
     <COND (<==? .KIND ,ITEMKIND-WEAPON>
-           <TELL "a level " N .LVL>
-           <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
-           <TELL " " <WEAPON-NAME .ID>>)
+           <LOG "a level " N .LVL>
+           <COND (<G? .ENCH 0> <LOG "+" N .ENCH>)>
+           <LOG " " <WEAPON-NAME .ID>>)
           (<==? .KIND ,ITEMKIND-GOLD>
-           <TELL N .AMT " gold pieces">)
+           <LOG N .AMT " gold pieces">)
           (<==? .KIND ,ITEMKIND-POTION>
-           <TELL <POTION-ARTICLE .ID> " " <POTION-DISPLAY-NAME .ID>>)
+           <LOG <POTION-ARTICLE .ID> " " <POTION-DISPLAY-NAME .ID>>)
           (<==? .KIND ,ITEMKIND-FOOD>
-           <TELL "a " <FOOD-NAME .ID>>)
+           <LOG "a " <FOOD-NAME .ID>>)
           (ELSE
-           <TELL "an offering">)>
+           <LOG "an offering">)>
     <RTRUE>>
 
 <ROUTINE SHRINE-GET-OFFER-KIND (SLOT)
@@ -1237,38 +1229,18 @@ Args:
 Returns:
     T."
 
-<ROUTINE SPAWN-ENEMY-OBJ-OF-TYPE (F TYPE "AUX" TRIES R PR X Y HP O)
-    <SET PR <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
-    <SET TRIES 0>
-    <REPEAT ()
-        <SET TRIES <+ .TRIES 1>>
-        <COND (<G? .TRIES 120> <RFALSE>)>
-        <SET R <RNG ,ROOM-COUNT>>
-        <COND (<AND <G? .PR 0> <==? .R .PR>> <AGAIN>)>
-        <COND (<NOT <RANDOM-POINT-IN-ROOM .R>> <AGAIN>)>
-        <SET X ,ENTRY-X>
-        <SET Y ,ENTRY-Y>
-        <COND (<NOT <IN-BOUNDS? .X .Y>> <AGAIN>)>
-        <COND (<NOT <FLOOR? .X .Y>> <AGAIN>)>
-        <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>> <AGAIN>)>
-        <COND (<G? <GOLD-OBJ-AT .X .Y> 0> <AGAIN>)>
-        <COND (<G? <FOOD-OBJ-AT .X .Y> 0> <AGAIN>)>
-        <COND (<G? <WEAPON-OBJ-AT .X .Y> 0> <AGAIN>)>
-        <COND (<POTION-AT? .X .Y> <AGAIN>)>
-        <COND (<G? <TREASURE-AT? .X .Y> 0> <AGAIN>)>
-        <COND (<TRADER-AT? .X .Y> <AGAIN>)>
-        <COND (<G? <ENEMY-AT .X .Y> 0> <AGAIN>)>
-        <COND (<OR <==? <TILE-AT .X .Y> ,TILE-STAIR-UP>
-                   <==? <TILE-AT .X .Y> ,TILE-STAIR-DOWN>>
-               <AGAIN>)>
-        <SET HP <ENEMY-START-HP .TYPE .F>>
-        <COND (<NOT <SET O <ALLOC-RASCAL-ENEMY>>> <RFALSE>)>
-        <PUTP .O ,P?R-ETYPE .TYPE>
-        <PUTP .O ,P?R-EHP .HP>
-        <PUTP .O ,P?R-X .X>
-        <PUTP .O ,P?R-Y .Y>
-        <MOVE .O ,CURRENT-FLOOR-OBJ>
-        <RTRUE>>>
+<ROUTINE SPAWN-ENEMY-OBJ-OF-TYPE (F TYPE "AUX" X Y HP O)
+    <COND (<NOT <FIND-RANDOM-ENEMY-SPAWN-POINT>> <RFALSE>)>
+    <SET X ,ENTRY-X>
+    <SET Y ,ENTRY-Y>
+    <SET HP <ENEMY-START-HP .TYPE .F>>
+    <COND (<NOT <SET O <ALLOC-RASCAL-ENEMY>>> <RFALSE>)>
+    <PUTP .O ,P?R-ETYPE .TYPE>
+    <PUTP .O ,P?R-EHP .HP>
+    <PUTP .O ,P?R-X .X>
+    <PUTP .O ,P?R-Y .Y>
+    <MOVE .O ,CURRENT-FLOOR-OBJ>
+    <RTRUE>>
 
 <ROUTINE APPLY-PENDING-SPIRIT-SPAWNS (F "AUX" PENDING)
     <COND (<G=? .F ,MAX-FLOORS> <RTRUE>)>

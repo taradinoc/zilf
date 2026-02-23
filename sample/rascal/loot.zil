@@ -217,6 +217,17 @@ Returns:
     <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
     <RTRUE>>
 
+  <ROUTINE ADD-BASIC-ITEM-PILE (X Y KIND ID "AUX" O)
+    <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <RETURN 0>)>
+    <COND (<NOT <SET O <ALLOC-RASCAL-ITEM>>> <RETURN 0>)>
+    <PUTP .O ,P?R-ITKIND .KIND>
+    <PUTP .O ,P?R-ITID .ID>
+    <PUTP .O ,P?R-X .X>
+    <PUTP .O ,P?R-Y .Y>
+    <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
+    <MARK-DIRTY .X .Y>
+    .O>
+
 "Weapon operations"
 
 ;"Adds a weapon drop at (X, Y) as a floor item object.
@@ -230,18 +241,11 @@ Returns:
   T if added; FALSE if no item object is available."
 
 <ROUTINE ADD-WEAPON-PILE (X Y TYPE LVL ENCH "AUX" O)
-    <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <RFALSE>)>
-    <COND (<SET O <ALLOC-RASCAL-ITEM>>
-           <PUTP .O ,P?R-ITKIND ,ITEMKIND-WEAPON>
-           <PUTP .O ,P?R-ITID .TYPE>
-           <PUTP .O ,P?R-ITLVL .LVL>
-           <PUTP .O ,P?R-ITENCH .ENCH>
-           <PUTP .O ,P?R-X .X>
-           <PUTP .O ,P?R-Y .Y>
-           <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
-           <MARK-DIRTY .X .Y>
-           <RTRUE>)>
-    <RFALSE>>
+    <COND (<L=? <SET O <ADD-BASIC-ITEM-PILE .X .Y ,ITEMKIND-WEAPON .TYPE>> 0>
+      <RFALSE>)>
+    <PUTP .O ,P?R-ITLVL .LVL>
+    <PUTP .O ,P?R-ITENCH .ENCH>
+    <RTRUE>>
 
 ;"Rolls a loot weapon level for the current floor.
 
@@ -282,14 +286,29 @@ Args:
 Returns:
   T if dropped; FALSE if no spot or no slot."
 
-<ROUTINE DROP-WEAPON-NEAR (X Y TYPE LVL ENCH)
-    <COND (<NOT <FIND-ADJACENT-DROP-TILE .X .Y ,DROPMODE-WEAPON>> <RFALSE>)>
-    <COND (<ADD-WEAPON-PILE ,DROP-CAND-X ,DROP-CAND-Y .TYPE .LVL .ENCH>
-           <RTRUE>)>
+<ROUTINE DROP-PILE-NEAR (X Y MODE KIND ID LVL ENCH)
+    <COND (<NOT <FIND-ADJACENT-DROP-TILE .X .Y .MODE>> <RFALSE>)>
+    <COND (<==? .KIND ,ITEMKIND-WEAPON>
+           <COND (<ADD-WEAPON-PILE ,DROP-CAND-X ,DROP-CAND-Y .ID .LVL .ENCH>
+                  <RTRUE>)>)
+          (<==? .KIND ,ITEMKIND-POTION>
+           <COND (<ADD-POTION-PILE ,DROP-CAND-X ,DROP-CAND-Y .ID> <RTRUE>)>)
+          (<==? .KIND ,ITEMKIND-FOOD>
+           <COND (<ADD-FOOD-PILE ,DROP-CAND-X ,DROP-CAND-Y .ID> <RTRUE>)>)>
     <RFALSE>>
+
+<ROUTINE DROP-WEAPON-NEAR (X Y TYPE LVL ENCH)
+    <DROP-PILE-NEAR .X .Y ,DROPMODE-WEAPON ,ITEMKIND-WEAPON .TYPE .LVL .ENCH>>
 
 <ROUTINE PICK-WEAPON-TYPE (F)
     <RNG ,WEAPON-COUNT>>
+
+<ROUTINE DROP-RANDOM-WEAPON-NEAR (X Y F)
+    <DROP-WEAPON-NEAR .X
+                      .Y
+                      <PICK-WEAPON-TYPE .F>
+                      <ROLL-LOOT-WEAPON-LEVEL .F>
+                      <ROLL-LOOT-WEAPON-ENCH>>>
 
 <ROUTINE SPAWN-WEAPONS (F "AUX" WANT TRIES X Y LVL ENCH)
     <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-WEAPON>
@@ -353,18 +372,11 @@ Returns:
   T if added; FALSE if no item object is available (or tile already has an item)."
 
 <ROUTINE ADD-POTION-PILE (X Y COLOR "AUX" O)
-    <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <RFALSE>)>
-    <COND (<SET O <ALLOC-RASCAL-ITEM>>
-           <PUTP .O ,P?R-ITKIND ,ITEMKIND-POTION>
-           <PUTP .O ,P?R-ITID .COLOR>
-           <FCLEAR .O ,SEENBIT>
-           <PUTP .O ,P?R-X .X>
-           <PUTP .O ,P?R-Y .Y>
-           <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
-           <SETG STATS-POTIONS-PLACED <+ ,STATS-POTIONS-PLACED 1>>
-              <MARK-DIRTY .X .Y>
-           <RTRUE>)>
-    <RFALSE>>
+    <COND (<L=? <SET O <ADD-BASIC-ITEM-PILE .X .Y ,ITEMKIND-POTION .COLOR>> 0>
+           <RFALSE>)>
+    <FCLEAR .O ,SEENBIT>
+    <SETG STATS-POTIONS-PLACED <+ ,STATS-POTIONS-PLACED 1>>
+    <RTRUE>>
 
 ;"Drops a potion near (X, Y) on a random adjacent passable tile.
 
@@ -376,9 +388,7 @@ Returns:
   T if dropped; FALSE if no spot or no slot."
 
 <ROUTINE DROP-POTION-NEAR (X Y COLOR)
-    <COND (<NOT <FIND-ADJACENT-DROP-TILE .X .Y ,DROPMODE-WEAPON>> <RFALSE>)>
-    <COND (<ADD-POTION-PILE ,DROP-CAND-X ,DROP-CAND-Y .COLOR> <RTRUE>)>
-    <RFALSE>>
+    <DROP-PILE-NEAR .X .Y ,DROPMODE-WEAPON ,ITEMKIND-POTION .COLOR 0 0>>
 
 "Key operations"
 
@@ -399,7 +409,23 @@ Returns:
     <COND (<ADD-KEY-PILE ,DROP-CAND-X ,DROP-CAND-Y .LOCKTYPE> <RTRUE>)>
     <RFALSE>>
 
-<ROUTINE SPAWN-POTION (F "AUX" WANT TRIES X Y TYPE COLOR)
+<ROUTINE FIND-RANDOM-GROUND-ITEM-SPAWN-POINT (LIMIT "AUX" TRIES X Y)
+    <SET TRIES 0>
+    <REPEAT ()
+        <SET TRIES <+ .TRIES 1>>
+        <COND (<G? .TRIES .LIMIT>
+               <SETG ENTRY-X 0>
+               <SETG ENTRY-Y 0>
+               <COND (<FIND-GROUND-ITEM-SPOT-ANYWHERE> <RTRUE>)
+                     (ELSE <RFALSE>)>)>
+        <SET X <+ 1 <RNG ,MAP-W>>>
+        <SET Y <+ 1 <RNG ,MAP-H>>>
+        <COND (<NOT <VALID-GROUND-ITEM-TILE? .X .Y>> <AGAIN>)>
+        <SETG ENTRY-X .X>
+        <SETG ENTRY-Y .Y>
+        <RTRUE>>>
+
+<ROUTINE SPAWN-POTION (F "AUX" WANT X Y TYPE COLOR)
     <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-POTION>
     ;"On floor 25, guarantee at least one of each potion color."
     <COND (<==? .F ,MAX-FLOORS> <SET WANT ,POTION-COLOR-COUNT>)
@@ -410,31 +436,19 @@ Returns:
            <SET WANT 1>
            <COND (<==? <RNG 3> 1> <SET WANT 2>)>)>
     <DO (I 1 .WANT)
-        <SET TRIES 0>
-        <REPEAT ()
-            <SET TRIES <+ .TRIES 1>>
-            ;"After enough random tries, fall back to a full-map scan."
-            <COND (<G? .TRIES 400>
-                   <SETG ENTRY-X 0>
-                   <SETG ENTRY-Y 0>
-                   <COND (<FIND-GROUND-ITEM-SPOT-ANYWHERE>
-                          <SET X ,ENTRY-X>
-                          <SET Y ,ENTRY-Y>)
-                         (ELSE <RETURN>)>)
-                  (ELSE
-                   <SET X <+ 1 <RNG ,MAP-W>>>
-                   <SET Y <+ 1 <RNG ,MAP-H>>>)>
+        <COND (<NOT <FIND-RANDOM-GROUND-ITEM-SPAWN-POINT 400>>
+               <RETURN>)>
+        <SET X ,ENTRY-X>
+        <SET Y ,ENTRY-Y>
 
-            <COND (<NOT <VALID-GROUND-ITEM-TILE? .X .Y>> <AGAIN>)>
-
-            <COND (<==? .F ,MAX-FLOORS> <SET COLOR .I>)
-                  (ELSE
-                   <SET TYPE <RNG ,POTION-TYPE-COUNT>>
-                   <SET COLOR <GETB ,POTION-COLOR-FOR-TYPE <- .TYPE 1>>>
-                   <COND (<L? .COLOR 1>
-                          <SET COLOR <RNG ,POTION-COLOR-COUNT>>)>)>
-            <COND (<ADD-POTION-PILE .X .Y .COLOR> <RETURN>)>
-            <RETURN>>>
+      <COND (<==? .F ,MAX-FLOORS> <SET COLOR .I>)
+          (ELSE
+           <SET TYPE <RNG ,POTION-TYPE-COUNT>>
+           <SET COLOR <GETB ,POTION-COLOR-FOR-TYPE <- .TYPE 1>>>
+           <COND (<L? .COLOR 1>
+              <SET COLOR <RNG ,POTION-COLOR-COUNT>>)>)>
+      <COND (<ADD-POTION-PILE .X .Y .COLOR> <RETURN>)>
+      <RETURN>>
     <RTRUE>>
 
 "Food operations"
@@ -448,16 +462,8 @@ Args:
 Returns:
   T if added; FALSE if no item object is available."
 
-<ROUTINE ADD-FOOD-PILE (X Y TYPE "AUX" O)
-    <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <RFALSE>)>
-    <COND (<SET O <ALLOC-RASCAL-ITEM>>
-           <PUTP .O ,P?R-ITKIND ,ITEMKIND-FOOD>
-           <PUTP .O ,P?R-ITID .TYPE>
-           <PUTP .O ,P?R-X .X>
-           <PUTP .O ,P?R-Y .Y>
-           <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
-              <MARK-DIRTY .X .Y>
-           <RTRUE>)>
+<ROUTINE ADD-FOOD-PILE (X Y TYPE)
+    <COND (<G? <ADD-BASIC-ITEM-PILE .X .Y ,ITEMKIND-FOOD .TYPE> 0> <RTRUE>)>
     <RFALSE>>
 
 ;"Drops food near (X, Y) on a random adjacent passable tile.
@@ -470,9 +476,7 @@ Returns:
   T if dropped; FALSE if no spot or no slot."
 
 <ROUTINE DROP-FOOD-NEAR (X Y TYPE)
-    <COND (<NOT <FIND-ADJACENT-DROP-TILE .X .Y ,DROPMODE-WEAPON>> <RFALSE>)>
-    <COND (<ADD-FOOD-PILE ,DROP-CAND-X ,DROP-CAND-Y .TYPE> <RTRUE>)>
-    <RFALSE>>
+    <DROP-PILE-NEAR .X .Y ,DROPMODE-WEAPON ,ITEMKIND-FOOD .TYPE 0 0>>
 
 <ROUTINE PICK-FOOD-TYPE (F "AUX" R)
     <SET R <RNG 100>>
@@ -503,7 +507,7 @@ Returns:
                  (<L=? .R 75> ,FOOD-MUFFIN)
                  (ELSE ,FOOD-TURKEY)>)>>
 
-<ROUTINE SPAWN-FOOD (F "AUX" WANT TRIES X Y)
+<ROUTINE SPAWN-FOOD (F "AUX" WANT X Y)
     <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-FOOD>
     <SET X <RNG 100>>
     <COND (<==? .F ,MAX-FLOORS> <SET WANT 3>)
@@ -511,28 +515,17 @@ Returns:
           (<L=? .X 90> <SET WANT 2>)
           (ELSE <SET WANT 3>)>
     <DO (I 1 .WANT)
-        <SET TRIES 0>
-        <REPEAT ()
-            <SET TRIES <+ .TRIES 1>>
-            <COND (<G? .TRIES 320>
-                   <SETG ENTRY-X 0>
-                   <SETG ENTRY-Y 0>
-                   <COND (<FIND-GROUND-ITEM-SPOT-ANYWHERE>
-                          <SET X ,ENTRY-X>
-                          <SET Y ,ENTRY-Y>)
-                         (ELSE <RETURN>)>)
-                  (ELSE
-                   <SET X <+ 1 <RNG ,MAP-W>>>
-                   <SET Y <+ 1 <RNG ,MAP-H>>>)>
-
-            <COND (<NOT <VALID-GROUND-ITEM-TILE? .X .Y>> <AGAIN>)>
-            <COND (<==? .F ,MAX-FLOORS>
-                   <COND (<ADD-FOOD-PILE .X .Y ,FOOD-CAVIAR> <RETURN>)
-                         (ELSE <RETURN>)>)
-                  (ELSE
-                   <COND (<ADD-FOOD-PILE .X .Y <PICK-FOOD-TYPE .F>> <RETURN>)
-                         (ELSE <RETURN>)>)>
-            <RETURN>>>
+       <COND (<NOT <FIND-RANDOM-GROUND-ITEM-SPAWN-POINT 320>>
+         <RETURN>)>
+       <SET X ,ENTRY-X>
+       <SET Y ,ENTRY-Y>
+       <COND (<==? .F ,MAX-FLOORS>
+         <COND (<ADD-FOOD-PILE .X .Y ,FOOD-CAVIAR> <RETURN>)
+          (ELSE <RETURN>)>)
+        (ELSE
+         <COND (<ADD-FOOD-PILE .X .Y <PICK-FOOD-TYPE .F>> <RETURN>)
+          (ELSE <RETURN>)>)>
+       <RETURN>>
     <RTRUE>>
 
 "Drop tile and spot finding helpers"

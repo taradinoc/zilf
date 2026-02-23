@@ -389,16 +389,15 @@ Returns:
     <SETG LAST-HIT-CRIT? <>>
     <SET S ,PLAYER-STR>
     <COND (<L=? .S 1> <SET S 1>)>
-    <COND (<AND ,EQUIPPED-WEAPON
-                <==? <GETP ,EQUIPPED-WEAPON ,P?R-ITKIND> ,ITEMKIND-WEAPON>
-                <G=? <+ .S <GETP ,EQUIPPED-WEAPON ,P?R-ITENCH>>
-                     <GETP ,EQUIPPED-WEAPON ,P?R-ITLVL>>>
+    <COND (<AND <G? <EQUIPPED-WEAPON-OBJ> 0>
+                <G=? <+ .S <GETP <EQUIPPED-WEAPON-OBJ> ,P?R-ITENCH>>
+                     <GETP <EQUIPPED-WEAPON-OBJ> ,P?R-ITLVL>>>
            ;"Weapon roll: a predictable-vs-swingy distribution per weapon type,
              with a chance to crit for 2x damage (dagger/waraxe highest).
              If STR exceeds the weapon's level requirement, the excess boosts damage."
-           <SET TYPE <GETP ,EQUIPPED-WEAPON ,P?R-ITID>>
-           <SET LVL <GETP ,EQUIPPED-WEAPON ,P?R-ITLVL>>
-           <SET EXCESS <- <+ .S <GETP ,EQUIPPED-WEAPON ,P?R-ITENCH>> .LVL>>
+           <SET TYPE <GETP <EQUIPPED-WEAPON-OBJ> ,P?R-ITID>>
+           <SET LVL <GETP <EQUIPPED-WEAPON-OBJ> ,P?R-ITLVL>>
+           <SET EXCESS <- <+ .S <GETP <EQUIPPED-WEAPON-OBJ> ,P?R-ITENCH>> .LVL>>
            <COND (<L? .EXCESS 0> <SET EXCESS 0>)>
            <SET POWER <+ <WEAPON-BASE-DMG .TYPE> .LVL </ .EXCESS 2>>>
            <SET DIV <WEAPON-VARIANCE-DIV .TYPE>>
@@ -417,10 +416,27 @@ Returns:
            ;"Fists: 1..STR (slightly weaker than the old STR+1)."
            <RNG .S>)>>
 
-<ROUTINE PLAYER-CRIT-MSG ("AUX" TYPE)
+<ROUTINE EQUIPPED-WEAPON-OBJ ()
     <COND (<AND ,EQUIPPED-WEAPON
                 <==? <GETP ,EQUIPPED-WEAPON ,P?R-ITKIND> ,ITEMKIND-WEAPON>>
-           <SET TYPE <GETP ,EQUIPPED-WEAPON ,P?R-ITID>>
+           ,EQUIPPED-WEAPON)
+          (ELSE 0)>>
+
+<ROUTINE DROP-ENEMY-KILL-LOOT-NEAR (X Y F CHOICE)
+    <SET CHOICE <RNG 4>>
+    <COND (<==? .CHOICE 1>
+           <COND (<DROP-POTION-NEAR .X .Y <ROLL-LOOT-POTION-COLOR>>)
+                 (ELSE <DROP-RANDOM-WEAPON-NEAR .X .Y .F>)>)
+          (<==? .CHOICE 2>
+           <COND (<DROP-FOOD-NEAR .X .Y <PICK-FOOD-TYPE .F>>)
+                 (ELSE <DROP-RANDOM-WEAPON-NEAR .X .Y .F>)>)
+          (ELSE
+           <DROP-RANDOM-WEAPON-NEAR .X .Y .F>)>
+    <RTRUE>>
+
+<ROUTINE PLAYER-CRIT-MSG ("AUX" TYPE O)
+    <COND (<G? <SET O <EQUIPPED-WEAPON-OBJ>> 0>
+           <SET TYPE <GETP .O ,P?R-ITID>>
            <COND (<==? .TYPE ,WEAPON-DAGGER> "(A ROGUEISH BLOW!!)")
                  (<==? .TYPE ,WEAPON-KATANA> "(A SAMURAI-LIKE BLOW!!)")
                  (<==? .TYPE ,WEAPON-WARAXE> "(A BYZANTINE BLOW!!)")
@@ -533,34 +549,8 @@ Returns:
            <COND (<AND <==? .ETYPE ,ETYPE-DRAGON> <==? <RNG 4> 1>>
                   <DROP-KEY-NEAR .EX .EY <RNG ,LOCK-TYPE-COUNT>>)>
            ;"Occasional item drop as loot. If an item drops: 50% weapon, 25% potion, 25% food."
-           <COND (<L=? <RNG 100> ,ITEM-ON-KILL-DROP-PCT>
-                  <SET LOOT <RNG 4>>
-                  <COND (<==? .LOOT 1>
-                         <COND (<DROP-POTION-NEAR .EX
-                                                  .EY
-                                                  <ROLL-LOOT-POTION-COLOR>>)
-                               (ELSE
-                                <DROP-WEAPON-NEAR .EX
-                                                  .EY
-                                                  <RNG ,WEAPON-COUNT>
-                                                  <ROLL-LOOT-WEAPON-LEVEL ,CURRENT-FLOOR>
-                                                  <ROLL-LOOT-WEAPON-ENCH>>)>)
-                        (<==? .LOOT 2>
-                         <COND (<DROP-FOOD-NEAR .EX
-                                                .EY
-                                                <PICK-FOOD-TYPE ,CURRENT-FLOOR>>)
-                               (ELSE
-                                <DROP-WEAPON-NEAR .EX
-                                                  .EY
-                                                  <RNG ,WEAPON-COUNT>
-                                                  <ROLL-LOOT-WEAPON-LEVEL ,CURRENT-FLOOR>
-                                                  <ROLL-LOOT-WEAPON-ENCH>>)>)
-                        (ELSE
-                         <DROP-WEAPON-NEAR .EX
-                                           .EY
-                                           <RNG ,WEAPON-COUNT>
-                                           <ROLL-LOOT-WEAPON-LEVEL ,CURRENT-FLOOR>
-                                           <ROLL-LOOT-WEAPON-ENCH>>)>)>
+              <COND (<L=? <RNG 100> ,ITEM-ON-KILL-DROP-PCT>
+                <DROP-ENEMY-KILL-LOOT-NEAR .EX .EY ,CURRENT-FLOOR .LOOT>)>
            <DESPAWN-ENEMY-OBJ .O>
            <COND (,LAST-HIT-CRIT?
                   <LOG "You hit the " <ENEMY-NAME .ETYPE> " for " N .DMG " damage and kill it. "
@@ -807,12 +797,7 @@ Returns:
           (<==? .TYPE ,ETYPE-SPIRIT> <+ ,ENEMY-BASE-HP-SPIRIT <ENEMY-FLOOR-BONUS .TYPE .F>>)
           (ELSE <+ 3 <ENEMY-FLOOR-BONUS .TYPE .F>>)>>
 
-;"Attempts to spawn a single enemy object on floor F.
-
-Returns:
-  T if spawned; FALSE otherwise."
-
-<ROUTINE SPAWN-ENEMY-OBJ (F "AUX" TRIES R PR X Y HP O TYPE)
+<ROUTINE FIND-RANDOM-ENEMY-SPAWN-POINT ("AUX" TRIES R PR X Y)
     <SET PR <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
     <SET TRIES 0>
     <REPEAT ()
@@ -836,16 +821,29 @@ Returns:
         <COND (<OR <==? <TILE-AT .X .Y> ,TILE-STAIR-UP>
                    <==? <TILE-AT .X .Y> ,TILE-STAIR-DOWN>>
                <AGAIN>)>
-        <SET TYPE <PICK-ENEMY-TYPE .F>>
-        <SET HP <ENEMY-START-HP .TYPE .F>>
-        <COND (<NOT <SET O <ALLOC-RASCAL-ENEMY>>> <RFALSE>)>
-        <PUTP .O ,P?R-ETYPE .TYPE>
-        <PUTP .O ,P?R-EHP .HP>
-        <PUTP .O ,P?R-X .X>
-        <PUTP .O ,P?R-Y .Y>
-        <MOVE .O ,CURRENT-FLOOR-OBJ>
-        <COND (<==? .TYPE ,ETYPE-MONKEY> <FSET .O ,PERSONBIT>)>
+        <SETG ENTRY-X .X>
+        <SETG ENTRY-Y .Y>
         <RTRUE>>>
+
+;"Attempts to spawn a single enemy object on floor F.
+
+Returns:
+  T if spawned; FALSE otherwise."
+
+<ROUTINE SPAWN-ENEMY-OBJ (F "AUX" X Y HP O TYPE)
+    <COND (<NOT <FIND-RANDOM-ENEMY-SPAWN-POINT>> <RFALSE>)>
+    <SET X ,ENTRY-X>
+    <SET Y ,ENTRY-Y>
+    <SET TYPE <PICK-ENEMY-TYPE .F>>
+    <SET HP <ENEMY-START-HP .TYPE .F>>
+    <COND (<NOT <SET O <ALLOC-RASCAL-ENEMY>>> <RFALSE>)>
+    <PUTP .O ,P?R-ETYPE .TYPE>
+    <PUTP .O ,P?R-EHP .HP>
+    <PUTP .O ,P?R-X .X>
+    <PUTP .O ,P?R-Y .Y>
+    <MOVE .O ,CURRENT-FLOOR-OBJ>
+    <COND (<==? .TYPE ,ETYPE-MONKEY> <FSET .O ,PERSONBIT>)>
+    <RTRUE>>
 
 ;"Spawns the runtime enemy list for a floor, scaling frequency by depth.
 
