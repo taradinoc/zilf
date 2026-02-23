@@ -152,10 +152,14 @@ Returns:
   T."
 
 <ROUTINE ADD-GOLD-PILE (X Y AMT "AUX" SLOT CUR)
+    <COND (<L=? .AMT 0> <RTRUE>)>
+    <COND (<G? .AMT 255> <SET AMT 255>)>
     <SET SLOT <GOLD-OBJ-AT .X .Y>>
     <COND (<G? .SLOT 0>
            <SET CUR <GETP .SLOT ,P?R-ITAMT>>
-           <PUTP .SLOT ,P?R-ITAMT <+ .CUR .AMT>>
+           <SET CUR <+ .CUR .AMT>>
+           <COND (<G? .CUR 255> <SET CUR 255>)>
+           <PUTP .SLOT ,P?R-ITAMT .CUR>
            <RTRUE>)>
     <SET SLOT <ALLOC-RASCAL-ITEM>>
     <COND (<NOT .SLOT>

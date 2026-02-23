@@ -861,7 +861,7 @@ Distribution:
            <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> ,TREASURE-LOOT-POTION>
            <PUTB ,TREASURE-ROOM-LOOT-ID <- .F 1> .COLOR>)
           (ELSE
-           <SET AMT <+ 200 <RNG 301>>>
+           <SET AMT <+ 200 <RNG 55>>>
            <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> ,TREASURE-LOOT-GOLD>
            <PUT ,TREASURE-ROOM-LOOT-AMT <- .F 1> .AMT>)>
     <RTRUE>>
