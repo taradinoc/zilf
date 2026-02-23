@@ -375,6 +375,7 @@ Reveals, picks up any items on the tile, and updates room discovery."
     <TRY-PICKUP-TREASURE>
     <TRY-PICKUP-FOOD>
     <TRY-PICKUP-GOLD>
+    <TRY-ACTIVATE-SHRINE>
     <COND (<AND <G? <ROOMID-AT ,PLAYER-X ,PLAYER-Y> 0>
                 <N==? <ROOMID-AT ,PLAYER-X ,PLAYER-Y> ,CURRENT-ROOM>>
            <SETG CURRENT-ROOM <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>

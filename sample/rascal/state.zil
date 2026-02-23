@@ -60,6 +60,18 @@ discovered and will display by effect name instead of color name."
 <GLOBAL TREASURE-ROOM-LOOT-ENCH <ITABLE ,MAX-FLOORS (BYTE) 0>>
 <GLOBAL TREASURE-ROOM-LOOT-AMT <ITABLE ,MAX-FLOORS (WORD) 0>>
 
+<GLOBAL SHRINE-OFFER1-KIND 0>
+<GLOBAL SHRINE-OFFER1-ID 0>
+<GLOBAL SHRINE-OFFER1-LVL 0>
+<GLOBAL SHRINE-OFFER1-ENCH 0>
+<GLOBAL SHRINE-OFFER1-AMT 0>
+
+<GLOBAL SHRINE-OFFER2-KIND 0>
+<GLOBAL SHRINE-OFFER2-ID 0>
+<GLOBAL SHRINE-OFFER2-LVL 0>
+<GLOBAL SHRINE-OFFER2-ENCH 0>
+<GLOBAL SHRINE-OFFER2-AMT 0>
+
 <GLOBAL SEED-HI 0>
 <GLOBAL SEED-LO 0>
 
@@ -404,8 +416,15 @@ Returns the item object, or 0 if none."
 <ROUTINE LOCKEDDOOR-OBJ-AT (X Y)
     <ITEM-OBJ-AT .X .Y ,ITEMKIND-LOCKEDDOOR>>
 
+<ROUTINE SHRINE-OBJ-AT (X Y)
+    <ITEM-OBJ-AT .X .Y ,ITEMKIND-SHRINE>>
+
 <ROUTINE LOCKED-DOOR-CLOSED-AT? (X Y "AUX" O)
     <SET O <LOCKEDDOOR-OBJ-AT .X .Y>>
+    <AND <G? .O 0> <NOT <FSET? .O ,OPENBIT>>>>
+
+<ROUTINE SHRINE-ACTIVE-AT? (X Y "AUX" O)
+    <SET O <SHRINE-OBJ-AT .X .Y>>
     <AND <G? .O 0> <NOT <FSET? .O ,OPENBIT>>>>
 
 <ROUTINE ADD-PENDING-KEY (F LOCKTYPE "AUX" O)
@@ -423,6 +442,20 @@ Returns the item object, or 0 if none."
     <COND (<NOT .O> <RETURN 0>)>
     <PUTP .O ,P?R-ITKIND ,ITEMKIND-LOCKEDDOOR>
     <PUTP .O ,P?R-ITID .LOCKTYPE>
+    <PUTP .O ,P?R-X .X>
+    <PUTP .O ,P?R-Y .Y>
+    <MOVE .O <FLOOR-OBJ .F>>
+    <FCLEAR .O ,OPENBIT>
+    .O>
+
+<ROUTINE ADD-SHRINE (F X Y "AUX" O)
+    <SET O <ALLOC-RASCAL-ITEM>>
+    <COND (<NOT .O> <RETURN 0>)>
+    <PUTP .O ,P?R-ITKIND ,ITEMKIND-SHRINE>
+    <PUTP .O ,P?R-ITID 0>
+    <PUTP .O ,P?R-ITLVL 0>
+    <PUTP .O ,P?R-ITENCH 0>
+    <PUTP .O ,P?R-ITAMT 0>
     <PUTP .O ,P?R-X .X>
     <PUTP .O ,P?R-Y .Y>
     <MOVE .O <FLOOR-OBJ .F>>
@@ -708,6 +741,65 @@ Returns the item object, or 0 if none."
 
         <AND .HAS-IN .HAS-OUT>>
 
+<ROUTINE SHRINE-NOOK-CANDIDATE? (X Y "AUX" NX NY WALLS DOORS T)
+    <COND (<NOT <IN-BOUNDS? .X .Y>> <RFALSE>)>
+    <COND (<NOT <OR <==? <TILE-AT .X .Y> ,TILE-FLOOR>
+                    <==? <TILE-AT .X .Y> ,TILE-CORRIDOR>>>
+           <RFALSE>)>
+    <COND (<OR <==? <TILE-AT .X .Y> ,TILE-STAIR-UP>
+               <==? <TILE-AT .X .Y> ,TILE-STAIR-DOWN>
+               <==? <TILE-AT .X .Y> ,TILE-INTERIOR>>
+           <RFALSE>)>
+    <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>> <RFALSE>)>
+    <COND (<TRADER-AT? .X .Y> <RFALSE>)>
+    <COND (<G? <ENEMY-AT .X .Y> 0> <RFALSE>)>
+    <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <RFALSE>)>
+
+    <SET WALLS 0>
+    <SET DOORS 0>
+    <DO (DY -1 1)
+        <DO (DX -1 1)
+             <COND (<NOT <AND <==? .DX 0> <==? .DY 0>>>
+                 <SET NX <+ .X .DX>>
+                 <SET NY <+ .Y .DY>>
+                 <COND (<NOT <IN-BOUNDS? .NX .NY>> <RFALSE>)>
+                 <SET T <TILE-AT .NX .NY>>
+                 <COND (<==? .T ,TILE-WALL>
+                     <SET WALLS <+ .WALLS 1>>)
+                    (<==? .T ,TILE-DOOR>
+                     <SET DOORS <+ .DOORS 1>>)>)>>> 
+
+    <AND <==? .WALLS 7> <==? .DOORS 1>>>
+
+<ROUTINE PRECOMPUTE-SHRINES-FOR-CURRENT-FLOOR (F "AUX" X Y DX DY CX CY)
+    <SET Y 1>
+    <REPEAT ()
+        <COND (<G? .Y ,MAP-H> <RTRUE>)>
+        <SET X 1>
+        <REPEAT ()
+            <COND (<G? .X ,MAP-W>
+                   <SET Y <+ .Y 1>>
+                   <RETURN>)>
+            <COND (<==? <TILE-AT .X .Y> ,TILE-DOOR>
+                   <SET DY -1>
+                   <REPEAT ()
+                       <COND (<G? .DY 1> <RETURN>)>
+                       <SET DX -1>
+                       <REPEAT ()
+                           <COND (<G? .DX 1>
+                                  <SET DY <+ .DY 1>>
+                                  <RETURN>)>
+                           <COND (<NOT <AND <==? .DX 0> <==? .DY 0>>>
+                                  <SET CX <+ .X .DX>>
+                                  <SET CY <+ .Y .DY>>
+                                  <COND (<AND <SHRINE-NOOK-CANDIDATE? .CX .CY>
+                                              <L=? <SHRINE-OBJ-AT .CX .CY> 0>
+                                              <==? <RNG 10> 1>>
+                                         <COND (<ADD-SHRINE .F .CX .CY>
+                                                <FORCE-PASSABLE .CX .CY>)>)>)>
+                           <SET DX <+ .DX 1>>>>)>
+            <SET X <+ .X 1>>>>>
+
 ;"Pick a key floor relative to a locked door floor.
 
 Distribution:
@@ -865,7 +957,8 @@ This simulates a full descent so keys can be placed on earlier floors."
                         <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> 0>
                             <AGAIN>)>
                       <SET CHOICE <PICK-KEY-FLOOR-FOR-LOCK .F>>
-                      <ADD-PENDING-KEY .CHOICE .LOCKTYPE>)>)>>
+                      <ADD-PENDING-KEY .CHOICE .LOCKTYPE>)>)>
+        <PRECOMPUTE-SHRINES-FOR-CURRENT-FLOOR .F>>
     <RTRUE>>
 
 ;"Place precomputed treasure loot for a floor.
@@ -905,6 +998,176 @@ Locked doors and keys are created during startup precompute."
            <SET AMT <GET ,TREASURE-ROOM-LOOT-AMT <- .F 1>>>
            <ADD-GOLD-PILE .LOOTX .LOOTY .AMT>)>
     <RTRUE>>
+
+<ROUTINE SHRINE-SET-OFFER (SLOT KIND ID LVL ENCH AMT)
+    <COND (<==? .SLOT 1>
+           <SETG SHRINE-OFFER1-KIND .KIND>
+           <SETG SHRINE-OFFER1-ID .ID>
+           <SETG SHRINE-OFFER1-LVL .LVL>
+           <SETG SHRINE-OFFER1-ENCH .ENCH>
+           <SETG SHRINE-OFFER1-AMT .AMT>)
+          (ELSE
+           <SETG SHRINE-OFFER2-KIND .KIND>
+           <SETG SHRINE-OFFER2-ID .ID>
+           <SETG SHRINE-OFFER2-LVL .LVL>
+           <SETG SHRINE-OFFER2-ENCH .ENCH>
+           <SETG SHRINE-OFFER2-AMT .AMT>)>
+    <RTRUE>>
+
+<ROUTINE SHRINE-ROLL-OFFER (F SLOT "AUX" PICK TYPE LVL ENCH ID AMT)
+    <SET PICK <RNG 4>>
+    <COND (<==? .PICK 1>
+           <SET TYPE <RNG ,WEAPON-COUNT>>
+           <SET LVL <+ <ROLL-LOOT-WEAPON-LEVEL .F> 1>>
+           <COND (<G? .LVL 15> <SET LVL 15>)>
+           <SET ENCH <ROLL-LOOT-WEAPON-ENCH>>
+           <COND (<L? .ENCH 1> <SET ENCH 1>)>
+           <SHRINE-SET-OFFER .SLOT ,ITEMKIND-WEAPON .TYPE .LVL .ENCH 0>)
+          (<==? .PICK 2>
+           <SET AMT <+ 49 <RNG 101>>>
+           <SHRINE-SET-OFFER .SLOT ,ITEMKIND-GOLD 0 0 0 .AMT>)
+          (<==? .PICK 3>
+           <SET ID <ROLL-LOOT-POTION-COLOR>>
+           <SHRINE-SET-OFFER .SLOT ,ITEMKIND-POTION .ID 0 0 0>)
+          (ELSE
+           <SET ID <COND (<==? <RNG 2> 1> ,FOOD-MUFFIN) (ELSE ,FOOD-TURKEY)>>
+           <SHRINE-SET-OFFER .SLOT ,ITEMKIND-FOOD .ID 0 0 0>)>
+    <RTRUE>>
+
+<ROUTINE SHRINE-OFFERS-MATCH? ()
+    <AND <==? ,SHRINE-OFFER1-KIND ,SHRINE-OFFER2-KIND>
+         <==? ,SHRINE-OFFER1-ID ,SHRINE-OFFER2-ID>
+         <==? ,SHRINE-OFFER1-LVL ,SHRINE-OFFER2-LVL>
+         <==? ,SHRINE-OFFER1-ENCH ,SHRINE-OFFER2-ENCH>
+         <==? ,SHRINE-OFFER1-AMT ,SHRINE-OFFER2-AMT>>>
+
+<ROUTINE SHRINE-OFFER-CONFLICT? ()
+    <OR <AND <==? ,SHRINE-OFFER1-KIND ,ITEMKIND-GOLD>
+             <==? ,SHRINE-OFFER2-KIND ,ITEMKIND-GOLD>>
+        <AND <==? ,SHRINE-OFFER1-KIND ,ITEMKIND-WEAPON>
+             <==? ,SHRINE-OFFER2-KIND ,ITEMKIND-WEAPON>
+             <==? ,SHRINE-OFFER1-ID ,SHRINE-OFFER2-ID>>
+        <AND <==? ,SHRINE-OFFER1-KIND ,ITEMKIND-POTION>
+             <==? ,SHRINE-OFFER2-KIND ,ITEMKIND-POTION>
+             <==? ,SHRINE-OFFER1-ID ,SHRINE-OFFER2-ID>>>>
+
+<ROUTINE GENERATE-SHRINE-OFFERS (F SX SY "AUX" TRIES MIXHI MIXLO SEEDHI SEEDLO)
+    <RNG-SAVE-STATE>
+
+    <SET MIXHI <+ <* .SX 257> <* .SY 911> <* .F 37>>>
+    <SET MIXLO <+ <* .SX 149> <* .SY 313> <* .F 71> 1>>
+    <SET SEEDHI <RNG-XOR16 <FLOOR-SEED-HI .F> .MIXHI>>
+    <SET SEEDLO <RNG-XOR16 <FLOOR-SEED-LO .F> .MIXLO>>
+    <SEED-RNG-32 .SEEDHI .SEEDLO>
+
+    <SHRINE-ROLL-OFFER .F 1>
+    <SET TRIES 0>
+    <REPEAT ()
+        <SHRINE-ROLL-OFFER .F 2>
+           <COND (<AND <NOT <SHRINE-OFFERS-MATCH?>>
+                    <NOT <SHRINE-OFFER-CONFLICT?>>>
+                <RETURN>)>
+        <SET TRIES <+ .TRIES 1>>
+        <COND (<G? .TRIES 16> <RETURN>)>>
+
+    <RNG-RESTORE-STATE>
+    <RTRUE>>
+
+<ROUTINE SHRINE-PRINT-OFFER-TEXT (SLOT "AUX" KIND ID LVL ENCH AMT)
+    <SET KIND <SHRINE-GET-OFFER-KIND .SLOT>>
+    <SET ID <SHRINE-GET-OFFER-ID .SLOT>>
+    <SET LVL <SHRINE-GET-OFFER-LVL .SLOT>>
+    <SET ENCH <SHRINE-GET-OFFER-ENCH .SLOT>>
+    <SET AMT <SHRINE-GET-OFFER-AMT .SLOT>>
+    <COND (<==? .KIND ,ITEMKIND-WEAPON>
+           <TELL "a level " N .LVL>
+           <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
+           <TELL " " <WEAPON-NAME .ID>>)
+          (<==? .KIND ,ITEMKIND-GOLD>
+           <TELL N .AMT " gold pieces">)
+          (<==? .KIND ,ITEMKIND-POTION>
+           <TELL <POTION-ARTICLE .ID> " " <POTION-DISPLAY-NAME .ID>>)
+          (<==? .KIND ,ITEMKIND-FOOD>
+           <TELL "a " <FOOD-NAME .ID>>)
+          (ELSE
+           <TELL "an offering">)>
+    <RTRUE>>
+
+<ROUTINE SHRINE-GET-OFFER-KIND (SLOT)
+    <COND (<==? .SLOT 1> ,SHRINE-OFFER1-KIND)
+          (ELSE ,SHRINE-OFFER2-KIND)>>
+
+<ROUTINE SHRINE-GET-OFFER-ID (SLOT)
+    <COND (<==? .SLOT 1> ,SHRINE-OFFER1-ID)
+          (ELSE ,SHRINE-OFFER2-ID)>>
+
+<ROUTINE SHRINE-GET-OFFER-LVL (SLOT)
+    <COND (<==? .SLOT 1> ,SHRINE-OFFER1-LVL)
+          (ELSE ,SHRINE-OFFER2-LVL)>>
+
+<ROUTINE SHRINE-GET-OFFER-ENCH (SLOT)
+    <COND (<==? .SLOT 1> ,SHRINE-OFFER1-ENCH)
+          (ELSE ,SHRINE-OFFER2-ENCH)>>
+
+<ROUTINE SHRINE-GET-OFFER-AMT (SLOT)
+    <COND (<==? .SLOT 1> ,SHRINE-OFFER1-AMT)
+          (ELSE ,SHRINE-OFFER2-AMT)>>
+
+<ROUTINE TAKE-SHRINE-OFFER (SLOT "AUX" KIND ID LVL ENCH AMT O)
+    <SET KIND <SHRINE-GET-OFFER-KIND .SLOT>>
+    <SET ID <SHRINE-GET-OFFER-ID .SLOT>>
+    <SET LVL <SHRINE-GET-OFFER-LVL .SLOT>>
+    <SET ENCH <SHRINE-GET-OFFER-ENCH .SLOT>>
+    <SET AMT <SHRINE-GET-OFFER-AMT .SLOT>>
+
+    <COND (<==? .KIND ,ITEMKIND-GOLD>
+           <SETG PLAYER-GOLD <+ ,PLAYER-GOLD .AMT>>
+           <LOG "You take " N .AMT " gold pieces from the shrine." CR>
+           <RTRUE>)>
+
+    <SET O 0>
+    <COND (<==? .KIND ,ITEMKIND-WEAPON>
+           <SET O <INV-ADD-WEAPON .ID .LVL .ENCH>>)
+          (<==? .KIND ,ITEMKIND-POTION>
+           <SET O <INV-ADD ,ITEMKIND-POTION .ID>>)
+          (<==? .KIND ,ITEMKIND-FOOD>
+           <SET O <INV-ADD ,ITEMKIND-FOOD .ID>>)> 
+
+    <COND (<NOT .O>
+           <SETG STATS-PACKFULL-PICKUP-BLOCKED
+               <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
+           <LOG "Your pack is too full to take ">
+           <SHRINE-PRINT-OFFER-TEXT .SLOT>
+           <LOG " from the shrine." CR>
+           <RFALSE>)>
+
+    <LOG "You take ">
+    <SHRINE-PRINT-OFFER-TEXT .SLOT>
+    <LOG " from the shrine." CR>
+    <COND (<AND <==? .KIND ,ITEMKIND-WEAPON>
+                <NOT ,EQUIPPED-WEAPON>
+                <G=? <+ ,PLAYER-STR .ENCH> .LVL>>
+           <SETG EQUIPPED-WEAPON .O>
+           <LOG "You wield it." CR>)>
+    <RTRUE>>
+
+<ROUTINE TRY-ACTIVATE-SHRINE ("AUX" O C PICK)
+    <SET O <SHRINE-OBJ-AT ,PLAYER-X ,PLAYER-Y>>
+    <COND (<L=? .O 0> <RFALSE>)>
+    <COND (<FSET? .O ,OPENBIT> <RFALSE>)>
+
+    <GENERATE-SHRINE-OFFERS ,CURRENT-FLOOR <GETP .O ,P?R-X> <GETP .O ,P?R-Y>>
+    <SET C <POPUP-SHRINE-GETCHAR>>
+    <SET PICK 0>
+    <COND (<==? .C !\1> <SET PICK 1>)
+          (<==? .C !\2> <SET PICK 2>)>
+    <COND (<L? .PICK 1> <RFALSE>)>
+
+    <COND (<TAKE-SHRINE-OFFER .PICK>
+           <FSET .O ,OPENBIT>
+           <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <RTRUE>)>
+    <RFALSE>>
 
 ;"Find a poison potion object at (X,Y), or 0 if none or not poison."
 
@@ -1197,6 +1460,7 @@ Returns:
         <PUTB ,PENDING-SPIRIT-SPAWNS <- .F 1> 0>
         <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-KEY>
         <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-LOCKEDDOOR>
+        <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-SHRINE>
         <PUTB ,TREASURE-ROOM-DOOR-X <- .F 1> 0>
         <PUTB ,TREASURE-ROOM-DOOR-Y <- .F 1> 0>
         <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>

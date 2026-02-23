@@ -7,6 +7,8 @@
 <CONSTANT TILE-CORRIDOR !\,>
 <CONSTANT TILE-DOOR !\+>
 <CONSTANT TILE-LOCKEDDOOR !\X>
+<CONSTANT TILE-SHRINE-ACTIVE !\ö>
+<CONSTANT TILE-SHRINE-INACTIVE !\o>
 <CONSTANT TILE-KEY !\->
 <CONSTANT TILE-PLAYER !\@>
 <CONSTANT TILE-GOBLIN !\g>
@@ -364,6 +366,10 @@ Returns:
            <UI-COL ,UI-RGB-ORANGE ,UI-RGB-BROWNBG ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)
           (<==? .CH ,TILE-LOCKEDDOOR>
            <UI-COL ,UI-RGB-ORANGE ,UI-RGB-BROWNBG ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)
+          (<==? .CH ,TILE-SHRINE-ACTIVE>
+           <UI-FG ,UI-RGB-TREASURE ,ZCOL-CYAN ,H-BOLD>)
+          (<==? .CH ,TILE-SHRINE-INACTIVE>
+           <UI-FG ,UI-RGB-CORRIDOR ,ZCOL-DEFAULT>)
           (<==? .CH ,TILE-FLOOR> <UI-FG ,UI-RGB-FLOOR ,ZCOL-DEFAULT>)
           (<==? .CH ,TILE-CORRIDOR> <UI-FG ,UI-RGB-CORRIDOR ,ZCOL-DEFAULT>)
           (<==? .CH ,TILE-UNKNOWN> <UI-FG ,UI-RGB-UNKNOWN ,ZCOL-DEFAULT>)
@@ -758,6 +764,73 @@ Returns:
         <PRINTC-REPEAT !\  .W>>
 
     ;"Restore the UI immediately. (Main loop may redraw again; that's fine.)"
+    <SETG FULL-REDRAW? T>
+    <DRAW>
+
+    .C>
+
+<ROUTINE POPUP-SHRINE-GETCHAR ("AUX" W INNERW H TOP LEFT C ROW CLEARCNT INTERIORCNT)
+    <SET W 54>
+    <COND (<G? .W <- <LOWCORE SCRH> 4>> <SET W <- <LOWCORE SCRH> 4>>)>
+    <COND (<L? .W 40> <SET W 40>)>
+    <SET INNERW <- .W 2>>
+
+    <SET H 6>
+    <SET TOP <+ 1 </ <- ,UPPER-HEIGHT .H> 2>>>
+    <COND (<L? .TOP 1> <SET TOP 1>)>
+    <SET LEFT <+ 1 </ <- <LOWCORE SCRH> .W> 2>>>
+    <COND (<L? .LEFT 1> <SET LEFT 1>)>
+
+    <SCREEN 1>
+    <UI-LOG-COLOR>
+
+    <CURSET .TOP .LEFT>
+    <PRINTC !\+>
+    <PRINTC-REPEAT !\- .INNERW>
+    <PRINTC !\+>
+
+    <SET INTERIORCNT <- .H 2>>
+    <DO (I 1 .INTERIORCNT)
+        <SET ROW <+ .TOP .I>>
+        <CURSET .ROW .LEFT>
+        <PRINTC !\|>
+        <PRINTC-REPEAT !\  .INNERW>
+        <PRINTC !\|>>
+
+    <CURSET <+ .TOP <- .H 1>> .LEFT>
+    <PRINTC !\+>
+    <PRINTC-REPEAT !\- .INNERW>
+    <PRINTC !\+>
+
+    <CURSET <+ .TOP 1> <+ .LEFT 2>>
+    <TELL "The shrine offers:">
+
+    <CURSET <+ .TOP 2> <+ .LEFT 2>>
+    <TELL "1) ">
+    <SHRINE-PRINT-OFFER-TEXT 1>
+
+    <CURSET <+ .TOP 3> <+ .LEFT 2>>
+    <TELL "2) ">
+    <SHRINE-PRINT-OFFER-TEXT 2>
+
+    <CURSET <+ .TOP 4> <+ .LEFT 2>>
+    <TELL "(1/2, Q cancels)">
+
+    <PROG ()
+        <SET C <GETCHAR>>
+        <COND (<==? .C 254> <AGAIN>)>
+        <COND (<OR <==? .C !\1>
+                   <==? .C !\2>
+                   <==? .C !\Q>
+                   <==? .C !\q>>
+               <RETURN>)>
+        <AGAIN>>
+
+    <SET CLEARCNT <- .H 1>>
+    <DO (I 0 .CLEARCNT)
+        <CURSET <+ .TOP .I> .LEFT>
+        <PRINTC-REPEAT !\  .W>>
+
     <SETG FULL-REDRAW? T>
     <DRAW>
 
@@ -1339,6 +1412,8 @@ Returns:
           (<WEAPON-OBJ-AT .X .Y> ,TILE-WEAPON)
           (<SET F <FOOD-OBJ-AT .X .Y>> <FOOD-TILE-FOR-TYPE <GETP .F ,P?R-ITID>>)
           (<GOLD-OBJ-AT .X .Y> ,TILE-GOLD)
+          (<SHRINE-ACTIVE-AT? .X .Y> ,TILE-SHRINE-ACTIVE)
+          (<SHRINE-OBJ-AT .X .Y> ,TILE-SHRINE-INACTIVE)
           (<AND <==? .T ,TILE-DOOR> <LOCKED-DOOR-CLOSED-AT? .X .Y>>
            ,TILE-LOCKEDDOOR)
           (ELSE .T)>>
