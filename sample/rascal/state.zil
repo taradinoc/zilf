@@ -1052,24 +1052,24 @@ Locked doors and keys are created during startup precompute."
     <RNG-RESTORE-STATE>
     <RTRUE>>
 
-<ROUTINE SHRINE-PRINT-OFFER-TEXT (SLOT "AUX" KIND ID LVL ENCH AMT)
+<ROUTINE SHRINE-PRINT-OFFER-TEXT (SLOT LOG? "AUX" KIND ID LVL ENCH AMT)
     <SET KIND <SHRINE-GET-OFFER-KIND .SLOT>>
     <SET ID <SHRINE-GET-OFFER-ID .SLOT>>
     <SET LVL <SHRINE-GET-OFFER-LVL .SLOT>>
     <SET ENCH <SHRINE-GET-OFFER-ENCH .SLOT>>
     <SET AMT <SHRINE-GET-OFFER-AMT .SLOT>>
     <COND (<==? .KIND ,ITEMKIND-WEAPON>
-           <LOG "a level " N .LVL>
-           <COND (<G? .ENCH 0> <LOG "+" N .ENCH>)>
-           <LOG " " <WEAPON-NAME .ID>>)
+           <TELL/LOG .LOG? "a level " N .LVL>
+           <COND (<G? .ENCH 0> <TELL/LOG .LOG? "+" N .ENCH>)>
+           <TELL/LOG .LOG? " " <WEAPON-NAME .ID>>)
           (<==? .KIND ,ITEMKIND-GOLD>
-           <LOG N .AMT " gold pieces">)
+           <TELL/LOG .LOG? N .AMT " gold pieces">)
           (<==? .KIND ,ITEMKIND-POTION>
-           <LOG <POTION-ARTICLE .ID> " " <POTION-DISPLAY-NAME .ID>>)
+           <TELL/LOG .LOG? <POTION-ARTICLE .ID> " " <POTION-DISPLAY-NAME .ID>>)
           (<==? .KIND ,ITEMKIND-FOOD>
-           <LOG "a " <FOOD-NAME .ID>>)
+           <TELL/LOG .LOG? "a " <FOOD-NAME .ID>>)
           (ELSE
-           <LOG "an offering">)>
+           <TELL/LOG .LOG? "an offering">)>
     <RTRUE>>
 
 <ROUTINE SHRINE-GET-OFFER-KIND (SLOT)
@@ -1116,12 +1116,12 @@ Locked doors and keys are created during startup precompute."
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
                <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
            <LOG "Your pack is too full to take ">
-           <SHRINE-PRINT-OFFER-TEXT .SLOT>
+           <SHRINE-PRINT-OFFER-TEXT .SLOT T>
            <LOG " from the shrine." CR>
            <RFALSE>)>
 
     <LOG "You take ">
-    <SHRINE-PRINT-OFFER-TEXT .SLOT>
+    <SHRINE-PRINT-OFFER-TEXT .SLOT T>
     <LOG " from the shrine." CR>
     <COND (<AND <==? .KIND ,ITEMKIND-WEAPON>
                 <NOT ,EQUIPPED-WEAPON>

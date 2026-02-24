@@ -790,11 +790,11 @@ Returns:
 
     <CURSET <+ ,POPUP-TOP 2> <+ ,POPUP-LEFT 2>>
     <TELL "1) ">
-    <SHRINE-PRINT-OFFER-TEXT 1>
+    <SHRINE-PRINT-OFFER-TEXT 1 <>>
 
     <CURSET <+ ,POPUP-TOP 3> <+ ,POPUP-LEFT 2>>
     <TELL "2) ">
-    <SHRINE-PRINT-OFFER-TEXT 2>
+    <SHRINE-PRINT-OFFER-TEXT 2 <>>
 
     <CURSET <+ ,POPUP-TOP 4> <+ ,POPUP-LEFT 2>>
     <TELL "(1/2, Q cancels)">
