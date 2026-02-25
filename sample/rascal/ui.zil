@@ -1063,7 +1063,7 @@ Returns:
     <COND (<INV-CONSUME-KEY .LOCKTYPE>
            <FSET .DOOR ,OPENBIT>
            <SETG STATS-DOORS-OPENED <+ ,STATS-DOORS-OPENED 1>>
-           <LOG "Unlocked." CR>
+           <LOG "You unlock the door with the " <KEY-NAME .LOCKTYPE> "." CR>
            <MARK-DIRTY .X .Y>
            <RTRUE>)>
     <LOG "The locked door requires a " <KEY-NAME .LOCKTYPE> "." CR>
