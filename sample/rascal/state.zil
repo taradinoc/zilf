@@ -199,6 +199,9 @@ Returns:
     <COND (<AND <G? .X 0> <G? .Y 0>>
            <SETG PLAYER-X .X>
            <SETG PLAYER-Y .Y>)
+          (<AND <G? ,ROOM-COUNT 0> <RANDOM-POINT-IN-ROOM 1>>
+           <SETG PLAYER-X ,ENTRY-X>
+           <SETG PLAYER-Y ,ENTRY-Y>)
           (ELSE
            <SETG PLAYER-X <ROOM-GET 1 ,ROOM-CX>>
            <SETG PLAYER-Y <ROOM-GET 1 ,ROOM-CY>>)>
@@ -227,15 +230,15 @@ Returns:
 <ROUTINE ENTER-FLOOR-PICK-DOWN-STAIRS-ROOMCENTER ("AUX" R)
     <SETG ENTRY-X 0>
     <SETG ENTRY-Y 0>
-    ;"First try: pick a different room's center."
+    ;"First try: pick a carved tile in a different room."
     <COND (<G? ,ROOM-COUNT 1>
            <DO (I 1 40)
                <SET R <RNG ,ROOM-COUNT>>
                <COND (<AND <G? ,CURRENT-ROOM 0> <==? .R ,CURRENT-ROOM>>
                       <AGAIN>)>
-               <SETG ENTRY-X <ROOM-GET .R ,ROOM-CX>>
-               <SETG ENTRY-Y <ROOM-GET .R ,ROOM-CY>>
+               <COND (<NOT <RANDOM-POINT-IN-ROOM .R>> <AGAIN>)>
                <COND (<AND <G? ,ENTRY-X 0> <G? ,ENTRY-Y 0>> <RETURN>)>>)
+          (<RANDOM-POINT-IN-ROOM 1> ;"sets ENTRY-X and ENTRY-Y")
           (ELSE
            <SETG ENTRY-X <ROOM-GET 1 ,ROOM-CX>>
            <SETG ENTRY-Y <ROOM-GET 1 ,ROOM-CY>>)>
@@ -1288,14 +1291,15 @@ Returns:
            <PUTP <TRADER-OBJ .F> ,P?R-Y .Y>
            <FORCE-PASSABLE .X .Y>
            <RTRUE>)>
-    ;"Pick a room center for the trader and persist it."
+    ;"Pick a carved tile in a room for the trader and persist it."
     <SET TRIES 0>
     <REPEAT ()
         <SET TRIES <+ .TRIES 1>>
         <COND (<G? .TRIES 120> <RTRUE>)>
         <SET R <RNG ,ROOM-COUNT>>
-        <SET X <ROOM-GET .R ,ROOM-CX>>
-        <SET Y <ROOM-GET .R ,ROOM-CY>>
+        <COND (<NOT <RANDOM-POINT-IN-ROOM .R>> <AGAIN>)>
+        <SET X ,ENTRY-X>
+        <SET Y ,ENTRY-Y>
         <COND (<OR <L=? .X 1>
                    <L=? .Y 1>
                    <==? <TILE-AT .X .Y> ,TILE-STAIR-UP>
@@ -1319,7 +1323,8 @@ Returns:
 ;"Spawns treasures that belong on floor F and re-hardens grounded treasures.
 
 If a treasure's assigned TREASURE-SPAWN-FLOOR equals F and no live treasure
-object with that ID exists anywhere, this chooses a room center and places it.
+object with that ID exists anywhere, this chooses a carved tile in a room and
+places it.
 
 Args:
   F: Floor number (1-based).
@@ -1336,8 +1341,9 @@ Returns:
                    <SET TRIES <+ .TRIES 1>>
                    <COND (<G? .TRIES 160> <RETURN>)>
                    <SET R <RNG ,ROOM-COUNT>>
-                   <SET X <ROOM-GET .R ,ROOM-CX>>
-                   <SET Y <ROOM-GET .R ,ROOM-CY>>
+                   <COND (<NOT <RANDOM-POINT-IN-ROOM .R>> <AGAIN>)>
+                   <SET X ,ENTRY-X>
+                   <SET Y ,ENTRY-Y>
                    <COND (<OR <NOT <FLOOR? .X .Y>>
                               <==? <TILE-AT .X .Y> ,TILE-STAIR-UP>
                               <==? <TILE-AT .X .Y> ,TILE-STAIR-DOWN>

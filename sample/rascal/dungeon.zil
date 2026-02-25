@@ -111,8 +111,10 @@ Returns:
     <COND (<L=? .R 80> ,ROOMSHAPE-RECT)
           (<L=? .R 85> ,ROOMSHAPE-CIRCLE)
           (<L=? .R 90> ,ROOMSHAPE-DIAMOND)
-          (<L=? .R 95> <+ ,ROOMSHAPE-L-NW <- <RNG 4> 1>>)
-          (ELSE <+ ,ROOMSHAPE-U-UP <- <RNG 4> 1>>)>>
+          (ELSE <+ ,ROOMSHAPE-L-NW <- <RNG 4> 1>>)
+          ;"U-shaped rooms look weird"
+          ;(<L=? .R 95> <+ ,ROOMSHAPE-L-NW <- <RNG 4> 1>>)
+          ;(ELSE <+ ,ROOMSHAPE-U-UP <- <RNG 4> 1>>)>>
 
 <ROUTINE TRY-ADD-ROOM ("AUX" W H MAXX MAXY X Y R SHAPE)
     <SET SHAPE <PICK-ROOM-SHAPE>>
