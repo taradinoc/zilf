@@ -88,7 +88,7 @@ Returns:
     <SET T <RNG ,WEAPON-COUNT>>
     <INV-ADD-WEAPON .T 1 0>
     <SETG EQUIPPED-WEAPON <INV-NTH-OBJ 1>>
-    <LOG "You start with a level 1 " <WEAPON-NAME .T> "." CR>
+    <LOG "You start with a level 1 " WEAPON-NAME .T "." CR>
     <RTRUE>>
 
 ;"Chooses the initial floor assignment for each treasure (unique), and clears
@@ -242,7 +242,7 @@ Returns:
 
 <ROUTINE ADD-WEAPON-PILE (X Y TYPE LVL ENCH "AUX" O)
     <COND (<L=? <SET O <ADD-BASIC-ITEM-PILE .X .Y ,ITEMKIND-WEAPON .TYPE>> 0>
-      <RFALSE>)>
+           <RFALSE>)>
     <PUTP .O ,P?R-ITLVL .LVL>
     <PUTP .O ,P?R-ITENCH .ENCH>
     <RTRUE>>

@@ -345,7 +345,7 @@ Returns:
     <COND (<NOT .DISC>
            <PUTB ,POTION-DISCOVERED <- .COLOR 1> 1>
            <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>
-           <LOG "You discover it was a " <POTION-TYPE-NAME .TYPE> "." CR>)>
+           <LOG "You discover it was a " POTION-TYPE-NAME .TYPE "." CR>)>
     <REMOVE-POTION-OBJ .POTION-OBJ>
     <DESPAWN-ENEMY-OBJ .ENEMY-OBJ>
     <RTRUE>>

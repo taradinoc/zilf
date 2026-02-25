@@ -65,22 +65,23 @@
 <CONSTANT TREASURE-TROPHY 9>
 <CONSTANT TREASURE-COUNT 9>
 
-;"Maps a weapon type code to its display name.
+;"Prints a weapon type code as its display name.
 
 Args:
   TYPE: Weapon type code (WEAPON-*).
 
 Returns:
-  Lowercase name string."
+  T."
 
-<ROUTINE WEAPON-NAME (TYPE)
-    <COND (<==? .TYPE ,WEAPON-DAGGER> "dagger")
-          (<==? .TYPE ,WEAPON-KATANA> "katana")
-          (<==? .TYPE ,WEAPON-WARAXE> "waraxe")
-          (<==? .TYPE ,WEAPON-SCYTHE> "scythe")
-          (<==? .TYPE ,WEAPON-CUDGEL> "cudgel")
-          (<==? .TYPE ,WEAPON-HAMMER> "hammer")
-          (ELSE "weapon")>>
+<ROUTINE PRINT-WEAPON-NAME (TYPE)
+    <COND (<==? .TYPE ,WEAPON-DAGGER> <TELL "dagger">)
+          (<==? .TYPE ,WEAPON-KATANA> <TELL "katana">)
+          (<==? .TYPE ,WEAPON-WARAXE> <TELL "waraxe">)
+          (<==? .TYPE ,WEAPON-SCYTHE> <TELL "scythe">)
+          (<==? .TYPE ,WEAPON-CUDGEL> <TELL "cudgel">)
+          (<==? .TYPE ,WEAPON-HAMMER> <TELL "hammer">)
+          (ELSE <TELL "weapon">)>
+    <RTRUE>>
 
 ;"Maps a weapon type code to its base damage.
 
@@ -141,23 +142,24 @@ Returns:
           (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-VARIANCE-DIV-HAMMER)
           (ELSE 3)>>
 
-;"Maps a food type code to its display name.
+;"Prints a food type code as its display name.
 
 Args:
   TYPE: Food type code (FOOD-*).
 
 Returns:
-  Lowercase name string."
+  T."
 
-<ROUTINE FOOD-NAME (TYPE)
-    <COND (<==? .TYPE ,FOOD-BANANA> "banana")
-          (<==? .TYPE ,FOOD-CHEESE> "cheese")
-          (<==? .TYPE ,FOOD-GRAPES> "grapes")
-          (<==? .TYPE ,FOOD-MUFFIN> "muffin")
-          (<==? .TYPE ,FOOD-TURKEY> "turkey")
-          (<==? .TYPE ,FOOD-CARROT> "carrot")
-          (<==? .TYPE ,FOOD-CAVIAR> "caviar")
-          (ELSE "food")>>
+<ROUTINE PRINT-FOOD-NAME (TYPE)
+    <COND (<==? .TYPE ,FOOD-BANANA> <TELL "banana">)
+          (<==? .TYPE ,FOOD-CHEESE> <TELL "cheese">)
+          (<==? .TYPE ,FOOD-GRAPES> <TELL "grapes">)
+          (<==? .TYPE ,FOOD-MUFFIN> <TELL "muffin">)
+          (<==? .TYPE ,FOOD-TURKEY> <TELL "turkey">)
+          (<==? .TYPE ,FOOD-CARROT> <TELL "carrot">)
+          (<==? .TYPE ,FOOD-CAVIAR> <TELL "caviar">)
+          (ELSE <TELL "food">)>
+    <RTRUE>>
 
 ;"Maps a food type code to its map sprite.
 
@@ -207,82 +209,81 @@ Returns:
     <COND (<==? .TYPE ,FOOD-CARROT> 100)
           (ELSE <+ 10 <* 10 <FOOD-HEAL-AMT .TYPE>>>)>>
 
-;"Maps a potion effect/type code to its display name.
+;"Prints a potion effect/type code as its display name.
 
 Args:
   TYPE: Potion type code (POTION-*).
 
 Returns:
-  Lowercase name string (e.g. \"potion of health\")."
+  T."
 
-<ROUTINE POTION-TYPE-NAME (TYPE)
-    <COND (<==? .TYPE ,POTION-MUSCLE> "potion of muscle")
-          (<==? .TYPE ,POTION-HEALTH> "potion of health")
-          (<==? .TYPE ,POTION-HIDING> "potion of hiding")
-          (<==? .TYPE ,POTION-POISON> "potion of poison")
-          (<==? .TYPE ,POTION-VISION> "potion of vision")
-          (<==? .TYPE ,POTION-MOTION> "potion of motion")
-          (<==? .TYPE ,POTION-SHADOW> "potion of shadow")
-          (<==? .TYPE ,POTION-METTLE> "potion of mettle")
-          (ELSE "potion")>>
+<ROUTINE PRINT-POTION-EFFECT-NAME (TYPE)
+    <COND (<==? .TYPE ,POTION-MUSCLE> <TELL "muscle">)
+          (<==? .TYPE ,POTION-HEALTH> <TELL "health">)
+          (<==? .TYPE ,POTION-HIDING> <TELL "hiding">)
+          (<==? .TYPE ,POTION-POISON> <TELL "poison">)
+          (<==? .TYPE ,POTION-VISION> <TELL "vision">)
+          (<==? .TYPE ,POTION-MOTION> <TELL "motion">)
+          (<==? .TYPE ,POTION-SHADOW> <TELL "shadow">)
+          (<==? .TYPE ,POTION-METTLE> <TELL "mettle">)
+          (ELSE <TELL "potion">)>
+    <RTRUE>>
 
-;"Maps a potion effect/type code to its pluralized display name.
+<ROUTINE PRINT-POTION-TYPE-NAME (TYPE)
+    <TELL "potion of ">
+    <PRINT-POTION-EFFECT-NAME .TYPE>
+    <RTRUE>>
+
+;"Prints a potion effect/type code as its pluralized display name.
 
 Args:
   TYPE: Potion type code (POTION-*).
 
 Returns:
-  Lowercase name string (e.g. \"potion of health\")."
+  T."
 
-<ROUTINE POTION-PLURAL-TYPE-NAME (TYPE)
-    <COND (<==? .TYPE ,POTION-MUSCLE> "potions of muscle")
-          (<==? .TYPE ,POTION-HEALTH> "potions of health")
-          (<==? .TYPE ,POTION-HIDING> "potions of hiding")
-          (<==? .TYPE ,POTION-POISON> "potions of poison")
-          (<==? .TYPE ,POTION-VISION> "potions of vision")
-          (<==? .TYPE ,POTION-MOTION> "potions of motion")
-          (<==? .TYPE ,POTION-SHADOW> "potions of shadow")
-          (<==? .TYPE ,POTION-METTLE> "potions of mettle")
-          (ELSE "potion")>>
+<ROUTINE PRINT-POTION-PLURAL-TYPE-NAME (TYPE)
+    <TELL "potions of ">
+    <PRINT-POTION-EFFECT-NAME .TYPE>
+    <RTRUE>>
 
-;"Maps a potion color code to its (concealed) display name.
+;"Prints a potion color code as its (concealed) display name.
 
 Args:
   COLOR: Potion color code (POTCOLOR-*).
 
 Returns:
-  Name string like \"violet potion\"."
+  T."
 
-<ROUTINE POTION-COLOR-NAME (COLOR)
-    <COND (<==? .COLOR ,POTCOLOR-ARGENT> "argent potion")
-          (<==? .COLOR ,POTCOLOR-BLUISH> "bluish potion")
-          (<==? .COLOR ,POTCOLOR-MAROON> "maroon potion")
-          (<==? .COLOR ,POTCOLOR-VIOLET> "violet potion")
-          (<==? .COLOR ,POTCOLOR-ORANGE> "orange potion")
-          (<==? .COLOR ,POTCOLOR-YELLOW> "yellow potion")
-          (<==? .COLOR ,POTCOLOR-INDIGO> "indigo potion")
-          (<==? .COLOR ,POTCOLOR-SALMON> "salmon potion")
-          (ELSE "potion")>>
+<ROUTINE PRINT-POTION-COLOR-ADJ (COLOR)
+    <COND (<==? .COLOR ,POTCOLOR-ARGENT> <TELL "argent">)
+          (<==? .COLOR ,POTCOLOR-BLUISH> <TELL "bluish">)
+          (<==? .COLOR ,POTCOLOR-MAROON> <TELL "maroon">)
+          (<==? .COLOR ,POTCOLOR-VIOLET> <TELL "violet">)
+          (<==? .COLOR ,POTCOLOR-ORANGE> <TELL "orange">)
+          (<==? .COLOR ,POTCOLOR-YELLOW> <TELL "yellow">)
+          (<==? .COLOR ,POTCOLOR-INDIGO> <TELL "indigo">)
+          (<==? .COLOR ,POTCOLOR-SALMON> <TELL "salmon">)
+          (ELSE <TELL "colored">)>
+    <RTRUE>>
 
-;"Maps a potion color code to the name of the color.
+<ROUTINE PRINT-POTION-COLOR-NAME (COLOR)
+    <PRINT-POTION-COLOR-ADJ .COLOR>
+    <TELL " potion">
+    <RTRUE>>
+
+;"Prints a potion color code as the color adjective only.
 
 Args:
   COLOR: Potion color code (POTCOLOR-*).
 
 Returns:
-  Color name string like \"violet\"."
-<ROUTINE POTION-BARE-COLOR-NAME (COLOR)
-    <COND (<==? .COLOR ,POTCOLOR-ARGENT> "argent")
-          (<==? .COLOR ,POTCOLOR-BLUISH> "bluish")
-          (<==? .COLOR ,POTCOLOR-MAROON> "maroon")
-          (<==? .COLOR ,POTCOLOR-VIOLET> "violet")
-          (<==? .COLOR ,POTCOLOR-ORANGE> "orange")
-          (<==? .COLOR ,POTCOLOR-YELLOW> "yellow")
-          (<==? .COLOR ,POTCOLOR-INDIGO> "indigo")
-          (<==? .COLOR ,POTCOLOR-SALMON> "salmon")
-          (ELSE "colored")>>
+  T."
+<ROUTINE PRINT-POTION-BARE-COLOR-NAME (COLOR)
+    <PRINT-POTION-COLOR-ADJ .COLOR>
+    <RTRUE>>
 
-;"Returns the player-facing name for a potion of the given color.
+;"Prints the player-facing name for a potion of the given color.
 
 Before a color is discovered, this returns the concealed color name. After it
 is discovered, it returns the underlying potion type name.
@@ -291,15 +292,24 @@ Args:
   COLOR: Potion color code (POTCOLOR-*).
 
 Returns:
-  Name string for UI/logging."
+  T."
 
-<ROUTINE POTION-DISPLAY-NAME (COLOR "AUX" TYPE)
+<ADD-TELL-TOKENS
+    POTION-TYPE-NAME * <PRINT-POTION-TYPE-NAME .X>
+    POTION-PLURAL-TYPE-NAME * <PRINT-POTION-PLURAL-TYPE-NAME .X>
+    POTION-COLOR-NAME * <PRINT-POTION-COLOR-NAME .X>
+    POTION-BARE-COLOR-NAME * <PRINT-POTION-BARE-COLOR-NAME .X>
+    POTION-DISPLAY-NAME * <PRINT-POTION-DISPLAY-NAME .X>>
+
+<ROUTINE PRINT-POTION-DISPLAY-NAME (COLOR "AUX" TYPE)
     <COND (<OR <L? .COLOR 1> <G? .COLOR ,POTION-COLOR-COUNT>>
-           <RETURN "potion">)>
+           <TELL "potion">
+           <RTRUE>)>
     <COND (<G? <GETB ,POTION-DISCOVERED <- .COLOR 1>> 0>
            <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>
-           <POTION-TYPE-NAME .TYPE>)
-          (ELSE <POTION-COLOR-NAME .COLOR>)>>
+           <PRINT-POTION-TYPE-NAME .TYPE>)
+          (ELSE <PRINT-POTION-COLOR-NAME .COLOR>)>
+    <RTRUE>>
 
 ;"Returns the correct indefinite article (a vs an) for the player-facing
   potion name of the given color.
@@ -322,25 +332,26 @@ Returns:
            "an")
           (ELSE "a")>>
 
-;"Maps a treasure ID to its display name.
+;"Prints a treasure ID as its display name.
 
 Args:
   ID: Treasure ID (TREASURE-*).
 
 Returns:
-  Lowercase name string."
+  T."
 
-<ROUTINE TREASURE-NAME (ID)
-    <COND (<==? .ID ,TREASURE-AMULET> "amulet")
-          (<==? .ID ,TREASURE-SCARAB> "scarab")
-          (<==? .ID ,TREASURE-GOBLET> "goblet")
-          (<==? .ID ,TREASURE-IOLITE> "iolite")
-          (<==? .ID ,TREASURE-GARNET> "garnet")
-          (<==? .ID ,TREASURE-JASPER> "jasper")
-          (<==? .ID ,TREASURE-ZIRCON> "zircon")
-          (<==? .ID ,TREASURE-POSTER> "poster")
-          (<==? .ID ,TREASURE-TROPHY> "Trophy of Scryra")
-          (ELSE "treasure")>>
+<ROUTINE PRINT-TREASURE-NAME (ID)
+    <COND (<==? .ID ,TREASURE-AMULET> <TELL "amulet">)
+          (<==? .ID ,TREASURE-SCARAB> <TELL "scarab">)
+          (<==? .ID ,TREASURE-GOBLET> <TELL "goblet">)
+          (<==? .ID ,TREASURE-IOLITE> <TELL "iolite">)
+          (<==? .ID ,TREASURE-GARNET> <TELL "garnet">)
+          (<==? .ID ,TREASURE-JASPER> <TELL "jasper">)
+          (<==? .ID ,TREASURE-ZIRCON> <TELL "zircon">)
+          (<==? .ID ,TREASURE-POSTER> <TELL "poster">)
+          (<==? .ID ,TREASURE-TROPHY> <TELL "Trophy of Scryra">)
+          (ELSE <TELL "treasure">)>
+    <RTRUE>>
 
 ;"Maps a treasure ID to the trader buy price.
 
@@ -362,20 +373,21 @@ Returns:
           (<==? .ID ,TREASURE-TROPHY> 5000)
           (ELSE 50)>>
 
-;"Maps a key ID to its display name.
+;"Prints a key ID as its display name.
 
 Args:
   LOCKTYPE: Key ID (LOCKTYPE-*).
 
 Returns:
-  Name string like \"golden key\"."
-<ROUTINE KEY-NAME (LOCKTYPE)
-    <COND (<==? .LOCKTYPE ,LOCK-GOLDEN> "golden key")
-          (<==? .LOCKTYPE ,LOCK-SILVER> "silver key")
-          (<==? .LOCKTYPE ,LOCK-BRONZE> "bronze key")
-          (<==? .LOCKTYPE ,LOCK-COPPER> "copper key")
-          (<==? .LOCKTYPE ,LOCK-NICKEL> "nickel key")
-          (ELSE "key")>>
+  T."
+<ROUTINE PRINT-KEY-NAME (LOCKTYPE)
+    <COND (<==? .LOCKTYPE ,LOCK-GOLDEN> <TELL "golden key">)
+          (<==? .LOCKTYPE ,LOCK-SILVER> <TELL "silver key">)
+          (<==? .LOCKTYPE ,LOCK-BRONZE> <TELL "bronze key">)
+          (<==? .LOCKTYPE ,LOCK-COPPER> <TELL "copper key">)
+          (<==? .LOCKTYPE ,LOCK-NICKEL> <TELL "nickel key">)
+          (ELSE <TELL "key">)>
+    <RTRUE>>
 
 ;"Maps a key ID to its metal adjective.
 
@@ -391,6 +403,12 @@ Returns:
           (<==? .LOCKTYPE ,LOCK-COPPER> "copper")
           (<==? .LOCKTYPE ,LOCK-NICKEL> "nickel")
           (ELSE "metal")>>
+
+<ADD-TELL-TOKENS
+    WEAPON-NAME *   <PRINT-WEAPON-NAME .X>
+    FOOD-NAME *     <PRINT-FOOD-NAME .X>
+    TREASURE-NAME * <PRINT-TREASURE-NAME .X>
+    KEY-NAME *      <PRINT-KEY-NAME .X>>
 
 
 ;"Trader buy price for any potion (same regardless of type/color)."

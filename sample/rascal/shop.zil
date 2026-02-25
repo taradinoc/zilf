@@ -83,24 +83,27 @@ Returns:
     <MOVE .O <TRADER-OBJ .F>>
     .O>
 
-;"Formats a trader inventory slot as a display name.
+;"Prints a trader inventory slot as a display name.
 
 Args:
   SLOT: 1-based slot number.
 
 Returns:
-  Item name string, or empty string if slot is invalid."
+    T."
 
-<ROUTINE TRINV-NAME (SLOT "AUX" O K ID)
-    <COND (<NOT <SET O <TRINV-NTH-OBJ .SLOT>>> "")>
+<ROUTINE PRINT-TRINV-NAME (SLOT "AUX" O K ID)
+    <COND (<NOT <SET O <TRINV-NTH-OBJ .SLOT>>> <RTRUE>)>
     <SET K <GETP .O ,P?R-ITKIND>>
     <SET ID <GETP .O ,P?R-ITID>>
-    <COND (<==? .K ,ITEMKIND-FOOD> <FOOD-NAME .ID>)
-          (<==? .K ,ITEMKIND-TREASURE> <TREASURE-NAME .ID>)
-          (<==? .K ,ITEMKIND-WEAPON> <WEAPON-NAME .ID>)
-          (<==? .K ,ITEMKIND-POTION> <POTION-DISPLAY-NAME .ID>)
-          (<==? .K ,ITEMKIND-KEY> <KEY-NAME .ID>)
-          (ELSE "item")>>
+    <COND (<==? .K ,ITEMKIND-FOOD> <TELL FOOD-NAME .ID>)
+          (<==? .K ,ITEMKIND-TREASURE> <TELL TREASURE-NAME .ID>)
+          (<==? .K ,ITEMKIND-WEAPON> <TELL WEAPON-NAME .ID>)
+          (<==? .K ,ITEMKIND-POTION> <TELL POTION-DISPLAY-NAME .ID>)
+          (<==? .K ,ITEMKIND-KEY> <TELL KEY-NAME .ID>)
+          (ELSE <TELL "item">)>
+    <RTRUE>>
+
+<ADD-TELL-TOKENS TRINV-NAME * <PRINT-TRINV-NAME .X>>
 
 "Trader shop UI + interaction"
 
@@ -138,7 +141,7 @@ Returns:
                       <TELL "L" N .LVL>
                       <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
                       <TELL " ">)>
-               <TELL <TRINV-NAME .I> "  " N .PRICE " gold">)>
+               <TELL TRINV-NAME .I "  " N .PRICE " gold">)>
         <CURSET .ROW 42>
         <SET CNT <INV-COUNT>>
         <COND (<L=? .I .CNT>
@@ -153,7 +156,7 @@ Returns:
                       <TELL "L" N .LVL>
                       <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
                       <TELL " ">)>
-               <TELL <INV-NAME .I> "  " N .PRICE " gold">)>>
+               <TELL INV-NAME .I "  " N .PRICE " gold">)>>
     <CURSET <+ 6 ,TRINV-SIZE> 1>
     <TELL "Q exits">
     <RTRUE>>

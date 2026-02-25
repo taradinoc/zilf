@@ -286,12 +286,12 @@ Returns:
     <DO (I 1 ,POTION-TYPE-COUNT)
         <SET CNT <GET ,STATS-POTIONS-DRANK <- .I 1>>>
         <CURSET <+ .ROW <- .I 1>> 1>
-        <TELL N .CNT "x " <POTION-TYPE-NAME .I>>>
+        <TELL N .CNT "x " POTION-TYPE-NAME .I>>
 
     <DO (I 1 ,FOOD-TYPE-COUNT)
         <SET CNT <GET ,STATS-FOODS-EATEN <- .I 1>>>
         <CURSET <+ .ROW <- .I 1>> 34>
-        <TELL N .CNT "x " <FOOD-NAME .I>>>
+        <TELL N .CNT "x " FOOD-NAME .I>>
 
     <CURSET <+ .ROW %<MAX ,POTION-TYPE-COUNT ,FOOD-TYPE-COUNT> 2> 1>
     <TELL "[Press N for next, P for previous, Q to quit.]">
@@ -322,7 +322,7 @@ Returns:
         <SET CNT <GET ,STATS-TREASURES-PICKED <- .I 1>>>
         <SET FOUND <COND (<G? .CNT 0> "found") (ELSE "not found")>>
         <CURSET <+ .ROW <- .I 1>> 34>
-        <TELL <TREASURE-NAME .I> " " .FOUND>>
+        <TELL TREASURE-NAME .I " " .FOUND>>
 
     <CURSET <+ .ROW %<MAX ,ETYPE-COUNT ,TREASURE-COUNT> 2> 1>
     <TELL "[Press P for previous, Q to quit.]">

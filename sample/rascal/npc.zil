@@ -238,9 +238,9 @@ A hand-painted sign reads: \"Weapon enchantments, 100 gold\"")
     <SET ID <GETP .OBJ ,P?R-ITID>>
     <SET LVL <GETP .OBJ ,P?R-ITLVL>>
     <TELL "The blacksmith takes your gold, mutters a few words, and taps the "
-          <WEAPON-NAME .ID> " with a hammer." CR>
+          WEAPON-NAME .ID " with a hammer." CR>
     <TELL "It hums faintly. It's now a level " N .LVL "+" N .NEWENCH " "
-          <WEAPON-NAME .ID> "." CR>
+          WEAPON-NAME .ID "." CR>
     <RTRUE>>
 
 <ROUTINE BLACKSMITH-F (ARG)
@@ -336,7 +336,7 @@ Identification 50 gold.\"")
            <RFALSE>)>
     <COND (<G? <GETB ,POTION-DISCOVERED <- .COLOR 1>> 0>
            <TELL "The farmer scoffs, \"That's obviously a "
-                 <POTION-DISPLAY-NAME .COLOR> ".\"" CR>
+                 POTION-DISPLAY-NAME .COLOR ".\"" CR>
            <RTRUE>)>
     <COND (<L? ,PLAYER-GOLD 50>
            <TELL "The farmer says, \"I ain't doing this for fun. It'll cost you 50 gold.\""
@@ -636,17 +636,17 @@ The Oracle herself seems to be away at the moment, but she left behind her glass
     <SET LOCKTYPE ,ORACLE-VISION-LOCKTYPE>
     <SET FLOOR ,ORACLE-VISION-FLOOR>
     <COND (<==? .KIND ,ITEMKIND-KEY>
-           <TELL "Gazing into the sphere, you see a " <KEY-NAME .LOCKTYPE>>
+           <TELL "Gazing into the sphere, you see a " KEY-NAME .LOCKTYPE>
            <COND (.KNOWN? <TELL " on floor " N .FLOOR>)
                  (ELSE <TELL " on a floor you don't recognize">)>
            <TELL "." CR>)
           (<==? .KIND ,ITEMKIND-LOCKEDDOOR>
-           <TELL "Gazing into the sphere, you see a locked door that requires a " <KEY-NAME .LOCKTYPE>>
+           <TELL "Gazing into the sphere, you see a locked door that requires a "
+                 KEY-NAME .LOCKTYPE>
            <COND (.KNOWN? <TELL " on floor " N .FLOOR>)
                  (ELSE <TELL " on a floor you don't recognize">)>
            <TELL "." CR>)
-          (ELSE
-           <TELL "The sphere shows only swirling fog." CR>)>>
+          (ELSE <TELL "The sphere shows only swirling fog." CR>)>>
 
 <ROUTINE ORACLE-SPHERE-VISION ("AUX" FOUND?)
     <SETG P-CONT 0>

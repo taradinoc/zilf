@@ -458,12 +458,12 @@ has above-average base damage, wild variance, and a low crit chance." CR>)
                   <TELL "When they sang about hammering out danger, this must've
 been what they had in mind. It has powerful base damage, average variance, and a
 minimal crit chance." CR>)
-                 (ELSE <TELL "It's a typical " <WEAPON-NAME .TYPE> "." CR>)>
+                 (ELSE <TELL "It's a typical " WEAPON-NAME .TYPE "." CR>)>
            <COND (<SET E <GETP ,PRSO ,P?R-ITENCH>>
                   <TELL CR "Because of its +" N .E
                            " enchantment, it hits like a level "
                            N <+ <SET L <GETP ,PRSO ,P?R-ITLVL>> .E> " "
-                           <WEAPON-NAME .TYPE> " and only requires "
+                           WEAPON-NAME .TYPE " and only requires "
                            N <MAX 1 <- .L .E>> " strength to wield." CR>)>
            <RTRUE>)>>
 
@@ -490,7 +490,7 @@ lengthwise across it and an inverted V above it." CR>)
            <RTRUE>)
           (<VERB? EXAMINE>
            <TELL "It's a glass flask with a cork stopper, filled with "
-                 <POTION-BARE-COLOR-NAME <GETP ,PRSO ,P?R-ITID>> " liquid." CR>)
+                 POTION-BARE-COLOR-NAME <GETP ,PRSO ,P?R-ITID> " liquid." CR>)
           (<VERB? OPEN>
            <TELL "No sense in opening it unless you're going to drink it." CR>)>>
 
@@ -505,7 +505,7 @@ lengthwise across it and an inverted V above it." CR>)
            <SETG PLAYER-HP .NEWHP>
            <COND (<AND <G? .ID 0> <L=? .ID ,FOOD-TYPE-COUNT>>
                   <STATS-INC-WORD-TABLE ,STATS-FOODS-EATEN <- .ID 1>>)>
-           <TELL "You eat the " <FOOD-NAME .ID> " and recover " N .HEAL " HP."
+           <TELL "You eat the " FOOD-NAME .ID " and recover " N .HEAL " HP."
                  CR>
            ;"Consume: remove the item object from the live inventory."
            <REMOVE ,PRSO>
@@ -525,7 +525,7 @@ lengthwise across it and an inverted V above it." CR>)
 <ROUTINE ITEM-ACTION-KEY ("AUX" ID)
     <COND (<VERB? EXAMINE>
            <SET ID <GETP ,PRSO ,P?R-ITID>>
-           <TELL "The " <KEY-NAME .ID> " probably opens a "
+           <TELL "The " KEY-NAME .ID " probably opens a "
                  <KEY-BARE-METAL-DESC .ID> " lock somewhere." CR>)>>
 
 <ROUTINE SET-ITEM-VOCAB (OBJ "AUX" K ID PT N1 N2 A1 A2 P1 P2)
@@ -620,11 +620,11 @@ lengthwise across it and an inverted V above it." CR>)
     <COND (<==? .K ,ITEMKIND-WEAPON>
            <TELL "level " N .LVL>
            <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
-           <TELL " " <WEAPON-NAME .ID>>)
-          (<==? .K ,ITEMKIND-POTION> <TELL <POTION-DISPLAY-NAME .ID>>)
-          (<==? .K ,ITEMKIND-FOOD> <TELL <FOOD-NAME .ID>>)
-          (<==? .K ,ITEMKIND-TREASURE> <TELL <TREASURE-NAME .ID>>)
-          (<==? .K ,ITEMKIND-KEY> <TELL <KEY-NAME .ID>>)
+           <TELL " " WEAPON-NAME .ID>)
+          (<==? .K ,ITEMKIND-POTION> <TELL POTION-DISPLAY-NAME .ID>)
+          (<==? .K ,ITEMKIND-FOOD> <TELL FOOD-NAME .ID>)
+          (<==? .K ,ITEMKIND-TREASURE> <TELL TREASURE-NAME .ID>)
+          (<==? .K ,ITEMKIND-KEY> <TELL KEY-NAME .ID>)
           (ELSE <TELL "item">)>>
 
 <ROUTINE INTERIOR-EXIT-SYNC ("AUX" O N)
@@ -746,8 +746,8 @@ lengthwise across it and an inverted V above it." CR>)
                              <TELL "potions">)
                             (<G? <GETB ,POTION-DISCOVERED <- .COLOR 1>> 0>
                              <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>
-                             <TELL <POTION-PLURAL-TYPE-NAME .TYPE>>)
-                            (ELSE <TELL <POTION-COLOR-NAME .COLOR> !\s>)>
+                                 <TELL POTION-PLURAL-TYPE-NAME .TYPE>)
+                                (ELSE <TELL POTION-COLOR-NAME .COLOR !\s>)>
                       <RTRUE>)
                      (<==? .K ,ITEMKIND-WEAPON>
                       <TELL "level " N <GETP .OBJ ,P?R-ITLVL>>

@@ -1064,15 +1064,12 @@ Locked doors and keys are created during startup precompute."
     <COND (<==? .KIND ,ITEMKIND-WEAPON>
            <TELL/LOG .LOG? "a level " N .LVL>
            <COND (<G? .ENCH 0> <TELL/LOG .LOG? "+" N .ENCH>)>
-           <TELL/LOG .LOG? " " <WEAPON-NAME .ID>>)
-          (<==? .KIND ,ITEMKIND-GOLD>
-           <TELL/LOG .LOG? N .AMT " gold pieces">)
+           <TELL/LOG .LOG? " " WEAPON-NAME .ID>)
+          (<==? .KIND ,ITEMKIND-GOLD> <TELL/LOG .LOG? N .AMT " gold pieces">)
           (<==? .KIND ,ITEMKIND-POTION>
-           <TELL/LOG .LOG? <POTION-ARTICLE .ID> " " <POTION-DISPLAY-NAME .ID>>)
-          (<==? .KIND ,ITEMKIND-FOOD>
-           <TELL/LOG .LOG? "a " <FOOD-NAME .ID>>)
-          (ELSE
-           <TELL/LOG .LOG? "an offering">)>
+           <TELL/LOG .LOG? <POTION-ARTICLE .ID> " " POTION-DISPLAY-NAME .ID>)
+          (<==? .KIND ,ITEMKIND-FOOD> <TELL/LOG .LOG? "a " FOOD-NAME .ID>)
+          (ELSE <TELL/LOG .LOG? "an offering">)>
     <RTRUE>>
 
 <ROUTINE SHRINE-GET-OFFER-KIND (SLOT)

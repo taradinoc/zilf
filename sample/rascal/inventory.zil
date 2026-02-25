@@ -123,25 +123,29 @@ Returns:
     <FREE-RASCAL-ITEM .O>
     <RTRUE>>
 
-;"Formats an inventory slot as a display name.
+;"Prints an inventory slot as a display name.
 
 Args:
   SLOT: 1-based slot number.
 
 Returns:
-  Item name string, or empty string if slot is invalid."
+  T."
 
-<ROUTINE INV-NAME (SLOT "AUX" O K ID)
+<ADD-TELL-TOKENS
+    INV-NAME * <PRINT-INV-NAME .X>>
+
+<ROUTINE PRINT-INV-NAME (SLOT "AUX" O K ID)
     <SET O <INV-NTH-OBJ .SLOT>>
-    <COND (<L=? .O 0> "")>
+    <COND (<L=? .O 0> <RTRUE>)>
     <SET K <GETP .O ,P?R-ITKIND>>
     <SET ID <GETP .O ,P?R-ITID>>
-    <COND (<==? .K ,ITEMKIND-FOOD> <FOOD-NAME .ID>)
-          (<==? .K ,ITEMKIND-TREASURE> <TREASURE-NAME .ID>)
-          (<==? .K ,ITEMKIND-WEAPON> <WEAPON-NAME .ID>)
-          (<==? .K ,ITEMKIND-POTION> <POTION-DISPLAY-NAME .ID>)
-          (<==? .K ,ITEMKIND-KEY> <KEY-NAME .ID>)
-          (ELSE "item")>>
+        <COND (<==? .K ,ITEMKIND-FOOD> <TELL FOOD-NAME .ID>)
+          (<==? .K ,ITEMKIND-TREASURE> <TELL TREASURE-NAME .ID>)
+          (<==? .K ,ITEMKIND-WEAPON> <TELL WEAPON-NAME .ID>)
+          (<==? .K ,ITEMKIND-POTION> <TELL POTION-DISPLAY-NAME .ID>)
+          (<==? .K ,ITEMKIND-KEY> <TELL KEY-NAME .ID>)
+          (ELSE <TELL "item">)>
+    <RTRUE>>
 
   <ROUTINE INV-FIND-KEY-OBJ (LOCKTYPE "AUX" O)
       <SET O <FIRST? ,PLAYER-INVENTORY>>
@@ -204,9 +208,9 @@ Returns:
         <COND (<AND <G? .O 0> <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-WEAPON>>
                <TELL N .I ") L" N <GETP .O ,P?R-ITLVL>>
                <COND (<G? <GETP .O ,P?R-ITENCH> 0> <TELL "+" N <GETP .O ,P?R-ITENCH>>)>
-               <TELL " " <INV-NAME .I>>
+               <TELL " " INV-NAME .I>
                <COND (<==? .O ,EQUIPPED-WEAPON> <TELL " (equipped)">)>)
-              (ELSE <TELL N .I ") " <INV-NAME .I>>)>>
+              (ELSE <TELL N .I ") " INV-NAME .I>)>>
 
     <PROG ()
         <SET C <GETCHAR>>
@@ -235,7 +239,7 @@ Returns:
     <LOG "You wield the level " N <GETP .W ,P?R-ITLVL>>
     <COND (<G? <GETP .W ,P?R-ITENCH> 0>
            <LOG "+" N <GETP .W ,P?R-ITENCH>>)>
-    <LOG " " <WEAPON-NAME <GETP .W ,P?R-ITID>> "." CR>
+    <LOG " " WEAPON-NAME <GETP .W ,P?R-ITID> "." CR>
     <RTRUE>>
 
 ;"Prompts for an inventory slot and equips that weapon if the player can wield it.
@@ -314,7 +318,7 @@ Returns:
                   <TELL "L" N <GETP .O ,P?R-ITLVL>>
                   <COND (<G? <GETP .O ,P?R-ITENCH> 0>
                          <TELL "+" N <GETP .O ,P?R-ITENCH>>)>
-                  <TELL " " <WEAPON-NAME <GETP .O ,P?R-ITID>>>)
+                  <TELL " " WEAPON-NAME <GETP .O ,P?R-ITID>>)
                  (ELSE <TELL "fists">)>)
           (ELSE <TELL "fists">)>>
 
@@ -352,7 +356,7 @@ Returns:
     <COND (<L=? .ANY 0> <RFALSE>)>
     <SET TYPE <GETP .ANY ,P?R-ITID>>
     <COND (<INV-ADD ,ITEMKIND-FOOD .TYPE>
-           <LOG "You pick up the " <FOOD-NAME .TYPE> "." CR>
+           <LOG "You pick up the " FOOD-NAME .TYPE "." CR>
            <REMOVE .ANY>
            <FREE-RASCAL-ITEM .ANY>
           <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
@@ -361,7 +365,7 @@ Returns:
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
                <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
            <LOG "Your pack is too full to pick up the "
-                <FOOD-NAME .TYPE>
+                FOOD-NAME .TYPE
                 "."
                 CR>
            <RTRUE>)>>
@@ -381,23 +385,23 @@ Returns:
     <COND (<OR <L? .COLOR 1> <G? .COLOR ,POTION-COLOR-COUNT>> <RFALSE>)>
     <COND (<INV-ADD ,ITEMKIND-POTION .COLOR>
            <COND (<G? <GETB ,POTION-DISCOVERED <- .COLOR 1>> 0>
-                  <LOG "You pick up a " <POTION-DISPLAY-NAME .COLOR> "." CR>)
+                  <LOG "You pick up a " POTION-DISPLAY-NAME .COLOR "." CR>)
                  (ELSE
                   <LOG "You pick up "
                        <POTION-ARTICLE .COLOR>
                        " "
-                       <POTION-DISPLAY-NAME .COLOR>
+                       POTION-DISPLAY-NAME .COLOR
                        "."
                        CR>)>
            <REMOVE .O>
            <FREE-RASCAL-ITEM .O>
-          <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
                <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
            <LOG "Your pack is too full to pick up the "
-                <POTION-DISPLAY-NAME .COLOR>
+                POTION-DISPLAY-NAME .COLOR
                 "."
                 CR>
            <RTRUE>)>>
@@ -407,7 +411,7 @@ Returns:
       <COND (<L=? .O 0> <RFALSE>)>
       <SET LOCKTYPE <GETP .O ,P?R-ITID>>
       <COND (<INV-ADD ,ITEMKIND-KEY .LOCKTYPE>
-             <LOG "You pick up the " <KEY-NAME .LOCKTYPE> "." CR>
+             <LOG "You pick up the " KEY-NAME .LOCKTYPE "." CR>
              <SETG STATS-KEYS-FOUND <+ ,STATS-KEYS-FOUND 1>>
              <REMOVE .O>
              <FREE-RASCAL-ITEM .O>
@@ -417,7 +421,7 @@ Returns:
              <SETG STATS-PACKFULL-PICKUP-BLOCKED
                  <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
              <LOG "Your pack is too full to pick up the "
-                  <KEY-NAME .LOCKTYPE>
+                  KEY-NAME .LOCKTYPE
                   "."
                   CR>
              <RTRUE>)>>
@@ -440,7 +444,7 @@ Returns:
     <COND (<INV-TAKE-OBJ .SLOT>
            <LOG "You pick up a level " N .LVL>
            <COND (<G? .ENCH 0> <LOG "+" N .ENCH>)>
-           <LOG " " <WEAPON-NAME .TYPE> "." CR>
+           <LOG " " WEAPON-NAME .TYPE "." CR>
            <COND (<AND <NOT ,EQUIPPED-WEAPON> <G=? <+ ,PLAYER-STR .ENCH> .LVL>>
                   <SETG EQUIPPED-WEAPON .SLOT>
                   <LOG "You wield it." CR>)>
@@ -451,7 +455,7 @@ Returns:
                <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
            <LOG "Your pack is too full to pick up the level " N .LVL>
            <COND (<G? .ENCH 0> <LOG "+" N .ENCH>)>
-           <LOG " " <WEAPON-NAME .TYPE> "." CR>
+           <LOG " " WEAPON-NAME .TYPE "." CR>
            <RTRUE>)>
     <RTRUE>>
 
@@ -470,14 +474,14 @@ Returns:
     <SET ID <GETP .O ,P?R-ITID>>
     <COND (<INV-TAKE-OBJ .O>
            <STATS-INC-WORD-TABLE ,STATS-TREASURES-PICKED <- .ID 1>>
-           <LOG "You pick up the " <TREASURE-NAME .ID> "." CR>
-          <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <LOG "You pick up the " TREASURE-NAME .ID "." CR>
+           <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
                <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
            <LOG "Your pack is too full to pick up the "
-                <TREASURE-NAME .ID>
+                TREASURE-NAME .ID
                 "."
                 CR>
            <RTRUE>)>
@@ -585,13 +589,11 @@ Returns:
            <SET DISC <G? <GETB ,POTION-DISCOVERED <- .COLOR 1>> 0>>
            <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>)>
 
-    <TELL/LOG .LOG?
-              "You drink the "
-              <COND (<AND <G? .COLOR 0> <L=? .COLOR ,POTION-COLOR-COUNT>>
-                     <POTION-DISPLAY-NAME .COLOR>)
-                    (ELSE "potion")>
-              "."
-              CR>
+    <TELL/LOG .LOG? "You drink the ">
+    <COND (<AND <G? .COLOR 0> <L=? .COLOR ,POTION-COLOR-COUNT>>
+           <TELL/LOG .LOG? POTION-DISPLAY-NAME .COLOR>)
+          (ELSE <TELL/LOG .LOG? "potion">)>
+    <TELL/LOG .LOG? "." CR>
 
     <APPLY-POTION-EFFECT .TYPE .FLAGS>
 
@@ -599,7 +601,7 @@ Returns:
            <PUTB ,POTION-DISCOVERED <- .COLOR 1> 1>
            <TELL/LOG .LOG?
                      "You discover it was a "
-                     <POTION-TYPE-NAME .TYPE>
+                     POTION-TYPE-NAME .TYPE
                      "."
                      CR>
            <RTRUE>)
@@ -640,13 +642,13 @@ Returns:
            <PUTP .O ,P?R-Y .NY>
            <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
            <MARK-DIRTY .NX .NY>
-           <LOG "You drop the " <TREASURE-NAME .ID> "." CR>
+           <LOG "You drop the " TREASURE-NAME .ID "." CR>
            <RTRUE>)
           (<==? .K ,ITEMKIND-WEAPON>
            <COND (<ADD-WEAPON-PILE .NX .NY .ID .LVL .ENCH>
                   <LOG "You drop the level " N .LVL>
                   <COND (<G? .ENCH 0> <LOG "+" N .ENCH>)>
-                  <LOG " " <WEAPON-NAME .ID> "." CR>
+                  <LOG " " WEAPON-NAME .ID "." CR>
                   <INV-REMOVE .SLOT>
                   <COND (.WASE
                          <COND (<AUTO-EQUIP-WEAPON>)
@@ -657,7 +659,7 @@ Returns:
                   <RFALSE>)>)
           (<==? .K ,ITEMKIND-POTION>
            <COND (<ADD-POTION-PILE .NX .NY .ID>
-                  <LOG "You drop the " <POTION-DISPLAY-NAME .ID> "." CR>
+                  <LOG "You drop the " POTION-DISPLAY-NAME .ID "." CR>
                   <INV-REMOVE .SLOT>
                   <RTRUE>)
                  (ELSE
@@ -665,7 +667,7 @@ Returns:
                   <RFALSE>)>)
           (<==? .K ,ITEMKIND-FOOD>
            <COND (<ADD-FOOD-PILE .NX .NY .ID>
-                  <LOG "You drop the " <FOOD-NAME .ID> "." CR>
+                  <LOG "You drop the " FOOD-NAME .ID "." CR>
                   <INV-REMOVE .SLOT>
                   <RTRUE>)
                  (ELSE
@@ -673,7 +675,7 @@ Returns:
                   <RFALSE>)>)
           (<==? .K ,ITEMKIND-KEY>
            <COND (<ADD-KEY-PILE .NX .NY .ID>
-                  <LOG "You drop the " <KEY-NAME .ID> "." CR>
+                  <LOG "You drop the " KEY-NAME .ID "." CR>
                   <INV-REMOVE .SLOT>
                   <RTRUE>)
                  (ELSE
@@ -710,7 +712,7 @@ Returns:
            <COND (<AND <G? .ID 0> <L=? .ID ,FOOD-TYPE-COUNT>>
                   <STATS-INC-WORD-TABLE ,STATS-FOODS-EATEN <- .ID 1>>)>
            <LOG "You eat the "
-                <FOOD-NAME .ID>
+                FOOD-NAME .ID
                 " and recover "
                 N
                 .HEAL
