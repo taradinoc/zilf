@@ -274,6 +274,7 @@ Returns:
 
 ;"UI colors (Brogue-ish). Use TCOLOR/COLOR when enabled; otherwise defaults."
 
+<CONSTANT ZCOL-CURRENT 0>
 <CONSTANT ZCOL-DEFAULT 1>
 <CONSTANT ZCOL-BLACK 2>
 <CONSTANT ZCOL-RED 3>
@@ -341,6 +342,8 @@ Returns:
 <DEFMAC UI-LOG-COLOR ()
     `<COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR>
             <TCOLOR ,UI-RGB-TEXT 0>)
+           (<==? ,COLOR-MODE ,COLMODE-COLOR>
+            <COLOR ,ZCOL-WHITE ,ZCOL-BLACK>)
            (ELSE <COLOR 1 1>)>>
 
 <DEFMAC UI-ALERT ()
@@ -352,32 +355,33 @@ Returns:
 
 <DEFMAC UI-RESET ()
     `<COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR>
-            <TCOLOR -1 0>)
+            <TCOLOR ,UI-RGB-TEXT 0>)
            (<==? ,COLOR-MODE ,COLMODE-COLOR>
-            <COLOR ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)
+            <COLOR ,ZCOL-WHITE ,ZCOL-BLACK>)
            (ELSE <COLOR 1 1>)>>
 
 <ROUTINE APPLY-SPRITE-COLOR (CH)
     <HLIGHT ,H-NORMAL>
-    <COND (<==? .CH ,TILE-PLAYER> <UI-FG ,UI-RGB-PLAYER ,ZCOL-DEFAULT>)
+    <CCOLOR ,ZCOL-WHITE ,ZCOL-BLACK>
+    <COND (<==? .CH ,TILE-PLAYER> <UI-FG ,UI-RGB-PLAYER ,ZCOL-WHITE>)
           (<==? .CH ,TILE-WALL>
-           <UI-COL ,UI-RGB-WALLFG ,UI-RGB-WALLBG ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)
+           <UI-COL ,UI-RGB-WALLFG ,UI-RGB-WALLBG ,ZCOL-WHITE ,ZCOL-BLACK>)
           (<==? .CH ,TILE-DOOR>
-           <UI-COL ,UI-RGB-ORANGE ,UI-RGB-BROWNBG ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)
+           <UI-COL ,UI-RGB-ORANGE ,UI-RGB-BROWNBG ,ZCOL-BLACK ,ZCOL-WHITE>)
           (<==? .CH ,TILE-LOCKEDDOOR>
-           <UI-COL ,UI-RGB-ORANGE ,UI-RGB-BROWNBG ,ZCOL-DEFAULT ,ZCOL-DEFAULT>)
+           <UI-COL ,UI-RGB-ORANGE ,UI-RGB-BROWNBG ,ZCOL-BLACK ,ZCOL-WHITE>)
           (<==? .CH ,TILE-SHRINE-ACTIVE>
            <UI-FG ,UI-RGB-TREASURE ,ZCOL-CYAN ,H-BOLD>)
           (<==? .CH ,TILE-SHRINE-INACTIVE>
-           <UI-FG ,UI-RGB-CORRIDOR ,ZCOL-DEFAULT>)
-          (<==? .CH ,TILE-FLOOR> <UI-FG ,UI-RGB-FLOOR ,ZCOL-DEFAULT>)
-          (<==? .CH ,TILE-CORRIDOR> <UI-FG ,UI-RGB-CORRIDOR ,ZCOL-DEFAULT>)
-          (<==? .CH ,TILE-UNKNOWN> <UI-FG ,UI-RGB-UNKNOWN ,ZCOL-DEFAULT>)
+           <UI-FG ,UI-RGB-CORRIDOR ,ZCOL-WHITE>)
+          (<==? .CH ,TILE-FLOOR> <UI-FG ,UI-RGB-FLOOR ,ZCOL-WHITE>)
+          (<==? .CH ,TILE-CORRIDOR> <UI-FG ,UI-RGB-CORRIDOR ,ZCOL-WHITE>)
+          (<==? .CH ,TILE-UNKNOWN> <UI-FG ,UI-RGB-UNKNOWN ,ZCOL-WHITE>)
           (<==? .CH ,TILE-INTERIOR> <UI-FG ,UI-RGB-INTERIOR ,ZCOL-MAGENTA ,H-BOLD>)
           (<==? .CH ,TILE-STAIR-UP ,TILE-STAIR-DOWN>
            <UI-FG ,UI-RGB-STAIRS ,ZCOL-GREEN>)
-          (<==? .CH ,TILE-GOLD> <UI-FG ,UI-RGB-GOLD ,ZCOL-GREEN>)
-          (<==? .CH ,TILE-KEY> <UI-FG ,UI-RGB-GOLD ,ZCOL-GREEN>)
+          (<==? .CH ,TILE-GOLD> <UI-FG ,UI-RGB-GOLD ,ZCOL-YELLOW>)
+          (<==? .CH ,TILE-KEY> <UI-FG ,UI-RGB-GOLD ,ZCOL-YELLOW>)
           (<==? .CH ,TILE-POTION> <UI-FG ,UI-RGB-POTION ,ZCOL-MAGENTA ,H-BOLD>)
           (<==? .CH ,TILE-TREASURE> <UI-FG ,UI-RGB-TREASURE ,ZCOL-CYAN ,H-BOLD>)
           (<==? .CH ,TILE-TRADER> <UI-FG ,UI-RGB-TRADER ,ZCOL-CYAN ,H-BOLD>)
@@ -387,12 +391,12 @@ Returns:
           (<==? .CH ,TILE-GRAPES ,TILE-MUFFIN ,TILE-TURKEY ,TILE-CAVIAR>
            <UI-FG ,UI-RGB-FOOD ,ZCOL-GREEN ,H-BOLD>)
           (<==? .CH ,TILE-GOBLIN> <UI-FG ,UI-RGB-GOBLIN ,ZCOL-GREEN ,H-BOLD>)
-          (<==? .CH ,TILE-SPHINX> <UI-FG ,UI-RGB-SPHINX ,ZCOL-MAGENTA ,H-BOLD>)
+          (<==? .CH ,TILE-SPHINX> <UI-FG ,UI-RGB-SPHINX ,ZCOL-YELLOW ,H-BOLD>)
           (<==? .CH ,TILE-KRAKEN> <UI-FG ,UI-RGB-KRAKEN ,ZCOL-CYAN ,H-BOLD>)
           (<==? .CH ,TILE-DRAGON> <UI-FG ,UI-RGB-DRAGON ,ZCOL-RED ,H-BOLD>)
           (<==? .CH ,TILE-WRAITH> <UI-FG ,UI-RGB-WRAITH ,ZCOL-MAGENTA ,H-BOLD>)
-          (<==? .CH ,TILE-BEES> <UI-FG ,UI-RGB-BEES ,ZCOL-MAGENTA ,H-BOLD>)
-          (<==? .CH ,TILE-MONKEY> <UI-FG ,UI-RGB-MONKEY ,ZCOL-MAGENTA ,H-BOLD>)
+          (<==? .CH ,TILE-BEES> <UI-FG ,UI-RGB-BEES ,ZCOL-YELLOW ,H-BOLD>)
+          (<==? .CH ,TILE-MONKEY> <UI-FG ,UI-RGB-MONKEY ,ZCOL-YELLOW ,H-BOLD>)
           (<==? .CH ,TILE-SPIRIT> <UI-FG ,UI-RGB-SPIRIT ,ZCOL-MAGENTA ,H-BOLD>)
           (ELSE <UI-RESET>)>
     <RTRUE>>
@@ -428,7 +432,7 @@ Returns:
     <TELL "!!: :!!   !!:  !!!       !:!  :!!       !!:  !!!  !!:     ">
     <CURSET 12 .COL>
     <CTCOLOR <RGB 11 9 21> 0>
-    <CCOLOR 8 0>    ;"cyan"
+    <CCOLOR 6 0>    ;"blue"
     <TELL ":!:  !:!  :!:  !:!      !:!   :!:       :!:  !:!   :!:    ">
     <CURSET 13 .COL>
     <CTCOLOR <RGB 9 10 23> 0>
@@ -438,7 +442,7 @@ Returns:
     <TELL " :   : :   :   : :  :: : :     :: :: :   :   : :  : :: : :">
 
     <CTCOLOR <RGB 22 22 22> 0>
-    <CCOLOR 1 0>
+    <CCOLOR 9 2>
     <IF-DEBUG
         <CURSET 16 .COL>
         <TELL "                       DEBUG BUILD                        ">>
@@ -451,7 +455,7 @@ Returns:
            <CURSET 19 .COL>
            <TELL "               Press C to change color mode (currently ">
            <COND (<==? ,COLOR-MODE ,COLMODE-TCOLOR> <TCOLOR ,UI-RGB-ORANGE ,UI-RGB-BROWNBG> <TELL "true color"> <TCOLOR <RGB 31 31 31> 0>)
-                 (<==? ,COLOR-MODE ,COLMODE-COLOR> <COLOR 5 6> <TELL "classic color"> <COLOR 1 1>)
+                 (<==? ,COLOR-MODE ,COLMODE-COLOR> <COLOR 5 6> <TELL "classic color"> <COLOR 9 2>)
                  (ELSE <TELL "no color">)>
            <TELL !\)>)>
     <CURSET 20 .COL>
@@ -1122,22 +1126,22 @@ Returns:
   (none)"
 
 <ROUTINE DRAW-STATUS-STATS ()
-        <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+        <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
         <TELL "  hp=">
         <COND (<L=? ,PLAYER-HP </ ,PLAYER-MAX-HP 4>> <UI-ALERT>)
-                    (ELSE <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>)>
+                    (ELSE <UI-FG ,UI-RGB-TEXT ,ZCOL-WHITE>)>
         <TELL N ,PLAYER-HP "/" N ,PLAYER-MAX-HP>
-        <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+        <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
         <TELL "  str=">
-        <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
+        <UI-FG ,UI-RGB-TEXT ,ZCOL-WHITE>
         <TELL N ,PLAYER-STR>
-        <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+        <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
         <TELL "  def=">
-        <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
+        <UI-FG ,UI-RGB-TEXT ,ZCOL-WHITE>
         <TELL N ,PLAYER-DEF>
-        <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+        <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
         <TELL "  wpn=">
-        <UI-FG ,UI-RGB-WEAPON ,ZCOL-DEFAULT>
+        <UI-FG ,UI-RGB-WEAPON ,ZCOL-CYAN>
         <PRINT-EQUIPPED-WEAPON>>
 
 <ROUTINE DRAW-STATUS-LINE (ROW COL MODE)
@@ -1145,29 +1149,29 @@ Returns:
     <ERASE-STATUS-LINE .ROW>
     <CURSET .ROW .COL>
     <COND (<==? .MODE 1>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+           <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
            <TELL "gold=">
-           <UI-FG ,UI-RGB-GOLD ,ZCOL-DEFAULT>
+           <UI-FG ,UI-RGB-GOLD ,ZCOL-YELLOW>
            <TELL N ,PLAYER-GOLD>
              <DRAW-STATUS-STATS>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+           <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
            <TELL "  floor=">
-           <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
+           <UI-FG ,UI-RGB-TEXT ,ZCOL-WHITE>
            <TELL N ,CURRENT-FLOOR "/" N ,MAX-FLOORS>
            <UI-RESET>)
           (ELSE
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+           <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
            <TELL "gold=">
-           <UI-FG ,UI-RGB-GOLD ,ZCOL-DEFAULT>
+           <UI-FG ,UI-RGB-GOLD ,ZCOL-YELLOW>
            <TELL N ,PLAYER-GOLD>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+           <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
            <TELL "  floor=">
-           <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
+           <UI-FG ,UI-RGB-TEXT ,ZCOL-WHITE>
            <TELL N ,CURRENT-FLOOR "/" N ,MAX-FLOORS>
              <DRAW-STATUS-STATS>
-           <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+           <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
            <TELL "  inv=">
-           <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
+           <UI-FG ,UI-RGB-TEXT ,ZCOL-WHITE>
            <TELL N <INV-COUNT> "/" N ,INV-SIZE>
            <UI-RESET>)>>
 
@@ -1267,11 +1271,11 @@ Returns:
     <CURSET ,CONTROLS-ROW 1>
     ;"two spaces after '.' get collapsed into one"
     <UI-RESET>
-    <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+    <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
     <TELL "seed=">
-    <UI-FG ,UI-RGB-TEXT ,ZCOL-DEFAULT>
+    <UI-FG ,UI-RGB-TEXT ,ZCOL-WHITE>
     <PRINT-SEED-HEX32>
-    <UI-FG ,UI-RGB-LABEL ,ZCOL-DEFAULT>
+    <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
     <TELL "  Wait: .   Drop: T  Ingest: I  Equip: G  Quit: Q  Instructions: ?">
     <UI-RESET>>
 
