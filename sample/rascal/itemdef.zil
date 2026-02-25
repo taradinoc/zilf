@@ -226,6 +226,25 @@ Returns:
           (<==? .TYPE ,POTION-METTLE> "potion of mettle")
           (ELSE "potion")>>
 
+;"Maps a potion effect/type code to its pluralized display name.
+
+Args:
+  TYPE: Potion type code (POTION-*).
+
+Returns:
+  Lowercase name string (e.g. \"potion of health\")."
+
+<ROUTINE POTION-PLURAL-TYPE-NAME (TYPE)
+    <COND (<==? .TYPE ,POTION-MUSCLE> "potions of muscle")
+          (<==? .TYPE ,POTION-HEALTH> "potions of health")
+          (<==? .TYPE ,POTION-HIDING> "potions of hiding")
+          (<==? .TYPE ,POTION-POISON> "potions of poison")
+          (<==? .TYPE ,POTION-VISION> "potions of vision")
+          (<==? .TYPE ,POTION-MOTION> "potions of motion")
+          (<==? .TYPE ,POTION-SHADOW> "potions of shadow")
+          (<==? .TYPE ,POTION-METTLE> "potions of mettle")
+          (ELSE "potion")>>
+
 ;"Maps a potion color code to its (concealed) display name.
 
 Args:

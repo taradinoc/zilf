@@ -738,9 +738,18 @@ lengthwise across it and an inverted V above it." CR>)
                <RTRUE>)
               (ELSE <TELL "The " D .OBJ>)>>
 
-    <ROUTINE PRINT-PLURAL (OBJ "AUX" PT W E)
+    <ROUTINE PRINT-PLURAL (OBJ "AUX" K PT W E COLOR TYPE)
         <COND (<RASCAL-ITEM? .OBJ>
-               <COND (<==? <GETP .OBJ ,P?R-ITKIND> ,ITEMKIND-WEAPON>
+               <COND (<==? <SET K <GETP .OBJ ,P?R-ITKIND>> ,ITEMKIND-POTION>
+                      <SET COLOR <GETP .OBJ ,P?R-ITID>>
+                      <COND (<OR <L? .COLOR 1> <G? .COLOR ,POTION-COLOR-COUNT>>
+                             <TELL "potions">)
+                            (<G? <GETB ,POTION-DISCOVERED <- .COLOR 1>> 0>
+                             <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>
+                             <TELL <POTION-PLURAL-TYPE-NAME .TYPE>>)
+                            (ELSE <TELL <POTION-COLOR-NAME .COLOR> !\s>)>
+                      <RTRUE>)
+                     (<==? .K ,ITEMKIND-WEAPON>
                       <TELL "level " N <GETP .OBJ ,P?R-ITLVL>>
                       <COND (<G? <SET E <GETP .OBJ ,P?R-ITENCH>> 0> <TELL "+" N .E>)>
                       <TELL !\ >)>
