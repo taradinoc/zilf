@@ -33,7 +33,13 @@ else if (downloadInfo != null)
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Download ZILF @downloadInfo.Version for @GetPlatformName(downloadInfo.Platform)</h5>
+                        <div>
+                            <h5 class="modal-title mb-0">Download ZILF @downloadInfo.Version for @GetPlatformName(downloadInfo.Platform)</h5>
+                            @if (downloadInfo.PublishedAt.HasValue)
+                            {
+                                <small class="text-muted">Published @FormatPublishedDate(downloadInfo.PublishedAt.Value)</small>
+                            }
+                        </div>
                         <button type="button" class="btn-close" aria-label="Close" @onclick="CloseModal"></button>
                     </div>
                     <div class="modal-body">
@@ -111,6 +117,7 @@ else if (!string.IsNullOrEmpty(fallbackUrl))
                         DownloadUrl = options[0].Url,
                         Version = ExtractVersionFromTag(latestRelease.TagName),
                         Platform = platformInfo.Platform,
+                        PublishedAt = latestRelease.ReleasedAt,
                         ReleasesPageUrl = latestRelease.Links?.Self
                     };
                 }
@@ -264,6 +271,9 @@ else if (!string.IsNullOrEmpty(fallbackUrl))
         return tagName;
     }
 
+    private static string FormatPublishedDate(DateTime publishedAt)
+        => publishedAt.ToString("MMMM d, yyyy");
+
     private static string GetPlatformIcon(Platform platform) => platform switch
     {
         Platform.Windows => "bi bi-windows",
@@ -296,6 +306,7 @@ else if (!string.IsNullOrEmpty(fallbackUrl))
         public required string DownloadUrl { get; init; }
         public required string Version { get; init; }
         public required Platform Platform { get; init; }
+        public DateTime? PublishedAt { get; init; }
         public string ReleasesPageUrl { get; init; }
     }
 
