@@ -32,6 +32,9 @@ and this project adheres to
 - Added warning MDL0134 for a `ROUTINE` that seems to contain nested definitions
   like `ROUTINE` or `GLOBAL`, which typically means a close bracket is missing.
 
+- `STATUS-LINE` can now have conditional overloads: add multiple status line
+  definitions with the same name, distinguished by a `(WHEN ...)` clause.
+
 ### Changed
 
 - Optimized code generation for INC/SUB pairs, DEC/ADD pairs, and INC/DEC pairs.
