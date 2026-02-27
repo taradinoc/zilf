@@ -153,6 +153,12 @@ Returns:
                <SET CNT <+ .CNT 1>>)>>
     .CNT>
 
+<ROUTINE COUNT-TOTAL-ROOMS ("AUX" CNT)
+    <SET CNT 0>
+    <DO (F 0 %<- ,MAX-FLOORS 1>)
+        <SET CNT <+ .CNT <GETB ,FLOOR-ROOM-COUNT .F>>>>
+    .CNT>
+
 <ROUTINE RJ-NUMBER (N)
     <COND (<L? .N 10000> <PRINTC !\ >)>
     <COND (<L? .N 1000> <PRINTC !\ >)>
@@ -185,8 +191,6 @@ Returns:
     <SET POT-ALL <SUM-WORD-TABLE ,STATS-POTIONS-DRANK ,POTION-TYPE-COUNT>>
     <SET FOOD-ALL <SUM-WORD-TABLE ,STATS-FOODS-EATEN ,FOOD-TYPE-COUNT>>
     <SET KILL-ALL <SUM-WORD-TABLE ,STATS-ENEMIES-KILLED ,ETYPE-COUNT>>
-    ;<SET DIAGP <STATS-PCT ,STATS-DIAG-MOVES ,STATS-MOVES>>
-    ;<SET POTFINDP <STATS-PCT ,STATS-POTIONS-FOUND ,STATS-POTIONS-PLACED>>
 
     <CURSET 3 1>
     <TELL "Final score: ">
@@ -209,8 +213,7 @@ Returns:
     <TELL " total">
 
     <CURSET 11 1>
-    <TELL "Rooms discovered: " N ,STATS-ROOMS-DISCOVERED-TOTAL>
-    ;"TODO: out of how many?"
+    <TELL "Rooms discovered: " N ,STATS-ROOMS-DISCOVERED-TOTAL "/" N <COUNT-TOTAL-ROOMS>>
     <CURSET 12 1>
     <TELL "Treasures acquired: " N .TREAS-UNIQ "/" N ,TREASURE-COUNT>
     <CURSET 13 1>

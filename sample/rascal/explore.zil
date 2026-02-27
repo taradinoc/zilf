@@ -9,9 +9,12 @@
 ;"Per-floor room discovery tracking.
 
 FLOOR-ROOM-DISCOVERED stores 0/1 flags for each (floor, room id) pair.
+FLOOR-ROOM-COUNT stores the total number of rooms on each floor.
 DISCOVERED-ROOMS is the cached count for the current floor."
 
 <GLOBAL FLOOR-ROOM-DISCOVERED <ITABLE <* ,MAX-FLOORS ,MAX-ROOMS> (BYTE) 0>>
+
+<GLOBAL FLOOR-ROOM-COUNT <ITABLE ,MAX-FLOORS (BYTE) 0>>
 
 <GLOBAL DISCOVERED-ROOMS 0>
 

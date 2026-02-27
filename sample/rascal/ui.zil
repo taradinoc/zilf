@@ -429,10 +429,10 @@ Returns:
     <TELL "!!@!@!    !!!@!!!!   !!@!!!   !!!       !!!@!!!!  !!!     ">
     <CURSET 11 .COL>
     <CTCOLOR <RGB 14 9 19> 0>
+    <CCOLOR 6 0>    ;"blue"
     <TELL "!!: :!!   !!:  !!!       !:!  :!!       !!:  !!!  !!:     ">
     <CURSET 12 .COL>
     <CTCOLOR <RGB 11 9 21> 0>
-    <CCOLOR 6 0>    ;"blue"
     <TELL ":!:  !:!  :!:  !:!      !:!   :!:       :!:  !:!   :!:    ">
     <CURSET 13 .COL>
     <CTCOLOR <RGB 9 10 23> 0>
@@ -673,7 +673,7 @@ Returns:
            <COND (,DEATH-LOGGED? <RTRUE>)>
            <SETG DEATH-LOGGED? T>
            <LOG "You died on floor " N ,CURRENT-FLOOR ". Final score: " N <FINAL-SCORE>>
-           <IF-DEBUG <COND (,DEBUG-USED? <LOG "*">)>>
+           <IF-DEBUG <COND (,DEBUG-USED? <LOG !\*>)>>
            <LOG ". Press Q to quit, R to restart." CR>)
           (<AND ,YOU-WIN? ,GAME-OVER?> <VICTORY>)>>
 
@@ -852,7 +852,9 @@ Returns:
     <CURSET 20 .COL><TELL "                                        ">
     <COLOR 1 1>
     <CURSET 21 .COL><TELL "  You escape with the Trophy of Scryra! ">
-    <CURSET 22 .COL><TELL "           Final score: " N <FINAL-SCORE> "           ">
+    <CURSET 22 .COL><TELL "           Final score: " N <FINAL-SCORE>>
+    <IF-DEBUG <COND (,DEBUG-USED? <TELL !\*>)>>
+    <TELL "           ">
     <CURSET 23 .COL><TELL "                                        ">
     <CURSET 24 .COL><TELL "    [Press Q to quit, R to restart,     ">
     <CURSET 25 .COL><TELL "         S to see statistics.]          ">

@@ -96,7 +96,8 @@ Returns:
         <COND (<G=? ,ROOM-COUNT ,MAX-ROOMS> <RETURN>)>
         <SET TRIES <+ .TRIES 1>>
         <COND (<G? .TRIES 300> <RETURN>)>
-        <TRY-ADD-ROOM>>>
+        <TRY-ADD-ROOM>>
+    <PUTB ,FLOOR-ROOM-COUNT <- ,CURRENT-FLOOR 1> ,ROOM-COUNT>>
 
 ;"Attempts to generate and carve a single room.
 
