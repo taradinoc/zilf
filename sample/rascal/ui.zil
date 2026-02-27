@@ -1309,7 +1309,11 @@ Returns:
     <SET SPR <SPRITE .X .Y>>
     <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>>
            <COND (,HIT-FLASH? <HLIGHT ,H-INVERSE>)>
-           <COND (<G? ,PLAYER-INVIS-TURNS 0>
+           <COND (<L=? ,PLAYER-HP 0>
+                  <UI-ALERT>
+                  <PRINTC .SPR>
+                  <UI-RESET>)
+                 (<G? ,PLAYER-INVIS-TURNS 0>
                   <UI-FG ,UI-RGB-PLAYER-INVIS ,ZCOL-CYAN>
                   <PRINTC .SPR>
                   <UI-RESET>)
