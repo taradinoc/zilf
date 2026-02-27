@@ -168,7 +168,7 @@ Stepping onto the trader's tile should invoke this.
 Returns:
   T."
 
-<ROUTINE TRADER-SHOP ("AUX" C C2 SLOT K ID LVL ENCH PRICE CNT O)
+<ROUTINE TRADER-SHOP ("AUX" C C2 C3 SLOT K ID LVL ENCH PRICE CNT O)
     <COND (<NOT <TRADER-AT? ,PLAYER-X ,PLAYER-Y>> <RFALSE>)>
     <SCREEN 1>
     <REPEAT ()
@@ -238,6 +238,12 @@ Returns:
                <SET LVL <GETP .O ,P?R-ITLVL>>
                <SET ENCH <GETP .O ,P?R-ITENCH>>
                <SET PRICE <TRADER-BUY-PRICE .K .ID .LVL .ENCH>>
+               <COND (<AND <==? .K ,ITEMKIND-TREASURE>
+                           <==? .ID ,TREASURE-TROPHY>>
+                      <SET C3 <POPUP-TROPHY-SELL-CONFIRM-GETCHAR>>
+                      <COND (<==? .C3 !\N !\n>
+                             <LOG "Never mind." CR>
+                             <AGAIN>)>)>
                <COND (<==? ,EQUIPPED-WEAPON .O> <SETG EQUIPPED-WEAPON <>>)>
                <REMOVE .O>
                <PUTP .O ,P?R-X 0>

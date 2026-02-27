@@ -789,6 +789,26 @@ Returns:
 
     .C>
 
+<ROUTINE POPUP-TROPHY-SELL-CONFIRM-GETCHAR ("AUX" C)
+    <POPUP-OPEN-BOX 54 3 40>
+
+    <CURSET <+ ,POPUP-TOP 1> <+ ,POPUP-LEFT 2>>
+    <TELL "Really sell Trophy of Scryra? (Y/N)">
+
+    <PROG ()
+        <SET C <GETCHAR>>
+        <COND (<==? .C 254> <AGAIN>)>
+        <COND (<OR <==? .C !\Y>
+                   <==? .C !\y>
+                   <==? .C !\N>
+                   <==? .C !\n>>
+               <RETURN>)>
+        <AGAIN>>
+
+    <POPUP-CLOSE-BOX>
+
+    .C>
+
 <ROUTINE POPUP-SHRINE-GETCHAR ("AUX" C)
     <POPUP-OPEN-BOX 54 6 40>
 
