@@ -463,6 +463,8 @@ Returns:
     <CURSET 21 .COL>
     <TELL "               Press S to enter a seed                    ">
     <CURSET 22 .COL>
+    <TELL "               Press Q to quit                            ">
+    <CURSET 23 .COL>
     <TELL "               Press any other key to start               ">
     <SET C <GETCHAR>>
     <COND (<==? .C !\I !\i>
@@ -472,6 +474,7 @@ Returns:
           (<==? .C !\C !\c>
            <COND (<HAS-COLOR?> <NEXT-COLOR-MODE>)>
            <AGAIN>)
+          (<==? .C 27 !\Q !\q> <QUIT>)
           (<==? .C 254 ;"mouse click"> <AGAIN>)
           (ELSE <CLEAR -1>)>>
 
@@ -688,11 +691,11 @@ Returns:
         <CURSET ,MAP-H <+ ,MAP-W 1>>
         <SET C <GETCHAR>>
         <COND (,GAME-OVER?
-               ;"After game over, Q exits and R restarts; ignore everything else."
-               <COND (<==? .C !\Q !\q> <RETURN>) (<==? .C !\R !\r> <RESTART>)>
+               ;"After game over, Q or ESC exits and R restarts; ignore everything else."
+               <COND (<==? .C 27 !\Q !\q> <RETURN>) (<==? .C !\R !\r> <RESTART>)>
                <DRAW>)
               (ELSE
-               <COND (<==? .C !\Q !\q>
+               <COND (<==? .C 27 !\Q !\q>
                       <SET C <POPUP-QUIT-CONFIRM-GETCHAR>>
                       <COND (<==? .C !\Y !\y>
                              <COLOR 1 1>
