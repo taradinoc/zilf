@@ -380,7 +380,8 @@ namespace Zilf.Compiler
                 if ((r.Flags & RoutineFlags.SuppressUnusedWarning) != 0)
                     suppressUnusedWarnings.Add(r.Name);
 
-                var refs = new HashSet<ZilAtom>(comparer);
+                // Optimization: Pre-allocate capacity based on typical routine size
+                var refs = new HashSet<ZilAtom>(16, comparer);
 
                 foreach (var argInfo in r.ArgSpec)
                 {
@@ -540,10 +541,11 @@ namespace Zilf.Compiler
                     return;
                 }
 
-                HashSet<ZilAtom>? priorReads = null;
+                // Optimization: Track count instead of copying entire HashSet
+                int priorReadCount = 0;
                 if (suppressGlobalReads)
                 {
-                    priorReads = new HashSet<ZilAtom>(ReadAccessedGlobalNames, comparer);
+                    priorReadCount = ReadAccessedGlobalNames.Count;
                 }
 
                 // Try to interpret as a constant; if it's a routine operand, map back to its atom
@@ -553,21 +555,14 @@ namespace Zilf.Compiler
                     output.Add(routineAtom);
                 }
 
-                if (suppressGlobalReads && priorReads != null)
+                // Optimization: Only process if new items were added
+                if (suppressGlobalReads && ReadAccessedGlobalNames.Count > priorReadCount)
                 {
-                    var newlyRead = new List<ZilAtom>();
-                    foreach (var name in ReadAccessedGlobalNames)
+                    // Remove only the newly added items (those after the prior count)
+                    var newlyRead = ReadAccessedGlobalNames.Skip(priorReadCount).ToList();
+                    foreach (var name in newlyRead)
                     {
-                        if (!priorReads.Contains(name))
-                            newlyRead.Add(name);
-                    }
-
-                    if (newlyRead.Count != 0)
-                    {
-                        foreach (var name in newlyRead)
-                        {
-                            ReadAccessedGlobalNames.Remove(name);
-                        }
+                        ReadAccessedGlobalNames.Remove(name);
                     }
                 }
 
