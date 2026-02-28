@@ -484,6 +484,7 @@ Returns:
            <SETG STATS-DMG-BLOCKED-BY-DEF
                <+ ,STATS-DMG-BLOCKED-BY-DEF <- .RAW .DMG>>>)>
     <SETG PLAYER-HP <- ,PLAYER-HP .DMG>>
+    <HONORS-NOTE-PLAYER-HP>
     <COND (<G? .DMG 0>
            <SETG HIT-FLASH? T>
            <SETG HIT-FLASH-EX <GETP .O ,P?R-X>>
@@ -519,6 +520,7 @@ Returns:
     <COND (<L=? .HP 0> <RFALSE>)>
     <SETG STATS-PLAYER-ATTACKS <+ ,STATS-PLAYER-ATTACKS 1>>
     <SET ETYPE <GETP .O ,P?R-ETYPE>>
+    <HONORS-NOTE-PLAYER-ATTACK <L=? <EQUIPPED-WEAPON-OBJ> 0>>
     <COND (<==? .ETYPE ,ETYPE-LEGION>
            <LOG "You swing at the legion of bees, but it won't disperse." CR>
            <RTRUE>)>

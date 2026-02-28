@@ -44,6 +44,278 @@
 
 <GLOBAL STATS-TREASURES-PICKED <ITABLE ,TREASURE-COUNT (WORD) 0>>
 
+"Honors"
+
+;"Honors are special achievements that the player can earn by following certain
+  self-imposed challenges. They don't affect gameplay, but they give the player
+  bragging rights and a sense of accomplishment. Some of them are mutually
+  exclusive, so the player has to choose which ones to go for."
+
+<CONSTANT HONOR-COUNT 19>
+
+<CONSTANT HONOR-ANIMAL-LOVER 1>
+<CONSTANT HONOR-ATTENTIVE 2>
+<CONSTANT HONOR-BISHOP 3>
+<CONSTANT HONOR-BRAWLER 4>
+<CONSTANT HONOR-CHEAPSKATE 5>
+<CONSTANT HONOR-DAREDEVIL 6>
+<CONSTANT HONOR-EXPLORER 7>
+<CONSTANT HONOR-HEALTH-NUT 8>
+<CONSTANT HONOR-LAB-SAFETY 9>
+<CONSTANT HONOR-OLD-FAITHFUL 10>
+<CONSTANT HONOR-PACIFIST 11>
+<CONSTANT HONOR-PAY-TO-WIN 12>
+<CONSTANT HONOR-PICKY-EATER 13>
+<CONSTANT HONOR-ROOK 14>
+
+<CONSTANT FIRST-HONOR-ID ,HONOR-ANIMAL-LOVER>
+<CONSTANT LAST-HONOR-BEFORE-SHOWOFF ,HONOR-ROOK>
+
+<CONSTANT HONOR-SHOWOFF-I 15>
+<CONSTANT HONOR-SHOWOFF-II 16>
+<CONSTANT HONOR-SHOWOFF-III 17>
+<CONSTANT HONOR-SHOWOFF-IV 18>
+<CONSTANT HONOR-SHOWOFF-V 19>
+
+<CONSTANT FIRST-SHOWOFF-HONOR ,HONOR-SHOWOFF-I>
+<CONSTANT LAST-SHOWOFF-HONOR ,HONOR-SHOWOFF-V>
+
+<GLOBAL HONOR-STARTER-WEAPON 0>
+<GLOBAL HONOR-BRAWLER-BROKEN? <>>
+<GLOBAL HONOR-OLD-FAITHFUL-BROKEN? <>>
+<GLOBAL HONOR-HP-BELOW-HALF? <>>
+<GLOBAL HONOR-DAREDEVIL-BROKEN? <>>
+<GLOBAL HONOR-DRANK-UNIDENTIFIED? <>>
+<GLOBAL HONOR-BOUGHT-TROPHY? <>>
+
+<ROUTINE HONORS-RESET ()
+    <SETG HONOR-STARTER-WEAPON 0>
+    <SETG HONOR-BRAWLER-BROKEN? <>>
+    <SETG HONOR-OLD-FAITHFUL-BROKEN? <>>
+    <SETG HONOR-HP-BELOW-HALF? <>>
+    <SETG HONOR-DAREDEVIL-BROKEN? <>>
+    <SETG HONOR-DRANK-UNIDENTIFIED? <>>
+    <SETG HONOR-BOUGHT-TROPHY? <>>
+    <RTRUE>>
+
+<ROUTINE HONORS-NOTE-STARTER-WEAPON (O)
+    <SETG HONOR-STARTER-WEAPON .O>
+    <SETG HONOR-OLD-FAITHFUL-BROKEN? <>>
+    <RTRUE>>
+
+<ROUTINE HONORS-NOTE-EQUIP-CHANGE ()
+    <COND (<AND <NOT ,HONOR-OLD-FAITHFUL-BROKEN?>
+                <G? ,HONOR-STARTER-WEAPON 0>
+                <N==? ,EQUIPPED-WEAPON ,HONOR-STARTER-WEAPON>>
+           <SETG HONOR-OLD-FAITHFUL-BROKEN? T>)>
+    <RTRUE>>
+
+<ROUTINE HP-BELOW-HALF? (HP MAXHP)
+    <L? <* .HP 2> .MAXHP>>
+
+<ROUTINE HONORS-NOTE-PLAYER-HP ()
+    <COND (<HP-BELOW-HALF? ,PLAYER-HP ,PLAYER-MAX-HP>
+           <SETG HONOR-HP-BELOW-HALF? T>)
+          (<AND ,HONOR-HP-BELOW-HALF?
+                <NOT ,HONOR-DAREDEVIL-BROKEN?>>
+           <SETG HONOR-DAREDEVIL-BROKEN? T>)>
+    <RTRUE>>
+
+<ROUTINE HONORS-NOTE-PLAYER-ATTACK (USED-FISTS?)
+    <COND (<NOT .USED-FISTS?>
+           <SETG HONOR-BRAWLER-BROKEN? T>)>
+    <RTRUE>>
+
+<ROUTINE HONORS-NOTE-POTION-DRINK (WAS-DISCOVERED?)
+    <COND (<NOT .WAS-DISCOVERED?>
+           <SETG HONOR-DRANK-UNIDENTIFIED? T>)>
+    <RTRUE>>
+
+<ROUTINE HONORS-NOTE-TROPHY-PURCHASE (K ID)
+    <COND (<AND <==? .K ,ITEMKIND-TREASURE>
+                <==? .ID ,TREASURE-TROPHY>>
+           <SETG HONOR-BOUGHT-TROPHY? T>)>
+    <RTRUE>>
+
+<ROUTINE HONORS-TOTAL-KILLS ()
+    <SUM-WORD-TABLE ,STATS-ENEMIES-KILLED ,ETYPE-COUNT>>
+
+<ROUTINE HONORS-TOTAL-SPENT ()
+    <+ ,STATS-GOLD-SPENT-TRADER
+       ,STATS-GOLD-SPENT-BLACKSMITH
+       ,STATS-GOLD-SPENT-CARROT-FARM>>
+
+<ROUTINE HONORS-FOOD-TYPES-EATEN ("AUX" CNT)
+    <SET CNT 0>
+    <DO (I 1 ,FOOD-TYPE-COUNT)
+        <COND (<G? <GET ,STATS-FOODS-EATEN <- .I 1>> 0>
+               <SET CNT <+ .CNT 1>>)>>
+    .CNT>
+
+<ROUTINE HONOR-SHOWOFF-THRESHOLD (ID)
+    <COND (<==? .ID ,HONOR-SHOWOFF-I> 3)
+          (<==? .ID ,HONOR-SHOWOFF-II> 5)
+          (<==? .ID ,HONOR-SHOWOFF-III> 7)
+          (<==? .ID ,HONOR-SHOWOFF-IV> 9)
+          (<==? .ID ,HONOR-SHOWOFF-V> 11)
+          (ELSE 0)>>
+
+<ROUTINE HONOR-SHOWOFF? (ID)
+    <AND <G=? .ID ,FIRST-SHOWOFF-HONOR>
+         <L=? .ID ,LAST-SHOWOFF-HONOR>>>
+
+<ROUTINE PRINT-HONOR-NAME (ID)
+    <COND (<==? .ID ,HONOR-ANIMAL-LOVER> <TELL "Animal Lover">)
+          (<==? .ID ,HONOR-ATTENTIVE> <TELL "Attentive">)
+          (<==? .ID ,HONOR-BISHOP> <TELL "Bishop">)
+          (<==? .ID ,HONOR-BRAWLER> <TELL "Brawler">)
+          (<==? .ID ,HONOR-CHEAPSKATE> <TELL "Cheapskate">)
+          (<==? .ID ,HONOR-DAREDEVIL> <TELL "Daredevil">)
+          (<==? .ID ,HONOR-EXPLORER> <TELL "Explorer">)
+          (<==? .ID ,HONOR-HEALTH-NUT> <TELL "Health Nut">)
+          (<==? .ID ,HONOR-LAB-SAFETY> <TELL "Lab Safety">)
+          (<==? .ID ,HONOR-OLD-FAITHFUL> <TELL "Old Faithful">)
+          (<==? .ID ,HONOR-PACIFIST> <TELL "Pacifist">)
+          (<==? .ID ,HONOR-PAY-TO-WIN> <TELL "Pay To Win">)
+          (<==? .ID ,HONOR-PICKY-EATER> <TELL "Picky Eater">)
+          (<==? .ID ,HONOR-ROOK> <TELL "Rook">)
+          (<==? .ID ,HONOR-SHOWOFF-I> <TELL "Showoff I">)
+          (<==? .ID ,HONOR-SHOWOFF-II> <TELL "Showoff II">)
+          (<==? .ID ,HONOR-SHOWOFF-III> <TELL "Showoff III">)
+          (<==? .ID ,HONOR-SHOWOFF-IV> <TELL "Showoff IV">)
+          (<==? .ID ,HONOR-SHOWOFF-V> <TELL "Showoff V">)
+          (ELSE <TELL "Unknown">)>>
+
+<ROUTINE PRINT-HONOR-DESC (ID)
+    <COND (<==? .ID ,HONOR-ANIMAL-LOVER> <TELL "don't kill any monkeys">)
+          (<==? .ID ,HONOR-ATTENTIVE> <TELL "never bump into walls">)
+          (<==? .ID ,HONOR-BISHOP> <TELL "move at least 90% diagonally">)
+          (<==? .ID ,HONOR-BRAWLER> <TELL "only attack with fists">)
+          (<==? .ID ,HONOR-CHEAPSKATE> <TELL "don't spend any gold">)
+          (<==? .ID ,HONOR-DAREDEVIL> <TELL "go below 50% HP and never go back up">)
+          (<==? .ID ,HONOR-EXPLORER> <TELL "visit every room">)
+          (<==? .ID ,HONOR-HEALTH-NUT> <TELL "never let HP go below 50%">)
+          (<==? .ID ,HONOR-LAB-SAFETY> <TELL "don't drink unidentified potions">)
+          (<==? .ID ,HONOR-OLD-FAITHFUL> <TELL "never unequip the starter weapon">)
+          (<==? .ID ,HONOR-PACIFIST> <TELL "don't kill any enemies">)
+          (<==? .ID ,HONOR-PAY-TO-WIN> <TELL "buy the Trophy of Scryra">)
+          (<==? .ID ,HONOR-PICKY-EATER> <TELL "only eat one type of food">)
+          (<==? .ID ,HONOR-ROOK> <TELL "don't move diagonally">)
+          (<==? .ID ,HONOR-SHOWOFF-I> <TELL "win with at least 3 other honors">)
+          (<==? .ID ,HONOR-SHOWOFF-II> <TELL "win with at least 5 other honors">)
+          (<==? .ID ,HONOR-SHOWOFF-III> <TELL "win with at least 7 other honors">)
+          (<==? .ID ,HONOR-SHOWOFF-IV> <TELL "win with at least 9 other honors">)
+          (<==? .ID ,HONOR-SHOWOFF-V> <TELL "win with at least 11 other honors">)
+          (ELSE <TELL "Unknown">)>>
+
+<ADD-TELL-TOKENS
+    HONOR-NAME * <PRINT-HONOR-NAME .X>
+    HONOR-DESC * <PRINT-HONOR-DESC .X>>
+
+<ROUTINE HONOR-DISQUALIFIED? (ID IN-GAME? "AUX" MOVES DIAG THRESH)
+    <SET MOVES ,STATS-MOVES>
+    <SET DIAG ,STATS-DIAG-MOVES>
+    <COND (<==? .ID ,HONOR-ANIMAL-LOVER>
+           <G? <GET ,STATS-ENEMIES-KILLED <- ,ETYPE-MONKEY 1>> 0>)
+          (<==? .ID ,HONOR-ATTENTIVE>
+           <G? ,STATS-WALL-BUMPS 0>)
+          (<==? .ID ,HONOR-PAY-TO-WIN>
+           <AND <NOT .IN-GAME?> <NOT ,HONOR-BOUGHT-TROPHY?>>)
+          (<==? .ID ,HONOR-BISHOP>
+           <AND <NOT .IN-GAME?> <G? .MOVES 0> <L? <* 10 .DIAG> <* 9 .MOVES>>>)
+          (<==? .ID ,HONOR-BRAWLER>
+           ,HONOR-BRAWLER-BROKEN?)
+          (<==? .ID ,HONOR-DAREDEVIL>
+           <OR ,HONOR-DAREDEVIL-BROKEN?
+               <AND <NOT .IN-GAME?> <NOT ,HONOR-HP-BELOW-HALF?>>>)
+          (<==? .ID ,HONOR-EXPLORER>
+           <AND <NOT .IN-GAME?>
+                <N==? ,STATS-ROOMS-DISCOVERED-TOTAL <COUNT-TOTAL-ROOMS>>>)
+          (<==? .ID ,HONOR-HEALTH-NUT>
+           ,HONOR-HP-BELOW-HALF?)
+          (<==? .ID ,HONOR-LAB-SAFETY>
+           ,HONOR-DRANK-UNIDENTIFIED?)
+          (<==? .ID ,HONOR-CHEAPSKATE>
+           <G? <HONORS-TOTAL-SPENT> 0>)
+          (<==? .ID ,HONOR-OLD-FAITHFUL>
+           ,HONOR-OLD-FAITHFUL-BROKEN?)
+          (<==? .ID ,HONOR-PACIFIST>
+           <G? <HONORS-TOTAL-KILLS> 0>)
+          (<==? .ID ,HONOR-PICKY-EATER>
+           <G? <HONORS-FOOD-TYPES-EATEN> 1>)
+          (<==? .ID ,HONOR-ROOK>
+           <G? .DIAG 0>)
+          (<HONOR-SHOWOFF? .ID>
+           <SET THRESH <HONOR-SHOWOFF-THRESHOLD .ID>>
+           <L? <HONORS-MAX-POSSIBLE-BASE .IN-GAME?> .THRESH>)
+          (ELSE <>)>>
+
+<ROUTINE HONOR-EARNED? (ID "AUX" MOVES DIAG THRESH)
+    <SET MOVES ,STATS-MOVES>
+    <SET DIAG ,STATS-DIAG-MOVES>
+    <COND (<==? .ID ,HONOR-ANIMAL-LOVER>
+           <NOT <HONOR-DISQUALIFIED? .ID <>>>)
+          (<==? .ID ,HONOR-ATTENTIVE>
+           <NOT <HONOR-DISQUALIFIED? .ID <>>>)
+          (<==? .ID ,HONOR-PAY-TO-WIN>
+           ,HONOR-BOUGHT-TROPHY?)
+          (<==? .ID ,HONOR-BISHOP>
+           <AND <G? .MOVES 0>
+                <G=? <* 10 .DIAG> <* 9 .MOVES>>>)
+          (<==? .ID ,HONOR-BRAWLER>
+           <NOT ,HONOR-BRAWLER-BROKEN?>)
+          (<==? .ID ,HONOR-DAREDEVIL>
+           <AND ,HONOR-HP-BELOW-HALF?
+                <NOT ,HONOR-DAREDEVIL-BROKEN?>>)
+          (<==? .ID ,HONOR-EXPLORER>
+           <==? ,STATS-ROOMS-DISCOVERED-TOTAL <COUNT-TOTAL-ROOMS>>)
+          (<==? .ID ,HONOR-HEALTH-NUT>
+           <NOT ,HONOR-HP-BELOW-HALF?>)
+          (<==? .ID ,HONOR-LAB-SAFETY>
+           <NOT ,HONOR-DRANK-UNIDENTIFIED?>)
+          (<==? .ID ,HONOR-CHEAPSKATE>
+           <L=? <HONORS-TOTAL-SPENT> 0>)
+          (<==? .ID ,HONOR-OLD-FAITHFUL>
+           <NOT ,HONOR-OLD-FAITHFUL-BROKEN?>)
+          (<==? .ID ,HONOR-PACIFIST>
+           <L=? <HONORS-TOTAL-KILLS> 0>)
+          (<==? .ID ,HONOR-PICKY-EATER>
+           <L=? <HONORS-FOOD-TYPES-EATEN> 1>)
+          (<==? .ID ,HONOR-ROOK>
+           <L=? .DIAG 0>)
+          (<HONOR-SHOWOFF? .ID>
+           <SET THRESH <HONOR-SHOWOFF-THRESHOLD .ID>>
+           <G=? <HONORS-BASE-EARNED-COUNT> .THRESH>)
+          (ELSE <>)>>
+
+<ROUTINE HONORS-BASE-EARNED-COUNT ("AUX" CNT)
+    <SET CNT 0>
+    <DO (I ,FIRST-HONOR-ID ,LAST-HONOR-BEFORE-SHOWOFF)
+        <COND (<HONOR-EARNED? .I>
+               <SET CNT <+ .CNT 1>>)>>
+    .CNT>
+
+<ROUTINE HONORS-MAX-POSSIBLE-BASE (IN-GAME? "AUX" CNT)
+    <SET CNT 0>
+    <DO (I ,FIRST-HONOR-ID ,LAST-HONOR-BEFORE-SHOWOFF)
+        <COND (<NOT <HONOR-DISQUALIFIED? .I .IN-GAME?>>
+               <SET CNT <+ .CNT 1>>)>>
+    .CNT>
+
+<ROUTINE HONORS-TOTAL-EARNED-COUNT ("AUX" CNT)
+    <SET CNT 0>
+    <DO (I ,FIRST-HONOR-ID ,HONOR-COUNT)
+        <COND (<HONOR-EARNED? .I>
+               <SET CNT <+ .CNT 1>>)>>
+    .CNT>
+
+<ROUTINE HIGHEST-EARNED-HONOR-ID ("AUX" TOP)
+    <SET TOP 0>
+    <DO (I ,FIRST-HONOR-ID ,HONOR-COUNT)
+        <COND (<HONOR-EARNED? .I>
+               <SET TOP .I>)>>
+    .TOP>
+
 <ROUTINE STATS-RESET ()
     <SETG STATS-TURNS 0>
     <SETG STATS-MOVES 0>
@@ -76,6 +348,7 @@
     <DO (I 1 ,FOOD-TYPE-COUNT) <PUT ,STATS-FOODS-EATEN <- .I 1> 0>>
     <DO (I 1 ,ETYPE-COUNT) <PUT ,STATS-ENEMIES-KILLED <- .I 1> 0>>
     <DO (I 1 ,TREASURE-COUNT) <PUT ,STATS-TREASURES-PICKED <- .I 1> 0>>
+    <HONORS-RESET>
     <RTRUE>>
 
 <ROUTINE STATS-INC-WORD-TABLE (TBL IDX "AUX" CUR)

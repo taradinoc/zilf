@@ -119,6 +119,7 @@ Returns:
     <SET O <INV-NTH-OBJ .SLOT>>
     <COND (<L=? .O 0> <RFALSE>)>
     <COND (<==? ,EQUIPPED-WEAPON .O> <SETG EQUIPPED-WEAPON <>>)>
+    <HONORS-NOTE-EQUIP-CHANGE>
     <REMOVE .O>
     <FREE-RASCAL-ITEM .O>
     <RTRUE>>
@@ -274,6 +275,7 @@ Returns:
                 CR>
            <RFALSE>)>
     <SETG EQUIPPED-WEAPON <INV-NTH-OBJ .SLOT>>
+    <HONORS-NOTE-EQUIP-CHANGE>
     <LOG-EQUIPPED-WEAPON ,EQUIPPED-WEAPON>
     <RTRUE>>
 
@@ -306,6 +308,7 @@ Returns:
                              <SET BESTLVL .LVL>
                              <SET BESTDMG .DMG>)>)>)>>
     <SETG EQUIPPED-WEAPON <COND (<G? .BESTS 0> <INV-NTH-OBJ .BESTS>) (ELSE <>)>>
+    <HONORS-NOTE-EQUIP-CHANGE>
     <COND (<G? .BESTS 0>
            <LOG-EQUIPPED-WEAPON ,EQUIPPED-WEAPON>
            <RTRUE>)>
@@ -447,8 +450,9 @@ Returns:
            <LOG " " WEAPON-NAME .TYPE "." CR>
            <COND (<AND <NOT ,EQUIPPED-WEAPON> <G=? <+ ,PLAYER-STR .ENCH> .LVL>>
                   <SETG EQUIPPED-WEAPON .SLOT>
+                  <HONORS-NOTE-EQUIP-CHANGE>
                   <LOG "You wield it." CR>)>
-          <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
@@ -516,6 +520,7 @@ Returns:
            <SET NEWHP <+ ,PLAYER-HP </ <+ ,PLAYER-MAX-HP 1> 2>>>
            <COND (<G? .NEWHP ,PLAYER-MAX-HP> <SET NEWHP ,PLAYER-MAX-HP>)>
            <SETG PLAYER-HP .NEWHP>
+           <HONORS-NOTE-PLAYER-HP>
            <TELL/LOG .LOG? "Your maximum HP is now " N ,PLAYER-MAX-HP "." CR>)
           (<==? .TYPE ,POTION-HIDING>
            <SETG PLAYER-INVIS-TURNS ,HIDING-POTION-DURATION>
@@ -523,6 +528,7 @@ Returns:
            <TELL/LOG .LOG? "You fade from sight." CR>)
           (<==? .TYPE ,POTION-POISON>
            <SETG PLAYER-HP <- ,PLAYER-HP 3>>
+           <HONORS-NOTE-PLAYER-HP>
            <TELL/LOG .LOG? "You feel sick." CR>
            <CHECK-END>)
           (<==? .TYPE ,POTION-VISION>
@@ -596,6 +602,7 @@ Returns:
     <TELL/LOG .LOG? "." CR>
 
     <APPLY-POTION-EFFECT .TYPE .FLAGS>
+    <HONORS-NOTE-POTION-DRINK .DISC>
 
     <COND (<AND <NOT .DISC> <G? .COLOR 0> <L=? .COLOR ,POTION-COLOR-COUNT>>
            <PUTB ,POTION-DISCOVERED <- .COLOR 1> 1>
@@ -709,6 +716,7 @@ Returns:
            <SET NEWHP <+ ,PLAYER-HP .HEAL>>
            <COND (<G? .NEWHP ,PLAYER-MAX-HP> <SET NEWHP ,PLAYER-MAX-HP>)>
            <SETG PLAYER-HP .NEWHP>
+           <HONORS-NOTE-PLAYER-HP>
            <COND (<AND <G? .ID 0> <L=? .ID ,FOOD-TYPE-COUNT>>
                   <STATS-INC-WORD-TABLE ,STATS-FOODS-EATEN <- .ID 1>>)>
            <LOG "You eat the "

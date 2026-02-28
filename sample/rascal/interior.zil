@@ -503,6 +503,7 @@ lengthwise across it and an inverted V above it." CR>)
            <SET NEWHP <+ ,PLAYER-HP .HEAL>>
            <COND (<G? .NEWHP ,PLAYER-MAX-HP> <SET NEWHP ,PLAYER-MAX-HP>)>
            <SETG PLAYER-HP .NEWHP>
+           <HONORS-NOTE-PLAYER-HP>
            <COND (<AND <G? .ID 0> <L=? .ID ,FOOD-TYPE-COUNT>>
                   <STATS-INC-WORD-TABLE ,STATS-FOODS-EATEN <- .ID 1>>)>
            <TELL "You eat the " FOOD-NAME .ID " and recover " N .HEAL " HP."

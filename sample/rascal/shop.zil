@@ -213,6 +213,7 @@ Returns:
                       <AGAIN>)>
                <COND (<==? .K ,ITEMKIND-TREASURE>
                       <STATS-INC-WORD-TABLE ,STATS-TREASURES-PICKED <- .ID 1>>)>
+             <HONORS-NOTE-TROPHY-PURCHASE .K .ID>
                <SETG PLAYER-GOLD <- ,PLAYER-GOLD .PRICE>>
                <SETG STATS-GOLD-SPENT-TRADER
                    <+ ,STATS-GOLD-SPENT-TRADER .PRICE>>
@@ -245,6 +246,7 @@ Returns:
                              <LOG "Never mind." CR>
                              <AGAIN>)>)>
                <COND (<==? ,EQUIPPED-WEAPON .O> <SETG EQUIPPED-WEAPON <>>)>
+               <HONORS-NOTE-EQUIP-CHANGE>
                <REMOVE .O>
                <PUTP .O ,P?R-X 0>
                <PUTP .O ,P?R-Y 0>

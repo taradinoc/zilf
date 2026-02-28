@@ -525,16 +525,68 @@ Returns:
     <CURSET 19 .COL>
     <TELL "                                                                              ">
     <CURSET 20 .COL>
-    <TELL "                         [Press any key to continue.]                         ">
+    <TELL "               [Press H for honors, any other key to continue.]                 ">
     <SET C <GETCHAR>>
-        <COND (<==? .C 254 ;"mouse click"> <AGAIN>)
-            (.IN-GAME?
-             <UI-RESET>
-             <CLEAR 1>
-             <SETG FULL-REDRAW? T>)
-            (ELSE
-             <UI-RESET>
-             <CLEAR -1>)>>
+    <COND (<==? .C 254 ;"mouse click"> <AGAIN>)
+          (<==? .C !\H !\h>
+           <HONORS-SCREEN .IN-GAME?>
+           <AGAIN>)
+          (.IN-GAME?
+           <UI-RESET>
+           <CLEAR 1>
+           <SETG FULL-REDRAW? T>)
+          (ELSE
+           <UI-RESET>
+           <CLEAR -1>)>>
+
+<ROUTINE DRAW-HONOR-LINE (ROW ID IN-GAME? WON? "AUX" DQ EARN)
+    <SET DQ <AND .IN-GAME? <HONOR-DISQUALIFIED? .ID .IN-GAME?>>>
+    <SET EARN <AND .WON? <HONOR-EARNED? .ID>>>
+    <CURSET .ROW 2>
+    <COND (.DQ <UI-FG ,UI-RGB-FLOOR ,ZCOL-BLUE>)
+          (ELSE <UI-FG ,UI-RGB-TEXT ,ZCOL-WHITE>)>
+    <COND (.WON? <COND (.EARN <TELL "[*] ">) (ELSE <TELL "[ ] ">)>)
+          (ELSE <TELL " -  ">)>
+    <TELL HONOR-NAME .ID ": " HONOR-DESC .ID>
+    <RTRUE>>
+
+<ROUTINE HONORS-SCREEN ("OPT" IN-GAME? "AUX" C WON?)
+    <UI-LOG-COLOR>
+    <SPLIT <LOWCORE SCRV>>
+    <SCREEN 1>
+    <CLEAR -2>
+
+    <SET WON? <AND ,YOU-WIN? ,GAME-OVER?>>
+    <CURSET 1 2>
+    <TELL "Honors">
+    <COND (.WON?
+           <CURSET 1 20>
+           <TELL "[*] = earned">)
+          (.IN-GAME?
+           <CURSET 1 20>
+           <UI-FG ,UI-RGB-FLOOR ,ZCOL-BLUE>
+           <TELL "dim">
+           <UI-LOG-COLOR>
+           <TELL " = disqualified">)>
+
+    <DO (I ,FIRST-HONOR-ID ,HONOR-COUNT)
+        <DRAW-HONOR-LINE <+ .I 2> .I .IN-GAME? .WON?>>
+
+    <CURSET 24 2>
+    <UI-LOG-COLOR>
+    <TELL "[Press any key to return.]">
+
+    <SET C <GETCHAR>>
+    <COND (<==? .C 254> <AGAIN>)>
+
+    <UI-RESET>
+    <CLEAR -1>
+
+    <COND (.IN-GAME?
+           <SPLIT ,UPPER-HEIGHT>
+           <SCREEN 1>
+           <SETG FULL-REDRAW? T>)>
+    <RTRUE>>
 
 ;"Prompts the player to enter a numeric RNG seed for the upcoming game.
 
@@ -879,8 +931,9 @@ Returns:
     <IF-DEBUG <COND (,DEBUG-USED? <TELL !\*>)>>
     <TELL "           ">
     <CURSET 23 .COL><TELL "                                        ">
+    <CURSET 23 .COL><PRINT-VICTORY-HONORS-LINE .COL>
     <CURSET 24 .COL><TELL "    [Press Q to quit, R to restart,     ">
-    <CURSET 25 .COL><TELL "         S to see statistics.]          ">
+    <CURSET 25 .COL><TELL "    S for statistics, H for honors.]    ">
 
     ;"crown"
     <CURSET 7 <+ .COL 7>><CTCOLOR ,JEWEL-COLOR-1 -1><TELL "o   "><CTCOLOR ,JEWEL-COLOR-2 -1><TELL "O   "><CTCOLOR ,JEWEL-COLOR-1 -1><TELL "o">
@@ -908,7 +961,21 @@ Returns:
           (<==? .C !\S !\s>
            <GAME-STATS>
            <AGAIN>)
+          (<==? .C !\H !\h>
+           <HONORS-SCREEN>
+           <AGAIN>)
           (ELSE <AGAIN>)>>
+
+    <ROUTINE PRINT-VICTORY-HONORS-LINE (COL "AUX" TOTAL TOP OTH)
+        <SET TOTAL <HONORS-TOTAL-EARNED-COUNT>>
+        <COND (<L=? .TOTAL 0> <RETURN>)>
+        <SET TOP <HIGHEST-EARNED-HONOR-ID>>
+        <COND (<L=? .TOP 0> <RETURN>)>
+        <SET OTH <- .TOTAL 1>>
+        <TELL "Won with honors: " HONOR-NAME .TOP>
+        <COND (<G? .OTH 0>
+            <TELL " and " N .OTH " others">)>
+        <RTRUE>>
 
 ;"Input handling"
 
