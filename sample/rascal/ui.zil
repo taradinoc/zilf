@@ -419,20 +419,20 @@ Returns:
     <TELL "@@!  @@@  @@!  @@@  !@@       !@@       @@!  @@@  @@!     ">
     <CURSET 8 .COL>
     <CTCOLOR <RGB 22 7 12> 0>
+    <CCOLOR 7 0>    ;"magenta"
     <TELL "!@!  @!@  !@!  @!@  !@!       !@!       !@!  @!@  !@!     ">
     <CURSET 9 .COL>
     <CTCOLOR <RGB 19 8 14> 0>
-    <CCOLOR 7 0>    ;"magenta"
     <TELL "@!@!!@!   @!@!@!@!  !!@@!!    !@!       @!@!@!@!  @!!     ">
     <CURSET 10 .COL>
     <CTCOLOR <RGB 17 8 17> 0>
     <TELL "!!@!@!    !!!@!!!!   !!@!!!   !!!       !!!@!!!!  !!!     ">
     <CURSET 11 .COL>
     <CTCOLOR <RGB 14 9 19> 0>
-    <CCOLOR 6 0>    ;"blue"
     <TELL "!!: :!!   !!:  !!!       !:!  :!!       !!:  !!!  !!:     ">
     <CURSET 12 .COL>
     <CTCOLOR <RGB 11 9 21> 0>
+    <CCOLOR 6 0>    ;"blue"
     <TELL ":!:  !:!  :!:  !:!      !:!   :!:       :!:  !:!   :!:    ">
     <CURSET 13 .COL>
     <CTCOLOR <RGB 9 10 23> 0>
