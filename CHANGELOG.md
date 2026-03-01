@@ -33,7 +33,8 @@ and this project adheres to
   like `ROUTINE` or `GLOBAL`, which typically means a close bracket is missing.
 
 - `STATUS-LINE` can now have conditional overloads: add multiple status line
-  definitions with the same name, distinguished by a `(WHEN ...)` clause.
+  definitions with the same name, distinguished by a `(WHEN ...)` clause. The
+  default status line templates use this for condensed layouts on small screens.
 
 ### Changed
 
