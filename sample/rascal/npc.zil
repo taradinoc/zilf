@@ -84,6 +84,7 @@ He's wearing a uniform with the dungeon's logo embroidered on it." CR>)
     (IN INFO-BOOTH)
     (SYNONYM STACK POSTER POSTERS)
     (ACTION STACK-OF-POSTERS-F)
+    (GENERIC POSTER-GENERIC-FCN)
     (FLAGS TRYTAKEBIT NDESCBIT)>
 
 <CONSTANT POSTER-DESCRIPTION
@@ -167,6 +168,14 @@ every dungeon. None have ever made it that far, so it's little more than a
 rumor... for now.↲
 ↲
 Good luck!\"">
+
+<ROUTINE POSTER-GENERIC-FCN (TBL "AUX" MAX IT)
+    ;"Prefer the poster over the stack of posters."
+    <SET MAX <GETB .TBL 0>>
+    <DO (I 1 .MAX)
+        <SET IT <GET/B .TBL .I>>
+        <COND (<POSTER? .IT> <RETURN .IT>)>>
+    ,STACK-OF-POSTERS>
 
 "---------------------------------------------------------------------------"
 
@@ -844,6 +853,7 @@ the last one, OK?\"" CR>)>)
            <TELL ,MONKEY-IGNORES CR>)>>
 
 <ROUTINE MONKEY-GENERIC-FCN (TBL "AUX" MAX O)
+    ;"Prefer tame monkeys."
     <SET MAX <GET .TBL 0>>
     <DO (I 1 .MAX)
         <SET O <GET .TBL .I>>
