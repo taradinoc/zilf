@@ -17,7 +17,14 @@
  */
 
 using System.Text;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Zapf.Parsing;
+using Zapf.Parsing.Diagnostics;
+using Zapf.Parsing.Instructions;
 
 namespace Zapf.Tests
 {
@@ -77,6 +84,87 @@ START::
 
             var code = string.Format(SCodeTemplate, tooManyObjects);
             Assert.IsFalse(TestHelper.Assemble(code), "Should not compile.");
+        }
+
+        [TestMethod]
+        public void Unicode_Minus_In_Number_Should_Report_Syntax_Error_Not_Throw()
+        {
+            const string prefix = @"
+    .NEW 5
+
+GLOBAL:: .TABLE
+    .GVAR TEST-GLOBAL=";
+
+            const string suffix = @"
+    .ENDT
+
+    .FUNCT GO
+START::
+    QUIT
+
+    .END";
+
+            var code = prefix + "\u22121" + suffix;
+
+            Assert.IsFalse(TestHelper.Assemble(code), "Unicode minus should fail as a syntax error.");
+        }
+
+        [TestMethod]
+        public void ASCII_Minus_In_Number_Should_Parse_Independently_Of_Current_Culture()
+        {
+            const string code = ".WORD -1\n";
+
+            var customCulture = (CultureInfo)CultureInfo.GetCultureInfo("sv-SE").Clone();
+            customCulture.NumberFormat.NegativeSign = "\u2212";
+
+            using var scope = new CultureScope(customCulture);
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(code));
+
+            var sink = new RecordingErrorSink();
+            var parser = new ZapParser(
+                sink,
+                new Dictionary<string, KeyValuePair<ushort, ZOpAttribute>>(),
+                (_, _) => new Dictionary<string, KeyValuePair<ushort, ZOpAttribute>>(),
+                informMode: false);
+
+            var result = parser.Parse(stream, "Input.zap");
+
+            Assert.AreEqual(0, result.NumberOfSyntaxErrors, "ASCII minus should parse regardless of current culture.");
+            Assert.AreEqual(0, sink.ErrorCount, "No parser errors should be reported for ASCII minus.");
+        }
+
+        sealed class CultureScope : IDisposable
+        {
+            readonly CultureInfo originalCulture;
+            readonly CultureInfo originalUiCulture;
+
+            public CultureScope(CultureInfo culture)
+            {
+                originalCulture = CultureInfo.CurrentCulture;
+                originalUiCulture = CultureInfo.CurrentUICulture;
+                CultureInfo.CurrentCulture = culture;
+                CultureInfo.CurrentUICulture = culture;
+            }
+
+            public void Dispose()
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+                CultureInfo.CurrentUICulture = originalUiCulture;
+            }
+        }
+
+        sealed class RecordingErrorSink : IErrorSink
+        {
+            public int ErrorCount { get; private set; }
+
+            public void HandleSeriousError(SeriousError ser)
+            {
+                ErrorCount++;
+            }
+
+            public void HandleWarning(Warning warning)
+            {
+            }
         }
     }
 }

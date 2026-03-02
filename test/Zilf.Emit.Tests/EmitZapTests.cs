@@ -19,6 +19,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
+using System.Globalization;
+using System.IO;
 using Zilf.Emit.Zap;
 
 namespace Zilf.Emit.Tests
@@ -63,6 +65,43 @@ namespace Zilf.Emit.Tests
         {
             // ReSharper disable once AssignNullToNotNullAttribute
             _ = new GameBuilder(5, null);
+        }
+
+        [TestMethod]
+        public void Numeric_Operand_Should_Use_ASCII_Minus_Ignoring_Current_Culture()
+        {
+            mockStreamFactory.Setup(m => m.CreateMainStream()).Returns(new MemoryStream());
+            mockStreamFactory.Setup(m => m.GetFrequentWordsFileName(false)).Returns("freq.zap");
+            mockStreamFactory.Setup(m => m.GetDataFileName(false)).Returns("data.zap");
+
+            var customCulture = (CultureInfo)CultureInfo.GetCultureInfo("sv-SE").Clone();
+            customCulture.NumberFormat.NegativeSign = "\u2212";
+
+            using var scope = new CultureScope(customCulture);
+            using var builder = new GameBuilder(5, mockStreamFactory.Object);
+            var text = builder.MakeOperand(-1).ToString();
+
+            Assert.AreEqual("-1", text);
+        }
+
+        sealed class CultureScope : IDisposable
+        {
+            readonly CultureInfo originalCulture;
+            readonly CultureInfo originalUiCulture;
+
+            public CultureScope(CultureInfo culture)
+            {
+                originalCulture = CultureInfo.CurrentCulture;
+                originalUiCulture = CultureInfo.CurrentUICulture;
+                CultureInfo.CurrentCulture = culture;
+                CultureInfo.CurrentUICulture = culture;
+            }
+
+            public void Dispose()
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+                CultureInfo.CurrentUICulture = originalUiCulture;
+            }
         }
     }
 }

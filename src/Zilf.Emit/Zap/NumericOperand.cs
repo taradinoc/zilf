@@ -29,7 +29,7 @@ namespace Zilf.Emit.Zap
 
         public override string ToString()
         {
-            return value.ToString();
+            return value.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
         public int Value => value;

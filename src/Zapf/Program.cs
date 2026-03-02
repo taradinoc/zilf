@@ -1010,7 +1010,17 @@ namespace Zapf
 
             Debug.Assert(ctx.OpcodeDict != null);
             var parser = new ZapParser(ctx, ctx.OpcodeDict, MakeOpcodeDict, ctx.InformMode);
-            var result = parser.Parse(stream, path);
+            Zapf.Parsing.ParseResult result;
+            try
+            {
+                result = parser.Parse(stream, path);
+            }
+            catch (SeriousError ser)
+            {
+                ctx.HandleSeriousError(ser);
+                Errors.ThrowFatal("syntax error");
+                return [];
+            }
 
             if (result.NumberOfSyntaxErrors > 0)
                 Errors.ThrowFatal("syntax error");

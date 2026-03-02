@@ -23,11 +23,11 @@ namespace Zapf.Parsing.Expressions
         public NumericLiteral(string text)
             : base(text)
         {
-            Value = int.Parse(text);
+            Value = int.Parse(text, System.Globalization.CultureInfo.InvariantCulture);
         }
 
         public NumericLiteral(int value)
-            : base(value.ToString())
+            : base(value.ToString(System.Globalization.CultureInfo.InvariantCulture))
         {
             Value = value;
         }
@@ -36,7 +36,7 @@ namespace Zapf.Parsing.Expressions
 
         public override string ToString()
         {
-            return Value.ToString();
+            return Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
         public override bool Equals(object? obj)
