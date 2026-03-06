@@ -68,7 +68,7 @@ namespace Zilf
             var firstArg = args[0];
 
             // Check if it's a known subcommand
-            if (firstArg is "build" or "repl" or "exec")
+            if (firstArg is "build" or "repl" or "exec" or "new")
                 return args;
 
             // Check if it's a help or version flag
@@ -377,6 +377,18 @@ namespace Zilf
 
             root.Subcommands.Add(execCommand);
 
+            // New project subcommand
+            var newCommand = new Command("new", "Create a new ZIL project from the empty sample template.");
+
+            var newProjectArgument = new Argument<string>("name")
+            {
+                Description = "Name or path of the project directory to create.",
+                HelpName = "project-name"
+            };
+
+            newCommand.Arguments.Add(newProjectArgument);
+            root.Subcommands.Add(newCommand);
+
             var spec = new ZilfCommandSpec(
                 root,
                 buildCommand,
@@ -446,6 +458,7 @@ namespace Zilf
             });
             replCommand.SetAction(ExecuteReplMode);
             execCommand.SetAction(parseResult => ExecuteExecMode(parseResult, parseResult.GetValue(spec.ExecInputArgument), parseResult.GetValue(spec.ExecExprOption)));
+            newCommand.SetAction(parseResult => ExecuteNewMode(parseResult.GetValue(newProjectArgument)));
 
             return spec;
         }
@@ -849,6 +862,87 @@ namespace Zilf
             }
         }
 
+        static int ExecuteNewMode(string? projectPath)
+        {
+            if (string.IsNullOrWhiteSpace(projectPath))
+            {
+                Console.Error.WriteLine("Error: Project name required for new mode.");
+                return 1;
+            }
+
+            string fullProjectPath;
+            try
+            {
+                fullProjectPath = Path.GetFullPath(projectPath);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                Console.Error.WriteLine($"Error: Invalid project path: {ex.Message}");
+                return 1;
+            }
+
+            var trimmedPath = fullProjectPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var projectName = Path.GetFileName(trimmedPath);
+
+            if (string.IsNullOrWhiteSpace(projectName))
+            {
+                Console.Error.WriteLine("Error: Could not determine project name from the specified path.");
+                return 1;
+            }
+
+            if (File.Exists(fullProjectPath))
+            {
+                Console.Error.WriteLine($"Error: A file already exists at '{fullProjectPath}'.");
+                return 1;
+            }
+
+            if (Directory.Exists(fullProjectPath))
+            {
+                Console.Error.WriteLine($"Error: Directory '{fullProjectPath}' already exists.");
+                return 1;
+            }
+
+            var sampleDir = FindNearbyDirectory(GetProgramDirectory(), ["sample"]);
+            var templatePath = sampleDir != null
+                ? Path.Combine(sampleDir, "empty", "empty.zil")
+                : null;
+
+            if (templatePath == null || !File.Exists(templatePath))
+            {
+                Console.Error.WriteLine("Error: Template file not found: sample/empty/empty.zil");
+                return 1;
+            }
+
+            var outputFile = Path.Combine(fullProjectPath, projectName + ".zil");
+
+            if (File.Exists(outputFile))
+            {
+                Console.Error.WriteLine($"Error: A file already exists at '{outputFile}'.");
+                return 1;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(fullProjectPath);
+                string content = File.ReadAllText(templatePath);
+                content = content.Replace("EMPTY GAME", projectName.ToUpperInvariant(), StringComparison.Ordinal);
+                File.WriteAllText(outputFile, content);
+            }
+            catch (IOException ex)
+            {
+                Console.Error.WriteLine("I/O error: " + ex.Message);
+                return 1;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Console.Error.WriteLine("Access error: " + ex.Message);
+                return 1;
+            }
+
+            Console.WriteLine($"Created {outputFile}");
+            return 0;
+        }
+
         static int WrapInFrontEnd(Func<FrontEnd, FrontEndResult> func)
         {
             var frontEnd = new FrontEnd();
@@ -1163,47 +1257,13 @@ namespace Zilf
             }
 
             // look for a "library" directory somewhere near zilf.exe
-            var strippables = new HashSet<string> { "bin", "debug", "release", "zilf", "src" };
             string[] libraryDirNames = { "Library", "library", "lib", "zillib" };
 
-            var zilfDir = Path.GetDirectoryName(System.AppContext.BaseDirectory);
-            Debug.Assert(zilfDir != null);
-
-            while (true)
+            var libraryDir = FindNearbyDirectory(GetProgramDirectory(), libraryDirNames);
+            if (libraryDir != null)
             {
-                bool found = false;
-
-                foreach (var n in libraryDirNames)
-                {
-                    var candidate = Path.Combine(zilfDir, n);
-
-                    if (Directory.Exists(candidate))
-                    {
-                        found = true;
-                        foreach (var path in RecursiveLibraryIncludePaths(candidate))
-                            includePaths.Add(path);
-                        break;
-                    }
-                }
-
-                if (!found)
-                {
-                    zilfDir += Path.DirectorySeparatorChar;
-                    var pos = strippables.Max(strippable =>
-                        zilfDir.LastIndexOf(Path.DirectorySeparatorChar + strippable + Path.DirectorySeparatorChar,
-                            StringComparison.InvariantCultureIgnoreCase));
-
-                    if (pos >= 0)
-                    {
-                        // remove part after split point and keep looking
-                        zilfDir = zilfDir[..pos];
-
-                        if (!string.IsNullOrEmpty(zilfDir))
-                            continue;
-                    }
-                }
-
-                break;
+                foreach (var path in RecursiveLibraryIncludePaths(libraryDir))
+                    includePaths.Add(path);
             }
 
             static IEnumerable<string> RecursiveLibraryIncludePaths(string parent)
@@ -1220,6 +1280,52 @@ namespace Zilf
 
                 return first.Concat(rest);
             }
+        }
+
+        internal static string GetProgramDirectory()
+        {
+            var assemblyLocation = typeof(Program).Assembly.Location;
+
+            if (!string.IsNullOrEmpty(assemblyLocation) && Path.GetDirectoryName(assemblyLocation) is string assemblyDir)
+                return assemblyDir;
+
+            return Path.GetDirectoryName(AppContext.BaseDirectory) ?? AppContext.BaseDirectory;
+        }
+
+        internal static string? FindNearbyDirectory(string startDir, IEnumerable<string> directoryNames)
+        {
+            var strippables = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
+            {
+                "bin",
+                "debug",
+                "release",
+                "zilf",
+                "src"
+            };
+
+            var currentDir = startDir;
+
+            while (!string.IsNullOrEmpty(currentDir))
+            {
+                foreach (var directoryName in directoryNames)
+                {
+                    var candidate = Path.Combine(currentDir, directoryName);
+                    if (Directory.Exists(candidate))
+                        return candidate;
+                }
+
+                currentDir += Path.DirectorySeparatorChar;
+                var pos = strippables.Max(strippable =>
+                    currentDir.LastIndexOf(Path.DirectorySeparatorChar + strippable + Path.DirectorySeparatorChar,
+                        StringComparison.InvariantCultureIgnoreCase));
+
+                if (pos < 0)
+                    break;
+
+                currentDir = currentDir[..pos];
+            }
+
+            return null;
         }
 
         // TODO: move Parse somewhere more sensible
