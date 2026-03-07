@@ -1660,7 +1660,7 @@ namespace Zilf.Emit.Glulx
             ; Status window selected?
             jz [gg_status_selected] -> rfalse
             sub i 1 -> push
-            callfi _rt_advance_cursor_x
+            callfi _rt_advance_cursor_x pop
             return";
 
         // Glulx textbuf/lexbuf format:

@@ -1026,9 +1026,15 @@ namespace Zilf.Interpreter
 
             if (newVersion == ZEnvironment.GLULX_ZVERSION)
             {
-                throw new InterpreterError(
-                    InterpreterMessages._0_Glulx_Output_Must_Be_Selected_On_The_Command_Line_With_Glulx,
-                    "VERSION");
+                if (ctx.IsGlulx16)
+                {
+                    throw new InterpreterError(
+                        InterpreterMessages._0_Glulx16_Cannot_Be_Combined_With_VERSION_GLULX,
+                        "VERSION");
+                }
+
+                ctx.SetZVersion(newVersion);
+                return new ZilFix(newVersion);
             }
 
             ctx.SetZVersion(newVersion);

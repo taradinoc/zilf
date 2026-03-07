@@ -23,6 +23,7 @@ using System.IO;
 using Zilf.Emit.Zap;
 using Zilf.Emit.Glulx;
 using Zilf.Interpreter;
+using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Diagnostics;
 using Zilf.Common;
@@ -78,12 +79,16 @@ namespace Zilf.Compiler
 
     public sealed class FrontEnd
     {
+        readonly Dictionary<Context, EvaluatedFileState> evaluatedFileStates = [];
+
         public IFileSystem FileSystem { get; init; } = PhysicalFileSystem.Instance;
         public IDiagnosticLogger Logger { get; init; } = new DefaultDiagnosticLogger();
 
         internal event EventHandler<ContextEventArgs>? InitializeContext;
 
         public IList<string> IncludePaths { get; } = new List<string>();
+
+        readonly record struct EvaluatedFileState(string Path, FileFlags Flags, ZilList? DefStructDefaults);
 
         sealed class ZapStreamFactory : IZapStreamFactory
         {
@@ -233,14 +238,48 @@ namespace Zilf.Compiler
             return Compile(ctx, inputFileName, outputFileName, ctx.WantDebugInfo);
         }
 
-        internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo) =>
-            InterpretOrCompile(ctx, inputFileName, outputFileName, true, wantDebugInfo);
+        internal FrontEndResult Compile(Context ctx, string inputFileName, string outputFileName, bool wantDebugInfo)
+        {
+            EvaluateSource(ctx, inputFileName);
+
+            if (ctx.ErrorCount == 0)
+            {
+                EmitCompiledGame(ctx, outputFileName, wantDebugInfo);
+            }
+
+            return MakeResult(ctx);
+        }
+
+        internal FrontEndResult EvaluateSource(Context ctx, string inputFileName)
+        {
+            EvaluateInput(ctx, inputFileName);
+            return MakeResult(ctx);
+        }
+
+        internal FrontEndResult EmitCompiledGame(Context ctx, string outputFileName, bool wantDebugInfo)
+        {
+            EmitCompilation(ctx, outputFileName, wantDebugInfo);
+            return MakeResult(ctx);
+        }
 
         FrontEndResult InterpretOrCompile(Context ctx, string inputFileName,
              string? outputFileName, bool wantCompile, bool wantDebugInfo)
         {
             Debug.Assert(!wantCompile || outputFileName != null);
 
+            EvaluateInput(ctx, inputFileName);
+
+            if (wantCompile && ctx.ErrorCount == 0)
+            {
+                Debug.Assert(outputFileName != null);
+                EmitCompilation(ctx, outputFileName, wantDebugInfo);
+            }
+
+            return MakeResult(ctx);
+        }
+
+        void EvaluateInput(Context ctx, string inputFileName)
+        {
             // open input file
             using var inputStream = FileSystem.OpenForReading(inputFileName);
 
@@ -258,46 +297,59 @@ namespace Zilf.Compiler
                     ctx.HandleError(ex);
                 }
 
-                // compile, if there were no evaluation errors
-                if (wantCompile && ctx.ErrorCount == 0)
-                {
-                    Debug.Assert(outputFileName != null);
+                evaluatedFileStates[ctx] = new(ctx.CurrentFile.Path, ctx.CurrentFile.Flags, ctx.CurrentFile.DefStructDefaults);
+            }
+        }
 
-                    ctx.RunHook("PRE-COMPILE");
-                    ctx.SetDefaultConstants();
-
-                    try
-                    {
-                        var gameOptions = MakeGameOptions(ctx);
-
-                        if (ctx.IsGlulx)
-                        {
-                            var streamFactory = new GlulxStreamFactory(this, outputFileName);
-                            using var gameBuilder = ctx.ZEnvironment.TargetPlatform == TargetPlatform.Glulx16
-                                ? new Emit.Glulx.GameBuilder16(streamFactory, (GlulxGameOptions)gameOptions)
-                                : new Emit.Glulx.GameBuilder(streamFactory, (GlulxGameOptions)gameOptions);
-                            Compilation.Compile(ctx, gameBuilder);
-                        }
-                        else
-                        {
-                            var zversion = ctx.ZEnvironment.ZVersion;
-                            var streamFactory = new ZapStreamFactory(this, outputFileName);
-
-                            var builderOptions = wantDebugInfo ? GameBuilderOptions.WantDebugInfo : GameBuilderOptions.None;
-                            if (!streamFactory.FrequentWordsFileExists)
-                                builderOptions |= GameBuilderOptions.WantFrequentWords;
-
-                            using var gameBuilder = new Emit.Zap.GameBuilder(zversion, streamFactory, builderOptions, (ZapGameOptions)gameOptions);
-                            Compilation.Compile(ctx, gameBuilder);
-                        }
-                    }
-                    catch (ZilErrorBase ex)     // catch fatals too
-                    {
-                        ctx.HandleError(ex);
-                    }
-                }
+        void EmitCompilation(Context ctx, string outputFileName, bool wantDebugInfo)
+        {
+            if (!evaluatedFileStates.TryGetValue(ctx, out var fileState))
+            {
+                throw new InvalidOperationException("Source must be evaluated before compilation.");
             }
 
+            using (ctx.PushFileContext(fileState.Path))
+            {
+                ctx.CurrentFile.Flags = fileState.Flags;
+                ctx.CurrentFile.DefStructDefaults = fileState.DefStructDefaults;
+
+                ctx.RunHook("PRE-COMPILE");
+                ctx.SetDefaultConstants();
+
+                try
+                {
+                    var gameOptions = MakeGameOptions(ctx);
+
+                    if (ctx.IsGlulx)
+                    {
+                        var streamFactory = new GlulxStreamFactory(this, outputFileName);
+                        using var gameBuilder = ctx.ZEnvironment.TargetPlatform == TargetPlatform.Glulx16
+                            ? new Emit.Glulx.GameBuilder16(streamFactory, (GlulxGameOptions)gameOptions)
+                            : new Emit.Glulx.GameBuilder(streamFactory, (GlulxGameOptions)gameOptions);
+                        Compilation.Compile(ctx, gameBuilder);
+                    }
+                    else
+                    {
+                        var zversion = ctx.ZEnvironment.ZVersion;
+                        var streamFactory = new ZapStreamFactory(this, outputFileName);
+
+                        var builderOptions = wantDebugInfo ? GameBuilderOptions.WantDebugInfo : GameBuilderOptions.None;
+                        if (!streamFactory.FrequentWordsFileExists)
+                            builderOptions |= GameBuilderOptions.WantFrequentWords;
+
+                        using var gameBuilder = new Emit.Zap.GameBuilder(zversion, streamFactory, builderOptions, (ZapGameOptions)gameOptions);
+                        Compilation.Compile(ctx, gameBuilder);
+                    }
+                }
+                catch (ZilErrorBase ex)     // catch fatals too
+                {
+                    ctx.HandleError(ex);
+                }
+            }
+        }
+
+        static FrontEndResult MakeResult(Context ctx)
+        {
             return new(
                 Success: ctx.ErrorCount == 0,
                 ErrorCount: ctx.ErrorCount,

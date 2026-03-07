@@ -499,6 +499,8 @@ namespace Zilf
             Option<bool> ExecWarningsAsErrorsOption,
             Option<string[]> ExecSuppressWarningsOption);
 
+        internal sealed record CompileOutputPaths(string IntermediateFile, string? FinalAssemblerOutput);
+
         static int ExecuteCompileMode(CommandParseResult parseResult, string? inputFile)
         {
             if (string.IsNullOrEmpty(inputFile))
@@ -528,7 +530,6 @@ namespace Zilf
             Option<bool> stopAfterCompileOption = spec.BuildStopAfterCompileOption;
             Option<string[]> zapfPassThroughOption = spec.BuildZapfPassThroughOption;
 
-            // TODO: reorder front-end processing so <VERSION GLULX> can affect the output file extension
             var output = parseResult.GetValue(outputArgument);
             var stopAfter = parseResult.GetValue(stopAfterCompileOption);
 
@@ -537,43 +538,12 @@ namespace Zilf
             if (hasIdeInfo)
                 stopAfter = true;
 
-            // Determine the intermediate assembly filename and the final assembler output filename
-            string intermediateFile;
-            string? finalAssemblerOutput = null;
-
-            if (string.IsNullOrEmpty(output))
-            {
-                // No second filename specified: use default intermediate output name
-                intermediateFile = Path.ChangeExtension(inputFile, ctx.IsGlulx ? ".asm" : ".zap");
-            }
-            else
-            {
-                // Second filename specified: check if it should be treated as intermediate or final output
-                var outputExt = Path.GetExtension(output);
-                var isIntermediateExtension = outputExt.Equals(".zap", StringComparison.OrdinalIgnoreCase) || 
-                                               outputExt.Equals(".asm", StringComparison.OrdinalIgnoreCase);
-
-                if (stopAfter || isIntermediateExtension)
-                {
-                    // Treat as intermediate assembly output
-                    intermediateFile = output;
-                }
-                else
-                {
-                    // Treat as final assembler output; generate intermediate name from input
-                    intermediateFile = Path.ChangeExtension(inputFile, ctx.IsGlulx ? ".asm" : ".zap");
-                    finalAssemblerOutput = output;
-                }
-            }
-
-            var outFile = intermediateFile;
-
             // Perform compilation, then optionally invoke ZAPF
             var frontEnd = new FrontEnd();
             FrontEndResult result;
             try
             {
-                result = frontEnd.Compile(ctx, inputFile, outFile, ctx.WantDebugInfo);
+                result = frontEnd.EvaluateSource(ctx, inputFile);
             }
             catch (FileNotFoundException ex)
             {
@@ -584,6 +554,26 @@ namespace Zilf
             {
                 Console.Error.WriteLine("I/O error: " + ex.Message);
                 return 1;
+            }
+
+            string? finalAssemblerOutput = null;
+            string? outFile = null;
+
+            if (result.ErrorCount == 0)
+            {
+                var outputPaths = ResolveCompileOutputPaths(inputFile, output, stopAfter, ctx.IsGlulx);
+                outFile = outputPaths.IntermediateFile;
+                finalAssemblerOutput = outputPaths.FinalAssemblerOutput;
+
+                try
+                {
+                    result = frontEnd.EmitCompiledGame(ctx, outFile, ctx.WantDebugInfo);
+                }
+                catch (IOException ex)
+                {
+                    Console.Error.WriteLine("I/O error: " + ex.Message);
+                    return 1;
+                }
             }
 
             if (hasIdeInfo)
@@ -681,6 +671,29 @@ namespace Zilf
                 var exit = RunZapfProcess(zapfExe, outFile!, asmArgsExpanded, finalAssemblerOutput);
                 return exit;
             }
+        }
+
+        internal static CompileOutputPaths ResolveCompileOutputPaths(
+            string inputFile,
+            string? output,
+            bool stopAfter,
+            bool isGlulx)
+        {
+            if (string.IsNullOrEmpty(output))
+            {
+                return new(Path.ChangeExtension(inputFile, isGlulx ? ".asm" : ".zap"), null);
+            }
+
+            var outputExt = Path.GetExtension(output);
+            var isIntermediateExtension = outputExt.Equals(".zap", StringComparison.OrdinalIgnoreCase) ||
+                                          outputExt.Equals(".asm", StringComparison.OrdinalIgnoreCase);
+
+            if (stopAfter || isIntermediateExtension)
+            {
+                return new(output, null);
+            }
+
+            return new(Path.ChangeExtension(inputFile, isGlulx ? ".asm" : ".zap"), output);
         }
 
         private static string? FindZapfExecutable()

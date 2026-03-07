@@ -11,6 +11,12 @@ and this project adheres to
 - Added a new execution mode: `zilf new <project-name>` will create a new
   ZIL file, in a new directory, using the `empty.zil` sample as a template.
 
+### Changed
+
+- `<VERSION GLULX>` can now be used to select Glulx output from source code.
+  It cannot be combined with `--glulx16`, which is meant to be used to emulate
+  the Z-machine.
+
 ## [1.6.1] (March 2, 2026)
 
 ### Fixed
