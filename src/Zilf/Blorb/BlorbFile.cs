@@ -26,8 +26,10 @@ namespace Zilf.Blorb
     {
         private List<byte[]> pictures = [];
         private List<PictureType> pictureTypes = [];
+        private byte[]? executable;
+        private bool executableIsGlulx;
 
-        public bool IsEmpty => pictures.Count == 0;
+        public bool IsEmpty => pictures.Count == 0 && executable == null;
 
         public int AddPicture(byte[] data)
         {
@@ -44,12 +46,21 @@ namespace Zilf.Blorb
             return pictures.Count;
         }
 
+        public void AddExecutable(byte[] data, bool isGlulx)
+        {
+            executable = data ?? throw new ArgumentNullException(nameof(data));
+            executableIsGlulx = isGlulx;
+        }
+
         public void WriteTo(Stream stream)
         {
             const int MagicNumber = ('F' << 24) + ('O' << 16) + ('R' << 8) + 'M';
             const int FormType = ('I' << 24) + ('F' << 16) + ('R' << 8) + 'S';
+            const int ExecUsage = ('E' << 24) + ('x' << 16) + ('e' << 8) + 'c';
             const int PictureUsage = ('P' << 24) + ('i' << 16) + ('c' << 8) + 't';
             const int RidxChunk = ('R' << 24) + ('I' << 16) + ('d' << 8) + 'x';
+            const int ZcodChunk = ('Z' << 24) + ('C' << 16) + ('O' << 8) + 'D';
+            const int GlulChunk = ('G' << 24) + ('L' << 16) + ('U' << 8) + 'L';
             const int PngChunk = ('P' << 24) + ('N' << 16) + ('G' << 8) + ' ';
             const int JpegChunk = ('J' << 24) + ('P' << 16) + ('E' << 8) + 'G';
 
@@ -60,13 +71,29 @@ namespace Zilf.Blorb
             WriteInt(stream, FormType);
 
             int pictureCount = pictures.Count;
+            bool hasExecutable = executable != null;
+            int resourceCount = pictureCount + (hasExecutable ? 1 : 0);
             var startingPositions = new List<int>(pictureCount);
+            int executablePosition = -1;
 
             // placeholder resource index, will be filled in later
-            int ridxLength = 12 + pictureCount * 12;
+            int ridxLength = 12 + resourceCount * 12;
             for (int i = 0; i < ridxLength; i++)
             {
                 stream.WriteByte(0);
+            }
+
+            if (hasExecutable)
+            {
+                var executableData = executable!;
+                executablePosition = (int)stream.Position;
+
+                WriteInt(stream, executableIsGlulx ? GlulChunk : ZcodChunk);
+                WriteInt(stream, executableData.Length);
+                stream.Write(executableData);
+
+                if ((stream.Position % 2) != 0)
+                    stream.WriteByte(0);
             }
 
             // picture chunks
@@ -92,7 +119,14 @@ namespace Zilf.Blorb
             stream.Position = 12;
             WriteInt(stream, RidxChunk);
             WriteInt(stream, ridxLength - 8);
-            WriteInt(stream, pictureCount);
+            WriteInt(stream, resourceCount);
+
+            if (hasExecutable)
+            {
+                WriteInt(stream, ExecUsage);
+                WriteInt(stream, 0);
+                WriteInt(stream, executablePosition);
+            }
 
             for (int i = 0; i < pictureCount; i++)
             {

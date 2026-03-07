@@ -618,16 +618,15 @@ namespace Zilf
                 return 2;
             }
 
-            // Write Blorb file if needed
-            if (!ctx.Blorb.IsEmpty)
-            {
-                string blorbFile = Path.ChangeExtension(finalAssemblerOutput ?? inputFile, ".blorb");
-                using var stream = new FileStream(blorbFile, FileMode.Create, FileAccess.Write);
-                ctx.Blorb.WriteTo(stream);
-            }
-
             if (stopAfter)
             {
+                if (!ctx.Blorb.IsEmpty)
+                {
+                    var blorbFile = ResolveBlorbOutputPath(outFile!, finalAssemblerOutput, stopAfter: true, ctx.IsGlulx, ctx.ZEnvironment.ZVersion);
+                    using var stream = new FileStream(blorbFile, FileMode.Create, FileAccess.Write);
+                    ctx.Blorb.WriteTo(stream);
+                }
+
                 return 0;
             }
 
@@ -656,7 +655,8 @@ namespace Zilf
                 }
 
                 var exit = RunGlazerProcess(glazerExe, outFile!, asmArgsExpanded, finalAssemblerOutput);
-                return exit;
+                if (exit != 0)
+                    return exit;
             }
             else
             {
@@ -669,8 +669,29 @@ namespace Zilf
                 }
 
                 var exit = RunZapfProcess(zapfExe, outFile!, asmArgsExpanded, finalAssemblerOutput);
-                return exit;
+                if (exit != 0)
+                    return exit;
             }
+
+            if (!ctx.Blorb.IsEmpty)
+            {
+                var storyFile = ResolveFinalStoryOutputPath(outFile!, finalAssemblerOutput, ctx.IsGlulx, ctx.ZEnvironment.ZVersion);
+                if (!File.Exists(storyFile))
+                {
+                    Console.Error.WriteLine($"Assembled story file not found: {storyFile}");
+                    return 1;
+                }
+
+                ctx.Blorb.AddExecutable(File.ReadAllBytes(storyFile), ctx.IsGlulx);
+
+                var blorbFile = ResolveBlorbOutputPath(outFile!, finalAssemblerOutput, stopAfter: false, ctx.IsGlulx, ctx.ZEnvironment.ZVersion);
+                using var stream = new FileStream(blorbFile, FileMode.Create, FileAccess.Write);
+                ctx.Blorb.WriteTo(stream);
+
+                Console.WriteLine($"Created {blorbFile}");
+            }
+
+            return 0;
         }
 
         internal static CompileOutputPaths ResolveCompileOutputPaths(
@@ -694,6 +715,25 @@ namespace Zilf
             }
 
             return new(Path.ChangeExtension(inputFile, isGlulx ? ".asm" : ".zap"), output);
+        }
+
+        internal static string ResolveFinalStoryOutputPath(string assemblerInputFile, string? output, bool isGlulx, int zVersion)
+        {
+            if (!string.IsNullOrEmpty(output))
+                return output;
+
+            return isGlulx
+                ? Path.ChangeExtension(assemblerInputFile, ".ulx")
+                : Path.ChangeExtension(assemblerInputFile, $".z{zVersion}");
+        }
+
+        internal static string ResolveBlorbOutputPath(string intermediateFile, string? output, bool stopAfter, bool isGlulx, int zVersion)
+        {
+            var basePath = stopAfter
+                ? intermediateFile
+                : ResolveFinalStoryOutputPath(intermediateFile, output, isGlulx, zVersion);
+
+            return Path.ChangeExtension(basePath, stopAfter ? ".blorb" : isGlulx ? ".gblorb" : ".zblorb");
         }
 
         private static string? FindZapfExecutable()

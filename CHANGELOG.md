@@ -11,6 +11,10 @@ and this project adheres to
 - Added a new execution mode: `zilf new <project-name>` will create a new
   ZIL file, in a new directory, using the `empty.zil` sample as a template.
 
+- When using `BLORB-PICTURE` to bundle image resources into a Blorb file, ZILF
+  now also packages the story file after assembly into a `.zblorb` or `.gblorb`
+  file (unless the `-S` option is used to stop before assembly).
+
 ### Changed
 
 - `<VERSION GLULX>` can now be used to select Glulx output from source code.

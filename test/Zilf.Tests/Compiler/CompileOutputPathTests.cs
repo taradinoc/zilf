@@ -94,6 +94,71 @@ namespace Zilf.Tests.Compiler
         }
 
         [TestMethod]
+        public void Default_ZMachine_Assembler_Output_Uses_Versioned_Extension()
+        {
+            var asmPath = Path.GetFullPath("story.zap");
+
+            var outputPath = Zilf.Program.ResolveFinalStoryOutputPath(asmPath, null, isGlulx: false, zVersion: 5);
+
+            Assert.AreEqual(Path.ChangeExtension(asmPath, ".z5"), outputPath);
+        }
+
+        [TestMethod]
+        public void Default_Glulx_Assembler_Output_Uses_Ulx_Extension()
+        {
+            var asmPath = Path.GetFullPath("story.asm");
+
+            var outputPath = Zilf.Program.ResolveFinalStoryOutputPath(asmPath, null, isGlulx: true, zVersion: 5);
+
+            Assert.AreEqual(Path.ChangeExtension(asmPath, ".ulx"), outputPath);
+        }
+
+        [TestMethod]
+        public void CompileOnly_Blorb_Output_Uses_Plain_Blorb_Extension()
+        {
+            var intermediatePath = Path.GetFullPath("story.asm");
+
+            var blorbPath = Zilf.Program.ResolveBlorbOutputPath(
+                intermediatePath,
+                output: null,
+                stopAfter: true,
+                isGlulx: true,
+                zVersion: 5);
+
+            Assert.AreEqual(Path.ChangeExtension(intermediatePath, ".blorb"), blorbPath);
+        }
+
+        [TestMethod]
+        public void FullBuild_Blorb_Output_Uses_Zblorb_Extension_For_ZMachine()
+        {
+            var intermediatePath = Path.GetFullPath("custom-output.zap");
+
+            var blorbPath = Zilf.Program.ResolveBlorbOutputPath(
+                intermediatePath,
+                output: null,
+                stopAfter: false,
+                isGlulx: false,
+                zVersion: 3);
+
+            Assert.AreEqual(Path.ChangeExtension(intermediatePath, ".zblorb"), blorbPath);
+        }
+
+        [TestMethod]
+        public void FullBuild_Blorb_Output_Uses_Gblorb_Extension_For_Glulx()
+        {
+            var intermediatePath = Path.GetFullPath("custom-output.asm");
+
+            var blorbPath = Zilf.Program.ResolveBlorbOutputPath(
+                intermediatePath,
+                output: null,
+                stopAfter: false,
+                isGlulx: true,
+                zVersion: 5);
+
+            Assert.AreEqual(Path.ChangeExtension(intermediatePath, ".gblorb"), blorbPath);
+        }
+
+        [TestMethod]
         public void Version_Glulx_Conflicts_With_Glulx16_Target()
         {
             var mainPath = Path.GetFullPath("story.zil");
