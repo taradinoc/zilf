@@ -1,0 +1,164 @@
+:root {
+    color-scheme: light;
+    --playport-min-height: 70vh;
+}
+
+body {
+    /* Don't let Parchment change it */
+    background-color: var(--bs-body-bg) !important;
+}
+
+body.site-body,
+body.play-body {
+    min-height: 100vh;
+}
+
+.site-shell,
+.play-shell {
+    min-height: 100vh;
+}
+
+.sidebar-sticky {
+    position: sticky;
+    top: 1.5rem;
+}
+
+.sidebar-cover {
+    max-width: 12rem;
+}
+
+.sidebar-nav .nav-link {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.sidebar-subnav {
+    border-left: 1px solid var(--bs-border-color);
+    margin-left: 0.15rem;
+    padding-left: 0.9rem;
+}
+
+.sidebar-subnav .nav-link {
+    font-size: 0.95rem;
+}
+
+.site-heading h1 {
+    font-size: clamp(2.4rem, 4vw, 4rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+}
+
+.site-heading .author-line {
+    color: var(--bs-secondary-color);
+    font-size: 1.4rem;
+    font-style: italic;
+}
+
+/* .site-copy,
+.site-footer {
+    font-size: 1.08rem;
+    line-height: 1.6;
+} */
+
+.site-copy p:last-child,
+.site-footer p:last-child {
+    margin-bottom: 0;
+}
+
+.source-copy {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color-translucent);
+    border-radius: 0.75rem;
+    font-family: "Iosevka", "SFMono-Regular", Consolas, monospace;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0;
+    overflow-x: auto;
+    padding: 1rem 1.25rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.play-title {
+    font-size: clamp(1.85rem, 3vw, 2.7rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.play-byline {
+    color: var(--bs-secondary-color);
+    font-size: 1.15rem;
+    font-style: italic;
+}
+
+.playport-card {
+    min-height: calc(var(--playport-min-height) + 2rem);
+    overflow: hidden;
+}
+
+.play-shell div#gameport {
+    inset: auto;
+    margin: 0;
+    max-width: none;
+    height: auto !important;
+    min-height: var(--playport-min-height);
+    overflow: clip;
+    position: relative;
+    width: 100%;
+}
+
+.play-shell #windowport {
+    height: var(--playport-min-height);
+    min-height: var(--playport-min-height);
+    position: relative;
+    width: 100%;
+}
+
+.play-shell #about {
+    margin-bottom: 1rem;
+    max-width: none;
+    text-align: left;
+}
+
+.play-shell #about h1 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.play-shell #loadingpane {
+    left: 0;
+    right: 0;
+    top: 6rem;
+}
+
+.play-shell #errorpane {
+    max-width: min(100% - 2rem, 38rem);
+    z-index: 10;
+}
+
+.interpreter-credit {
+    color: var(--bs-secondary-color);
+    font-size: 0.9rem;
+}
+
+.interpreter-credit a {
+    color: inherit;
+}
+
+@media (max-width: 991.98px) {
+    :root {
+        --playport-min-height: 60vh;
+    }
+
+    .sidebar-sticky {
+        position: static;
+    }
+}
+
+@media (max-width: 575.98px) {
+    :root {
+        --playport-min-height: 52vh;
+    }
+}

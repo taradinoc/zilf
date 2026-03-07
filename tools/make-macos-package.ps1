@@ -5,7 +5,7 @@
 .DESCRIPTION
   Produces a signed-less macOS installer package (.pkg) using fpm -t osxpkg from
   the staged directory created by the Stage target. Installs under /opt/zilf and
-  creates/removes symlinks in /usr/local/bin for `zilf` and `zapf`.
+  creates/removes symlinks in /usr/local/bin for `zilf`, `zapf`, and `zilfpub`.
 
 .PARAMETER Source
   Path to the staged directory, e.g. Package/Release/Stage/zilf-1.2.3-osx-arm64
@@ -102,6 +102,7 @@ BIN_DIR="/opt/zilf/bin"
 mkdir -p /usr/local/bin
 ln -sf "$BIN_DIR/zilf" /usr/local/bin/zilf
 ln -sf "$BIN_DIR/zapf" /usr/local/bin/zapf
+ln -sf "$BIN_DIR/zilfpub" /usr/local/bin/zilfpub
 exit 0
 '@
 
@@ -111,13 +112,14 @@ set -e
 remove_link() {
   if [ -L "$1" ]; then
     TARGET="$(readlink "$1")"
-    if [ "$TARGET" = "/opt/zilf/bin/zilf" ] || [ "$TARGET" = "/opt/zilf/bin/zapf" ]; then
+    if [ "$TARGET" = "/opt/zilf/bin/zilf" ] || [ "$TARGET" = "/opt/zilf/bin/zapf" ] || [ "$TARGET" = "/opt/zilf/bin/zilfpub" ]; then
       rm -f "$1"
     fi
   fi
 }
 remove_link /usr/local/bin/zilf
 remove_link /usr/local/bin/zapf
+remove_link /usr/local/bin/zilfpub
 exit 0
 '@
 

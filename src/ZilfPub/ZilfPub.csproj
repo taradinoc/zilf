@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>zilfpub</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TransformOnBuild>true</TransformOnBuild>
+    <RuntimeIdentifiers>win-x86;win-x64;linux-arm;linux-arm64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PortableTarget)' != 'true'">
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <!-- <PublishSingleFile>true</PublishSingleFile> -->
+    <PublishAot>true</PublishAot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-rc.2.25502.107" />
+    <PackageReference Include="System.CodeDom" Version="10.0.3" />
+    <PackageReference Include="T4.BuildTools" Version="3.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <T4Preprocess Include="*.tt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Static\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

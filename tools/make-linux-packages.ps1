@@ -9,7 +9,7 @@
 		- Splits version/iteration for RPM/DEB compliance (e.g. 1.2.3-beta1 -> 1.2.3 + beta1)
 		- Maps RID architecture to Debian/RPM arch names
 		- Installs under /opt/zilf using --prefix, preserving staged layout (bin/, sample/, zillib/)
-		- Creates post-install/pre-remove scripts to manage /usr/bin symlinks (zilf, zapf)
+		- Creates post-install/pre-remove scripts to manage /usr/bin symlinks (zilf, zapf, zilfpub)
 		- Emits files named: zilf-<version>-linux-<arch>.deb/.rpm in the destination directory
 
 .PARAMETER Source
@@ -107,6 +107,7 @@ set -e
 BIN_DIR="/opt/zilf/bin"
 ln -sf "$BIN_DIR/zilf" /usr/bin/zilf
 ln -sf "$BIN_DIR/zapf" /usr/bin/zapf
+ln -sf "$BIN_DIR/zilfpub" /usr/bin/zilfpub
 exit 0
 '@
 
@@ -116,13 +117,14 @@ set -e
 remove_link() {
 	if [ -L "$1" ]; then
 		TARGET="$(readlink -f "$1" 2>/dev/null || readlink "$1")"
-		if [ "$TARGET" = "/opt/zilf/bin/zilf" ] || [ "$TARGET" = "/opt/zilf/bin/zapf" ]; then
+		if [ "$TARGET" = "/opt/zilf/bin/zilf" ] || [ "$TARGET" = "/opt/zilf/bin/zapf" ] || [ "$TARGET" = "/opt/zilf/bin/zilfpub" ]; then
 			rm -f "$1"
 		fi
 	fi
 }
 remove_link /usr/bin/zilf
 remove_link /usr/bin/zapf
+remove_link /usr/bin/zilfpub
 exit 0
 '@
 

@@ -1,0 +1,62 @@
+<#@ template language="C#" #>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title><#= HtmlEncode(model.AuthorName) #> - <#= HtmlEncode(model.ProjectName) #></title>
+        <meta name="author" content="<#= HtmlEncode(model.AuthorName) #>" />
+        <meta name="description" content="A page for the game <#= HtmlEncode(model.ProjectName) #> by <#= HtmlEncode(model.AuthorName) #>." />
+        <link rel="stylesheet" href="vendor/bootstrap/bootstrap.min.css" />
+        <link rel="stylesheet" href="css/site.css" type="text/css" media="all" />
+    </head>
+    <body class="site-body" data-bs-theme="light">
+        <div class="container-fluid py-4 site-shell">
+            <div class="row g-4 align-items-start">
+                <aside class="col-12 col-lg-3 col-xl-2">
+                    <div class="card border-0 bg-transparent sidebar-card sidebar-sticky">
+<# if (model.CoverArtUri is not null) { #>
+                        <div class="mb-4 sidebar-cover">
+                            <img class="img-fluid rounded shadow-sm" src="<#= HtmlEncode(model.CoverArtUri) #>" alt="Cover art" />
+                        </div>
+<# } #>
+                        <nav class="nav flex-column gap-2 sidebar-nav" aria-label="Story links">
+                            <a class="nav-link link-primary" href="play.html">Play In-Browser</a>
+<# if (model.HasSourceFiles) { #>
+                            <a class="nav-link link-primary" href="<#= HtmlEncode(model.SourceFiles[0].PageUri) #>">Source Text <span class="text-body-secondary small">(link)</span></a>
+<# } #>
+                            <a class="nav-link link-primary" href="<#= HtmlEncode(model.StoryFileUri) #>">Story File <span class="text-body-secondary small text-nowrap">(<#= HtmlEncodeNbsp(model.StoryFileFormat) #>,&nbsp;<#= HtmlEncodeNbsp(model.StoryFileSize) #>)</span></a>
+                        </nav>
+                    </div>
+                </aside>
+                <main class="col-12 col-lg-9 col-xl-10 col-xxl-9">
+                    <div class="site-content">
+                        <header class="site-heading mb-4">
+                            <h1 class="mb-2"><#= HtmlEncode(model.ProjectName) #></h1>
+                            <p class="author-line mb-1">by <#= HtmlEncode(model.AuthorName) #></p>
+                            <p class="text-body-secondary mb-0">Release <#= model.ReleaseId #></p>
+                        </header>
+<# if (model.DescriptionHtml is not null) { #>
+                        <section class="site-copy mb-4">
+                            <#= model.DescriptionHtml #>
+                        </section>
+<# } #>
+                        <footer class="site-footer border-top pt-3 small">
+                            <p><em><#= HtmlEncode(model.ProjectName) #></em><# if (model.StoryFileHasZilfVersion) { #> was created with <a href="https://zilf.io/">ZILF</a> and<# } #> has IFID <#= HtmlEncode(model.IFID) #>.</p>
+                            <p>To play a work like this one, you can download the story file and run it with an interpreter program, or you can play it right now by following the "Play In-Browser" link.</p>
+                        </footer>
+                    </div>
+                </main>
+            </div>
+        </div>
+        <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    </body>
+</html>
+<#+
+    private static string HtmlEncode(string obj)
+    {
+        return System.Net.WebUtility.HtmlEncode(obj);
+    }
+
+    private static string HtmlEncodeNbsp(string obj) => HtmlEncode(obj).Replace(" ", "&nbsp;");
+#>

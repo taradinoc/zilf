@@ -1,0 +1,234 @@
+.source-copy .zil-comment {
+    color: #6b7280;
+    font-style: italic;
+}
+
+.source-copy .zil-comment span {
+    color: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+}
+
+.source-copy .zil-comment .zil-prefix-comment {
+    color: inherit;
+    font-weight: 700;
+}
+
+.source-copy .zil-comment .zil-prefix-macro {
+    color: #2563eb;
+    font-style: normal;
+    font-weight: 700;
+}
+
+.source-copy .zil-quoted,
+.source-copy .zil-quasiquoted {
+    background-color: rgba(37, 99, 235, 0.06);
+    border-radius: 0.2rem;
+}
+
+.source-copy .zil-structure {
+    border-radius: 0.15rem;
+}
+
+.source-copy .zil-structure-form {
+    box-shadow: none;
+}
+
+.source-copy .zil-structure-list {
+    box-shadow: none;
+}
+
+.source-copy .zil-structure-vector {
+    box-shadow: none;
+}
+
+.source-copy .zil-structure-struct {
+    box-shadow: none;
+}
+
+.source-copy .zil-quasiquoted {
+    background-color: rgba(124, 58, 237, 0.08);
+}
+
+.source-copy .zil-quasiquoted .zil-unquoted {
+    background-color: rgba(15, 118, 110, 0.1);
+    border-radius: 0.2rem;
+}
+
+.source-copy .zil-string {
+    color: #0f766e;
+}
+
+.source-copy .zil-char {
+    color: #0f766e;
+    font-weight: 600;
+}
+
+.source-copy .zil-number-dec,
+.source-copy .zil-number-bin,
+.source-copy .zil-number-oct,
+.source-copy .zil-number-hex {
+    color: #b45309;
+}
+
+.source-copy .zil-prefix-macro,
+.source-copy .zil-prefix-local,
+.source-copy .zil-prefix-global,
+.source-copy .zil-prefix-quote,
+.source-copy .zil-prefix-quasiquote,
+.source-copy .zil-prefix-unquote,
+.source-copy .zil-prefix-bang,
+.source-copy .zil-prefix-sharp {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.source-copy .zil-bracket-form {
+    color: #4f46e5;
+}
+
+.source-copy .zil-bracket-list {
+    color: #0f766e;
+}
+
+.source-copy .zil-bracket-vector {
+    color: #0891b2;
+}
+
+.source-copy .zil-bracket-struct {
+    color: #7c3aed;
+}
+
+.source-copy .zil-keyword-control,
+.source-copy .zil-keyword-output,
+.source-copy .zil-keyword-zmodel,
+.source-copy .zil-keyword-meta,
+.source-copy .zil-keyword-def-func,
+.source-copy .zil-keyword-def-object,
+.source-copy .zil-keyword-def-global,
+.source-copy .zil-keyword-def-local,
+.source-copy .zil-keyword-type-op,
+.source-copy .zil-keyword-type-def,
+.source-copy .zil-keyword-syntax,
+.source-copy .zil-keyword-op-arith,
+.source-copy .zil-keyword-op-bit,
+.source-copy .zil-keyword-op-cmp,
+.source-copy .zil-keyword-bool,
+.source-copy .zil-keyword-else {
+    color: #7c3aed;
+    font-weight: 600;
+}
+
+.source-copy .zil-atom {
+    color: inherit;
+}
+
+.source-copy .zil-invalid {
+    color: #b91c1c;
+    text-decoration: wavy underline;
+    text-decoration-color: #b91c1c;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-comment {
+    color: #9ca3af;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-comment .zil-prefix-comment {
+    color: inherit;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-comment .zil-prefix-macro {
+    color: #60a5fa;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-quoted,
+[data-bs-theme="dark"] .source-copy .zil-quasiquoted {
+    background-color: rgba(96, 165, 250, 0.14);
+}
+
+[data-bs-theme="dark"] .source-copy .zil-structure-form {
+    box-shadow: none;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-structure-list {
+    box-shadow: none;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-structure-vector {
+    box-shadow: none;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-structure-struct {
+    box-shadow: none;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-quasiquoted {
+    background-color: rgba(196, 181, 253, 0.14);
+}
+
+[data-bs-theme="dark"] .source-copy .zil-quasiquoted .zil-unquoted {
+    background-color: rgba(45, 212, 191, 0.14);
+}
+
+[data-bs-theme="dark"] .source-copy .zil-string,
+[data-bs-theme="dark"] .source-copy .zil-char {
+    color: #2dd4bf;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-number-dec,
+[data-bs-theme="dark"] .source-copy .zil-number-bin,
+[data-bs-theme="dark"] .source-copy .zil-number-oct,
+[data-bs-theme="dark"] .source-copy .zil-number-hex {
+    color: #f59e0b;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-prefix-macro,
+[data-bs-theme="dark"] .source-copy .zil-prefix-local,
+[data-bs-theme="dark"] .source-copy .zil-prefix-global,
+[data-bs-theme="dark"] .source-copy .zil-prefix-quote,
+[data-bs-theme="dark"] .source-copy .zil-prefix-quasiquote,
+[data-bs-theme="dark"] .source-copy .zil-prefix-unquote,
+[data-bs-theme="dark"] .source-copy .zil-prefix-bang,
+[data-bs-theme="dark"] .source-copy .zil-prefix-sharp {
+    color: #60a5fa;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-bracket-form {
+    color: #a78bfa;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-bracket-list {
+    color: #34d399;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-bracket-vector {
+    color: #22d3ee;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-bracket-struct {
+    color: #c4b5fd;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-keyword-control,
+[data-bs-theme="dark"] .source-copy .zil-keyword-output,
+[data-bs-theme="dark"] .source-copy .zil-keyword-zmodel,
+[data-bs-theme="dark"] .source-copy .zil-keyword-meta,
+[data-bs-theme="dark"] .source-copy .zil-keyword-def-func,
+[data-bs-theme="dark"] .source-copy .zil-keyword-def-object,
+[data-bs-theme="dark"] .source-copy .zil-keyword-def-global,
+[data-bs-theme="dark"] .source-copy .zil-keyword-def-local,
+[data-bs-theme="dark"] .source-copy .zil-keyword-type-op,
+[data-bs-theme="dark"] .source-copy .zil-keyword-type-def,
+[data-bs-theme="dark"] .source-copy .zil-keyword-syntax,
+[data-bs-theme="dark"] .source-copy .zil-keyword-op-arith,
+[data-bs-theme="dark"] .source-copy .zil-keyword-op-bit,
+[data-bs-theme="dark"] .source-copy .zil-keyword-op-cmp,
+[data-bs-theme="dark"] .source-copy .zil-keyword-bool,
+[data-bs-theme="dark"] .source-copy .zil-keyword-else {
+    color: #c4b5fd;
+}
+
+[data-bs-theme="dark"] .source-copy .zil-invalid {
+    color: #fca5a5;
+    text-decoration-color: #fca5a5;
+}

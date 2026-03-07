@@ -8,6 +8,14 @@
 <CONSTANT IFID-ARRAY
 	<PTABLE (STRING) "UUID://191CA66D-29E1-4C20-8A2C-CE80B0633521//">>
 
+;"Metadata for publishing"
+<SETG PUBLISH-TITLE "Rascal">
+<SETG PUBLISH-AUTHOR "Tara McGrew">
+<SETG PUBLISH-COVER-ART "coverart.jpg">
+<SETG PUBLISH-DESCRIPTION "A tiny roguelike for ZILF.">
+<SETG PUBLISH-THEME "Litera">
+<SETG PUBLISH-SOURCE? T>
+
 ;"Rascal's ASCII art (RASCII art?) uses '|', the traditional ZIL newline
   character, so we need to change CRLF-CHARACTER in order to be able to put it
   into a string. Since the most reasonable alternative ('^', Inform's newline
