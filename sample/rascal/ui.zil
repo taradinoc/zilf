@@ -479,7 +479,7 @@ Returns:
           (ELSE <CLEAR -1>)>>
 
 <ROUTINE INSTRUCTIONS ("OPT" IN-GAME? "AUX" COL C)
-    <COLOR 1 1>
+    <UI-RESET>
     <COND (.IN-GAME? <CLEAR 1>)
           (ELSE
            <SPLIT <LOWCORE SCRV>>
