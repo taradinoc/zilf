@@ -611,7 +611,7 @@ Returns:
     <SETG SEED-HI 0>
     <SETG SEED-LO 0>
     <DO (I 1 8) <PUTB ,SEED-BUF <- .I 1> 0>>
-    <COLOR 1 1>
+    <UI-RESET>
     <CLEAR -2>
     <SET COL </ <- <LOWCORE SCRH> 58> 2>>
     <CURSET 10 .COL>
@@ -901,7 +901,7 @@ Returns:
 <ROUTINE VICTORY ("AUX" COL C)
     <SPLIT <LOWCORE SCRV>>
     <SCREEN 1>
-    <COLOR 1 1>
+    <UI-RESET>
     <CLEAR -2>
     <SET COL </ <- <LOWCORE SCRH> 40> 2>>
     <CURSET 1 .COL><TELL "__   __           __        ___       _ ">
@@ -925,7 +925,7 @@ Returns:
     <CURSET 18 .COL><TELL "     `*8bu.. ..u@      ">
     <CURSET 19 .COL><TELL "        ^\"***%\"`        ">
     <CURSET 20 .COL><TELL "                                        ">
-    <COLOR 1 1>
+    <UI-RESET>
     <CURSET 21 .COL><TELL "  You escape with the Trophy of Scryra! ">
     <CURSET 22 .COL><TELL "           Final score: " N <FINAL-SCORE>>
     <IF-DEBUG <COND (,DEBUG-USED? <TELL !\*>)>>
@@ -954,7 +954,7 @@ Returns:
     <CURSET 18 <+ .COL 23>><TELL "    _.' '._      ">
     <CURSET 19 <+ .COL 23>><TELL "   `\"\"\"\"\"\"\"`     ">
 
-    <COLOR 1 1>
+    <UI-RESET>
     <SET C <GETCHAR>>
     <COND (<==? .C !\Q !\q> <QUIT>)
           (<==? .C !\R !\r> <RESTART>)

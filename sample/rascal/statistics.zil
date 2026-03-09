@@ -395,6 +395,7 @@
 <ROUTINE GAME-STATS-CLEAR ()
     <SPLIT <LOWCORE SCRV>>
     <SCREEN 1>
+    <UI-RESET>
     <CLEAR -2>
     <RTRUE>>
 

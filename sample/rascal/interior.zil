@@ -77,7 +77,7 @@ interior ID."
     <SET ENTRX ,PLAYER-X>
     <SET ENTRY ,PLAYER-Y>
     <SET LEFT-BEES? <==? .ROOM ,BEE-HIVE>>
-    <COLOR 1 1>
+    <UI-RESET>
     <CLEAR -1>
     <SETG HERE .ROOM>
     <MOVE ,PLAYER ,HERE>
