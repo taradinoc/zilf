@@ -26,6 +26,10 @@ internal sealed record WebsitePublishResult(string OutputDirectory, WebsiteModel
 
 internal static class WebsitePublisher
 {
+    private const string BundledAssetManifestPrefix = "Static/";
+    private static readonly Lazy<IReadOnlyDictionary<string, string>> BundledAssetResourceNames =
+        new(CreateBundledAssetResourceNames);
+
     public static WebsitePublishResult Publish(WebsitePublishOptions options)
     {
         var storyInfo = StoryFileInspector.Inspect(options.StoryFile.FullName);
@@ -266,60 +270,55 @@ internal static class WebsitePublisher
 
     private static void CopyBundledAssets(string outputDirectory, bool overwrite)
     {
-        var assetRoot = ResolveBundledAssetRoot();
-
-        foreach (var directoryPath in Directory.EnumerateDirectories(assetRoot, "*", SearchOption.AllDirectories))
+        foreach (var relativePath in EnumerateBundledAssetPaths())
         {
-            var relativePath = Path.GetRelativePath(assetRoot, directoryPath);
-
             if (IsExcludedBundledAssetPath(relativePath))
             {
                 continue;
             }
 
-            Directory.CreateDirectory(Path.Combine(outputDirectory, relativePath));
-        }
-
-        foreach (var filePath in Directory.EnumerateFiles(assetRoot, "*", SearchOption.AllDirectories))
-        {
-            var relativePath = Path.GetRelativePath(assetRoot, filePath);
-
-            if (IsExcludedBundledAssetPath(relativePath))
-            {
-                continue;
-            }
-
-            var targetPath = Path.Combine(outputDirectory, relativePath);
+            var targetPath = Path.Combine(outputDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
             Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
-            File.Copy(filePath, targetPath, overwrite);
+            WriteBinaryFile(targetPath, LoadBundledBinaryAsset(relativePath), overwrite);
         }
     }
 
     private static bool IsExcludedBundledAssetPath(string relativePath)
     {
-        var normalizedPath = relativePath.Replace(Path.DirectorySeparatorChar, '/').Replace(Path.AltDirectorySeparatorChar, '/');
+        var normalizedPath = NormalizeAssetPath(relativePath);
 
         return normalizedPath.Equals("vendor/parchment", StringComparison.OrdinalIgnoreCase)
             || normalizedPath.StartsWith("vendor/parchment/", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string ResolveBundledAssetRoot()
+    private static IEnumerable<string> EnumerateBundledAssetPaths()
     {
-        var candidatePaths = new[]
-        {
-            Path.Combine(AppContext.BaseDirectory, "Static"),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Static")),
-        };
+        return BundledAssetResourceNames.Value.Keys.Order(StringComparer.OrdinalIgnoreCase);
+    }
 
-        foreach (var candidatePath in candidatePaths)
+    private static IReadOnlyDictionary<string, string> CreateBundledAssetResourceNames()
+    {
+        var assembly = typeof(WebsitePublisher).Assembly;
+        var resources = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var resourceName in assembly.GetManifestResourceNames())
         {
-            if (Directory.Exists(candidatePath))
+            var normalizedResourceName = NormalizeAssetPath(resourceName);
+            if (!normalizedResourceName.StartsWith(BundledAssetManifestPrefix, StringComparison.OrdinalIgnoreCase))
             {
-                return candidatePath;
+                continue;
             }
+
+            var relativePath = normalizedResourceName[BundledAssetManifestPrefix.Length..];
+            resources.Add(relativePath, resourceName);
         }
 
-        throw new InvalidOperationException("Unable to locate the bundled website assets.");
+        if (resources.Count == 0)
+        {
+            throw new InvalidOperationException("Unable to locate the embedded website assets.");
+        }
+
+        return resources;
     }
 
     private static ParchmentEmbeddedAsset[] LoadParchmentEmbeddedAssets(string parchmentFormat)
@@ -355,8 +354,9 @@ internal static class WebsitePublisher
 
     private static string LoadBundledTextAsset(string relativePath)
     {
-        var assetPath = Path.Combine(ResolveBundledAssetRoot(), relativePath);
-        return File.ReadAllText(assetPath, Encoding.UTF8);
+        using var stream = OpenBundledAssetStream(relativePath);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return reader.ReadToEnd();
     }
 
     private static string LoadAndRebaseParchmentStylesheet()
@@ -367,8 +367,38 @@ internal static class WebsitePublisher
 
     private static byte[] LoadBundledBinaryAsset(string relativePath)
     {
-        var assetPath = Path.Combine(ResolveBundledAssetRoot(), relativePath);
-        return File.ReadAllBytes(assetPath);
+        using var stream = OpenBundledAssetStream(relativePath);
+        using var memoryStream = new MemoryStream();
+        stream.CopyTo(memoryStream);
+        return memoryStream.ToArray();
+    }
+
+    private static Stream OpenBundledAssetStream(string relativePath)
+    {
+        var normalizedPath = NormalizeAssetPath(relativePath);
+
+        if (!BundledAssetResourceNames.Value.TryGetValue(normalizedPath, out var resourceName))
+        {
+            throw new InvalidOperationException($"Unable to locate the embedded website asset '{normalizedPath}'.");
+        }
+
+        return typeof(WebsitePublisher).Assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"Unable to open the embedded website asset '{normalizedPath}'.");
+    }
+
+    private static string NormalizeAssetPath(string path)
+    {
+        return path.Replace(Path.DirectorySeparatorChar, '/').Replace(Path.AltDirectorySeparatorChar, '/');
+    }
+
+    private static void WriteBinaryFile(string path, byte[] content, bool overwrite)
+    {
+        if (!overwrite && File.Exists(path))
+        {
+            throw new IOException($"The file '{path}' already exists.");
+        }
+
+        File.WriteAllBytes(path, content);
     }
 
     private static void WriteTextFile(string path, string content)

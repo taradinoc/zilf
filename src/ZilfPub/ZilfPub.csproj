@@ -29,10 +29,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Static\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
+    <EmbeddedResource Include="Static\**\*">
+      <LogicalName>Static/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>
