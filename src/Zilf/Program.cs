@@ -824,15 +824,15 @@ namespace Zilf
 
         internal static string ResolvePublishProjectName(Context ctx, string inputFile)
         {
-            var publishTitle = TryGetGlobalString(ctx, "PUBLISH-TITLE");
+            var publishTitle = TryGetGlobalString(ctx, StdAtom.PUBLISH_TITLE);
             if (!string.IsNullOrWhiteSpace(publishTitle))
                 return publishTitle;
 
-            var gameTitle = TryGetGlobalString(ctx, "GAME-TITLE");
+            var gameTitle = TryGetGlobalString(ctx, StdAtom.GAME_TITLE);
             if (!string.IsNullOrWhiteSpace(gameTitle))
                 return gameTitle;
 
-            var bannerValue = GetGlobalValueByName(ctx, "GAME-BANNER");
+            var bannerValue = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.GAME_BANNER));
             var bannerText = bannerValue is ZilString bannerString ? bannerString.Text : null;
             var bannerFirstLine = GetBannerFirstLine(ctx, bannerText);
             if (!string.IsNullOrWhiteSpace(bannerFirstLine))
@@ -868,12 +868,12 @@ namespace Zilf
                 ResolvePublishProjectName(ctx, inputFile)
             };
 
-            AddOptionIfPresent(args, "--author-name", TryGetGlobalString(ctx, "PUBLISH-AUTHOR"));
-            AddOptionIfPresent(args, "--cover-art", TryGetGlobalString(ctx, "PUBLISH-COVER-ART"));
-            AddOptionIfPresent(args, "--description", TryGetGlobalString(ctx, "PUBLISH-DESCRIPTION"));
-            AddOptionIfPresent(args, "--theme", TryGetGlobalString(ctx, "PUBLISH-THEME"));
+            AddOptionIfPresent(args, "--author-name", TryGetGlobalString(ctx, StdAtom.PUBLISH_AUTHOR));
+            AddOptionIfPresent(args, "--cover-art", TryGetGlobalString(ctx, StdAtom.PUBLISH_COVER_ART));
+            AddOptionIfPresent(args, "--description", TryGetGlobalString(ctx, StdAtom.PUBLISH_DESCRIPTION));
+            AddOptionIfPresent(args, "--theme", TryGetGlobalString(ctx, StdAtom.PUBLISH_THEME));
 
-            if (GetGlobalValueByName(ctx, "PUBLISH-SOURCE?")?.IsTrue == true)
+            if (ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.PUBLISH_SOURCE_P))?.IsTrue == true)
             {
                 var sourceDir = Path.GetDirectoryName(Path.GetFullPath(inputFile));
                 if (!string.IsNullOrWhiteSpace(sourceDir))
@@ -895,21 +895,9 @@ namespace Zilf
             args.Add(value);
         }
 
-        static ZilObject? GetGlobalValueByName(Context ctx, string name)
+        static string? TryGetGlobalString(Context ctx, StdAtom stdAtom)
         {
-            var comparison = ctx.IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-            foreach (var (atom, binding) in ctx.GetGlobalBindings())
-            {
-                if (string.Equals(atom.Text, name, comparison))
-                    return binding.Value;
-            }
-
-            return null;
-        }
-
-        static string? TryGetGlobalString(Context ctx, string name)
-        {
-            var value = GetGlobalValueByName(ctx, name);
+            var value = ctx.GetGlobalVal(ctx.GetStdAtom(stdAtom));
 
             return value switch
             {

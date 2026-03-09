@@ -1,6 +1,7 @@
 :root {
     color-scheme: light;
     --playport-min-height: 70vh;
+    --sidebar-desktop-width: 13.5rem;
 }
 
 body {
@@ -25,6 +26,11 @@ body.play-body {
 
 .sidebar-cover {
     max-width: 12rem;
+}
+
+.sidebar-pane {
+    margin-top: -1.5rem;
+    padding-top: 3rem !important;
 }
 
 .sidebar-nav .nav-link {
@@ -145,6 +151,41 @@ body.play-body {
 
 .interpreter-credit a {
     color: inherit;
+}
+
+@media (min-width: 992px) {
+    .site-shell,
+    .play-shell {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .site-shell > .row,
+    .play-shell > .row {
+        min-height: 100vh;
+    }
+
+    .site-shell > .row > .sidebar-pane,
+    .play-shell > .row > .sidebar-pane {
+        flex: 0 0 var(--sidebar-desktop-width);
+        max-width: var(--sidebar-desktop-width);
+        width: var(--sidebar-desktop-width);
+    }
+
+    .site-shell > .row > main,
+    .play-shell > .row > main {
+        flex: 1 1 0;
+        max-width: none;
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+        width: auto;
+    }
+
+    .sidebar-pane {
+        margin-top: 0;
+        min-height: 100vh;
+        padding-top: 1.5rem !important;
+    }
 }
 
 @media (max-width: 991.98px) {
