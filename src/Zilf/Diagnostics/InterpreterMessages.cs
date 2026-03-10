@@ -117,6 +117,8 @@ namespace Zilf.Diagnostics
         public const int _0_CALL_Clause_Must_Not_Be_Combined_With_Other_Argument_Bindings = 133;
         [Warning("{0}: likely missing closing bracket before nested '{1}'")]
         public const int _0_Likely_Missing_Closing_Bracket_Before_Nested_1 = 134;
+        [Error("{0}: required arguments may not have defaults (missing \"OPT\" or \"AUX\"?)")]
+        public const int _0_Required_Arguments_May_Not_Have_Defaults_Missing_OPT_Or_AUX = 135;
 
         // Type/Format/DECL - 0200
 

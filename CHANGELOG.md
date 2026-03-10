@@ -34,6 +34,9 @@ and this project adheres to
   It cannot be combined with `--glulx16`, which is meant to be used to emulate
   the Z-machine.
 
+- Assigning a default value to a required argument in ROUTINE or DEFINE now
+  produces error MDL0135 instead of a misleading MDL0117.
+
 ## [1.6.1] (March 2, 2026)
 
 ### Fixed

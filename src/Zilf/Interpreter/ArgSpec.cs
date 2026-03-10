@@ -262,9 +262,13 @@ namespace Zilf.Interpreter
                     if (al.IsEmpty)
                         throw new InterpreterError(InterpreterMessages._0_Empty_List_In_Arg_Spec, caller);
 
-                    if (!al.HasLength(2) || (auxArgsStart == -1 && optArgsStart == -1))
+                    if (!al.HasLength(2))
                     {
                         throw new InterpreterError(InterpreterMessages._0_Must_Have_1_Element1s, "binding", 2);
+                    }
+                    else if (auxArgsStart == -1 && optArgsStart == -1)
+                    {
+                        throw new InterpreterError(InterpreterMessages._0_Required_Arguments_May_Not_Have_Defaults_Missing_OPT_Or_AUX, caller);
                     }
 
                     argName = al.First!;
