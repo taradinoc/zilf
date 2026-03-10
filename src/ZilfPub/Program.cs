@@ -158,7 +158,7 @@ internal static class Program
 					Console.Error.WriteLine($"Theme '{themeName}' not found. Use --list-themes to see available themes.");
 					return 1;
 				}
-				Console.WriteLine($"Downloading theme '{theme.Name}'...");
+				Console.WriteLine($"Resolving theme '{theme.Name}'...");
 				themeCssContent = BootswatchThemeService.DownloadThemeCssAsync(theme).GetAwaiter().GetResult();
 			}
 			catch (Exception ex)
