@@ -414,7 +414,7 @@ beasts to hit you.\""
                                <PERFORM ,V?TAKE ,PRSO>>)
                  (ELSE <TELL "He doesn't respond." CR>)>)
           (<VERB? EXAMINE>
-           <TELL "He's wearing a pair of denim overalls and a straw hat.">)
+           <TELL "He's wearing a pair of denim overalls and a straw hat." CR>)
           (<AND <VERB? ASK-ABOUT TELL-ABOUT> <PRSO? ,CARROT-MAN>>
            <COND (<CARROT? ,PRSI>
                   <TELL "\"They're a great source of vitamin A, and they're as nourishing as a muffin.\""
