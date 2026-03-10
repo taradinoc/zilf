@@ -20,8 +20,12 @@ around the booth, and a stack of posters balances precariously on the edge
 of the counter.")
     (ACTION INFO-BOOTH-R)
     (THINGS VARIOUS (SIGN SIGNS) ([READ EXAMINE] "The signs all say \"Info Booth\". Kind of redundant, I suppose.")
-            (WOOD GRAIN CHEAP FAKE) (COUNTER EDGE) "It's covered with a cheap-looking, obviously-fake wood grain."
-            (CHEAP PLYWOOD INFO INFORMATION) BOOTH "It appears to be made of cheap plywood.")
+            <> (COUNTER EDGE) "It's covered with a cheap-looking, obviously-fake wood grain."
+            (WOOD CHEAP FAKE) GRAIN "It's hardly the most interesting thing around here."
+            (CHEAP PLYWOOD INFO INFORMATION) BOOTH "It appears to be made of cheap plywood."
+            (DUNGEON DUNGEON\'S) (LOGO UNIFORM) "You'd recognize the League of Scryra's logo anywhere: five horizontal
+colored stripes in a mirrored pattern, representing descent and ascent through the dungeon floors, each divided
+into six parts, representing apophenia.")
     (FLAGS LIGHTBIT)>
 
 
@@ -39,7 +43,7 @@ of the counter.")
     (ACTION INFO-MAN-F)
     (FLAGS PERSONBIT NDESCBIT)>
 
-<ROUTINE INFO-MAN-F (ARG)
+<ROUTINE INFO-MAN-F (ARG "AUX" ID)
     <COND (<==? .ARG ,M-WINNER>
            <COND (<VERB? HELLO>
                   <TELL CT ,INFO-MAN
@@ -65,18 +69,19 @@ He's wearing a uniform with the dungeon's logo embroidered on it." CR>)
                         "He leans in close and whispers, \"They might be listening.\""
                         CR>)>)
           (<AND <VERB? GIVE> <PRSI? ,INFO-MAN>>
-             <COND (<AND <TREASURE? ,PRSO>
-                     <==? <GETP ,PRSO ,P?R-ITID> ,TREASURE-POSTER>>
-                    <TELL "\"Thanks for returning it. A lot of people would love to get their hands on one of these!\""
-                          CR>
-                    <REMOVE ,PRSO>
-                    <FREE-RASCAL-ITEM ,PRSO>)
+             <COND (<TREASURE? ,PRSO>
+                    <COND (<==? <SET ID <GETP ,PRSO ,P?R-ITID>> ,TREASURE-POSTER>
+                           <TELL "\"Thanks for returning it. A lot of people would love to get their hands on one of these!\"" CR>
+                           <REMOVE ,PRSO>
+                           <FREE-RASCAL-ITEM ,PRSO>)
+                          (<==? .ID ,TREASURE-TROPHY>
+                           <TELL "\"That's what was down there? Huh. Well, I guess we'll have to update the posters.\"" CR>)
+                          (ELSE
+                           <TELL "\"Seems like you need that more than I do.\"" CR>)>)
                    (<FOOD? ,PRSO>
                     <TELL "\"No thanks, I had a big breakfast.\"" CR>)
                    (<OR <POTION? ,PRSO> <WEAPON? ,PRSO>>
                     <TELL "He smiles. \"My adventuring days are long past.\"" CR>)
-                   (<TREASURE? ,PRSO>
-                    <TELL "\"Seems like you need that more than I do.\"" CR>)
                    (ELSE <TELL "The old man doesn't seem interested." CR>)>)>>
 
 <OBJECT STACK-OF-POSTERS
