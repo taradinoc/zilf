@@ -1,0 +1,114 @@
+<#+
+    private enum SidebarCurrentPage
+    {
+        Home,
+        Play,
+        Source,
+    }
+
+    private void WriteStandardSidebar(
+        string asideClasses,
+        SidebarCurrentPage currentPage,
+        WebsiteSourceFile currentSourceFile = null)
+    {
+#>
+                <aside class="<#= HtmlEncode(asideClasses) #>">
+                    <div class="card border-0 bg-transparent sidebar-card sidebar-sticky">
+<#+
+        WriteSidebarContents(currentPage, "Story links", currentSourceFile);
+#>
+                    </div>
+                </aside>
+<#+
+    }
+
+    private void WritePlayOffcanvasSidebar(string offcanvasId, string labelledById)
+    {
+#>
+        <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="<#= HtmlEncode(offcanvasId) #>" aria-labelledby="<#= HtmlEncode(labelledById) #>">
+            <div class="offcanvas-header">
+                <h2 class="offcanvas-title" id="<#= HtmlEncode(labelledById) #>"><#= HtmlEncode(model.ProjectName) #></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+<#+
+        WriteSidebarContents(SidebarCurrentPage.Play, "Mobile play page links");
+#>
+            </div>
+        </div>
+<#+
+    }
+
+    private void WriteSidebarContents(
+        SidebarCurrentPage currentPage,
+        string navAriaLabel,
+        WebsiteSourceFile currentSourceFile = null)
+    {
+        if (model.CoverArtUri is not null)
+        {
+#>
+                        <div class="mb-4 sidebar-cover">
+                            <img class="img-fluid rounded shadow-sm" src="<#= HtmlEncode(model.CoverArtUri) #>" alt="Cover art" />
+                        </div>
+<#+
+        }
+
+        var storyFileLabel =
+            $"Story File <span class=\"text-body-secondary small text-nowrap\">({HtmlEncodeNbsp(model.StoryFileFormat)},&nbsp;{HtmlEncodeNbsp(model.StoryFileSize)})</span>";
+#>
+                        <nav class="nav flex-column gap-2 sidebar-nav" aria-label="<#= HtmlEncode(navAriaLabel) #>">
+<#+
+        WritePrimarySidebarItem("Home page", "index.html", currentPage == SidebarCurrentPage.Home);
+        WritePrimarySidebarItem("Play In-Browser", "play.html", currentPage == SidebarCurrentPage.Play);
+        WritePrimarySidebarItem(storyFileLabel, model.StoryFileUri, isCurrent: false);
+
+        if (model.HasSourceFiles)
+        {
+            WritePrimarySidebarItem("Source Text", model.SourceFiles[0].PageUri, currentPage == SidebarCurrentPage.Source);
+
+            if (currentPage == SidebarCurrentPage.Source && currentSourceFile is not null)
+            {
+#>
+                            <div class="nav flex-column gap-1 sidebar-subnav" aria-label="Source files">
+<#+
+                foreach (var navSourceFile in model.SourceFiles)
+                {
+                    WriteSecondarySidebarItem(
+                        HtmlEncode(navSourceFile.DisplayName),
+                        navSourceFile.PageUri,
+                        navSourceFile.PageUri == currentSourceFile.PageUri);
+                }
+#>
+                            </div>
+<#+
+            }
+        }
+#>
+                        </nav>
+<#+
+    }
+
+    private void WritePrimarySidebarItem(string innerHtml, string href, bool isCurrent)
+    {
+        WriteSidebarItem(innerHtml, href, "nav-link link-primary", isCurrent);
+    }
+
+    private void WriteSecondarySidebarItem(string innerHtml, string href, bool isCurrent)
+    {
+        WriteSidebarItem(innerHtml, href, "nav-link link-secondary", isCurrent);
+    }
+
+    private void WriteSidebarItem(string innerHtml, string href, string linkClasses, bool isCurrent)
+    {
+        if (isCurrent)
+        {
+#>
+                            <span class="nav-link text-body-emphasis fw-semibold active" aria-current="page"><#= innerHtml #></span>
+<#+
+            return;
+        }
+#>
+                            <a class="<#= HtmlEncode(linkClasses) #>" href="<#= HtmlEncode(href) #>"><#= innerHtml #></a>
+<#+
+    }
+#>

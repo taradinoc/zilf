@@ -1,4 +1,5 @@
 <#@ template language="C#" #>
+<#@ include file="Sidebar.ttinclude" #>
 <!DOCTYPE html>
 <html>
     <head>
@@ -13,22 +14,7 @@
     <body class="site-body" data-bs-theme="light">
         <div class="container-fluid py-4 site-shell">
             <div class="row g-4 align-items-start align-items-lg-stretch">
-                <aside class="col-12 col-lg-3 col-xl-2 sidebar-pane bg-secondary-subtle py-4">
-                    <div class="card border-0 bg-transparent sidebar-card sidebar-sticky">
-<# if (model.CoverArtUri is not null) { #>
-                        <div class="mb-4 sidebar-cover">
-                            <img class="img-fluid rounded shadow-sm" src="<#= HtmlEncode(model.CoverArtUri) #>" alt="Cover art" />
-                        </div>
-<# } #>
-                        <nav class="nav flex-column gap-2 sidebar-nav" aria-label="Story links">
-                            <a class="nav-link link-primary" href="play.html">Play In-Browser</a>
-<# if (model.HasSourceFiles) { #>
-                            <a class="nav-link link-primary" href="<#= HtmlEncode(model.SourceFiles[0].PageUri) #>">Source Text <span class="text-body-secondary small">(link)</span></a>
-<# } #>
-                            <a class="nav-link link-primary" href="<#= HtmlEncode(model.StoryFileUri) #>">Story File <span class="text-body-secondary small text-nowrap">(<#= HtmlEncodeNbsp(model.StoryFileFormat) #>,&nbsp;<#= HtmlEncodeNbsp(model.StoryFileSize) #>)</span></a>
-                        </nav>
-                    </div>
-                </aside>
+<# WriteStandardSidebar("col-12 col-lg-3 col-xl-2 sidebar-pane bg-secondary-subtle py-4", SidebarCurrentPage.Home); #>
                 <main class="col-12 col-lg-9 col-xl-10 col-xxl-9">
                     <div class="site-content">
                         <header class="site-heading mb-4">

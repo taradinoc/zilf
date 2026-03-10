@@ -1,4 +1,5 @@
 <#@ template language="C#" #>
+<#@ include file="Sidebar.ttinclude" #>
 <!DOCTYPE html>
 <html>
     <head>
@@ -46,22 +47,7 @@
                 <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#playSidebar" aria-controls="playSidebar">Menu</button>
             </header>
             <div class="row g-4 align-items-start align-items-lg-stretch">
-                <aside class="col-lg-3 col-xl-2 d-none d-lg-block sidebar-pane bg-secondary-subtle py-4">
-                    <div class="card border-0 bg-transparent sidebar-card sidebar-sticky">
-<# if (model.CoverArtUri is not null) { #>
-                        <div class="mb-4 sidebar-cover">
-                            <img class="img-fluid rounded shadow-sm" src="<#= HtmlEncode(model.CoverArtUri) #>" alt="Cover art" />
-                        </div>
-<# } #>
-                        <nav class="nav flex-column gap-2 sidebar-nav" aria-label="Story links">
-                            <a class="nav-link link-primary" href="index.html">Home page</a>
-<# if (model.HasSourceFiles) { #>
-                            <a class="nav-link link-primary" href="<#= HtmlEncode(model.SourceFiles[0].PageUri) #>">Source Text <span class="text-body-secondary small">(link)</span></a>
-<# } #>
-                            <a class="nav-link link-primary" href="<#= HtmlEncode(model.StoryFileUri) #>">Story File <span class="text-body-secondary small text-nowrap">(<#= HtmlEncodeNbsp(model.StoryFileFormat) #>,&nbsp;<#= HtmlEncodeNbsp(model.StoryFileSize) #>)</span></a>
-                        </nav>
-                    </div>
-                </aside>
+<# WriteStandardSidebar("col-lg-3 col-xl-2 d-none d-lg-block sidebar-pane bg-secondary-subtle py-4", SidebarCurrentPage.Play); #>
                 <main class="col-12 col-lg-9 col-xl-10">
                     <header class="d-none d-lg-block mb-4">
                         <h1 class="play-title mb-1"><#= HtmlEncode(model.ProjectName) #></h1>
@@ -90,26 +76,7 @@
                 </main>
             </div>
         </div>
-        <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="playSidebar" aria-labelledby="playSidebarLabel">
-            <div class="offcanvas-header">
-                <h2 class="offcanvas-title" id="playSidebarLabel"><#= HtmlEncode(model.ProjectName) #></h2>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-            </div>
-            <div class="offcanvas-body">
-<# if (model.CoverArtUri is not null) { #>
-                <div class="mb-4 sidebar-cover">
-                    <img class="img-fluid rounded shadow-sm" src="<#= HtmlEncode(model.CoverArtUri) #>" alt="Cover art" />
-                </div>
-<# } #>
-                <nav class="nav flex-column gap-2 sidebar-nav" aria-label="Mobile play page links">
-                    <a class="nav-link link-primary" href="index.html">Home page</a>
-<# if (model.HasSourceFiles) { #>
-                    <a class="nav-link link-primary" href="<#= HtmlEncode(model.SourceFiles[0].PageUri) #>">Source Text <span class="text-body-secondary small">(link)</span></a>
-<# } #>
-                    <a class="nav-link link-primary" href="<#= HtmlEncode(model.StoryFileUri) #>">Story File <span class="text-body-secondary small text-nowrap">(<#= HtmlEncodeNbsp(model.StoryFileFormat) #>,&nbsp;<#= HtmlEncodeNbsp(model.StoryFileSize) #>)</span></a>
-                </nav>
-            </div>
-        </div>
+<# WritePlayOffcanvasSidebar("playSidebar", "playSidebarLabel"); #>
         <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
     </body>
 </html>
