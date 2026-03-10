@@ -1,0 +1,138 @@
+<#@ template language="C#" #>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title><#= HtmlEncode(model.AuthorName) #> - <#= HtmlEncode(model.ProjectName) #> &mdash; Play</title>
+        <meta name="author" content="<#= HtmlEncode(model.AuthorName) #>" />
+        <meta name="description" content="A page for the game <#= HtmlEncode(model.ProjectName) #> by <#= HtmlEncode(model.AuthorName) #>." />
+        <link rel="stylesheet" href="vendor/bootstrap/bootstrap.min.css" />
+        <style><#= EscapeStyleText(model.ParchmentStylesheetSource) #></style>
+        <link rel="stylesheet" href="css/site.css" type="text/css" media="all" />
+        <script><#= EscapeScriptText(model.ParchmentJQuerySource) #></script>
+        <script nomodule><#= EscapeScriptText(model.ParchmentLegacySupportScriptSource) #></script>
+        <script>
+            window.parchment_options = {
+                auto_launch: 1,
+                single_file: 1,
+                story: {
+                    author: <#= JsonString(model.AuthorName) #>,
+                    format: <#= JsonString(model.StoryFileParchmentFormat) #>,
+                    ifid: <#= JsonString(model.IFID) #>,
+                    title: <#= JsonString(model.ProjectName) #>,
+                    url: <#= JsonString(model.StoryFileJsUri) #>
+                }
+            };
+        </script>
+<# if (model.StoryFileJsUri.StartsWith("embedded:", System.StringComparison.OrdinalIgnoreCase)) { #>
+        <script type="text/plain" id="<#= HtmlEncode(model.StoryFileEmbeddedId) #>"><#= model.StoryFileEmbeddedData #></script>
+<# } #>
+<# foreach (var asset in model.ParchmentEmbeddedAssets) { #>
+        <script type="<#= HtmlEncode(asset.Type) #>" id="<#= HtmlEncode(asset.Id) #>"><#= EscapeScriptText(asset.Content) #></script>
+<# } #>
+        <script type="module">
+            const parchmentBootstrap = document.getElementById("web.js").text;
+            import(`data:text/javascript;charset=utf-8,${encodeURIComponent(parchmentBootstrap)}`);
+        </script>
+    </head>
+    <body class="play-body" data-bs-theme="light">
+        <div class="container-fluid py-4 play-shell">
+            <header class="d-flex d-lg-none justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                    <h1 class="play-title mb-1"><#= HtmlEncode(model.ProjectName) #></h1>
+                    <p class="play-byline mb-0">by <#= HtmlEncode(model.AuthorName) #></p>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#playSidebar" aria-controls="playSidebar">Menu</button>
+            </header>
+            <div class="row g-4 align-items-start">
+                <aside class="col-lg-3 col-xl-2 d-none d-lg-block sidebar-pane bg-secondary-subtle py-4">
+                    <div class="card border-0 bg-transparent sidebar-card sidebar-sticky">
+<# if (model.CoverArtUri is not null) { #>
+                        <div class="mb-4 sidebar-cover">
+                            <img class="img-fluid rounded shadow-sm" src="<#= HtmlEncode(model.CoverArtUri) #>" alt="Cover art" />
+                        </div>
+<# } #>
+                        <nav class="nav flex-column gap-2 sidebar-nav" aria-label="Story links">
+                            <a class="nav-link link-primary" href="index.html">Home page</a>
+<# if (model.HasSourceFiles) { #>
+                            <a class="nav-link link-primary" href="<#= HtmlEncode(model.SourceFiles[0].PageUri) #>">Source Text <span class="text-body-secondary small">(link)</span></a>
+<# } #>
+                            <a class="nav-link link-primary" href="<#= HtmlEncode(model.StoryFileUri) #>">Story File <span class="text-body-secondary small text-nowrap">(<#= HtmlEncodeNbsp(model.StoryFileFormat) #>,&nbsp;<#= HtmlEncodeNbsp(model.StoryFileSize) #>)</span></a>
+                        </nav>
+                    </div>
+                </aside>
+                <main class="col-12 col-lg-9 col-xl-10">
+                    <header class="d-none d-lg-block mb-4">
+                        <h1 class="play-title mb-1"><#= HtmlEncode(model.ProjectName) #></h1>
+                        <p class="play-byline mb-0">by <#= HtmlEncode(model.AuthorName) #></p>
+                    </header>
+                    <section class="card shadow-sm playport-card">
+                        <div class="card-body p-2 p-md-3">
+                            <div id="gameport" class="playport">
+                                <div id="about">
+                                    <h1>Parchment</h1>
+                                    <p>is an interpreter for Interactive Fiction. <a href="https://github.com/curiousdannii/parchment">Find out more.</a></p>
+                                    <noscript><p>Parchment requires JavaScript. Please enable it in your browser.</p></noscript>
+                                </div>
+                                <div id="windowport"></div>
+                                <div id="loadingpane" style="display:none;">
+                                    <img src="<#= HtmlEncode(model.ParchmentWaitingImageDataUri) #>" alt="Loading"><br />
+                                    <em>Loading...</em>
+                                </div>
+                                <div id="errorpane" style="display:none;"><div id="errorcontent">...</div></div>
+                            </div>
+                        </div>
+                    </section>
+                    <div class="interpreter-credit mt-3">
+                        <a href="https://github.com/curiousdannii/parchment">Parchment</a>
+                    </div>
+                </main>
+            </div>
+        </div>
+        <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="playSidebar" aria-labelledby="playSidebarLabel">
+            <div class="offcanvas-header">
+                <h2 class="offcanvas-title" id="playSidebarLabel"><#= HtmlEncode(model.ProjectName) #></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+<# if (model.CoverArtUri is not null) { #>
+                <div class="mb-4 sidebar-cover">
+                    <img class="img-fluid rounded shadow-sm" src="<#= HtmlEncode(model.CoverArtUri) #>" alt="Cover art" />
+                </div>
+<# } #>
+                <nav class="nav flex-column gap-2 sidebar-nav" aria-label="Mobile play page links">
+                    <a class="nav-link link-primary" href="index.html">Home page</a>
+<# if (model.HasSourceFiles) { #>
+                    <a class="nav-link link-primary" href="<#= HtmlEncode(model.SourceFiles[0].PageUri) #>">Source Text <span class="text-body-secondary small">(link)</span></a>
+<# } #>
+                    <a class="nav-link link-primary" href="<#= HtmlEncode(model.StoryFileUri) #>">Story File <span class="text-body-secondary small text-nowrap">(<#= HtmlEncodeNbsp(model.StoryFileFormat) #>,&nbsp;<#= HtmlEncodeNbsp(model.StoryFileSize) #>)</span></a>
+                </nav>
+            </div>
+        </div>
+        <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    </body>
+</html>
+<#+
+    private static string HtmlEncode(string obj)
+    {
+        return System.Net.WebUtility.HtmlEncode(obj);
+    }
+
+    private static string HtmlEncodeNbsp(string obj) => HtmlEncode(obj).Replace(" ", "&nbsp;");
+
+    private static string EscapeScriptText(string value)
+    {
+        return value.Replace("</script", "<\\/script", System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string EscapeStyleText(string value)
+    {
+        return value.Replace("</style", "<\\/style", System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string JsonString(string value)
+    {
+        return $"\"{System.Text.Json.JsonEncodedText.Encode(value).ToString()}\"";
+    }
+#>

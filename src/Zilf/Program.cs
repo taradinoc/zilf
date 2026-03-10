@@ -26,6 +26,7 @@ using System.Reflection;
 using System.Text;
 using System.CommandLine;
 using System.Text.Json;
+using System.Globalization;
 using Zilf.Common;
 using Zilf.Compiler;
 using Zilf.Diagnostics;
@@ -36,6 +37,7 @@ using Zilf.Language.Parsing;
 using Zilf.ZModel;
 using Zilf.Ide;
 using CommandParseResult = System.CommandLine.ParseResult;
+using Zilf.ZModel.Values;
 
 namespace Zilf
 {
@@ -66,6 +68,16 @@ namespace Zilf
                 return args;
 
             var firstArg = args[0];
+
+            // Alias "publish" to "build --publish"
+            if (firstArg == "publish")
+            {
+                var newArgs = new string[args.Length + 1];
+                newArgs[0] = "build";
+                newArgs[1] = "--publish";
+                Array.Copy(args, 1, newArgs, 2, args.Length - 1);
+                return newArgs;
+            }
 
             // Check if it's a known subcommand
             if (firstArg is "build" or "repl" or "exec" or "new")
@@ -205,6 +217,17 @@ namespace Zilf
                 Arity = ArgumentArity.ZeroOrOne
             };
 
+            var buildPublishOption = new Option<bool>("--publish")
+            {
+                Description = "After a successful build, invoke ZilfPub to generate a publishable site."
+            };
+
+            var buildPublishOutputOption = new Option<string?>("--publish-output")
+            {
+                Description = "Output directory to pass to ZilfPub. Defaults to a 'publish' folder next to the story file.",
+                Arity = ArgumentArity.ZeroOrOne
+            };
+
             buildCommand.Arguments.Add(buildInputArgument);
             buildCommand.Arguments.Add(buildOutputArgument);
             buildCommand.Options.Add(buildQuietOption);
@@ -222,6 +245,8 @@ namespace Zilf
             buildCommand.Options.Add(buildZapfPassThroughOption);
             buildCommand.Options.Add(buildIdeInfoOption);
             buildCommand.Options.Add(buildDefineFlagOption);
+            buildCommand.Options.Add(buildPublishOption);
+            buildCommand.Options.Add(buildPublishOutputOption);
 
             buildCommand.Validators.Add(commandResult =>
             {
@@ -239,6 +264,26 @@ namespace Zilf
                 if (hasGlulx && hasGlulx16)
                 {
                     commandResult.AddError("Options --glulx and --glulx16 cannot be used together.");
+                }
+
+                var wantsPublish = commandResult.GetResult(buildPublishOption) is not null;
+                var stopAfterCompile = commandResult.GetResult(buildStopAfterCompileOption) is not null;
+                var hasIdeInfo = commandResult.GetResult(buildIdeInfoOption) is not null;
+                var hasPublishOutput = commandResult.GetResult(buildPublishOutputOption) is not null;
+
+                if (wantsPublish && stopAfterCompile)
+                {
+                    commandResult.AddError("Options --publish and --stop-after-compile (-S) cannot be used together.");
+                }
+
+                if (wantsPublish && hasIdeInfo)
+                {
+                    commandResult.AddError("Option --publish cannot be used with --ide-info because --ide-info implies --stop-after-compile.");
+                }
+
+                if (hasPublishOutput && !wantsPublish)
+                {
+                    commandResult.AddError("Option --publish-output requires --publish.");
                 }
             });
 
@@ -409,6 +454,8 @@ namespace Zilf
                 buildZapfPassThroughOption,
                 buildIdeInfoOption,
                 buildDefineFlagOption,
+                buildPublishOption,
+                buildPublishOutputOption,
                 replCommand,
                 replQuietOption,
                 replCaseSensitiveOption,
@@ -483,6 +530,8 @@ namespace Zilf
             Option<string[]> BuildZapfPassThroughOption,
             Option<string?> BuildIdeInfoOption,
             Option<string[]> BuildDefineFlagOption,
+            Option<bool> BuildPublishOption,
+            Option<string?> BuildPublishOutputOption,
             Command ReplCommand,
             Option<bool> ReplQuietOption,
             Option<bool?> ReplCaseSensitiveOption,
@@ -532,6 +581,8 @@ namespace Zilf
 
             var output = parseResult.GetValue(outputArgument);
             var stopAfter = parseResult.GetValue(stopAfterCompileOption);
+            var publish = parseResult.GetValue(spec.BuildPublishOption);
+            var publishOutput = parseResult.GetValue(spec.BuildPublishOutputOption);
 
             // IDE info needs a full compilation to discover all entities created during compilation.
             // Treat --ide-info as "compile only" (skip external assembly).
@@ -691,6 +742,32 @@ namespace Zilf
                 Console.WriteLine($"Created {blorbFile}");
             }
 
+            if (publish)
+            {
+                var storyFile = ResolveFinalStoryOutputPath(outFile!, finalAssemblerOutput, ctx.IsGlulx, ctx.ZEnvironment.ZVersion);
+                var publishInputFile = !ctx.Blorb.IsEmpty
+                    ? ResolveBlorbOutputPath(outFile!, finalAssemblerOutput, stopAfter: false, ctx.IsGlulx, ctx.ZEnvironment.ZVersion)
+                    : storyFile;
+
+                if (!File.Exists(publishInputFile))
+                {
+                    Console.Error.WriteLine($"Publish input file not found: {publishInputFile}");
+                    return 1;
+                }
+
+                var zilfPubExe = FindZilfPubExecutable();
+                if (zilfPubExe == null)
+                {
+                    Console.Error.WriteLine("ZilfPub not found next to ZILF (looked for zilfpub, ZilfPub, zilfpub.exe). Use build without --publish.");
+                    return 1;
+                }
+
+                var publishArgs = BuildZilfPubArguments(ctx, inputFile, publishInputFile, publishOutput);
+                var exit = RunZilfPubProcess(zilfPubExe, publishArgs);
+                if (exit != 0)
+                    return exit;
+            }
+
             return 0;
         }
 
@@ -736,6 +813,104 @@ namespace Zilf
             return Path.ChangeExtension(basePath, stopAfter ? ".blorb" : isGlulx ? ".gblorb" : ".zblorb");
         }
 
+        internal static string ResolvePublishOutputPath(string storyFilePath, string? publishOutputOption)
+        {
+            if (!string.IsNullOrWhiteSpace(publishOutputOption))
+                return publishOutputOption;
+
+            var storyDirectory = Path.GetDirectoryName(Path.GetFullPath(storyFilePath)) ?? Environment.CurrentDirectory;
+            return Path.Combine(storyDirectory, "publish");
+        }
+
+        internal static string ResolvePublishProjectName(Context ctx, string inputFile)
+        {
+            var publishTitle = TryGetGlobalString(ctx, StdAtom.PUBLISH_TITLE);
+            if (!string.IsNullOrWhiteSpace(publishTitle))
+                return publishTitle;
+
+            var gameTitle = TryGetGlobalString(ctx, StdAtom.GAME_TITLE);
+            if (!string.IsNullOrWhiteSpace(gameTitle))
+                return gameTitle;
+
+            var bannerValue = ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.GAME_BANNER));
+            var bannerText = bannerValue is ZilString bannerString ? bannerString.Text : null;
+            var bannerFirstLine = GetBannerFirstLine(ctx, bannerText);
+            if (!string.IsNullOrWhiteSpace(bannerFirstLine))
+                return bannerFirstLine;
+
+            var baseName = Path.GetFileNameWithoutExtension(inputFile);
+            if (string.IsNullOrWhiteSpace(baseName))
+                return "Story";
+
+            return char.ToUpper(baseName[0], CultureInfo.InvariantCulture) + baseName[1..];
+        }
+
+        internal static string? GetBannerFirstLine(Context ctx, string? banner)
+        {
+            if (string.IsNullOrWhiteSpace(banner))
+                return null;
+
+            var crlfChar = (ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.CRLF_CHARACTER)) as ZilChar)?.Char ?? '|';
+            var splitChars = new[] { '|', '\r', '\n', crlfChar };
+            var firstLine = banner.Split(splitChars, StringSplitOptions.None)[0].Trim();
+            return firstLine.Length > 0 ? firstLine : null;
+        }
+
+        static List<string> BuildZilfPubArguments(Context ctx, string inputFile, string publishInputFile, string? publishOutputOption)
+        {
+            var args = new List<string>
+            {
+                publishInputFile,
+                "--overwrite",
+                "--output-dir",
+                ResolvePublishOutputPath(publishInputFile, publishOutputOption),
+                "--project-name",
+                ResolvePublishProjectName(ctx, inputFile)
+            };
+
+            AddOptionIfPresent(args, "--author-name", TryGetGlobalString(ctx, StdAtom.PUBLISH_AUTHOR));
+            AddOptionIfPresent(args, "--cover-art", TryGetGlobalString(ctx, StdAtom.PUBLISH_COVER_ART));
+            AddOptionIfPresent(args, "--description", TryGetGlobalString(ctx, StdAtom.PUBLISH_DESCRIPTION));
+            AddOptionIfPresent(args, "--theme", TryGetGlobalString(ctx, StdAtom.PUBLISH_THEME));
+
+            if (ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.PUBLISH_SOURCE_P))?.IsTrue == true)
+            {
+                var sourceDir = Path.GetDirectoryName(Path.GetFullPath(inputFile));
+                if (!string.IsNullOrWhiteSpace(sourceDir))
+                {
+                    args.Add("--source-dir");
+                    args.Add(sourceDir);
+                }
+            }
+
+            return args;
+        }
+
+        static void AddOptionIfPresent(List<string> args, string optionName, string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return;
+
+            args.Add(optionName);
+            args.Add(value);
+        }
+
+        static string? TryGetGlobalString(Context ctx, StdAtom stdAtom)
+        {
+            var value = ctx.GetGlobalVal(ctx.GetStdAtom(stdAtom));
+
+            return value switch
+            {
+                ZilString zstr => zstr.Text,
+                ZilChar zchar => zchar.Char.ToString(),
+                ZilAtom atom => atom.Text,
+                ZilConstant { Value: ZilString zstr } => zstr.Text,
+                ZilConstant { Value: ZilChar zchar } => zchar.Char.ToString(),
+                ZilConstant { Value: ZilAtom atom } => atom.Text,
+                _ => null
+            };
+        }
+
         private static string? FindZapfExecutable()
         {
             var baseDir = AppContext.BaseDirectory;
@@ -746,6 +921,20 @@ namespace Zilf
                 if (File.Exists(full))
                     return full;
             }
+            return null;
+        }
+
+        private static string? FindZilfPubExecutable()
+        {
+            var baseDir = AppContext.BaseDirectory;
+            var candidates = new[] { "zilfpub", "ZilfPub", "zilfpub.exe", "ZilfPub.exe" };
+            foreach (var name in candidates)
+            {
+                var full = Path.Combine(baseDir, name);
+                if (File.Exists(full))
+                    return full;
+            }
+
             return null;
         }
 
@@ -847,6 +1036,41 @@ namespace Zilf
             catch (InvalidOperationException ex)
             {
                 Console.Error.WriteLine($"Failed to run Glazer: {ex.Message}");
+                return 1;
+            }
+        }
+
+        private static int RunZilfPubProcess(string zilfPubPath, List<string> arguments)
+        {
+            using var proc = new Process();
+            proc.StartInfo = new ProcessStartInfo
+            {
+                FileName = zilfPubPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+                CreateNoWindow = false,
+            };
+
+            foreach (var arg in arguments)
+            {
+                proc.StartInfo.ArgumentList.Add(arg);
+            }
+
+            try
+            {
+                if (!proc.Start())
+                {
+                    Console.Error.WriteLine("Failed to start ZilfPub process.");
+                    return 1;
+                }
+
+                proc.WaitForExit();
+                return proc.ExitCode;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error invoking ZilfPub: {ex.Message}");
                 return 1;
             }
         }
@@ -1337,11 +1561,6 @@ namespace Zilf
 
         internal static string GetProgramDirectory()
         {
-            var assemblyLocation = typeof(Program).Assembly.Location;
-
-            if (!string.IsNullOrEmpty(assemblyLocation) && Path.GetDirectoryName(assemblyLocation) is string assemblyDir)
-                return assemblyDir;
-
             return Path.GetDirectoryName(AppContext.BaseDirectory) ?? AppContext.BaseDirectory;
         }
 

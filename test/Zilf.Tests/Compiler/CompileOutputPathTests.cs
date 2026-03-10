@@ -24,6 +24,7 @@ using Zilf.Common;
 using Zilf.Compiler;
 using Zilf.Diagnostics;
 using Zilf.Interpreter;
+using Zilf.Interpreter.Values;
 using Zilf.ZModel;
 
 namespace Zilf.Tests.Compiler
@@ -156,6 +157,92 @@ namespace Zilf.Tests.Compiler
                 zVersion: 5);
 
             Assert.AreEqual(Path.ChangeExtension(intermediatePath, ".gblorb"), blorbPath);
+        }
+
+        [TestMethod]
+        public void Publish_Output_Defaults_To_Publish_Subdirectory_Of_Story_Directory()
+        {
+            var storyPath = Path.GetFullPath(Path.Combine("build", "story.z3"));
+
+            var outputPath = Zilf.Program.ResolvePublishOutputPath(storyPath, publishOutputOption: null);
+
+            Assert.AreEqual(Path.Combine(Path.GetDirectoryName(storyPath)!, "publish"), outputPath);
+        }
+
+        [TestMethod]
+        public void Publish_Output_Uses_Explicit_Option_When_Provided()
+        {
+            var storyPath = Path.GetFullPath("story.z3");
+            var explicitPath = Path.GetFullPath(Path.Combine("out", "site"));
+
+            var outputPath = Zilf.Program.ResolvePublishOutputPath(storyPath, explicitPath);
+
+            Assert.AreEqual(explicitPath, outputPath);
+        }
+
+        [TestMethod]
+        public void Publish_Project_Name_Prefers_Game_Title_Global()
+        {
+            var ctx = new Context(ignoreCase: false)
+            {
+                RunMode = RunMode.Compiler
+            };
+            var titleAtom = ZilAtom.Parse("GAME-TITLE", ctx);
+            ctx.SetGlobalVal(titleAtom, ZilString.FromString("The Great Game"));
+
+            var projectName = Zilf.Program.ResolvePublishProjectName(ctx, Path.GetFullPath("story.zil"));
+
+            Assert.AreEqual("The Great Game", projectName);
+        }
+
+        [TestMethod]
+        public void Publish_Project_Name_Uses_First_Banner_Line_When_Title_Missing()
+        {
+            var ctx = new Context(ignoreCase: false)
+            {
+                RunMode = RunMode.Compiler
+            };
+
+            var bannerAtom = ZilAtom.Parse("GAME-BANNER", ctx);
+            ctx.SetGlobalVal(bannerAtom, ZilString.FromString("Banner Name|By Author"));
+
+            var projectName = Zilf.Program.ResolvePublishProjectName(ctx, Path.GetFullPath("story.zil"));
+
+            Assert.AreEqual("Banner Name", projectName);
+        }
+
+        [TestMethod]
+        public void Publish_Project_Name_Uses_Banner_Custom_Crlf_Character()
+        {
+            var ctx = new Context(ignoreCase: false)
+            {
+                RunMode = RunMode.Compiler
+            };
+
+            var crlfAtom = ctx.GetStdAtom(Zilf.Language.StdAtom.CRLF_CHARACTER);
+            ctx.SetGlobalVal(crlfAtom, new ZilChar('/'));
+
+            var bannerAtom = ZilAtom.Parse("GAME-BANNER", ctx);
+            ctx.SetGlobalVal(bannerAtom, ZilString.FromString("Alpha/Beta"));
+
+            var projectName = Zilf.Program.ResolvePublishProjectName(ctx, Path.GetFullPath("story.zil"));
+
+            Assert.AreEqual("Alpha", projectName);
+        }
+
+        [TestMethod]
+        public void Publish_Project_Name_Falls_Back_To_Capitalized_Input_Base_Name()
+        {
+            var ctx = new Context(ignoreCase: false)
+            {
+                RunMode = RunMode.Compiler
+            };
+
+            var inputPath = Path.GetFullPath("advent.zil");
+
+            var projectName = Zilf.Program.ResolvePublishProjectName(ctx, inputPath);
+
+            Assert.AreEqual("Advent", projectName);
         }
 
         [TestMethod]

@@ -33,6 +33,7 @@
       <StageBinDir>$(StageDir)/bin</StageBinDir>
       <ZilfPublishDir>$(StageDir)/_publish/Zilf/</ZilfPublishDir>
       <ZapfPublishDir>$(StageDir)/_publish/Zapf/</ZapfPublishDir>
+      <ZilfPubPublishDir>$(StageDir)/_publish/ZilfPub/</ZilfPubPublishDir>
     </PropertyGroup>
 
     <ItemGroup>
@@ -52,6 +53,10 @@
          Targets="Publish"
          Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishAot=true;PublishSingleFile=true;PublishTrimmed=true;StripSymbols=true;DebuggerSupport=false;IncludeNativeLibrariesForSelfExtract=true;PublishDir=$(ZapfPublishDir)" />
 
+    <MSBuild Projects="$(RootDir)src/ZilfPub/ZilfPub.csproj"
+         Targets="Publish"
+         Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=true;PublishAot=true;PublishSingleFile=true;PublishTrimmed=true;StripSymbols=true;DebuggerSupport=false;IncludeNativeLibrariesForSelfExtract=true;PublishDir=$(ZilfPubPublishDir)" />
+
     <Copy SourceFiles="@(_RootDocs)" DestinationFolder="$(StageDir)" />
 
     <MakeDir Directories="$(StageDir)/sample" Condition="!Exists('$(StageDir)/sample')" />
@@ -68,21 +73,33 @@
           $(ZilfPublishDir)zilf*;
           $(ZapfPublishDir)Zapf*;
           $(ZapfPublishDir)zapf*;
+          $(ZilfPubPublishDir)ZilfPub*;
+          $(ZilfPubPublishDir)zilfpub*;
           $(ZilfPublishDir)createdump*;
-          $(ZapfPublishDir)createdump*"
+          $(ZapfPublishDir)createdump*;
+          $(ZilfPubPublishDir)createdump*"
                         Exclude="
           $(ZilfPublishDir)Zilf.Common*;
           $(ZilfPublishDir)zilf.common*;
           $(ZapfPublishDir)Zilf.Common*;
-      $(ZapfPublishDir)zilf.common*;
-      $(ZilfPublishDir)*.pdb;
-      $(ZilfPublishDir)*.dbg;
-      $(ZapfPublishDir)*.pdb;
-      $(ZapfPublishDir)*.dbg;
-      $(ZilfPublishDir)*.dSYM/**;
-      $(ZapfPublishDir)*.dSYM/**;
-      $(ZilfPublishDir)*.dSYM;
-      $(ZapfPublishDir)*.dSYM" />
+          $(ZapfPublishDir)zilf.common*;
+          $(ZilfPubPublishDir)Zilf.Common*;
+          $(ZilfPubPublishDir)zilf.common*;
+          $(ZilfPublishDir)*.pdb;
+          $(ZilfPublishDir)*.dbg;
+          $(ZapfPublishDir)*.pdb;
+          $(ZapfPublishDir)*.dbg;
+          $(ZilfPubPublishDir)*.pdb;
+          $(ZilfPubPublishDir)*.dbg;
+          $(ZilfPublishDir)*.xml;
+          $(ZapfPublishDir)*.xml;
+          $(ZilfPubPublishDir)*.xml;
+          $(ZilfPublishDir)*.dSYM/**;
+          $(ZapfPublishDir)*.dSYM/**;
+          $(ZilfPubPublishDir)*.dSYM/**;
+          $(ZilfPublishDir)*.dSYM;
+          $(ZapfPublishDir)*.dSYM;
+          $(ZilfPubPublishDir)*.dSYM" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_PublishOutputs)" DestinationFiles="@(_PublishOutputs->'$(StageBinDir)/%(Filename)%(Extension)')" />

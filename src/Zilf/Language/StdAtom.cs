@@ -108,6 +108,10 @@ namespace Zilf.Language
         FORM,
         FSUBR,
         FUNCTION,
+        [Atom("GAME-BANNER")]
+        GAME_BANNER,
+        [Atom("GAME-TITLE")]
+        GAME_TITLE,
         GET,
         [Atom("GET-CLASSIFICATION")]
         GET_CLASSIFICATION,
@@ -214,6 +218,18 @@ namespace Zilf.Language
         PRSTBL,
         PRTBL,
         PSEUDO,
+        [Atom("PUBLISH-AUTHOR")]
+        PUBLISH_AUTHOR,
+        [Atom("PUBLISH-COVER-ART")]
+        PUBLISH_COVER_ART,
+        [Atom("PUBLISH-DESCRIPTION")]
+        PUBLISH_DESCRIPTION,
+        [Atom("PUBLISH-SOURCE?")]
+        PUBLISH_SOURCE_P,
+        [Atom("PUBLISH-THEME")]
+        PUBLISH_THEME,
+        [Atom("PUBLISH-TITLE")]
+        PUBLISH_TITLE,
         PURE,
         PUT,
         QUOTE,

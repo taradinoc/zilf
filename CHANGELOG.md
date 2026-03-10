@@ -15,6 +15,15 @@ and this project adheres to
   now also packages the story file after assembly into a `.zblorb` or `.gblorb`
   file (unless the `-S` option is used to stop before assembly).
 
+- Added the ability to bundle the game, an interpreter, and (optionally) the
+  game's source code into a static website, suitable for online or offline play.
+  This is accomplished with the `zilf publish` command (or by adding `--publish`
+  to your regular build command). The GVALs of `PUBLISH-TITLE`,
+  `PUBLISH-AUTHOR`, `PUBLISH-COVER-ART`, `PUBLISH-DESCRIPTION`, `PUBLISH-THEME`,
+  and `PUBLISH-SOURCE?` will control how the site is generated. You can also run
+  the new tool ZilfPub on its own to generate a site for any story file, even
+  one not produced with ZILF.
+
 ### Changed
 
 - `<VERSION GLULX>` can now be used to select Glulx output from source code.

@@ -25,6 +25,14 @@ Based on Adventure by Willie Crowther and Don Woods (1977)|
 And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and others|
 Adapted once more by Tara McGrew (2015)">>
 
+;"Metadata for publishing"
+<SETG PUBLISH-TITLE "Adventure">
+<SETG PUBLISH-AUTHOR "Tara McGrew">
+<SETG PUBLISH-COVER-ART "coverart.png">
+<SETG PUBLISH-DESCRIPTION "A port of Colossal Cave Adventure to ZILF.">
+<SETG PUBLISH-THEME "Litera">
+<SETG PUBLISH-SOURCE? T>
+
 ;----------------------------------------------------------------------
 "Main entry point"
 ;----------------------------------------------------------------------

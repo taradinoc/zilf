@@ -1407,7 +1407,10 @@ This assumes that if the objects have a common parent, it's within HERE."
           (ELSE <TELL <LIBRARY-MESSAGE EAT NOT-EDIBLE> CR>)>>
 
 <DEFMAC PRINT-GAME-BANNER ()
-    <COND (<GASSIGNED? GAME-TITLE>
+    <COND (<AND <GASSIGNED? GAME-TITLE>
+                <TYPE? ,GAME-TITLE CONSTANT>
+                <GASSIGNED? GAME-DESCRIPTION>
+                <TYPE? ,GAME-DESCRIPTION CONSTANT>>
            #SPLICE (<VERSION? (ZIP) (ELSE <HLIGHT ,H-BOLD>)>
                     <TELL ,GAME-TITLE CR>
                     <VERSION? (ZIP) (ELSE <HLIGHT ,H-NORMAL>)>

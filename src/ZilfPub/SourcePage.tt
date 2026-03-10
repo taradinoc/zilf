@@ -1,0 +1,66 @@
+<#@ template language="C#" #>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title><#= HtmlEncode(model.AuthorName) #> - <#= HtmlEncode(model.ProjectName) #> &mdash; <#= HtmlEncode(sourceFile.DisplayName) #></title>
+        <meta name="author" content="<#= HtmlEncode(model.AuthorName) #>" />
+        <meta name="description" content="Source text for <#= HtmlEncode(model.ProjectName) #> by <#= HtmlEncode(model.AuthorName) #>." />
+        <link rel="stylesheet" href="vendor/bootstrap/bootstrap.min.css" />
+        <link rel="stylesheet" href="css/site.css" type="text/css" media="all" />
+        <link rel="stylesheet" href="css/syntax.css" type="text/css" media="all" />
+    </head>
+    <body class="site-body" data-bs-theme="light">
+        <div class="container-fluid py-4 site-shell">
+            <div class="row g-4 align-items-start">
+                <aside class="col-12 col-lg-3 col-xl-2 sidebar-pane bg-secondary-subtle py-4">
+                    <div class="card border-0 bg-transparent sidebar-card sidebar-sticky">
+<# if (model.CoverArtUri is not null) { #>
+                        <div class="mb-4 sidebar-cover">
+                            <img class="img-fluid rounded shadow-sm" src="<#= HtmlEncode(model.CoverArtUri) #>" alt="Cover art" />
+                        </div>
+<# } #>
+                        <nav class="nav flex-column gap-2 sidebar-nav" aria-label="Story links">
+                            <a class="nav-link link-primary" href="index.html">Home page</a>
+                            <a class="nav-link link-primary" href="play.html">Play In-Browser</a>
+<# if (model.HasSourceFiles) { #>
+                            <a class="nav-link link-primary" href="<#= HtmlEncode(model.SourceFiles[0].PageUri) #>">Source Text <span class="text-body-secondary small">(link)</span></a>
+                            <div class="nav flex-column gap-1 sidebar-subnav" aria-label="Source files">
+<# foreach (var navSourceFile in model.SourceFiles) { #>
+                                <a class="nav-link link-secondary<#= navSourceFile.PageUri == sourceFile.PageUri ? " active" : string.Empty #>" href="<#= HtmlEncode(navSourceFile.PageUri) #>"><#= HtmlEncode(navSourceFile.DisplayName) #></a>
+<# } #>
+                            </div>
+<# } #>
+                            <a class="nav-link link-primary" href="<#= HtmlEncode(model.StoryFileUri) #>">Story File <span class="text-body-secondary small text-nowrap">(<#= HtmlEncodeNbsp(model.StoryFileFormat) #>,&nbsp;<#= HtmlEncodeNbsp(model.StoryFileSize) #>)</span></a>
+                        </nav>
+                    </div>
+                </aside>
+                <main class="col-12 col-lg-9 col-xl-10 col-xxl-9">
+                    <div class="site-content">
+                        <header class="site-heading mb-4">
+                            <h1 class="mb-2"><#= HtmlEncode(model.ProjectName) #></h1>
+                            <p class="author-line mb-1">by <#= HtmlEncode(model.AuthorName) #></p>
+<# if (model.SourceArchiveUri is not null) { #>
+                            <p class="mb-1"><a class="link-primary" href="<#= HtmlEncode(model.SourceArchiveUri) #>">Download Source Text (ZIP)</a></p>
+<# } #>
+                            <p class="text-body-secondary mb-0"><#= HtmlEncode(sourceFile.DisplayName) #></p>
+                        </header>
+                        <section>
+                            <pre class="source-copy"><#= sourceFile.HighlightedHtml #></pre>
+                        </section>
+                    </div>
+                </main>
+            </div>
+        </div>
+        <script src="vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    </body>
+</html>
+<#+
+    private static string HtmlEncode(string obj)
+    {
+        return System.Net.WebUtility.HtmlEncode(obj);
+    }
+
+    private static string HtmlEncodeNbsp(string obj) => HtmlEncode(obj).Replace(" ", "&nbsp;");
+#>
