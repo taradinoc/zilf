@@ -24,6 +24,10 @@ and this project adheres to
   the new tool ZilfPub on its own to generate a site for any story file, even
   one not produced with ZILF.
 
+- When running `zilf repl`, typing `help`, `quit`, or `exit` will print a
+  reminder of how to exit the REPL. You can also cancel multiline input by
+  typing `.` on a line by itself.
+
 ### Changed
 
 - `<VERSION GLULX>` can now be used to select Glulx output from source code.

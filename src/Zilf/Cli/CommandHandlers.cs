@@ -478,12 +478,35 @@ namespace Zilf.Cli
                 {
                     try
                     {
-                        var line = ReadLine.Read(sb.Length == 0 ? "> " : ">> ");
+                        bool continuing = sb.Length > 0;
+                        var line = ReadLine.Read(continuing ? ">> " : "> ");
                         if (line == null)
                             break;
 
-                        if (sb.Length > 0)
+                        if (continuing)
+                        {
+                            if (line == ".")
+                            {
+                                // abort input
+                                sb.Clear();
+                                angles = rounds = squares = quotes = 0;
+                                Console.WriteLine("Input aborted.");
+                                continue;
+                            }
+
                             sb.AppendLine();
+                        }
+                        else
+                        {
+                            if (line.Equals("help", StringComparison.OrdinalIgnoreCase) ||
+                                line.Equals("exit", StringComparison.OrdinalIgnoreCase) ||
+                                line.Equals("quit", StringComparison.OrdinalIgnoreCase))
+                            {
+                                Console.WriteLine("Type '<QUIT>' to exit.");
+                                continue;
+                            }
+                        }
+
                         sb.Append(line);
 
                         int state = quotes > 0 ? 1 : 0;
