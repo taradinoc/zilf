@@ -13,7 +13,7 @@
     </head>
     <body class="site-body" data-bs-theme="light">
         <div class="container-fluid py-4 site-shell">
-            <div class="row g-4 align-items-start">
+            <div class="row g-4 align-items-start align-items-lg-stretch">
                 <aside class="col-12 col-lg-3 col-xl-2 sidebar-pane bg-secondary-subtle py-4">
                     <div class="card border-0 bg-transparent sidebar-card sidebar-sticky">
 <# if (model.CoverArtUri is not null) { #>

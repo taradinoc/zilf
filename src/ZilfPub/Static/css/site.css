@@ -1,3 +1,7 @@
+html {
+    height: 100%;
+}
+
 :root {
     color-scheme: light;
     --playport-min-height: 70vh;
@@ -11,12 +15,19 @@ body {
 
 body.site-body,
 body.play-body {
+    display: flex;
+    flex-direction: column;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .site-shell,
 .play-shell {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .sidebar-sticky {
@@ -162,7 +173,8 @@ body.play-body {
 
     .site-shell > .row,
     .play-shell > .row {
-        min-height: 100vh;
+        flex: 1 0 auto;
+        min-height: 100%;
     }
 
     .site-shell > .row > .sidebar-pane,
