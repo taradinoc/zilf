@@ -4,6 +4,8 @@ public sealed record ParchmentEmbeddedAsset(string Id, string Content, string Ty
 
 public sealed record WebsiteSourceFile(string DisplayName, string PageUri, string SourceText, string HighlightedHtml);
 
+public sealed record WebsiteExtraFile(string DisplayName, string Uri, string FileType, string FileSize);
+
 public class WebsiteModel
 {
     public required string AuthorName { get; init; }
@@ -32,6 +34,7 @@ public class WebsiteModel
     public required ParchmentEmbeddedAsset[] ParchmentEmbeddedAssets { get; init; }
 
     public WebsiteSourceFile[] SourceFiles { get; init; } = [];
+    public WebsiteExtraFile[] ExtraFiles { get; init; } = [];
 
     public bool HasSourceFiles => SourceFiles.Length > 0;
 }

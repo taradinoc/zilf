@@ -224,6 +224,8 @@ namespace Zilf.Language
         PUBLISH_COVER_ART,
         [Atom("PUBLISH-DESCRIPTION")]
         PUBLISH_DESCRIPTION,
+        [Atom("PUBLISH-EXTRAS")]
+        PUBLISH_EXTRAS,
         [Atom("PUBLISH-SOURCE?")]
         PUBLISH_SOURCE_P,
         [Atom("PUBLISH-THEME")]

@@ -273,6 +273,19 @@ namespace Zilf.Cli
             AddOptionIfPresent(args, "--description", TryGetGlobalString(ctx, StdAtom.PUBLISH_DESCRIPTION));
             AddOptionIfPresent(args, "--theme", TryGetGlobalString(ctx, StdAtom.PUBLISH_THEME));
 
+            if (ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.PUBLISH_EXTRAS)) is ZilList extras)
+            {
+                foreach (var item in extras)
+                {
+                    if (item is ZilList lst && lst.First is ZilString filename &&
+                        lst.Rest?.First is ZilString caption && lst.Rest.Rest?.IsEmpty == true)
+                    {
+                        args.Add("--extra");
+                        args.Add($"{filename.Text}={caption.Text}");
+                    }
+                }
+            }
+
             if (ctx.GetGlobalVal(ctx.GetStdAtom(StdAtom.PUBLISH_SOURCE_P))?.IsTrue == true)
             {
                 var sourceDir = Path.GetDirectoryName(Path.GetFullPath(inputFile));

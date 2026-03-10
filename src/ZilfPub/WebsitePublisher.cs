@@ -19,8 +19,11 @@ internal sealed record WebsitePublishOptions(
     string? DescriptionHtml,
     FileInfo? DescriptionFile,
     string[]? SourceFilenames,
+    WebsiteExtraFileOption[]? ExtraFiles,
     bool Overwrite,
     string? ThemeCssContent);
+
+internal sealed record WebsiteExtraFileOption(string SourcePath, string DisplayName);
 
 internal sealed record WebsitePublishResult(string OutputDirectory, WebsiteModel Model);
 
@@ -47,6 +50,7 @@ internal static class WebsitePublisher
         }
 
         var storyOutputPath = CopyStoryFile(options.StoryFile.FullName, outputDirectory, options.Overwrite);
+        var extraFiles = CopyExtraFiles(outputDirectory, options.ExtraFiles, options.Overwrite);
         var sourceArchiveUri = WriteSourceArchive(
             outputDirectory,
             options.StoryFile.Name,
@@ -81,6 +85,7 @@ internal static class WebsitePublisher
                 $"data:image/gif;base64,{Convert.ToBase64String(LoadBundledBinaryAsset(Path.Combine("vendor", "parchment", "waiting.gif")))}",
             ParchmentEmbeddedAssets = parchmentEmbeddedAssets,
             SourceFiles = sourceFiles,
+            ExtraFiles = extraFiles,
         };
 
         WriteTextFile(Path.Combine(outputDirectory, "index.html"), new IndexPage(model).TransformText());
@@ -136,6 +141,7 @@ internal static class WebsitePublisher
         Directory.CreateDirectory(Path.Combine(outputDirectory, "assets", "story"));
         Directory.CreateDirectory(Path.Combine(outputDirectory, "assets", "images"));
         Directory.CreateDirectory(Path.Combine(outputDirectory, "assets", "source"));
+        Directory.CreateDirectory(Path.Combine(outputDirectory, "assets", "extras"));
     }
 
     private static void DeleteManagedOutput(string outputDirectory, string relativePath)
@@ -194,6 +200,41 @@ internal static class WebsitePublisher
         }
 
         return File.ReadAllText(options.DescriptionFile.FullName);
+    }
+
+    private static WebsiteExtraFile[] CopyExtraFiles(
+        string outputDirectory,
+        WebsiteExtraFileOption[]? extraFiles,
+        bool overwrite)
+    {
+        if (extraFiles is not { Length: > 0 })
+        {
+            return [];
+        }
+
+        var targetDirectory = Path.Combine(outputDirectory, "assets", "extras");
+        var usedTargetNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var links = new List<WebsiteExtraFile>(extraFiles.Length);
+
+        foreach (var (extraFile, index) in extraFiles.Select((extraFile, index) => (extraFile, index)))
+        {
+            var sourceFileName = Path.GetFileName(extraFile.SourcePath);
+            var fallbackName = $"extra-{index + 1}";
+            var targetFileName = EnsureUniqueArchiveEntryName(
+                SanitizeArchiveEntryName(sourceFileName, fallbackName),
+                usedTargetNames);
+            var targetPath = Path.Combine(targetDirectory, targetFileName);
+
+            File.Copy(extraFile.SourcePath, targetPath, overwrite: overwrite);
+            var fileInfo = new FileInfo(extraFile.SourcePath);
+            links.Add(new WebsiteExtraFile(
+                extraFile.DisplayName,
+                MakeSiteRelativePath(outputDirectory, targetPath),
+                GetExtraFileTypeLabel(extraFile.SourcePath),
+                FormatFileSize(fileInfo.Length)));
+        }
+
+        return links.ToArray();
     }
 
     private static string? WriteSourceArchive(
@@ -445,6 +486,26 @@ internal static class WebsitePublisher
         {
             return System.Net.WebUtility.HtmlEncode(sourceText);
         }
+    }
+
+    private static string GetExtraFileTypeLabel(string path)
+    {
+        var extension = Path.GetExtension(path).ToLowerInvariant();
+
+        return extension switch
+        {
+            ".z1" or ".z2" or ".z3" or ".z4" or ".z5" or ".z6" or ".z7" or ".z8" => "Z-code",
+            ".ulx" => "Glulx",
+            ".zblorb" or ".gblorb" or ".blorb" or ".blb" => "Blorb",
+            ".html" or ".htm" => "HTML",
+            ".txt" or ".md" or ".zil" or ".mud" or ".zap" or ".asm" or ".inf" or ".h" or ".ni" => "Text",
+            ".pdf" => "PDF",
+            ".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" or ".svg" or ".bmp" => "Image",
+            ".mp3" or ".wav" or ".ogg" or ".flac" or ".m4a" => "Audio",
+            ".mp4" or ".webm" or ".ogv" or ".mov" or ".mkv" => "Video",
+            _ when extension.Length > 1 => extension[1..].ToUpperInvariant(),
+            _ => "File",
+        };
     }
 
     private static string FormatFileSize(long size)

@@ -20,9 +20,9 @@ and this project adheres to
   This is accomplished with the `zilf publish` command (or by adding `--publish`
   to your regular build command). The GVALs of `PUBLISH-TITLE`,
   `PUBLISH-AUTHOR`, `PUBLISH-COVER-ART`, `PUBLISH-DESCRIPTION`, `PUBLISH-THEME`,
-  and `PUBLISH-SOURCE?` will control how the site is generated. You can also run
-  the new tool ZilfPub on its own to generate a site for any story file, even
-  one not produced with ZILF.
+  `PUBLISH-SOURCE?`, and `PUBLISH-EXTRAS` will control how the site is
+  generated. You can also run the new tool ZilfPub on its own to generate a site
+  for any story file, even one not produced with ZILF.
 
 - When running `zilf repl`, typing `help`, `quit`, or `exit` will print a
   reminder of how to exit the REPL. You can also cancel multiline input by

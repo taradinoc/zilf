@@ -39,6 +39,9 @@ internal static class Program
 		var sourceDirectoryOption = CreateOption<DirectoryInfo[]>("--source-dir",
 			"A directory whose top-level .zil and .mud files should be published as source text pages.");
 		sourceDirectoryOption.AllowMultipleArgumentsPerToken = true;
+		var extraFilesOption = CreateOption<string[]>("--extra",
+			"Extra file to publish and link in the sidebar. Format: path[=link title]. Can be repeated.");
+		extraFilesOption.AllowMultipleArgumentsPerToken = true;
 		var overwriteOption = CreateOption<bool>("--overwrite", "Allow overwriting files in an existing output directory.");
 		var listThemesOption = CreateOption<bool>("--list-themes", "List available Bootswatch themes and exit.");
 		var themeOption = CreateOption<string?>("--theme", "Use a Bootswatch theme by name (e.g., darkly, cosmo, united).");
@@ -59,6 +62,7 @@ internal static class Program
 		rootCommand.Options.Add(descriptionFileOption);
 		rootCommand.Options.Add(sourceFilenamesOption);
 		rootCommand.Options.Add(sourceDirectoryOption);
+		rootCommand.Options.Add(extraFilesOption);
 		rootCommand.Options.Add(overwriteOption);
 		rootCommand.Options.Add(listThemesOption);
 		rootCommand.Options.Add(themeOption);
@@ -76,6 +80,7 @@ internal static class Program
 			descriptionFileOption,
 			sourceFilenamesOption,
 			sourceDirectoryOption,
+			extraFilesOption,
 			overwriteOption,
 			listThemesOption,
 			themeOption);
@@ -113,6 +118,9 @@ internal static class Program
 			parseResult.GetValue(spec.SourceFilenamesOption),
 			parseResult.GetValue(spec.SourceDirectoryOption),
 			out var sourceErrorMessage);
+		var extraFiles = ExpandExtraFiles(
+			parseResult.GetValue(spec.ExtraFilesOption),
+			out var extraErrorMessage);
 		var overwrite = parseResult.GetValue(spec.OverwriteOption);
 		var themeName = parseResult.GetValue(spec.ThemeOption);
 
@@ -143,6 +151,12 @@ internal static class Program
 		if (sourceErrorMessage is not null)
 		{
 			Console.Error.WriteLine(sourceErrorMessage);
+			return 1;
+		}
+
+		if (extraErrorMessage is not null)
+		{
+			Console.Error.WriteLine(extraErrorMessage);
 			return 1;
 		}
 
@@ -181,6 +195,7 @@ internal static class Program
 				DescriptionHtml: descriptionHtml,
 				DescriptionFile: descriptionFile,
 				SourceFilenames: sourceFilenames,
+				ExtraFiles: extraFiles,
 				Overwrite: overwrite,
 				ThemeCssContent: themeCssContent);
 
@@ -287,6 +302,58 @@ internal static class Program
 		}
 	}
 
+	private static WebsiteExtraFileOption[]? ExpandExtraFiles(string[]? extras, out string? errorMessage)
+	{
+		errorMessage = null;
+
+		if (extras is not { Length: > 0 })
+		{
+			return null;
+		}
+
+		var results = new List<WebsiteExtraFileOption>();
+		var seenPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var extra in extras)
+		{
+			if (string.IsNullOrWhiteSpace(extra))
+			{
+				continue;
+			}
+
+			var equalsIndex = extra.IndexOf('=');
+			var pathPart = equalsIndex >= 0 ? extra[..equalsIndex] : extra;
+			var titlePart = equalsIndex >= 0 ? extra[(equalsIndex + 1)..] : null;
+
+			var sourcePath = pathPart.Trim();
+			if (sourcePath.Length == 0)
+			{
+				errorMessage = $"Invalid --extra value '{extra}'. Expected path[=title].";
+				return null;
+			}
+
+			var sourceFile = new FileInfo(sourcePath);
+			if (!sourceFile.Exists)
+			{
+				errorMessage = $"Extra file not found: {sourceFile.FullName}";
+				return null;
+			}
+
+			if (!seenPaths.Add(sourceFile.FullName))
+			{
+				continue;
+			}
+
+			var linkTitle = string.IsNullOrWhiteSpace(titlePart)
+				? (Path.GetFileName(sourceFile.FullName) ?? sourceFile.FullName)
+				: titlePart.Trim();
+
+			results.Add(new WebsiteExtraFileOption(sourceFile.FullName, linkTitle));
+		}
+
+		return results.Count > 0 ? results.ToArray() : null;
+	}
+
 	private static bool IsSupportedSourceFile(string path)
 	{
 		var extension = Path.GetExtension(path);
@@ -307,6 +374,7 @@ internal static class Program
 		Option<FileInfo?> DescriptionFileOption,
 		Option<string[]> SourceFilenamesOption,
 		Option<DirectoryInfo[]> SourceDirectoryOption,
+		Option<string[]> ExtraFilesOption,
 		Option<bool> OverwriteOption,
 		Option<bool> ListThemesOption,
 		Option<string?> ThemeOption);

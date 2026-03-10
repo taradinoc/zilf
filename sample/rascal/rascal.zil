@@ -15,6 +15,7 @@
 <SETG PUBLISH-DESCRIPTION "A tiny roguelike for ZILF.">
 <SETG PUBLISH-THEME "Litera">
 <SETG PUBLISH-SOURCE? T>
+<SETG PUBLISH-EXTRAS (("poster.png" "Poster"))>
 
 ;"Rascal's ASCII art (RASCII art?) uses '|', the traditional ZIL newline
   character, so we need to change CRLF-CHARACTER in order to be able to put it

@@ -62,6 +62,13 @@
         WritePrimarySidebarItem("Play In-Browser", "play.html", currentPage == SidebarCurrentPage.Play);
         WritePrimarySidebarItem(storyFileLabel, model.StoryFileUri, isCurrent: false);
 
+        foreach (var extraFile in model.ExtraFiles)
+        {
+            var extraFileLabel =
+                $"{HtmlEncode(extraFile.DisplayName)} <span class=\"text-body-secondary small text-nowrap\">({HtmlEncodeNbsp(extraFile.FileType)},&nbsp;{HtmlEncodeNbsp(extraFile.FileSize)})</span>";
+            WritePrimarySidebarItem(extraFileLabel, extraFile.Uri, isCurrent: false);
+        }
+
         if (model.HasSourceFiles)
         {
             WritePrimarySidebarItem("Source Text", model.SourceFiles[0].PageUri, currentPage == SidebarCurrentPage.Source);
