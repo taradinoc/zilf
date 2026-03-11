@@ -505,7 +505,7 @@ Returns:
     <CURSET 9 .COL>
     <TELL "          Get weapon  )                     <    >            .    or  space   "> ;"collapsed space after ."
     <CURSET 10 .COL>
-    <TELL "          Get edible  b C ...                                                  "> ;"collapsed space after ."
+    <TELL "          Get snacks  b C ...                                                  "> ;"collapsed space after ."
     <CURSET 11 .COL>
     <TELL "        Fight beasts  g w ...        Drop item     Eat/drink    Equip weapon   "> ;"collapsed space after ."
     <CURSET 12 .COL>
