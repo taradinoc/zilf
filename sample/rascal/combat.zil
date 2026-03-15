@@ -551,14 +551,16 @@ Returns:
            <COND (<AND <==? .ETYPE ,ETYPE-DRAGON> <==? <RNG 4> 1>>
                   <DROP-KEY-NEAR .EX .EY <RNG ,LOCK-TYPE-COUNT>>)>
            ;"Occasional item drop as loot. If an item drops: 50% weapon, 25% potion, 25% food."
-              <COND (<L=? <RNG 100> ,ITEM-ON-KILL-DROP-PCT>
-                <DROP-ENEMY-KILL-LOOT-NEAR .EX .EY ,CURRENT-FLOOR .LOOT>)>
+           <COND (<L=? <RNG 100> ,ITEM-ON-KILL-DROP-PCT>
+                  <DROP-ENEMY-KILL-LOOT-NEAR .EX .EY ,CURRENT-FLOOR .LOOT>)>
            <DESPAWN-ENEMY-OBJ .O>
            <COND (,LAST-HIT-CRIT?
                   <LOG "You hit the " <ENEMY-NAME .ETYPE> " for " N .DMG " damage and kill it. "
                        <PLAYER-CRIT-MSG> CR>)
                  (ELSE
-                  <LOG "You hit the " <ENEMY-NAME .ETYPE> " for " N .DMG " damage and kill it." CR>)>)
+                  <LOG "You hit the " <ENEMY-NAME .ETYPE> " for " N .DMG " damage and kill it." CR>)>
+           <COND (<==? .ETYPE ,ETYPE-MONKEY>
+                  <LOG "You hear a bone-chilling screech in the distance." CR>)>)
           (ELSE
            <COND (,LAST-HIT-CRIT?
                   <LOG "You hit the " <ENEMY-NAME .ETYPE> " for " N .DMG " damage. "
