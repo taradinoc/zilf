@@ -1,40 +1,56 @@
 "Inventory management"
 
 ;"Inventory is stored as child item objects under PLAYER-INVENTORY.
+  Inventory slot contents live in the INV-SLOTS table.
   EQUIPPED-WEAPON (global, defined in objects.zil) points to the equipped
   weapon item object, or <> when unarmed."
+<ROUTINE INV-NTH-OBJ (SLOT)
+    <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>> <RETURN 0>)>
+    <GET ,INV-SLOTS <INV-SLOT-IDX .SLOT>>>
+
+<ROUTINE INV-SET-OBJ (SLOT O)
+    <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>> <RETURN 0>)>
+    <PUT ,INV-SLOTS <INV-SLOT-IDX .SLOT> .O>
+    .O>
+
+<ROUTINE INV-CLEAR-SLOT (SLOT)
+    <INV-SET-OBJ .SLOT 0>>
+
+<ROUTINE INV-SLOT-OF-OBJ (OBJ)
+    <DO (I 1 ,INV-SIZE)
+        <COND (<==? <INV-NTH-OBJ .I> .OBJ> <RETURN .I>)>>
+    0>
 
 <ROUTINE INV-COUNT ("AUX" O C)
     <SET C 0>
-    <SET O <FIRST? ,PLAYER-INVENTORY>>
-    <REPEAT ()
-        <COND (<NOT .O> <RETURN .C>)>
-        <SET C <+ .C 1>>
-        <SET O <NEXT? .O>>>>
+    <DO (I 1 ,INV-SIZE)
+        <COND (<INV-NTH-OBJ .I> <SET C <+ .C 1>>)>>
+    .C>
 
-;"Returns the Nth inventory item object (1-based), or 0 if out of range."
+<ROUTINE INV-FIRST-FREE-SLOT ()
+    <DO (I 1 ,INV-SIZE)
+        <COND (<NOT <INV-NTH-OBJ .I>> <RETURN .I>)>>
+    0>
 
-<ROUTINE INV-NTH-OBJ (SLOT "AUX" O I)
-    <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>> <RETURN 0>)>
-    <SET O <FIRST? ,PLAYER-INVENTORY>>
-    <SET I 1>
-    <REPEAT ()
-        <COND (<NOT .O> <RETURN 0>)>
-        <COND (<==? .I .SLOT> <RETURN .O>)>
-        <SET I <+ .I 1>>
-        <SET O <NEXT? .O>>>>
+<ROUTINE INV-LAST-USED-SLOT ()
+    <DO (I ,INV-SIZE 1 -1)
+        <COND (<INV-NTH-OBJ .I> <RETURN .I>)>>
+    0>
 
 ;"Moves an existing item object into the player's inventory.
 
 Returns the object if moved; 0 if pack is full or O invalid."
 
-<ROUTINE INV-TAKE-OBJ (O)
+<ROUTINE INV-TAKE-OBJ (O "AUX" SLOT)
     <COND (<NOT .O> <RETURN 0>)>
-    <COND (<G=? <INV-COUNT> ,INV-SIZE> <RETURN 0>)>
+    <SET SLOT <INV-FIRST-FREE-SLOT>>
+    <COND (<L=? .SLOT 0> <RETURN 0>)>
+    <CLEAR-RASCAL-ITEM-SLOT-REFS .O>
     <REMOVE .O>
     <PUTP .O ,P?R-X 0>
     <PUTP .O ,P?R-Y 0>
     <MOVE .O ,PLAYER-INVENTORY>
+    <INV-SET-OBJ .SLOT .O>
     .O>
 
 "Core inventory operations"
@@ -66,6 +82,8 @@ Returns:
         <REMOVE .O>
         <FREE-RASCAL-ITEM .O>
         <SET O .N>>
+      <DO (I 1 ,INV-SIZE)
+        <INV-CLEAR-SLOT .I>>
     <SETG EQUIPPED-WEAPON <>>
     <RTRUE>>
 
@@ -78,8 +96,9 @@ Args:
 Returns:
   T if added; FALSE if inventory is full."
 
-<ROUTINE INV-ADD (KIND ID "AUX" O)
-    <COND (<G=? <INV-COUNT> ,INV-SIZE> <RETURN 0>)>
+<ROUTINE INV-ADD (KIND ID "AUX" O SLOT)
+    <SET SLOT <INV-FIRST-FREE-SLOT>>
+    <COND (<L=? .SLOT 0> <RETURN 0>)>
     <SET O <ALLOC-RASCAL-ITEM>>
     <COND (<NOT .O> <RETURN 0>)>
     <PUTP .O ,P?R-ITKIND .KIND>
@@ -90,6 +109,7 @@ Returns:
     <PUTP .O ,P?R-X 0>
     <PUTP .O ,P?R-Y 0>
     <MOVE .O ,PLAYER-INVENTORY>
+    <INV-SET-OBJ .SLOT .O>
     .O>
 
 ;"Appends a weapon to the player's inventory.
@@ -107,7 +127,7 @@ Returns:
     <PUTP .O ,P?R-ITENCH .ENCH>
     .O>
 
-;"Removes an inventory slot, shifting down later slots to keep inventory packed.
+;"Removes an inventory slot.
 
 Args:
   SLOT: 1-based slot number.
@@ -120,6 +140,7 @@ Returns:
     <COND (<L=? .O 0> <RFALSE>)>
     <COND (<==? ,EQUIPPED-WEAPON .O> <SETG EQUIPPED-WEAPON <>>)>
     <HONORS-NOTE-EQUIP-CHANGE>
+  <INV-CLEAR-SLOT .SLOT>
     <REMOVE .O>
     <FREE-RASCAL-ITEM .O>
     <RTRUE>>
@@ -149,13 +170,13 @@ Returns:
     <RTRUE>>
 
   <ROUTINE INV-FIND-KEY-OBJ (LOCKTYPE "AUX" O)
-      <SET O <FIRST? ,PLAYER-INVENTORY>>
-      <REPEAT ()
-          <COND (<NOT .O> <RETURN 0>)>
-          <COND (<AND <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-KEY>
-                      <==? <GETP .O ,P?R-ITID> .LOCKTYPE>>
-                 <RETURN .O>)>
-          <SET O <NEXT? .O>>>>
+      <DO (I 1 ,INV-SIZE)
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (<AND .O
+              <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-KEY>
+              <==? <GETP .O ,P?R-ITID> .LOCKTYPE>>
+           <RETURN .O>)>>
+      0>
 
   <ROUTINE INV-CONSUME-KEY (LOCKTYPE "AUX" O)
       <SET O <INV-FIND-KEY-OBJ .LOCKTYPE>>
@@ -181,34 +202,36 @@ MODE:
 Returns:
   ZSCII character code from GETCHAR."
 
-<ROUTINE POPUP-INVENTORY-GETCHAR (MODE "AUX" W H C CNT O)
+<ROUTINE POPUP-INVENTORY-GETCHAR (MODE "AUX" W H C MAX O)
     ;"Size and position the box roughly centered in the upper window."
     <SET W <- <LOWCORE SCRH> 4>>
     <COND (<G? .W 60> <SET W 60>)>
     <COND (<L? .W 34> <SET W 34>)>
 
     ;"Top border + prompt + items + bottom border."
-    <SET CNT <INV-COUNT>>
-    <SET H <+ .CNT 3>>
+    <SET MAX <INV-LAST-USED-SLOT>>
+    <SET H <+ .MAX 3>>
     <COND (<G? .H ,UPPER-HEIGHT> <SET H ,UPPER-HEIGHT>)>
-  <POPUP-OPEN-BOX .W .H 34>
+    <POPUP-OPEN-BOX .W .H 34>
 
     ;"Prompt line."
-  <CURSET <+ ,POPUP-TOP 1> <+ ,POPUP-LEFT 2>>
+    <CURSET <+ ,POPUP-TOP 1> <+ ,POPUP-LEFT 2>>
     <COND (<==? .MODE 1>
-           <TELL "Equip which weapon? (1-" N .CNT "; 0=10; Q cancels)">)
+           <TELL "Equip which weapon? (1-" N .MAX "; 0=10; Q cancels)">)
           (<==? .MODE 2>
-           <TELL "Ingest which item? (1-" N .CNT "; 0=10; Q cancels)">)
-          (ELSE <TELL "Drop which item? (1-" N .CNT "; 0=10; Q cancels)">)>
+           <TELL "Ingest which item? (1-" N .MAX "; 0=10; Q cancels)">)
+          (ELSE <TELL "Drop which item? (1-" N .MAX "; 0=10; Q cancels)">)>
 
     ;"Inventory lines."
-    <DO (I 1 .CNT)
+    <DO (I 1 ,INV-SIZE)
         <COND (<G? .I <- .H 3>> <RETURN>)>
-    <CURSET <+ ,POPUP-TOP <+ .I 1>> <+ ,POPUP-LEFT 2>>
+        <CURSET <+ ,POPUP-TOP <+ .I 1>> <+ ,POPUP-LEFT 2>>
         <SET O <INV-NTH-OBJ .I>>
-        <COND (<AND <G? .O 0> <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-WEAPON>>
+        <COND (<NOT <G? .O 0>>)
+              (<==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-WEAPON>
                <TELL N .I ") L" N <GETP .O ,P?R-ITLVL>>
-               <COND (<G? <GETP .O ,P?R-ITENCH> 0> <TELL "+" N <GETP .O ,P?R-ITENCH>>)>
+               <COND (<G? <GETP .O ,P?R-ITENCH> 0>
+                      <TELL "+" N <GETP .O ,P?R-ITENCH>>)>
                <TELL " " INV-NAME .I>
                <COND (<==? .O ,EQUIPPED-WEAPON> <TELL " (equipped)">)>)
               (ELSE <TELL N .I ") " INV-NAME .I>)>>
@@ -221,17 +244,19 @@ Returns:
 
     .C>
 
-<ROUTINE INVENTORY-SELL-VALUE ("AUX" SUM K ID LVL ENCH CNT O)
+<ROUTINE INVENTORY-SELL-VALUE ("AUX" SUM K ID LVL ENCH O)
     <SET SUM 0>
-    <SET CNT <INV-COUNT>>
-    <DO (I 1 .CNT)
+    <DO (I 1 ,INV-SIZE)
         <SET O <INV-NTH-OBJ .I>>
-        <COND (<NOT .O> <AGAIN>)>
-        <SET K <GETP .O ,P?R-ITKIND>>
-        <SET ID <GETP .O ,P?R-ITID>>
-        <SET LVL <GETP .O ,P?R-ITLVL>>
-        <SET ENCH <GETP .O ,P?R-ITENCH>>
-        <SET SUM <+ .SUM <TRADER-BUY-PRICE .K .ID .LVL .ENCH>>>>
+        <COND (<NOT .O>)
+              (<NOT <IN? .O ,PLAYER-INVENTORY>>
+               <RETURN>)
+              (ELSE
+               <SET K <GETP .O ,P?R-ITKIND>>
+               <SET ID <GETP .O ,P?R-ITID>>
+               <SET LVL <GETP .O ,P?R-ITLVL>>
+               <SET ENCH <GETP .O ,P?R-ITENCH>>
+               <SET SUM <+ .SUM <TRADER-BUY-PRICE .K .ID .LVL .ENCH>>>)>>
     .SUM>
 
 "Equipment operations"
@@ -251,34 +276,32 @@ Args:
 Returns:
   T if a weapon was equipped; FALSE otherwise."
 
-<ROUTINE TRY-EQUIP-WEAPON ("AUX" C SLOT K ID LVL ENCH WSTR NEED)
+<ROUTINE TRY-EQUIP-WEAPON ("AUX" C SLOT K ID LVL ENCH WSTR NEED O)
     <COND (<L=? <INV-COUNT> 0> <LOG "You have nothing to equip." CR> <RFALSE>)>
     <SET C <POPUP-INVENTORY-GETCHAR 1>>
     <COND (<==? .C !\Q !\q> <LOG "Never mind." CR> <RFALSE>)>
     <SET SLOT <DIGIT-TO-SLOT .C>>
-    <COND (<OR <L? .SLOT 1> <G? .SLOT <INV-COUNT>>>
+    <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>>
            <LOG "Never mind." CR>
            <RFALSE>)>
-    <SET K <GETP <INV-NTH-OBJ .SLOT> ,P?R-ITKIND>>
-    <SET ID <GETP <INV-NTH-OBJ .SLOT> ,P?R-ITID>>
-    <SET LVL <GETP <INV-NTH-OBJ .SLOT> ,P?R-ITLVL>>
-    <SET ENCH <GETP <INV-NTH-OBJ .SLOT> ,P?R-ITENCH>>
+    <SET O <INV-NTH-OBJ .SLOT>>
+    <COND (<L=? .O 0> <LOG "Never mind." CR> <RFALSE>)>
+    <SET K <GETP .O ,P?R-ITKIND>>
+    <SET ID <GETP .O ,P?R-ITID>>
+    <SET LVL <GETP .O ,P?R-ITLVL>>
+    <SET ENCH <GETP .O ,P?R-ITENCH>>
     <COND (<N==? .K ,ITEMKIND-WEAPON> <LOG "That's not a weapon." CR> <RFALSE>)>
     <SET WSTR <+ ,PLAYER-STR .ENCH>>
     <COND (<L? .WSTR .LVL>
            <SET NEED <- .LVL .ENCH>>
            <COND (<L? .NEED 1> <SET NEED 1>)>
            <LOG "You're not strong enough to wield that (need STR >= "
-                N
-                .NEED
-                ")."
-                CR>
+                N .NEED ")." CR>
            <RFALSE>)>
-    <SETG EQUIPPED-WEAPON <INV-NTH-OBJ .SLOT>>
+    <SETG EQUIPPED-WEAPON .O>
     <HONORS-NOTE-EQUIP-CHANGE>
     <LOG-EQUIPPED-WEAPON ,EQUIPPED-WEAPON>
     <RTRUE>>
-
 ;"Equips the best weapon currently carried (highest level that STR can wield).
 
 Args:
@@ -287,31 +310,31 @@ Args:
 Returns:
   T if a weapon was equipped; FALSE if no wieldable weapon exists."
 
-<ROUTINE AUTO-EQUIP-WEAPON ("AUX" BESTS BESTLVL BESTDMG K LVL ENCH WSTR DMG ID CNT)
+<ROUTINE AUTO-EQUIP-WEAPON ("AUX" BESTS BESTLVL BESTDMG K LVL ENCH WSTR DMG ID O)
     <SET BESTS 0>
     <SET BESTLVL 0>
     <SET BESTDMG 0>
-    <SET CNT <INV-COUNT>>
-    <DO (I 1 .CNT)
-        <SET K <GETP <INV-NTH-OBJ .I> ,P?R-ITKIND>>
-        <COND (<==? .K ,ITEMKIND-WEAPON>
-               <SET LVL <GETP <INV-NTH-OBJ .I> ,P?R-ITLVL>>
-               <SET ENCH <GETP <INV-NTH-OBJ .I> ,P?R-ITENCH>>
-               <SET WSTR <+ ,PLAYER-STR .ENCH>>
-               <COND (<G=? .WSTR .LVL>
-                      <SET ID <GETP <INV-NTH-OBJ .I> ,P?R-ITID>>
-                      <SET DMG <WEAPON-BASE-DMG .ID>>
-                      <COND (<OR <L? .BESTS 1>
-                                 <G? .LVL .BESTLVL>
-                                 <AND <==? .LVL .BESTLVL> <G? .DMG .BESTDMG>>>
-                             <SET BESTS .I>
-                             <SET BESTLVL .LVL>
-                             <SET BESTDMG .DMG>)>)>)>>
+    <DO (I 1 ,INV-SIZE)
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (.O
+               <SET K <GETP .O ,P?R-ITKIND>>
+               <COND (<==? .K ,ITEMKIND-WEAPON>
+                      <SET LVL <GETP .O ,P?R-ITLVL>>
+                      <SET ENCH <GETP .O ,P?R-ITENCH>>
+                      <SET WSTR <+ ,PLAYER-STR .ENCH>>
+                      <COND (<G=? .WSTR .LVL>
+                             <SET ID <GETP .O ,P?R-ITID>>
+                             <SET DMG <WEAPON-BASE-DMG .ID>>
+                             <COND (<OR <L? .BESTS 1>
+                                        <G? .LVL .BESTLVL>
+                                        <AND <==? .LVL .BESTLVL>
+                                             <G? .DMG .BESTDMG>>>
+                                    <SET BESTS .I>
+                                    <SET BESTLVL .LVL>
+                                    <SET BESTDMG .DMG>)>)>)>)>>
     <SETG EQUIPPED-WEAPON <COND (<G? .BESTS 0> <INV-NTH-OBJ .BESTS>) (ELSE <>)>>
     <HONORS-NOTE-EQUIP-CHANGE>
-    <COND (<G? .BESTS 0>
-           <LOG-EQUIPPED-WEAPON ,EQUIPPED-WEAPON>
-           <RTRUE>)>
+    <COND (<G? .BESTS 0> <LOG-EQUIPPED-WEAPON ,EQUIPPED-WEAPON> <RTRUE>)>
     <RFALSE>>
 
 <ROUTINE PRINT-EQUIPPED-WEAPON ("AUX" O)
@@ -341,7 +364,7 @@ Returns:
     <SET TOTAL <GETP .O ,P?R-ITAMT>>
     <REMOVE .O>
     <FREE-RASCAL-ITEM .O>
-  <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+    <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
     <SETG PLAYER-GOLD <+ ,PLAYER-GOLD .TOTAL>>
     <LOG "You pick up " N .TOTAL " gold pieces." CR>
     <RTRUE>>
@@ -362,15 +385,12 @@ Returns:
            <LOG "You pick up the " FOOD-NAME .TYPE "." CR>
            <REMOVE .ANY>
            <FREE-RASCAL-ITEM .ANY>
-          <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
                <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
-           <LOG "Your pack is too full to pick up the "
-                FOOD-NAME .TYPE
-                "."
-                CR>
+           <LOG "Your pack is too full to pick up the " FOOD-NAME .TYPE "." CR>
            <RTRUE>)>>
 
 ;"If the player is standing on a potion, attempts to pick it up into inventory.
@@ -627,7 +647,7 @@ Returns:
     <SET C <POPUP-INVENTORY-GETCHAR 0>>
     <COND (<==? .C !\Q !\q> <LOG "Never mind." CR> <RFALSE>)>
     <SET SLOT <DIGIT-TO-SLOT .C>>
-    <COND (<OR <L? .SLOT 1> <G? .SLOT <INV-COUNT>>>
+    <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>>
            <LOG "Never mind." CR>
            <RFALSE>)>
     <SET O <INV-NTH-OBJ .SLOT>>
@@ -645,6 +665,7 @@ Returns:
     <SET NX ,DROP-CAND-X>
     <SET NY ,DROP-CAND-Y>
     <COND (<==? .K ,ITEMKIND-TREASURE>
+           <INV-CLEAR-SLOT .SLOT>
            <PUTP .O ,P?R-X .NX>
            <PUTP .O ,P?R-Y .NY>
            <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
@@ -701,16 +722,18 @@ Args:
 Returns:
     T if something was consumed; FALSE otherwise."
 
-<ROUTINE TRY-INGEST-INVENTORY ("AUX" C SLOT K ID HEAL NEWHP)
+<ROUTINE TRY-INGEST-INVENTORY ("AUX" C SLOT K ID HEAL NEWHP O)
     <COND (<L=? <INV-COUNT> 0> <LOG "You have nothing to ingest." CR> <RFALSE>)>
     <SET C <POPUP-INVENTORY-GETCHAR 2>>
     <COND (<==? .C !\Q !\q> <LOG "Never mind." CR> <RFALSE>)>
     <SET SLOT <DIGIT-TO-SLOT .C>>
-    <COND (<OR <L? .SLOT 1> <G? .SLOT <INV-COUNT>>>
+        <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>>
            <LOG "Never mind." CR>
            <RFALSE>)>
-    <SET K <GETP <INV-NTH-OBJ .SLOT> ,P?R-ITKIND>>
-    <SET ID <GETP <INV-NTH-OBJ .SLOT> ,P?R-ITID>>
+        <SET O <INV-NTH-OBJ .SLOT>>
+        <COND (<L=? .O 0> <LOG "Never mind." CR> <RFALSE>)>
+        <SET K <GETP .O ,P?R-ITKIND>>
+        <SET ID <GETP .O ,P?R-ITID>>
     <COND (<==? .K ,ITEMKIND-FOOD>
            <SET HEAL <FOOD-HEAL-AMT .ID>>
            <SET NEWHP <+ ,PLAYER-HP .HEAL>>

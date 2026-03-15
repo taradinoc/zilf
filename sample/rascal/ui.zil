@@ -744,7 +744,8 @@ Returns:
         <SET C <GETCHAR>>
         <COND (,GAME-OVER?
                ;"After game over, Q or ESC exits and R restarts; ignore everything else."
-               <COND (<==? .C 27 !\Q !\q> <RETURN>) (<==? .C !\R !\r> <RESTART>)>
+               <COND (<==? .C 27 !\Q !\q> <RETURN>)
+                     (<==? .C !\R !\r> <RESTART>)>
                <DRAW>)
               (ELSE
                <COND (<==? .C 27 !\Q !\q>

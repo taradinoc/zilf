@@ -5,31 +5,34 @@
 <GLOBAL TRADER-ON? <>>
 
 ;"Trader inventory is stored as child item objects under the per-floor trader
-  object (see objects.zil). Slot N is the Nth child."
+    object (see objects.zil). Slot contents live in the TRINV-SLOTS table."
 
-<ROUTINE TRINV-COUNT-FLOOR (F "AUX" O C K)
+<ROUTINE TRINV-NTH-OBJ-FLOOR (F SLOT)
+    <COND (<OR <L? .SLOT 1> <G? .SLOT ,TRINV-SIZE>> <RETURN 0>)>
+    <GET ,TRINV-SLOTS <TRINV-SLOT-IDX .F .SLOT>>>
+
+<ROUTINE TRINV-SET-OBJ-FLOOR (F SLOT O)
+    <COND (<OR <L? .SLOT 1> <G? .SLOT ,TRINV-SIZE>> <RETURN 0>)>
+    <PUT ,TRINV-SLOTS <TRINV-SLOT-IDX .F .SLOT> .O>
+    .O>
+
+<ROUTINE TRINV-COUNT-FLOOR (F "AUX" O C)
     <SET C 0>
-    <SET O <FIRST? <TRADER-OBJ .F>>>
-    <REPEAT ()
-        <COND (<NOT .O> <RETURN .C>)>
-        <SET K <GETP .O ,P?R-ITKIND>>
-        <COND (<G? .K 0> <SET C <+ .C 1>>)>
-        <SET O <NEXT? .O>>>>
+    <DO (I 1 ,TRINV-SIZE)
+        <SET O <TRINV-NTH-OBJ-FLOOR .F .I>>
+        <COND (.O <SET C <+ .C 1>>)>
+    .C>>
 
 <ROUTINE TRINV-COUNT ()
     <TRINV-COUNT-FLOOR ,CURRENT-FLOOR>>
 
-<ROUTINE TRINV-NTH-OBJ-FLOOR (F SLOT "AUX" O I K)
-    <COND (<OR <L? .SLOT 1> <G? .SLOT ,TRINV-SIZE>> <RETURN 0>)>
-    <SET O <FIRST? <TRADER-OBJ .F>>>
-    <SET I 1>
-    <REPEAT ()
-        <COND (<NOT .O> <RETURN 0>)>
-        <SET K <GETP .O ,P?R-ITKIND>>
-        <COND (<G? .K 0>
-               <COND (<==? .I .SLOT> <RETURN .O>)>
-               <SET I <+ .I 1>>)>
-        <SET O <NEXT? .O>>>>
+<ROUTINE TRINV-FIRST-FREE-SLOT-FLOOR (F)
+    <DO (I 1 ,TRINV-SIZE)
+        <COND (<NOT <TRINV-NTH-OBJ-FLOOR .F .I>> <RETURN .I>)>>
+    0>
+
+<ROUTINE TRINV-FIRST-FREE-SLOT ()
+    <TRINV-FIRST-FREE-SLOT-FLOOR ,CURRENT-FLOOR>>
 
 <ROUTINE TRINV-NTH-OBJ (SLOT)
     <TRINV-NTH-OBJ-FLOOR ,CURRENT-FLOOR .SLOT>>
@@ -69,8 +72,9 @@ Returns:
 <ROUTINE TRADER-SELL-PRICE (KIND ID LVL ENCH)
     <* 2 <TRADER-BUY-PRICE .KIND .ID .LVL .ENCH>>>
 
-<ROUTINE TRINV-ADD-FLOOR (F KIND ID LVL ENCH "AUX" O)
-    <COND (<G=? <TRINV-COUNT-FLOOR .F> ,TRINV-SIZE> <RETURN 0>)>
+<ROUTINE TRINV-ADD-FLOOR (F KIND ID LVL ENCH "AUX" O SLOT)
+    <SET SLOT <TRINV-FIRST-FREE-SLOT-FLOOR .F>>
+    <COND (<L=? .SLOT 0> <RETURN 0>)>
     <SET O <ALLOC-RASCAL-ITEM>>
     <COND (<NOT .O> <RETURN 0>)>
     <PUTP .O ,P?R-ITKIND .KIND>
@@ -81,6 +85,7 @@ Returns:
     <PUTP .O ,P?R-X 0>
     <PUTP .O ,P?R-Y 0>
     <MOVE .O <TRADER-OBJ .F>>
+    <TRINV-SET-OBJ-FLOOR .F .SLOT .O>
     .O>
 
 ;"Prints a trader inventory slot as a display name.
@@ -115,7 +120,7 @@ Two columns: trader inventory on the left (buy), player inventory on the right
 Returns:
   T."
 
-<ROUTINE DRAW-TRADER-SHOP ("AUX" ROW K ID LVL ENCH PRICE CNT O)
+<ROUTINE DRAW-TRADER-SHOP ("AUX" ROW K ID LVL ENCH PRICE O)
     <SCREEN 1>
     <CLEAR 1>
     <DRAW-STATUS-LINE 1 1 1>
@@ -141,12 +146,11 @@ Returns:
                       <TELL "L" N .LVL>
                       <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
                       <TELL " ">)>
+               <TELL TRINV-NAME .I>
                <CURSET .ROW 19>
-               <TELL TRINV-NAME .I "  " N .PRICE " gold">)>
+               <TELL N .PRICE " gold">)>
         <CURSET .ROW 42>
-        <SET CNT <INV-COUNT>>
-        <COND (<L=? .I .CNT>
-               <SET O <INV-NTH-OBJ .I>>
+        <COND (<SET O <INV-NTH-OBJ .I>>
                <SET K <GETP .O ,P?R-ITKIND>>
                <SET ID <GETP .O ,P?R-ITID>>
                <SET LVL <GETP .O ,P?R-ITLVL>>
@@ -157,8 +161,9 @@ Returns:
                       <TELL "L" N .LVL>
                       <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
                       <TELL " ">)>
+               <TELL INV-NAME .I>
                <CURSET .ROW <+ 42 19>>
-               <TELL INV-NAME .I "  " N .PRICE " gold">)>>
+               <TELL N .PRICE " gold">)>>
     <CURSET <+ 6 ,TRINV-SIZE> 1>
     <TELL "Q exits">
     <RTRUE>>
@@ -170,7 +175,7 @@ Stepping onto the trader's tile should invoke this.
 Returns:
   T."
 
-<ROUTINE TRADER-SHOP ("AUX" C C2 C3 SLOT K ID LVL ENCH PRICE CNT O)
+<ROUTINE TRADER-SHOP ("AUX" C C2 C3 SLOT K ID LVL ENCH PRICE O)
     <COND (<NOT <TRADER-AT? ,PLAYER-X ,PLAYER-Y>> <RFALSE>)>
     <SCREEN 1>
     <REPEAT ()
@@ -184,15 +189,11 @@ Returns:
                <RTRUE>)>
         <COND (<==? .C !\B !\b>
                <COND (<0? <TRINV-COUNT>> <LOG "Nothing to buy." CR> <AGAIN>)>
-               <LOG "Buy which item? (1-"
-                    N
-                    <TRINV-COUNT>
-                    "; 0=10; Q cancels)"
-                    CR>
+             <LOG "Buy which item? (1-" N ,TRINV-SIZE "; 0=10; Q cancels)" CR>
                <SET C2 <GETCHAR>>
                <COND (<==? .C2 !\Q !\q> <LOG "Never mind." CR> <AGAIN>)>
                <SET SLOT <DIGIT-TO-SLOT .C2>>
-               <COND (<OR <L? .SLOT 1> <G? .SLOT <TRINV-COUNT>>>
+             <COND (<OR <L? .SLOT 1> <G? .SLOT ,TRINV-SIZE>>
                       <LOG "No such item." CR>
                       <AGAIN>)>
                <SET O <TRINV-NTH-OBJ .SLOT>>
@@ -222,13 +223,12 @@ Returns:
                <LOG "You buy the " ITEM-NAME .O "." CR>
                <AGAIN>)>
         <COND (<==? .C !\S !\s>
-               <SET CNT <INV-COUNT>>
-               <COND (<L=? .CNT 0> <LOG "Nothing to sell." CR> <AGAIN>)>
-               <LOG "Sell which item? (1-" N .CNT "; 0=10; Q cancels)" CR>
+             <COND (<L=? <INV-COUNT> 0> <LOG "Nothing to sell." CR> <AGAIN>)>
+             <LOG "Sell which item? (1-" N ,INV-SIZE "; 0=10; Q cancels)" CR>
                <SET C2 <GETCHAR>>
                <COND (<==? .C2 !\Q !\q> <LOG "Never mind." CR> <AGAIN>)>
                <SET SLOT <DIGIT-TO-SLOT .C2>>
-               <COND (<OR <L? .SLOT 1> <G? .SLOT .CNT>>
+             <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>>
                       <LOG "No such item." CR>
                       <AGAIN>)>
                <COND (<G=? <TRINV-COUNT> ,TRINV-SIZE>
@@ -249,10 +249,12 @@ Returns:
                              <AGAIN>)>)>
                <COND (<==? ,EQUIPPED-WEAPON .O> <SETG EQUIPPED-WEAPON <>>)>
                <HONORS-NOTE-EQUIP-CHANGE>
+               <INV-CLEAR-SLOT .SLOT>
                <REMOVE .O>
                <PUTP .O ,P?R-X 0>
                <PUTP .O ,P?R-Y 0>
                <MOVE .O <TRADER-OBJ ,CURRENT-FLOOR>>
+               <TRINV-SET-OBJ-FLOOR ,CURRENT-FLOOR <TRINV-FIRST-FREE-SLOT> .O>
                <SETG PLAYER-GOLD <+ ,PLAYER-GOLD .PRICE>>
                <SETG STATS-GOLD-EARNED-TRADER
                    <+ ,STATS-GOLD-EARNED-TRADER .PRICE>>

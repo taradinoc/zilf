@@ -155,7 +155,7 @@ Returns:
          <==? .RID <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
          <REVEALED? .EX .EY>>>
 
-<ROUTINE MONKEY-STEAL-ONE (ENEMY "AUX" K PC OC PICK AMT)
+<ROUTINE MONKEY-STEAL-ONE (ENEMY "AUX" K PC OC PICK AMT SLOT)
     <SET PC 0>
     <SET OC 0>
     <SET PICK 0>
@@ -186,6 +186,8 @@ Returns:
                  (ELSE <RETURN 0>)>)>
 
     <REMOVE .PICK>
+    <SET SLOT <INV-SLOT-OF-OBJ .PICK>>
+    <COND (<G? .SLOT 0> <INV-CLEAR-SLOT .SLOT>)>
     <MOVE .PICK .ENEMY>
 
     <LOG "The monkey steals your " ITEM-NAME .PICK "!" CR>

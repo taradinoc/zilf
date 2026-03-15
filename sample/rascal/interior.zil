@@ -222,10 +222,13 @@ interior ID."
 
 <ROUTINE SANITIZE-DUNGEON-INVENTORY ("AUX" I K O)
     ;"Remove any invalid inventory entries (kind outside ITEMKIND-* range)."
-    <SET I <INV-COUNT>>
+    <SET I ,INV-SIZE>
     <REPEAT ()
         <COND (<L? .I 1> <RETURN>)>
         <SET O <INV-NTH-OBJ .I>>
+        <COND (<NOT .O>
+               <SET I <- .I 1>>
+               <AGAIN>)>
         <SET K <GETP .O ,P?R-ITKIND>>
          <COND (<OR <L? .K ,ITEMKIND-FOOD> <G? .K ,ITEMKIND-KEY>>
                <IF-DEBUG
@@ -234,6 +237,32 @@ interior ID."
                                 " kind=" N .K CR>)>>
                <INV-REMOVE .I>)>
         <SET I <- .I 1>>>
+    <RTRUE>>
+
+<ROUTINE ASSIGN-MISSING-DUNGEON-SLOTS ("AUX" O N SLOT)
+    <SET O <FIRST? ,PLAYER-INVENTORY>>
+    <REPEAT ()
+        <COND (<NOT .O> <RETURN T>)>
+        <SET N <NEXT? .O>>
+        <SET SLOT <INV-SLOT-OF-OBJ .O>>
+        <COND (<L=? .SLOT 0>
+               <SET SLOT <INV-FIRST-FREE-SLOT>>
+               <COND (<G? .SLOT 0>
+                      <INV-SET-OBJ .SLOT .O>)>)>
+        <SET O .N>>>
+
+<ROUTINE CLEAR-NONHELD-DUNGEON-SLOTS ("AUX" O)
+    <DO (I 1 ,INV-SIZE)
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (<AND .O <NOT <IN? .O ,PLAYER-INVENTORY>>>
+               <INV-CLEAR-SLOT .I>)>>
+    <RTRUE>>
+
+<ROUTINE RESYNC-DUNGEON-INVENTORY-SLOTS ()
+    ;"Preserve existing held slots where possible, then reclaim stale ones and fill again."
+    <ASSIGN-MISSING-DUNGEON-SLOTS>
+    <CLEAR-NONHELD-DUNGEON-SLOTS>
+    <ASSIGN-MISSING-DUNGEON-SLOTS>
     <RTRUE>>
 
 ;"Compile-time vocab words for pack items (so we can write them into SYNONYM/ADJECTIVE)."
@@ -636,12 +665,18 @@ lengthwise across it and an inverted V above it." CR>)
     <REPEAT ()
         <COND (<NOT .O> <RETURN>)>
         <SET N <NEXT? .O>>
-        <COND (<RASCAL-ITEM? .O>
-               <MOVE .O ,PLAYER-INVENTORY>)>
+        <COND (<RASCAL-ITEM? .O> <MOVE .O ,PLAYER-INVENTORY>)>
         <SET O .N>>
+
+    <RESYNC-DUNGEON-INVENTORY-SLOTS>
 
     ;"Defensive cleanup: if anything still managed to add an invalid entry, drop it now."
     <SANITIZE-DUNGEON-INVENTORY>
+
+    ;"If the equipped weapon was dropped in the interior, clear the stale reference."
+    <COND (<AND ,EQUIPPED-WEAPON <NOT <IN? ,EQUIPPED-WEAPON ,PLAYER-INVENTORY>>>
+           <SETG EQUIPPED-WEAPON <>>
+           <HONORS-NOTE-EQUIP-CHANGE>)>
 
     ;"If unarmed but now carrying a weapon, auto-wield the best one."
     <COND (<AND <NOT ,EQUIPPED-WEAPON> <G? <INV-COUNT> 0>>
