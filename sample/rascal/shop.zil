@@ -141,6 +141,7 @@ Returns:
                       <TELL "L" N .LVL>
                       <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
                       <TELL " ">)>
+               <CURSET .ROW 19>
                <TELL TRINV-NAME .I "  " N .PRICE " gold">)>
         <CURSET .ROW 42>
         <SET CNT <INV-COUNT>>
@@ -156,6 +157,7 @@ Returns:
                       <TELL "L" N .LVL>
                       <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
                       <TELL " ">)>
+               <CURSET .ROW <+ 42 19>>
                <TELL INV-NAME .I "  " N .PRICE " gold">)>>
     <CURSET <+ 6 ,TRINV-SIZE> 1>
     <TELL "Q exits">
