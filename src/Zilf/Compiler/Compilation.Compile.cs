@@ -180,22 +180,22 @@ namespace Zilf.Compiler
                 }
             };
 
-            var builtWords = new HashSet<IWordBuilder>();
-            foreach (var pair in Vocabulary)
+            foreach (var group in Vocabulary.GroupBy(pair => pair.Value, pair => pair.Key))
             {
-                var word = pair.Key;
-                var wb = pair.Value;
+                var wordsForBuilder = group.ToList();
+                var primaryWord = wordsForBuilder[0];
+                var wordBuilder = group.Key;
 
-                if (builtWords.Contains(wb))
-                    continue;
-
-                builtWords.Add(wb);
-
-                Context.ZEnvironment.VocabFormat.WriteToBuilder(word, wb, helpers);
-
-                if (longWords != null && Context.ZEnvironment.IsLongWord(word))
+                for (var index = 1; index < wordsForBuilder.Count; index++)
                 {
-                    longWords.Enqueue(word);
+                    Context.ZEnvironment.VocabFormat.MergeWords(primaryWord, wordsForBuilder[index]);
+                }
+
+                Context.ZEnvironment.VocabFormat.WriteToBuilder(primaryWord, wordBuilder, helpers);
+
+                if (longWords != null && Context.ZEnvironment.IsLongWord(primaryWord))
+                {
+                    longWords.Enqueue(primaryWord);
                 }
             }
         }

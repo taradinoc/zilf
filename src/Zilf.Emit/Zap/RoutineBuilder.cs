@@ -77,6 +77,8 @@ namespace Zilf.Emit.Zap
         public ILabel RFalse => RFALSE;
         public IVariable Stack => STACK;
 
+        public bool UsesStackBasedCalls => false;
+
         bool LocalExists(string localName)
         {
             return requiredParams.Concat(optionalParams).Concat(locals).Any(lb => lb.Name == localName);

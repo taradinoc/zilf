@@ -111,7 +111,33 @@ namespace Zilf.Compiler
             // evaluate the rest of the arguments right to left, leaving the results
             // in their natural locations.
             for (int i = length - 1; i > marker; i--)
+            {
                 values[i] = CompileAsOperand(rb, exprs[i], src);
+
+                // On stack-based call targets (e.g. Cornerstone), all call arguments
+                // are pushed onto the evaluation stack. If a complex subexpression
+                // leaves its result on the stack and there are preceding operands
+                // that will be pushed later (by EmitRuntimeCall), the left-to-right
+                // push would place them out of order. Save the stack result to a
+                // temp variable to prevent this.
+                if (rb.UsesStackBasedCalls && i > 0 && values[i] == rb.Stack)
+                {
+                    try
+                    {
+                        PushInnerLocal(rb, tempAtom, LocalBindingType.CompilerTemporary, src);
+                        values[i] = Locals[tempAtom].LocalBuilder;
+                        rb.EmitStore((IVariable)values[i], rb.Stack);
+                        temps[i] = true;
+                    }
+                    catch (CompilerError)
+                    {
+                        // Entry point routines cannot allocate temp locals.
+                        // Leave the value on the stack and accept potential
+                        // misordering — the entry point rarely uses complex
+                        // table operations.
+                    }
+                }
+            }
 
             return new Operands(this, values, temps, tempAtom);
         }

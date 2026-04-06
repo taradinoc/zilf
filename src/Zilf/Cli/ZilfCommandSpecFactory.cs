@@ -112,6 +112,11 @@ namespace Zilf.Cli
                 Description = "Target Glulx with Z-machine-compatible 16-bit layout."
             };
 
+            var buildCornerstoneOption = new Option<bool>("--cornerstone")
+            {
+                Description = "Target the Cornerstone MME VM (experimental)."
+            };
+
             var buildEnableAllWarningsOption = new Option<bool>("--warn-all", "-W")
             {
                 Description = "Enable all warnings (even noisy ones)."
@@ -176,6 +181,7 @@ namespace Zilf.Cli
             buildCommand.Options.Add(buildDebugInfoOption);
             buildCommand.Options.Add(buildGlulxOption);
             buildCommand.Options.Add(buildGlulx16Option);
+            buildCommand.Options.Add(buildCornerstoneOption);
             buildCommand.Options.Add(buildEnableAllWarningsOption);
             buildCommand.Options.Add(buildWarningsAsErrorsOption);
             buildCommand.Options.Add(buildSuppressWarningsOption);
@@ -197,9 +203,12 @@ namespace Zilf.Cli
 
                 bool hasGlulx = commandResult.GetResult(buildGlulxOption) is not null;
                 bool hasGlulx16 = commandResult.GetResult(buildGlulx16Option) is not null;
-                if (hasGlulx && hasGlulx16)
+                bool hasCornerstone = commandResult.GetResult(buildCornerstoneOption) is not null;
+                if ((hasGlulx && hasGlulx16) ||
+                    (hasGlulx && hasCornerstone) ||
+                    (hasGlulx16 && hasCornerstone))
                 {
-                    commandResult.AddError("Options --glulx and --glulx16 cannot be used together.");
+                    commandResult.AddError("Options --glulx, --glulx16, and --cornerstone are mutually exclusive.");
                 }
 
                 var wantsPublish = commandResult.GetResult(buildPublishOption) is not null;
@@ -372,6 +381,7 @@ namespace Zilf.Cli
                 buildDebugInfoOption,
                 buildGlulxOption,
                 buildGlulx16Option,
+                buildCornerstoneOption,
                 buildEnableAllWarningsOption,
                 buildWarningsAsErrorsOption,
                 buildSuppressWarningsOption,

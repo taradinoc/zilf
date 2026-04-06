@@ -473,7 +473,11 @@ namespace Zilf.Compiler
                 {
                     // literal string -> PRINTI
                     case ZilString zstr:
-                        rb.EmitPrint(TranslateString(zstr, Context), false);
+                        var translated = TranslateString(zstr, Context);
+                        if (Game is Zilf.Emit.Cornerstone.GameBuilder)
+                            rb.EmitPrint(translated, crlfRtrue: false);
+                        else
+                            rb.EmitPrint(translated, false);
                         index++;
                         continue;
 

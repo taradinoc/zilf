@@ -79,6 +79,8 @@ namespace Zilf.Emit.Glulx
 
         public IVariable Stack => STACK;
 
+        public bool UsesStackBasedCalls => false;
+
         public ILabel RoutineStart { get; }
 
         public bool HasArgCount => true;

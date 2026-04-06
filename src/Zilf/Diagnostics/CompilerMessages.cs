@@ -220,5 +220,7 @@ namespace Zilf.Diagnostics
         public const int Possibly_Unintended_Complex_DO_Loop_Condition_It_Should_Be_A_Predicate = 510;
         [Warning("possibly unintended complex DO loop increment (it should have side effects)")]
         public const int Possibly_Unintended_Complex_DO_Loop_Increment_It_Should_Have_Side_Effects = 511;
+        [Error("Cornerstone backend limitation: {0}")]
+        public const int Cornerstone_Backend_Limitation_0 = 512;
     }
 }

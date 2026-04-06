@@ -24,6 +24,7 @@ using System.Linq;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
+using Zilf.ZModel;
 using Zilf.ZModel.Values;
 
 namespace Zilf.Cli
@@ -34,43 +35,99 @@ namespace Zilf.Cli
             string inputFile,
             string? output,
             bool stopAfter,
-            bool isGlulx)
+            TargetPlatform targetPlatform)
         {
+            var intermediateExtension = GetIntermediateExtension(targetPlatform);
+
             if (string.IsNullOrEmpty(output))
             {
-                return new(Path.ChangeExtension(inputFile, isGlulx ? ".asm" : ".zap"), null);
+                return new(Path.ChangeExtension(inputFile, intermediateExtension), null);
             }
 
             var outputExt = Path.GetExtension(output);
             var isIntermediateExtension = outputExt.Equals(".zap", StringComparison.OrdinalIgnoreCase) ||
-                                          outputExt.Equals(".asm", StringComparison.OrdinalIgnoreCase);
+                                          outputExt.Equals(".asm", StringComparison.OrdinalIgnoreCase) ||
+                                          outputExt.Equals(".cas", StringComparison.OrdinalIgnoreCase);
 
             if (stopAfter || isIntermediateExtension)
             {
                 return new(output, null);
             }
 
-            return new(Path.ChangeExtension(inputFile, isGlulx ? ".asm" : ".zap"), output);
+            return new(Path.ChangeExtension(inputFile, intermediateExtension), output);
         }
 
-        public static string ResolveFinalStoryOutputPath(string assemblerInputFile, string? output, bool isGlulx, int zVersion)
+        public static Program.CompileOutputPaths ResolveCompileOutputPaths(
+            string inputFile,
+            string? output,
+            bool stopAfter,
+            bool isGlulx)
+        {
+            return ResolveCompileOutputPaths(
+                inputFile,
+                output,
+                stopAfter,
+                isGlulx ? TargetPlatform.Glulx32 : TargetPlatform.ZMachine);
+        }
+
+        public static string ResolveFinalStoryOutputPath(
+            string assemblerInputFile,
+            string? output,
+            TargetPlatform targetPlatform,
+            int zVersion)
         {
             if (!string.IsNullOrEmpty(output))
                 return output;
 
-            return isGlulx
-                ? Path.ChangeExtension(assemblerInputFile, ".ulx")
-                : Path.ChangeExtension(assemblerInputFile, $".z{zVersion}");
+            return targetPlatform switch
+            {
+                TargetPlatform.Glulx32 or TargetPlatform.Glulx16 => Path.ChangeExtension(assemblerInputFile, ".ulx"),
+                TargetPlatform.Cornerstone => Path.ChangeExtension(assemblerInputFile, ".mme"),
+                _ => Path.ChangeExtension(assemblerInputFile, $".z{zVersion}"),
+            };
         }
 
-        public static string ResolveBlorbOutputPath(string intermediateFile, string? output, bool stopAfter, bool isGlulx, int zVersion)
+        public static string ResolveFinalStoryOutputPath(string assemblerInputFile, string? output, bool isGlulx, int zVersion)
+        {
+            return ResolveFinalStoryOutputPath(
+                assemblerInputFile,
+                output,
+                isGlulx ? TargetPlatform.Glulx32 : TargetPlatform.ZMachine,
+                zVersion);
+        }
+
+        public static string ResolveBlorbOutputPath(
+            string intermediateFile,
+            string? output,
+            bool stopAfter,
+            TargetPlatform targetPlatform,
+            int zVersion)
         {
             var basePath = stopAfter
                 ? intermediateFile
-                : ResolveFinalStoryOutputPath(intermediateFile, output, isGlulx, zVersion);
+                : ResolveFinalStoryOutputPath(intermediateFile, output, targetPlatform, zVersion);
 
-            return Path.ChangeExtension(basePath, stopAfter ? ".blorb" : isGlulx ? ".gblorb" : ".zblorb");
+            return Path.ChangeExtension(
+                basePath,
+                stopAfter ? ".blorb" : targetPlatform is TargetPlatform.Glulx32 or TargetPlatform.Glulx16 ? ".gblorb" : ".zblorb");
         }
+
+            public static string ResolveBlorbOutputPath(string intermediateFile, string? output, bool stopAfter, bool isGlulx, int zVersion)
+            {
+                return ResolveBlorbOutputPath(
+                intermediateFile,
+                output,
+                stopAfter,
+                isGlulx ? TargetPlatform.Glulx32 : TargetPlatform.ZMachine,
+                zVersion);
+            }
+
+        private static string GetIntermediateExtension(TargetPlatform targetPlatform) => targetPlatform switch
+        {
+            TargetPlatform.Glulx32 or TargetPlatform.Glulx16 => ".asm",
+            TargetPlatform.Cornerstone => ".cas",
+            _ => ".zap",
+        };
 
         public static string ResolvePublishOutputPath(string storyFilePath, string? publishOutputOption)
         {

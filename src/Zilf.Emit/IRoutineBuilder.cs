@@ -35,6 +35,14 @@ namespace Zilf.Emit
 
         IVariable Stack { get; }
 
+        /// <summary>
+        /// Gets a value indicating whether call arguments are passed exclusively via the
+        /// evaluation stack. When true, the compiler must ensure that operands compiled
+        /// for binary/ternary operations are not left on the stack in an order that could
+        /// be disrupted by pushing later operands.
+        /// </summary>
+        bool UsesStackBasedCalls { get; }
+
         /// <exception cref="ArgumentException">
         /// A local variable already exists by that paramName.
         /// </exception>

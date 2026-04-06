@@ -46,6 +46,7 @@ namespace Zilf.Cli
             Option<bool> debugInfoOption;
             Option<bool> glulxOption;
             Option<bool> glulx16Option;
+            Option<bool> cornerstoneOption;
             Option<string[]> defineFlagOption;
 
             var commandResult = parseResult.CommandResult;
@@ -62,6 +63,7 @@ namespace Zilf.Cli
                 debugInfoOption = spec.BuildDebugInfoOption;
                 glulxOption = spec.BuildGlulxOption;
                 glulx16Option = spec.BuildGlulx16Option;
+                cornerstoneOption = spec.BuildCornerstoneOption;
                 defineFlagOption = spec.BuildDefineFlagOption;
             }
             else if (commandResult.Command == spec.ReplCommand)
@@ -77,6 +79,7 @@ namespace Zilf.Cli
                 debugInfoOption = default!;
                 glulxOption = default!;
                 glulx16Option = default!;
+                cornerstoneOption = default!;
                 defineFlagOption = default!;
             }
             else if (commandResult.Command == spec.ExecCommand)
@@ -92,6 +95,7 @@ namespace Zilf.Cli
                 debugInfoOption = default!;
                 glulxOption = default!;
                 glulx16Option = default!;
+                cornerstoneOption = default!;
                 defineFlagOption = default!;
             }
             else
@@ -144,10 +148,13 @@ namespace Zilf.Cli
 
             var useGlulx = glulxOption != null && parseResult.GetValue(glulxOption);
             var useGlulx16 = glulx16Option != null && parseResult.GetValue(glulx16Option);
+            var useCornerstone = cornerstoneOption != null && parseResult.GetValue(cornerstoneOption);
 
-            if (useGlulx && useGlulx16)
+            if ((useGlulx && useGlulx16) ||
+                (useGlulx && useCornerstone) ||
+                (useGlulx16 && useCornerstone))
             {
-                throw new InvalidOperationException("Cannot select both Glulx and Glulx16 targets.");
+                throw new InvalidOperationException("Cannot select multiple backend targets.");
             }
 
             if (useGlulx)
@@ -158,6 +165,11 @@ namespace Zilf.Cli
             else if (useGlulx16)
             {
                 ctx.SetTargetPlatform(TargetPlatform.Glulx16);
+                ctx.SetZVersion(ctx.ZEnvironment.ZVersion);
+            }
+            else if (useCornerstone)
+            {
+                ctx.SetTargetPlatform(TargetPlatform.Cornerstone);
                 ctx.SetZVersion(ctx.ZEnvironment.ZVersion);
             }
 

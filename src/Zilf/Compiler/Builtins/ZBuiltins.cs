@@ -2936,6 +2936,12 @@ namespace Zilf.Compiler.Builtins
         [Builtin("LOWCORE", Platform = BuiltinPlatform.ZMachineOnly)]
         public static IOperand LowCoreReadOp_Z(ValueCall c, ZilObject fieldSpec)
         {
+            if (fieldSpec is ZilAtom fieldAtom && c.rb is IProvideLowCoreEmulation emulator)
+            {
+                if (emulator.TryEmitLowCoreRead(fieldAtom.Text, c.resultStorage))
+                    return c.resultStorage;
+            }
+
             if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out var offset, out var flags, out _))
                 return c.cc.Game.Zero;
 
@@ -2964,6 +2970,12 @@ namespace Zilf.Compiler.Builtins
         [Builtin("LOWCORE", HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
         public static void LowCoreWriteOp_Z(VoidCall c, ZilObject fieldSpec, IOperand newValue)
         {
+            if (fieldSpec is ZilAtom fieldAtom && c.rb is IProvideLowCoreEmulation emulator)
+            {
+                if (emulator.TryEmitLowCoreWrite(fieldAtom.Text, newValue))
+                    return;
+            }
+
             if (!TryGetLowCoreField("LOWCORE", c.cc.Context, c.form.SourceLine, fieldSpec, true, out var offset, out var flags, out _))
                 return;
 
@@ -2992,6 +3004,41 @@ namespace Zilf.Compiler.Builtins
         [Builtin("LOWCORE-TABLE", HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
         public static void LowCoreTableOp_Z(VoidCall c, ZilObject fieldSpec, int length, ZilAtom handler)
         {
+            if (fieldSpec is ZilAtom fieldAtom && c.rb is IProvideLowCoreEmulation emulator)
+            {
+                var tmpAtom1 = ZilAtom.Parse("?TMP", c.cc.Context);
+                var lbStart = c.cc.PushInnerLocal(c.rb, tmpAtom1, LocalBindingType.CompilerTemporary, c.form.SourceLine);
+                try
+                {
+                    var tmpAtom2 = ZilAtom.Parse("?TMP2", c.cc.Context);
+                    var lbEnd = c.cc.PushInnerLocal(c.rb, tmpAtom2, LocalBindingType.CompilerTemporary, c.form.SourceLine);
+                    try
+                    {
+                        if (emulator.TryEmitLowCoreGetTable(fieldAtom.Text, lbStart))
+                        {
+                            c.rb.EmitBinary(BinaryOp.Add, lbStart, c.cc.Game.MakeOperand(length - 1), lbEnd);
+
+                            var label = c.rb.DefineLabel();
+                            c.rb.MarkLabel(label);
+
+                            var form = (ZilForm)Program.Parse(c.cc.Context, c.form.SourceLine, "<{0} <GETB 0 .{1}>>", handler, tmpAtom1).Single();
+                            c.cc.CompileForm(c.rb, form, false, null);
+
+                            c.rb.Branch(Condition.IncCheck, lbStart, lbEnd, label, false);
+                            return;
+                        }
+                    }
+                    finally
+                    {
+                        c.cc.PopInnerLocal(tmpAtom2);
+                    }
+                }
+                finally
+                {
+                    c.cc.PopInnerLocal(tmpAtom1);
+                }
+            }
+
             if (!TryGetLowCoreField("LOWCORE-TABLE", c.cc.Context, c.form.SourceLine, fieldSpec, false, out var offset, out var flags, out _))
                 return;
 

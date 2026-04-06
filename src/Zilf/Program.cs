@@ -30,6 +30,7 @@ using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
 using Zilf.Language.Parsing;
+using Zilf.ZModel;
 
 namespace Zilf
 {
@@ -135,19 +136,60 @@ namespace Zilf
             string inputFile,
             string? output,
             bool stopAfter,
+            TargetPlatform targetPlatform)
+        {
+            return PathResolution.ResolveCompileOutputPaths(inputFile, output, stopAfter, targetPlatform);
+        }
+
+        internal static CompileOutputPaths ResolveCompileOutputPaths(
+            string inputFile,
+            string? output,
+            bool stopAfter,
             bool isGlulx)
         {
-            return PathResolution.ResolveCompileOutputPaths(inputFile, output, stopAfter, isGlulx);
+            return ResolveCompileOutputPaths(
+                inputFile,
+                output,
+                stopAfter,
+                isGlulx ? TargetPlatform.Glulx32 : TargetPlatform.ZMachine);
+        }
+
+        internal static string ResolveFinalStoryOutputPath(
+            string assemblerInputFile,
+            string? output,
+            TargetPlatform targetPlatform,
+            int zVersion)
+        {
+            return PathResolution.ResolveFinalStoryOutputPath(assemblerInputFile, output, targetPlatform, zVersion);
         }
 
         internal static string ResolveFinalStoryOutputPath(string assemblerInputFile, string? output, bool isGlulx, int zVersion)
         {
-            return PathResolution.ResolveFinalStoryOutputPath(assemblerInputFile, output, isGlulx, zVersion);
+            return ResolveFinalStoryOutputPath(
+                assemblerInputFile,
+                output,
+                isGlulx ? TargetPlatform.Glulx32 : TargetPlatform.ZMachine,
+                zVersion);
+        }
+
+        internal static string ResolveBlorbOutputPath(
+            string intermediateFile,
+            string? output,
+            bool stopAfter,
+            TargetPlatform targetPlatform,
+            int zVersion)
+        {
+            return PathResolution.ResolveBlorbOutputPath(intermediateFile, output, stopAfter, targetPlatform, zVersion);
         }
 
         internal static string ResolveBlorbOutputPath(string intermediateFile, string? output, bool stopAfter, bool isGlulx, int zVersion)
         {
-            return PathResolution.ResolveBlorbOutputPath(intermediateFile, output, stopAfter, isGlulx, zVersion);
+            return ResolveBlorbOutputPath(
+                intermediateFile,
+                output,
+                stopAfter,
+                isGlulx ? TargetPlatform.Glulx32 : TargetPlatform.ZMachine,
+                zVersion);
         }
 
         internal static string ResolvePublishOutputPath(string storyFilePath, string? publishOutputOption)

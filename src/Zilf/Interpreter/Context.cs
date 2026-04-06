@@ -241,9 +241,13 @@ namespace Zilf.Interpreter
 
         public BlorbFile Blorb { get; }
 
-        public bool IsGlulx => ZEnvironment.TargetPlatform != TargetPlatform.ZMachine || ZEnvironment.ZVersion == ZEnvironment.GLULX_ZVERSION;
+        public bool IsGlulx =>
+            ZEnvironment.TargetPlatform is TargetPlatform.Glulx32 or TargetPlatform.Glulx16 ||
+            ZEnvironment.ZVersion == ZEnvironment.GLULX_ZVERSION;
 
         public bool IsGlulx16 => ZEnvironment.TargetPlatform == TargetPlatform.Glulx16;
+
+        public bool IsCornerstone => ZEnvironment.TargetPlatform == TargetPlatform.Cornerstone;
 
         public int ZWordSize => IsGlulx16 ? 2 : IsGlulx ? 4 : 2;
 

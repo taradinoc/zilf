@@ -189,6 +189,8 @@ namespace Zilf.ZModel
             {
                 if (TargetPlatform == TargetPlatform.Glulx32)
                     return int.MaxValue;
+                else if (TargetPlatform == TargetPlatform.Cornerstone)
+                    return byte.MaxValue;
                 else if (ZVersion > 3)
                     return 7;
                 else
@@ -198,7 +200,12 @@ namespace Zilf.ZModel
 
         public int MaxRoutineLocals
         {
-            get => TargetPlatform == TargetPlatform.Glulx32 ? int.MaxValue : 15;
+            get => TargetPlatform switch
+            {
+                TargetPlatform.Glulx32 => int.MaxValue,
+                TargetPlatform.Cornerstone => 0x7F,
+                _ => 15,
+            };
         }
 
         public string Charset0

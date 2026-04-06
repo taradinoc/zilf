@@ -4,6 +4,23 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to
 [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added an experimental feature to compile to the Cornerstone VM, a.k.a. the
+  μ-Machine, using the `--cornerstone` switch. This mode provides most of the
+  functionality of Z-Machine version 3, including a status bar, wrapped text
+  output, and editable text input. It doesn't provide save/restore or restart;
+  those operations will always fail. It also doesn't provide access to the
+  unique features of the μ-Machine such as module-level globals, file channels,
+  or memory allocation.
+
+  The output is `.cas` assembly code, which can be assembled into `.mme` and
+  `.obj` files with [Chisel](https://github.com/taradinoc/linchpin) and then run
+  with [Linchpin](https://github.com/taradinoc/linchpin) or MME (the original
+  Cornerstone interpreter).
+
 ## [1.7] (March 26, 2026)
 
 ### Added

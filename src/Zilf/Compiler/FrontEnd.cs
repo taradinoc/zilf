@@ -19,19 +19,20 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using Zilf.Emit.Zap;
+using Zilf.Common;
+using Zilf.Diagnostics;
+using Zilf.Emit;
+using Zilf.Emit.Cornerstone;
 using Zilf.Emit.Glulx;
+using Zilf.Emit.Zap;
 using Zilf.Interpreter;
 using Zilf.Interpreter.Values;
 using Zilf.Language;
-using Zilf.Diagnostics;
-using Zilf.Common;
 using Zilf.ZModel;
-using Zilf.Emit;
 
 using ZapGameOptions = Zilf.Emit.Zap.GameOptions;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Zilf.Compiler
 {
@@ -218,6 +219,30 @@ namespace Zilf.Compiler
             }
         }
 
+        sealed class CornerstoneStreamFactory : ICornerstoneStreamFactory
+        {
+            readonly FrontEnd owner;
+            readonly string mainFile;
+
+            public CornerstoneStreamFactory(FrontEnd owner, string mainFile)
+            {
+                this.owner = owner;
+                this.mainFile = mainFile;
+
+                var dir = Path.GetDirectoryName(mainFile);
+                if (dir == null)
+                    throw new ArgumentException("Must be a file name.", nameof(mainFile));
+            }
+
+            public Stream CreateMainStream() => owner.FileSystem.OpenForWriting(mainFile);
+
+            public string GetMainFileName(bool withExt)
+            {
+                var result = mainFile;
+                return withExt ? result : Path.ChangeExtension(result, null);
+            }
+        }
+
         Context NewContext(RunMode runMode, bool wantDebugInfo)
         {
             var ignoreCase = runMode == RunMode.Interactive;
@@ -320,7 +345,13 @@ namespace Zilf.Compiler
                 {
                     var gameOptions = MakeGameOptions(ctx);
 
-                    if (ctx.IsGlulx)
+                    if (ctx.IsCornerstone)
+                    {
+                        var streamFactory = new CornerstoneStreamFactory(this, outputFileName);
+                        using var gameBuilder = new Emit.Cornerstone.GameBuilder(streamFactory, (CornerstoneGameOptions)gameOptions);
+                        Compilation.Compile(ctx, gameBuilder);
+                    }
+                    else if (ctx.IsGlulx)
                     {
                         var streamFactory = new GlulxStreamFactory(this, outputFileName);
                         using var gameBuilder = ctx.ZEnvironment.TargetPlatform == TargetPlatform.Glulx16
@@ -344,6 +375,10 @@ namespace Zilf.Compiler
                 catch (ZilErrorBase ex)     // catch fatals too
                 {
                     ctx.HandleError(ex);
+                }
+                catch (NotSupportedException ex) when (ctx.IsCornerstone)
+                {
+                    ctx.HandleError(new CompilerError(CompilerMessages.Cornerstone_Backend_Limitation_0, ex.Message));
                 }
             }
         }
@@ -376,6 +411,15 @@ namespace Zilf.Compiler
             if (zenv.TargetPlatform == TargetPlatform.Glulx32 || zenv.ZVersion == ZEnvironment.GLULX_ZVERSION)
             {
                 return new GlulxGameOptions();
+            }
+
+            if (zenv.TargetPlatform == TargetPlatform.Cornerstone)
+            {
+                return new CornerstoneGameOptions
+                {
+                    ZMachineVersion = zenv.ZVersion,
+                    TimeStatusLine = zenv.TimeStatusLine,
+                };
             }
 
             switch (zenv.ZVersion)

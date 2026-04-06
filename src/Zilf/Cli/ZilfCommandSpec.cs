@@ -33,6 +33,7 @@ namespace Zilf.Cli
         Option<bool> BuildDebugInfoOption,
         Option<bool> BuildGlulxOption,
         Option<bool> BuildGlulx16Option,
+        Option<bool> BuildCornerstoneOption,
         Option<bool> BuildEnableAllWarningsOption,
         Option<bool> BuildWarningsAsErrorsOption,
         Option<string[]> BuildSuppressWarningsOption,

@@ -99,7 +99,11 @@ namespace Zilf.Cli
 
             if (result.ErrorCount == 0)
             {
-                var outputPaths = PathResolution.ResolveCompileOutputPaths(inputFile, output, stopAfter, ctx.IsGlulx);
+                var outputPaths = PathResolution.ResolveCompileOutputPaths(
+                    inputFile,
+                    output,
+                    stopAfter,
+                    ctx.ZEnvironment.TargetPlatform);
                 outFile = outputPaths.IntermediateFile;
                 finalAssemblerOutput = outputPaths.FinalAssemblerOutput;
 
@@ -138,13 +142,19 @@ namespace Zilf.Cli
 
             if (stopAfter)
             {
+                if (ctx.IsCornerstone && !ctx.Blorb.IsEmpty)
+                {
+                    Console.Error.WriteLine("Blorb generation is not supported when targeting Cornerstone.");
+                    return 1;
+                }
+
                 if (!ctx.Blorb.IsEmpty)
                 {
                     var blorbFile = PathResolution.ResolveBlorbOutputPath(
                         outFile!,
                         finalAssemblerOutput,
                         stopAfter: true,
-                        ctx.IsGlulx,
+                        ctx.ZEnvironment.TargetPlatform,
                         ctx.ZEnvironment.ZVersion);
                     using var stream = hostFileSystem.OpenWrite(blorbFile);
                     ctx.Blorb.WriteTo(stream);
@@ -156,6 +166,13 @@ namespace Zilf.Cli
             var asmArgsExpanded = ExpandAssemblerArgs(parseResult.GetValue(spec.BuildZapfPassThroughOption));
             if (ctx.Quiet && !asmArgsExpanded.Any(a => a is "-q" or "--quiet"))
                 asmArgsExpanded.Insert(0, "-q");
+
+            if (ctx.IsCornerstone)
+            {
+                Console.Error.WriteLine(
+                    "Automatic assembly is not wired up yet for the Cornerstone target. Use -S to stop after emitting .cas.");
+                return 1;
+            }
 
             if (ctx.IsGlulx)
             {
@@ -191,7 +208,7 @@ namespace Zilf.Cli
                 var storyFile = PathResolution.ResolveFinalStoryOutputPath(
                     outFile!,
                     finalAssemblerOutput,
-                    ctx.IsGlulx,
+                    ctx.ZEnvironment.TargetPlatform,
                     ctx.ZEnvironment.ZVersion);
                 if (!hostFileSystem.FileExists(storyFile))
                 {
@@ -205,7 +222,7 @@ namespace Zilf.Cli
                     outFile!,
                     finalAssemblerOutput,
                     stopAfter: false,
-                    ctx.IsGlulx,
+                    ctx.ZEnvironment.TargetPlatform,
                     ctx.ZEnvironment.ZVersion);
                 using var stream = hostFileSystem.OpenWrite(blorbFile);
                 ctx.Blorb.WriteTo(stream);
@@ -215,17 +232,23 @@ namespace Zilf.Cli
 
             if (publish)
             {
+                if (ctx.IsCornerstone)
+                {
+                    Console.Error.WriteLine("Publishing is not supported when targeting Cornerstone.");
+                    return 1;
+                }
+
                 var storyFile = PathResolution.ResolveFinalStoryOutputPath(
                     outFile!,
                     finalAssemblerOutput,
-                    ctx.IsGlulx,
+                    ctx.ZEnvironment.TargetPlatform,
                     ctx.ZEnvironment.ZVersion);
                 var publishInputFile = !ctx.Blorb.IsEmpty
                     ? PathResolution.ResolveBlorbOutputPath(
                         outFile!,
                         finalAssemblerOutput,
                         stopAfter: false,
-                        ctx.IsGlulx,
+                        ctx.ZEnvironment.TargetPlatform,
                         ctx.ZEnvironment.ZVersion)
                     : storyFile;
 

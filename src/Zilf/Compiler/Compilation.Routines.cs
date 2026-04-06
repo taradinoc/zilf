@@ -448,8 +448,9 @@ namespace Zilf.Compiler
             if (var is not ILocalBuilder)
                 return;
 
-            var lbr = Locals.Values.First(r => r.LocalBuilder == var);
-            markAction(lbr);
+            var lbr = Locals.Values.FirstOrDefault(r => r.LocalBuilder == var);
+            if (lbr != null)
+                markAction(lbr);
         }
 
         public static void MarkVariableAsRead(LocalBindingRecord lbr) =>
