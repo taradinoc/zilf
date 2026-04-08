@@ -119,7 +119,7 @@ jobs:
           ZILF_LONG_VERSION: ${{ env.ZILF_LONG_VERSION }}
           ZILF_ARCH: ${{ env.ZILF_ARCH }}
       - name: Upload windows packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: packages-windows
           path: |
@@ -152,7 +152,7 @@ jobs:
           ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
           ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
       - name: Upload linux-x64 packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: packages-linux-x64
           path: Package/Release/Packages/*
@@ -184,7 +184,7 @@ jobs:
           ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
           ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
       - name: Upload linux-arm64 packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: packages-linux-arm64
           path: Package/Release/Packages/*
@@ -217,7 +217,7 @@ jobs:
           ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
           ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
       - name: Upload mac packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: packages-macos
           path: Package/Release/Packages/*
@@ -290,7 +290,7 @@ jobs:
 
           Write-Host "Wrote manifest to $manifestPath"
       - name: Upload aggregated packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: packages-aggregate
           path: dist/**
