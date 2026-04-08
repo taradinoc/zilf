@@ -38,8 +38,8 @@
 
     <ItemGroup>
       <_RootDocs Include="$(RootDir)README.md;$(RootDir)CHANGELOG.md;$(RootDir)COPYING.txt;$(RootDir)LICENSE.RTL.txt" />
-      <_SampleFiles Include="$(RootDir)sample/**/*" Exclude="$(RootDir)sample/**/;$(RootDir)sample/**/bin/**;$(RootDir)sample/**/obj/**;$(RootDir)sample/**/.git/**;$(RootDir)sample/**/.hg/**" />
-      <_ZilLibFiles Include="$(RootDir)zillib/**/*" Exclude="$(RootDir)zillib/**/;$(RootDir)zillib/**/bin/**;$(RootDir)zillib/**/obj/**;$(RootDir)zillib/tests/**;$(RootDir)zillib/**/.git/**;$(RootDir)zillib/**/.hg/**;$(RootDir)zillib/**/ZilLib.proj" />
+      <_SampleFiles Include="$(RootDir)sample/**/*" Exclude="$(RootDir)sample/**/;$(RootDir)sample/**/bin/**;$(RootDir)sample/**/obj/**;$(RootDir)sample/**/.git/**;$(RootDir)sample/**/.hg/**;$(RootDir)sample/**/.vscode/**;$(RootDir)sample/Samples.proj" />
+      <_ZilLibFiles Include="$(RootDir)zillib/**/*" Exclude="$(RootDir)zillib/**/;$(RootDir)zillib/**/bin/**;$(RootDir)zillib/**/obj/**;$(RootDir)zillib/tests/**;$(RootDir)zillib/**/.git/**;$(RootDir)zillib/**/.hg/**;$(RootDir)zillib/**/.vscode/**;$(RootDir)zillib/**/ZilLib.proj" />
     </ItemGroup>
 
     <RemoveDir Directories="$(StageDir)" Condition="Exists('$(StageDir)')" />
