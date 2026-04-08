@@ -15,7 +15,7 @@ jobs:
       shortVersion: ${{ steps.determine_version.outputs.shortVersion }}
       longVersion: ${{ steps.determine_version.outputs.longVersion }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Compute version variables
         id: determine_version
         shell: pwsh
@@ -68,7 +68,7 @@ jobs:
 
           Write-Host "Short version: $displayVersion"
           Write-Host "Long version:  $packageVersion"
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - name: Install build tools for Glazer
@@ -89,8 +89,8 @@ jobs:
       ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
       ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - name: Set Windows installer variables
@@ -132,8 +132,8 @@ jobs:
       ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
       ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - name: Package linux-x64 artifacts
@@ -164,8 +164,8 @@ jobs:
       ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
       ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - name: Package linux-arm64 artifacts
@@ -196,8 +196,8 @@ jobs:
       ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
       ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - name: Package osx-arm64 artifacts
@@ -234,7 +234,7 @@ jobs:
       ZILF_SHORT_VERSION: ${{ needs.test.outputs.shortVersion }}
       ZILF_LONG_VERSION: ${{ needs.test.outputs.longVersion }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Download all package artifacts
         uses: actions/download-artifact@v4
         with:
