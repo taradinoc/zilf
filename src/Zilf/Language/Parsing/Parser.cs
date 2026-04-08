@@ -512,7 +512,41 @@ namespace Zilf.Language.Parsing
                     case ';':
                     case Bang.Semicolon:
                     {
-                        var po = ParsePrefixed(chars, c, ParserOutput.FromComment, out var innerSrc);
+                        ParserOutput po;
+
+                        if (chars.MoveNext())
+                        {
+                            c = chars.Current;
+
+                            if (c == ';' || c == Bang.Semicolon)
+                            {
+                                // it's a line comment
+                                var sb = new StringBuilder();
+                                while (chars.MoveNext())
+                                {
+                                    c = chars.Current;
+                                    if (c is '\r' or '\n')
+                                    {
+                                        break;
+                                    }
+
+                                    sb.Append(chars.Current);
+                                }
+
+                                var zstr = ZilString.FromString(sb.ToString());
+                                po = ParserOutput.FromComment(zstr);
+
+                                endLine = chars.Line;
+                                endColumn = chars.Column;
+
+                                result = po;
+                                break;
+                            }
+
+                            chars.PushBack(c);
+                        }
+
+                        po = ParsePrefixed(chars, c, ParserOutput.FromComment, out var innerSrc);
                         (endLine, endColumn) = GetEnd(innerSrc, startLine, startColumn);
                         result = po;
                         break;

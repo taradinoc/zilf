@@ -170,6 +170,24 @@ namespace Zilf.Tests.Interpreter
         }
 
         [TestMethod]
+        public void TestParsingLineComment()
+        {
+            var parser = new Parser(site);
+
+            var result = parser.Parse("123  ;; first comment\n;;; second;comment\n456").ToArray();
+            Assert.AreEqual(5, result.Length);
+            Assert.AreEqual(ParserOutputType.Object, result[0].Type);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(123), result[0].Object);
+            Assert.AreEqual(ParserOutputType.Comment, result[1].Type);
+            TestHelpers.AssertStructurallyEqual(ZilString.FromString(" first comment"), result[1].Object);
+            Assert.AreEqual(ParserOutputType.Comment, result[2].Type);
+            TestHelpers.AssertStructurallyEqual(ZilString.FromString("; second;comment"), result[2].Object);
+            Assert.AreEqual(ParserOutputType.Object, result[3].Type);
+            TestHelpers.AssertStructurallyEqual(new ZilFix(456), result[3].Object);
+            Assert.AreEqual(ParserOutputType.EndOfInput, result[4].Type);
+        }
+
+        [TestMethod]
         public void TestParsingString()
         {
             var parser = new Parser(site);

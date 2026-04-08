@@ -24,6 +24,9 @@ and this project adheres to
 - `COLOR` and `TCOLOR` are now allowed on Glulx, and will work as long as the
   interpreter supports the GarGlk color extensions.
 
+- Added a new form of comment: two semicolons (`;;`) turn the rest of the line
+  into a comment, without the need to add quotes or backslashes.
+
 ## [1.7] (March 26, 2026)
 
 ### Added
