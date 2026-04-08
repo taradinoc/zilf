@@ -51,8 +51,8 @@
     ;"This is used when a quantifier like TAKE TEN BANANAS cannot be satisfied."
     (TOO-FEW-AVAILABLE "There " IFELSE <1? .COUNT> "is" "are" " only " ENGLISH-NUM .COUNT " available.")
 
-    ;"This is used when the player uses a pronoun to refer to an object that's
-      no longer available."
+    ;"This is used when the player uses a pronoun or AGAIN to refer to an object
+      that's no longer available."
     (NOT-STILL-VISIBLE " no longer here.")
 
     ;"These are used around the message when GWIM infers a missing object:

@@ -68,6 +68,7 @@
 ;"Templates"
 
 <OBJECT-TEMPLATE RASCAL-ITEM = OBJECT
+    (DESC "item")
     (LOC RASCAL-ITEM-POOL)
     (SYNONYM \,DUMMY-NOUN \,DUMMY-NOUN)
     ;"The third adjective slot is used by our parser hook."
@@ -86,6 +87,7 @@
     (R-Y 0)>
 
 <OBJECT-TEMPLATE RASCAL-ENEMY = OBJECT
+    (DESC "enemy")
     (LOC RASCAL-ENEMY-POOL)
     (SYNONYM \,DUMMY-NOUN \,DUMMY-NOUN)
     (ADJECTIVE \,DUMMY-ADJ \,DUMMY-ADJ)
