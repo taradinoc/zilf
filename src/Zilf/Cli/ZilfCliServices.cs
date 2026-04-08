@@ -97,9 +97,13 @@ namespace Zilf.Cli
 
         string? FindGlazerExecutable();
 
+        string? FindChiselExecutable();
+
         int RunZapfProcess(string zapfPath, string zapInputPath, IReadOnlyList<string> extraArgs, string? finalOutput = null);
 
         int RunGlazerProcess(string glazerPath, string asmInputPath, IReadOnlyList<string> extraArgs, string? finalOutput = null);
+
+        int RunChiselProcess(string chiselPath, string asmInputPath, IReadOnlyList<string> extraArgs, string? finalOutput = null);
 
         int RunZilfPubProcess(string zilfPubPath, IReadOnlyList<string> arguments);
     }
@@ -111,6 +115,8 @@ namespace Zilf.Cli
         public string? FindZilfPubExecutable() => FindExecutable(["zilfpub", "ZilfPub", "zilfpub.exe", "ZilfPub.exe"]);
 
         public string? FindGlazerExecutable() => FindExecutable(["glazer", "Glazer", "glazer.exe", "Glazer.exe"]);
+
+        public string? FindChiselExecutable() => FindExecutable(["chisel", "Chisel", "chisel.exe", "Chisel.exe"]);
 
         public int RunZapfProcess(string zapfPath, string zapInputPath, IReadOnlyList<string> extraArgs, string? finalOutput = null)
         {
@@ -143,9 +149,42 @@ namespace Zilf.Cli
             return RunProcess(glazerPath, arguments, "Glazer");
         }
 
+        public int RunChiselProcess(string chiselPath, string asmInputPath, IReadOnlyList<string> extraArgs, string? finalOutput = null)
+        {
+            var arguments = CreateChiselArguments(asmInputPath, extraArgs, finalOutput);
+
+            return RunProcess(chiselPath, arguments, "Chisel");
+        }
+
         public int RunZilfPubProcess(string zilfPubPath, IReadOnlyList<string> arguments)
         {
             return RunProcess(zilfPubPath, arguments, "ZilfPub", includeStartFailureMessage: true);
+        }
+
+        internal static IReadOnlyList<string> CreateChiselArguments(
+            string asmInputPath,
+            IReadOnlyList<string> extraArgs,
+            string? finalOutput = null)
+        {
+            var arguments = new List<string>
+            {
+                "assemble",
+                asmInputPath
+            };
+
+            if (!string.IsNullOrEmpty(finalOutput))
+            {
+                arguments.Add("--mme");
+                arguments.Add(finalOutput);
+            }
+            else
+            {
+                arguments.Add("--mme");
+                arguments.Add(Path.ChangeExtension(asmInputPath, ".mme"));
+            }
+
+            arguments.AddRange(extraArgs);
+            return arguments;
         }
 
         private static string? FindExecutable(IEnumerable<string> candidates)

@@ -19,7 +19,8 @@ and this project adheres to
   The output is `.cas` assembly code, which can be assembled into `.mme` and
   `.obj` files with [Chisel](https://github.com/taradinoc/linchpin) and then run
   with [Linchpin](https://github.com/taradinoc/linchpin) or MME (the original
-  Cornerstone interpreter).
+  Cornerstone interpreter). If Chisel is installed in the same location as ZILF,
+  it will be invoked automatically (unless skipped with `-S`).
 
 - `COLOR` and `TCOLOR` are now allowed on Glulx, and will work as long as the
   interpreter supports the GarGlk color extensions.

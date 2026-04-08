@@ -142,7 +142,7 @@ namespace Zilf.Cli
 
             var buildZapfPassThroughOption = new Option<string[]>("--asm-options")
             {
-                Description = "Pass comma-separated options through to the assembler (ZAPF). May be repeated.",
+                Description = "Pass comma-separated options through to the assembler. May be repeated.",
                 AllowMultipleArgumentsPerToken = true,
                 Arity = ArgumentArity.ZeroOrMore
             };

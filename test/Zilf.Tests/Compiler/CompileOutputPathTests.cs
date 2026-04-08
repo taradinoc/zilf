@@ -83,6 +83,40 @@ namespace Zilf.Tests.Compiler
         }
 
         [TestMethod]
+        public void Source_Selected_Cornerstone_Defaults_To_Cas_Output()
+        {
+            var mainPath = Path.GetFullPath("story.zil");
+            var fs = new InMemoryFileSystem();
+            fs.SetText(mainPath, MakeProgram("<VERSION ZIP>"));
+
+            var frontEnd = CreateFrontEnd(fs, mainPath);
+            var ctx = new Context(ignoreCase: false)
+            {
+                RunMode = RunMode.Compiler
+            };
+
+            ctx.SetTargetPlatform(TargetPlatform.Cornerstone);
+            ctx.SetZVersion(ctx.ZEnvironment.ZVersion);
+
+            var evalResult = frontEnd.EvaluateSource(ctx, mainPath);
+
+            Assert.IsTrue(evalResult.Success, FormatDiagnostics(evalResult));
+            Assert.IsTrue(ctx.IsCornerstone);
+
+            var outputPaths = Zilf.Cli.PathResolution.ResolveCompileOutputPaths(
+                mainPath,
+                output: null,
+                stopAfter: false,
+                ctx.ZEnvironment.TargetPlatform);
+            Assert.AreEqual(Path.ChangeExtension(mainPath, ".cas"), outputPaths.IntermediateFile);
+            Assert.IsNull(outputPaths.FinalAssemblerOutput);
+
+            var emitResult = frontEnd.EmitCompiledGame(ctx, outputPaths.IntermediateFile, wantDebugInfo: false);
+            Assert.IsTrue(emitResult.Success, FormatDiagnostics(emitResult));
+            Assert.IsTrue(fs.Exists(outputPaths.IntermediateFile));
+        }
+
+        [TestMethod]
         public void Explicit_Output_Path_Is_Preserved()
         {
             var mainPath = Path.GetFullPath("story.zil");
@@ -112,6 +146,20 @@ namespace Zilf.Tests.Compiler
             var outputPath = Zilf.Program.ResolveFinalStoryOutputPath(asmPath, null, isGlulx: true, zVersion: 5);
 
             Assert.AreEqual(Path.ChangeExtension(asmPath, ".ulx"), outputPath);
+        }
+
+        [TestMethod]
+        public void Default_Cornerstone_Assembler_Output_Uses_Mme_Extension()
+        {
+            var asmPath = Path.GetFullPath("story.cas");
+
+            var outputPath = Zilf.Program.ResolveFinalStoryOutputPath(
+                asmPath,
+                output: null,
+                TargetPlatform.Cornerstone,
+                zVersion: 5);
+
+            Assert.AreEqual(Path.ChangeExtension(asmPath, ".mme"), outputPath);
         }
 
         [TestMethod]

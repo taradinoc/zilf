@@ -169,12 +169,19 @@ namespace Zilf.Cli
 
             if (ctx.IsCornerstone)
             {
-                Console.Error.WriteLine(
-                    "Automatic assembly is not wired up yet for the Cornerstone target. Use -S to stop after emitting .cas.");
-                return 1;
-            }
+                var chiselExe = externalToolService.FindChiselExecutable();
+                if (chiselExe == null)
+                {
+                    Console.Error.WriteLine(
+                        "Chisel not found next to ZILF (looked for chisel, Chisel, chisel.exe). Use -S to skip assembly.");
+                    return 1;
+                }
 
-            if (ctx.IsGlulx)
+                var exit = externalToolService.RunChiselProcess(chiselExe, outFile!, asmArgsExpanded, finalAssemblerOutput);
+                if (exit != 0)
+                    return exit;
+            }
+            else if (ctx.IsGlulx)
             {
                 var glazerExe = externalToolService.FindGlazerExecutable();
                 if (glazerExe == null)
