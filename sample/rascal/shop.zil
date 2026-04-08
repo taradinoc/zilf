@@ -147,7 +147,7 @@ Returns:
                       <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
                       <TELL " ">)>
                <TELL TRINV-NAME .I>
-               <CURSET .ROW 19>
+               <CURSET .ROW 22>
                <TELL N .PRICE " gold">)>
         <CURSET .ROW 42>
         <COND (<SET O <INV-NTH-OBJ .I>>
@@ -162,7 +162,7 @@ Returns:
                       <COND (<G? .ENCH 0> <TELL "+" N .ENCH>)>
                       <TELL " ">)>
                <TELL INV-NAME .I>
-               <CURSET .ROW <+ 42 19>>
+               <CURSET .ROW <+ 42 22>>
                <TELL N .PRICE " gold">)>>
     <CURSET <+ 6 ,TRINV-SIZE> 1>
     <TELL "Q exits">
