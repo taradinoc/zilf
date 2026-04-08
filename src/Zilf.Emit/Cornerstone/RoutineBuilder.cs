@@ -338,8 +338,11 @@ namespace Zilf.Emit.Cornerstone
                         EmitRuntimeCall(RuntimeLib.DirectOutput, [value], null);
                         return;
 
-                    case UnaryOp.OutputBuffer:
                     case UnaryOp.OutputStyle:
+                        EmitRuntimeCall(RuntimeLib.SetOutputStyle, [value], null);
+                        return;
+
+                    case UnaryOp.OutputBuffer:
                     case UnaryOp.SplitWindow:
                     case UnaryOp.SelectWindow:
                     case UnaryOp.ClearWindow:

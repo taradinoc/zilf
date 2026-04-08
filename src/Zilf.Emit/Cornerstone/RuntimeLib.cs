@@ -67,6 +67,7 @@ namespace Zilf.Emit.Cornerstone
         public const string MoveObject = nameof(MoveObject);
         public const string DirectInput = nameof(DirectInput);
         public const string DirectOutput = nameof(DirectOutput);
+        public const string SetOutputStyle = nameof(SetOutputStyle);
         public const string TryReadCommandFileLine = nameof(TryReadCommandFileLine);
         public const string EchoReadLineToCommandFile = nameof(EchoReadLineToCommandFile);
         private const string PrintPackedObjDataCore = nameof(PrintPackedObjDataCore);
@@ -715,6 +716,39 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine($"    PUTMG 0x{GameBuilder.CursorRowSlot:X2}");
                         routine.EmitRawLine("    PUSHL 1");
                         routine.EmitRawLine($"    PUTMG 0x{GameBuilder.CursorColumnSlot:X2}");
+                        routine.EmitRawLine("    RET");
+                    },
+                    ReturnsValue: false));
+
+            routines.Add(
+                SetOutputStyle,
+                new RuntimeRoutineDefinition(
+                    "__SetOutputStyle",
+                    [],
+                    static (builder, routine) =>
+                    {
+                        routine.DefineRequiredParameter("style");
+
+                        // Clear bits 0 (reverse) and 3 (bold) from the current text attribute (0xD5).
+                        routine.EmitRawLine($"    LOADMG 0x{GameBuilder.TextAttributeSlot:X2}");
+                        routine.EmitRawLine("    PUSH 0xFFF6");  // ~0x09: clears bits 0 and 3
+                        routine.EmitRawLine("    AND");
+
+                        // Map style bit 0 (reverse video) → D5 bit 0.
+                        routine.EmitRawLine("    PUSHL 0");      // style
+                        routine.EmitRawLine("    PUSH1");
+                        routine.EmitRawLine("    AND");          // style & 1
+                        routine.EmitRawLine("    OR");           // attr | reverse_bit
+
+                        // Map style bits 1 and 2 (bold, italic) → D5 bit 3 (bright/bold).
+                        routine.EmitRawLine("    PUSHL 0");      // style
+                        routine.EmitRawLine("    PUSH 6");       // mask for bits 1 and 2
+                        routine.EmitRawLine("    AND");          // style & 6
+                        routine.EmitRawLine("    JUMPZ set_output_style_done");
+                        routine.EmitRawLine("    PUSH8");        // D5 bit 3
+                        routine.EmitRawLine("    OR");
+                        routine.EmitRawLine("set_output_style_done:");
+                        routine.EmitRawLine($"    PUTMG 0x{GameBuilder.TextAttributeSlot:X2}");
                         routine.EmitRawLine("    RET");
                     },
                     ReturnsValue: false));
