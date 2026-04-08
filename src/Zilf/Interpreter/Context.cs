@@ -360,6 +360,7 @@ namespace Zilf.Interpreter
             SetGlobalVal(GetStdAtom(StdAtom.PLUS_MODE), ZEnvironment.ZVersion > 3 ? TRUE : FALSE);
             SetGlobalVal(GetStdAtom(StdAtom.SIBREAKS), ZilString.FromString(",.\""));
             SetGlobalVal(GetStdAtom(StdAtom.GLK), IsGlulx ? TRUE : FALSE);
+            SetGlobalVal(GetStdAtom(StdAtom.CORNERSTONE), IsCornerstone ? TRUE : FALSE);
 
             // runtime constants
             AddZConstant(GetStdAtom(StdAtom.TRUE_VALUE), TRUE);
@@ -832,6 +833,7 @@ namespace Zilf.Interpreter
 
             SetGlobalVal(GetStdAtom(StdAtom.PLUS_MODE), newVersion > 3 ? TRUE : FALSE);
             SetGlobalVal(GetStdAtom(StdAtom.GLK), IsGlulx ? TRUE : FALSE);
+            SetGlobalVal(GetStdAtom(StdAtom.CORNERSTONE), IsCornerstone ? TRUE : FALSE);
             InitPropDefs();
         }
 
@@ -839,6 +841,7 @@ namespace Zilf.Interpreter
         {
             ZEnvironment.TargetPlatform = platform;
             SetGlobalVal(GetStdAtom(StdAtom.GLK), IsGlulx ? TRUE : FALSE);
+            SetGlobalVal(GetStdAtom(StdAtom.CORNERSTONE), IsCornerstone ? TRUE : FALSE);
         }
 
         public void RegisterType(ZilAtom atom, PrimType primType)

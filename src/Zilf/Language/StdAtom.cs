@@ -69,6 +69,7 @@ namespace Zilf.Language
         CONSOLE,
         CONSTANT,
         CONSTRUCTOR,
+        CORNERSTONE,
         [Atom("CRLF-CHARACTER")]
         CRLF_CHARACTER,
         DEC,
