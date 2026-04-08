@@ -3,7 +3,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <MajorVersion>1</MajorVersion>
-    <MinorVersion>7</MinorVersion>
+    <MinorVersion>8</MinorVersion>
     <MicroVersion>0</MicroVersion>
     <!-- Allowed: alpha,beta,candidate,final -->
     <ReleaseLevel>final</ReleaseLevel>
