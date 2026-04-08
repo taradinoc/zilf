@@ -3,8 +3,9 @@ ZILF RUNTIME LIBRARY LICENSE
 
 The following license applies to any portion of ZILF's source code that ZILF
 of its own accord copies into its output without substantial modification. At
-time of writing, this comprises the Glulx runtime routines, which are included
-as text in RuntimeLib.cs and RuntimeLib16.cs and copied when targeting Glulx.
+time of writing, this comprises the Glulx and Cornerstone runtime routines,
+which are included as text in RuntimeLib.cs and RuntimeLib16.cs and copied when
+targeting Glulx or Cornerstone.
 
 ZILF Runtime Library Copyright (C) 2025-2026 Tara McGrew
 

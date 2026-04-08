@@ -47,6 +47,9 @@ namespace Zilf.Emit.Cornerstone
         internal const string CommandFileNameBufferLabel = "__COMMAND_FILE_NAME_BUFFER";
         internal const string CommandFileTransferBufferLabel = "__COMMAND_FILE_TRANSFER_BUFFER";
         internal const string VocabularyTableLabel = "VOCAB_TABLE";
+        internal const string MetadataCreatorLabel = "__METADATA_CREATOR";
+        internal const string MetadataReleaseIdLabel = "__METADATA_RELEASEID";
+        internal const string MetadataSerialLabel = "__METADATA_SERIAL";
         internal const string SelfInsertingBreaksLabel = "__SI_BREAKS";
         internal const int FalseSentinel = 0x8001;
         internal const int OutputBufferCapacity = 256;
@@ -97,7 +100,6 @@ namespace Zilf.Emit.Cornerstone
         private readonly NamedVariable commandOutputChannel;
         private readonly NamedVariable commandFileBypass;
         private readonly NamedVariable commandInputPendingByte;
-        private byte[]? emulatedSerialBytes;
         private TableBuilder? objDataBuffer;
         private TableBuilder? outputBuffer;
         private TableBuilder? outputWindowGeometry;
@@ -321,6 +323,7 @@ namespace Zilf.Emit.Cornerstone
             EmitProgramGlobalDefinitions(writer);
             EmitModules(writer);
             PreparePackedText();
+            PrepareMetadata();
             EmitRam(writer);
             EmitObjData(writer);
 
@@ -484,17 +487,6 @@ namespace Zilf.Emit.Cornerstone
             tables.Add(commandFileTransferBuffer);
             return commandFileTransferBuffer.Name;
         }
-
-        internal IOperand GetEmulatedReleaseIdOperand()
-        {
-            return (IOperand?)(FindConstant("RELEASEID") ?? FindConstant("ZORKID")) ?? Zero;
-        }
-
-        internal IReadOnlyList<byte> GetEmulatedSerialBytes() =>
-            emulatedSerialBytes ??= Encoding.ASCII.GetBytes(DateTime.Now.ToString("yyMMdd", CultureInfo.InvariantCulture));
-
-
-        internal string FormatRuntimeConstant(IOperand operand) => FormatConstantOperand(operand.StripIndirect());
 
         private NamedConstant? FindConstant(string name) =>
             constants.FirstOrDefault(constant => string.Equals(constant.Name, name, StringComparison.OrdinalIgnoreCase));
@@ -1023,6 +1015,17 @@ namespace Zilf.Emit.Cornerstone
                 packedTextHistogram.TryGetValue(ch, out var count);
                 packedTextHistogram[ch] = count + 1;
             }
+        }
+
+        private void PrepareMetadata()
+        {
+            ramBytes.Add(new RamBytesDefinition(MetadataCreatorLabel, [], Metadata.GetCreatorString()));
+
+            var releaseRam = new TableBuilder(MetadataReleaseIdLabel, pure: false);
+            releaseRam.AddWord((IOperand?)(FindConstant("RELEASEID") ?? FindConstant("ZORKID")) ?? Zero);
+            tables.Add(releaseRam);
+
+            ramBytes.Add(new RamBytesDefinition(MetadataSerialLabel, [], DateTime.Now.ToString("yyMMdd", CultureInfo.InvariantCulture)));
         }
 
         private void PreparePackedText()

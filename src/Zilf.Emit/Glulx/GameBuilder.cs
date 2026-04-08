@@ -956,9 +956,6 @@ namespace Zilf.Emit.Glulx
 
         void FinishMetadata()
         {
-            string version = typeof(GameBuilder).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-               ?.InformationalVersion ?? "<?.??>";
-
             writer.WriteLine();
             writer.WriteLine(INDENT + "; Metadata");
             writer.WriteLine(INDENT + "db \"{0}\"", Metadata.GetCreatorString());

@@ -829,24 +829,24 @@ namespace Zilf.Emit.Cornerstone
                     [GetLowCoreFlags, GetScreenHeight, GetScreenWidth],
                     static (builder, routine) =>
                     {
-                        string releaseId = builder.FormatRuntimeConstant(builder.GetEmulatedReleaseIdOperand());
-                        var serialBytes = builder.GetEmulatedSerialBytes();
-
                         routine.DefineRequiredParameter("address");
 
-                        for (var index = 0; index < serialBytes.Count; index++)
+                        const int serialLength = 6;
+                        for (var index = 0; index < serialLength; index++)
                         {
-                            string nextLabel = index == serialBytes.Count - 1
+                            string nextLabel = index == serialLength - 1
                                 ? "not_serial_byte"
                                 : $"not_serial_byte_{index:X2}";
 
                             routine.EmitRawLine("    PUSHL 0");
                             routine.EmitRawLine($"    PUSHB 0x{0x12 + index:X2}");
                             routine.EmitRawLine($"    JUMPNE {nextLabel}");
-                            routine.EmitRawLine($"    PUSHB 0x{serialBytes[index]:X2}");
+                            routine.EmitRawLine($"    PUSHW {GameBuilder.MetadataSerialLabel}");
+                            routine.EmitRawLine($"    PUSHB 0x{index + 1:X2}");
+                            routine.EmitRawLine("    VLOADB");
                             routine.EmitRawLine("    RETURN");
 
-                            if (index < serialBytes.Count - 1)
+                            if (index < serialLength - 1)
                                 routine.EmitRawLine($"{nextLabel}:");
                         }
 
@@ -868,7 +868,8 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHB 0x02");
                         routine.EmitRawLine("    JUMPNE not_release_high");
-                        routine.EmitRawLine($"    PUSHW {releaseId}");
+                        routine.EmitRawLine($"    PUSHW {GameBuilder.MetadataReleaseIdLabel}");
+                        routine.EmitRawLine("    VLOADW_ 0x00");
                         routine.EmitRawLine("    PUSHm8");
                         routine.EmitRawLine("    SHIFT");
                         routine.EmitRawLine("    PUSH 0x00FF");
@@ -879,7 +880,8 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHB 0x03");
                         routine.EmitRawLine("    JUMPNE not_release_low");
-                        routine.EmitRawLine($"    PUSHW {releaseId}");
+                        routine.EmitRawLine($"    PUSHW {GameBuilder.MetadataReleaseIdLabel}");
+                        routine.EmitRawLine("    VLOADW_ 0x00");
                         routine.EmitRawLine("    PUSH 0x00FF");
                         routine.EmitRawLine("    AND");
                         routine.EmitRawLine("    RETURN");
@@ -937,8 +939,6 @@ namespace Zilf.Emit.Cornerstone
                     [GetLowCoreFlags],
                     static (builder, routine) =>
                     {
-                        string releaseId = builder.FormatRuntimeConstant(builder.GetEmulatedReleaseIdOperand());
-
                         routine.DefineRequiredParameter("address");
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSH0");
@@ -950,7 +950,8 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHB 0x02");
                         routine.EmitRawLine("    JUMPNE not_release_word");
-                        routine.EmitRawLine($"    PUSHW {releaseId}");
+                        routine.EmitRawLine($"    PUSHW {GameBuilder.MetadataReleaseIdLabel}");
+                        routine.EmitRawLine("    VLOADW_ 0x00");
                         routine.EmitRawLine("    RETURN");
                         routine.EmitRawLine("not_release_word:");
 

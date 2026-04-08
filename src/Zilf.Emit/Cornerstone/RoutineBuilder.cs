@@ -656,7 +656,9 @@ namespace Zilf.Emit.Cornerstone
 
                     case "RELEASEID":
                     case "ZORKID":
-                        EmitStore(resultStorage, owner.GetEmulatedReleaseIdOperand());
+                        EmitRawLine($"    PUSHW {GameBuilder.MetadataReleaseIdLabel}");
+                        EmitRawLine("    VLOADW_ 0x00");
+                        EmitStore(resultStorage, Stack);
                         return true;
 
                     case "SCRH":
