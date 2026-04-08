@@ -459,8 +459,12 @@ namespace Zilf.Emit.Glulx
                     return;
 
                 case BinaryOp.SetColor:
+                    Emit($"callfii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.set_color))} {FormatLoad(left)} {FormatLoad(right)}", "callfii");
+                    return;
+
                 case BinaryOp.SetTrueColor:
-                    throw new NotSupportedException("Colors not supported for Glulx");
+                    Emit($"callfii {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.set_true_color))} {FormatLoad(left)} {FormatLoad(right)}", "callfii");
+                    return;
             }
 
             string opcode = op switch
@@ -980,7 +984,7 @@ namespace Zilf.Emit.Glulx
                     Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_lowcore_flags))} -> {FormatStore(resultStorage)}", "callf");
                     return true;
                 case "ZVERSION":
-                    Emit($"copy ((ZMACHINE_VERSION << 8) | ZVERSION_FLAGS) -> {FormatStore(resultStorage)}", "copy");
+                    Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_lowcore_zversion))} -> {FormatStore(resultStorage)}", "callf");
                     return true;
             }
 

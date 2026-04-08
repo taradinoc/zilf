@@ -234,7 +234,7 @@ namespace Zilf.Emit.Glulx
             callfii _rt_put_header_byte address value
             return";
 
-        [RuntimeFunc]
+        [RuntimeFunc(nameof(get_lowcore_zversion))]
         public const string get_header_byte = @"
             function
             local address
@@ -251,11 +251,13 @@ namespace Zilf.Emit.Glulx
         .not_version:
             ; Version-dependent flags in byte 1
             jne address 1 -> .not_flags
-            return ZVERSION_FLAGS
+            callf _rt_get_lowcore_zversion -> push
+            bitand pop 0xFF -> push
+            return pop
         .not_flags:
             return 0";
 
-        [RuntimeFunc(nameof(get_lowcore_flags))]
+        [RuntimeFunc(nameof(get_lowcore_flags), nameof(get_lowcore_zversion))]
         public const string get_header_word = @"
             function
             local address
@@ -271,7 +273,8 @@ namespace Zilf.Emit.Glulx
         .not_flags:
             ; ZVERSION word at 0?
             jne address 0 -> .not_zversion
-            return ((ZMACHINE_VERSION << 8) | ZVERSION_FLAGS)
+            callf _rt_get_lowcore_zversion -> push
+            return pop
         .not_zversion:
             return 0";
 

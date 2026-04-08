@@ -21,6 +21,9 @@ and this project adheres to
   with [Linchpin](https://github.com/taradinoc/linchpin) or MME (the original
   Cornerstone interpreter).
 
+- `COLOR` and `TCOLOR` are now allowed on Glulx, and will work as long as the
+  interpreter supports the GarGlk color extensions.
+
 ## [1.7] (March 26, 2026)
 
 ### Added

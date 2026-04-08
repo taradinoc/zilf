@@ -153,6 +153,7 @@ namespace Zilf.Emit.Glulx
         public const string glk_defines = @"
             MAX_OUTPUT_BUFFER = 4096
 
+            glk_gestalt = 0x4
             glk_window_iterate = 0x20
             glk_window_open = 0x23
             glk_window_get_size = 0x25
@@ -183,6 +184,12 @@ namespace Zilf.Emit.Glulx
             glk_request_line_event = 0xD0
             glk_request_char_event = 0xD2
             glk_set_terminators_line_event = 0x151
+
+            garglk_set_zcolors = 0x1100
+            garglk_set_zcolors_stream = 0x1101
+            gestalt_GarglkText = 0x1100
+            zcolor_Default = -1
+            zcolor_Current = -2
 
             wintype_AllTypes = 0
             wintype_Pair = 1
@@ -272,6 +279,7 @@ namespace Zilf.Emit.Glulx
             gg_status_height: dd 0
             gg_current_style: dd style_Normal
             gg_prev_stream_sp: dd 0
+            gg_have_zcolors: dd 0
 
             section .bss
             gg_prev_stream_stack: resd 16
@@ -334,6 +342,10 @@ namespace Zilf.Emit.Glulx
         public const string recover_glk = @"
             function
             local id
+            ; Check whether garglk_set_zcolors is available
+            push 0
+            push gestalt_GarglkText
+            glk glk_gestalt 2 -> [gg_have_zcolors]
             ; Clear all stored Glk IDs
             copy 0 -> [gg_main_window_id]
             copy 0 -> [gg_status_window_id]
@@ -1117,6 +1129,87 @@ namespace Zilf.Emit.Glulx
             glk glk_set_style 1
             return";
 
+        [RuntimeDefinitionSet]
+        public const string zcolor_defines = @"
+            MAX_ZCOLOR = 12
+
+            section .data
+            zcolor_table:
+                dw -2       ; current
+                dw -1       ; default
+                dw 0x0000   ; black
+                dw 0x001D   ; red
+                dw 0x0340   ; green
+                dw 0x03BD   ; yellow
+                dw 0x59A0   ; blue
+                dw 0x7C1F   ; magenta
+                dw 0x77A0   ; cyan
+                dw 0x7FFF   ; white
+                dw 0x5AD6   ; light grey
+                dw 0x4631   ; medium grey
+                dw 0x2D6B   ; dark grey";
+
+        [RuntimeFunc(nameof(glk_defines), nameof(zcolor_defines), nameof(set_true_color))]
+        public const string set_color = @"
+            function
+            local fg
+            local bg
+            ; Validate colors
+            jlt fg 0 -> rfalse
+            jgt fg MAX_ZCOLOR -> rfalse
+            jlt bg 0 -> rfalse
+            jgt bg MAX_ZCOLOR -> rfalse
+            ; Convert to 16-bit true colors
+            aloads zcolor_table bg -> push
+            aloads zcolor_table fg -> push
+            callfii _rt_set_true_color pop pop -> push
+            return pop";
+
+        [RuntimeFunc(nameof(glk_defines), nameof(convert_true_color))]
+        public const string set_true_color = @"
+            function
+            local fg
+            local bg
+            ; Are colors supported?
+            jz [gg_have_zcolors] -> rfalse
+            ; Convert 15-bit color values to 24 bits
+            callfi _rt_convert_true_color fg -> fg
+            callfi _rt_convert_true_color bg -> bg
+            ; Set current stream colors
+            push bg
+            push fg
+            glk garglk_set_zcolors 2
+            return 1";
+
+        [RuntimeFunc]
+        public const string convert_true_color = @"
+            function
+            local color
+            local red
+            local green
+            local blue
+            bitand color 0xFFFF -> color
+            ; Special colors -1 and -2 just get sign-extended
+            jeq color 0xFFFF -> .special
+            jne color 0xFFFE -> .not_special
+        .special:
+            sexs color -> push
+            return pop
+        .not_special:
+            ; Mask RGB channels separately
+            bitand color 0x1F -> red
+            bitand color 0x3E0 -> push
+            ushiftr pop 5 -> green
+            bitand color 0x7C00 -> push
+            ushiftr pop 10 -> blue
+            ; Shift to recombine
+            shiftl blue 3 -> push
+            shiftl green 11 -> push
+            bitor pop pop -> push
+            shiftl red 19 -> push
+            bitor pop pop -> push
+            return pop";
+
         [RuntimeFunc(nameof(glk_defines), nameof(translate_save_result))]
         public const string save_game = @"
             function
@@ -1222,6 +1315,17 @@ namespace Zilf.Emit.Glulx
         .bit_1_done:
             ; Bit 4: Ignore (game can't enable/disable UNDO)
             return";
+
+        [RuntimeFunc(nameof(glk_defines))]
+        public const string get_lowcore_zversion = @"
+            function
+            local res
+            copy ((ZMACHINE_VERSION << 8) | ZVERSION_FLAGS) -> res
+            ; Colors available?
+            jz [gg_have_zcolors] -> .no_colors
+            bitor res 1 -> res
+        .no_colors:
+            return res";
 
         #endregion
 
