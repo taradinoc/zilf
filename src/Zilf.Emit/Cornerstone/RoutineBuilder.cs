@@ -189,7 +189,7 @@ namespace Zilf.Emit.Cornerstone
                         return;
 
                     default:
-                        ThrowNotSupported();
+                        ThrowNotSupported(cond.ToString());
                         return;
                 }
             }
@@ -260,7 +260,7 @@ namespace Zilf.Emit.Cornerstone
                 EmitStore(result, owner.Zero);
             }
 
-            public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form, IVariable result, ILabel label, bool polarity) => ThrowNotSupported();
+            public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form, IVariable result, ILabel label, bool polarity) => ThrowNotSupported(null);
 
             public void EmitGetChild(IOperand value, IVariable result, ILabel label, bool polarity)
             {
@@ -286,7 +286,7 @@ namespace Zilf.Emit.Cornerstone
                         return;
 
                     default:
-                        ThrowNotSupported();
+                        ThrowNotSupported(op.ToString());
                         return;
                 }
             }
@@ -298,7 +298,7 @@ namespace Zilf.Emit.Cornerstone
                     case UnaryOp.LoadIndirect when value is IIndirectOperand indirect:
                         if (indirect.Variable is not NamedVariable resolvedIndirectVariable)
                         {
-                            ThrowNotSupported();
+                            ThrowNotSupported(op.ToString());
                             return;
                         }
 
@@ -379,7 +379,7 @@ namespace Zilf.Emit.Cornerstone
                         return;
 
                     default:
-                        ThrowNotSupported();
+                        ThrowNotSupported(op.ToString());
                         return;
                 }
             }
@@ -463,7 +463,7 @@ namespace Zilf.Emit.Cornerstone
                         break;
 
                     default:
-                        ThrowNotSupported();
+                        ThrowNotSupported(op.ToString());
                         return;
                 }
 
@@ -487,7 +487,7 @@ namespace Zilf.Emit.Cornerstone
                         return;
 
                     default:
-                        ThrowNotSupported();
+                        ThrowNotSupported(op.ToString());
                         return;
                 }
             }
@@ -530,12 +530,12 @@ namespace Zilf.Emit.Cornerstone
                         return;
 
                     default:
-                        ThrowNotSupported();
+                        ThrowNotSupported(op.ToString());
                         return;
                 }
             }
 
-            public void EmitPrintTable(IOperand table, IOperand width, IOperand? height, IOperand? skip) => ThrowNotSupported();
+            public void EmitPrintTable(IOperand table, IOperand width, IOperand? height, IOperand? skip) => ThrowNotSupported(null);
 
             public void EmitPrintNewLine()
             {
@@ -547,18 +547,18 @@ namespace Zilf.Emit.Cornerstone
             {
                 // Timed input callbacks are not yet implemented for the Cornerstone backend.
                 if (interval != null || routine != null)
-                    ThrowNotSupported();
+                    ThrowNotSupported("timned input");
 
                 EmitRuntimeCall(RuntimeLib.ReadLine, [chrbuf, lexbuf ?? owner.Zero], result);
             }
 
-            public void EmitReadChar(IOperand? interval, IOperand? routine, IVariable result) => ThrowNotSupported();
+            public void EmitReadChar(IOperand? interval, IOperand? routine, IVariable result) => ThrowNotSupported(null);
 
-            public void EmitPlaySound(IOperand number, IOperand? effect, IOperand? volume, IOperand? routine) => ThrowNotSupported();
+            public void EmitPlaySound(IOperand number, IOperand? effect, IOperand? volume, IOperand? routine) => ThrowNotSupported(null);
 
-            public void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset, IOperand dest) => ThrowNotSupported();
+            public void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset, IOperand dest) => ThrowNotSupported(null);
 
-            public void EmitTokenize(IOperand text, IOperand parse, IOperand? dictionary, IOperand? flag) => ThrowNotSupported();
+            public void EmitTokenize(IOperand text, IOperand parse, IOperand? dictionary, IOperand? flag) => ThrowNotSupported(null);
 
             public void EmitCall(IOperand routine, IOperand[] args, IVariable? result)
             {
@@ -644,7 +644,7 @@ namespace Zilf.Emit.Cornerstone
                         return;
 
                     default:
-                        ThrowNotSupported();
+                        ThrowNotSupported(variable.Kind.ToString());
                         return;
                 }
             }
@@ -716,7 +716,7 @@ namespace Zilf.Emit.Cornerstone
                 lines.Add("    POP");
             }
 
-            public void EmitPushUserStack(IOperand value, IOperand stack, ILabel label, bool polarity) => ThrowNotSupported();
+            public void EmitPushUserStack(IOperand value, IOperand stack, ILabel label, bool polarity) => ThrowNotSupported(null);
 
             public void Finish()
             {
@@ -976,7 +976,7 @@ namespace Zilf.Emit.Cornerstone
                         return;
 
                     default:
-                        ThrowNotSupported();
+                        ThrowNotSupported(label.Ordinal.ToString());
                         return;
                 }
             }
@@ -1126,7 +1126,7 @@ namespace Zilf.Emit.Cornerstone
                         return;
 
                     default:
-                        ThrowNotSupported();
+                        ThrowNotSupported(variable.Kind.ToString());
                         return;
                 }
             }
@@ -1191,7 +1191,7 @@ namespace Zilf.Emit.Cornerstone
                         return;
 
                     default:
-                        ThrowNotSupported();
+                        ThrowNotSupported(operand.GetType().Name);
                         return;
                 }
             }
@@ -1258,8 +1258,11 @@ namespace Zilf.Emit.Cornerstone
                 return line;
             }
 
-            private static void ThrowNotSupported([CallerMemberName] string memberName = "") =>
-                throw new NotSupportedException($"Cornerstone routine emission is not implemented for this construct yet ({memberName}).");
+            private static void ThrowNotSupported(string? operation, [CallerMemberName] string memberName = "")
+            {
+                string explanation = operation is null ? memberName : $"{operation} in {memberName}";
+                throw new NotSupportedException($"Cornerstone routine emission is not implemented for this construct yet ({explanation}).");
+            }
 
             [GeneratedRegex(@"^(\s*)(PUSHL|PUTL|STOREL|LOADL)\s+(\d+)\s*$", RegexOptions.Compiled)]
             private static partial Regex GetNumberedLocalOperandRegex();

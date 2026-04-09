@@ -952,6 +952,7 @@ namespace Zilf.Emit.Cornerstone
             PropertyBuilder property => $"P?{property.Name}",
             FlagBuilder flag => flag.Name,
             ObjectBuilder obj => obj.Name,
+            TableBuilder table => table.Name,
             _ => throw new NotSupportedException($"Cornerstone local initializers do not support operand type {operand.GetType().Name}."),
         };
 
