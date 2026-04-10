@@ -20,8 +20,8 @@
     <SET C 0>
     <DO (I 1 ,TRINV-SIZE)
         <SET O <TRINV-NTH-OBJ-FLOOR .F .I>>
-        <COND (.O <SET C <+ .C 1>>)>
-    .C>>
+        <COND (.O <SET C <+ .C 1>>)>>
+    .C>
 
 <ROUTINE TRINV-COUNT ()
     <TRINV-COUNT-FLOOR ,CURRENT-FLOOR>>
