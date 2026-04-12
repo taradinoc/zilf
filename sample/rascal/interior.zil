@@ -211,7 +211,7 @@ interior ID."
     <ROUTINE INV-PRINT-EXTRA-DETAILS (OBJ)
         <COND (<==? .OBJ ,EQUIPPED-WEAPON> <TELL " (equipped)">)>>
 
-    <ROUTINE INV-EXTRA-DETAILS-INDISTINGUISHABLE? (A B)
+    <ROUTINE INV-SAME-EXTRA-DETAILS? (A B)
         ;"Only one item can be equipped at a time"
         <N==? ,EQUIPPED-WEAPON .A .B>>>
 

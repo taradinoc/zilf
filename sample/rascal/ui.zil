@@ -405,6 +405,7 @@ Returns:
     <SPLIT <LOWCORE SCRV>>
     <SCREEN 1>
     <UI-RESET>
+    <SETG EXPERT-MODE? <>>
     <CLEAR -2>
     <SET COL </ <- <LOWCORE SCRH> 58> 2>>
     <CURSET 5 .COL>
@@ -463,8 +464,10 @@ Returns:
     <CURSET 21 .COL>
     <TELL "               Press S to enter a seed                    ">
     <CURSET 22 .COL>
-    <TELL "               Press Q to quit                            ">
+    <TELL "               Press E for the expert quest               ">
     <CURSET 23 .COL>
+    <TELL "               Press Q to quit                            ">
+    <CURSET 24 .COL>
     <TELL "               Press any other key to start               ">
     <SET C <GETCHAR>>
     <COND (<==? .C !\I !\i>
@@ -474,9 +477,14 @@ Returns:
           (<==? .C !\C !\c>
            <COND (<HAS-COLOR?> <NEXT-COLOR-MODE>)>
            <AGAIN>)
+           (<==? .C !\E !\e>
+            <SETG EXPERT-MODE? T>
+            <CLEAR -1>)
           (<==? .C 27 !\Q !\q> <QUIT>)
           (<==? .C 254 ;"mouse click"> <AGAIN>)
-          (ELSE <CLEAR -1>)>>
+           (ELSE
+            <SETG EXPERT-MODE? <>>
+            <CLEAR -1>)>>
 
 <ROUTINE INSTRUCTIONS ("OPT" IN-GAME? "AUX" COL C)
     <UI-RESET>
@@ -969,11 +977,18 @@ Returns:
 
     <ROUTINE PRINT-VICTORY-HONORS-LINE (COL "AUX" TOTAL TOP OTH)
         <SET TOTAL <HONORS-TOTAL-EARNED-COUNT>>
-        <COND (<L=? .TOTAL 0> <RETURN>)>
+         <COND (<L=? .TOTAL 0>
+             <COND (,EXPERT-MODE? <TELL "Expertly won.">)>
+             <RTRUE>)>
         <SET TOP <HIGHEST-EARNED-HONOR-ID>>
-        <COND (<L=? .TOP 0> <RETURN>)>
+         <COND (<L=? .TOP 0>
+             <COND (,EXPERT-MODE? <TELL "Expertly won.">)>
+             <RTRUE>)>
         <SET OTH <- .TOTAL 1>>
-        <TELL "Won with honors: " HONOR-NAME .TOP>
+         <COND (,EXPERT-MODE?
+             <TELL "Expertly won with honors: " HONOR-NAME .TOP>)
+            (ELSE
+             <TELL "Won with honors: " HONOR-NAME .TOP>)>
         <COND (<G? .OTH 0>
             <TELL " and " N .OTH " others">)>
         <RTRUE>>
@@ -1369,7 +1384,9 @@ Returns:
     <UI-FG ,UI-RGB-TEXT ,ZCOL-WHITE>
     <PRINT-SEED-HEX32>
     <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
-    <TELL "  Wait: .   Drop: T  Ingest: I  Equip: G  Quit: Q  Instructions: ?">
+    <TELL "  Wait: .   Drop: T  Ingest: I  Equip: G  Quit: Q  ">
+    <COND (,EXPERT-MODE? <TELL "(Expert quest)">)
+          (ELSE <TELL "Instructions: ?">)>
     <UI-RESET>>
 
 ;"Draws the visible map area (MAP-H rows by MAP-W columns)."

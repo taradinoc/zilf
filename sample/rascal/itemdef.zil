@@ -369,7 +369,7 @@ Returns:
           (<==? .ID ,TREASURE-GARNET> 400)
           (<==? .ID ,TREASURE-JASPER> 600)
           (<==? .ID ,TREASURE-ZIRCON> 1000)
-          (<==? .ID ,TREASURE-POSTER> 1500)
+          (<==? .ID ,TREASURE-POSTER> <COND (,EXPERT-MODE? 50) (ELSE 1500)>)
           (<==? .ID ,TREASURE-TROPHY> 5000)
           (ELSE 50)>>
 

@@ -48,13 +48,17 @@ Args:
 Returns:
   Gold value as a positive integer."
 
-<ROUTINE TRADER-BUY-PRICE (KIND ID LVL ENCH)
-    <COND (<==? .KIND ,ITEMKIND-TREASURE> <TREASURE-VALUE .ID>)
-          (<==? .KIND ,ITEMKIND-FOOD> <FOOD-VALUE .ID>)
-          (<==? .KIND ,ITEMKIND-POTION> ,POTION-VALUE)
-          (<==? .KIND ,ITEMKIND-WEAPON> <WEAPON-VALUE .ID .LVL .ENCH>)
-      (<==? .KIND ,ITEMKIND-KEY> 150)
-          (ELSE 1)>>
+<ROUTINE TRADER-BUY-PRICE (KIND ID LVL ENCH "AUX" PRICE)
+    <SET PRICE
+         <COND (<==? .KIND ,ITEMKIND-TREASURE> <TREASURE-VALUE .ID>)
+               (<==? .KIND ,ITEMKIND-FOOD> <FOOD-VALUE .ID>)
+               (<==? .KIND ,ITEMKIND-POTION> ,POTION-VALUE)
+               (<==? .KIND ,ITEMKIND-WEAPON> <WEAPON-VALUE .ID .LVL .ENCH>)
+               (<==? .KIND ,ITEMKIND-KEY> 150)
+               (ELSE 1)>>
+    <COND (<AND ,EXPERT-MODE? <N==? .KIND ,ITEMKIND-TREASURE>>
+           <SET PRICE <* 2 .PRICE>>)> 
+    .PRICE>
 
 ;"Computes the trader sell price for an item (what the player pays the trader).
 

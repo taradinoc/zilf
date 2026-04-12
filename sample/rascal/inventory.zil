@@ -21,7 +21,7 @@
         <COND (<==? <INV-NTH-OBJ .I> .OBJ> <RETURN .I>)>>
     0>
 
-<ROUTINE INV-COUNT ("AUX" O C)
+<ROUTINE INV-COUNT ("AUX" C)
     <SET C 0>
     <DO (I 1 ,INV-SIZE)
         <COND (<INV-NTH-OBJ .I> <SET C <+ .C 1>>)>>
@@ -547,7 +547,7 @@ Returns:
            <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <TELL/LOG .LOG? "You fade from sight." CR>)
           (<==? .TYPE ,POTION-POISON>
-           <SETG PLAYER-HP <- ,PLAYER-HP 3>>
+           <SETG PLAYER-HP <- ,PLAYER-HP <POISON-POTION-DAMAGE>>>
            <HONORS-NOTE-PLAYER-HP>
            <TELL/LOG .LOG? "You feel sick." CR>
            <CHECK-END>)

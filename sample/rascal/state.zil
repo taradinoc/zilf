@@ -69,6 +69,12 @@ discovered and will display by effect name instead of color name."
 <GLOBAL SEED-HI 0>
 <GLOBAL SEED-LO 0>
 
+<GLOBAL EXPERT-MODE? <>>
+
+<GLOBAL IDENTIFY-COST 50>
+<GLOBAL CARROT-COST 5>
+<GLOBAL ENCHANT-COST 100>
+
 <GLOBAL CURRENT-FLOOR 1>
 <GLOBAL ROOM-COUNT 0>
 <GLOBAL CURRENT-ROOM 0>
@@ -85,6 +91,25 @@ discovered and will display by effect name instead of color name."
 
 ;"Set to avoid repeating the death message/score each turn after dying."
 <GLOBAL DEATH-LOGGED? <>>
+
+<ROUTINE STARTING-PLAYER-STR ()
+    <COND (,EXPERT-MODE? 1)
+          (ELSE ,INITIAL-PLAYER-STR)>>
+
+<ROUTINE WIN-SCORE-BONUS ()
+    <COND (,EXPERT-MODE? <* 2 ,SCORE-BONUS-WIN>)
+          (ELSE ,SCORE-BONUS-WIN)>>
+
+<ROUTINE BEE-SWARM-LOSE-DISTANCE ()
+    <COND (,EXPERT-MODE? <* 2 ,BEE-SWARM-LOSE-DIST>)
+          (ELSE ,BEE-SWARM-LOSE-DIST)>>
+
+<ROUTINE POISON-POTION-DAMAGE ()
+    <COND (,EXPERT-MODE? 9)
+          (ELSE 3)>>
+
+<ROUTINE PRICE-PLUS-HALF (PRICE)
+    <+ .PRICE </ <+ .PRICE 1> 2>>>
 
 <ROUTINE LOAD-FLOOR-TRINV (F "AUX" T O)
     <SET T <TRADER-OBJ .F>>
@@ -1442,6 +1467,15 @@ Returns:
     <PRECOMPUTE-TREASURE-ROOM-PLANS>
     <SETG GAME-OVER? <>>
     <SETG YOU-WIN? <>>
+        <COND (,EXPERT-MODE?
+            <SETG IDENTIFY-COST 100>
+            <SETG CARROT-COST 50>
+            <SETG ENCHANT-COST 200>)
+           (ELSE
+            <SETG IDENTIFY-COST 50>
+            <SETG CARROT-COST 5>
+            <SETG ENCHANT-COST 100>)>
+    <SETG CARROTS-SOLD 0>
     <IF-DEBUG
         <SETG DEBUG-DOUBLEKEY 0>
         <SETG DEBUG-USED? <>>
@@ -1451,6 +1485,8 @@ Returns:
         <SETG STAIR-FINDER? <>>>
     <SETG PLAYER-MAX-HP ,INITIAL-PLAYER-MAX-HP>
     <SETG PLAYER-HP ,PLAYER-MAX-HP>
+    <SETG PLAYER-STR <STARTING-PLAYER-STR>>
+    <SETG PLAYER-DEF ,INITIAL-PLAYER-DEF>
     <SETG TRADER-ON? <>>
     <SETG TRADER-X 0>
     <SETG TRADER-Y 0>
@@ -1458,6 +1494,9 @@ Returns:
     <ENTER-FLOOR 1 0 0 0>
     <SETG ORIG-SPAWN-X ,PLAYER-X>
     <SETG ORIG-SPAWN-Y ,PLAYER-Y>
-    <LOG "Welcome, rascal! Get gold. Don't die. Kill beasts." CR>
+    <COND (,EXPERT-MODE?
+           <LOG "I hope you know what you're doing, rascal. Good luck." CR>)
+          (ELSE
+           <LOG "Welcome, rascal! Get gold. Don't die. Kill beasts." CR>)>
     <DRAW>
     <RTRUE>>

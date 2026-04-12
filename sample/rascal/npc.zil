@@ -214,18 +214,23 @@ One sting would be bad. A hundred will kill you.↲↲You should leave. Immediat
     (IN ROOMS)
     (DESC "Blacksmith")
     (INTERIOR-NAME "blacksmith")
-    (LDESC "A soot-darkened forge squats here, cold and quiet. The tools are laid out as if
-someone stepped away mid-swing... days ago.↲↲A blacksmith leans against the anvil, watching you.↲↲
-A hand-painted sign reads: \"Weapon enchantments, 100 gold\"")
     (ACTION BLACKSMITH-SHOP-R)
-    (THINGS (HAND PAINTED HAND-PAINTED) SIGN ([READ EXAMINE] "\"Weapon enchantments, 100 gold\""))
+    (THINGS (HAND PAINTED HAND-PAINTED) SIGN BLACKSMITH-SIGN-R)
     (FLAGS LIGHTBIT)>
+
+<ROUTINE BLACKSMITH-SIGN-R ()
+    <COND (<VERB? READ EXAMINE>
+           <TELL "\"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" CR>)>>
 
 <ROUTINE BLACKSMITH-SHOP-R (RARG)
     <COND (<==? .RARG ,M-ENTER> <THIS-IS-IT ,BLACKSMITH>)
           (<==? .RARG ,M-BEG>
            <COND (<OR <VERB? EXIT> <AND <VERB? WALK> <PRSO? ,P?OUT>>>
-                  <THROW <> ,INTERIOR-CATCH-TOKEN>)>)>>
+                  <THROW <> ,INTERIOR-CATCH-TOKEN>)>)
+          (<==? .RARG ,M-LOOK>
+           <TELL "A soot-darkened forge squats here, cold and quiet. The tools are laid out as if
+someone stepped away mid-swing... days ago.↲↲A blacksmith leans against the anvil, watching you.↲↲
+A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" CR>)>>
 
 <OBJECT BLACKSMITH
     (IN BLACKSMITH-SHOP)
@@ -239,15 +244,18 @@ A hand-painted sign reads: \"Weapon enchantments, 100 gold\"")
     <COND (<NOT <WEAPON? .OBJ>>
            <TELL "The blacksmith says, \"That's not a weapon.\"" CR>
            <RFALSE>)>
-    <COND (<L? ,PLAYER-GOLD 100>
-           <TELL "The blacksmith says, \"It'll cost you 100 gold.\"" CR>
+    <COND (<L? ,PLAYER-GOLD ,ENCHANT-COST>
+           <TELL "The blacksmith says, \"It'll cost you " N ,ENCHANT-COST
+                 " gold.\"" CR>
            <RFALSE>)>
 
-    <SETG PLAYER-GOLD <- ,PLAYER-GOLD 100>>
-    <SETG STATS-GOLD-SPENT-BLACKSMITH <+ ,STATS-GOLD-SPENT-BLACKSMITH 100>>
+    <SETG PLAYER-GOLD <- ,PLAYER-GOLD ,ENCHANT-COST>>
+    <SETG STATS-GOLD-SPENT-BLACKSMITH
+          <+ ,STATS-GOLD-SPENT-BLACKSMITH ,ENCHANT-COST>>
     <SET ENCH <GETP .OBJ ,P?R-ITENCH>>
     <COND (<G? .ENCH 254> <SET NEWENCH 255>) (ELSE <SET NEWENCH <+ .ENCH 1>>)>
     <PUTP .OBJ ,P?R-ITENCH .NEWENCH>
+    <COND (,EXPERT-MODE? <SETG ENCHANT-COST <PRICE-PLUS-HALF ,ENCHANT-COST>>)>
 
     <SET ID <GETP .OBJ ,P?R-ITID>>
     <SET LVL <GETP .OBJ ,P?R-ITLVL>>
@@ -270,7 +278,8 @@ A hand-painted sign reads: \"Weapon enchantments, 100 gold\"")
           (<AND <VERB? ASK-ABOUT TELL-ABOUT> <PRSO? ,BLACKSMITH>>
            <COND (<PRSI? ,BLACKSMITH> <TELL "\"I just work here.\"" CR>)
                  (<RASCAL-ITEM? ,PRSI>
-                  <TELL "\"If you give me a weapon, I'll enchant it for 100 gold.\""
+                  <TELL "\"If you give me a weapon, I'll enchant it for "
+                    N ,ENCHANT-COST " gold.\""
                         CR>)
                  (ELSE <TELL "\"That's none of my business.\"" CR>)>)
           (<AND <VERB? GIVE> <PRSI? ,BLACKSMITH>>
@@ -291,19 +300,25 @@ A hand-painted sign reads: \"Weapon enchantments, 100 gold\"")
     (IN ROOMS)
     (DESC "Carrot Farm")
     (INTERIOR-NAME "carrot farm")
-    (LDESC "Neat rows of vegetables stretch across a small underground plot.
-An earthy smell clings to the air. A farmer watches you closely, arms crossed.
-In front of the carrot patch, a hand-painted sign reads: \"Carrots 5 gold.
-Identification 50 gold.\"")
     (ACTION CARROT-FARM-R)
-    (THINGS (HAND PAINTED HAND-PAINTED) SIGN ([READ EXAMINE] "\"Carrots 5 gold. Identification 50 gold.\""))
+    (THINGS (HAND PAINTED HAND-PAINTED) SIGN CARROT-SIGN-R)
     (FLAGS LIGHTBIT)>
+
+<ROUTINE CARROT-SIGN-R ()
+    <COND (<VERB? READ EXAMINE>
+           <TELL "\"Carrots: " N ,CARROT-COST " gold. Potions identified: "
+                 N ,IDENTIFY-COST " gold.\"" CR>)>>
 
 <ROUTINE CARROT-FARM-R (RARG)
     <COND (<==? .RARG ,M-ENTER> <THIS-IS-IT ,CARROT-MAN>)
           (<==? .RARG ,M-BEG>
            <COND (<OR <VERB? EXIT> <AND <VERB? WALK> <PRSO? ,P?OUT>>>
-                  <THROW <> ,INTERIOR-CATCH-TOKEN>)>)>>
+                  <THROW <> ,INTERIOR-CATCH-TOKEN>)>)
+          (<==? .RARG ,M-LOOK>
+           <TELL "Neat rows of vegetables stretch across a small underground plot.
+An earthy smell clings to the air. A farmer watches you closely, arms crossed.
+In front of the carrot patch, a hand-painted sign reads: \"Carrots: "
+                 N ,CARROT-COST " gold. Potions identified: " N ,IDENTIFY-COST " gold.\"" CR>)>>
 
 <GLOBAL CARROTS-SOLD 0>
 
@@ -313,9 +328,9 @@ Identification 50 gold.\"")
     <REPEAT ()
         <COND (<NOT .O> <RETURN>)>
         <SET N <NEXT? .O>>
-         <COND (<RASCAL-ITEM? .O>
-             <SET K <GETP .O ,P?R-ITKIND>>
-             <SET ID <GETP .O ,P?R-ITID>>
+        <COND (<RASCAL-ITEM? .O>
+               <SET K <GETP .O ,P?R-ITKIND>>
+               <SET ID <GETP .O ,P?R-ITID>>
                <COND (<AND <==? .K ,ITEMKIND-FOOD> <==? .ID ,FOOD-CARROT>>
                       <RTRUE>)>)>
         <SET O .N>>
@@ -324,9 +339,9 @@ Identification 50 gold.\"")
     <REPEAT ()
         <COND (<NOT .O> <RETURN>)>
         <SET N <NEXT? .O>>
-         <COND (<RASCAL-ITEM? .O>
-             <SET K <GETP .O ,P?R-ITKIND>>
-             <SET ID <GETP .O ,P?R-ITID>>
+        <COND (<RASCAL-ITEM? .O>
+               <SET K <GETP .O ,P?R-ITKIND>>
+               <SET ID <GETP .O ,P?R-ITID>>
                <COND (<AND <==? .K ,ITEMKIND-FOOD> <==? .ID ,FOOD-CARROT>>
                       <RTRUE>)>)>
         <SET O .N>>
@@ -352,15 +367,19 @@ Identification 50 gold.\"")
            <TELL "The farmer scoffs, \"That's obviously a "
                  POTION-DISPLAY-NAME .COLOR ".\"" CR>
            <RTRUE>)>
-    <COND (<L? ,PLAYER-GOLD 50>
-           <TELL "The farmer says, \"I ain't doing this for fun. It'll cost you 50 gold.\""
+    <COND (<L? ,PLAYER-GOLD ,IDENTIFY-COST>
+           <TELL "The farmer says, \"I ain't doing this for fun. It'll cost you "
+                 N ,IDENTIFY-COST " gold.\""
                  CR>
            <RFALSE>)>
 
-    <SETG PLAYER-GOLD <- ,PLAYER-GOLD 50>>
-    <SETG STATS-GOLD-SPENT-CARROT-FARM <+ ,STATS-GOLD-SPENT-CARROT-FARM 50>>
+    <SETG PLAYER-GOLD <- ,PLAYER-GOLD ,IDENTIFY-COST>>
+    <SETG STATS-GOLD-SPENT-CARROT-FARM
+          <+ ,STATS-GOLD-SPENT-CARROT-FARM ,IDENTIFY-COST>>
     <PUTB ,POTION-DISCOVERED <- .COLOR 1> 1>
     <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>
+    <COND (,EXPERT-MODE?
+           <SETG IDENTIFY-COST <PRICE-PLUS-HALF ,IDENTIFY-COST>>)>
     <COND (<==? .TYPE ,POTION-HEALTH>
            <TELL "The farmer swirls it, sniffs, and nods. \"This'n's a potion of health.
 It'll increase your max HP by two, plus it'll heal you a bunch.\""
@@ -460,17 +479,19 @@ beasts to hit you.\""
                  (<CARROT-PRESENT?>
                   <TELL "The farmer says, \"One carrot at a time.\"" CR>)
                  (<INTERIOR-PACK-FULL?> <TELL "Your pack is full." CR>)
-                 (<L? ,PLAYER-GOLD 5>
-                  <TELL "The farmer says, \"Five gold.\"" CR>)
+                 (<L? ,PLAYER-GOLD ,CARROT-COST>
+                  <TELL "The farmer says, \"" N ,CARROT-COST " gold.\"" CR>)
                  (ELSE
                   <SET O <ALLOC-RASCAL-ITEM>>
                   <COND (<NOT .O>
                          <TELL "The farmer frowns. \"That's all I've got.\"" CR>
                          <RTRUE>)>
-                  <SETG PLAYER-GOLD <- ,PLAYER-GOLD 5>>
+                  <SETG PLAYER-GOLD <- ,PLAYER-GOLD ,CARROT-COST>>
                   <SETG STATS-GOLD-SPENT-CARROT-FARM
-                      <+ ,STATS-GOLD-SPENT-CARROT-FARM 5>>
+                      <+ ,STATS-GOLD-SPENT-CARROT-FARM ,CARROT-COST>>
                   <SETG CARROTS-SOLD <+ ,CARROTS-SOLD 1>>
+                  <COND (,EXPERT-MODE?
+                         <SETG CARROT-COST <* 2 ,CARROT-COST>>)> 
                   <PUTP .O ,P?R-ITKIND ,ITEMKIND-FOOD>
                   <PUTP .O ,P?R-ITID ,FOOD-CARROT>
                   <PUTP .O ,P?R-ITLVL 0>
