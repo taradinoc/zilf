@@ -134,8 +134,8 @@ Returns:
     <TELL "-------------------------------">
     <DO (I 1 ,TRINV-SIZE)
         <SET ROW <+ 4 .I>>
-        <CURSET .ROW 1>
         <COND (<SET O <TRINV-NTH-OBJ .I>>
+               <CURSET .ROW 1>
                <SET K <GETP .O ,P?R-ITKIND>>
                <SET ID <GETP .O ,P?R-ITID>>
                <SET LVL <GETP .O ,P?R-ITLVL>>
@@ -149,8 +149,11 @@ Returns:
                <TELL TRINV-NAME .I>
                <CURSET .ROW 22>
                <TELL N .PRICE " gold">)>
-        <CURSET .ROW 42>
         <COND (<SET O <INV-NTH-OBJ .I>>
+               <COND (<==? .O ,EQUIPPED-WEAPON>
+                      <CURSET .ROW 41>
+                      <TELL !\*>)>
+               <CURSET .ROW 42>
                <SET K <GETP .O ,P?R-ITKIND>>
                <SET ID <GETP .O ,P?R-ITID>>
                <SET LVL <GETP .O ,P?R-ITLVL>>

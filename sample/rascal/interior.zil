@@ -207,6 +207,14 @@ interior ID."
             <AND <CARROT? .A> <CARROT? .B>>
             <AND <MONKEY? .A> <MONKEY? .B> <FSET? .A ,SOLDBIT> <FSET? .B ,SOLDBIT>>>>>
 
+<REPLACE-DEFINITION INV-EXTRA-DETAILS
+    <ROUTINE INV-PRINT-EXTRA-DETAILS (OBJ)
+        <COND (<==? .OBJ ,EQUIPPED-WEAPON> <TELL " (equipped)">)>>
+
+    <ROUTINE INV-EXTRA-DETAILS-INDISTINGUISHABLE? (A B)
+        ;"Only one item can be equipped at a time"
+        <N==? ,EQUIPPED-WEAPON .A .B>>>
+
 <IF-DEBUG <CONSTANT DEBUG-PACK-SYNC? <>>>
 
 <ROUTINE INTERIOR-PACK-COUNT ("AUX" O C)

@@ -4,6 +4,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to
 [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- You can now replace the `INV-EXTRA-DETAILS` section, containing
+  `INV-PRINT-EXTRA-DETAILS` and `INV-SAME-EXTRA-DETAILS?`, to add more details
+  like "(worn)" to the inventory listing; or you can override the defaults by
+  replacing `INV-PRINT-DETAILS` (and probably also `INV-INDISTINGUISHABLE?`).
+
 ## [1.8](April 8, 2026)
 
 ### Added

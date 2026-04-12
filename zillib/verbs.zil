@@ -1036,18 +1036,12 @@ Returns:
                       <PUT/B ,P-XOBJS .N .I>>
                   <PUTB ,P-XOBJS 0 .N>
                   ;"combine indistinguishable items"
-                  <SET N <LIST-OBJECTS-TAG-COUNTS ,P-XOBJS ,P-XOBJS-TAGS>>
+                  <SET N <LIST-OBJECTS-TAG-COUNTS ,P-XOBJS ,P-XOBJS-TAGS ,INV-INDISTINGUISHABLE?>>
                   <DO (I 1 .N)
                       <SET O <GET/B ,P-XOBJS .I>>
                       <TELL "   ">
                       <LIST-OBJECTS-PRINT .O 0 <GETB ,P-XOBJS-TAGS .I>>
-                      <AND <FSET? .O ,WORNBIT> <TELL <LIBRARY-MESSAGE INVENTORY WORN>>>
-                      <AND <FSET? .O ,LIGHTBIT> <TELL <LIBRARY-MESSAGE INVENTORY LIGHTING>>>
-                      <COND (<FSET? .O ,CONTBIT>
-                             <COND (<FSET? .O ,OPENABLEBIT>
-                                    <COND (<FSET? .O ,OPENBIT> <TELL <LIBRARY-MESSAGE INVENTORY OPEN>>)
-                                          (ELSE <TELL <LIBRARY-MESSAGE INVENTORY CLOSED>>)>)>
-                             <COND (<SEE-INSIDE? .O> <INV-DESCRIBE-CONTENTS .O>)>)>
+                      <INV-PRINT-DETAILS .O>
                       <CRLF>>)
                  (ELSE
                   <TELL <LIBRARY-MESSAGE INVENTORY EMPTY-HANDED> CR>)>)
@@ -1069,6 +1063,28 @@ surface or container, for use in inventory listings."
     <LIST-OBJECTS .OBJ>
     <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-2>>>
 
+<DEFAULT-DEFINITION INV-PRINT-DETAILS
+    ;"Prints the attributes following an object in an inventory listing,
+      including the contents of open containers."
+    <ROUTINE INV-PRINT-DETAILS (O)
+        <AND <FSET? .O ,WORNBIT> <TELL <LIBRARY-MESSAGE INVENTORY WORN>>>
+        <AND <FSET? .O ,LIGHTBIT> <TELL <LIBRARY-MESSAGE INVENTORY LIGHTING>>>
+        <INV-PRINT-EXTRA-DETAILS .O>
+        <COND (<FSET? .O ,CONTBIT>
+               <COND (<FSET? .O ,OPENABLEBIT>
+                      <COND (<FSET? .O ,OPENBIT>
+                             <TELL <LIBRARY-MESSAGE INVENTORY OPEN>>)
+                            (ELSE <TELL <LIBRARY-MESSAGE INVENTORY CLOSED>>)>)>
+               <COND (<SEE-INSIDE? .O> <INV-DESCRIBE-CONTENTS .O>)>)>>>
+
+<DEFAULT-DEFINITION INV-EXTRA-DETAILS
+    ;"The game can replace this to show more details for inventory objects."
+    <DEFMAC INV-PRINT-EXTRA-DETAILS ('O) <>>
+
+    ;"If INV-PRINT-EXTRA-DETAILS is replaced, this should also be replaced to
+      determine whether two objects have the same extra details."
+    <DEFMAC INV-SAME-EXTRA-DETAILS? ('A 'B) T>>
+
 <DEFAULT-DEFINITION INV-INDISTINGUISHABLE?
     ;"Checks whether two objects are indistinguishable for inventory purposes,
       i.e., whether they should be combined in an inventory listing, where
@@ -1078,6 +1094,7 @@ surface or container, for use in inventory listings."
         <AND <INDISTINGUISHABLE? .A .B>
              <==? <FSET? .A ,WORNBIT> <FSET? .B ,WORNBIT>>
              <==? <FSET? .A ,LIGHTBIT> <FSET? .B ,LIGHTBIT>>
+             <INV-SAME-EXTRA-DETAILS? .A .B>
              ;"If neither is a container..."
              <OR <NOT <OR <FSET? .A ,CONTBIT> <FSET? .B ,CONTBIT>>>
                  ;"...or they're both unopenable..."
