@@ -9,7 +9,8 @@
 <CONSTANT ETYPE-LEGION 6> ;"bees"
 <CONSTANT ETYPE-MONKEY 7>
 <CONSTANT ETYPE-SPIRIT 8>
-<CONSTANT ETYPE-COUNT 8>
+<CONSTANT ETYPE-MIMICK 9>
+<CONSTANT ETYPE-COUNT 9>
 
 ;"Set by PLAYER-DAMAGE: T if the last player attack roll crit."
 
@@ -61,7 +62,8 @@ Returns:
 
 <ROUTINE ENEMY-FLOOR-BONUS (TYPE F)
     <COND (<==? .TYPE ,ETYPE-GOBLIN> </ .F ,ENEMY-SCALING-DIVISOR-EASY>)
-          (<==? .TYPE ,ETYPE-SPHINX ,ETYPE-WRAITH> </ .F ENEMY-SCALING-DIVISOR-MEDIUM>)
+          (<==? .TYPE ,ETYPE-SPHINX ,ETYPE-WRAITH ,ETYPE-MIMICK>
+           </ .F ENEMY-SCALING-DIVISOR-MEDIUM>)
           (<==? .TYPE ,ETYPE-KRAKEN ,ETYPE-DRAGON ,ETYPE-SPIRIT> </ .F ,ENEMY-SCALING-DIVISOR-HARD>)
           (ELSE </ .F ,ENEMY-SCALING-DIVISOR-EASY>)>>
 
@@ -81,6 +83,7 @@ Returns:
           (<==? .TYPE ,ETYPE-LEGION> "legion")
           (<==? .TYPE ,ETYPE-MONKEY> "monkey")
           (<==? .TYPE ,ETYPE-SPIRIT> "spirit")
+          (<==? .TYPE ,ETYPE-MIMICK> "mimick")
           (ELSE "goblin")>>
 
 ;"Maps an enemy type code to its map sprite.
@@ -99,6 +102,7 @@ Returns:
           (<==? .TYPE ,ETYPE-LEGION> ,TILE-BEES)
           (<==? .TYPE ,ETYPE-MONKEY> ,TILE-MONKEY)
           (<==? .TYPE ,ETYPE-SPIRIT> ,TILE-SPIRIT)
+          (<==? .TYPE ,ETYPE-MIMICK> ,TILE-MIMICK)
           (ELSE ,TILE-GOBLIN)>>
 
 <IF-DEBUG
@@ -462,6 +466,7 @@ Returns:
           (<==? .TYPE ,ETYPE-KRAKEN> ,ENEMY-BASE-DMG-KRAKEN)
           (<==? .TYPE ,ETYPE-DRAGON> ,ENEMY-BASE-DMG-DRAGON)
           (<==? .TYPE ,ETYPE-SPIRIT> ,ENEMY-BASE-DMG-SPIRIT)
+          (<==? .TYPE ,ETYPE-MIMICK> ,ENEMY-BASE-DMG-MIMICK)
           (<==? .TYPE ,ETYPE-LEGION> ,ENEMY-BASE-DMG-LEGION)
           (ELSE 1)>>
 
@@ -547,13 +552,17 @@ Returns:
                                <+ 1
                                   <GETB ,PENDING-SPIRIT-SPAWNS
                                         ,CURRENT-FLOOR>>>)>)>
-           <SET AMT <+ 4 <RNG 16> <ENEMY-FLOOR-BONUS .ETYPE ,CURRENT-FLOOR>>>
+            <COND (<==? .ETYPE ,ETYPE-MIMICK>
+                <SET AMT <GETP .O ,P?R-EGOLD>>)
+               (ELSE
+                <SET AMT <+ 4 <RNG 16> <ENEMY-FLOOR-BONUS .ETYPE ,CURRENT-FLOOR>>>)>
            <COND (<G? .AMT 255> <SET AMT 255>)>
            <DROP-GOLD-NEAR .EX .EY .AMT>
            <COND (<AND <==? .ETYPE ,ETYPE-DRAGON> <==? <RNG 4> 1>>
                   <DROP-KEY-NEAR .EX .EY <RNG ,LOCK-TYPE-COUNT>>)>
            ;"Occasional item drop as loot. If an item drops: 50% weapon, 25% potion, 25% food."
-           <COND (<L=? <RNG 100> ,ITEM-ON-KILL-DROP-PCT>
+            <COND (<AND <N==? .ETYPE ,ETYPE-MIMICK>
+                  <L=? <RNG 100> ,ITEM-ON-KILL-DROP-PCT>>
                   <DROP-ENEMY-KILL-LOOT-NEAR .EX .EY ,CURRENT-FLOOR .LOOT>)>
            <DESPAWN-ENEMY-OBJ .O>
            <COND (,LAST-HIT-CRIT?
@@ -745,15 +754,19 @@ Args:
 Returns:
   (none)"
 
-<ROUTINE STEP-ENEMIES ("AUX" O NXT TYPE HP)
+<ROUTINE STEP-ENEMIES ("AUX" O NXT TYPE HP WAIT)
     <SET O <FIRST? ,CURRENT-FLOOR-OBJ>>
     <REPEAT ()
         <COND (<NOT .O> <RETURN>)>
         <SET NXT <NEXT? .O>>
         <SET TYPE <GETP .O ,P?R-ETYPE>>
         <SET HP <GETP .O ,P?R-EHP>>
+        <SET WAIT <GETP .O ,P?R-EWAIT>>
 
-        <COND (<AND <G? .TYPE 0> <G? .HP 0>> <STEP-ENEMY-AI .O .TYPE>)>
+        <COND (<AND <G? .TYPE 0> <G? .HP 0>>
+               <COND (<G? .WAIT 0>
+                      <PUTP .O ,P?R-EWAIT <- .WAIT 1>>)
+                     (ELSE <STEP-ENEMY-AI .O .TYPE>)>)>
 
         <SET O .NXT>>>
 
@@ -802,6 +815,7 @@ Returns:
                (<==? .TYPE ,ETYPE-KRAKEN> <+ ,ENEMY-BASE-HP-KRAKEN <ENEMY-FLOOR-BONUS .TYPE .F>>)
                (<==? .TYPE ,ETYPE-DRAGON> <+ ,ENEMY-BASE-HP-DRAGON <ENEMY-FLOOR-BONUS .TYPE .F>>)
                (<==? .TYPE ,ETYPE-SPIRIT> <+ ,ENEMY-BASE-HP-SPIRIT <ENEMY-FLOOR-BONUS .TYPE .F>>)
+               (<==? .TYPE ,ETYPE-MIMICK> <+ ,ENEMY-BASE-HP-MIMICK <ENEMY-FLOOR-BONUS .TYPE .F>>)
                (ELSE <+ 3 <ENEMY-FLOOR-BONUS .TYPE .F>>)>>
     <COND (,EXPERT-MODE? <SET HP <* 2 .HP>>)> 
     .HP>

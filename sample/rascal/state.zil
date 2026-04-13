@@ -349,7 +349,8 @@ Returns:
            <SPAWN-POTION .F>
            ;"Generate treasure rooms after the free/spawn passes so treasure loot
             (which may be a weapon/potion) isn't immediately cleared."
-           <PLACE-PRECOMPUTED-TREASURE-ROOM .F>)>
+           <PLACE-PRECOMPUTED-TREASURE-ROOM .F>
+           <SPAWN-COFFERS .F>)>
     <LOAD-FLOOR-ENEMIES .F>
     <APPLY-PENDING-SPIRIT-SPAWNS .F>
     <REVEAL-AROUND ,PLAYER-X ,PLAYER-Y>
@@ -443,6 +444,18 @@ Returns the item object, or 0 if none."
 <ROUTINE SHRINE-OBJ-AT (X Y)
     <ITEM-OBJ-AT .X .Y ,ITEMKIND-SHRINE>>
 
+<ROUTINE COFFER-OBJ-AT (X Y)
+    <ITEM-OBJ-AT .X .Y ,ITEMKIND-COFFER>>
+
+<ROUTINE COFFER-MIMICK? (O)
+    <AND <G? .O 0> <==? <GETP .O ,P?R-ITID> ,COFFER-TYPE-MIMICK>>>
+
+<ROUTINE VISION-THREAT-AT? (X Y "AUX" O)
+    <COND (<G? <ENEMY-AT .X .Y> 0> <RTRUE>)>
+    <SET O <COFFER-OBJ-AT .X .Y>>
+    <COND (<COFFER-MIMICK? .O> <RTRUE>)>
+    <RFALSE>>
+
 <ROUTINE LOCKED-DOOR-CLOSED-AT? (X Y "AUX" O)
     <SET O <LOCKEDDOOR-OBJ-AT .X .Y>>
     <AND <G? .O 0> <NOT <FSET? .O ,OPENBIT>>>>
@@ -485,6 +498,82 @@ Returns the item object, or 0 if none."
     <MOVE .O <FLOOR-OBJ .F>>
     <FCLEAR .O ,OPENBIT>
     .O>
+
+<ROUTINE ADD-COFFER (F X Y SUBTYPE GOLD "AUX" O)
+    <SET O <ALLOC-RASCAL-ITEM>>
+    <COND (<NOT .O> <RETURN 0>)>
+    <PUTP .O ,P?R-ITKIND ,ITEMKIND-COFFER>
+    <PUTP .O ,P?R-ITID .SUBTYPE>
+    <PUTP .O ,P?R-ITLVL 0>
+    <PUTP .O ,P?R-ITENCH 0>
+    <PUTP .O ,P?R-ITAMT .GOLD>
+    <PUTP .O ,P?R-X .X>
+    <PUTP .O ,P?R-Y .Y>
+    <MOVE .O <FLOOR-OBJ .F>>
+    .O>
+
+<ROUTINE COFFER-SPAWN-PCT (F)
+    <* 5 <+ 1 </ <- .F 1> 5>>>>
+
+<ROUTINE MIMICK-SPAWN-PCT (F)
+    <+ 20 <* 10 </ <- .F 1> 5>>>>
+
+<ROUTINE COFFER-GOLD-AMT (F "AUX" AMT)
+    <SET AMT <+ ,COFFER-GOLD-BASE
+                 <RNG ,COFFER-GOLD-VARIANCE>
+                 <ENEMY-FLOOR-BONUS ,ETYPE-MIMICK .F>>>
+    <COND (<G? .AMT 255> <SET AMT 255>)>
+    .AMT>
+
+<ROUTINE SPAWN-COFFERS (F "AUX" XY X Y GOLD SUBTYPE PCT MIMPCT)
+    <SET PCT <COFFER-SPAWN-PCT .F>>
+    <SET MIMPCT <MIMICK-SPAWN-PCT .F>>
+    <DO (RID 1 ,ROOM-COUNT)
+        <COND (<L=? <RNG 100> .PCT>
+               <SET XY <FIND-TREASURE-SPOT-IN-ROOM .RID>>
+               <COND (<G? .XY 0>
+                      <SET X <WORD16-HI-BYTE .XY>>
+                      <SET Y <WORD16-LO-BYTE .XY>>
+                      <SET GOLD <COFFER-GOLD-AMT .F>>
+                      <SET SUBTYPE
+                           <COND (<L=? <RNG 100> .MIMPCT>
+                                  ,COFFER-TYPE-MIMICK)
+                                 (ELSE ,COFFER-TYPE-COFFER)>>
+                      <COND (<ADD-COFFER .F .X .Y .SUBTYPE .GOLD>
+                             <FORCE-PASSABLE .X .Y>)>)>)>>
+    <RTRUE>>
+
+<ROUTINE TRY-OPEN-COFFER ("AUX" O AMT)
+    <SET O <COFFER-OBJ-AT ,PLAYER-X ,PLAYER-Y>>
+    <COND (<L=? .O 0> <RFALSE>)>
+    <COND (<N==? <GETP .O ,P?R-ITID> ,COFFER-TYPE-COFFER> <RFALSE>)>
+    <SET AMT <GETP .O ,P?R-ITAMT>>
+    <REMOVE .O>
+    <FREE-RASCAL-ITEM .O>
+    <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+    <SETG PLAYER-GOLD <+ ,PLAYER-GOLD .AMT>>
+    <LOG "You open the coffer and collect " N .AMT " gold pieces." CR>
+    <RTRUE>>
+
+<ROUTINE TRIGGER-MIMICK-AT (X Y "AUX" O E GOLD)
+    <SET O <COFFER-OBJ-AT .X .Y>>
+    <COND (<NOT <COFFER-MIMICK? .O>> <RFALSE>)>
+    <SET GOLD <GETP .O ,P?R-ITAMT>>
+    <COND (<NOT <SET E <ALLOC-RASCAL-ENEMY>>>
+           <LOG "The coffer shudders, but nothing emerges." CR>
+           <RTRUE>)>
+    <PUTP .E ,P?R-ETYPE ,ETYPE-MIMICK>
+    <PUTP .E ,P?R-EHP <ENEMY-START-HP ,ETYPE-MIMICK ,CURRENT-FLOOR>>
+    <PUTP .E ,P?R-EGOLD .GOLD>
+    <PUTP .E ,P?R-EWAIT 1>
+    <PUTP .E ,P?R-X .X>
+    <PUTP .E ,P?R-Y .Y>
+    <MOVE .E ,CURRENT-FLOOR-OBJ>
+    <REMOVE .O>
+    <FREE-RASCAL-ITEM .O>
+    <MARK-DIRTY .X .Y>
+    <LOG "The coffer snaps open. It's a mimick!" CR>
+    <RTRUE>>
 
 <ROUTINE PLACE-PENDING-KEY-OBJ (O "AUX" TRIES X Y)
     <SET TRIES 0>
@@ -1450,6 +1539,7 @@ Returns:
         <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-KEY>
         <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-LOCKEDDOOR>
         <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-SHRINE>
+        <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-COFFER>
         <PUTB ,TREASURE-ROOM-DOOR-X <- .F 1> 0>
         <PUTB ,TREASURE-ROOM-DOOR-Y <- .F 1> 0>
         <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>

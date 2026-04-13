@@ -63,6 +63,8 @@
 
 <PROPDEF R-ETYPE <> (R-ETYPE N:FIX = <BYTE .N>)>
 <PROPDEF R-EHP <> (R-EHP N:FIX = <BYTE .N>)>
+<PROPDEF R-EGOLD <> (R-EGOLD N:FIX = <BYTE .N>)>
+<PROPDEF R-EWAIT <> (R-EWAIT N:FIX = <BYTE .N>)>
 <PROPDEF R-TON <> (R-TON N:FIX = <BYTE .N>)>
 
 ;"Templates"
@@ -101,6 +103,8 @@
     (FLAGS NDESCBIT)
     (R-ETYPE 0)
     (R-EHP 0)
+    (R-EGOLD 0)
+    (R-EWAIT 0)
     (R-X 0)
     (R-Y 0)>
 
@@ -236,6 +240,8 @@
 <ROUTINE CLEAR-RASCAL-ENEMY (O)
     <PUTP .O ,P?R-ETYPE 0>
     <PUTP .O ,P?R-EHP 0>
+    <PUTP .O ,P?R-EGOLD 0>
+    <PUTP .O ,P?R-EWAIT 0>
     <PUTP .O ,P?R-X 0>
     <PUTP .O ,P?R-Y 0>
     <PUTP .O ,P?ACTION <>>

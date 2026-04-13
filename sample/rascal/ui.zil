@@ -28,6 +28,8 @@
 <CONSTANT TILE-TREASURE !\*>
 <CONSTANT TILE-TRADER !\t>
 <CONSTANT TILE-WEAPON !\)>
+<CONSTANT TILE-COFFER !\n>
+<CONSTANT TILE-MIMICK !\u>
 <CONSTANT TILE-BANANA !\b>
 <CONSTANT TILE-CHEESE !\C>
 <CONSTANT TILE-GRAPES !\G>
@@ -419,6 +421,8 @@ Returns:
           (<==? .CH ,TILE-TREASURE> <UI-FG ,UI-RGB-TREASURE ,ZCOL-CYAN ,H-BOLD>)
           (<==? .CH ,TILE-TRADER> <UI-FG ,UI-RGB-TRADER ,ZCOL-CYAN ,H-BOLD>)
           (<==? .CH ,TILE-WEAPON> <UI-FG ,UI-RGB-WEAPON ,ZCOL-CYAN ,H-BOLD>)
+          (<==? .CH ,TILE-COFFER ,TILE-MIMICK>
+           <UI-FG ,UI-RGB-TREASURE ,ZCOL-CYAN ,H-BOLD>)
           (<==? .CH ,TILE-BANANA ,TILE-CHEESE ,TILE-CARROT>
            <UI-FG ,UI-RGB-FOOD ,ZCOL-GREEN ,H-BOLD>)
           (<==? .CH ,TILE-GRAPES ,TILE-MUFFIN ,TILE-TURKEY ,TILE-CAVIAR>
@@ -1185,6 +1189,7 @@ Returns:
     <COND (<NOT <FLOOR? .NX .NY>>
            <SETG STATS-WALL-BUMPS <+ ,STATS-WALL-BUMPS 1>>
            <RETURN>)>
+        <COND (<TRIGGER-MIMICK-AT .NX .NY> <RFALSE>)>
     <COND (<G? <ENEMY-AT .NX .NY> 0>
             <COND (<AND <==? <GETP <ENEMY-AT .NX .NY> ,P?R-ETYPE> ,ETYPE-MONKEY>
                        <FSET? <ENEMY-AT .NX .NY> ,TAMEBIT>>
@@ -1485,7 +1490,7 @@ Returns:
                   <PRINTC .SPR>
                   <HLIGHT ,H-NORMAL>)>
            <COND (,HIT-FLASH? <HLIGHT ,H-NORMAL>)>)
-          (<AND <G? ,PLAYER-VISION-TURNS 0> <G? <ENEMY-AT .X .Y> 0>>
+          (<AND <G? ,PLAYER-VISION-TURNS 0> <VISION-THREAT-AT? .X .Y>>
            <UI-ALERT>
            <PRINTC .SPR>
            <UI-RESET>)
@@ -1527,7 +1532,7 @@ Args:
 Returns:
   ZSCII character constant (TILE-*)."
 
-<ROUTINE SPRITE (X Y "AUX" T E F)
+<ROUTINE SPRITE (X Y "AUX" T E F C)
     <SET T <TILE-AT .X .Y>>
     <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>> ,TILE-PLAYER)
           (<AND <SET E <ENEMY-AT .X .Y>> <G? ,PLAYER-VISION-TURNS 0>>
@@ -1540,6 +1545,11 @@ Returns:
                 <NOT <REVEALED? .X .Y>>>
            ,TILE-UNKNOWN)
           (.E <ENEMY-TILE-FOR-TYPE <GETP .E ,P?R-ETYPE>>)
+          (<SET C <COFFER-OBJ-AT .X .Y>>
+           <COND (<AND <G? ,PLAYER-VISION-TURNS 0>
+                       <==? <GETP .C ,P?R-ITID> ,COFFER-TYPE-MIMICK>>
+                  ,TILE-MIMICK)
+                 (ELSE ,TILE-COFFER)>)
           (<TRADER-AT? .X .Y> ,TILE-TRADER)
           (<KEY-OBJ-AT .X .Y> ,TILE-KEY)
           (<POTION-AT? .X .Y> ,TILE-POTION)
