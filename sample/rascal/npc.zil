@@ -28,12 +28,18 @@ colored stripes in a mirrored pattern, representing descent and ascent through t
 into six parts, representing apophenia.")
     (FLAGS LIGHTBIT)>
 
-
-<ROUTINE INFO-BOOTH-R (RARG)
+<ROUTINE INFO-BOOTH-R (RARG "OPT" TYPE)
     <COND (<==? .RARG ,M-ENTER> <THIS-IS-IT ,INFO-MAN>)
           (<==? .RARG ,M-BEG>
            <COND (<OR <VERB? EXIT> <AND <VERB? WALK> <PRSO? ,P?OUT>>>
-                  <THROW <> ,INTERIOR-CATCH-TOKEN>)>)>>
+                  <THROW <> ,INTERIOR-CATCH-TOKEN>)>)
+          (<==? .RARG ,M-POTION-REACT>
+           <COND (<==? .TYPE ,POTION-HIDING>
+                  <TELL "The old man chuckles. \"Don't get up to any invisible mischief, now.\"" CR>)
+                 (<==? .TYPE ,POTION-HUSTLE>
+                  <TELL "The old man chuckles. \"What's the rush?\"" CR>)
+                 (<==? .TYPE ,POTION-TORPOR>
+                  <TELL "The old man chuckles. \"Don't operate any heavy machinery, all right?\"" CR>)>)>>
 
 <OBJECT INFO-MAN
     (IN INFO-BOOTH)
@@ -222,7 +228,7 @@ One sting would be bad. A hundred will kill you.↲↲You should leave. Immediat
     <COND (<VERB? READ EXAMINE>
            <TELL "\"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" CR>)>>
 
-<ROUTINE BLACKSMITH-SHOP-R (RARG)
+<ROUTINE BLACKSMITH-SHOP-R (RARG "OPT" TYPE)
     <COND (<==? .RARG ,M-ENTER> <THIS-IS-IT ,BLACKSMITH>)
           (<==? .RARG ,M-BEG>
            <COND (<OR <VERB? EXIT> <AND <VERB? WALK> <PRSO? ,P?OUT>>>
@@ -230,7 +236,16 @@ One sting would be bad. A hundred will kill you.↲↲You should leave. Immediat
           (<==? .RARG ,M-LOOK>
            <TELL "A soot-darkened forge squats here, cold and quiet. The tools are laid out as if
 someone stepped away mid-swing... days ago.↲↲A blacksmith leans against the anvil, watching you.↲↲
-A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" CR>)>>
+A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" CR>)
+          (<==? .RARG ,M-POTION-REACT>
+           <COND (<==? .TYPE ,POTION-HIDING>
+                  <TELL "The blacksmith nods approvingly. \"That's the way. Don't let 'em see you coming.\""
+                        CR>)
+                 (<==? .TYPE ,POTION-HUSTLE>
+                  <TELL "The blacksmith nods approvingly. \"Float like a butterfly, sting like a bee.\"" CR>)
+                 (<==? .TYPE ,POTION-TORPOR>
+                  <TELL "The blacksmith winces. \"You're in no condition to fight like that.\""
+                        CR>)>)>>
 
 <OBJECT BLACKSMITH
     (IN BLACKSMITH-SHOP)
@@ -310,7 +325,7 @@ A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" C
            <TELL "\"Carrots: " N ,CARROT-COST " gold. Potions identified: "
                  N ,IDENTIFY-COST " gold.\"" CR>)>>
 
-<ROUTINE CARROT-FARM-R (RARG)
+<ROUTINE CARROT-FARM-R (RARG "OPT" TYPE)
     <COND (<==? .RARG ,M-ENTER> <THIS-IS-IT ,CARROT-MAN>)
           (<==? .RARG ,M-BEG>
            <COND (<OR <VERB? EXIT> <AND <VERB? WALK> <PRSO? ,P?OUT>>>
@@ -319,7 +334,15 @@ A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" C
            <TELL "Neat rows of vegetables stretch across a small underground plot.
 An earthy smell clings to the air. A farmer watches you closely, arms crossed.
 In front of the carrot patch, a hand-painted sign reads: \"Carrots: "
-                 N ,CARROT-COST " gold. Potions identified: " N ,IDENTIFY-COST " gold.\"" CR>)>>
+                 N ,CARROT-COST " gold. Potions identified: " N ,IDENTIFY-COST " gold.\"" CR>)
+          (<==? .RARG ,M-POTION-REACT>
+           <COND (<==? .TYPE ,POTION-HIDING>
+                  <TELL "The farmer narrows his eyes. \"I can still see your footprints. Don't go stealing my carrots!\""
+                        CR>)
+                 (<==? .TYPE ,POTION-HUSTLE>
+                  <TELL "The farmer shakes his head. \"You city folk are always in such a hurry.\"" CR>)
+                 (<==? .TYPE ,POTION-TORPOR>
+                  <TELL "The farmer chuckles. \"Know what's great for a hangover? Carrots.\"" CR>)>)>>
 
 <GLOBAL CARROTS-SOLD 0>
 

@@ -54,6 +54,7 @@
 <GLOBAL DIRTY-Y <ITABLE ,MAX-DIRTY (BYTE) 0>>
 <GLOBAL FULL-REDRAW? T>
 
+<CONSTANT KEY-F7 139>
 <CONSTANT KEY-F8 140>
 <CONSTANT KEY-F9 141>
 <CONSTANT KEY-F10 142>
@@ -165,6 +166,38 @@
             (ELSE <ENTER-FLOOR .F ,PLAYER-X ,PLAYER-Y T>)>
         <DBG-MOVE-PLAYER-NEAR-BUSKER>
         <DBG-SPAWN-TAMED-MONKEY-NEAR-PLAYER>
+        <RTRUE>>
+
+    <ROUTINE DBG-F7-REFILL-POTIONS ("AUX" O K COLOR ADDED DROPPED LOST)
+        <DO (SLOT 1 ,INV-SIZE)
+            <SET O <INV-NTH-OBJ .SLOT>>
+            <COND (.O
+                   <SET K <GETP .O ,P?R-ITKIND>>
+                   <COND (<==? .K ,ITEMKIND-POTION>
+                          <INV-REMOVE .SLOT>)>)>>
+        <DO (T 1 ,POTION-TYPE-COUNT)
+            <SET COLOR <GETB ,POTION-COLOR-FOR-TYPE <- .T 1>>>
+            <COND (<AND <G? .COLOR 0> <L=? .COLOR ,POTION-COLOR-COUNT>>
+                   <PUTB ,POTION-DISCOVERED <- .COLOR 1> 1>)>>
+        <DO (T 1 ,POTION-TYPE-COUNT)
+            <SET COLOR <GETB ,POTION-COLOR-FOR-TYPE <- .T 1>>>
+            <COND (<OR <L? .COLOR 1> <G? .COLOR ,POTION-COLOR-COUNT>>
+                   <SET LOST <+ .LOST 1>>
+                   <LOG "[DEBUG] Potion mapping missing for type " N .T "." CR>)
+                  (<INV-ADD ,ITEMKIND-POTION .COLOR>
+                   <SET ADDED <+ .ADDED 1>>)
+                  (<DROP-POTION-NEAR ,PLAYER-X ,PLAYER-Y .COLOR>
+                   <SET DROPPED <+ .DROPPED 1>>)
+                  (ELSE
+                   <SET LOST <+ .LOST 1>>
+                   <LOG "[DEBUG] No room to drop " POTION-DISPLAY-NAME .COLOR
+                        " nearby." CR>)>>
+        <SETG FULL-REDRAW? T>
+        <LOG "[DEBUG] Potions reset: " N .ADDED " in inventory, "
+             N .DROPPED " dropped nearby">
+        <COND (<G? .LOST 0>
+               <LOG ", " N .LOST " not placed">)>
+        <LOG "." CR>
         <RTRUE>>
 >
 
@@ -1039,7 +1072,8 @@ Returns:
     <SET DY 0>
     <IF-DEBUG
         ;"Debug keys: require a double-press (F-key twice in a row)."
-        <COND (<OR <==? .C ,KEY-F8>
+        <COND (<OR <==? .C ,KEY-F7>
+                   <==? .C ,KEY-F8>
                    <==? .C ,KEY-F9>
                    <==? .C ,KEY-F10>
                    <==? .C ,KEY-F11>
@@ -1049,6 +1083,10 @@ Returns:
                       <COND (<==? .C ,KEY-F12>
                              <SETG DEBUG-USED? T>
                              <SETG DEBUG-OVERLAY-ONCE? T>
+                             <RTRUE>)
+                            (<==? .C ,KEY-F7>
+                             <SETG DEBUG-USED? T>
+                             <DBG-F7-REFILL-POTIONS>
                              <RTRUE>)
                             (<==? .C ,KEY-F8>
                              <SETG DEBUG-USED? T>

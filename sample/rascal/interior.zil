@@ -5,6 +5,10 @@ interior ID."
 
 <CONSTANT MAX-INTERIOR-ENTRANCES 32>
 
+;"We use this to notify the room's ACTION routine when the player consumes a
+potion (or arrives while already under its effect), so the NPC can react."
+<CONSTANT M-POTION-REACT 1000>
+
 ;"Interior IDs (resolved by LAUNCH-INTERIOR-ID in interiors.zil)."
 
 <CONSTANT INTERIOR-INFO-BOOTH 1>
@@ -98,6 +102,7 @@ interior ID."
 
     <APPLY <GETP .ROOM ,P?ACTION> ,M-ENTER>
     <V-LOOK>
+    <NOTIFY-POTION-ARRIVAL>
     <WRAP-PARSER-MAIN-LOOP>
     <INTERIOR-EXIT-SYNC>
     <UI-RESET>
@@ -124,6 +129,13 @@ interior ID."
                       <RETURN>)>>)>
 
     <LOG "You leave the " <GETP .ROOM ,P?INTERIOR-NAME> "." CR>>
+
+<ROUTINE NOTIFY-POTION-ARRIVAL ("AUX" TYPE)
+    <SET TYPE <COND (,PLAYER-INVIS-TURNS ,POTION-HIDING)
+                    (,PLAYER-HUSTLE-TURNS ,POTION-HUSTLE)
+                    (,PLAYER-TORPOR-TURNS ,POTION-TORPOR)
+                    (ELSE <>)>>
+    <COND (.TYPE <CRLF> <APPLY <GETP ,HERE ,P?ACTION> ,M-POTION-REACT .TYPE>)>>
 
 <ROUTINE SET-TAMED-MONKEY-VOCAB (OBJ "AUX" PT A1)
     ;"Make a tamed monkey addressable and visible in the parser world."
@@ -521,14 +533,16 @@ Engraved on one side, you see the outline of an oval with a zigzag line running
 lengthwise across it and an inverted V above it." CR>)
                  (ELSE <TELL "It looks valuable." CR>)>)>>
 
-<ROUTINE ITEM-ACTION-POTION ("AUX" COLOR)
+<ROUTINE ITEM-ACTION-POTION ("AUX" COLOR TYPE)
     <COND (<VERB? DRINK>
            <SETG P-CONT 0>
            <COND (<NOT <==? <GETP ,PRSO ,P?R-ITKIND> ,ITEMKIND-POTION>>
                   <RFALSE>)>
            <SET COLOR <GETP ,PRSO ,P?R-ITID>>
+           <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>
            <DRINK-POTION-COLOR .COLOR ,POTIONFX-FL-INTERIOR>
            <UPDATE-POTION-ITEMS-FOR-COLOR .COLOR>
+           <APPLY <GETP ,HERE ,P?ACTION> ,M-POTION-REACT .TYPE>
            ;"Consume: remove the item object from the live inventory."
            <REMOVE ,PRSO>
            <FREE-RASCAL-ITEM ,PRSO>
