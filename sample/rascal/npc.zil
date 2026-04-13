@@ -263,6 +263,7 @@ A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" C
           WEAPON-NAME .ID " with a hammer." CR>
     <TELL "It hums faintly. It's now a level " N .LVL "+" N .NEWENCH " "
           WEAPON-NAME .ID "." CR>
+    <COND (,EXPERT-MODE? <TELL "The sign shimmers, almost imperceptibly." CR>)>
     <RTRUE>>
 
 <ROUTINE BLACKSMITH-F (ARG)
@@ -428,6 +429,7 @@ beasts to hit you.\""
                CR>)
           (ELSE
            <TELL "\"Huh. I'm stumped. That shouldn't happen.\"" CR>)>
+    <COND (,EXPERT-MODE? <TELL "The sign shimmers, almost imperceptibly." CR>)>
     <UPDATE-POTION-ITEMS-FOR-COLOR .COLOR>
     <RTRUE>>
 
@@ -464,6 +466,7 @@ beasts to hit you.\""
                  (<WEAPON? ,PRSO>
                   <TELL "\"Why would I need that? To protect myself from the carrots?\""
                         CR>)
+                 (<KEY? ,PRSO> <TELL "\"Why would I need that? To open the ground?\"" CR>)
                  (ELSE <TELL "The farmer doesn't seem interested." CR>)>)>>
 
 <OBJECT CARROT-PATCH
