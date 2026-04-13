@@ -262,8 +262,29 @@ Returns:
     <MOVE .O ,CURRENT-FLOOR-OBJ>
     <RTRUE>>
 
+<ROUTINE TRY-SPAWN-BEE-SWARM (X Y "AUX" SX SY)
+    ;"Try to spawn at the hive entrance tile; if blocked, try adjacent tiles."
+    <SET SX 0>
+    <SET SY 0>
+    <COND (<BEE-SPAWN-CANDIDATE? .X .Y>
+           <SET SX .X>
+           <SET SY .Y>)
+          (<BEE-SPAWN-CANDIDATE? <- .X 1> .Y>
+           <SET SX <- .X 1>>
+           <SET SY .Y>)
+          (<BEE-SPAWN-CANDIDATE? <+ .X 1> .Y>
+           <SET SX <+ .X 1>>
+           <SET SY .Y>)
+          (<BEE-SPAWN-CANDIDATE? .X <- .Y 1>>
+           <SET SX .X>
+           <SET SY <- .Y 1>>)
+          (<BEE-SPAWN-CANDIDATE? .X <+ .Y 1>>
+           <SET SX .X>
+           <SET SY <+ .Y 1>>)>
+    <COND (<NOT <AND <G? .SX 0> <G? .SY 0>>> <RFALSE>)>
+    <SPAWN-BEE-ENEMY .SX .SY>>
+
 <ROUTINE START-BEE-SWARM (F X Y "AUX" OLD O)
-    ;"Schedule spawn on the following turn, so the swarm visibly lags behind the player."
     <SET OLD ,BEE-SWARM-FLOOR>
     <COND (<G? .OLD 0>
            <SET O <BEE-ENEMY-OBJ-FOR-FLOOR .OLD>>
@@ -278,42 +299,15 @@ Returns:
     <SETG BEE-SWARM-PEND-FLOOR .F>
     <SETG BEE-SWARM-PEND-X .X>
     <SETG BEE-SWARM-PEND-Y .Y>
-    <SETG BEE-SWARM-PEND-DELAY 1>
     <RTRUE>>
 
-<ROUTINE UPDATE-BEE-SWARM ("AUX" O DIST SX SY)
+<ROUTINE UPDATE-BEE-SWARM ("AUX" O DIST)
     <COND (,BEE-SWARM-PENDING?
            <COND (<N==? ,CURRENT-FLOOR ,BEE-SWARM-PEND-FLOOR>
                   ;"Changed floors before the swarm could emerge."
                   <SETG BEE-SWARM-PENDING? <>>
-                  <SETG BEE-SWARM-PEND-DELAY 0>
                   <RTRUE>)>
-           <COND (<G? ,BEE-SWARM-PEND-DELAY 0>
-                  <SETG BEE-SWARM-PEND-DELAY <- ,BEE-SWARM-PEND-DELAY 1>>
-                  <RTRUE>)>
-           ;"Try to spawn at the hive entrance tile; if blocked, try adjacent tiles."
-           <SET SX 0>
-           <SET SY 0>
-           <COND (<BEE-SPAWN-CANDIDATE? ,BEE-SWARM-PEND-X ,BEE-SWARM-PEND-Y>
-                  <SET SX ,BEE-SWARM-PEND-X>
-                  <SET SY ,BEE-SWARM-PEND-Y>)
-                 (<BEE-SPAWN-CANDIDATE? <- ,BEE-SWARM-PEND-X 1>
-                                        ,BEE-SWARM-PEND-Y>
-                  <SET SX <- ,BEE-SWARM-PEND-X 1>>
-                  <SET SY ,BEE-SWARM-PEND-Y>)
-                 (<BEE-SPAWN-CANDIDATE? <+ ,BEE-SWARM-PEND-X 1>
-                                        ,BEE-SWARM-PEND-Y>
-                  <SET SX <+ ,BEE-SWARM-PEND-X 1>>
-                  <SET SY ,BEE-SWARM-PEND-Y>)
-                 (<BEE-SPAWN-CANDIDATE? ,BEE-SWARM-PEND-X
-                                        <- ,BEE-SWARM-PEND-Y 1>>
-                  <SET SX ,BEE-SWARM-PEND-X>
-                  <SET SY <- ,BEE-SWARM-PEND-Y 1>>)
-                 (<BEE-SPAWN-CANDIDATE? ,BEE-SWARM-PEND-X
-                                        <+ ,BEE-SWARM-PEND-Y 1>>
-                  <SET SX ,BEE-SWARM-PEND-X>
-                  <SET SY <+ ,BEE-SWARM-PEND-Y 1>>)>
-           <COND (<AND <G? .SX 0> <G? .SY 0> <SPAWN-BEE-ENEMY .SX .SY>>
+            <COND (<TRY-SPAWN-BEE-SWARM ,BEE-SWARM-PEND-X ,BEE-SWARM-PEND-Y>
                   <SETG BEE-SWARM-PENDING? <>>
                   <SETG BEE-SWARM-ON? T>
                   <LOG "A legion of bees pours out after you!" CR>)

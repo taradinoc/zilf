@@ -33,21 +33,22 @@ potion (or arrives while already under its effect), so the NPC can react."
 
 <GLOBAL GUARANTEED-BUSKER-FLOOR 0>
 
-;"Bee swarm: implemented as an enemy that spawns one turn after leaving the hive.
-    BEE-SWARM-FLOOR/X/Y store the hive entrance ('home') for despawn distance checks."
+;"Bee swarm: implemented as an enemy that emerges on the first dungeon turn
+    after the player leaves the hive. BEE-SWARM-FLOOR/X/Y store the hive
+    entrance ('home') for despawn distance checks."
 
 <GLOBAL BEE-SWARM-ON? <>>
 <GLOBAL BEE-SWARM-FLOOR 0>
 <GLOBAL BEE-SWARM-X 0>
 <GLOBAL BEE-SWARM-Y 0>
 
-;"When set, the player has just exited the hive and the swarm will spawn on the next turn."
+;"When set, the player has just exited the hive or the swarm could not be placed
+    yet, so spawning will be attempted on later turns."
 
 <GLOBAL BEE-SWARM-PENDING? <>>
 <GLOBAL BEE-SWARM-PEND-FLOOR 0>
 <GLOBAL BEE-SWARM-PEND-X 0>
 <GLOBAL BEE-SWARM-PEND-Y 0>
-<GLOBAL BEE-SWARM-PEND-DELAY 0>
 
 ;"Set by AFTER-PLAYER-RELOCATE when stepping onto an interior entrance."
 

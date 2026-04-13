@@ -813,14 +813,16 @@ Returns:
                           <STEP-ENEMIES>
                           <IF-DEBUG <APPLY-IMMORTAL>>
                           <CHECK-END>
-                          <COND (,GAME-OVER? <DRAW> <AGAIN>)>>)>
+                          <COND (,GAME-OVER? <DRAW> <RETURN>)>>)>
+               <COND (,GAME-OVER? <AGAIN>)>
                <UPDATE-BEE-SWARM>
                <IF-DEBUG <APPLY-IMMORTAL>>
                <COND (.PHASES
                       <DO (I 1 .PHASES)
                           <TICK-POTION-TIMERS>
                           <CHECK-END>
-                          <COND (,GAME-OVER? <DRAW> <AGAIN>)>>)>
+                          <COND (,GAME-OVER? <DRAW> <RETURN>)>>)>
+               <COND (,GAME-OVER? <AGAIN>)>
                <REVEAL-AROUND ,PLAYER-X ,PLAYER-Y>
                <CHECK-END>
                <DRAW>)>>>
