@@ -745,7 +745,7 @@ Returns:
 ;"Main game loop. Each iteration clears messages, reads one character, and
     either handles input (movement/stairs/wait) or advances the enemies."
 
-<ROUTINE RASCAL-MAIN-LOOP ("AUX" C)
+<ROUTINE RASCAL-MAIN-LOOP ("AUX" C PHASES)
     <REPEAT ()
         <UI-RESET>
         <CURSET ,MAP-H <+ ,MAP-W 1>>
@@ -769,14 +769,29 @@ Returns:
                              <DRAW>
                              <AGAIN>)>)>
                <COND (<HANDLE-INPUT .C> <CHECK-END> <DRAW> <AGAIN>)>
-               <STEP-ENEMIES>
                <SETG STATS-TURNS <+ ,STATS-TURNS 1>>
+               <SET PHASES <TURN-ENEMY-PHASE-COUNT>>
+               <COND (.PHASES
+                      <DO (I 1 .PHASES)
+                          <STEP-ENEMIES>
+                          <IF-DEBUG <APPLY-IMMORTAL>>
+                          <CHECK-END>
+                          <COND (,GAME-OVER? <DRAW> <AGAIN>)>>)>
                <UPDATE-BEE-SWARM>
                <IF-DEBUG <APPLY-IMMORTAL>>
-               <TICK-POTION-TIMERS>
+               <COND (.PHASES
+                      <DO (I 1 .PHASES)
+                          <TICK-POTION-TIMERS>
+                          <CHECK-END>
+                          <COND (,GAME-OVER? <DRAW> <AGAIN>)>>)>
                <REVEAL-AROUND ,PLAYER-X ,PLAYER-Y>
                <CHECK-END>
                <DRAW>)>>>
+
+<ROUTINE TURN-ENEMY-PHASE-COUNT ()
+    <COND (<G? ,PLAYER-TORPOR-TURNS 0> 2)
+          (<AND <G? ,PLAYER-HUSTLE-TURNS 0> <==? <BAND ,STATS-TURNS 1> 1>> 0)
+          (ELSE 1)>>
 
 ;"Draws a quit confirmation popup in the upper window, reads one key,
   clears the popup with spaces, then redraws the game UI.

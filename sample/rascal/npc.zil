@@ -418,6 +418,14 @@ the beasts before they get anywhere near you.\""
 finger and thumb. \"That's a potion of mettle. Every swig of that makes it harder for the
 beasts to hit you.\""
                  CR>)
+           (<==? .TYPE ,POTION-TORPOR>
+            <TELL "The farmer gives it a lazy swirl and yawns. \"Potion of torpor. Drink that
+    and the beasts'll close in on you twice as fast before you can do much back.\""
+               CR>)
+           (<==? .TYPE ,POTION-HUSTLE>
+            <TELL "The farmer jerks the bottle in a few quick circles and nods. \"That's a
+    potion of hustle. It'll get you moving twice as fast as any beast.\""
+               CR>)
           (ELSE
            <TELL "\"Huh. I'm stumped. That shouldn't happen.\"" CR>)>
     <UPDATE-POTION-ITEMS-FOR-COLOR .COLOR>

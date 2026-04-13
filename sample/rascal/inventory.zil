@@ -564,6 +564,14 @@ Returns:
            <SETG PLAYER-SHADOW-TURNS ,SHADOW-POTION-DURATION>
            <MARK-ALL-DIRTY>
            <TELL/LOG .LOG? "A heavy darkness settles over your eyes." CR>)
+          (<==? .TYPE ,POTION-TORPOR>
+           <SETG PLAYER-HUSTLE-TURNS 0>
+           <SETG PLAYER-TORPOR-TURNS ,TORPOR-POTION-DURATION>
+           <TELL/LOG .LOG? "Everything suddenly feels heavier." CR>)
+          (<==? .TYPE ,POTION-HUSTLE>
+           <SETG PLAYER-TORPOR-TURNS 0>
+           <SETG PLAYER-HUSTLE-TURNS ,HUSTLE-POTION-DURATION>
+           <TELL/LOG .LOG? "You surge with restless energy." CR>)
           (ELSE <TELL/LOG .LOG? "Nothing seems to happen." CR>)>
     <RTRUE>>
 
@@ -590,9 +598,23 @@ Returns:
            <SETG PLAYER-SHADOW-TURNS <- ,PLAYER-SHADOW-TURNS 1>>
            <COND (<==? ,PLAYER-SHADOW-TURNS ,POTION-TIMER-WARNING-TURNS>
                   <LOG "The darkness begins to lift." CR>)
-           (<==? ,PLAYER-SHADOW-TURNS 0>
-            <MARK-ALL-DIRTY>
-            <LOG "You can see your surroundings again." CR>)>)>
+                 (<==? ,PLAYER-SHADOW-TURNS 0>
+                  <MARK-ALL-DIRTY>
+                  <LOG "You can see your surroundings again." CR>)>)>
+    ;"potion of torpor"
+    <COND (<G? ,PLAYER-TORPOR-TURNS 0>
+           <SETG PLAYER-TORPOR-TURNS <- ,PLAYER-TORPOR-TURNS 1>>
+           <COND (<==? ,PLAYER-TORPOR-TURNS ,POTION-TIMER-WARNING-TURNS>
+                  <LOG "Your sluggishness begins to fade." CR>)
+                 (<==? ,PLAYER-TORPOR-TURNS 0>
+                  <LOG "You feel nimble again." CR>)>)>
+    ;"potion of hustle"
+    <COND (<G? ,PLAYER-HUSTLE-TURNS 0>
+           <SETG PLAYER-HUSTLE-TURNS <- ,PLAYER-HUSTLE-TURNS 1>>
+           <COND (<==? ,PLAYER-HUSTLE-TURNS ,POTION-TIMER-WARNING-TURNS>
+                  <LOG "Your rush begins to ebb." CR>)
+                 (<==? ,PLAYER-HUSTLE-TURNS 0>
+                  <LOG "Your burst of speed wears off." CR>)>)>
     <COND (<AND <G? .SHOLD 0> <L=? ,PLAYER-SHADOW-TURNS 0>>
            <SET RID <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
            <COND (<G? .RID 0> <SETG CURRENT-ROOM .RID> <REVEAL-ROOM .RID>)>)>>

@@ -84,11 +84,15 @@
 "Potion Effects"
 
 ;"Number of turns the potion of hiding lasts"
-<CONSTANT HIDING-POTION-DURATION 60>
+<CONSTANT HIDING-POTION-DURATION 80>
 ;"Number of turns the potion of vision lasts"
-<CONSTANT VISION-POTION-DURATION 60>
+<CONSTANT VISION-POTION-DURATION 80>
 ;"Number of turns the potion of shadow lasts"
 <CONSTANT SHADOW-POTION-DURATION 75>
+;"Number of turns the potion of torpor lasts"
+<CONSTANT TORPOR-POTION-DURATION 160>
+;"Number of turns the potion of hustle lasts"
+<CONSTANT HUSTLE-POTION-DURATION 40>
 
 "Healing"
 
