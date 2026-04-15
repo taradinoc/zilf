@@ -197,7 +197,7 @@ potion (or arrives while already under its effect), so the NPC can react."
 
 <BIND ((REDEFINE T))
     <DEFMAC GAME-VERB? ()
-        `<VERB? QUIT VERSION WAIT ;SAVE ;RESTORE RESTART UNDO SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT PRONOUNS TELL>>>
+        `<VERB? QUIT VERSION WAIT ;SAVE ;RESTORE RESTART UNDO SUPERBRIEF BRIEF VERBOSE AGAIN SCRIPT UNSCRIPT PRONOUNS TELL SCORE>>>
 
 <ROUTINE RASCAL-ITEM? (OBJ "AUX" K)
     <COND (<NOT .OBJ> <RFALSE>)>
@@ -949,6 +949,11 @@ lengthwise across it and an inverted V above it." CR>)
 <SYNTAX SAY GOODBYE OBJECT (FIND PERSONBIT) = V-GOODBYE>
 
 <ROUTINE V-GOODBYE () <PERFORM ,V?EXIT>>
+
+<SYNTAX SCORE = V-SCORE>
+
+<ROUTINE V-SCORE ()
+    <TELL "If the game ended now, your final score would be " N <FINAL-SCORE> "." CR>>
 
 "Interior/dungeon interface"
 

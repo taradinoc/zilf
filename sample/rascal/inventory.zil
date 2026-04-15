@@ -244,20 +244,28 @@ Returns:
 
     .C>
 
-<ROUTINE INVENTORY-SELL-VALUE ("AUX" SUM K ID LVL ENCH O)
+<ROUTINE INVENTORY-SELL-VALUE ("AUX" SUM O)
     <SET SUM 0>
-    <DO (I 1 ,INV-SIZE)
-        <SET O <INV-NTH-OBJ .I>>
-        <COND (<NOT .O>)
-              (<NOT <IN? .O ,PLAYER-INVENTORY>>
-               <RETURN>)
-              (ELSE
-               <SET K <GETP .O ,P?R-ITKIND>>
-               <SET ID <GETP .O ,P?R-ITID>>
-               <SET LVL <GETP .O ,P?R-ITLVL>>
-               <SET ENCH <GETP .O ,P?R-ITENCH>>
-               <SET SUM <+ .SUM <TRADER-BUY-PRICE .K .ID .LVL .ENCH>>>)>>
+    ;"Check PLAYER-INVENTORY and PLAYER to work in dungeon and interiors"
+    <COND (<FIRST? ,PLAYER-INVENTORY>
+           <DO (I 1 ,INV-SIZE)
+               <SET O <INV-NTH-OBJ .I>>
+               <COND (<NOT .O>)
+                     (<NOT <IN? .O ,PLAYER-INVENTORY>>
+                      <RETURN>)
+                     (ELSE
+                      <SET SUM <+ .SUM <OBJ-TRADER-BUY-PRICE .O>>>)>>)
+          (<FIRST? ,PLAYER>
+           <MAP-CONTENTS (O ,PLAYER)
+               <SET SUM <+ .SUM <OBJ-TRADER-BUY-PRICE .O>>>>)>
     .SUM>
+
+<ROUTINE OBJ-TRADER-BUY-PRICE (O "AUX" K ID LVL ENCH)
+    <SET K <GETP .O ,P?R-ITKIND>>
+    <SET ID <GETP .O ,P?R-ITID>>
+    <SET LVL <GETP .O ,P?R-ITLVL>>
+    <SET ENCH <GETP .O ,P?R-ITENCH>>
+    <TRADER-BUY-PRICE .K .ID .LVL .ENCH>>
 
 "Equipment operations"
 
