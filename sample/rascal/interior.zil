@@ -626,13 +626,11 @@ lengthwise across it and an inverted V above it." CR>)
                     the parser handle the 'OF' in between."
                   <SET N2
                        <POTION-EFFECT-WORD <GETB ,POTION-TYPE-FOR-COLOR
-                                                 <- .ID 1>>>>
-                  <SET A1
-                       <VERSION? (ZIP ,A?\,DUMMY-ADJ) (ELSE ,W?\,DUMMY-ADJ)>>)
+                                                 <- .ID 1>>>>)
                  (ELSE
                   ;"Unidentified: parse as color adjective + POTION."
-                  <SET N2 ,W?\,DUMMY-NOUN>
-                  <SET A1 <POTION-ADJ1 .ID>>)>
+                  <SET N2 ,W?\,DUMMY-NOUN>)>
+           <SET A1 <POTION-ADJ1 .ID>>
            <SET P1 ,WORD-POTIONS>
            <SET P2 <>>)
           (<==? .K ,ITEMKIND-KEY>
