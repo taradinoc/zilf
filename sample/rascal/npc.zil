@@ -493,20 +493,20 @@ potion of hustle. It'll get you moving twice as fast as any beast.\""
 a carrot suit. I don't even own one anymore.\"" CR>)
                  (<PRSI? ,GENERIC-DUNGEON> <TELL "\"It's a simple, honest life here, raising carrots and
 sniffing potions.\"" CR>)
-                 (<OR <MONKEY? ,PRSI> <PRSI? ,GENERIC-MONKEYS>> <TELL "\"I don't care much for monkeys.
+                 (<OR <MONKEY? ,PRSI> <PRSI? ,GENERIC-MONKEYS>> <TELL "\"I don't much care for monkeys.
 They only eat bananas.\"" CR>)
                  (<CARROT? ,PRSI>
                   <TELL "\"They're a great source of vitamin A, and they're as nourishing as a muffin.\""
                         CR>)
                  (<OR <FOOD? ,PRSI> <PRSI? ,GENERIC-FOOD>> <TELL ,NOT-A-CARROT CR>)
-                 (<POTION? ,PRSI> <CARROT-MAN-IDENTIFY-POTION ,PRSI>)
+                 (<POTION? ,PRSI> <CARROT-MAN-IDENTIFY-POTION ,PRSI> <RTRUE>)
                  (<PRSI? ,GENERIC-POTIONS ,GENERIC-GOLD>
                   <TELL "\"Gimme a potion, and I'll identify it for " N ,IDENTIFY-COST " gold.\"" CR>)
                  (<OR <WEAPON? ,PRSI> <TREASURE? ,PRSI> <KEY? ,PRSI> <PRSI? ,GENERIC-WEAPONS ,GENERIC-ENEMIES>>
                   <TELL "\"Sounds exciting, but that life ain't for me.\"" CR>)
                  (ELSE <TELL "\"I try not to worry about that.\"" CR>)>)
           (<AND <VERB? GIVE> <PRSI? ,CARROT-MAN>>
-           <COND (<POTION? ,PRSO> <CARROT-MAN-IDENTIFY-POTION ,PRSO>)
+           <COND (<POTION? ,PRSO> <CARROT-MAN-IDENTIFY-POTION ,PRSO> <RTRUE>)
                  (<CARROT? ,PRSO> <TELL "\"All sales are final.\"" CR>)
                  (<FOOD? ,PRSO> <TELL ,NOT-A-CARROT CR>)
                  (<TREASURE? ,PRSO>
@@ -564,7 +564,8 @@ They only eat bananas.\"" CR>)
                   <THIS-IS-IT .O>
                   <TELL "The farmer takes your gold and hands you a carrot." CR>
                   <COND (,EXPERT-MODE?
-                         <TELL CR "The sign shimmers, almost imperceptibly." CR>)>)>)>>
+                         <TELL CR "The sign shimmers, almost imperceptibly." CR>)>
+                  <RTRUE>)>)>>
 
 <ROUTINE CARROT-GENERIC-FCN (TBL "AUX" MAX IT)
     ;"Prefer a carried carrot item over the carrot patch itself."
@@ -801,7 +802,9 @@ The Oracle herself seems to be away at the moment, but she left behind her glass
            <COND (<==? ,BUSKER-MONKEY-SALES 0>
                   <TELL "It's a ratty old hat, set out to collect tips, but containing barely anything at all." CR>)
                  (ELSE
-                  <TELL "It's a ratty old hat. The monkey has a tight grip on it and is waving it around like a checkered flag." CR>)>)>>
+                  <TELL "It's a ratty old hat. The monkey has a tight grip on it and is waving it around like a checkered flag." CR>)>)
+          (<VERB? TAKE> <TELL "The busker snaps, \"You can't have that!\"" CR>)
+          (<VERB? PUT-IN> <PERFORM ,V?PAY ,BUSKER>)>>
 
 <GLOBAL BUSKER-GREETS? <>>
 
