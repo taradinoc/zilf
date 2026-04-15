@@ -681,7 +681,7 @@ Returns:
            <LOG "Never mind." CR>
            <RFALSE>)>
     <SET O <INV-NTH-OBJ .SLOT>>
-    <COND (<L=? .O 0> <RFALSE>)>
+    <COND (<L=? .O 0> <LOG "Never mind." CR> <RFALSE>)>
     <SET K <GETP .O ,P?R-ITKIND>>
     <SET ID <GETP .O ,P?R-ITID>>
     <SET LVL <GETP .O ,P?R-ITLVL>>

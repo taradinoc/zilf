@@ -1032,23 +1032,18 @@ Returns:
            <AGAIN>)
           (ELSE <AGAIN>)>>
 
-    <ROUTINE PRINT-VICTORY-HONORS-LINE (COL "AUX" TOTAL TOP OTH)
-        <SET TOTAL <HONORS-TOTAL-EARNED-COUNT>>
-         <COND (<L=? .TOTAL 0>
-             <COND (,EXPERT-MODE? <TELL "Expertly won.">)>
-             <RTRUE>)>
-        <SET TOP <HIGHEST-EARNED-HONOR-ID>>
-         <COND (<L=? .TOP 0>
-             <COND (,EXPERT-MODE? <TELL "Expertly won.">)>
-             <RTRUE>)>
-        <SET OTH <- .TOTAL 1>>
-         <COND (,EXPERT-MODE?
-             <TELL "Expertly won with honors: " HONOR-NAME .TOP>)
-            (ELSE
-             <TELL "Won with honors: " HONOR-NAME .TOP>)>
-        <COND (<G? .OTH 0>
-            <TELL " and " N .OTH " others">)>
-        <RTRUE>>
+<ROUTINE PRINT-VICTORY-HONORS-LINE (COL "AUX" TOTAL TOP OTH)
+    <SET TOTAL <HONORS-TOTAL-EARNED-COUNT>>
+    <COND (<L=? .TOTAL 0>
+           <COND (,EXPERT-MODE? <TELL "Expertly won.">)>
+           <RTRUE>)>
+    <SET TOP <HIGHEST-EARNED-HONOR-ID>>
+    <COND (<L=? .TOP 0> <COND (,EXPERT-MODE? <TELL "Expertly won.">)> <RTRUE>)>
+    <SET OTH <- .TOTAL 1>>
+    <COND (,EXPERT-MODE? <TELL "Expertly won with honors: " HONOR-NAME .TOP>)
+          (ELSE <TELL "Won with honors: " HONOR-NAME .TOP>)>
+    <COND (<G? .OTH 0> <TELL " and " N .OTH " others">)>
+    <RTRUE>>
 
 ;"Input handling"
 
