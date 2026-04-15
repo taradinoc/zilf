@@ -552,9 +552,9 @@ Returns:
     <CURSET 10 .COL>
     <TELL "          Get snacks  b C ...                                                  "> ;"collapsed space after ."
     <CURSET 11 .COL>
-    <TELL "        Fight beasts  g w ...        Drop item     Eat/drink    Equip weapon   "> ;"collapsed space after ."
+    <TELL "        Fight beasts  g w ...   Drop item   Put back   Eat/drink   Equip weapon"> ;"collapsed space after ."
     <CURSET 12 .COL>
-    <TELL "     Discover others  t ?               T             I             G         ">
+    <TELL "     Discover others  t ?          T           R          I            G      ">
     <CURSET 13 .COL>
     <TELL "                                                                              ">
     <CURSET 14 .COL>
@@ -1074,6 +1074,11 @@ Returns:
 <ROUTINE HANDLE-INPUT (C "AUX" DX DY NX NY ENTERTR OLDX OLDY E)
     <SET DX 0>
     <SET DY 0>
+    <COND (,LAST-PICKUP-OBJ
+           <COND (<OR <==? .C !\R> <==? .C !\r>>
+                  <TRY-UNDO-LAST-PICKUP>
+                  <RTRUE>)
+                 (ELSE <CLEAR-LAST-PICKUP>)>)>
     <IF-DEBUG
         ;"Debug keys: require a double-press (F-key twice in a row)."
         <COND (<OR <==? .C ,KEY-F7>
@@ -1442,7 +1447,7 @@ Returns:
     <UI-FG ,UI-RGB-TEXT ,ZCOL-WHITE>
     <PRINT-SEED-HEX32>
     <UI-FG ,UI-RGB-LABEL ,ZCOL-WHITE>
-    <TELL "  Wait: .   Drop: T  Ingest: I  Equip: G  Quit: Q  ">
+    <TELL "  Wait: .   Drop: T  Put back: R  Ingest: I  Equip: G  Quit: Q  ">
     <COND (,EXPERT-MODE? <TELL "(Expert quest)">)
           (ELSE <TELL "Instructions: ?">)>
     <UI-RESET>>

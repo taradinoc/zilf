@@ -356,6 +356,16 @@ Returns:
                  (ELSE <TELL "fists">)>)
           (ELSE <TELL "fists">)>>
 
+<GLOBAL LAST-PICKUP-OBJ 0>
+
+<ROUTINE CLEAR-LAST-PICKUP ()
+    <SETG LAST-PICKUP-OBJ 0>
+    <RTRUE>>
+
+<ROUTINE ARM-LAST-PICKUP (O)
+    <SETG LAST-PICKUP-OBJ .O>
+    <RTRUE>>
+
 "Pickup operations"
 
 ;"If the player is standing on a gold pile, picks it up and shows a message.
@@ -385,15 +395,16 @@ Args:
 Returns:
   T if any food was picked up (or pack-full message was shown); FALSE otherwise."
 
-<ROUTINE TRY-PICKUP-FOOD ("AUX" TYPE ANY)
+<ROUTINE TRY-PICKUP-FOOD ("AUX" TYPE ANY O)
     <SET ANY <FOOD-OBJ-AT ,PLAYER-X ,PLAYER-Y>>
     <COND (<L=? .ANY 0> <RFALSE>)>
     <SET TYPE <GETP .ANY ,P?R-ITID>>
-    <COND (<INV-ADD ,ITEMKIND-FOOD .TYPE>
+    <COND (<SET O <INV-ADD ,ITEMKIND-FOOD .TYPE>>
            <LOG "You pick up the " FOOD-NAME .TYPE "." CR>
            <REMOVE .ANY>
            <FREE-RASCAL-ITEM .ANY>
            <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <ARM-LAST-PICKUP .O>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
@@ -409,53 +420,47 @@ Args:
 Returns:
   T if handled (picked up or pack-full message); FALSE otherwise."
 
-<ROUTINE TRY-PICKUP-POTION ("AUX" O COLOR)
+<ROUTINE TRY-PICKUP-POTION ("AUX" O COLOR NEW)
     <SET O <POTION-OBJ-AT ,PLAYER-X ,PLAYER-Y>>
     <COND (<L=? .O 0> <RFALSE>)>
     <SET COLOR <GETP .O ,P?R-ITID>>
     <COND (<OR <L? .COLOR 1> <G? .COLOR ,POTION-COLOR-COUNT>> <RFALSE>)>
-    <COND (<INV-ADD ,ITEMKIND-POTION .COLOR>
+    <COND (<SET NEW <INV-ADD ,ITEMKIND-POTION .COLOR>>
            <COND (<G? <GETB ,POTION-DISCOVERED <- .COLOR 1>> 0>
                   <LOG "You pick up a " POTION-DISPLAY-NAME .COLOR "." CR>)
                  (ELSE
-                  <LOG "You pick up "
-                       <POTION-ARTICLE .COLOR>
-                       " "
-                       POTION-DISPLAY-NAME .COLOR
-                       "."
-                       CR>)>
+                  <LOG "You pick up " <POTION-ARTICLE .COLOR> " "
+                       POTION-DISPLAY-NAME .COLOR "." CR>)>
            <REMOVE .O>
            <FREE-RASCAL-ITEM .O>
            <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <ARM-LAST-PICKUP .NEW>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
                <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
            <LOG "Your pack is too full to pick up the "
-                POTION-DISPLAY-NAME .COLOR
-                "."
-                CR>
+                POTION-DISPLAY-NAME .COLOR "." CR>
            <RTRUE>)>>
 
-  <ROUTINE TRY-PICKUP-KEY ("AUX" O LOCKTYPE)
-      <SET O <KEY-OBJ-AT ,PLAYER-X ,PLAYER-Y>>
-      <COND (<L=? .O 0> <RFALSE>)>
-      <SET LOCKTYPE <GETP .O ,P?R-ITID>>
-      <COND (<INV-ADD ,ITEMKIND-KEY .LOCKTYPE>
-             <LOG "You pick up the " KEY-NAME .LOCKTYPE "." CR>
-             <SETG STATS-KEYS-FOUND <+ ,STATS-KEYS-FOUND 1>>
-             <REMOVE .O>
-             <FREE-RASCAL-ITEM .O>
-              <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
-             <RTRUE>)
-            (ELSE
-             <SETG STATS-PACKFULL-PICKUP-BLOCKED
-                 <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
-             <LOG "Your pack is too full to pick up the "
-                  KEY-NAME .LOCKTYPE
-                  "."
-                  CR>
-             <RTRUE>)>>
+<ROUTINE TRY-PICKUP-KEY ("AUX" O LOCKTYPE NEW)
+    <SET O <KEY-OBJ-AT ,PLAYER-X ,PLAYER-Y>>
+    <COND (<L=? .O 0> <RFALSE>)>
+    <SET LOCKTYPE <GETP .O ,P?R-ITID>>
+    <COND (<SET NEW <INV-ADD ,ITEMKIND-KEY .LOCKTYPE>>
+           <LOG "You pick up the " KEY-NAME .LOCKTYPE "." CR>
+           <SETG STATS-KEYS-FOUND <+ ,STATS-KEYS-FOUND 1>>
+           <REMOVE .O>
+           <FREE-RASCAL-ITEM .O>
+           <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <ARM-LAST-PICKUP .NEW>
+           <RTRUE>)
+          (ELSE
+           <SETG STATS-PACKFULL-PICKUP-BLOCKED
+               <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
+           <LOG "Your pack is too full to pick up the "
+                KEY-NAME .LOCKTYPE "." CR>
+           <RTRUE>)>>
 
 ;"If the player is standing on a grounded weapon, attempts to pick it up into
   inventory.
@@ -481,6 +486,7 @@ Returns:
                   <HONORS-NOTE-EQUIP-CHANGE>
                   <LOG "You wield it." CR>)>
            <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <ARM-LAST-PICKUP .SLOT>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
@@ -508,14 +514,13 @@ Returns:
            <STATS-INC-WORD-TABLE ,STATS-TREASURES-PICKED <- .ID 1>>
            <LOG "You pick up the " TREASURE-NAME .ID "." CR>
            <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+           <ARM-LAST-PICKUP .O>
            <RTRUE>)
           (ELSE
            <SETG STATS-PACKFULL-PICKUP-BLOCKED
                <+ ,STATS-PACKFULL-PICKUP-BLOCKED 1>>
            <LOG "Your pack is too full to pick up the "
-                TREASURE-NAME .ID
-                "."
-                CR>
+                TREASURE-NAME .ID "." CR>
            <RTRUE>)>
     <RTRUE>>
 
@@ -744,6 +749,48 @@ Returns:
 
 <CONSTANT NO-ROOM-TO-DROP-THAT "There's no room to drop that.">
 
+<ROUTINE DROP-INVENTORY-OBJ-HERE (O "AUX" SLOT)
+    <COND (<NOT .O> <RFALSE>)>
+    <COND (<G? <ITEM-OBJ-AT ,PLAYER-X ,PLAYER-Y 0> 0>
+           <LOG ,NO-ROOM-TO-DROP-THAT CR>
+           <RFALSE>)>
+    <SET SLOT <INV-SLOT-OF-OBJ .O>>
+    <COND (<L=? .SLOT 0> <RFALSE>)>
+    <COND (<==? ,EQUIPPED-WEAPON .O>
+           <SETG EQUIPPED-WEAPON <>>
+           <HONORS-NOTE-EQUIP-CHANGE>)>
+    <INV-CLEAR-SLOT .SLOT>
+    <PUTP .O ,P?R-X ,PLAYER-X>
+    <PUTP .O ,P?R-Y ,PLAYER-Y>
+    <MOVE .O <FLOOR-OBJ ,CURRENT-FLOOR>>
+    <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+    <RTRUE>>
+
+<ROUTINE TRY-UNDO-LAST-PICKUP ("AUX" O K ID LVL ENCH)
+    <SET O ,LAST-PICKUP-OBJ>
+    <CLEAR-LAST-PICKUP>
+    <COND (<L=? .O 0>
+           <LOG "You can only put something back immediately after picking it up." CR>
+           <RFALSE>)>
+    <SET K <GETP .O ,P?R-ITKIND>>
+    <SET ID <GETP .O ,P?R-ITID>>
+    <SET LVL <GETP .O ,P?R-ITLVL>>
+    <SET ENCH <GETP .O ,P?R-ITENCH>>
+    <COND (<NOT <DROP-INVENTORY-OBJ-HERE .O>> <RTRUE>)>
+    <COND (<==? .K ,ITEMKIND-TREASURE>
+           <LOG "You put back the " TREASURE-NAME .ID "." CR>)
+          (<==? .K ,ITEMKIND-WEAPON>
+           <LOG "You put back the level " N .LVL>
+           <COND (<G? .ENCH 0> <LOG "+" N .ENCH>)>
+           <LOG " " WEAPON-NAME .ID "." CR>)
+          (<==? .K ,ITEMKIND-POTION>
+           <LOG "You put back the " POTION-DISPLAY-NAME .ID "." CR>)
+          (<==? .K ,ITEMKIND-FOOD>
+           <LOG "You put back the " FOOD-NAME .ID "." CR>)
+          (<==? .K ,ITEMKIND-KEY>
+           <LOG "You put back the " KEY-NAME .ID "." CR>)>
+    <RTRUE>>
+
 ;"Prompts for an inventory slot and ingests that item if it is consumable.
 
 Args:
@@ -757,13 +804,13 @@ Returns:
     <SET C <POPUP-INVENTORY-GETCHAR 2>>
     <COND (<==? .C !\Q !\q> <LOG "Never mind." CR> <RFALSE>)>
     <SET SLOT <DIGIT-TO-SLOT .C>>
-        <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>>
+    <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>>
            <LOG "Never mind." CR>
            <RFALSE>)>
-        <SET O <INV-NTH-OBJ .SLOT>>
-        <COND (<L=? .O 0> <LOG "Never mind." CR> <RFALSE>)>
-        <SET K <GETP .O ,P?R-ITKIND>>
-        <SET ID <GETP .O ,P?R-ITID>>
+    <SET O <INV-NTH-OBJ .SLOT>>
+    <COND (<L=? .O 0> <LOG "Never mind." CR> <RFALSE>)>
+    <SET K <GETP .O ,P?R-ITKIND>>
+    <SET ID <GETP .O ,P?R-ITID>>
     <COND (<==? .K ,ITEMKIND-FOOD>
            <SET HEAL <FOOD-HEAL-AMT .ID>>
            <SET NEWHP <+ ,PLAYER-HP .HEAL>>
@@ -772,13 +819,7 @@ Returns:
            <HONORS-NOTE-PLAYER-HP>
            <COND (<AND <G? .ID 0> <L=? .ID ,FOOD-TYPE-COUNT>>
                   <STATS-INC-WORD-TABLE ,STATS-FOODS-EATEN <- .ID 1>>)>
-           <LOG "You eat the "
-                FOOD-NAME .ID
-                " and recover "
-                N
-                .HEAL
-                " HP."
-                CR>
+           <LOG "You eat the " FOOD-NAME .ID " and recover " N .HEAL " HP." CR>
            <INV-REMOVE .SLOT>
            <RTRUE>)
           (<==? .K ,ITEMKIND-POTION>
