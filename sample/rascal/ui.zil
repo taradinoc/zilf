@@ -1071,7 +1071,7 @@ Returns:
     T if the input consumes the turn without advancing enemies (stairs/UI-only);
     FALSE if enemies should take a turn afterwards (movement/combat/wait)."
 
-<ROUTINE HANDLE-INPUT (C "AUX" DX DY NX NY ENTERTR OLDX OLDY)
+<ROUTINE HANDLE-INPUT (C "AUX" DX DY NX NY ENTERTR OLDX OLDY E)
     <SET DX 0>
     <SET DY 0>
     <IF-DEBUG
@@ -1189,34 +1189,34 @@ Returns:
     <COND (<NOT <FLOOR? .NX .NY>>
            <SETG STATS-WALL-BUMPS <+ ,STATS-WALL-BUMPS 1>>
            <RETURN>)>
-        <COND (<TRIGGER-MIMICK-AT .NX .NY> <RFALSE>)>
-    <COND (<G? <ENEMY-AT .NX .NY> 0>
-            <COND (<AND <==? <GETP <ENEMY-AT .NX .NY> ,P?R-ETYPE> ,ETYPE-MONKEY>
-                       <FSET? <ENEMY-AT .NX .NY> ,TAMEBIT>>
+    <COND (<TRIGGER-MIMICK-AT .NX .NY> <RFALSE>)>
+    <COND (<G? <SET E <ENEMY-AT .NX .NY>> 0>
+           <COND (<AND <==? <GETP .E ,P?R-ETYPE> ,ETYPE-MONKEY>
+                       <FSET? .E ,TAMEBIT>>
                   ;"Swap places with a tamed monkey instead of attacking."
-                <SET OLDX ,PLAYER-X>
-                <SET OLDY ,PLAYER-Y>
-                  <PUTP <ENEMY-AT .NX .NY> ,P?R-X ,PLAYER-X>
-                  <PUTP <ENEMY-AT .NX .NY> ,P?R-Y ,PLAYER-Y>
+                  <SET OLDX ,PLAYER-X>
+                  <SET OLDY ,PLAYER-Y>
+                  <PUTP .E ,P?R-X ,PLAYER-X>
+                  <PUTP .E ,P?R-Y ,PLAYER-Y>
                   <SETG PLAYER-X .NX>
                   <SETG PLAYER-Y .NY>
-                <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>
+                  <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>
                   <AFTER-PLAYER-RELOCATE>
                   <RFALSE>)
                  (ELSE
-                  <PLAYER-ATTACK <ENEMY-AT .NX .NY>>
-                  <COND (<L=? <ENEMY-AT .NX .NY> 0>
-                    <SET OLDX ,PLAYER-X>
-                    <SET OLDY ,PLAYER-Y>
-                    <SETG PLAYER-X .NX>
-                    <SETG PLAYER-Y .NY>
-                    <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>)
+                  <PLAYER-ATTACK .E>
+                  <COND (<L=? .E 0>
+                         <SET OLDX ,PLAYER-X>
+                         <SET OLDY ,PLAYER-Y>
+                         <SETG PLAYER-X .NX>
+                         <SETG PLAYER-Y .NY>
+                         <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>)
                         (ELSE <RFALSE>)>)>)>
-        <SET OLDX ,PLAYER-X>
-        <SET OLDY ,PLAYER-Y>
-        <SETG PLAYER-X .NX>
-        <SETG PLAYER-Y .NY>
-        <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>
+    <SET OLDX ,PLAYER-X>
+    <SET OLDY ,PLAYER-Y>
+    <SETG PLAYER-X .NX>
+    <SETG PLAYER-Y .NY>
+    <MARK-PLAYER-MOVE .OLDX .OLDY ,PLAYER-X ,PLAYER-Y>
     <AFTER-PLAYER-RELOCATE>
     <COND (<OR <N==? .DX 0> <N==? .DY 0>>
            <SETG STATS-MOVES <+ ,STATS-MOVES 1>>
