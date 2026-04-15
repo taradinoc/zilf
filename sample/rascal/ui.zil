@@ -774,7 +774,10 @@ Returns:
            <SETG DEATH-LOGGED? T>
            <LOG "You died on floor " N ,CURRENT-FLOOR ". Final score: " N <FINAL-SCORE>>
            <IF-DEBUG <COND (,DEBUG-USED? <LOG !\*>)>>
-           <LOG ". Press Q to quit, R to restart." CR>)
+           <COND (<INTERIOR-ACTIVE?>
+                  <LOG "." CR "Would you like to RESTART or QUIT? >">
+                  <INTERIOR-DEATH-PROMPT>)
+                 (ELSE <LOG ". Press Q to quit, R to restart." CR>)>)
           (<AND ,YOU-WIN? ,GAME-OVER?> <VICTORY>)>>
 
 "Gameplay loop and input"

@@ -207,8 +207,7 @@ One sting would be bad. A hundred will kill you.↲↲You should leave. Immediat
            <COND (<OR <VERB? EXIT> <AND <VERB? WALK> <PRSO? ,P?OUT>>>
                   <THROW <> ,INTERIOR-CATCH-TOKEN>)>)
           (<==? .RARG ,M-END>
-           <TELL CR "The legion of bees engulfs you." CR CR "[Press any key to continue.]">
-           <GETCHAR>
+           <TELL CR "The legion of bees engulfs you." CR>
            <SETG PLAYER-HP 0>
            <THROW <> ,INTERIOR-CATCH-TOKEN>)>>
 

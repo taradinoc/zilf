@@ -1559,14 +1559,14 @@ Returns:
     <PRECOMPUTE-TREASURE-ROOM-PLANS>
     <SETG GAME-OVER? <>>
     <SETG YOU-WIN? <>>
-        <COND (,EXPERT-MODE?
-            <SETG IDENTIFY-COST 100>
-            <SETG CARROT-COST 50>
-            <SETG ENCHANT-COST 200>)
-           (ELSE
-            <SETG IDENTIFY-COST 50>
-            <SETG CARROT-COST 5>
-            <SETG ENCHANT-COST 100>)>
+    <COND (,EXPERT-MODE?
+           <SETG IDENTIFY-COST 100>
+           <SETG CARROT-COST 50>
+           <SETG ENCHANT-COST 200>)
+          (ELSE
+           <SETG IDENTIFY-COST 50>
+           <SETG CARROT-COST 5>
+           <SETG ENCHANT-COST 100>)>
     <SETG CARROTS-SOLD 0>
     <IF-DEBUG
         <SETG DEBUG-DOUBLEKEY 0>

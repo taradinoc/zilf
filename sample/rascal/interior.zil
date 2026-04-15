@@ -78,6 +78,8 @@ potion (or arrives while already under its effect), so the NPC can react."
              (SECTION HP)
              (SECTION GOLD)>
 
+<DEFMAC INTERIOR-ACTIVE? () '<T? ,INTERIOR-CATCH-TOKEN>>
+
 <ROUTINE LAUNCH-INTERIOR (ROOM "AUX" ENTRX ENTRY LEFT-BEES? MONKEY)
     <SET ENTRX ,PLAYER-X>
     <SET ENTRY ,PLAYER-Y>
@@ -105,6 +107,10 @@ potion (or arrives while already under its effect), so the NPC can react."
     <V-LOOK>
     <NOTIFY-POTION-ARRIVAL>
     <WRAP-PARSER-MAIN-LOOP>
+    <COND (<L=? ,PLAYER-HP 0>
+           <CHECK-END>
+           <RETURN>)>
+    <SETG INTERIOR-CATCH-TOKEN <>>
     <INTERIOR-EXIT-SYNC>
     <UI-RESET>
     <CLEAR -1>
@@ -112,8 +118,6 @@ potion (or arrives while already under its effect), so the NPC can react."
     <UI-LOG-COLOR>
     <CLEAR 0>
     <SETG FULL-REDRAW? T>
-    ;"If the player died inside the interior, log the death and don't print leave text or spawn hazards."
-    <COND (<L=? ,PLAYER-HP 0> <CHECK-END> <RETURN>)>
     <COND (.LEFT-BEES? <START-BEE-SWARM ,CURRENT-FLOOR .ENTRX .ENTRY>)>
     <COND (,PENDING-INTERIOR-TELEPORT?
            <SETG PENDING-INTERIOR-TELEPORT? <>>
@@ -958,6 +962,20 @@ lengthwise across it and an inverted V above it." CR>)
 "Interior/dungeon interface"
 
 <GLOBAL INTERIOR-CATCH-TOKEN <>>
+
+<ROUTINE INTERIOR-DEATH-PROMPT ("AUX" W)
+    <SETG P-CONT 0>
+    <REPEAT PROMPT ()
+        <READLINE>
+        <SET W <AND <GETB ,LEXBUF 1> <GET ,LEXBUF 1>>>
+        <COND (<EQUAL? .W ,W?RESTART>
+               <RESTART>)
+              (<EQUAL? .W ,W?QUIT>
+               <TELL CR <LIBRARY-MESSAGE QUIT GOODBYE> CR>
+               <QUIT>)
+              (T
+               <TELL CR "(Please type RESTART or QUIT) >">)>
+          <AGAIN .PROMPT>>>
 
 ;"Launches an interior by numeric ID.
 

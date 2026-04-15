@@ -36,6 +36,11 @@
     <INIT>
     <RASCAL-MAIN-LOOP>>
 
+;"Property defined but never used"
+<SUPPRESS-WARNINGS? "ZIL0212">
+;"Vocab collision"
+<SUPPRESS-WARNINGS? "ZIL0310">
+
 ;"balance.zil defines constants used elsewhere, so it has to be included first."
 <INSERT-FILE "balance">
 
