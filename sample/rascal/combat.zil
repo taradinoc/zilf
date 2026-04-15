@@ -326,7 +326,7 @@ Returns:
     <COND (<L=? .O 0> <SETG BEE-SWARM-ON? <>> <RTRUE>)>
     <SET DIST
          <+ <ABS <- ,PLAYER-X ,BEE-SWARM-X>> <ABS <- ,PLAYER-Y ,BEE-SWARM-Y>>>>
-        <COND (<G=? .DIST <BEE-SWARM-LOSE-DISTANCE>>
+    <COND (<G=? .DIST <BEE-SWARM-LOSE-DISTANCE>>
            <DESPAWN-ENEMY-OBJ .O>
            <SETG BEE-SWARM-ON? <>>
            <LOG "You finally lose the legion of bees." CR>

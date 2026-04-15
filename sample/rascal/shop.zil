@@ -196,11 +196,11 @@ Returns:
                <RTRUE>)>
         <COND (<==? .C !\B !\b>
                <COND (<0? <TRINV-COUNT>> <LOG "Nothing to buy." CR> <AGAIN>)>
-             <LOG "Buy which item? (1-" N ,TRINV-SIZE "; 0=10; Q cancels)" CR>
+               <LOG "Buy which item? (1-" N ,TRINV-SIZE "; 0=10; Q cancels)" CR>
                <SET C2 <GETCHAR>>
                <COND (<==? .C2 !\Q !\q> <LOG "Never mind." CR> <AGAIN>)>
                <SET SLOT <DIGIT-TO-SLOT .C2>>
-             <COND (<OR <L? .SLOT 1> <G? .SLOT ,TRINV-SIZE>>
+               <COND (<OR <L? .SLOT 1> <G? .SLOT ,TRINV-SIZE>>
                       <LOG "No such item." CR>
                       <AGAIN>)>
                <SET O <TRINV-NTH-OBJ .SLOT>>
@@ -223,19 +223,19 @@ Returns:
                       <AGAIN>)>
                <COND (<==? .K ,ITEMKIND-TREASURE>
                       <STATS-INC-WORD-TABLE ,STATS-TREASURES-PICKED <- .ID 1>>)>
-             <HONORS-NOTE-TROPHY-PURCHASE .K .ID>
+               <HONORS-NOTE-TROPHY-PURCHASE .K .ID>
                <SETG PLAYER-GOLD <- ,PLAYER-GOLD .PRICE>>
                <SETG STATS-GOLD-SPENT-TRADER
                    <+ ,STATS-GOLD-SPENT-TRADER .PRICE>>
                <LOG "You buy the " ITEM-NAME .O "." CR>
                <AGAIN>)>
         <COND (<==? .C !\S !\s>
-             <COND (<L=? <INV-COUNT> 0> <LOG "Nothing to sell." CR> <AGAIN>)>
-             <LOG "Sell which item? (1-" N ,INV-SIZE "; 0=10; Q cancels)" CR>
+               <COND (<L=? <INV-COUNT> 0> <LOG "Nothing to sell." CR> <AGAIN>)>
+               <LOG "Sell which item? (1-" N ,INV-SIZE "; 0=10; Q cancels)" CR>
                <SET C2 <GETCHAR>>
                <COND (<==? .C2 !\Q !\q> <LOG "Never mind." CR> <AGAIN>)>
                <SET SLOT <DIGIT-TO-SLOT .C2>>
-             <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>>
+               <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>>
                       <LOG "No such item." CR>
                       <AGAIN>)>
                <COND (<G=? <TRINV-COUNT> ,TRINV-SIZE>

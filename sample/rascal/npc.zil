@@ -278,7 +278,7 @@ A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" C
           WEAPON-NAME .ID " with a hammer." CR>
     <TELL "It hums faintly. It's now a level " N .LVL "+" N .NEWENCH " "
           WEAPON-NAME .ID "." CR>
-    <COND (,EXPERT-MODE? <TELL "The sign shimmers, almost imperceptibly." CR>)>
+    <COND (,EXPERT-MODE? <TELL CR "The sign shimmers, almost imperceptibly." CR>)>
     <RTRUE>>
 
 <ROUTINE BLACKSMITH-F (ARG)
@@ -444,15 +444,15 @@ beasts to hit you.\""
                  CR>)
            (<==? .TYPE ,POTION-TORPOR>
             <TELL "The farmer gives it a lazy swirl and yawns. \"Potion of torpor. Drink that
-    and the beasts'll close in on you twice as fast before you can do much back.\""
+and the beasts'll close in on you twice as fast before you can do much back.\""
                CR>)
            (<==? .TYPE ,POTION-HUSTLE>
             <TELL "The farmer jerks the bottle in a few quick circles and nods. \"That's a
-    potion of hustle. It'll get you moving twice as fast as any beast.\""
+potion of hustle. It'll get you moving twice as fast as any beast.\""
                CR>)
           (ELSE
            <TELL "\"Huh. I'm stumped. That shouldn't happen.\"" CR>)>
-    <COND (,EXPERT-MODE? <TELL "The sign shimmers, almost imperceptibly." CR>)>
+    <COND (,EXPERT-MODE? <TELL CR "The sign shimmers, almost imperceptibly." CR>)>
     <UPDATE-POTION-ITEMS-FOR-COLOR .COLOR>
     <RTRUE>>
 
@@ -525,7 +525,7 @@ beasts to hit you.\""
                       <+ ,STATS-GOLD-SPENT-CARROT-FARM ,CARROT-COST>>
                   <SETG CARROTS-SOLD <+ ,CARROTS-SOLD 1>>
                   <COND (,EXPERT-MODE?
-                         <SETG CARROT-COST <* 2 ,CARROT-COST>>)> 
+                         <SETG CARROT-COST <* 2 ,CARROT-COST>>)>
                   <PUTP .O ,P?R-ITKIND ,ITEMKIND-FOOD>
                   <PUTP .O ,P?R-ITID ,FOOD-CARROT>
                   <PUTP .O ,P?R-ITLVL 0>
@@ -536,7 +536,9 @@ beasts to hit you.\""
                   <MOVE .O ,WINNER>
                   <SET-ITEM-VOCAB .O>
                   <THIS-IS-IT .O>
-                  <TELL "The farmer takes your gold and hands you a carrot." CR>)>)>>
+                  <TELL "The farmer takes your gold and hands you a carrot." CR>
+                  <COND (,EXPERT-MODE?
+                         <TELL CR "The sign shimmers, almost imperceptibly." CR>)>)>)>>
 
 <ROUTINE CARROT-GENERIC-FCN (TBL "AUX" MAX IT)
     ;"Prefer a carried carrot item over the carrot patch itself."
