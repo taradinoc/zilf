@@ -256,6 +256,7 @@ A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" C
     (FLAGS PERSONBIT NDESCBIT)>
 
 <ROUTINE BLACKSMITH-ENCHANT-WEAPON (OBJ "AUX" ID LVL ENCH NEWENCH)
+    <THIS-IS-IT .OBJ>
     <COND (<NOT <WEAPON? .OBJ>>
            <TELL "The blacksmith says, \"That's not a weapon.\"" CR>
            <RFALSE>)>
@@ -379,6 +380,7 @@ In front of the carrot patch, a hand-painted sign reads: \"Carrots: "
     (FLAGS PERSONBIT NDESCBIT)>
 
 <ROUTINE CARROT-MAN-IDENTIFY-POTION (OBJ "AUX" COLOR TYPE)
+    <THIS-IS-IT .OBJ>
     <COND (<NOT <POTION? .OBJ>>
            <TELL "The farmer says, \"I only deal in potions.\"" CR>
            <RFALSE>)>
