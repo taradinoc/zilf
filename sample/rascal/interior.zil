@@ -157,10 +157,14 @@ potion (or arrives while already under its effect), so the NPC can react."
     <PUTP .OBJ ,P?GENERIC MONKEY-GENERIC-FCN>
     <RTRUE>>
 
-;"Let the player GIVE MONKEY TO BUSKER without holding the monkey."
+;"Let the player GIVE MONKEY TO BUSKER without holding the monkey, or
+  GIVE GOLD TO FARMER without holding GENERIC-GOLD."
 <REPLACE-DEFINITION FAILS-HAVE-CHECK?
     <ROUTINE FAILS-HAVE-CHECK? (OBJ)
-        <NOT <OR <ORDERING?> <HELD? .OBJ> <MONKEY? .OBJ>>>>>
+        <NOT <OR <ORDERING?>
+                 <HELD? .OBJ>
+                 <MONKEY? .OBJ>
+                 <IN? .OBJ ,GENERIC-OBJECTS>>>>>
 
 <ROUTINE INTERIOR-TELEPORT-PLAYER ("AUX" TRIES X Y)
     ;"Teleport the roguelike position after leaving an interior, without calling
@@ -741,6 +745,9 @@ lengthwise across it and an inverted V above it." CR>)
                       <COND (<==? .K ,ITEMKIND-POTION>
                              <TELL <POTION-ARTICLE .ID>>
                              <PRINTC !\ >)
+                            (<==? .K ,ITEMKIND-TREASURE>
+                             <TELL <TREASURE-ARTICLE .ID>>
+                             <PRINTC !\ >)
                             (ELSE <TELL "a ">)>)>
                <PRINT-ITEM-NAME .OBJ>
                <RTRUE>)
@@ -778,6 +785,9 @@ lengthwise across it and an inverted V above it." CR>)
                       <SET ID <GETP .OBJ ,P?R-ITID>>
                       <COND (<==? .K ,ITEMKIND-POTION>
                              <PRINT-CAP-STR <POTION-ARTICLE .ID>>
+                             <PRINTC !\ >)
+                            (<==? .K ,ITEMKIND-TREASURE>
+                             <PRINT-CAP-STR <TREASURE-ARTICLE .ID>>
                              <PRINTC !\ >)
                             (ELSE <TELL "A ">)>)>
                <PRINT-ITEM-NAME .OBJ>
@@ -912,7 +922,12 @@ lengthwise across it and an inverted V above it." CR>)
                           <PUT/B .PT 2 .A>)>>
                ;"Replace it in LEXBUF, skipping .WDS words"
                <PUTWORD <+ .WN .WDS> .A>
-               .WDS)>>>
+               .WDS)
+              (<AND <L? .WN ,P-LEN>
+                    <IN-PWTBL? ,GENERIC-GOLD ,P?SYNONYM <GETWORD? <+ .WN 1>>>
+                    <PARSE-NUMBER? .WN>>
+               ;"Skip a number before 'gold'"
+               1)>>>
 
 "Interior action overrides"
 
@@ -958,6 +973,128 @@ lengthwise across it and an inverted V above it." CR>)
 
 <ROUTINE V-SCORE ()
     <TELL "If the game ended now, your final score would be " N <FINAL-SCORE> "." CR>>
+
+<SYNTAX HELP = V-HELP>
+<SYNTAX HELP OBJECT (FIND PERSONBIT) = V-HELP>
+
+<CONSTANT COMMAND-HELP "To interact with someone, try \"GIVE (item) TO (person)\", \"TAKE (item)\",
+\"ASK (person) ABOUT (topic)\", or \"(person), HELLO\". Keep in mind that the inhabitants of
+the dungeon are simple folk, and not much for conversation.↲↲To leave this place, try \"OUT\".">
+
+<ROUTINE V-HELP ()
+    <COND (<PRSO? <> ,ROOMS ,WINNER>
+           <TELL ,COMMAND-HELP CR>)
+          (<MONKEY? ,PRSO>
+           <COND (<FSET? ,PRSO ,SOLDBIT> <TELL "The monkey seems happy where it is." CR>)
+                 (ELSE <TELL "The monkey is scurrying like a champ already." CR>)>)
+          (ELSE <TELL CT ,PRSO " seems to be doing fine on " IFELSE <FSET? ,PRSO ,PERSONBIT> "his" "its" " own." CR>)>>
+
+<SYNTAX COMMANDS = V-COMMANDS>
+
+<ROUTINE V-COMMANDS ()
+    <TELL ,COMMAND-HELP CR>>
+
+<SYNTAX IDENTIFY OBJECT = V-IDENTIFY>
+
+<ROUTINE V-IDENTIFY ()
+    <COND (<==? ,HERE ,CARROT-FARM>
+           <PERFORM ,V?GIVE ,PRSO ,CARROT-MAN>)
+          (ELSE <TELL "Yes, that's " A ,PRSO "." CR>)>>
+
+<SYNTAX ENCHANT OBJECT = V-ENCHANT>
+
+<CONSTANT FIND-SOMEONE-ELSE "You'll have to find someone else to help you with that.">
+
+<ROUTINE V-ENCHANT ()
+    <COND (<PRSO? ,WINNER> <TELL <LIBRARY-MESSAGE TAKE PICK-ME-UP> CR>)
+          (<==? ,HERE ,BLACKSMITH-SHOP>
+           <PERFORM ,V?GIVE ,PRSO ,BLACKSMITH>)
+          (<FSET? ,PRSO ,PERSONBIT>
+           <TELL "You bat your eyes seductively at " T ,PRSO ", but it only earns you an unimpressed stare." CR>)
+          (ELSE <TELL ,FIND-SOMEONE-ELSE CR>)>>
+
+<SYNTAX UPGRADE OBJECT = V-UPGRADE>
+
+<ROUTINE V-UPGRADE ()
+    <COND (<PRSO? ,WINNER> <TELL "There are potions for that." CR>)
+          (<==? ,HERE ,BLACKSMITH-SHOP>
+           <PERFORM ,V?GIVE ,PRSO ,BLACKSMITH>)
+          (<WEAPON? ,PRSO> <TELL ,FIND-SOMEONE-ELSE CR>)
+          (ELSE <TELL CT ,PRSO " is as good as " IFELSE <FSET? ,PRSO ,PERSONBIT> "he's" "it's" " going to get, I'm afraid." CR>)>>
+
+<SYNTAX PAY OBJECT (FIND PERSONBIT) = V-PAY>
+
+<CONSTANT MONKEY-REFUSES-GOLD
+    <LTABLE "The monkey rejects capitalism and wants nothing to do with your currency."
+            "The monkey is deeply invested in crypto and wants nothing to do with your analog money."
+            "The monkey is a peace activist and wants nothing to do with your blood money."
+            "The monkey is fiercely independent and wants nothing to do with your handouts."
+            "The monkey is a germophobe and wants nothing to do with your filthy lucre.">>
+
+<ROUTINE V-PAY ()
+    <COND (<PRSO? ,WINNER> <TELL "Find your own gold." CR>)
+          (<MONKEY? ,PRSO> <TELL <PICK-ONE-R ,MONKEY-REFUSES-GOLD> CR>)
+          (<FSET? ,PRSO ,PERSONBIT> <TELL "To do business with someone, try
+\"GIVE (item) TO (person)\" or \"TAKE (item)\"." CR>)
+          (ELSE <SILLY>)>>
+
+<VERB-SYNONYM TAKE BUY>
+
+<SYNTAX EQUIP OBJECT = V-EQUIP>
+<VERB-SYNONYM EQUIP UNEQUIP>
+
+<ROUTINE V-EQUIP ()
+    <TELL "Might as well wait until you're back in the dungeon, since you won't be using it here anyway."
+          CR>>
+
+"Interior conversation topics"
+
+<OBJECT GENERIC-POTIONS
+    (DESC "potions")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM POTION)
+    (PLURAL POTIONS)>
+
+<OBJECT GENERIC-GOLD
+    (DESC "gold")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM GOLD GP MONEY LOOT)
+    (ADJECTIVE \,NUMBER)>
+
+<OBJECT GENERIC-WEAPONS
+    (DESC "weapons")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM WEAPON)
+    (PLURAL WEAPONS)>
+
+<OBJECT GENERIC-DUNGEON
+    (DESC "dungeon")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM DUNGEON HERE PLACE)
+    (ADJECTIVE THIS)>
+
+<OBJECT GENERIC-ENEMIES
+    (DESC "enemies")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM ENEMY BEAST MONSTER)
+    (PLURAL ENEMIES BEASTS MONSTERS)>
+
+<OBJECT GENERIC-MONKEYS
+    (DESC "monkeys")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM MONKEY)
+    (PLURAL MONKEYS)>
+
+<OBJECT GENERIC-FOOD
+    (DESC "food")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM FOOD SNACK)
+    (PLURAL FOODS SNACKS)>
+
+<OBJECT ITSELF
+    (DESC "itself")
+    (IN GENERIC-OBJECTS)
+    (SYNONYM ITSELF HIMSELF HERSELF THEMSELF THEMSELVES)>
 
 "Interior/dungeon interface"
 

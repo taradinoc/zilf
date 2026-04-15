@@ -338,10 +338,11 @@ Returns:
 <ROUTINE POTION-ARTICLE (COLOR)
     <COND (<OR <L? .COLOR 1> <G? .COLOR ,POTION-COLOR-COUNT>> <RETURN "a">)>
     <COND (<G? <GETB ,POTION-DISCOVERED <- .COLOR 1>> 0> <RETURN "a">)>
-    <COND (<OR <==? .COLOR ,POTCOLOR-ARGENT>
-         <==? .COLOR ,POTCOLOR-AUBURN>
-               <==? .COLOR ,POTCOLOR-ORANGE>
-               <==? .COLOR ,POTCOLOR-INDIGO>>
+    <COND (<==? .COLOR
+                ,POTCOLOR-ARGENT
+                ,POTCOLOR-AUBURN
+                ,POTCOLOR-ORANGE
+                ,POTCOLOR-INDIGO>
            "an")
           (ELSE "a")>>
 
@@ -365,6 +366,18 @@ Returns:
           (<==? .ID ,TREASURE-TROPHY> <TELL "Trophy of Scryra">)
           (ELSE <TELL "treasure">)>
     <RTRUE>>
+
+;"Returns the correct indefinite article (a vs an) for a treasure.
+
+Args:
+  ID: Treasure ID (TREASURE-*).
+
+Returns:
+  The string a or an."
+
+<ROUTINE TREASURE-ARTICLE (ID)
+    <COND (<==? .ID ,TREASURE-AMULET ,TREASURE-IOLITE> "an")
+          (ELSE "a")>>
 
 ;"Maps a treasure ID to the trader buy price.
 

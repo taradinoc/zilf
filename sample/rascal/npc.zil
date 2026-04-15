@@ -49,6 +49,10 @@ into six parts, representing apophenia.")
     (ACTION INFO-MAN-F)
     (FLAGS PERSONBIT NDESCBIT)>
 
+<CONSTANT YOU-NEED-IT-MORE "\"Seems like you need that more than I do.\"">
+
+<GLOBAL POSTER-RETURNED? <>>
+
 <ROUTINE INFO-MAN-F (ARG "AUX" ID)
     <COND (<==? .ARG ,M-WINNER>
            <COND (<VERB? HELLO>
@@ -67,9 +71,10 @@ into six parts, representing apophenia.")
            <TELL "Easily one of the top three most grizzled old men you've ever seen.
 He's wearing a uniform with the dungeon's logo embroidered on it." CR>)
           (<AND <VERB? ASK-ABOUT TELL-ABOUT> <PRSO? ,INFO-MAN>>
-           <COND (<PRSI? ,INFO-MAN> <TELL "\"Some call me the info man.\"" CR>)
+           <COND (<PRSI? ,INFO-MAN ,ITSELF> <TELL "\"Some call me the info man.\"" CR>)
                  (<POSTER? ,PRSI>
                   <TELL "\"You can have one.\"" CR>)
+                 (<PRSI? ,GENERIC-DUNGEON> <TELL "\"I hope you're enjoying it so far.\"" CR>)
                  (ELSE
                   <TELL "\"I'm not authorized to talk about that.\"" CR CR
                         "He leans in close and whispers, \"They might be listening.\""
@@ -79,15 +84,17 @@ He's wearing a uniform with the dungeon's logo embroidered on it." CR>)
                     <COND (<==? <SET ID <GETP ,PRSO ,P?R-ITID>> ,TREASURE-POSTER>
                            <TELL "\"Thanks for returning it. A lot of people would love to get their hands on one of these!\"" CR>
                            <REMOVE ,PRSO>
+                           <SETG POSTER-RETURNED? T>
                            <FREE-RASCAL-ITEM ,PRSO>)
                           (<==? .ID ,TREASURE-TROPHY>
                            <TELL "\"That's what was down there? Huh. Well, I guess we'll have to update the posters.\"" CR>)
                           (ELSE
-                           <TELL "\"Seems like you need that more than I do.\"" CR>)>)
+                           <TELL ,YOU-NEED-IT-MORE CR>)>)
                    (<FOOD? ,PRSO>
                     <TELL "\"No thanks, I had a big breakfast.\"" CR>)
                    (<OR <POTION? ,PRSO> <WEAPON? ,PRSO>>
                     <TELL "He smiles. \"My adventuring days are long past.\"" CR>)
+                   (<PRSO? ,GENERIC-GOLD> <TELL ,YOU-NEED-IT-MORE CR>)
                    (ELSE <TELL "The old man doesn't seem interested." CR>)>)>>
 
 <OBJECT STACK-OF-POSTERS
@@ -114,7 +121,8 @@ The rest of the poster is covered with text.">
 
 <ROUTINE STACK-OF-POSTERS-F ("AUX" O)
     <COND (<VERB? TAKE>
-           <COND (<G? <GET ,STATS-TREASURES-PICKED <- ,TREASURE-POSTER 1>> 0>
+           <COND (<AND <G? <GET ,STATS-TREASURES-PICKED <- ,TREASURE-POSTER 1>> 0>
+                       <NOT ,POSTER-RETURNED?>>
                   <TELL "The old man snaps at you. \"One per rascal!\"" CR>)
                  (<INTERIOR-PACK-FULL?> <TELL "Your pack is full." CR>)
                  (ELSE
@@ -133,11 +141,16 @@ The rest of the poster is covered with text.">
                   <MOVE .O ,WINNER>
                   <SET-ITEM-VOCAB .O>
                   <THIS-IS-IT .O>
-                  <STATS-INC-WORD-TABLE ,STATS-TREASURES-PICKED
-                                        <- ,TREASURE-POSTER 1>>
-                  <TELL "The old man sees you eyeing the stack of posters and hands you one.
+                  <COND (,POSTER-RETURNED?
+                         <SETG POSTER-RETURNED? <>>
+                         <TELL "The old man chuckles. \"Changed your mind, huh? Here you go.\""
+                               CR>)
+                        (ELSE
+                         <TELL "The old man sees you eyeing the stack of posters and hands you one.
 \"There aren't many left, but here you go.\""
-                        CR>)>)
+                               CR>
+                         <STATS-INC-WORD-TABLE ,STATS-TREASURES-PICKED
+                                               <- ,TREASURE-POSTER 1>>)>)>)
           (<VERB? EXAMINE>
            <TELL ,POSTER-DESCRIPTION CR CR "There aren't many left." CR>)
           (<VERB? READ>
@@ -292,11 +305,11 @@ A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" C
            <TELL "He's wearing an apron with a small logo, depicting a pair of tongs and a hammer."
                  CR>)
           (<AND <VERB? ASK-ABOUT TELL-ABOUT> <PRSO? ,BLACKSMITH>>
-           <COND (<PRSI? ,BLACKSMITH> <TELL "\"I just work here.\"" CR>)
-                 (<RASCAL-ITEM? ,PRSI>
+           <COND (<PRSI? ,BLACKSMITH ,GENERIC-DUNGEON ,ITSELF> <TELL "\"I just work here.\"" CR>)
+                 (<PRSI? ,GENERIC-ENEMIES> <TELL "\"That's what the weapons are for.\"" CR>)
+                 (<OR <RASCAL-ITEM? ,PRSI> <PRSI? ,GENERIC-WEAPONS ,GENERIC-GOLD>>
                   <TELL "\"If you give me a weapon, I'll enchant it for "
-                    N ,ENCHANT-COST " gold.\""
-                        CR>)
+                        N ,ENCHANT-COST " gold.\"" CR>)
                  (ELSE <TELL "\"That's none of my business.\"" CR>)>)
           (<AND <VERB? GIVE> <PRSI? ,BLACKSMITH>>
            <COND (<WEAPON? ,PRSO>
@@ -305,6 +318,7 @@ A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" C
                   <TELL "\"I already ate.\"" CR>)
                  (<TREASURE? ,PRSO>
                   <TELL "\"Nah, you keep it. I'd just melt it down.\"" CR>)
+                 (<PRSO? ,GENERIC-GOLD> <PERFORM ,V?PAY ,BLACKSMITH>)
                  (ELSE <TELL "\"I'm really more of a weapon guy.\"" CR>)>
            <RTRUE>)>>
 
@@ -474,19 +488,30 @@ potion of hustle. It'll get you moving twice as fast as any beast.\""
           (<VERB? EXAMINE>
            <TELL "He's wearing a pair of denim overalls and a straw hat." CR>)
           (<AND <VERB? ASK-ABOUT TELL-ABOUT> <PRSO? ,CARROT-MAN>>
-           <COND (<CARROT? ,PRSI>
+           <COND (<PRSI? ,CARROT-MAN ,ITSELF>
+                  <TELL "\"I'm just a simple carrot farmer, not one of those weirdos who walks around in
+a carrot suit. I don't even own one anymore.\"" CR>)
+                 (<PRSI? ,GENERIC-DUNGEON> <TELL "\"It's a simple, honest life here, raising carrots and
+sniffing potions.\"" CR>)
+                 (<OR <MONKEY? ,PRSI> <PRSI? ,GENERIC-MONKEYS>> <TELL "\"I don't care much for monkeys.
+They only eat bananas.\"" CR>)
+                 (<CARROT? ,PRSI>
                   <TELL "\"They're a great source of vitamin A, and they're as nourishing as a muffin.\""
                         CR>)
-                 (<FOOD? ,PRSI> <TELL ,NOT-A-CARROT CR>)
+                 (<OR <FOOD? ,PRSI> <PRSI? ,GENERIC-FOOD>> <TELL ,NOT-A-CARROT CR>)
                  (<POTION? ,PRSI> <CARROT-MAN-IDENTIFY-POTION ,PRSI>)
-                 (<OR <WEAPON? ,PRSI> <TREASURE? ,PRSI>>
-                  <TELL "\"Sounds exciting, but that life ain't for me.\"" CR>)>)
+                 (<PRSI? ,GENERIC-POTIONS ,GENERIC-GOLD>
+                  <TELL "\"Gimme a potion, and I'll identify it for " N ,IDENTIFY-COST " gold.\"" CR>)
+                 (<OR <WEAPON? ,PRSI> <TREASURE? ,PRSI> <KEY? ,PRSI> <PRSI? ,GENERIC-WEAPONS ,GENERIC-ENEMIES>>
+                  <TELL "\"Sounds exciting, but that life ain't for me.\"" CR>)
+                 (ELSE <TELL "\"I try not to worry about that.\"" CR>)>)
           (<AND <VERB? GIVE> <PRSI? ,CARROT-MAN>>
            <COND (<POTION? ,PRSO> <CARROT-MAN-IDENTIFY-POTION ,PRSO>)
                  (<CARROT? ,PRSO> <TELL "\"All sales are final.\"" CR>)
                  (<FOOD? ,PRSO> <TELL ,NOT-A-CARROT CR>)
                  (<TREASURE? ,PRSO>
                   <TELL "\"No need to get all fancy, I only take gold.\"" CR>)
+                 (<PRSO? ,GENERIC-GOLD> <PERFORM ,V?PAY ,CARROT-MAN>)
                  (<WEAPON? ,PRSO>
                   <TELL "\"Why would I need that? To protect myself from the carrots?\""
                         CR>)
@@ -863,16 +888,20 @@ the last one, OK?\"" CR>)>)
           (<VERB? EXAMINE>
            <TELL "The organ grinder has a barrel organ hanging from a strap around his shoulders." CR>)
           (<AND <VERB? ASK-ABOUT TELL-ABOUT> <PRSO? ,BUSKER>>
-           <COND (<PRSI? ,BUSKER>
+           <COND (<PRSI? ,BUSKER ,GENERIC-DUNGEON ,ITSELF>
                   <TELL "\"Just trying to make a living,\" the busker says." CR>)
-                 (<MONKEY? ,PRSI>
+                 (<OR <MONKEY? ,PRSI> <PRSI? ,GENERIC-MONKEYS>>
                   <TELL "\"Every self-respecting organ grinder needs a monkey.\"" CR>)
                  (ELSE
                   <TELL "\"If it's not about monkeys, I don't know,\" he says."
                         CR>)>
            <RTRUE>)
           (<AND <VERB? GIVE> <PRSI? ,BUSKER>>
-           <COND (<NOT <MONKEY? ,PRSO>> <TELL "The busker scoffs, \"You call that a monkey?\"" CR>)
+           <COND (<==? ,PRSO ,GENERIC-GOLD>
+                  <COND (,BUSKER-MONKEY-SALES <TELL "The busker gives you a puzzled look. \"Didn't I just give you that?\"" CR>)
+                        (ELSE <TELL "The busker narrows his eyes. \"I'm not even playing, and you want to tip me? No one does that! What is it,
+stolen? I run a clean operation here, pal.\"" CR>)>)
+                 (<NOT <MONKEY? ,PRSO>> <TELL "The busker scoffs, \"You call that a monkey?\"" CR>)
                  (<FSET? ,PRSO ,SOLDBIT> <TELL "The busker cocks his head and raises one eyebrow. \"You gave me that one already, remember?\"" CR>)
                  (<NOT <FSET? ,PRSO ,TAMEBIT>>
                   <TELL "The busker says, \"How'd you even get that one in here? Take it away before someone gets bitten!\""
@@ -901,7 +930,7 @@ the last one, OK?\"" CR>)>)
 
 <CONSTANT MONKEY-IGNORES "The monkey pays no attention.">
 
-<ROUTINE ENEMY-ACTION-MONKEY (ARG)
+<ROUTINE ENEMY-ACTION-MONKEY (ARG "AUX" IT)
     <COND (<VERB? TELL>
            <SETG P-CONT 0>
            <TELL ,MONKEY-IGNORES CR>)
@@ -911,9 +940,12 @@ the last one, OK?\"" CR>)>)
            <COND (<FSET? ,PRSO ,SOLDBIT>
                   <TELL "The monkey is tied to the organ by a string, but seems happy." CR>)
                  (ELSE <TELL "The monkey is scurrying around your feet. It seems friendly." CR>)>)
-          (<OR <AND <MONKEY? ,PRSO> <VERB? SGIVE ASK-ABOUT TELL-ABOUT>>
-               <AND <MONKEY? ,PRSI> <VERB? GIVE>>>
-           <TELL ,MONKEY-IGNORES CR>)>>
+          (<OR <AND <MONKEY? ,PRSO> <VERB? SGIVE ASK-ABOUT TELL-ABOUT> <SET IT ,PRSO>>
+               <AND <MONKEY? ,PRSI> <VERB? GIVE> <SET IT ,PRSI>>>
+           <COND (<OR <AND <VERB? SGIVE ASK-ABOUT TELL-ABOUT> <PRSI? ,GENERIC-GOLD>>
+                      <AND <VERB? GIVE> <PRSO? ,GENERIC-GOLD>>>
+                  <PERFORM ,V?PAY .IT>)
+                 (ELSE <TELL ,MONKEY-IGNORES CR>)>)>>
 
 <ROUTINE MONKEY-GENERIC-FCN (TBL "AUX" MAX O)
     ;"Prefer tame monkeys."
