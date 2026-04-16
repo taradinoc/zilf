@@ -13,6 +13,11 @@ and this project adheres to
   like "(worn)" to the inventory listing; or you can override the defaults by
   replacing `INV-PRINT-DETAILS` (and probably also `INV-INDISTINGUISHABLE?`).
 
+### Fixed
+
+- Fixed a bug where `SUPPRESS-WARNINGS?` could only suppress one warning code
+  at a time.
+
 ## [1.8](April 8, 2026)
 
 ### Added

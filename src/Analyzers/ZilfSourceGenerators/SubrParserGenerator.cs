@@ -758,6 +758,46 @@ namespace ZilfSourceGenerators
             return $"{string.Join(", ", ordered.Take(ordered.Count - 1))}, or {ordered[ordered.Count - 1]}";
         }
 
+        private static string BuildExpectedTypeDisplayPreservingOrder(System.Collections.Generic.IEnumerable<string> expectedTypes, string fallback)
+        {
+            var normalized = expectedTypes
+                .Where(type => !string.IsNullOrWhiteSpace(type))
+                .Select(type => type.Trim())
+                .ToList();
+
+            if (normalized.Count == 0 && !string.IsNullOrWhiteSpace(fallback))
+            {
+                normalized.Add(fallback.Trim());
+            }
+
+            var distinct = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var type in normalized)
+            {
+                if (seen.Add(type))
+                {
+                    distinct.Add(type);
+                }
+            }
+
+            if (distinct.Count == 0)
+            {
+                return string.IsNullOrWhiteSpace(fallback) ? "structured" : fallback.Trim();
+            }
+
+            if (distinct.Count == 1)
+            {
+                return distinct[0];
+            }
+
+            if (distinct.Count == 2)
+            {
+                return $"{distinct[0]} or {distinct[1]}";
+            }
+
+            return $"{string.Join(", ", distinct.Take(distinct.Count - 1))}, or {distinct[distinct.Count - 1]}";
+        }
+
 internal static string GetDefaultValueString(IParameterSymbol parameter)
         {
             if (parameter.HasExplicitDefaultValue)
@@ -1649,6 +1689,21 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             public bool HasDeclConstraint { get; set; }
             public string? DeclPattern { get; set; }
 
+            private string GetElementExpectedTypeDisplay()
+            {
+                return BuildExpectedTypeDisplayPreservingOrder(
+                    ElementNode.GetErrorExpectedTypes(),
+                    ElementNode.GetExpectedTypeName());
+            }
+
+            public override System.Collections.Generic.IEnumerable<string> GetErrorExpectedTypes()
+            {
+                foreach (var type in ElementNode.GetErrorExpectedTypes())
+                {
+                    yield return type;
+                }
+            }
+
             public override void GenerateParsingStep(IndentedStringBuilder sb, GenerationContext ctx)
             {
                 // Ensure the element's parsing step is emitted (use depth+1 for element helper/result)
@@ -1701,7 +1756,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine("{");
                     sb.Indent();
                     sb.AppendLine($"// Element failed to parse - record type error");
-                    var expectedTypeName = ElementNode.GetExpectedTypeName();
+                    var expectedTypeName = GetElementExpectedTypeDisplay();
                     sb.AppendLine($"{ctx.RankerVar}.WrongType(list.Count, {ctx.SiteVar}, prevArgIndex, \"{expectedTypeName}\");");
                     sb.Unindent();
                     sb.AppendLine("}");
@@ -1762,7 +1817,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine("{");
                     sb.Indent();
                     sb.AppendLine($"// Element failed to parse - record type error");
-                    var expectedTypeName = ElementNode.GetExpectedTypeName();
+                    var expectedTypeName = GetElementExpectedTypeDisplay();
                     sb.AppendLine($"{ctx.RankerVar}.WrongType(list.Count, {ctx.SiteVar}, prevArgIndex, \"{expectedTypeName}\");");
                     sb.Unindent();
                     sb.AppendLine("}");
@@ -1848,7 +1903,7 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
 
             public override string GetExpectedTypeName()
             {
-                var elementType = ElementNode.GetExpectedTypeName();
+                var elementType = GetElementExpectedTypeDisplay();
                 return IsTrailingParams ? $"{elementType}[]" : $"{elementType} array";
             }
         }
@@ -2548,31 +2603,32 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                                 return (finalMin, maxAlts);
 
                             case CustomSequenceParameterNode customSequence:
-                                // ZilSequenceStructureNode parameters with arrays are optional and consume 0 to unlimited
                                 if (customSequence.IsArray)
                                 {
                                     return (0, null); // Optional array consumes 0 to unlimited arguments
                                 }
-                                else
-                                {
-                                    // Non-array ZilSequenceStructureNode consumes as many arguments as it has fields
-                                    if (customSequence.TargetType is INamedTypeSymbol structType)
-                                    {
-                                        var fields = structType.GetMembers().OfType<IFieldSymbol>()
-                                            .Where(f => f.DeclaredAccessibility == Accessibility.Public && !f.IsStatic)
-                                            .Count();
 
-                                        if (customSequence.IsOptional)
-                                            return (0, fields);
-                                        else
-                                            return (fields, fields);
-                                    }
-                                    else
+                                if (customSequence.StructureType is INamedTypeSymbol sequenceStructType)
+                                {
+                                    var fields = sequenceStructType.GetMembers().OfType<IFieldSymbol>()
+                                        .Where(f => f.DeclaredAccessibility == Accessibility.Public && !f.IsStatic)
+                                        .OrderBy(f => f.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
+                                        .ToArray();
+
+                                    var treeBuilder = new ParameterTreeBuilder(/*debugLog*/);
+                                    var fieldTree = treeBuilder.BuildTree(fields);
+                                    var (sequenceMin, sequenceMax) = CalculateArgumentBounds(fieldTree);
+
+                                    if (customSequence.IsOptional)
                                     {
-                                        // Fallback if we can't analyze the struct type
-                                        return customSequence.IsOptional ? (0, 1) : (1, 1);
+                                        return (0, sequenceMax);
                                     }
+
+                                    return (sequenceMin, sequenceMax);
                                 }
+
+                                // Fallback if we can't analyze the sequence type
+                                return customSequence.IsOptional ? (0, 1) : (1, 1);
 
                             case CustomStructuredParameterNode customStructure:
                                 if (customStructure.IsArray)
@@ -3216,6 +3272,28 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
             /// Gets or sets a value indicating whether this sequence parameter is required (must parse at least one element).
             /// </summary>
             public bool IsRequired { get; set; }
+
+            public override string GetExpectedTypeName()
+            {
+                if (StructureType != null)
+                {
+                    var fields = StructureType.GetMembers().OfType<IFieldSymbol>()
+                        .Where(f => f.DeclaredAccessibility == Accessibility.Public && !f.IsStatic)
+                        .OrderBy(f => f.Locations.FirstOrDefault()?.SourceSpan.Start ?? 0)
+                        .ToArray();
+
+                    if (fields.Length > 0)
+                    {
+                        var builder = new ParameterTreeBuilder(/*[]*/);
+                        var nodes = builder.BuildTree(fields);
+                        return BuildExpectedTypeDisplayPreservingOrder(
+                            nodes.SelectMany(node => node.GetErrorExpectedTypes()),
+                            GetHybridStructureTypeName());
+                    }
+                }
+
+                return GetHybridStructureTypeName();
+            }
 
             public override System.Collections.Generic.IEnumerable<string> GetErrorExpectedTypes()
             {

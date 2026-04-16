@@ -17,6 +17,7 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
 using System.Threading.Tasks;
 using Zilf.Diagnostics;
 
@@ -271,6 +272,28 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<SUPPRESS-WARNINGS? NONE>")
                 .WithWarnings("ZIL0204")
                 .GivesNumberAsync("5");
+
+            // multiple warnings at once
+            await AssertRoutine("", ".X")
+                .WithGlobal("<GLOBAL X 5>")
+                .WithGlobal("<PROPDEF MYPROP 123>")
+                .WithGlobal("<SUPPRESS-WARNINGS? \"ZIL0204\" \"ZIL0212\">")
+                .WithoutUnsuppressedWarnings()
+                .GivesNumberAsync("5");
+        }
+
+        [TestMethod]
+        public async Task Suppress_Warnings_Reports_Concrete_Expected_Types()
+        {
+            await AssertRoutine("", ".X")
+                .WithGlobal("<SUPPRESS-WARNINGS? 1>")
+                .DoesNotCompileAsync(
+                    res => res.Diagnostics.Any(d =>
+                        d.Code == "MDL0128" &&
+                        d.GetFormattedMessage().Contains("expected ATOM or STRING") &&
+                        !d.GetFormattedMessage().Contains("expected Object") &&
+                        !d.GetFormattedMessage().Contains("array")),
+                    "Expected MDL0128 to mention only ATOM or STRING, not Object or array");
         }
     }
 }
