@@ -772,7 +772,7 @@ Returns:
            <SETG YOU-WIN? <>>
            <COND (,DEATH-LOGGED? <RTRUE>)>
            <SETG DEATH-LOGGED? T>
-           <LOG "You died on floor " N ,CURRENT-FLOOR ". Final score: " N <FINAL-SCORE>>
+           <LOG "You " IF ,EXPERT-MODE? "expertly " "died on floor " N ,CURRENT-FLOOR ". Final score: " N <FINAL-SCORE>>
            <IF-DEBUG <COND (,DEBUG-USED? <LOG !\*>)>>
            <COND (<INTERIOR-ACTIVE?>
                   <LOG "." CR "Would you like to RESTART or QUIT? >">
