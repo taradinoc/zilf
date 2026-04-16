@@ -999,6 +999,7 @@ the dungeon are simple folk, and not much for conversation.↲↲To leave this p
 <ROUTINE V-IDENTIFY ()
     <COND (<==? ,HERE ,CARROT-FARM>
            <CARROT-MAN-IDENTIFY-POTION ,PRSO>)
+          (<POTION? ,PRSO> <TELL ,FIND-SOMEONE-ELSE CR>)
           (ELSE <TELL "Yes, that's " A ,PRSO "." CR>)>>
 
 <SYNTAX ENCHANT OBJECT = V-ENCHANT>

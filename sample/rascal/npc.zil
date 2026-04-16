@@ -59,6 +59,8 @@ into six parts, representing apophenia.")
                   <TELL CT ,INFO-MAN
                         " smiles. \"I hope you're enjoying the dungeon so far.\""
                         CR>)
+                 (<VERB? IDENTIFY ENCHANT UPGRADE> <TELL CT ,INFO-MAN " shakes his head. \"I can't help you with that.
+You might find someone in the dungeon who can, though.\"" CR>)
                  (<AND <VERB? TELL-ABOUT> <PRSO? ,CURRENT-PLAYER>>
                   <WITH-GLOBAL ((WINNER ,CURRENT-PLAYER))
                                <PERFORM ,V?ASK-ABOUT ,INFO-MAN ,PRSI>>)
@@ -297,6 +299,8 @@ A hand-painted sign reads: \"Weapon enchantments, " N ,ENCHANT-COST " gold.\"" C
 <ROUTINE BLACKSMITH-F (ARG)
     <COND (<==? .ARG ,M-WINNER>
            <COND (<VERB? HELLO> <TELL "The blacksmith nods." CR>)
+                 (<VERB? ENCHANT UPGRADE> <BLACKSMITH-ENCHANT-WEAPON ,PRSO>)
+                 (<VERB? IDENTIFY> <TELL "\"I'm the blacksmith. You must be thinking of the other guy.\"" CR>)
                  (<AND <VERB? TELL-ABOUT> <PRSO? ,CURRENT-PLAYER>>
                   <WITH-GLOBAL ((WINNER ,CURRENT-PLAYER))
                                <PERFORM ,V?ASK-ABOUT ,BLACKSMITH ,PRSI>>)
@@ -477,6 +481,8 @@ potion of hustle. It'll get you moving twice as fast as any beast.\""
 <ROUTINE CARROT-MAN-F (ARG)
     <COND (<==? .ARG ,M-WINNER>
            <COND (<VERB? HELLO> <TELL CT ,CARROT-MAN " nods." CR>)
+                 (<VERB? IDENTIFY> <CARROT-MAN-IDENTIFY-POTION ,PRSO>)
+                 (<VERB? ENCHANT UPGRADE> <TELL "\"I don't do that sort of thing. You'll need the other guy for that.\"" CR>)
                  (<AND <VERB? TELL-ABOUT> <PRSO? ,CURRENT-PLAYER>>
                   <WITH-GLOBAL ((WINNER ,CURRENT-PLAYER))
                                <PERFORM ,V?ASK-ABOUT ,CARROT-MAN ,PRSI>>)
