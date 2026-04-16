@@ -88,11 +88,6 @@ namespace Zilf.Emit.Glulx
                     case BinaryOp.GetByte when PotentialHeaderAccess(left):
                         EmitBinary16(nameof(RuntimeLib16.getbyte16), left, right, result);
                         return;
-
-                    case BinaryOp.SetColor:
-                    case BinaryOp.SetTrueColor:
-                        // not supported for Glulx, silently ignore
-                        return;
                 }
             }
 
