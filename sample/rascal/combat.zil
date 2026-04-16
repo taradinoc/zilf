@@ -159,35 +159,48 @@ Returns:
          <==? .RID <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
          <REVEALED? .EX .EY>>>
 
-<ROUTINE MONKEY-STEAL-ONE (ENEMY "AUX" K PC OC PICK AMT SLOT)
-    <SET PC 0>
-    <SET OC 0>
-    <SET PICK 0>
-    <MAP-CONTENTS (O ,PLAYER-INVENTORY)
-    <COND (<AND ,EQUIPPED-WEAPON <==? .O ,EQUIPPED-WEAPON>>)
-        (ELSE
-         <SET K <GETP .O ,P?R-ITKIND>>
-         <COND (<OR <==? .K ,ITEMKIND-FOOD> <==? .K ,ITEMKIND-TREASURE>>
-            <SET PC <+ .PC 1>>
-            <COND (<==? <RNG .PC> 1> <SET PICK .O>)>)
-           (ELSE
-            <SET OC <+ .OC 1>>
-            <COND (<AND <L=? .PC 0> <==? <RNG .OC> 1>> <SET PICK .O>)>)>)>>
+<ROUTINE MONKEY-STEAL-WEIGHT (K)
+    <COND (<==? .K ,ITEMKIND-FOOD> ,MONKEY-STEAL-WEIGHT-FOOD)
+          (<==? .K ,ITEMKIND-TREASURE> ,MONKEY-STEAL-WEIGHT-TREASURE)
+          (<==? .K ,ITEMKIND-POTION> ,MONKEY-STEAL-WEIGHT-POTION)
+          (<==? .K ,ITEMKIND-KEY> ,MONKEY-STEAL-WEIGHT-KEY)
+          (<==? .K ,ITEMKIND-WEAPON> ,MONKEY-STEAL-WEIGHT-WEAPON)
+          (ELSE 0)>>
 
-    <COND (<L=? .PICK 0>
-           <COND (<G? ,PLAYER-GOLD 0>
-                  <SET AMT <+ 4 <RNG 21>>>
-                  <COND (<G? .AMT ,PLAYER-GOLD> <SET AMT ,PLAYER-GOLD>)>
-                  <COND (<NOT <SET PICK <ALLOC-RASCAL-ITEM>>> <RETURN 0>)>
-                  <PUTP .PICK ,P?R-ITKIND ,ITEMKIND-GOLD>
-                  <PUTP .PICK ,P?R-ITAMT .AMT>
-                  <PUTP .PICK ,P?R-X 0>
-                  <PUTP .PICK ,P?R-Y 0>
-                  <SETG PLAYER-GOLD <- ,PLAYER-GOLD .AMT>>
-                  <MOVE .PICK .ENEMY>
-                  <LOG "The monkey steals " N .AMT " gold!" CR>
-                  <RETURN .PICK>)
-                 (ELSE <RETURN 0>)>)>
+<ROUTINE MONKEY-STEAL-ONE (ENEMY "AUX" K W PICK TOTAL AMT SLOT GOLDP)
+    <SET PICK 0>
+    <SET TOTAL 0>
+    <SET GOLDP <>>
+    <MAP-CONTENTS (O ,PLAYER-INVENTORY)
+        <COND (<AND ,EQUIPPED-WEAPON <==? .O ,EQUIPPED-WEAPON>>)
+              (ELSE
+               <SET K <GETP .O ,P?R-ITKIND>>
+               <COND (<G? <SET W <MONKEY-STEAL-WEIGHT .K>> 0>
+                      <SET TOTAL <+ .TOTAL .W>>
+                      <COND (<L=? <RNG .TOTAL> .W>
+                             <SET PICK .O>
+                             <SET GOLDP <>>)>)>)>>
+
+    <COND (<AND <G? ,PLAYER-GOLD 0> <G? ,MONKEY-STEAL-WEIGHT-GOLD 0>>
+           <SET TOTAL <+ .TOTAL ,MONKEY-STEAL-WEIGHT-GOLD>>
+           <COND (<L=? <RNG .TOTAL> ,MONKEY-STEAL-WEIGHT-GOLD>
+                  <SET PICK 0>
+                  <SET GOLDP T>)>)>
+
+    <COND (.GOLDP
+           <SET AMT <+ 4 <RNG 21>>>
+           <COND (<G? .AMT ,PLAYER-GOLD> <SET AMT ,PLAYER-GOLD>)>
+           <COND (<NOT <SET PICK <ALLOC-RASCAL-ITEM>>> <RETURN 0>)>
+           <PUTP .PICK ,P?R-ITKIND ,ITEMKIND-GOLD>
+           <PUTP .PICK ,P?R-ITAMT .AMT>
+           <PUTP .PICK ,P?R-X 0>
+           <PUTP .PICK ,P?R-Y 0>
+           <SETG PLAYER-GOLD <- ,PLAYER-GOLD .AMT>>
+           <MOVE .PICK .ENEMY>
+           <LOG "The monkey steals " N .AMT " gold!" CR>
+           <RETURN .PICK>)>
+
+    <COND (<L=? .PICK 0> <RETURN 0>)>
 
     <REMOVE .PICK>
     <SET SLOT <INV-SLOT-OF-OBJ .PICK>>
@@ -515,7 +528,7 @@ Returns:
 Returns:
     T if an attack was performed; FALSE if no enemy exists in that slot."
 
-<ROUTINE PLAYER-ATTACK (O "AUX" HP EX EY AMT ETYPE DMG LOOT)
+<ROUTINE PLAYER-ATTACK (O "AUX" HP EX EY AMT ETYPE DMG LOOT SPIRIT?)
     <COND (<NOT .O> <RFALSE>)>
     <SET HP <GETP .O ,P?R-EHP>>
     <COND (<L=? .HP 0> <RFALSE>)>
@@ -528,6 +541,7 @@ Returns:
     <SET EX <GETP .O ,P?R-X>>
     <SET EY <GETP .O ,P?R-Y>>
     <SET DMG <PLAYER-DAMAGE>>
+    <SET SPIRIT? <>>
     <COND (<G? .DMG ,STATS-BIGGEST-HIT-DEALT>
            <SETG STATS-BIGGEST-HIT-DEALT .DMG>)>
     <COND (,LAST-HIT-CRIT? <SETG STATS-PLAYER-CRITS <+ ,STATS-PLAYER-CRITS 1>>)>
@@ -540,16 +554,14 @@ Returns:
            <COND (<==? .ETYPE ,ETYPE-MONKEY>
                   <COND (<G? <SET LOOT <ENEMY-CARRIED-ITEM .O>> 0>
                          <DROP-EXISTING-ITEM-NEAR .LOOT .EX .EY>)>
-                  <COND (<L? ,CURRENT-FLOOR ,MAX-FLOORS>
+                  <COND (<AND <L? ,CURRENT-FLOOR ,MAX-FLOORS>
+                              <L=? <RNG 100> ,MONKEY-SPIRIT-SPAWN-PCT>>
                          <PUTB ,PENDING-SPIRIT-SPAWNS
                                ,CURRENT-FLOOR
-                               <+ 1
-                                  <GETB ,PENDING-SPIRIT-SPAWNS
-                                        ,CURRENT-FLOOR>>>)>)>
-            <COND (<==? .ETYPE ,ETYPE-MIMICK>
-                <SET AMT <GETP .O ,P?R-EGOLD>>)
-               (ELSE
-                <SET AMT <+ 4 <RNG 16> <ENEMY-FLOOR-BONUS .ETYPE ,CURRENT-FLOOR>>>)>
+                               <+ 1 <GETB ,PENDING-SPIRIT-SPAWNS ,CURRENT-FLOOR>>>
+                         <SET SPIRIT? T>)>)>
+           <COND (<==? .ETYPE ,ETYPE-MIMICK> <SET AMT <GETP .O ,P?R-EGOLD>>)
+                 (ELSE <SET AMT <+ 4 <RNG 16> <ENEMY-FLOOR-BONUS .ETYPE ,CURRENT-FLOOR>>>)>
            <COND (<G? .AMT 255> <SET AMT 255>)>
            <DROP-GOLD-NEAR .EX .EY .AMT>
            <COND (<AND <==? .ETYPE ,ETYPE-DRAGON> <==? <RNG 4> 1>>
@@ -564,8 +576,8 @@ Returns:
                        <PLAYER-CRIT-MSG> CR>)
                  (ELSE
                   <LOG "You hit the " <ENEMY-NAME .ETYPE> " for " N .DMG " damage and kill it." CR>)>
-           <COND (<==? .ETYPE ,ETYPE-MONKEY>
-                  <LOG "You hear a bone-chilling screech in the distance." CR>)>)
+            <COND (<AND <==? .ETYPE ,ETYPE-MONKEY> .SPIRIT?>
+                   <LOG "You hear a bone-chilling screech in the distance." CR>)>)
           (ELSE
            <COND (,LAST-HIT-CRIT?
                   <LOG "You hit the " <ENEMY-NAME .ETYPE> " for " N .DMG " damage. "

@@ -43,6 +43,15 @@
 <CONSTANT MAX-ENEMIES 8>
 ;"Percent chance of spawning a monkey per floor"
 <CONSTANT MONKEY-SPAWN-PCT 20>
+;"Percent chance that killing a monkey spawns a spirit on the next floor"
+<CONSTANT MONKEY-SPIRIT-SPAWN-PCT 35>
+;"Relative monkey theft weights by target kind"
+<CONSTANT MONKEY-STEAL-WEIGHT-FOOD 12>
+<CONSTANT MONKEY-STEAL-WEIGHT-TREASURE 12>
+<CONSTANT MONKEY-STEAL-WEIGHT-POTION 3>
+<CONSTANT MONKEY-STEAL-WEIGHT-KEY 2>
+<CONSTANT MONKEY-STEAL-WEIGHT-WEAPON 1>
+<CONSTANT MONKEY-STEAL-WEIGHT-GOLD 4>
 ;"How close an enemy has to be to detect and chase the player"
 <CONSTANT CHASE-RADIUS 6>
 ;"How far the player has to be from the bee hive to escape"
