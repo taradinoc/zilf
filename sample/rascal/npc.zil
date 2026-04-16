@@ -429,8 +429,7 @@ It'll increase your max HP by two, plus it'll heal you a bunch.\""
                  CR>)
           (<==? .TYPE ,POTION-HIDING>
            <TELL "The farmer swirls it, peers closely at it, and nods. \"That's a potion of hiding.
-Makes you invisible for thirty turns or so. Monsters won't attack you, but try not to
-bump into them.\""
+Makes you invisible for a while. Monsters won't attack you, but try not to bump into them.\""
                  CR>)
           (<==? .TYPE ,POTION-MOTION>
            <TELL "The farmer swirls it, taps it a few times, and nods. \"Yep, that's a
