@@ -585,6 +585,7 @@ On success sets DROP-CAND-X/Y and returns T. On failure returns FALSE."
         <SET NX <+ .X .DX>>
         <SET NY <+ .Y .DY>>
         <COND (<NOT <PASSABLE-FOR-DROP? .NX .NY>> <AGAIN>)>
+        <COND (<AND <==? .NX ,PLAYER-X> <==? .NY ,PLAYER-Y>> <AGAIN>)>
         <COND (<==? .MODE ,DROPMODE-GOLD>
            <COND (<G? <FOOD-OBJ-AT .NX .NY> 0> <AGAIN>)>
                <COND (<POTION-AT? .NX .NY> <AGAIN>)>
