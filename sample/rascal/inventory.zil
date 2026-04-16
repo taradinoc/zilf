@@ -766,17 +766,19 @@ Returns:
     <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
     <RTRUE>>
 
+<CONSTANT CANT-PUT-BACK-NOW "You can only put an item back immediately after picking it up.">
+
 <ROUTINE TRY-UNDO-LAST-PICKUP ("AUX" O K ID LVL ENCH)
     <SET O ,LAST-PICKUP-OBJ>
     <CLEAR-LAST-PICKUP>
-    <COND (<L=? .O 0>
-           <LOG "You can only put something back immediately after picking it up." CR>
-           <RFALSE>)>
+    <COND (<L=? .O 0> <LOG ,CANT-PUT-BACK-NOW CR> <RFALSE>)>
     <SET K <GETP .O ,P?R-ITKIND>>
     <SET ID <GETP .O ,P?R-ITID>>
     <SET LVL <GETP .O ,P?R-ITLVL>>
     <SET ENCH <GETP .O ,P?R-ITENCH>>
-    <COND (<NOT <DROP-INVENTORY-OBJ-HERE .O>> <RTRUE>)>
+    <COND (<NOT <DROP-INVENTORY-OBJ-HERE .O>>
+           <LOG ,CANT-PUT-BACK-NOW CR>
+           <RTRUE>)>
     <COND (<==? .K ,ITEMKIND-TREASURE>
            <LOG "You put back the " TREASURE-NAME .ID "." CR>)
           (<==? .K ,ITEMKIND-WEAPON>

@@ -1074,11 +1074,11 @@ Returns:
 <ROUTINE HANDLE-INPUT (C "AUX" DX DY NX NY ENTERTR OLDX OLDY E)
     <SET DX 0>
     <SET DY 0>
-    <COND (,LAST-PICKUP-OBJ
-           <COND (<OR <==? .C !\R> <==? .C !\r>>
-                  <TRY-UNDO-LAST-PICKUP>
-                  <RTRUE>)
-                 (ELSE <CLEAR-LAST-PICKUP>)>)>
+    <COND (<==? .C !\R !\r>
+           <COND (,LAST-PICKUP-OBJ <TRY-UNDO-LAST-PICKUP>)
+                 (ELSE <LOG ,CANT-PUT-BACK-NOW CR>)>
+           <RTRUE>)>
+    <CLEAR-LAST-PICKUP>
     <IF-DEBUG
         ;"Debug keys: require a double-press (F-key twice in a row)."
         <COND (<OR <==? .C ,KEY-F7>
