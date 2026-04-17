@@ -282,7 +282,7 @@ Args:
   (none)
 
 Returns:
-  T if a weapon was equipped; FALSE otherwise."
+  T if a different weapon was equipped; FALSE otherwise."
 
 <ROUTINE TRY-EQUIP-WEAPON ("AUX" C SLOT K ID LVL ENCH WSTR NEED O)
     <COND (<L=? <INV-COUNT> 0> <LOG "You have nothing to equip." CR> <RFALSE>)>
@@ -299,6 +299,9 @@ Returns:
     <SET LVL <GETP .O ,P?R-ITLVL>>
     <SET ENCH <GETP .O ,P?R-ITENCH>>
     <COND (<N==? .K ,ITEMKIND-WEAPON> <LOG "That's not a weapon." CR> <RFALSE>)>
+    <COND (<==? .O ,EQUIPPED-WEAPON>
+           <LOG "You're already wielding that." CR>
+           <RFALSE>)>
     <SET WSTR <+ ,PLAYER-STR .ENCH>>
     <COND (<L? .WSTR .LVL>
            <SET NEED <- .LVL .ENCH>>

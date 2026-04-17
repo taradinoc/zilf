@@ -1151,7 +1151,8 @@ Returns:
            <COND (<TRY-INGEST-INVENTORY>
                   <COND (,GAME-OVER? <RTRUE>) (ELSE <RFALSE>)>)
                  (ELSE <RTRUE>)>)>
-    <COND (<OR <==? .C !\G> <==? .C !\g>> <TRY-EQUIP-WEAPON> <RFALSE>)>
+    <COND (<==? .C !\G !\g>
+           <COND (<TRY-EQUIP-WEAPON> <RFALSE>) (ELSE <RTRUE>)>)>
     <COND (<==? .C !\?>
            <INSTRUCTIONS T>
            <RTRUE>)
