@@ -931,10 +931,17 @@ lengthwise across it and an inverted V above it." CR>)
 
 "Interior action overrides"
 
-<REMOVE-SYNTAX * = V-SAVE>
-<REMOVE-SYNTAX * = V-RESTORE>
+<CONSTANT NO-SAVING "Saving is not allowed in this game.">
 
 <BIND ((REDEFINE T))
+    <ROUTINE V-SAVE () <TELL ,NO-SAVING CR>>
+
+    <ROUTINE V-RESTORE ()
+        <TELL ,NO-SAVING CR>>
+
+    <ROUTINE V-UNDO ()
+        <TELL "Undo is not allowed in this game." CR>>
+
     <ROUTINE V-READ ()
         <PERFORM ,V?EXAMINE ,PRSO>>>
 
