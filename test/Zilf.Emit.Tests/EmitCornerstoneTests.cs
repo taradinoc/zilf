@@ -981,10 +981,10 @@ namespace Zilf.Emit.Tests
             StringAssert.Contains(output, "    PUTL RESULT");
             StringAssert.Contains(output, ".proc __LoadIndirectGlobal");
             StringAssert.Contains(output, "    PUSHW 0x0010");
-            StringAssert.Contains(output, "    JUMPEQ load_global_0000");
+            StringAssert.Contains(output, "    JUMPL load_global_missing");
+            StringAssert.Contains(output, "    PUSHW 0x001B");
+            StringAssert.Contains(output, "    JUMPG load_global_missing");
             StringAssert.Contains(output, "    LOADG FIRST_GLOBAL");
-            StringAssert.Contains(output, "    PUSHW 0x0011");
-            StringAssert.Contains(output, "    JUMPEQ load_global_0001");
             StringAssert.Contains(output, "    LOADG SECOND_GLOBAL");
             Assert.IsFalse(output.Contains("    POP\n    PUSH0\n    PUTL RESULT", StringComparison.Ordinal));
         }

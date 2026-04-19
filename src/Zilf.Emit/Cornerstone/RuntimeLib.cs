@@ -1264,21 +1264,91 @@ namespace Zilf.Emit.Cornerstone
                     {
                         routine.DefineRequiredParameter("selector");
 
-                        foreach (var global in builder.Globals)
+                        var globals = builder.Globals.OrderBy(global => global.Index).ToArray();
+
+                        if (globals.Length == 0)
                         {
+                            routine.EmitRawLine("    RZERO");
+                            return;
+                        }
+
+                        static void EmitSearchNode(
+                            GameBuilder.NamedVariable[] globals,
+                            GameBuilder.RoutineBuilder routine,
+                            int start,
+                            int end,
+                            string? entryLabel,
+                            ref int nextNodeId)
+                        {
+                            if (entryLabel is not null)
+                                routine.EmitRawLine($"{entryLabel}:");
+
+                            if (start == end)
+                            {
+                                routine.EmitRawLine($"    LOADG {globals[start].Name}");
+                                routine.EmitRawLine("    RETURN");
+                                return;
+                            }
+
+                            var midpoint = start + ((end - start) / 2);
+                            var midpointGlobal = globals[midpoint];
+                            var midpointSelector = midpointGlobal.Index + 0x10;
+                            var leftStart = start;
+                            var leftEnd = midpoint - 1;
+                            var rightStart = midpoint + 1;
+                            var rightEnd = end;
+                            var loadLabel = $"load_global_{midpointGlobal.Index:X4}";
+                            var hasLeftBranch = leftStart <= leftEnd;
+                            var hasRightBranch = rightStart <= rightEnd;
+
+                            if (!hasRightBranch)
+                            {
+                                var leftLabel = $"load_global_search_{nextNodeId++:X4}";
+                                routine.EmitRawLine("    PUSHL 0");
+                                routine.EmitRawLine($"    PUSHW 0x{midpointSelector:X4}");
+                                routine.EmitRawLine($"    JUMPL {leftLabel}");
+                                routine.EmitRawLine($"    LOADG {midpointGlobal.Name}");
+                                routine.EmitRawLine("    RETURN");
+                                EmitSearchNode(globals, routine, leftStart, leftEnd, leftLabel, ref nextNodeId);
+                                return;
+                            }
+
                             routine.EmitRawLine("    PUSHL 0");
-                            routine.EmitRawLine($"    PUSHW 0x{global.Index + 0x10:X4}");
-                            routine.EmitRawLine($"    JUMPEQ load_global_{global.Index:X4}");
-                        }
+                            routine.EmitRawLine($"    PUSHW 0x{midpointSelector:X4}");
+                            routine.EmitRawLine($"    JUMPEQ {loadLabel}");
 
-                        routine.EmitRawLine("    RZERO");
+                            string? leftBranchLabel = null;
+                            if (hasLeftBranch)
+                            {
+                                leftBranchLabel = $"load_global_search_{nextNodeId++:X4}";
+                                routine.EmitRawLine("    PUSHL 0");
+                                routine.EmitRawLine($"    PUSHW 0x{midpointSelector:X4}");
+                                routine.EmitRawLine($"    JUMPL {leftBranchLabel}");
+                            }
 
-                        foreach (var global in builder.Globals)
-                        {
-                            routine.EmitRawLine($"load_global_{global.Index:X4}:");
-                            routine.EmitRawLine($"    LOADG {global.Name}");
+                            EmitSearchNode(globals, routine, rightStart, rightEnd, null, ref nextNodeId);
+                            routine.EmitRawLine($"{loadLabel}:");
+                            routine.EmitRawLine($"    LOADG {midpointGlobal.Name}");
                             routine.EmitRawLine("    RETURN");
+
+                            if (leftBranchLabel is not null)
+                                EmitSearchNode(globals, routine, leftStart, leftEnd, leftBranchLabel, ref nextNodeId);
                         }
+
+                        var missTargetLabel = "load_global_missing";
+                        var nextNodeId = 0;
+                        var lowSelector = globals[0].Index + 0x10;
+                        var highSelector = globals[^1].Index + 0x10;
+
+                        routine.EmitRawLine("    PUSHL 0");
+                        routine.EmitRawLine($"    PUSHW 0x{lowSelector:X4}");
+                        routine.EmitRawLine($"    JUMPL {missTargetLabel}");
+                        routine.EmitRawLine("    PUSHL 0");
+                        routine.EmitRawLine($"    PUSHW 0x{highSelector:X4}");
+                        routine.EmitRawLine($"    JUMPG {missTargetLabel}");
+                        EmitSearchNode(globals, routine, 0, globals.Length - 1, null, ref nextNodeId);
+                        routine.EmitRawLine($"{missTargetLabel}:");
+                        routine.EmitRawLine("    RZERO");
                     }));
 
             routines.Add(
