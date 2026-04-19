@@ -23,5 +23,6 @@ namespace Zilf.Compiler.Builtins
         Any = 0,
         ZMachineOnly = 1,
         GlulxOnly = 2,
+        CornerstoneOnly = 3,
     }
 }

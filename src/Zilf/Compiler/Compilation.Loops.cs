@@ -519,9 +519,9 @@ namespace Zilf.Compiler
                     {
                         var zversion = blc.cc.Context.ZEnvironment.ZVersion;
                         var argCount = ((ZilForm)end).Rest?.GetLength(10) ?? 10;
-                        var isGlulx = blc.cc.Context.IsGlulx;
-                        if (ZBuiltins.IsBuiltinValueCall(endCall, zversion, argCount, isGlulx) ||
-                            ZBuiltins.IsBuiltinVoidCall(endCall, zversion, argCount, isGlulx))
+                        var currentPlatform = ZBuiltins.GetCurrentBuiltinPlatform(blc.cc.Context.ZEnvironment.TargetPlatform);
+                        if (ZBuiltins.IsBuiltinValueCall(endCall, zversion, argCount, currentPlatform) ||
+                            ZBuiltins.IsBuiltinVoidCall(endCall, zversion, argCount, currentPlatform))
                         {
                             blc.cc.Context.HandleError(new CompilerError(
                                 end,
@@ -538,10 +538,10 @@ namespace Zilf.Compiler
                     {
                         var zversion = blc.cc.Context.ZEnvironment.ZVersion;
                         var argCount = ((ZilForm)inc).Rest?.GetLength(10) ?? 10;
-                        var isGlulx = blc.cc.Context.IsGlulx;
-                        if ((ZBuiltins.IsBuiltinValueCall(incCall, zversion, argCount, isGlulx) ||
-                             ZBuiltins.IsBuiltinValuePredCall(incCall, zversion, argCount, isGlulx) ||
-                             ZBuiltins.IsBuiltinPredCall(incCall, zversion, argCount, isGlulx)) &&
+                            var currentPlatform = ZBuiltins.GetCurrentBuiltinPlatform(blc.cc.Context.ZEnvironment.TargetPlatform);
+                            if ((ZBuiltins.IsBuiltinValueCall(incCall, zversion, argCount, currentPlatform) ||
+                                ZBuiltins.IsBuiltinValuePredCall(incCall, zversion, argCount, currentPlatform) ||
+                                ZBuiltins.IsBuiltinPredCall(incCall, zversion, argCount, currentPlatform)) &&
                              !ZBuiltins.IsBuiltinWithSideEffects(incCall, zversion, argCount))
                         {
                             blc.cc.Context.HandleError(new CompilerError(

@@ -96,41 +96,63 @@ namespace Zilf.Compiler.Builtins
             return Array.Empty<ISignature>();
         }
 
-        public static bool IsBuiltinValueCall(string name, int zversion, int argCount, bool isGlulx)
+        internal static BuiltinPlatform GetCurrentBuiltinPlatform(TargetPlatform targetPlatform)
+        {
+            return targetPlatform switch
+            {
+                TargetPlatform.Glulx16 or TargetPlatform.Glulx32 => BuiltinPlatform.GlulxOnly,
+                TargetPlatform.Cornerstone => BuiltinPlatform.CornerstoneOnly,
+                _ => BuiltinPlatform.ZMachineOnly,
+            };
+        }
+
+        public static bool IsBuiltinValueCall(string name, int zversion, int argCount, BuiltinPlatform currentPlatform)
         {
             // Check generated parsers using capability checking
             // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
             int normalizedVersion = zversion > 6 ? 5 : zversion;
             return GeneratedBuiltinParsers.ValueCallParsers.TryGetValue(name, out var valueEntry) &&
-                   valueEntry.SupportsCall(normalizedVersion, argCount, isGlulx);
+                   valueEntry.SupportsCall(normalizedVersion, argCount, currentPlatform);
         }
 
-        public static bool IsBuiltinVoidCall(string name, int zversion, int argCount, bool isGlulx)
+        public static bool IsBuiltinValueCall(string name, int zversion, int argCount, bool isGlulx) =>
+            IsBuiltinValueCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.GlulxOnly : BuiltinPlatform.ZMachineOnly);
+
+        public static bool IsBuiltinVoidCall(string name, int zversion, int argCount, BuiltinPlatform currentPlatform)
         {
             // Check generated parsers using capability checking
             // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
             int normalizedVersion = zversion > 6 ? 5 : zversion;
             return GeneratedBuiltinParsers.VoidCallParsers.TryGetValue(name, out var voidEntry) &&
-                   voidEntry.SupportsCall(normalizedVersion, argCount, isGlulx);
+                   voidEntry.SupportsCall(normalizedVersion, argCount, currentPlatform);
         }
 
-        public static bool IsBuiltinPredCall(string name, int zversion, int argCount, bool isGlulx)
+        public static bool IsBuiltinVoidCall(string name, int zversion, int argCount, bool isGlulx) =>
+            IsBuiltinVoidCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.GlulxOnly : BuiltinPlatform.ZMachineOnly);
+
+        public static bool IsBuiltinPredCall(string name, int zversion, int argCount, BuiltinPlatform currentPlatform)
         {
             // Check generated parsers using capability checking
             // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
             int normalizedVersion = zversion > 6 ? 5 : zversion;
             return GeneratedBuiltinParsers.PredCallParsers.TryGetValue(name, out var predEntry) &&
-                   predEntry.SupportsCall(normalizedVersion, argCount, isGlulx);
+                   predEntry.SupportsCall(normalizedVersion, argCount, currentPlatform);
         }
 
-        public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount, bool isGlulx)
+        public static bool IsBuiltinPredCall(string name, int zversion, int argCount, bool isGlulx) =>
+            IsBuiltinPredCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.GlulxOnly : BuiltinPlatform.ZMachineOnly);
+
+        public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount, BuiltinPlatform currentPlatform)
         {
             // Check generated parsers using capability checking
             // Normalize versions 7 and 8 to version 5 (they have same operations as v5)
             int normalizedVersion = zversion > 6 ? 5 : zversion;
             return GeneratedBuiltinParsers.ValuePredCallParsers.TryGetValue(name, out var valuePredEntry) &&
-                   valuePredEntry.SupportsCall(normalizedVersion, argCount, isGlulx);
+                   valuePredEntry.SupportsCall(normalizedVersion, argCount, currentPlatform);
         }
+
+        public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount, bool isGlulx) =>
+            IsBuiltinValuePredCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.GlulxOnly : BuiltinPlatform.ZMachineOnly);
 
         public static bool IsBuiltinWithSideEffects(string name, int zversion, int argCount)
         {
@@ -140,7 +162,7 @@ namespace Zilf.Compiler.Builtins
             return GeneratedBuiltinParsers.HasSideEffects(name);
         }
 
-        public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, bool isGlulx, [NotNullWhen(true)] out CompilerError? error)
+        public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, BuiltinPlatform currentPlatform, [NotNullWhen(true)] out CompilerError? error)
         {
             // Check if the builtin name exists in any generated parser dictionary
             bool hasVoidCall = GeneratedBuiltinParsers.VoidCallParsers.ContainsKey(name);
@@ -157,14 +179,14 @@ namespace Zilf.Compiler.Builtins
                 // Try different argument counts to see if any would work with this version
                 for (int testArgCount = 0; testArgCount <= 10; testArgCount++) // reasonable upper bound
                 {
-                    if ((hasVoidCall && GeneratedBuiltinParsers.VoidCallParsers[name].SupportsCall(normalizedVersion, testArgCount, isGlulx)) ||
-                        (hasValueCall && GeneratedBuiltinParsers.ValueCallParsers[name].SupportsCall(normalizedVersion, testArgCount, isGlulx)) ||
-                        (hasPredCall && GeneratedBuiltinParsers.PredCallParsers[name].SupportsCall(normalizedVersion, testArgCount, isGlulx)) ||
-                        (hasValuePredCall && GeneratedBuiltinParsers.ValuePredCallParsers[name].SupportsCall(normalizedVersion, testArgCount, isGlulx)))
+                    if ((hasVoidCall && GeneratedBuiltinParsers.VoidCallParsers[name].SupportsCall(normalizedVersion, testArgCount, currentPlatform)) ||
+                        (hasValueCall && GeneratedBuiltinParsers.ValueCallParsers[name].SupportsCall(normalizedVersion, testArgCount, currentPlatform)) ||
+                        (hasPredCall && GeneratedBuiltinParsers.PredCallParsers[name].SupportsCall(normalizedVersion, testArgCount, currentPlatform)) ||
+                        (hasValuePredCall && GeneratedBuiltinParsers.ValuePredCallParsers[name].SupportsCall(normalizedVersion, testArgCount, currentPlatform)))
                     {
                         // Found a working arg count for this version - this is a wrong argument count error
                         // Get the specific argument count ranges from the builtin metadata
-                        var ranges = GetArgumentCountRanges(name, normalizedVersion, isGlulx);
+                        var ranges = GetArgumentCountRanges(name, normalizedVersion, currentPlatform);
                         if (ranges.Count > 0)
                         {
                             error = CompilerError.WrongArgCount(name, ranges);
@@ -180,9 +202,12 @@ namespace Zilf.Compiler.Builtins
 
                 // No working arg count found for this version - version not supported
                 error = new CompilerError(
-                    isGlulx
-                        ? CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx
-                        : CompilerMessages._0_Is_Not_Supported_In_This_Zmachine_Version,
+                    currentPlatform switch
+                    {
+                        BuiltinPlatform.GlulxOnly => CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx,
+                        BuiltinPlatform.CornerstoneOnly => CompilerMessages._0_Is_Not_Supported_When_Targeting_Cornerstone,
+                        _ => CompilerMessages._0_Is_Not_Supported_In_This_Zmachine_Version,
+                    },
                     name);
                 return true;
             }
@@ -192,7 +217,7 @@ namespace Zilf.Compiler.Builtins
             return false;
         }
 
-        private static List<ArgCountRange> GetArgumentCountRanges(string name, int normalizedVersion, bool isGlulx)
+        private static List<ArgCountRange> GetArgumentCountRanges(string name, int normalizedVersion, BuiltinPlatform currentPlatform)
         {
             var ranges = new List<ArgCountRange>();
 
@@ -206,8 +231,9 @@ namespace Zilf.Compiler.Builtins
                     {
                         bool platformMatch = zSignature.Platform switch
                         {
-                            BuiltinPlatform.ZMachineOnly => !isGlulx,
-                            BuiltinPlatform.GlulxOnly => isGlulx,
+                            BuiltinPlatform.ZMachineOnly => currentPlatform == BuiltinPlatform.ZMachineOnly,
+                            BuiltinPlatform.GlulxOnly => currentPlatform == BuiltinPlatform.GlulxOnly,
+                            BuiltinPlatform.CornerstoneOnly => currentPlatform == BuiltinPlatform.CornerstoneOnly,
                             _ => true,
                         };
 

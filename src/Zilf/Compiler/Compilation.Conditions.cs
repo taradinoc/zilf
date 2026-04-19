@@ -91,20 +91,20 @@ namespace Zilf.Compiler
             // prefer the predicate version, then value, value+predicate, void
             // (value+predicate is hard to clean up)
             var zversion = Context.ZEnvironment.ZVersion;
-            var isGlulx = Context.IsGlulx;
+            var currentPlatform = ZBuiltins.GetCurrentBuiltinPlatform(Context.ZEnvironment.TargetPlatform);
             var argCount = form.Count() - 1;
-            if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount, isGlulx))
+            if (ZBuiltins.IsBuiltinPredCall(head.Text, zversion, argCount, currentPlatform))
             {
                 ZBuiltins.CompilePredCall(head.Text, this, rb, form, label, polarity);
                 return;
             }
-            if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount, isGlulx))
+            if (ZBuiltins.IsBuiltinValueCall(head.Text, zversion, argCount, currentPlatform))
             {
                 var result = ZBuiltins.CompileValueCall(head.Text, this, rb, form, rb.Stack);
                 BranchIfNonZero(result);
                 return;
             }
-            if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount, isGlulx))
+            if (ZBuiltins.IsBuiltinValuePredCall(head.Text, zversion, argCount, currentPlatform))
             {
                 if (rb.CleanStack)
                 {
@@ -121,7 +121,7 @@ namespace Zilf.Compiler
                 }
                 return;
             }
-            if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount, isGlulx))
+            if (ZBuiltins.IsBuiltinVoidCall(head.Text, zversion, argCount, currentPlatform))
             {
                 if (head.Text == "FSET")
                 {
@@ -295,7 +295,7 @@ namespace Zilf.Compiler
                     // for OR, if the value is true we want to return it; otherwise discard it and try the next expr
                     // however, if the expr is a predicate anyway, we can branch out of the OR if it's true;
                     // otherwise fall through to the next expr
-                    if (first.IsPredicate(Context.ZEnvironment.ZVersion, Context.IsGlulx))
+                    if (first.IsPredicate(Context.ZEnvironment.ZVersion, ZBuiltins.GetCurrentBuiltinPlatform(Context.ZEnvironment.TargetPlatform)))
                     {
                         CompileCondition(rb, first, src, TrueLabelProvider(), true);
                         // fall through to nextLabel

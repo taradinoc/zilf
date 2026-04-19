@@ -193,6 +193,8 @@ namespace Zilf.Diagnostics
         public const int Character_0_Is_Not_Part_Of_Standard_ZSCII_And_Cannot_Be_Printed_In_Zmachine_Version_1 = 414;
         [Error("no room left in Unicode translation table for character '{0}'")]
         public const int No_Room_Left_In_Unicode_Translation_Table_For_Character_0 = 415;
+        [Error("{0} is not supported when targeting Cornerstone")]
+        public const int _0_Is_Not_Supported_When_Targeting_Cornerstone = 416;
 
         // Misc - 0500
 

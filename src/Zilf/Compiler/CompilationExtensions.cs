@@ -125,7 +125,7 @@ namespace Zilf.Compiler
             return list.Any(zo => ModifiesLocal(zo, localAtom));
         }
 
-        public static bool IsPredicate(this ZilObject zo, int zversion, bool isGlulx)
+        public static bool IsPredicate(this ZilObject zo, int zversion, BuiltinPlatform currentPlatform)
         {
             if (zo is not ZilForm form || form.First is not ZilAtom head)
                 return false;
@@ -135,10 +135,13 @@ namespace Zilf.Compiler
             // ReSharper disable once SwitchStatementMissingSomeCases
             return head.StdAtom switch
             {
-                StdAtom.AND or StdAtom.OR or StdAtom.NOT => form.Rest.All(a => a.IsPredicate(zversion, isGlulx)),
-                _ => ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count(), isGlulx),
+                StdAtom.AND or StdAtom.OR or StdAtom.NOT => form.Rest.All(a => a.IsPredicate(zversion, currentPlatform)),
+                _ => ZBuiltins.IsBuiltinPredCall(head.Text, zversion, form.Rest.Count(), currentPlatform),
             };
         }
+
+        public static bool IsPredicate(this ZilObject zo, int zversion, bool isGlulx) =>
+            IsPredicate(zo, zversion, isGlulx ? BuiltinPlatform.GlulxOnly : BuiltinPlatform.ZMachineOnly);
 
         /// <summary>
         /// Recursively expands macros and cracks ADECLs to prepare an expression for compilation.

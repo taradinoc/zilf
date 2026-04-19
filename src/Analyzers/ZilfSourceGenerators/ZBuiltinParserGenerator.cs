@@ -187,6 +187,7 @@ namespace ZilfSourceGenerators
                 {
                     1 => BuiltinPlatformSetting.ZMachineOnly,
                     2 => BuiltinPlatformSetting.GlulxOnly,
+                    3 => BuiltinPlatformSetting.CornerstoneOnly,
                     _ => BuiltinPlatformSetting.Any,
                 };
             }
@@ -527,8 +528,9 @@ namespace ZilfSourceGenerators
                 }
                 var platformCondition = info.Attribute.Platform switch
                 {
-                    BuiltinPlatformSetting.ZMachineOnly => "!isGlulx",
-                    BuiltinPlatformSetting.GlulxOnly => "isGlulx",
+                    BuiltinPlatformSetting.ZMachineOnly => "currentPlatform == BuiltinPlatform.ZMachineOnly",
+                    BuiltinPlatformSetting.GlulxOnly => "currentPlatform == BuiltinPlatform.GlulxOnly",
+                    BuiltinPlatformSetting.CornerstoneOnly => "currentPlatform == BuiltinPlatform.CornerstoneOnly",
                     _ => "true"
                 };
 
@@ -558,16 +560,16 @@ namespace ZilfSourceGenerators
             // Generate lambda that returns true if ANY overload matches
             if (conditions.Count == 0)
             {
-                return "(zversion, argCount, isGlulx) => false";
+                return "(zversion, argCount, currentPlatform) => false";
             }
             else if (conditions.Count == 1)
             {
-                return $"(zversion, argCount, isGlulx) => {conditions[0]}";
+                return $"(zversion, argCount, currentPlatform) => {conditions[0]}";
             }
             else
             {
                 var combined = string.Join(" || ", conditions);
-                return $"(zversion, argCount, isGlulx) => ({combined})";
+                return $"(zversion, argCount, currentPlatform) => ({combined})";
             }
         }
 
@@ -586,7 +588,7 @@ namespace ZilfSourceGenerators
             var voidCallGroup = callTypeGroups.FirstOrDefault(g => g.Key == "VoidCall");
             if (voidCallGroup != null)
             {
-                sb.AppendLine("internal static readonly System.Collections.Generic.Dictionary<string, (System.Action<Zilf.Compiler.Builtins.VoidCall, Zilf.Interpreter.Values.ZilObject[]> Parser, System.Func<int, int, bool, bool> SupportsCall)> VoidCallParsers = new() {");
+                sb.AppendLine("internal static readonly System.Collections.Generic.Dictionary<string, (System.Action<Zilf.Compiler.Builtins.VoidCall, Zilf.Interpreter.Values.ZilObject[]> Parser, System.Func<int, int, BuiltinPlatform, bool> SupportsCall)> VoidCallParsers = new() {");
                 sb.Indent();
                 foreach (var group in voidCallGroup)
                 {
@@ -605,7 +607,7 @@ namespace ZilfSourceGenerators
             var valueCallGroup = callTypeGroups.FirstOrDefault(g => g.Key == "ValueCall");
             if (valueCallGroup != null)
             {
-                sb.AppendLine("internal static readonly System.Collections.Generic.Dictionary<string, (System.Func<Zilf.Compiler.Builtins.ValueCall, Zilf.Interpreter.Values.ZilObject[], Zilf.Emit.IOperand> Parser, System.Func<int, int, bool, bool> SupportsCall)> ValueCallParsers = new() {");
+                sb.AppendLine("internal static readonly System.Collections.Generic.Dictionary<string, (System.Func<Zilf.Compiler.Builtins.ValueCall, Zilf.Interpreter.Values.ZilObject[], Zilf.Emit.IOperand> Parser, System.Func<int, int, BuiltinPlatform, bool> SupportsCall)> ValueCallParsers = new() {");
                 sb.Indent();
                 foreach (var group in valueCallGroup)
                 {
@@ -624,7 +626,7 @@ namespace ZilfSourceGenerators
             var predCallGroup = callTypeGroups.FirstOrDefault(g => g.Key == "PredCall");
             if (predCallGroup != null)
             {
-                sb.AppendLine("internal static readonly System.Collections.Generic.Dictionary<string, (System.Action<Zilf.Compiler.Builtins.PredCall, Zilf.Interpreter.Values.ZilObject[]> Parser, System.Func<int, int, bool, bool> SupportsCall)> PredCallParsers = new() {");
+                sb.AppendLine("internal static readonly System.Collections.Generic.Dictionary<string, (System.Action<Zilf.Compiler.Builtins.PredCall, Zilf.Interpreter.Values.ZilObject[]> Parser, System.Func<int, int, BuiltinPlatform, bool> SupportsCall)> PredCallParsers = new() {");
                 sb.Indent();
                 foreach (var group in predCallGroup)
                 {
@@ -643,7 +645,7 @@ namespace ZilfSourceGenerators
             var valuePredCallGroup = callTypeGroups.FirstOrDefault(g => g.Key == "ValuePredCall");
             if (valuePredCallGroup != null)
             {
-                sb.AppendLine("internal static readonly System.Collections.Generic.Dictionary<string, (System.Func<Zilf.Compiler.Builtins.ValuePredCall, Zilf.Interpreter.Values.ZilObject[], Zilf.Emit.IOperand> Parser, System.Func<int, int, bool, bool> SupportsCall)> ValuePredCallParsers = new() {");
+                sb.AppendLine("internal static readonly System.Collections.Generic.Dictionary<string, (System.Func<Zilf.Compiler.Builtins.ValuePredCall, Zilf.Interpreter.Values.ZilObject[], Zilf.Emit.IOperand> Parser, System.Func<int, int, BuiltinPlatform, bool> SupportsCall)> ValuePredCallParsers = new() {");
                 sb.Indent();
                 foreach (var group in valuePredCallGroup)
                 {
@@ -910,69 +912,74 @@ namespace ZilfSourceGenerators
                 return;
             }
 
+            var cornerstoneCandidates = group.Overloads
+                .Where(o => o.Attribute.Platform is BuiltinPlatformSetting.Any or BuiltinPlatformSetting.CornerstoneOnly)
+                .ToList();
             var glulxCandidates = group.Overloads
-                .Where(o => o.Attribute.Platform != BuiltinPlatformSetting.ZMachineOnly)
+                .Where(o => o.Attribute.Platform is BuiltinPlatformSetting.Any or BuiltinPlatformSetting.GlulxOnly)
                 .ToList();
             var zMachineCandidates = group.Overloads
-                .Where(o => o.Attribute.Platform != BuiltinPlatformSetting.GlulxOnly)
+                .Where(o => o.Attribute.Platform is BuiltinPlatformSetting.Any or BuiltinPlatformSetting.ZMachineOnly)
                 .ToList();
 
+            var supportsCornerstone = cornerstoneCandidates.Count > 0;
             var supportsGlulx = glulxCandidates.Count > 0;
             var supportsZMachine = zMachineCandidates.Count > 0;
 
-            if (supportsGlulx && supportsZMachine)
+            sb.AppendLine("if (c.cc.Context.IsCornerstone)");
+            sb.AppendLine("{");
+            sb.Indent();
+            if (supportsCornerstone)
             {
-                sb.AppendLine("if (c.cc.Context.IsGlulx)");
-                sb.AppendLine("{");
-                sb.Indent();
                 GenerateOverloadDispatchBodyCore(sb, new OverloadGroup
                 {
                     BuiltinName = group.BuiltinName ?? string.Empty,
                     CallType = group.CallType,
-                    Overloads = glulxCandidates
+                    Overloads = cornerstoneCandidates
                 });
-                sb.Unindent();
-                sb.AppendLine("}");
-                sb.AppendLine("else");
-                sb.AppendLine("{");
-                sb.Indent();
-                GenerateOverloadDispatchBodyCore(sb, new OverloadGroup
-                {
-                    BuiltinName = group.BuiltinName ?? string.Empty,
-                    CallType = group.CallType,
-                    Overloads = zMachineCandidates
-                });
-                sb.Unindent();
-                sb.AppendLine("}");
-                return;
             }
-
+            else
+            {
+                EmitPlatformError(sb, group.CallType, group.BuiltinName ?? string.Empty, BuiltinPlatformSetting.CornerstoneOnly);
+            }
+            sb.Unindent();
+            sb.AppendLine("}");
+            sb.AppendLine("else if (c.cc.Context.IsGlulx)");
+            sb.AppendLine("{");
+            sb.Indent();
             if (supportsGlulx)
             {
-                EmitPlatformGuard(sb, group.CallType, group.BuiltinName ?? string.Empty, requiresGlulx: true);
                 GenerateOverloadDispatchBodyCore(sb, new OverloadGroup
                 {
                     BuiltinName = group.BuiltinName ?? string.Empty,
                     CallType = group.CallType,
                     Overloads = glulxCandidates
                 });
-                return;
             }
-
+            else
+            {
+                EmitPlatformError(sb, group.CallType, group.BuiltinName ?? string.Empty, BuiltinPlatformSetting.GlulxOnly);
+            }
+            sb.Unindent();
+            sb.AppendLine("}");
+            sb.AppendLine("else");
+            sb.AppendLine("{");
+            sb.Indent();
             if (supportsZMachine)
             {
-                EmitPlatformGuard(sb, group.CallType, group.BuiltinName ?? string.Empty, requiresGlulx: false);
                 GenerateOverloadDispatchBodyCore(sb, new OverloadGroup
                 {
                     BuiltinName = group.BuiltinName ?? string.Empty,
                     CallType = group.CallType,
                     Overloads = zMachineCandidates
                 });
-                return;
             }
-
-            // No overloads support the current platform – emit a guard that always fails to produce a meaningful error.
-            EmitPlatformGuard(sb, group.CallType, group.BuiltinName ?? string.Empty, requiresGlulx: false);
+            else
+            {
+                EmitPlatformError(sb, group.CallType, group.BuiltinName ?? string.Empty, BuiltinPlatformSetting.ZMachineOnly);
+            }
+            sb.Unindent();
+            sb.AppendLine("}");
         }
 
         private static void GenerateOverloadDispatchBodyCore(IndentedStringBuilder sb, OverloadGroup group)
@@ -1387,28 +1394,19 @@ namespace ZilfSourceGenerators
             {
                 BuiltinPlatformSetting.ZMachineOnly => "BuiltinPlatform.ZMachineOnly",
                 BuiltinPlatformSetting.GlulxOnly => "BuiltinPlatform.GlulxOnly",
+                BuiltinPlatformSetting.CornerstoneOnly => "BuiltinPlatform.CornerstoneOnly",
                 _ => "BuiltinPlatform.Any",
             };
         }
 
-        private static void EmitPlatformGuard(IndentedStringBuilder sb, string callType, string operationName, bool requiresGlulx)
+        private static void EmitPlatformError(IndentedStringBuilder sb, string callType, string operationName, BuiltinPlatformSetting currentPlatform)
         {
-            var condition = requiresGlulx ? "!c.cc.Context.IsGlulx" : "c.cc.Context.IsGlulx";
-            var description = requiresGlulx ? "Glulx only" : "Z-machine only";
-            sb.AppendLine($"// Platform guard: {description}");
-            sb.AppendLine($"if ({condition})");
-            sb.AppendLine("{");
-            sb.Indent();
-            EmitPlatformError(sb, callType, operationName, requiresGlulx);
-            sb.Unindent();
-            sb.AppendLine("}");
-        }
-
-        private static void EmitPlatformError(IndentedStringBuilder sb, string callType, string operationName, bool requiresGlulx)
-        {
-            var messageId = requiresGlulx
-                ? "CompilerMessages._0_Is_Not_Supported_When_Targeting_The_Zmachine"
-                : "CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx";
+            var messageId = currentPlatform switch
+            {
+                BuiltinPlatformSetting.GlulxOnly => "CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx",
+                BuiltinPlatformSetting.CornerstoneOnly => "CompilerMessages._0_Is_Not_Supported_When_Targeting_Cornerstone",
+                _ => "CompilerMessages._0_Is_Not_Supported_When_Targeting_The_Zmachine",
+            };
             var safeName = operationName.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
             switch (callType)
@@ -2738,6 +2736,7 @@ namespace ZilfSourceGenerators
         Any = 0,
         ZMachineOnly = 1,
         GlulxOnly = 2,
+        CornerstoneOnly = 3,
     }
 
     public class ParameterInfo
