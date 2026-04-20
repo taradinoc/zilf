@@ -8,6 +8,9 @@
         monaco.languages.register({ id: 'zil' });
 
         monaco.languages.setLanguageConfiguration('zil', {
+            comments: {
+                lineComment: ';;'
+            },
             brackets: [
                 ['<', '>'],
                 ['(', ')'],
@@ -115,6 +118,7 @@
                 root: [
                     { include: '@whitespace' },
 
+                    [/;;[^\r\n]*/, 'comment.line.zil'],
                     [/;/, { token: 'punctuation.definition.comment.prefix.zil', next: '@comment' }],
                     [/%%/, { token: 'punctuation.definition.macro.double.prefix.zil', next: '@macro' }],
                     [/%/, { token: 'punctuation.definition.macro.single.prefix.zil', next: '@macro' }],
@@ -650,6 +654,7 @@
             base: 'vs-dark',
             inherit: true,
             rules: [
+                { token: 'comment.line.zil', foreground: '6A9955' },
                 { token: 'comment.block.zil', foreground: '6A9955' },
                 { token: 'meta.macro.zil', foreground: '9CDCFE' },
                 { token: 'variable.other.local.zil', foreground: '9CDCFE' },
