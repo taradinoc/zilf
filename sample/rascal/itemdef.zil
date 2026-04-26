@@ -19,7 +19,8 @@
 <CONSTANT LOCK-BRONZE 3>
 <CONSTANT LOCK-COPPER 4>
 <CONSTANT LOCK-NICKEL 5>
-<CONSTANT LOCK-TYPE-COUNT 5>
+<CONSTANT LOCK-COBALT 6>
+<CONSTANT LOCK-TYPE-COUNT 6>
 
 <CONSTANT WEAPON-DAGGER 1>
 <CONSTANT WEAPON-KATANA 2>
@@ -412,6 +413,7 @@ Returns:
           (<==? .LOCKTYPE ,LOCK-BRONZE> <TELL "bronze key">)
           (<==? .LOCKTYPE ,LOCK-COPPER> <TELL "copper key">)
           (<==? .LOCKTYPE ,LOCK-NICKEL> <TELL "nickel key">)
+          (<==? .LOCKTYPE ,LOCK-COBALT> <TELL "cobalt key">)
           (ELSE <TELL "key">)>
     <RTRUE>>
 
@@ -428,7 +430,14 @@ Returns:
           (<==? .LOCKTYPE ,LOCK-BRONZE> "bronze")
           (<==? .LOCKTYPE ,LOCK-COPPER> "copper")
           (<==? .LOCKTYPE ,LOCK-NICKEL> "nickel")
+          (<==? .LOCKTYPE ,LOCK-COBALT> "cobalt")
           (ELSE "metal")>>
+
+<ROUTINE KEY-VALUE (LOCKTYPE)
+    <COND (<==? .LOCKTYPE ,LOCK-GOLDEN ,LOCK-SILVER> 150)
+          (<==? .LOCKTYPE ,LOCK-BRONZE ,LOCK-COPPER> 100)
+          (<==? .LOCKTYPE ,LOCK-NICKEL ,LOCK-COBALT> 50)
+          (ELSE 50)>>
 
 <ADD-TELL-TOKENS
     WEAPON-NAME *   <PRINT-WEAPON-NAME .X>

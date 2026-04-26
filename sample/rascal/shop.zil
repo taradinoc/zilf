@@ -54,7 +54,7 @@ Returns:
                (<==? .KIND ,ITEMKIND-FOOD> <FOOD-VALUE .ID>)
                (<==? .KIND ,ITEMKIND-POTION> ,POTION-VALUE)
                (<==? .KIND ,ITEMKIND-WEAPON> <WEAPON-VALUE .ID .LVL .ENCH>)
-               (<==? .KIND ,ITEMKIND-KEY> 150)
+               (<==? .KIND ,ITEMKIND-KEY> <KEY-VALUE .ID>)
                (ELSE 1)>>
     <COND (<AND ,EXPERT-MODE? <N==? .KIND ,ITEMKIND-TREASURE>>
            <SET PRICE <* 2 .PRICE>>)> 
@@ -305,7 +305,7 @@ Returns:
     ;"1 random potion."
     <SET COLOR <TRADER-PICK-POTION-COLOR>>
     <TRINV-ADD-FLOOR .F ,ITEMKIND-POTION .COLOR 0 0>
-    ;"Sometimes a key, always priced at 300 gold."
+    ;"Sometimes a key, priced by metal type."
     <COND (<==? <RNG 4> 1>
            <TRINV-ADD-FLOOR .F ,ITEMKIND-KEY <RNG ,LOCK-TYPE-COUNT> 0 0>)>
     ;"1-2 other random items."

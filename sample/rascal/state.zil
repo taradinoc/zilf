@@ -53,6 +53,9 @@ discovered and will display by effect name instead of color name."
 <GLOBAL TREASURE-ROOM-LOOT-LVL <ITABLE ,MAX-FLOORS (BYTE) 0>>
 <GLOBAL TREASURE-ROOM-LOOT-ENCH <ITABLE ,MAX-FLOORS (BYTE) 0>>
 <GLOBAL TREASURE-ROOM-LOOT-AMT <ITABLE ,MAX-FLOORS (WORD) 0>>
+<GLOBAL TREASURE-ROOM-BONUS-GOLD-X <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-BONUS-GOLD-Y <ITABLE ,MAX-FLOORS (BYTE) 0>>
+<GLOBAL TREASURE-ROOM-BONUS-GOLD-AMT <ITABLE ,MAX-FLOORS (WORD) 0>>
 
 <GLOBAL SHRINE-OFFER1-KIND 0>
 <GLOBAL SHRINE-OFFER1-ID 0>
@@ -899,31 +902,62 @@ Returns the item object, or 0 if none."
                            <SET DX <+ .DX 1>>>>)>
             <SET X <+ .X 1>>>>>
 
-;"Pick a key floor relative to a locked door floor.
+;"Pick a key floor for a locked door based on the lock metal.
 
-Distribution:
-- 60%: 1-2 floors away (up or down)
-- 20%: same floor
-- 15%: 3-4 floors away
-- 5%: 5+ floors away"
+Golden and silver keys may appear on any floor.
+Bronze and copper keys may appear on the same floor or an earlier floor.
+Nickel and cobalt keys always appear on the same floor as their lock."
 
-<ROUTINE PICK-KEY-FLOOR-FOR-LOCK (DOORF "AUX" R OFFSET SIGN FLOOR)
-    <SET R <RNG 100>>
-    <COND (<L=? .R 60> <SET OFFSET <RNG 2>>)
-          (<L=? .R 80> <SET OFFSET 0>)
-          (<L=? .R 95> <SET OFFSET <+ 2 <RNG 2>>>)
+<ROUTINE KEY-FLOOR-WEIGHT (DOORF TARGETF "AUX" DIST)
+    <SET DIST <ABS <- .TARGETF .DOORF>>>
+    <MAX 1 <- 8 .DIST>>>
+
+<ROUTINE PICK-KEY-FLOOR-FOR-LOCK (DOORF LOCKTYPE "AUX" MINF MAXF TOTAL ROLL SUM)
+    <COND (<OR <==? .LOCKTYPE ,LOCK-GOLDEN>
+               <==? .LOCKTYPE ,LOCK-SILVER>>
+           <SET MINF 1>
+           <SET MAXF ,MAX-FLOORS>)
+          (<OR <==? .LOCKTYPE ,LOCK-BRONZE>
+               <==? .LOCKTYPE ,LOCK-COPPER>>
+           <SET MINF 1>
+           <SET MAXF .DOORF>)
           (ELSE
-           <COND (<L=? ,MAX-FLOORS 5> <SET OFFSET 5>)
-                 (ELSE <SET OFFSET <+ 4 <RNG <- ,MAX-FLOORS 5>>>>)>)>
+           <RETURN .DOORF>)>
 
-    <COND (<==? .OFFSET 0> <RETURN .DOORF>)>
-    <SET SIGN <COND (<==? <RNG 2> 1> -1) (ELSE 1)>>
-    <SET FLOOR <+ .DOORF <* .SIGN .OFFSET>>>
-    <COND (<OR <L? .FLOOR 1> <G? .FLOOR ,MAX-FLOORS>>
-           <SET FLOOR <+ .DOORF <* <- .SIGN> .OFFSET>>>)>
-    <COND (<L? .FLOOR 1> <SET FLOOR 1>)
-          (<G? .FLOOR ,MAX-FLOORS> <SET FLOOR ,MAX-FLOORS>)>
-    .FLOOR>
+    <SET TOTAL 0>
+    <DO (F .MINF .MAXF)
+        <SET TOTAL <+ .TOTAL <KEY-FLOOR-WEIGHT .DOORF .F>>>>
+
+    <COND (<L=? .TOTAL 0> <RETURN .DOORF>)>
+    <SET ROLL <RNG .TOTAL>>
+    <SET SUM 0>
+    <DO (F .MINF .MAXF)
+        <SET SUM <+ .SUM <KEY-FLOOR-WEIGHT .DOORF .F>>>
+        <COND (<L=? .ROLL .SUM> <RETURN .F>)>>
+
+    .DOORF>
+
+<ROUTINE TREASURE-ROOM-GOLD-AMT (LOCKTYPE "AUX" AMT)
+    <SET AMT <+ ,TREASURE-LOOT-GOLD-BASE <RNG ,TREASURE-LOOT-GOLD-VARIANCE>>>
+    <COND (<OR <==? .LOCKTYPE ,LOCK-GOLDEN>
+               <==? .LOCKTYPE ,LOCK-SILVER>>
+           <RETURN <PRICE-PLUS-HALF .AMT>>)
+          (<OR <==? .LOCKTYPE ,LOCK-NICKEL>
+               <==? .LOCKTYPE ,LOCK-COBALT>>
+           <RETURN <MAX 1 </ <* .AMT 2> 3>>>)>
+    .AMT>
+
+<ROUTINE FIND-TREASURE-SPOT-IN-ROOM-EXCEPT (RID AVOIDX AVOIDY "AUX" TRIES LOOTXY X Y)
+    <SET TRIES 0>
+    <REPEAT ()
+        <SET TRIES <+ .TRIES 1>>
+        <COND (<G? .TRIES 60> <RETURN 0>)>
+        <SET LOOTXY <FIND-TREASURE-SPOT-IN-ROOM .RID>>
+        <COND (<L=? .LOOTXY 0> <RETURN 0>)>
+        <SET X <WORD16-HI-BYTE .LOOTXY>>
+        <SET Y <WORD16-LO-BYTE .LOOTXY>>
+        <COND (<AND <==? .X .AVOIDX> <==? .Y .AVOIDY>> <AGAIN>)>
+        <RETURN .LOOTXY>>>
 
 ;"Store the precomputed treasure loot for a floor."
 
@@ -945,7 +979,10 @@ Distribution:
            <COND (<L? .COLOR 1> <SET COLOR 1>)>)>
     .COLOR>
 
-<ROUTINE PRECOMPUTE-TREASURE-LOOT (F CHOICE "AUX" TYPE LVL ENCH COLOR AMT)
+<ROUTINE PRECOMPUTE-TREASURE-LOOT (F LOCKTYPE CHOICE "AUX" TYPE LVL ENCH COLOR AMT)
+    <PUTB ,TREASURE-ROOM-BONUS-GOLD-X <- .F 1> 0>
+    <PUTB ,TREASURE-ROOM-BONUS-GOLD-Y <- .F 1> 0>
+    <PUT ,TREASURE-ROOM-BONUS-GOLD-AMT <- .F 1> 0>
     <COND (<==? .CHOICE 1>
            <SET TYPE <RNG ,WEAPON-COUNT>>
            <SET LVL <+ <ROLL-LOOT-WEAPON-LEVEL .F> 2>>
@@ -954,13 +991,17 @@ Distribution:
            <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> ,TREASURE-LOOT-WEAPON>
            <PUTB ,TREASURE-ROOM-LOOT-ID <- .F 1> .TYPE>
            <PUTB ,TREASURE-ROOM-LOOT-LVL <- .F 1> .LVL>
-           <PUTB ,TREASURE-ROOM-LOOT-ENCH <- .F 1> .ENCH>)
+           <PUTB ,TREASURE-ROOM-LOOT-ENCH <- .F 1> .ENCH>
+           <SET AMT </ <TREASURE-ROOM-GOLD-AMT .LOCKTYPE> 3>>
+           <PUT ,TREASURE-ROOM-BONUS-GOLD-AMT <- .F 1> .AMT>)
           (<==? .CHOICE 2>
            <SET COLOR <PICK-STAT-BOOST-POTION-COLOR>>
            <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> ,TREASURE-LOOT-POTION>
-           <PUTB ,TREASURE-ROOM-LOOT-ID <- .F 1> .COLOR>)
+           <PUTB ,TREASURE-ROOM-LOOT-ID <- .F 1> .COLOR>
+           <SET AMT </ <TREASURE-ROOM-GOLD-AMT .LOCKTYPE> 3>>
+           <PUT ,TREASURE-ROOM-BONUS-GOLD-AMT <- .F 1> .AMT>)
           (ELSE
-           <SET AMT <+ ,TREASURE-LOOT-GOLD-BASE <RNG ,TREASURE-LOOT-GOLD-VARIANCE>>>
+           <SET AMT <TREASURE-ROOM-GOLD-AMT .LOCKTYPE>>
            <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> ,TREASURE-LOOT-GOLD>
            <PUT ,TREASURE-ROOM-LOOT-AMT <- .F 1> .AMT>)>
     <RTRUE>>
@@ -969,7 +1010,7 @@ Distribution:
 
 This simulates a full descent so keys can be placed on earlier floors."
 
-<ROUTINE PRECOMPUTE-TREASURE-ROOM-PLANS ("AUX" LANDX LANDY ENTRYRID RID DOORX DOORY LOOTXY LOOTX LOOTY LOCKTYPE CHOICE)
+<ROUTINE PRECOMPUTE-TREASURE-ROOM-PLANS ("AUX" LANDX LANDY ENTRYRID RID DOORX DOORY LOOTXY LOOTX LOOTY LOCKTYPE CHOICE BONUSXY)
     <SET LANDX 0>
     <SET LANDY 0>
     <DO (F 1 ,MAX-FLOORS)
@@ -1039,7 +1080,9 @@ This simulates a full descent so keys can be placed on earlier floors."
                           <==? .RID .ENTRYRID>
                           <N==? <ROOM-DEGREE .RID> 1>
                           <ROOM-BLOCKED-FOR-TREASURE? .RID>
-                          <NOT <ROOM-HAS-ONLY-TREASURE-EXIT? .RID .DOORX .DOORY>>>
+                          <NOT <ROOM-HAS-ONLY-TREASURE-EXIT? .RID
+                                                             .DOORX
+                                                             .DOORY>>>
                       <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>
                       <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> 0>)
                      (ELSE
@@ -1050,12 +1093,27 @@ This simulates a full descent so keys can be placed on earlier floors."
                       <PUTB ,TREASURE-ROOM-LOOT-X <- .F 1> .LOOTX>
                       <PUTB ,TREASURE-ROOM-LOOT-Y <- .F 1> .LOOTY>
                       <SET CHOICE <RNG 3>>
-                      <PRECOMPUTE-TREASURE-LOOT .F .CHOICE>
-                     <COND (<NOT <ADD-LOCKEDDOOR .F .DOORX .DOORY .LOCKTYPE>>
-                        <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>
-                        <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> 0>
-                            <AGAIN>)>
-                      <SET CHOICE <PICK-KEY-FLOOR-FOR-LOCK .F>>
+                      <PRECOMPUTE-TREASURE-LOOT .F .LOCKTYPE .CHOICE>
+                      <COND (<NOT <==? .CHOICE 3>>
+                             <SET BONUSXY
+                                  <FIND-TREASURE-SPOT-IN-ROOM-EXCEPT .RID
+                                                                     .LOOTX
+                                                                     .LOOTY>>
+                             <COND (<G? .BONUSXY 0>
+                                    <PUTB ,TREASURE-ROOM-BONUS-GOLD-X
+                                          <- .F 1>
+                                          <WORD16-HI-BYTE .BONUSXY>>
+                                    <PUTB ,TREASURE-ROOM-BONUS-GOLD-Y
+                                          <- .F 1>
+                                          <WORD16-LO-BYTE .BONUSXY>>)>)>
+                      <COND (<NOT <ADD-LOCKEDDOOR .F .DOORX .DOORY .LOCKTYPE>>
+                             <PUTB ,TREASURE-ROOM-LOCKTYPE <- .F 1> 0>
+                             <PUTB ,TREASURE-ROOM-LOOT-KIND <- .F 1> 0>
+                             <PUTB ,TREASURE-ROOM-BONUS-GOLD-X <- .F 1> 0>
+                             <PUTB ,TREASURE-ROOM-BONUS-GOLD-Y <- .F 1> 0>
+                             <PUT ,TREASURE-ROOM-BONUS-GOLD-AMT <- .F 1> 0>
+                             <AGAIN>)>
+                      <SET CHOICE <PICK-KEY-FLOOR-FOR-LOCK .F .LOCKTYPE>>
                       <ADD-PENDING-KEY .CHOICE .LOCKTYPE>)>)>
         <PRECOMPUTE-SHRINES-FOR-CURRENT-FLOOR .F>>
     <RTRUE>>
@@ -1064,7 +1122,7 @@ This simulates a full descent so keys can be placed on earlier floors."
 
 Locked doors and keys are created during startup precompute."
 
-<ROUTINE PLACE-PRECOMPUTED-TREASURE-ROOM (F "AUX" DOORX DOORY LOCKTYPE LOOTX LOOTY LOOTKIND ID LVL ENCH AMT)
+<ROUTINE PLACE-PRECOMPUTED-TREASURE-ROOM (F "AUX" DOORX DOORY LOCKTYPE LOOTX LOOTY LOOTKIND ID LVL ENCH AMT BONUSX BONUSY BONUSAMT)
     <COND (<G? <GETB ,TREASURE-ROOM-CREATED <- .F 1>> 0> <RTRUE>)>
     <SET LOCKTYPE <GETB ,TREASURE-ROOM-LOCKTYPE <- .F 1>>>
     <COND (<L=? .LOCKTYPE 0> <RTRUE>)>
@@ -1096,6 +1154,14 @@ Locked doors and keys are created during startup precompute."
           (<==? .LOOTKIND ,TREASURE-LOOT-GOLD>
            <SET AMT <GET ,TREASURE-ROOM-LOOT-AMT <- .F 1>>>
            <ADD-GOLD-PILE .LOOTX .LOOTY .AMT>)>
+
+    <SET BONUSAMT <GET ,TREASURE-ROOM-BONUS-GOLD-AMT <- .F 1>>>
+    <COND (<L=? .BONUSAMT 0> <RTRUE>)>
+    <SET BONUSX <GETB ,TREASURE-ROOM-BONUS-GOLD-X <- .F 1>>>
+    <SET BONUSY <GETB ,TREASURE-ROOM-BONUS-GOLD-Y <- .F 1>>>
+    <COND (<OR <L=? .BONUSX 0> <L=? .BONUSY 0>> <RTRUE>)>
+    <COND (<L=? <ITEM-OBJ-AT .BONUSX .BONUSY 0> 0>
+           <ADD-GOLD-PILE .BONUSX .BONUSY .BONUSAMT>)>
     <RTRUE>>
 
 <ROUTINE SHRINE-SET-OFFER (SLOT KIND ID LVL ENCH AMT)
@@ -1549,7 +1615,10 @@ Returns:
         <PUTB ,TREASURE-ROOM-LOOT-ID <- .F 1> 0>
         <PUTB ,TREASURE-ROOM-LOOT-LVL <- .F 1> 0>
         <PUTB ,TREASURE-ROOM-LOOT-ENCH <- .F 1> 0>
-        <PUT ,TREASURE-ROOM-LOOT-AMT <- .F 1> 0>>
+        <PUT ,TREASURE-ROOM-LOOT-AMT <- .F 1> 0>
+        <PUTB ,TREASURE-ROOM-BONUS-GOLD-X <- .F 1> 0>
+        <PUTB ,TREASURE-ROOM-BONUS-GOLD-Y <- .F 1> 0>
+        <PUT ,TREASURE-ROOM-BONUS-GOLD-AMT <- .F 1> 0>>
     <STATS-RESET>
     <INV-CLEAR>
     <INIT-START-WEAPON>

@@ -374,6 +374,7 @@ potion (or arrives while already under its effect), so the NPC can react."
 <CONSTANT ADJ-BRONZE <VOC "BRONZE" ADJ>>
 <CONSTANT ADJ-COPPER <VOC "COPPER" ADJ>>
 <CONSTANT ADJ-NICKEL <VOC "NICKEL" ADJ>>
+<CONSTANT ADJ-COBALT <VOC "COBALT" ADJ>>
 <CONSTANT WORD-KEY <VOC "KEY" OBJECT>>
 <CONSTANT WORD-KEYS <VOC "KEYS" OBJECT>>
 
@@ -468,6 +469,7 @@ potion (or arrives while already under its effect), so the NPC can react."
           (<==? .TYPE ,LOCK-BRONZE> ,ADJ-BRONZE)
           (<==? .TYPE ,LOCK-COPPER> ,ADJ-COPPER)
           (<==? .TYPE ,LOCK-NICKEL> ,ADJ-NICKEL)
+          (<==? .TYPE ,LOCK-COBALT> ,ADJ-COBALT)
           (ELSE ,W?\,DUMMY-ADJ)>>
 
 <ROUTINE KEY-ADJ2 (TYPE)
