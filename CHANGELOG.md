@@ -13,6 +13,13 @@ and this project adheres to
   like "(worn)" to the inventory listing; or you can override the defaults by
   replacing `INV-PRINT-DETAILS` (and probably also `INV-INDISTINGUISHABLE?`).
 
+### Changed
+
+- Updated `zillib/LICENSE.txt` to clarify that you may redistribute games
+  compiled for targets other than Z-code (i.e., Glulx and Cornerstone) and that
+  you may satisfy the redistribution requirement by printing the compiler
+  version number (the library version number is no longer required).
+
 ### Fixed
 
 - Fixed a bug where `SUPPRESS-WARNINGS?` could only suppress one warning code
