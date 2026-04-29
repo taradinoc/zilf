@@ -8,7 +8,7 @@ A Modern Classic
 Based on Adventure by Willie Crowther and Don Woods (1977)
 And prior adaptations by David M. Baggett (1993), Graham Nelson (1994), and others
 Adapted once more by Tara McGrew (2015)
-Release 1 / Serial number 161219 / ZILF 0.7 lib J3
+Release 1 / Serial number 161219 / ZILF 0.7
 
 At End Of Road
 You are standing at the end of a road before a small brick building. Around you is a forest. A small stream flows out of the building and down a gully.

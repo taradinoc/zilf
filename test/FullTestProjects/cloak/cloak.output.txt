@@ -6,7 +6,7 @@ Cloak of Darkness
 A basic IF demonstration.
 Original game by Roger Firth
 ZIL conversion by Tara McGrew, Jayson Smith, and Josh Lawrence
-Release 1 / Serial number 150611 / ZILF 0.6 lib J2+
+Release 1 / Serial number 150611 / ZILF 0.6
 
 Foyer of the Opera House
 You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.
@@ -60,7 +60,7 @@ Cloak of Darkness
 A basic IF demonstration.
 Original game by Roger Firth
 ZIL conversion by Tara McGrew, Jayson Smith, and Josh Lawrence
-Release 1 / Serial number 150611 / ZILF 0.6 lib J2+
+Release 1 / Serial number 150611 / ZILF 0.6
 
 Foyer of the Opera House
 You are standing in a spacious hall, splendidly decorated in red and gold, with glittering chandeliers overhead. The entrance from the street is to the north, and there are doorways south and west.

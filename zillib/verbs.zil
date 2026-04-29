@@ -1438,7 +1438,7 @@ This assumes that if the objects have a common parent, it's within HERE."
     <PRINT-GAME-BANNER>
     <TELL <LIBRARY-MESSAGE VERSION RELEASE-AND-SERIAL ((RELEASE <BAND <LOWCORE RELEASEID> *3777*>))>>
     <LOWCORE-TABLE SERIAL 6 PRINTC>
-    <TELL %<STRING " / " ,ZIL-VERSION " lib " ,ZILLIB-VERSION>>
+    <TELL %<STRING " / " ,ZIL-VERSION>>
     <CRLF>>
 
 <ROUTINE V-THINK-ABOUT ()

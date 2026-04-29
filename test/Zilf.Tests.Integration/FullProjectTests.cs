@@ -154,7 +154,7 @@ namespace Zilf.Tests.Integration
         static string MassageText(string text)
         {
             text = SerialNumberRegex.Replace(text, "######");
-            text = ZilfVersionRegex.Replace(text, "ZILF #.# lib ##");
+            text = ZilfVersionRegex.Replace(text, "ZILF #.#");
             return text;
         }
 
@@ -170,7 +170,7 @@ namespace Zilf.Tests.Integration
             return lines;
         }
 
-        [GeneratedRegex(@"ZILF [0-9.a-z]+ lib \S+")]
+        [GeneratedRegex(@"ZILF [0-9.a-z]+")]
         private static partial Regex GetZilfVersionRegex();
         [GeneratedRegex(@"(?<=Serial number )\d{6}", RegexOptions.IgnoreCase, "en-US")]
         private static partial Regex GetSerialNumberRegex();

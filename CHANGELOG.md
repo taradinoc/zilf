@@ -20,6 +20,10 @@ and this project adheres to
   you may satisfy the redistribution requirement by printing the compiler
   version number (the library version number is no longer required).
 
+- `zillib` no longer has its own version number separate from the compiler.
+  `,ZILLIB-VERSION` is defined as equal to `,ZIL-VERSION`, i.e., the compiler
+  version number.
+
 ### Fixed
 
 - Fixed a bug where `SUPPRESS-WARNINGS?` could only suppress one warning code

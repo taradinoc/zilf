@@ -5,7 +5,10 @@
 
 <USE "QQ">
 
-<SETG ZILLIB-VERSION "T8">
+;"Historically, the library had its own version number, separate from ZILF's
+  version number. That's no longer the case, but ZILLIB-VERSION is still defined
+  for compatibility and posterity."
+<SETG ZILLIB-VERSION ,ZIL-VERSION>
 
 <VERSION?
     (ZIP)
