@@ -480,7 +480,7 @@ potion of hustle. It'll get you moving twice as fast as any beast.\""
 <ROUTINE CARROT-MAN-F (ARG)
     <COND (<==? .ARG ,M-WINNER>
            <COND (<VERB? HELLO> <TELL CT ,CARROT-MAN " nods." CR>)
-                 (<VERB? IDENTIFY> <CARROT-MAN-IDENTIFY-POTION ,PRSO>)
+                 (<VERB? IDENTIFY> <CARROT-MAN-IDENTIFY-POTION ,PRSO> <RTRUE>)
                  (<VERB? ENCHANT UPGRADE> <TELL "\"I don't do that sort of thing. You'll need the other guy for that.\"" CR>)
                  (<AND <VERB? TELL-ABOUT> <PRSO? ,CURRENT-PLAYER>>
                   <WITH-GLOBAL ((WINNER ,CURRENT-PLAYER))
