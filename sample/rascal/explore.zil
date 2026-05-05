@@ -75,6 +75,20 @@ Returns:
     <SET BASE <FLOOR-BASE .F>>
     <DO (I 1 ,REVEAL-BYTES) <PUTB ,FLOOR-REVEALED <+ .BASE <- .I 1>> 0>>>
 
+;"Clears current-floor reveal state, then re-reveals only the player's local area.
+
+Used by the potion of shadow to throw the floor back into darkness without
+leaving room-tracking stuck in the previous state."
+
+<ROUTINE SHADOW-CURRENT-FLOOR ("AUX" RID)
+  <CLEAR-FLOOR-REVEAL ,CURRENT-FLOOR>
+  <CLEAR-FLOOR-ROOMDISC ,CURRENT-FLOOR>
+  <SETG DISCOVERED-ROOMS 0>
+  <SET RID <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
+  <SETG CURRENT-ROOM .RID>
+  <REVEAL-AROUND ,PLAYER-X ,PLAYER-Y>
+  <RTRUE>>
+
 ;"Attempts to descend stairs to the next floor (>) if standing on down stairs.
 
 Args:
@@ -383,7 +397,7 @@ Reveals, picks up any items on the tile, and updates room discovery."
     <COND (<AND <G? <ROOMID-AT ,PLAYER-X ,PLAYER-Y> 0>
                 <N==? <ROOMID-AT ,PLAYER-X ,PLAYER-Y> ,CURRENT-ROOM>>
            <SETG CURRENT-ROOM <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
-           <COND (<L=? ,PLAYER-SHADOW-TURNS 0> <REVEAL-ROOM ,CURRENT-ROOM>)>)>
+          <REVEAL-ROOM ,CURRENT-ROOM>)>
     <SETG INTERIOR-LAUNCHED? <>>
     <COND (<==? <TILE-AT ,PLAYER-X ,PLAYER-Y> ,TILE-INTERIOR>
            <SET ID <INTERIOR-ID-AT ,CURRENT-FLOOR ,PLAYER-X ,PLAYER-Y>>
