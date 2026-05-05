@@ -1258,9 +1258,6 @@ Returns:
     <SETG DIRTY-COUNT <+ ,DIRTY-COUNT 1>>
     <RTRUE>>
 
-<ROUTINE MARK-DIRTY-3X3 (X Y)
-    <DO (DY -1 1) <DO (DX -1 1) <MARK-DIRTY <+ .X .DX> <+ .Y .DY>>>>>
-
 <ROUTINE MARK-ALL-DIRTY ()
     <SETG FULL-REDRAW? T>
     <SETG DIRTY-COUNT 0>
@@ -1280,12 +1277,8 @@ Returns:
         <SET O <NEXT? .O>>>>
 
 <ROUTINE MARK-PLAYER-MOVE (OX OY NX NY)
-    <COND (<G? ,PLAYER-SHADOW-TURNS 0>
-           <MARK-DIRTY-3X3 .OX .OY>
-           <MARK-DIRTY-3X3 .NX .NY>)
-          (ELSE
-           <MARK-DIRTY .OX .OY>
-           <MARK-DIRTY .NX .NY>)>
+    <MARK-DIRTY .OX .OY>
+    <MARK-DIRTY .NX .NY>
     <RTRUE>>
 
 ;"Writes a one-line status summary.
@@ -1515,20 +1508,6 @@ Returns:
            <HLIGHT ,H-NORMAL>)>
     <RTRUE>>
 
-;"Returns true if (X, Y) is within the player's shadow-limited vision.
-
-While PLAYER-SHADOW-TURNS is active, the player can only see the 8 neighboring
-tiles (and their own tile).
-
-Args:
-  X, Y: Map coordinates.
-
-Returns:
-  T if within shadow vision; FALSE otherwise."
-
-<ROUTINE SHADOW-VISIBLE? (X Y)
-    <AND <L=? <ABS <- .X ,PLAYER-X>> 1> <L=? <ABS <- .Y ,PLAYER-Y>> 1>>>
-
 ;"Returns the character to draw at (X, Y), including overlays:
     player, fog-of-war, enemies, and gold.
 
@@ -1543,10 +1522,6 @@ Returns:
     <COND (<AND <==? .X ,PLAYER-X> <==? .Y ,PLAYER-Y>> ,TILE-PLAYER)
           (<AND <SET E <ENEMY-AT .X .Y>> <G? ,PLAYER-VISION-TURNS 0>>
            <ENEMY-TILE-FOR-TYPE <GETP .E ,P?R-ETYPE>>)
-          (<AND <G? ,PLAYER-SHADOW-TURNS 0>
-                <OR <NOT <IF-DEBUG ,OMNISCIENT?>> <==? .T ,TILE-WALL>>
-                <NOT <SHADOW-VISIBLE? .X .Y>>>
-           ,TILE-UNKNOWN)
           (<AND <OR <NOT <IF-DEBUG ,OMNISCIENT?>> <==? .T ,TILE-WALL>>
                 <NOT <REVEALED? .X .Y>>>
            ,TILE-UNKNOWN)
@@ -1574,7 +1549,5 @@ Returns:
     <IF-DEBUG
         <COND (,OMNISCIENT? <RTRUE>)>
         <COND (,DEBUG-OVERLAY-ONCE? <RTRUE>)>>
-    <COND (<G? ,PLAYER-SHADOW-TURNS 0>
-           <COND (<NOT <SHADOW-VISIBLE? .X .Y>> <RFALSE>)>)>
     <COND (<REVEALED? .X .Y> <RTRUE>)
           (ELSE <RFALSE>)>>

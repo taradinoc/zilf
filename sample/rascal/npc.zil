@@ -448,7 +448,7 @@ he frowns and says, \"That there's poison. Don't drink that.\""
                  CR>)
           (<==? .TYPE ,POTION-SHADOW>
            <TELL "The farmer swirls it, holds it up to the light, and nods. \"This'n's a
-potion of shadow. Makes it hard to see more than an arm's length. Lasts a while, too.\""
+potion of shadow. Throws the whole floor back into darkness in a blink.\""
                  CR>)
           (<==? .TYPE ,POTION-VISION>
            <TELL "The farmer swirls it, puts an ear up to it, and closes his eyes. Seconds later,

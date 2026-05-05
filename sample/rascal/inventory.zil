@@ -577,9 +577,9 @@ Returns:
                   <SETG PENDING-INTERIOR-TELEPORT? T>)
                  (ELSE <TELEPORT-PLAYER>)>)
           (<==? .TYPE ,POTION-SHADOW>
-           <SETG PLAYER-SHADOW-TURNS ,SHADOW-POTION-DURATION>
+              <SHADOW-CURRENT-FLOOR>
            <MARK-ALL-DIRTY>
-           <TELL/LOG .LOG? "A heavy darkness settles over your eyes." CR>)
+              <TELL/LOG .LOG? "Darkness sweeps across the floor." CR>)
           (<==? .TYPE ,POTION-TORPOR>
            <SETG PLAYER-HUSTLE-TURNS 0>
            <SETG PLAYER-TORPOR-TURNS ,TORPOR-POTION-DURATION>
@@ -591,7 +591,7 @@ Returns:
           (ELSE <TELL/LOG .LOG? "Nothing seems to happen." CR>)>
     <RTRUE>>
 
-<ROUTINE TICK-POTION-TIMERS ("AUX" SHOLD RID)
+<ROUTINE TICK-POTION-TIMERS ()
     ;"potion of hiding"
     <COND (<G? ,PLAYER-INVIS-TURNS 0>
            <SETG PLAYER-INVIS-TURNS <- ,PLAYER-INVIS-TURNS 1>>
@@ -608,15 +608,6 @@ Returns:
            (<==? ,PLAYER-VISION-TURNS 0>
             <MARK-ALL-DIRTY>
             <LOG "Your vision returns to normal." CR>)>)>
-    ;"potion of shadow"
-    <SET SHOLD ,PLAYER-SHADOW-TURNS>
-    <COND (<G? ,PLAYER-SHADOW-TURNS 0>
-           <SETG PLAYER-SHADOW-TURNS <- ,PLAYER-SHADOW-TURNS 1>>
-           <COND (<==? ,PLAYER-SHADOW-TURNS ,POTION-TIMER-WARNING-TURNS>
-                  <LOG "The darkness begins to lift." CR>)
-                 (<==? ,PLAYER-SHADOW-TURNS 0>
-                  <MARK-ALL-DIRTY>
-                  <LOG "You can see your surroundings again." CR>)>)>
     ;"potion of torpor"
     <COND (<G? ,PLAYER-TORPOR-TURNS 0>
            <SETG PLAYER-TORPOR-TURNS <- ,PLAYER-TORPOR-TURNS 1>>
@@ -630,10 +621,8 @@ Returns:
            <COND (<==? ,PLAYER-HUSTLE-TURNS ,POTION-TIMER-WARNING-TURNS>
                   <LOG "Your rush begins to ebb." CR>)
                  (<==? ,PLAYER-HUSTLE-TURNS 0>
-                  <LOG "Your burst of speed wears off." CR>)>)>
-    <COND (<AND <G? .SHOLD 0> <L=? ,PLAYER-SHADOW-TURNS 0>>
-           <SET RID <ROOMID-AT ,PLAYER-X ,PLAYER-Y>>
-           <COND (<G? .RID 0> <SETG CURRENT-ROOM .RID> <REVEAL-ROOM .RID>)>)>>
+            <LOG "Your burst of speed wears off." CR>)>)>
+        <RTRUE>>
 
 ;"Drinks a potion given by color code, applying its effect and handling discovery.
 
