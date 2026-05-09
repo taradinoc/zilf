@@ -618,6 +618,8 @@ The Oracle herself seems to be away at the moment, but she left behind her glass
 <GLOBAL ORACLE-VISION-KIND 0>
 <GLOBAL ORACLE-VISION-LOCKTYPE 0>
 
+<CONSTANT ORACLE-KIND-TAME-MONKEY 100>
+
 <ROUTINE GLASSY-SPHERE-F (ARG)
     <COND (<VERB? EXAMINE LOOK>
            <ORACLE-SPHERE-VISION>
@@ -645,7 +647,12 @@ The Oracle herself seems to be away at the moment, but she left behind her glass
                <SET Y <GETP .O ,P?R-Y>>
                <COND (<AND <G? .X 0> <G? .Y 0>> <SET CNT <+ .CNT 1>>)>)
               (<==? .K ,ITEMKIND-LOCKEDDOOR>
-               <COND (<NOT <FSET? .O ,OPENBIT>> <SET CNT <+ .CNT 1>>)>)>
+               <COND (<NOT <FSET? .O ,OPENBIT>> <SET CNT <+ .CNT 1>>)>)
+              (<==? .K ,ITEMKIND-SHRINE>
+               <COND (<NOT <FSET? .O ,OPENBIT>> <SET CNT <+ .CNT 1>>)>)
+              (<AND <==? <GETP .O ,P?R-ETYPE> ,ETYPE-MONKEY>
+                    <FSET? .O ,TAMEBIT>>
+               <SET CNT <+ .CNT 1>>)>
         <SET O <NEXT? .O>>>>
 
 <ROUTINE ORACLE-COUNT-VISITED-CANDIDATES ("AUX" CNT)
@@ -687,7 +694,23 @@ The Oracle herself seems to be away at the moment, but she left behind her glass
                              <SETG ORACLE-VISION-FLOOR .F>
                              <SETG ORACLE-VISION-KIND ,ITEMKIND-LOCKEDDOOR>
                              <SETG ORACLE-VISION-LOCKTYPE <GETP .O ,P?R-ITID>>
-                             <RETURN 0>)>)>)>
+                             <RETURN 0>)>)>)
+              (<==? .K ,ITEMKIND-SHRINE>
+               <COND (<NOT <FSET? .O ,OPENBIT>>
+                      <SET TARGET <- .TARGET 1>>
+                      <COND (<L=? .TARGET 0>
+                             <SETG ORACLE-VISION-FLOOR .F>
+                             <SETG ORACLE-VISION-KIND ,ITEMKIND-SHRINE>
+                             <SETG ORACLE-VISION-LOCKTYPE 0>
+                             <RETURN 0>)>)>)
+              (<AND <==? <GETP .O ,P?R-ETYPE> ,ETYPE-MONKEY>
+                    <FSET? .O ,TAMEBIT>>
+               <SET TARGET <- .TARGET 1>>
+               <COND (<L=? .TARGET 0>
+                      <SETG ORACLE-VISION-FLOOR .F>
+                      <SETG ORACLE-VISION-KIND ,ORACLE-KIND-TAME-MONKEY>
+                      <SETG ORACLE-VISION-LOCKTYPE 0>
+                      <RETURN 0>)>)>
         <SET O <NEXT? .O>>>>
 
 <ROUTINE ORACLE-PICK-VISITED ("AUX" TOTAL TARGET)
@@ -746,6 +769,16 @@ The Oracle herself seems to be away at the moment, but she left behind her glass
           (<==? .KIND ,ITEMKIND-LOCKEDDOOR>
            <TELL "Gazing into the sphere, you see a locked door that requires a "
                  KEY-NAME .LOCKTYPE>
+           <COND (.KNOWN? <TELL " on floor " N .FLOOR>)
+                 (ELSE <TELL " on a floor you don't recognize">)>
+           <TELL "." CR>)
+          (<==? .KIND ,ITEMKIND-SHRINE>
+           <TELL "Gazing into the sphere, you see a shrine">
+           <COND (.KNOWN? <TELL " on floor " N .FLOOR>)
+                 (ELSE <TELL " on a floor you don't recognize">)>
+           <TELL "." CR>)
+          (<==? .KIND ,ORACLE-KIND-TAME-MONKEY>
+           <TELL "Gazing into the sphere, you see a friendly monkey">
            <COND (.KNOWN? <TELL " on floor " N .FLOOR>)
                  (ELSE <TELL " on a floor you don't recognize">)>
            <TELL "." CR>)
