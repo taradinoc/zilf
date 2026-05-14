@@ -466,11 +466,14 @@ Returns the item object, or 0 if none."
     <SET O <SHRINE-OBJ-AT .X .Y>>
     <AND <G? .O 0> <NOT <FSET? .O ,OPENBIT>>>>
 
-<ROUTINE ADD-PENDING-KEY (F LOCKTYPE "AUX" O)
+<ROUTINE ADD-PENDING-KEY (F LOCKTYPE AVOIDRID "AUX" O)
     <SET O <ALLOC-RASCAL-ITEM>>
     <COND (<NOT .O> <RETURN 0>)>
     <PUTP .O ,P?R-ITKIND ,ITEMKIND-KEY>
     <PUTP .O ,P?R-ITID .LOCKTYPE>
+    ;"Pending same-floor keys temporarily store their locked room id in R-ITLVL
+      so placement can avoid that room before the key receives coordinates."
+    <PUTP .O ,P?R-ITLVL .AVOIDRID>
     <PUTP .O ,P?R-X 0>
     <PUTP .O ,P?R-Y 0>
     <MOVE .O <FLOOR-OBJ .F>>
@@ -577,8 +580,10 @@ Returns the item object, or 0 if none."
     <LOG "The coffer snaps open. It's a mimick!" CR>
     <RTRUE>>
 
-<ROUTINE PLACE-PENDING-KEY-OBJ (O "AUX" TRIES X Y)
+<ROUTINE PLACE-PENDING-KEY-OBJ (O "AUX" TRIES X Y AVOID)
     <SET TRIES 0>
+    ;"R-ITLVL contains the locked room ID"
+    <SET AVOID <GETP .O ,P?R-ITLVL>>
     <REPEAT ()
         <SET TRIES <+ .TRIES 1>>
         <COND (<G? .TRIES 500> <RFALSE>)>
@@ -586,8 +591,12 @@ Returns the item object, or 0 if none."
         <SET X ,ENTRY-X>
         <SET Y ,ENTRY-Y>
         <COND (<G? <ITEM-OBJ-AT .X .Y 0> 0> <AGAIN>)>
+        <COND (<AND <G? .AVOID 0>
+                    <==? <ROOMID-AT .X .Y> .AVOID>>
+               <AGAIN>)>
         <PUTP .O ,P?R-X .X>
         <PUTP .O ,P?R-Y .Y>
+        <PUTP .O ,P?R-ITLVL 0>
         <FORCE-PASSABLE .X .Y>
         <RTRUE>>>
 
@@ -1113,7 +1122,10 @@ This simulates a full descent so keys can be placed on earlier floors."
                              <PUT ,TREASURE-ROOM-BONUS-GOLD-AMT <- .F 1> 0>
                              <AGAIN>)>
                       <SET CHOICE <PICK-KEY-FLOOR-FOR-LOCK .F .LOCKTYPE>>
-                      <ADD-PENDING-KEY .CHOICE .LOCKTYPE>)>)>
+                      <ADD-PENDING-KEY .CHOICE
+                                       .LOCKTYPE
+                                       <COND (<==? .CHOICE .F> .RID)
+                                             (ELSE 0)>>)>)>
         <PRECOMPUTE-SHRINES-FOR-CURRENT-FLOOR .F>>
     <RTRUE>>
 
