@@ -898,19 +898,10 @@ the last one, OK?\"" CR>)>)
     (ACTION BUSKER-F)
     (FLAGS PERSONBIT NDESCBIT)>
 
-<ROUTINE BUSKER-F (ARG "AUX" M OFFER)
+<ROUTINE BUSKER-F (ARG "AUX" OFFER)
     <COND (<==? .ARG ,M-WINNER>
-           <COND (<VERB? HELLO>
-                  <COND (<SET M <INTERIOR-MONKEY? ,TAMEBIT>>
-                         <COND (<G? <SET OFFER <BUSKER-OFFER>> 0>
-                                <TELL "The busker nods toward your monkey. \"I bet that monkey would drum up some business. I'll give you "
-                                      N .OFFER " gold for it.\"" CR>)
-                               (ELSE
-                                <TELL "The busker says, \"I can't use another one.\""
-                                      CR>)>)
-                        (,BUSKER-MONKEY-SALES
-                         <TELL "The busker says, \"It was a pleasure doing monkey business with you.\"" CR>)
-                        (ELSE <TELL "The busker says, \"Hello! Let me know if you find a monkey. I could use one around here.\"" CR>)>
+           <COND (<VERB? HELLO HELP>
+                  <BUSKER-HELLO>
                   <RTRUE>)
                  (<AND <VERB? TELL-ABOUT> <PRSO? ,CURRENT-PLAYER>>
                   <WITH-GLOBAL ((WINNER ,CURRENT-PLAYER))
@@ -926,6 +917,9 @@ the last one, OK?\"" CR>)>)
                  (ELSE
                   <TELL "He doesn't respond." CR>
                   <RTRUE>)>)
+          (<VERB? HELP>
+           <BUSKER-HELLO>
+           <RTRUE>)
           (<VERB? EXAMINE>
            <TELL "The organ grinder has a barrel organ hanging from a strap around his shoulders." CR>)
           (<AND <VERB? ASK-ABOUT TELL-ABOUT> <PRSO? ,BUSKER>>
@@ -963,6 +957,20 @@ stolen? I run a clean operation here, pal.\"" CR>)>)
                         " gold and takes the monkey." CR>
                   <RTRUE>)>)
           (ELSE <RFALSE>)>>
+
+<ROUTINE BUSKER-HELLO ("AUX" OFFER)
+    <COND (<INTERIOR-MONKEY? ,TAMEBIT>
+           <COND (<G? <SET OFFER <BUSKER-OFFER>> 0>
+                  <TELL "The busker nods toward your monkey. \"I bet that monkey would drum up some business. I'll give you "
+                        N .OFFER " gold for it.\"" CR>)
+                 (ELSE
+                  <TELL "The busker says, \"I can't use another one.\"" CR>)>)
+          (,BUSKER-MONKEY-SALES
+           <TELL "The busker says, \"It was a pleasure doing monkey business with you.\""
+                 CR>)
+          (ELSE
+           <TELL "The busker says, \"Hello! Let me know if you find a monkey. I could use one around here.\""
+                 CR>)>>
 
 <ROUTINE MONKEY-DESCFCN (ARG)
     <COND (<==? .ARG ,M-OBJDESC?> T)

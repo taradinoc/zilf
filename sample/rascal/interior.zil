@@ -991,7 +991,7 @@ lengthwise across it and an inverted V above it." CR>)
 the dungeon are simple folk, and not much for conversation.↲↲To leave this place, try \"OUT\".">
 
 <ROUTINE V-HELP ()
-    <COND (<PRSO? <> ,ROOMS ,WINNER>
+    <COND (<OR <PRSO? <> ,ROOMS ,WINNER> <IN? ,PRSO ,GENERIC-OBJECTS>>
            <TELL ,COMMAND-HELP CR>)
           (<MONKEY? ,PRSO>
            <COND (<FSET? ,PRSO ,SOLDBIT> <TELL "The monkey seems happy where it is." CR>)
