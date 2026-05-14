@@ -650,7 +650,8 @@ The Oracle herself seems to be away at the moment, but she left behind her glass
                <COND (<NOT <FSET? .O ,OPENBIT>> <SET CNT <+ .CNT 1>>)>)
               (<==? .K ,ITEMKIND-SHRINE>
                <COND (<NOT <FSET? .O ,OPENBIT>> <SET CNT <+ .CNT 1>>)>)
-              (<AND <==? <GETP .O ,P?R-ETYPE> ,ETYPE-MONKEY>
+              (<AND <N==? .F ,CURRENT-FLOOR>
+                    <==? <GETP .O ,P?R-ETYPE> ,ETYPE-MONKEY>
                     <FSET? .O ,TAMEBIT>>
                <SET CNT <+ .CNT 1>>)>
         <SET O <NEXT? .O>>>>
@@ -703,7 +704,8 @@ The Oracle herself seems to be away at the moment, but she left behind her glass
                              <SETG ORACLE-VISION-KIND ,ITEMKIND-SHRINE>
                              <SETG ORACLE-VISION-LOCKTYPE 0>
                              <RETURN 0>)>)>)
-              (<AND <==? <GETP .O ,P?R-ETYPE> ,ETYPE-MONKEY>
+              (<AND <N==? .F ,CURRENT-FLOOR>
+                    <==? <GETP .O ,P?R-ETYPE> ,ETYPE-MONKEY>
                     <FSET? .O ,TAMEBIT>>
                <SET TARGET <- .TARGET 1>>
                <COND (<L=? .TARGET 0>
