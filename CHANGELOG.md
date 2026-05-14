@@ -29,6 +29,9 @@ and this project adheres to
 - Fixed a bug where `SUPPRESS-WARNINGS?` could only suppress one warning code
   at a time.
 
+- Fixed `INSERT-HELD-WORD` and `REPLACE-HELD-WORD` cutting off the last
+  character in V5+.
+
 ## [1.8](April 8, 2026)
 
 ### Added

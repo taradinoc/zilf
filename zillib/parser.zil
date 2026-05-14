@@ -1319,8 +1319,7 @@ Sets:
                <PUTB .RBUF .I !\ >>)
           (<G? .NL .OL>
            ;"Shift the rest of the buffer up to make room"
-           <SET BL <READBUF-LENGTH .RBUF>>
-           <VERSION? (ZIP <SET BL <+ .BL 1>>)>
+           <SET BL <+ <READBUF-LENGTH .RBUF> 1>>
            <SET DELTA <- .NL .OL>>
            <COND (<G=? <+ .BL .DELTA> ,READBUF-SIZE>
                   <SET BL <- ,READBUF-SIZE .DELTA 1>>)>
@@ -1361,9 +1360,8 @@ Sets:
     <PUTB .LBUF 1 <+ .LEN 1>>
     <COND (<L=? .N .LEN>
            ;"Shift READBUF up to make room"
-           <SET BL <READBUF-LENGTH .RBUF>>
+           <SET BL <+ <READBUF-LENGTH .RBUF> 1>>
            <SET DELTA <+ .NL 1>>
-           <VERSION? (ZIP <SET BL <+ .BL 1>>)>
            <COND (<G=? <+ .BL .DELTA> ,READBUF-SIZE>
                   <SET BL <- ,READBUF-SIZE .DELTA 1>>)>
            <VERSION? (ZIP)
