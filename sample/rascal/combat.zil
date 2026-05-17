@@ -398,35 +398,27 @@ Returns:
     <DO (I 1 .DMG) <COND (<L=? <RNG 100> .PCT> <SET BLOCKED <+ .BLOCKED 1>>)>>
     <- .DMG .BLOCKED>>
 
-<ROUTINE PLAYER-DAMAGE ("AUX" S TYPE LVL EXCESS POWER DIV RANGE MIN PCT DMG)
+<ROUTINE PLAYER-DAMAGE ("AUX" S O TYPE LVL ENCH MIN MAX PCT BONUS DMG)
     <SETG LAST-HIT-CRIT? <>>
     <SET S ,PLAYER-STR>
     <COND (<L=? .S 1> <SET S 1>)>
-    <COND (<AND <G? <EQUIPPED-WEAPON-OBJ> 0>
-                <G=? <+ .S <GETP <EQUIPPED-WEAPON-OBJ> ,P?R-ITENCH>>
-                     <GETP <EQUIPPED-WEAPON-OBJ> ,P?R-ITLVL>>>
-           ;"Weapon roll: a predictable-vs-swingy distribution per weapon type,
-             with a chance to crit for 2x damage (dagger/waraxe highest).
-             If STR exceeds the weapon's level requirement, the excess boosts damage."
-           <SET TYPE <GETP <EQUIPPED-WEAPON-OBJ> ,P?R-ITID>>
-           <SET LVL <GETP <EQUIPPED-WEAPON-OBJ> ,P?R-ITLVL>>
-           <SET EXCESS <- <+ .S <GETP <EQUIPPED-WEAPON-OBJ> ,P?R-ITENCH>> .LVL>>
-           <COND (<L? .EXCESS 0> <SET EXCESS 0>)>
-           <SET POWER <+ <WEAPON-BASE-DMG .TYPE> .LVL </ .EXCESS 2>>>
-           <SET DIV <WEAPON-VARIANCE-DIV .TYPE>>
-           <COND (<L=? .DIV 1> <SET RANGE .POWER>)
-                 (ELSE <SET RANGE </ .POWER .DIV>>)>
-           <COND (<L=? .RANGE 1> <SET RANGE 2>)>
-           <SET MIN <+ <- .POWER .RANGE> 1>>
-           <COND (<L=? .MIN 1> <SET MIN 1>)>
-           <SET DMG <+ <- .MIN 1> <RNG .RANGE>>>
-           <SET PCT <WEAPON-CRIT-PCT .TYPE>>
+    <SET O <EQUIPPED-WEAPON-OBJ>>
+    <COND (<AND <G? .O 0>
+          <G=? <+ .S <GETP .O ,P?R-ITENCH>>
+            <GETP .O ,P?R-ITLVL>>>
+        <SET TYPE <GETP .O ,P?R-ITID>>
+        <SET LVL <GETP .O ,P?R-ITLVL>>
+        <SET ENCH <GETP .O ,P?R-ITENCH>>
+        <SET MIN <WEAPON-MIN-DMG .TYPE .LVL .ENCH .S>>
+        <SET MAX <WEAPON-MAX-DMG .TYPE .LVL .ENCH .S>>
+        <SET DMG <+ <- .MIN 1> <RNG <+ <- .MAX .MIN> 1>>>>
+        <SET PCT <WEAPON-CRIT-PCT .TYPE>>
            <COND (<AND <G? .PCT 0> <L=? <RNG 100> .PCT>>
                   <SETG LAST-HIT-CRIT? T>
-                  <SET DMG <* .DMG 2>>)>
+            <SET BONUS <WEAPON-CRIT-BONUS-DMG .TYPE .LVL .ENCH .S>>
+            <SET DMG <+ .DMG .BONUS>>)>
            .DMG)
           (ELSE
-           ;"Fists: 1..STR (slightly weaker than the old STR+1)."
            <RNG .S>)>>
 
 <ROUTINE EQUIPPED-WEAPON-OBJ ()

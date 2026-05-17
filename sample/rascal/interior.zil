@@ -497,42 +497,54 @@ potion (or arrives while already under its effect), so the NPC can react."
             <SET-ITEM-VOCAB .O>)>
         <SET O .N>>>
 
-<ROUTINE ITEM-ACTION-WEAPON ("AUX" E TYPE L)
+<ROUTINE ITEM-ACTION-WEAPON ("AUX" ENCH TYPE LVL STR REQ MIN MAX PCT BONUS)
     <COND (<VERB? EXAMINE>
            <SET TYPE <GETP ,PRSO ,P?R-ITID>>
            <COND (<==? .TYPE ,WEAPON-DAGGER>
                   <TELL "It's called a dagger, but come to think of it, you've
-never actually seen it dag. This short blade has low base damage, above-average
-variance, and an outstanding crit chance." CR>)
+never actually seen this short blade dag." CR>)
                  (<==? .TYPE ,WEAPON-WARAXE>
-                  <TELL "It's autographed by all the members of War. This
-double-bladed axe has above-average base damage, wild variance, and an
-impressive crit chance." CR>)
+                  <TELL "This double-bladed axe is autographed by all the
+members of War." CR>)
                  (<==? .TYPE ,WEAPON-CUDGEL>
                   <TELL "Metaphorically, a cudgel is an issue used to
 aggressively beat down an opponent in public discourse. Physically,
 this cudgel is a stout stick used to aggressively beat down an opponent in
-a dungeon, with average base damage, minimal variance, and an average crit
-chance." CR>)
+the dungeon." CR>)
                  (<==? .TYPE ,WEAPON-KATANA>
                   <TELL "This curved, single-edged blade is traditionally
-associated with samurai and ninja turtles. It has average base damage,
-high variance, and a below-average crit chance." CR>)
+associated with samurai and ninja turtles." CR>)
                  (<==? .TYPE ,WEAPON-SCYTHE>
                   <TELL "This curved blade on the end of a long pole
-demonstrates why it was so hard to convince people not to fear the reaper. It
-has above-average base damage, wild variance, and a low crit chance." CR>)
+demonstrates why it was so hard to convince people not to fear the reaper." CR>)
                  (<==? .TYPE ,WEAPON-HAMMER>
                   <TELL "When they sang about hammering out danger, this must've
-been what they had in mind. It has powerful base damage, average variance, and a
-minimal crit chance." CR>)
+been what they had in mind." CR>)
                  (ELSE <TELL "It's a typical " WEAPON-NAME .TYPE "." CR>)>
-           <COND (<SET E <GETP ,PRSO ,P?R-ITENCH>>
-                  <TELL CR "Because of its +" N .E
-                           " enchantment, it hits like a level "
-                           N <+ <SET L <GETP ,PRSO ,P?R-ITLVL>> .E> " "
-                           WEAPON-NAME .TYPE " and only requires "
-                           N <MAX 1 <- .L .E>> " strength to wield." CR>)>
+                <SET ENCH <GETP ,PRSO ,P?R-ITENCH>>
+                <SET LVL <GETP ,PRSO ,P?R-ITLVL>>
+                <SET STR ,PLAYER-STR>
+                <COND (<L=? .STR 1> <SET STR 1>)>
+                <SET REQ <WEAPON-REQUIRED-STR .LVL .ENCH>>
+                <SET MIN <WEAPON-MIN-DMG .TYPE .LVL .ENCH .STR>>
+                <SET MAX <WEAPON-MAX-DMG .TYPE .LVL .ENCH .STR>>
+                <SET PCT <WEAPON-CRIT-PCT .TYPE>>
+                <SET BONUS <WEAPON-CRIT-BONUS-DMG .TYPE .LVL .ENCH .STR>>
+                <COND (<L? .STR .REQ>
+                    <TELL CR "You're not strong enough to use it yet."
+                          " Once you have " N .REQ
+                          " strength, it'll deal " N .MIN "-" N .MAX
+                          " base damage, crit " N .PCT
+                          "% of the time, and land for "
+                          N <+ .MIN .BONUS> "-" N <+ .MAX .BONUS>
+                          " on a crit." CR>)
+                   (ELSE
+                    <TELL CR "At your strength, this one deals "
+                          N .MIN "-" N .MAX
+                          " base damage, crits " N .PCT
+                          "% of the time, and lands for "
+                          N <+ .MIN .BONUS> "-" N <+ .MAX .BONUS>
+                          " on a crit." CR>)>
            <RTRUE>)>>
 
 <ROUTINE ITEM-ACTION-TREASURE ()

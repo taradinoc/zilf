@@ -137,10 +137,13 @@ File: [itemdef.zil](../itemdef.zil)
 This module defines the canonical constants and lookup functions for items.
 It is effectively the data dictionary for item kinds (`ITEMKIND-*`), food,
 weapons, potions, treasures, and key/lock types. The code in other modules
-relies on `WEAPON-NAME`, `WEAPON-BASE-DMG`, and `WEAPON-CRIT-PCT` to compute
-damage and display names; `FOOD-NAME` and `FOOD-HEAL-AMT` determine healing; and
-potion helpers like `POTION-DISPLAY-NAME` and `POTION-ARTICLE` manage the
-discovery illusion by swapping color names for effect names when identified.
+relies on `WEAPON-NAME` plus the derived weapon-profile helpers such as
+`WEAPON-POWER`, `WEAPON-MIN-DMG`, `WEAPON-MAX-DMG`,
+`WEAPON-CRIT-PCT`, and `WEAPON-AVERAGE-BASE-DMG` to compute damage,
+ranking, and display behavior; `FOOD-NAME` and `FOOD-HEAL-AMT` determine
+healing; and potion helpers like `POTION-DISPLAY-NAME` and
+`POTION-ARTICLE` manage the discovery illusion by swapping color names for
+effect names when identified.
 
 ### Object system and pooling
 
@@ -176,8 +179,9 @@ in-game menu.
 
 Equipment management is centered on `EQUIPPED-WEAPON`, with `TRY-EQUIP-WEAPON`
 validating that the player can wield a weapon and `AUTO-EQUIP-WEAPON` choosing
-an inventory option based on its internal heuristics. Combat reads the global
-pointer to determine the active weapon.
+an inventory option based on its internal heuristics, which now use
+`WEAPON-AVERAGE-BASE-DMG` as the tie-breaker within a level. Combat reads the
+global pointer to determine the active weapon.
 
 ### Loot and spawners
 

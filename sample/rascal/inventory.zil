@@ -335,7 +335,7 @@ Returns:
                       <SET WSTR <+ ,PLAYER-STR .ENCH>>
                       <COND (<G=? .WSTR .LVL>
                              <SET ID <GETP .O ,P?R-ITID>>
-                             <SET DMG <WEAPON-BASE-DMG .ID>>
+                         <SET DMG <WEAPON-AVERAGE-BASE-DMG .ID .LVL .ENCH>>
                              <COND (<OR <L? .BESTS 1>
                                         <G? .LVL .BESTLVL>
                                         <AND <==? .LVL .BESTLVL>

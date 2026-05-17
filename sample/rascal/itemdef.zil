@@ -92,28 +92,87 @@ Returns:
           (ELSE <TELL "weapon">)>
     <RTRUE>>
 
-;"Maps a weapon type code to its base damage.
+;"Returns the integer square root of N.
+
+Args:
+  N: Non-negative integer.
+
+Returns:
+  Greatest integer R such that R*R <= N."
+
+<ROUTINE INTEGER-SQRT (N "AUX" ROOT NEXT)
+    <COND (<L=? .N 0> <RETURN 0>)>
+    <SET ROOT 0>
+    <REPEAT ()
+        <SET NEXT <+ .ROOT 1>>
+        <COND (<G? <* .NEXT .NEXT> .N> <RETURN .ROOT>)>
+        <SET ROOT .NEXT>>>
+
+;"Rounds VALUE * PCT / 100 upward.
+
+Args:
+  VALUE: Non-negative integer value.
+  PCT: Percentage multiplier.
+
+Returns:
+  Rounded-up percentage amount."
+
+<ROUTINE PERCENT-CEILING (VALUE PCT)
+    <COND (<L=? .VALUE 0> 0)
+          (ELSE </ <+ <* .VALUE .PCT> 99> 100>)>>
+
+;"Maps a weapon type code to its power bonus.
 
 Args:
   TYPE: Weapon type code (WEAPON-*).
 
 Returns:
-  Positive integer base damage."
+  Signed power bonus."
 
-<ROUTINE WEAPON-BASE-DMG (TYPE)
-    <COND (<==? .TYPE ,WEAPON-DAGGER> ,WEAPON-BASE-DMG-DAGGER)
-          (<==? .TYPE ,WEAPON-KATANA> ,WEAPON-BASE-DMG-KATANA)
-          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-BASE-DMG-WARAXE)
-          (<==? .TYPE ,WEAPON-SCYTHE> ,WEAPON-BASE-DMG-SCYTHE)
-          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-BASE-DMG-CUDGEL)
-          (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-BASE-DMG-HAMMER)
-          (ELSE 2)>>
+<ROUTINE WEAPON-POWER-BONUS (TYPE)
+    <COND (<==? .TYPE ,WEAPON-DAGGER> ,WEAPON-POWER-BONUS-DAGGER)
+          (<==? .TYPE ,WEAPON-KATANA> ,WEAPON-POWER-BONUS-KATANA)
+          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-POWER-BONUS-WARAXE)
+          (<==? .TYPE ,WEAPON-SCYTHE> ,WEAPON-POWER-BONUS-SCYTHE)
+          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-POWER-BONUS-CUDGEL)
+          (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-POWER-BONUS-HAMMER)
+          (ELSE 0)>>
+
+;"Maps a weapon type code to its minimum base-damage percentage.
+
+Args:
+  TYPE: Weapon type code (WEAPON-*).
+
+Returns:
+  Percentage multiplier (0..100+)."
+
+<ROUTINE WEAPON-MIN-PCT (TYPE)
+    <COND (<==? .TYPE ,WEAPON-DAGGER> ,WEAPON-MIN-PCT-DAGGER)
+          (<==? .TYPE ,WEAPON-KATANA> ,WEAPON-MIN-PCT-KATANA)
+          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-MIN-PCT-WARAXE)
+          (<==? .TYPE ,WEAPON-SCYTHE> ,WEAPON-MIN-PCT-SCYTHE)
+          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-MIN-PCT-CUDGEL)
+          (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-MIN-PCT-HAMMER)
+          (ELSE 75)>>
+
+;"Maps a weapon type code to its maximum base-damage percentage.
+
+Args:
+  TYPE: Weapon type code (WEAPON-*).
+
+Returns:
+  Percentage multiplier (0..100+)."
+
+<ROUTINE WEAPON-MAX-PCT (TYPE)
+    <COND (<==? .TYPE ,WEAPON-DAGGER> ,WEAPON-MAX-PCT-DAGGER)
+          (<==? .TYPE ,WEAPON-KATANA> ,WEAPON-MAX-PCT-KATANA)
+          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-MAX-PCT-WARAXE)
+          (<==? .TYPE ,WEAPON-SCYTHE> ,WEAPON-MAX-PCT-SCYTHE)
+          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-MAX-PCT-CUDGEL)
+          (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-MAX-PCT-HAMMER)
+          (ELSE 125)>>
 
 ;"Maps a weapon type code to its crit chance.
-
-Design notes:
-  - Dagger + waraxe have the highest crit chance.
-  - Other weapons trade predictability/variance against crit odds.
 
 Args:
   TYPE: Weapon type code (WEAPON-*).
@@ -123,33 +182,161 @@ Returns:
 
 <ROUTINE WEAPON-CRIT-PCT (TYPE)
     <COND (<==? .TYPE ,WEAPON-DAGGER> ,WEAPON-CRIT-PCT-DAGGER)
-          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-CRIT-PCT-WARAXE)
-          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-CRIT-PCT-CUDGEL)
           (<==? .TYPE ,WEAPON-KATANA> ,WEAPON-CRIT-PCT-KATANA)
+          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-CRIT-PCT-WARAXE)
           (<==? .TYPE ,WEAPON-SCYTHE> ,WEAPON-CRIT-PCT-SCYTHE)
+          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-CRIT-PCT-CUDGEL)
           (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-CRIT-PCT-HAMMER)
           (ELSE 10)>>
 
-;"Maps a weapon type code to its damage variance behavior.
-
-The caller computes POWER = base + level, then RANGE is derived from POWER:
-  - DIV=1  => RANGE = POWER (very swingy)
-  - DIV=2+ => RANGE = max(2, POWER/DIV) (more predictable)
+;"Maps a weapon type code to its crit bonus percentage.
 
 Args:
   TYPE: Weapon type code (WEAPON-*).
 
 Returns:
-  Positive integer divisor (>= 1)."
+  Percentage multiplier (0..100+)."
 
-<ROUTINE WEAPON-VARIANCE-DIV (TYPE)
-    <COND (<==? .TYPE ,WEAPON-DAGGER> ,WEAPON-VARIANCE-DIV-DAGGER)
-          (<==? .TYPE ,WEAPON-KATANA> ,WEAPON-VARIANCE-DIV-KATANA)
-          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-VARIANCE-DIV-WARAXE)
-          (<==? .TYPE ,WEAPON-SCYTHE> ,WEAPON-VARIANCE-DIV-SCYTHE)
-          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-VARIANCE-DIV-CUDGEL)
-          (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-VARIANCE-DIV-HAMMER)
-          (ELSE 3)>>
+<ROUTINE WEAPON-CRIT-BONUS-PCT (TYPE)
+    <COND (<==? .TYPE ,WEAPON-DAGGER> ,WEAPON-CRIT-BONUS-PCT-DAGGER)
+          (<==? .TYPE ,WEAPON-KATANA> ,WEAPON-CRIT-BONUS-PCT-KATANA)
+          (<==? .TYPE ,WEAPON-WARAXE> ,WEAPON-CRIT-BONUS-PCT-WARAXE)
+          (<==? .TYPE ,WEAPON-SCYTHE> ,WEAPON-CRIT-BONUS-PCT-SCYTHE)
+          (<==? .TYPE ,WEAPON-CUDGEL> ,WEAPON-CRIT-BONUS-PCT-CUDGEL)
+          (<==? .TYPE ,WEAPON-HAMMER> ,WEAPON-CRIT-BONUS-PCT-HAMMER)
+          (ELSE 50)>>
+
+;"Calculates the enchantment damage bonus used in weapon power.
+
+Args:
+  ENCH: Weapon enchantment.
+
+Returns:
+  Signed damage bonus."
+
+<ROUTINE WEAPON-ENCHANT-DMG-BONUS (ENCH)
+    <COND (<L=? .ENCH 0> .ENCH)
+      (ELSE <INTEGER-SQRT <* .ENCH 3>>)>>
+
+;"Calculates the minimum strength needed to wield a weapon properly.
+
+Args:
+  LVL: Weapon level.
+  ENCH: Weapon enchantment.
+
+Returns:
+  Strength requirement (>= 1)."
+
+<ROUTINE WEAPON-REQUIRED-STR (LVL ENCH "AUX" REQ)
+    <SET REQ <- .LVL .ENCH>>
+    <COND (<L=? .REQ 1> 1)
+          (ELSE .REQ)>>
+
+;"Calculates the weapon mastery bonus for a given strength.
+
+Args:
+  STR: Player strength.
+  LVL: Weapon level.
+  ENCH: Weapon enchantment.
+
+Returns:
+  Non-negative mastery bonus."
+
+<ROUTINE WEAPON-MASTERY (STR LVL ENCH "AUX" EXCESS)
+    <COND (<L? .STR <WEAPON-REQUIRED-STR .LVL .ENCH>> <RETURN 0>)>
+    <SET EXCESS <- .STR .LVL>>
+    <COND (<L? .EXCESS 0> <RETURN 0>)>
+  <SET EXCESS </ .EXCESS 2>>
+  <INTEGER-SQRT .EXCESS>>
+
+;"Calculates the intermediate power value for a weapon.
+
+Args:
+  TYPE: Weapon type code (WEAPON-*).
+  LVL: Weapon level.
+  ENCH: Weapon enchantment.
+  STR: Player strength.
+
+Returns:
+  Power value used by weapon damage rolls."
+
+<ROUTINE WEAPON-POWER (TYPE LVL ENCH STR "AUX" POWER)
+    <SET POWER
+         <+ 1
+            <+ .LVL
+               <+ <WEAPON-ENCHANT-DMG-BONUS .ENCH>
+                  <+ <WEAPON-POWER-BONUS .TYPE>
+                     <WEAPON-MASTERY .STR .LVL .ENCH>>>>>>
+    <COND (<L=? .POWER 1> 1)
+          (ELSE .POWER)>>
+
+;"Calculates the minimum base damage for a weapon.
+
+Args:
+  TYPE: Weapon type code (WEAPON-*).
+  LVL: Weapon level.
+  ENCH: Weapon enchantment.
+  STR: Player strength.
+
+Returns:
+  Minimum base-damage roll (>= 1)."
+
+<ROUTINE WEAPON-MIN-DMG (TYPE LVL ENCH STR "AUX" POWER DMG)
+    <SET POWER <WEAPON-POWER .TYPE .LVL .ENCH .STR>>
+    <SET DMG <PERCENT-CEILING .POWER <WEAPON-MIN-PCT .TYPE>>>
+    <COND (<L=? .DMG 1> 1)
+          (ELSE .DMG)>>
+
+;"Calculates the maximum base damage for a weapon.
+
+Args:
+  TYPE: Weapon type code (WEAPON-*).
+  LVL: Weapon level.
+  ENCH: Weapon enchantment.
+  STR: Player strength.
+
+Returns:
+  Maximum base-damage roll (>= minimum roll)."
+
+<ROUTINE WEAPON-MAX-DMG (TYPE LVL ENCH STR "AUX" MIN POWER DMG)
+    <SET MIN <WEAPON-MIN-DMG .TYPE .LVL .ENCH .STR>>
+    <SET POWER <WEAPON-POWER .TYPE .LVL .ENCH .STR>>
+    <SET DMG <PERCENT-CEILING .POWER <WEAPON-MAX-PCT .TYPE>>>
+    <COND (<L? .DMG .MIN> .MIN)
+          (ELSE .DMG)>>
+
+;"Calculates the critical-hit bonus damage for a weapon.
+
+Args:
+  TYPE: Weapon type code (WEAPON-*).
+  LVL: Weapon level.
+  ENCH: Weapon enchantment.
+  STR: Player strength.
+
+Returns:
+  Additional critical-hit damage (>= 1)."
+
+<ROUTINE WEAPON-CRIT-BONUS-DMG (TYPE LVL ENCH STR "AUX" POWER DMG)
+    <SET POWER <WEAPON-POWER .TYPE .LVL .ENCH .STR>>
+    <SET DMG <PERCENT-CEILING .POWER <WEAPON-CRIT-BONUS-PCT .TYPE>>>
+    <COND (<L=? .DMG 1> 1)
+          (ELSE .DMG)>>
+
+;"Calculates the expected base damage of a weapon.
+
+Args:
+  TYPE: Weapon type code (WEAPON-*).
+  LVL: Weapon level.
+  ENCH: Weapon enchantment.
+
+Returns:
+  Average base damage, ignoring crits."
+
+<ROUTINE WEAPON-AVERAGE-BASE-DMG (TYPE LVL ENCH "AUX" MIN MAX)
+    <SET MIN <WEAPON-MIN-DMG .TYPE .LVL .ENCH .LVL>>
+    <SET MAX <WEAPON-MAX-DMG .TYPE .LVL .ENCH .LVL>>
+  <SET MAX </ <+ .MIN .MAX> 2>>
+  .MAX>
 
 ;"Prints a food type code as its display name.
 
@@ -462,5 +649,7 @@ Args:
 Returns:
   Gold value as a positive integer."
 
-<ROUTINE WEAPON-VALUE (TYPE LVL ENCH)
-    <+ 1 <+ <* 2 <WEAPON-BASE-DMG .TYPE>> <* 4 .LVL> <* 2 .ENCH>>>>
+<ROUTINE WEAPON-VALUE (TYPE LVL ENCH "AUX" BASE)
+    <SET BASE <WEAPON-AVERAGE-BASE-DMG .TYPE 1 0>>
+    <SET BASE <+ 1 <+ <* 2 .BASE> <+ <* 4 .LVL> <* 2 .ENCH>>>>>
+    .BASE>
