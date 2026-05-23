@@ -1073,8 +1073,8 @@ Returns:
     ;"Carve room 1 around the entry coordinate so the stairs are always usable."
     <SET W 9>
     <SET H 7>
-    <SET L <CLAMP <- ,ENTRY-X </ .W 2>> 2 <- ,MAP-W .W>>>
-    <SET T <CLAMP <- ,ENTRY-Y </ .H 2>> 2 <- ,MAP-H .H>>>
+    <SET L <CLAMP <- ,ENTRY-X </ .W 2>> 2 <+ 1 <- ,MAP-W .W>>>>
+    <SET T <CLAMP <- ,ENTRY-Y </ .H 2>> 2 <+ 1 <- ,MAP-H .H>>>>
     <CARVE-ROOM .L .T .W .H 1 ,ROOMSHAPE-RECT>
     <SETG ROOM-COUNT 1>
     <RTRUE>>
