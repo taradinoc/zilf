@@ -21,7 +21,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Zilf.Common;
 
 namespace Zilf.Playground.Services.Workspaces
@@ -65,7 +69,9 @@ namespace Zilf.Playground.Services.Workspaces
             }
         }
 
-        public ProjectFile AddFile(string path)
+        public ProjectFile AddFile(string path) => AddFile(path, notify: true);
+
+        private ProjectFile AddFile(string path, bool notify)
         {
             if (files.Any(f => f.Path == path))
                 throw new ArgumentException("Path is already in use", nameof(path));
@@ -76,7 +82,10 @@ namespace Zilf.Playground.Services.Workspaces
 
             mainFile ??= result;
 
-            FilesChanged?.Invoke();
+            if (notify)
+            {
+                FilesChanged?.Invoke();
+            }
 
             return result;
         }
@@ -121,5 +130,107 @@ namespace Zilf.Playground.Services.Workspaces
                    select p;
         }
 
+        public async Task ImportFromZipArchiveAsync(ZipArchive archive)
+        {
+            // First, try to read project metadata
+            var metadataEntry = archive.GetEntry("project.json");
+            string? mainFilePath = null;
+            List<string> includes = new();
+
+            if (metadataEntry != null)
+            {
+                using var metadataStream = metadataEntry.Open();
+                using var reader = new StreamReader(metadataStream);
+                var metadataJson = await reader.ReadToEndAsync();
+                var metadata = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(metadataJson);
+
+                if (metadata != null)
+                {
+                    if (metadata.TryGetValue("MainFile", out var mainFileElement))
+                        mainFilePath = mainFileElement.GetString();
+
+                    if (metadata.TryGetValue("Includes", out var includesElement))
+                    {
+                        includes = JsonSerializer.Deserialize<List<string>>(includesElement.GetRawText()) ?? new();
+                    }
+                }
+            }
+
+            // Extract all files from ZIP
+            var zippedFiles = new List<(string Path, string Content)>();
+
+            foreach (var entry in archive.Entries)
+            {
+                if (entry.FullName == "project.json")
+                    continue;
+
+                using var entryStream = entry.Open();
+                using var reader = new StreamReader(entryStream);
+                var content = await reader.ReadToEndAsync();
+
+                System.Diagnostics.Debug.WriteLine("Importing file from ZIP: " + entry.FullName);
+
+                zippedFiles.Add((entry.FullName, content));
+            }
+
+            // Verify files are present
+            if (zippedFiles.Count == 0)
+            {
+                throw new InvalidOperationException("No files found in ZIP archive");
+            }
+
+            // Clear existing project files
+            foreach (var oldFile in this.files)
+            {
+                oldFile.ContentChanged -= OnFileContentChanged;
+            }
+
+            this.files.Clear();
+
+            // Add extracted files to project
+            foreach (var (path, content) in zippedFiles)
+            {
+                var file = AddFile(path, notify: false);
+                file.Content = content;
+            }
+
+            // Restore includes from metadata
+            foreach (var include in includes)
+            {
+                if (!this.includes.Contains(include))
+                    this.includes.Add(include);
+            }
+
+            // Set main file if specified
+            if (!string.IsNullOrEmpty(mainFilePath))
+            {
+                var mainFile = this.files.FirstOrDefault(f => f.Path == mainFilePath);
+                if (mainFile != null)
+                {
+                    this.mainFile = mainFile;
+                }
+            }
+            else if (this.files.Count > 0)
+            {
+                // If no main file specified, use first non-library file
+                var nonLibraryFiles = this.files
+                    .Where(f => !this.includes.Any(inc => f.Path.StartsWith(inc + "/")))
+                    .OrderBy(f => f.Path)
+                    .ToList();
+
+                if (nonLibraryFiles.Count > 0)
+                {
+                    this.mainFile = nonLibraryFiles.First();
+                }
+                else
+                {
+                    // Fallback to any file if all are library files
+                    this.mainFile = this.files.First();
+                }
+            }
+
+            // Notify that project has changed
+            FilesChanged?.Invoke();
+        }
     }
 }

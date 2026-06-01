@@ -179,7 +179,7 @@
 </div>
 
 @code {
-#nullable enable
+    #nullable enable
     [Parameter]
     public Guid ProjectId { get; set; }
 
@@ -189,7 +189,7 @@
     private Project? project;
     private string selectedMainFile = "";
     private IEnumerable<ProjectFile> libraryFiles = Enumerable.Empty<ProjectFile>();
-    
+
     private bool HasLibrary => project?.Includes.Contains("zillib") == true;
 
     private IEnumerable<ProjectFile> ProjectFiles =>
@@ -273,90 +273,8 @@
             memoryStream.Position = 0;
 
             using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read);
-            
-            // First, try to read project metadata
-            var metadataEntry = archive.GetEntry("project.json");
-            string? mainFilePath = null;
-            List<string> includes = new();
 
-            if (metadataEntry != null)
-            {
-                using var metadataStream = metadataEntry.Open();
-                using var reader = new StreamReader(metadataStream);
-                var metadataJson = await reader.ReadToEndAsync();
-                var metadata = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(metadataJson);
-                
-                if (metadata != null)
-                {
-                    if (metadata.TryGetValue("MainFile", out var mainFileElement))
-                        mainFilePath = mainFileElement.GetString();
-                    
-                    if (metadata.TryGetValue("Includes", out var includesElement))
-                    {
-                        includes = JsonSerializer.Deserialize<List<string>>(includesElement.GetRawText()) ?? new();
-                    }
-                }
-            }
-
-            // Clear existing project files (except library files)
-            var filesToRemove = project.Files
-                .Where(f => !project.Includes.Any(inc => f.Path.StartsWith(inc + "/")))
-                .ToList();
-            foreach (var oldFile in filesToRemove)
-            {
-                project.RemoveFile(oldFile.Path);
-            }
-
-            // Import all files from ZIP
-            foreach (var entry in archive.Entries)
-            {
-                if (entry.FullName == "project.json")
-                    continue;
-
-                using var entryStream = entry.Open();
-                using var reader = new StreamReader(entryStream);
-                var content = await reader.ReadToEndAsync();
-
-                project.AddFile(entry.FullName).Content = content;
-            }
-
-            // Restore includes from metadata
-            foreach (var include in includes)
-            {
-                if (!project.Includes.Contains(include))
-                    project.Includes.Add(include);
-            }
-
-            // Set main file if specified
-            if (!string.IsNullOrEmpty(mainFilePath))
-            {
-                var mainFile = project.Files.FirstOrDefault(f => f.Path == mainFilePath);
-                if (mainFile != null)
-                {
-                    project.MainFile = mainFile;
-                    selectedMainFile = mainFilePath;
-                }
-            }
-            else if (project.Files.Count > 0)
-            {
-                // If no main file specified, use first non-library file
-                var nonLibraryFiles = project.Files
-                    .Where(f => !project.Includes.Any(inc => f.Path.StartsWith(inc + "/")))
-                    .OrderBy(f => f.Path)
-                    .ToList();
-                
-                if (nonLibraryFiles.Count > 0)
-                {
-                    project.MainFile = nonLibraryFiles.First();
-                    selectedMainFile = project.MainFile.Path;
-                }
-                else
-                {
-                    // Fallback to any file if all are library files
-                    project.MainFile = project.Files.First();
-                    selectedMainFile = project.MainFile.Path;
-                }
-            }
+            await project.ImportFromZipArchiveAsync(archive);
 
             // Manually save to ensure everything is persisted
             await ProjectStorage.SaveProjectAsync(project);
