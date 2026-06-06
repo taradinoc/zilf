@@ -16,6 +16,9 @@ and this project adheres to
 - Using `GET` with a second argument that looks like a property name now issues
   warning ZIL0513.
 
+- The error thrown by invalid references to `P?DESC`, `P?LOC`, and `P?FLAGS` now
+  includes an info message explaining that they're pseudo-properties.
+
 ### Changed
 
 - Updated `zillib/LICENSE.txt` to clarify that you may redistribute games
