@@ -1,32 +1,49 @@
+# ZIL/ZILF Differences
+
 The main documentation for ZIL programming is Infocom's "Learning ZIL" manual, 
 which you can find at
 http://www.xlisper.com/zil.pdf
 
-This doc describes the differences between ZILF's v0.6 library and the description 
-of ZIL found in "Learning ZIL", including, at the bottom of this doc, what is not 
-yet implemented in the ZILF library.
+This document describes the differences between ZILF 1.9's library and the
+description of ZIL found in "Learning ZIL", including, at the bottom of this
+doc, what is not yet implemented in the ZILF library. This list of differences
+is not exhaustive.
 
-The code that comprises the library is part of parser.zil.
+The code that comprises the library is found in the `zillib` directory. The
+`sample` directory should be consulted as well for examples of how to use the
+ZILF library.
 
--- New OPENABLEBIT bit.  If an object with CONTBIT also has OPENABLEBIT, then it 
+## What's New/Different
+
+### OPENABLEBIT
+
+New OPENABLEBIT bit.  If an object with CONTBIT also has OPENABLEBIT, then it 
 can be opened and closed by the player. An object with CONTBIT and OPENBIT but no 
 OPENABLEBIT flag will be considered always open.  An object with just CONTBIT
 assigned to it is considered a sealed-off container (the author can make certain 
 game events add OPENBIT and/or OPENABLEBIT to such a container to make it an 
 accessible container).
 
--- If an object has a TEXT property, that TEXT will show, along with any LDESC, 
+### TEXT
+
+If an object has a TEXT property, that TEXT will show, along with any LDESC, 
 when the object is EXAMINED. If the object is READ, only the TEXT will be shown.
 
--- New TEXT-HELD property.  If an object has a TEXT-HELD property, the string 
+### TEXT-HELD
+
+New TEXT-HELD property.  If an object has a TEXT-HELD property, the string 
 associated with it will only be shown if the player is holding the object and 
 performs a READ on the object (for books, etc).
 
--- New DEVICEBIT to indicate a device can be turned on and off.  ZIL used
+### DEVICEBIT
+
+New DEVICEBIT to indicate a device can be turned on and off.  ZIL used
 LIGHTBIT for this.  In ZILF, LIGHTBIT is used solely to indicate something
 providing light.
 
--- "Learning ZIL" describes objects as having a default SIZE and CAPACITY of 5, 
+### SIZE/CAPACITY
+
+"Learning ZIL" describes objects as having a default SIZE and CAPACITY of 5, 
 if the author does not specify them. If such default containers tested their 
 CAPACITY against a default object (being inserted)'s SIZE, then all default 
 containers could only hold 1 default object max (object of SIZE 5 filling the 
@@ -40,64 +57,75 @@ but only allows objects of a certain size or below, the author can either specif
 a very large CAPACITY along with the desired SIZE limit, or custom handle PUT-IN 
 in the object's ACTION routine).
 
--- ZILF has the WEIGHT routine, as described in "Learning ZIL", but also a 
-CONTENTS-WEIGHT, which only adds up the SIZEs of the objects in the chosen container 
-- not adding the size of the container itself and also not recursing down through 
+### CONTENTS-WEIGHT
+
+ZILF has the WEIGHT routine, as described in "Learning ZIL", but also a 
+CONTENTS-WEIGHT, which only adds up the SIZEs of the objects in the chosen container,
+not adding the size of the container itself and also not recursing down through 
 any containers within the primary container.
 
--- PICK-ONE in early versions of ZIL randomly picked any element from a given table, 
+### PICK-ONE/PICK-ONE-R
+
+PICK-ONE in early versions of ZIL randomly picked any element from a given table, 
 and was later replaced by aversion that would randomly cycle through all elements of 
 the given table before repeating any of them.  ZILF offers both. PICK-ONE does the 
 cyclic 'shuffling' (no repeats til all elements have been displayed once).  PICK-ONE-R 
 is the totally random version (repeats likely).  Tables used with PICK-ONE must have 
 the numeral 2 as their first element. Both PICK-ONE and PICK-ONE-R tables must be LTABLES.
 
--- The ZIL Manual is a little inconsistent about how a multiple-turn WAIT can/can't be 
+### WAIT
+
+The ZIL Manual is a little inconsistent about how a multiple-turn WAIT can/can't be 
 interrupted.  In ZILF, any routine that returns TRUE (whether an I-EVENT, the room's 
 M-END RARG, whatever) will interrupt a WAIT which is running though a sequence of passed 
 turns.  However, if a routine ends with a RFALSE, WAIT will continue to cycle on to 
 additional passed turns after the routine.  The default number of turns that pass with 
 WAIT is set by the global STANDARD-WAIT variable.
 
--- New WAIT-TURNS routine. Pass a number to it, it will pass that number of game turns 
+### WAIT-TURNS
+
+New WAIT-TURNS routine. Pass a number to it, it will pass that number of game turns 
 in the same fashion as a player-called WAIT.
 
--- New EDIBLEBIT (not in ZIL manual) for verb EAT
+### EDIBLEBIT
 
+New EDIBLEBIT (not in ZIL manual) for verb EAT
 
-WHAT'S NOT IMPLEMENTED IN THE ZILF LIBRARY
---------------------------------------------
+## What's Not Implemented
 
-The following are not implemented yet as of v 0.7:
+The following are not implemented yet as of ZILF 1.9:
 
-General
-- All mouse and graphic routines
+### General
 
-Properties
-PLURAL (note this is different from PLURALBIT, which is implemented)
-SDESC
-OWNER
-ADJACENT
+* All mouse and graphic routines
 
-Bits
-FLAMEBIT
-BURNBIT
-SEARCHBIT (ZILF does not use the abitrary level-of-containment limit 
-when searching through visible & accessible objects)
-VEHBIT
-RLANDBIT
-RWATERBIT
-RAIRBIT
-OUTSIDEBIT
-INTEGRALBIT
-PARTBIT
-NALLBIT
-DROPBIT
-INBIT
+### Properties
 
-Routines
-UNTOUCHABLE?
-WITHIN?
-TOUCHING?
-CANT-SEE
-CAPITAL-NOUN?
+* SDESC
+* OWNER
+* ADJACENT
+
+### Flags
+
+* FLAMEBIT
+* BURNBIT
+* SEARCHBIT (ZILF does not use the abitrary level-of-containment limit 
+  when searching through visible & accessible objects)
+* RLANDBIT
+* RWATERBIT
+* RAIRBIT
+* OUTSIDEBIT
+* INTEGRALBIT
+* PARTBIT
+* NALLBIT
+* DROPBIT
+* INBIT
+* ACTORBIT (use PERSONBIT instead)
+
+### Routines
+
+* UNTOUCHABLE?
+* WITHIN?
+* TOUCHING?
+* CANT-SEE
+* CAPITAL-NOUN?
