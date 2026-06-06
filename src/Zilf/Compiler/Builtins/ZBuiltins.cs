@@ -1532,9 +1532,6 @@ namespace Zilf.Compiler.Builtins
                     case ZilForm form when form.IsGVAL(out var atom):
                         pname = atom.Text;
                         break;
-                    default:
-                        System.Console.Error.WriteLine(c.form.ToString());
-                        break;
                 }
                 
                 if (pname?.StartsWith("P?", StringComparison.OrdinalIgnoreCase) == true)
