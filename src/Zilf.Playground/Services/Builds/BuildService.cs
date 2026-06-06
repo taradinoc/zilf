@@ -446,7 +446,8 @@ namespace Zilf.Playground.Services.Builds
             // Generate filename based on main file
             var mainFilePath = workspace.Project.MainFile.Path;
             var baseFileName = System.IO.Path.GetFileNameWithoutExtension(mainFilePath);
-            var storyFileName = $"{baseFileName}.z5";
+            // Get version number from Z-machine header
+            var storyFileName = $"{baseFileName}.z{_lastCompiledGame[0]}";
             const string contentType = "application/x-zmachine";
 
             await jsInterop.DownloadBytesAsFileAsync(_lastCompiledGame, storyFileName, contentType);
