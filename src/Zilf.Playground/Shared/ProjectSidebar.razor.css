@@ -4,6 +4,8 @@
     border-right: 1px solid #dee2e6;
     display: flex;
     flex-direction: column;
+    height: 100%;
+    min-height: 0;
     overflow-y: auto;
 }
 
