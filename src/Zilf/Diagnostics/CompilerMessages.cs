@@ -224,5 +224,7 @@ namespace Zilf.Diagnostics
         public const int Possibly_Unintended_Complex_DO_Loop_Increment_It_Should_Have_Side_Effects = 511;
         [Error("Cornerstone backend limitation: {0}")]
         public const int Cornerstone_Backend_Limitation_0 = 512;
+        [Warning("GET used with a property name constant, GETP may have been intended")]
+        public const int GET_Used_With_A_Property_Name_Constant_GETP_May_Have_Been_Intended = 513;
     }
 }

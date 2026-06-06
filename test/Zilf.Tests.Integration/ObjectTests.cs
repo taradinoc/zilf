@@ -702,5 +702,15 @@ namespace Zilf.Tests.Integration
                 .WithWarnings("MDL0429")
                 .DoesNotCompileAsync(); // because 90 can't be an adjective
         }
+
+        [TestMethod]
+        public async Task GET_With_Property_Name_Should_Warn()
+        {
+            System.Diagnostics.Debugger.Break();
+            await AssertRoutine("", "<GET ,BOX ,P?SIZE>")
+                .WithGlobal("<OBJECT BOX (SIZE 123)>")
+                .WithWarnings("ZIL0513")
+                .CompilesAsync();
+        }
     }
 }

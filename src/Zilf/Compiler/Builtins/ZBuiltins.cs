@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text.Json.Serialization;
 using Zilf.Common;
 using Zilf.Diagnostics;
 using Zilf.Emit;
@@ -1520,6 +1521,30 @@ namespace Zilf.Compiler.Builtins
         public static IOperand BinaryTableValueOp(
             ValueCall c, [Data] BinaryOp op, [Table] IOperand left, IOperand right)
         {
+            if (c.form.First is ZilAtom { StdAtom: StdAtom.GET })
+            {
+                string? pname = null;
+                switch (c.form[2])
+                {
+                    case ZilAtom atom:
+                        pname = atom.Text;
+                        break;
+                    case ZilForm form when form.IsGVAL(out var atom):
+                        pname = atom.Text;
+                        break;
+                    default:
+                        System.Console.Error.WriteLine(c.form.ToString());
+                        break;
+                }
+                
+                if (pname?.StartsWith("P?", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    c.cc.Context.HandleError(new CompilerError(
+                        CompilerMessages.GET_Used_With_A_Property_Name_Constant_GETP_May_Have_Been_Intended
+                    ));
+                }
+            }
+
             c.rb.EmitBinary(op, left, right, c.resultStorage);
             return c.resultStorage;
         }

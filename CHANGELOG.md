@@ -13,6 +13,9 @@ and this project adheres to
   like "(worn)" to the inventory listing; or you can override the defaults by
   replacing `INV-PRINT-DETAILS` (and probably also `INV-INDISTINGUISHABLE?`).
 
+- Using `GET` with a second argument that looks like a property name now issues
+  warning ZIL0513.
+
 ### Changed
 
 - Updated `zillib/LICENSE.txt` to clarify that you may redistribute games
