@@ -2216,11 +2216,23 @@ namespace Zilf.Compiler.Builtins
             }
 
             // error
-            c.cc.Context.HandleError(new CompilerError(
+            var error = new CompilerError(
                 c.form,
                 CompilerMessages.Undefined_0_1,
                 "global or constant",
-                atom));
+                atom);
+
+            if (atom?.Text.ToUpperInvariant() is "P?DESC" or "P?LOC" or "P?FLAGS")
+            {
+                error = error.Combine(new CompilerError(
+                    c.form,
+                    CompilerMessages._0_Is_A_Pseudo_Property_And_Cannot_Be_Accessed_Directly,
+                    atom.Text[2..]
+                ));
+            }
+
+            c.cc.Context.HandleError(error);
+
             return c.cc.Game.Zero;
         }
 

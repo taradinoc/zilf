@@ -226,5 +226,7 @@ namespace Zilf.Diagnostics
         public const int Cornerstone_Backend_Limitation_0 = 512;
         [Warning("GET used with a property name constant, GETP may have been intended")]
         public const int GET_Used_With_A_Property_Name_Constant_GETP_May_Have_Been_Intended = 513;
+        [Info("{0} is a pseudo-property and cannot be accessed directly")]
+        public const int _0_Is_A_Pseudo_Property_And_Cannot_Be_Accessed_Directly = 514;
     }
 }

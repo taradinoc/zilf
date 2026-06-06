@@ -706,11 +706,20 @@ namespace Zilf.Tests.Integration
         [TestMethod]
         public async Task GET_With_Property_Name_Should_Warn()
         {
-            System.Diagnostics.Debugger.Break();
             await AssertRoutine("", "<GET ,BOX ,P?SIZE>")
                 .WithGlobal("<OBJECT BOX (SIZE 123)>")
                 .WithWarnings("ZIL0513")
                 .CompilesAsync();
+        }
+
+        [TestMethod]
+        public async Task References_To_Pseudo_Properties_Should_Give_Info()
+        {
+            await AssertRoutine("", "<GET ,BOX ,P?DESC>")
+                .WithGlobal("<OBJECT BOX (DESC \"box\")>")
+                .DoesNotCompileAsync(
+                    "ZIL0207",
+                    diag => diag.SubDiagnostics.Any(sub => sub.Code == "ZIL0514"));
         }
     }
 }
