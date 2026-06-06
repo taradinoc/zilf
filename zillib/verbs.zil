@@ -836,7 +836,8 @@ Returns:
 
 <ROUTINE V-WALK ("AUX" PT PTS RM D)
     <COND (<NOT ,PRSO-DIR>
-           <TELL <LIBRARY-MESSAGE WALK NO-DIRECTION> CR>)
+           <TELL <LIBRARY-MESSAGE WALK NO-DIRECTION> CR>
+           <RTRUE>)
           (<0? <SET PT <GETPT ,HERE ,PRSO>>>
            <COND (<OR ,HERE-LIT <NOT <DARKNESS-F ,M-DARK-CANT-GO>>>
                   <TELL ,CANT-GO-THAT-WAY CR>)>
