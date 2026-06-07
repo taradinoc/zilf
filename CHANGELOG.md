@@ -23,6 +23,16 @@ and this project adheres to
   `DELAY-DEFINITION`, but whose replacement definition is never actually
   inserted, now issues warning ZIL0214 (if replaced) or ZIL0215 (if delayed).
 
+- Added `LOAD`, to read and execute code from an open file channel (like `FLOAD`
+  but with a channel instead of a path).
+
+- Added `READCHR`, to read a single character from an open file channel, or
+  a control-Z character if the file is at EOF.
+
+- `OPEN` can now accept the file mode `"PRINT"` to open files for writing. This
+  will only succeed if the command-line switch `--allow-file-writes` has been
+  given.
+
 ### Changed
 
 - Updated `zillib/LICENSE.txt` to clarify that you may redistribute games
