@@ -167,6 +167,7 @@ namespace Zilf.Compiler
             }
             else if (args.Length == 1)
             {
+                MarkSequencePoint(rb, args[0]);
                 CompileCondition(rb, args[0], src, label, polarity);
             }
             else if (and == polarity)
@@ -174,8 +175,10 @@ namespace Zilf.Compiler
                 // AND or NOR
                 var failure = rb.DefineLabel();
                 for (int i = 0; i < args.Length - 1; i++)
+                {
+                    MarkSequencePoint(rb, args[i]);
                     CompileCondition(rb, args[i], src, failure, !and);
-
+                }
                 /* QUIRK: ZILCH considered <AND ... <SET X 0>> to be true,
                  * even though <SET X 0> is false. We emulate this issue by compiling the
                  * last element as a statement instead of a condition when it fits
@@ -184,28 +187,38 @@ namespace Zilf.Compiler
                 if (and && last.IsSetToZeroForm())
                 {
                     Context.HandleError(new CompilerError(last.SourceLine, CompilerMessages.Treating_SET_To_0_As_True_Here));
+                    // CompileStmt marks a sequence point
                     CompileStmt(rb, last, false);
                 }
                 else
+                {
+                    MarkSequencePoint(rb, last);
                     CompileCondition(rb, last, src, label, and);
-
+                }
                 rb.MarkLabel(failure);
             }
             else
             {
                 // NAND or OR
                 for (int i = 0; i < args.Length - 1; i++)
+                {
+                    MarkSequencePoint(rb, args[i]);
                     CompileCondition(rb, args[i], src, label, !and);
+                }
 
                 /* QUIRK: Emulate the aforementioned SET issue. */
                 var last = args[^1];
                 if (and && last.IsSetToZeroForm())
                 {
                     Context.HandleError(new CompilerError(last.SourceLine, CompilerMessages.Treating_SET_To_0_As_True_Here));
+                    // CompileStmt marks a sequence point
                     CompileStmt(rb, last, false);
                 }
                 else
+                {
+                    MarkSequencePoint(rb, last);
                     CompileCondition(rb, last, src, label, !and);
+                }
             }
         }
 
@@ -221,6 +234,7 @@ namespace Zilf.Compiler
                 if (wantResult)
                     return CompileAsOperand(rb, first, src, resultStorage);
 
+                // CompileStmt marks a sequence point
                 CompileStmt(rb, first, false);
                 return Game.Zero;
             }
@@ -236,6 +250,7 @@ namespace Zilf.Compiler
                 {
                     var nextLabel = rb.DefineLabel();
 
+                    MarkSequencePoint(rb, first);
                     CompileCondition(rb, first, src, nextLabel, and);
 
                     rb.Branch(lastLabel);
@@ -244,6 +259,7 @@ namespace Zilf.Compiler
                     (first, rest) = rest;
                 }
 
+                // CompileStmt marks a sequence point
                 CompileStmt(rb, first, false);
                 rb.MarkLabel(lastLabel);
 
@@ -282,6 +298,8 @@ namespace Zilf.Compiler
                 /* TODO: use "value or predicate" context here - if the expr is naturally a predicate,
                  * branch to a final label and synthesize the value without using a temp var,
                  * otherwise use the returned value */
+
+                MarkSequencePoint(rb, first);
 
                 if (and)
                 {

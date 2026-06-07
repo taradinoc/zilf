@@ -8,6 +8,7 @@
     <Description>The ZIL Implementation You Really, Really Like.</Description>
     <Deterministic>false</Deterministic>
     <Nullable>enable</Nullable>
+    <DebugType>portable</DebugType>
 	<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   <GenerateDocumentationFile>true</GenerateDocumentationFile>
   <NoWarn>$(NoWarn);CS1591</NoWarn>
