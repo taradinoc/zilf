@@ -231,13 +231,34 @@ namespace Zilf.Interpreter
         /// Opens a file channel for reading from a file specified by a retro-style path.
         /// </summary>
         /// <param name="ctx"></param>
-        /// <param name="mode">Must be the atom READ.</param>
+        /// <param name="mode">Must be the atom READ or PRINT.</param>
         /// <param name="path">A retro-style file path.</param>
+        /// <param name="ext">An optional file extension to use.</param>
         /// <returns>The opened file channel.</returns>
         [Subr]
-        public static ZilObject OPEN(Context ctx, [Decl("'\"READ\"")] string mode, string path)
+        public static ZilObject OPEN(Context ctx,
+            [Decl("<OR '\"READ\" '\"PRINT\">")] string mode, string path,
+            string? ext = null)
         {
-            var result = new ZilFileChannel(ConvertPath(path), FileAccess.Read);
+            string convertedPath = ConvertPath(path);
+
+            if (ext != null)
+            {
+                convertedPath += "." + ext;
+            }
+
+            bool write = mode == "PRINT";
+
+            if (write && !ctx.AllowFileWrites)
+            {
+                throw new InterpreterError(
+                    InterpreterMessages._0_File_Writes_Are_Not_Permitted,
+                    "OPEN");
+            }
+
+            var result = new ZilFileChannel(
+                convertedPath,
+                write ? FileAccess.Write : FileAccess.Read);
             result.Reset(ctx);
             return result;
         }
@@ -272,6 +293,24 @@ namespace Zilf.Interpreter
         {
             var length = channel.GetFileLength();
             return length == null ? ctx.FALSE : new ZilFix((int)length.Value);
+        }
+
+        /// <summary>
+        /// Reads a character from a channel.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="channel">The channel to read from.</param>
+        /// <returns>The character read, or a control-Z character if the channel is at EOF.</returns>
+        [Subr]
+        public static ZilObject READCHR(Context ctx, ZilChannel channel)
+        {
+            if (channel.IsEOF)
+            {
+                return new ZilChar((char)0x1a);     // ^Z
+            }
+
+            char c = channel.ReadChar() ?? (char)0x1a;
+            return new ZilChar(c);
         }
 
         /// <summary>

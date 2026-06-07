@@ -43,11 +43,13 @@ namespace Zilf.Cli
         Option<string[]> BuildDefineFlagOption,
         Option<bool> BuildPublishOption,
         Option<string?> BuildPublishOutputOption,
+        Option<bool> BuildAllowFileWritesOption,
         Command ReplCommand,
         Option<bool> ReplQuietOption,
         Option<bool?> ReplCaseSensitiveOption,
         Option<bool?> ReplCaseInsensitiveOption,
         Option<string[]> ReplIncludePathOption,
+        Option<bool> ReplAllowFileWritesOption,
         Command ExecCommand,
         Argument<string?> ExecInputArgument,
         Option<string?> ExecExprOption,
@@ -57,5 +59,6 @@ namespace Zilf.Cli
         Option<string[]> ExecIncludePathOption,
         Option<bool> ExecEnableAllWarningsOption,
         Option<bool> ExecWarningsAsErrorsOption,
-        Option<string[]> ExecSuppressWarningsOption);
+        Option<string[]> ExecSuppressWarningsOption,
+        Option<bool> ExecAllowFileWritesOption);
 }

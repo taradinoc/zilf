@@ -39,6 +39,9 @@ namespace Zilf.Interpreter
             public string? ObList { get; set; }
         }
 
+        /// <summary>
+        /// Indicates that a method implements a SUBR.
+        /// </summary>
         public sealed class SubrAttribute : SubrAttributeBase
         {
             public SubrAttribute()
@@ -46,12 +49,17 @@ namespace Zilf.Interpreter
             {
             }
 
+            /// <param name="name">The name of the implemented SUBR. Defaults to the name of the method.</param>
             public SubrAttribute(string name)
                 : base(name)
             {
             }
         }
 
+        /// <summary>
+        /// Indicates that a method implements an FSUBR, and its arguments should
+        /// not be evaluated before calling.
+        /// </summary>
         public sealed class FSubrAttribute : SubrAttributeBase
         {
             public FSubrAttribute()
@@ -59,15 +67,22 @@ namespace Zilf.Interpreter
             {
             }
 
+            /// <param name="name">The name of the implemented FSUBR. Defaults to the name of the method.</param>
             public FSubrAttribute(string name)
                 : base(name)
             {
             }
         }
 
+        /// <summary>
+        /// Indicates that calls to a SUBR should be redirected to another implementation
+        /// when the current file is in <c>MDL-ZIL?</c> mode.
+        /// </summary>
         [AttributeUsage(AttributeTargets.Method)]
         public sealed class MdlZilRedirectAttribute : Attribute
         {
+            /// <param name="type">The type providing the other implementation.</param>
+            /// <param name="target">The name of the method providing the other implementation.</param>
             public MdlZilRedirectAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type type, string target)
             {
                 Type = type;
@@ -79,6 +94,10 @@ namespace Zilf.Interpreter
 
             public string Target { get; }
 
+            /// <summary>
+            /// Gets or sets a value indicating whether the redirect should only be performed when
+            /// <see cref="Context.AtTopLevel"/> is true.
+            /// </summary>
             public bool TopLevelOnly { get; set; }
         }
     }

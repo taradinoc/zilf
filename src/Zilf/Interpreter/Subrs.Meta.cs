@@ -75,6 +75,43 @@ namespace Zilf.Interpreter
             return PerformLoadFile(ctx, file, "INSERT-FILE");
         }
 
+        [Subr]
+        public static ZilObject LOAD(Context ctx, ZilChannel channel)
+        {
+            if (channel is IChannelWithStream cws)
+            {
+                try
+                {
+                    using (ctx.PushFileContext(cws.Path))
+                    {
+                        if (cws.Stream == null)
+                        {
+                            channel.Reset(ctx);
+                        }
+
+                        Debug.Assert(cws.Stream != null);
+                        Program.Evaluate(ctx, cws.Stream);
+                    }
+                }
+                catch (FileNotFoundException ex)
+                {
+                    throw new InterpreterError(InterpreterMessages._0_File_Not_Found_1, "LOAD", cws.Path, ex);
+                }
+                catch (IOException ex)
+                {
+                    throw new InterpreterError(InterpreterMessages._0_Error_Loading_File_1, "LOAD", ex.Message, ex);
+                }
+
+                return ZilString.FromString("DONE");
+            }
+            else
+            {
+                throw new InterpreterError(
+                    InterpreterMessages._0_Not_Supported_By_This_Type_Of_Channel,
+                    "LOAD");
+            }
+        }
+
         /// <summary>
         /// Sets compiler options for the current file.
         /// </summary>

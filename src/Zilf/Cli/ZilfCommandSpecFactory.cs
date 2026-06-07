@@ -135,6 +135,11 @@ namespace Zilf.Cli
             };
             buildSuppressWarningsOption.Aliases.Add("-Wno");
 
+            var buildAllowFileWritesOption = new Option<bool>("--allow-file-writes")
+            {
+                Description = "Allow files to be opened for writing."
+            };
+
             var buildStopAfterCompileOption = new Option<bool>("--stop-after-compile", "-S")
             {
                 Description = "Stop after compilation; do not run ZAPF."
@@ -185,6 +190,7 @@ namespace Zilf.Cli
             buildCommand.Options.Add(buildEnableAllWarningsOption);
             buildCommand.Options.Add(buildWarningsAsErrorsOption);
             buildCommand.Options.Add(buildSuppressWarningsOption);
+            buildCommand.Options.Add(buildAllowFileWritesOption);
             buildCommand.Options.Add(buildStopAfterCompileOption);
             buildCommand.Options.Add(buildZapfPassThroughOption);
             buildCommand.Options.Add(buildIdeInfoOption);
@@ -258,11 +264,16 @@ namespace Zilf.Cli
                 AllowMultipleArgumentsPerToken = false,
                 Arity = ArgumentArity.ZeroOrMore
             };
+            var replAllowFileWritesOption = new Option<bool>("--allow-file-writes")
+            {
+                Description = "Allow files to be opened for writing."
+            };
 
             replCommand.Options.Add(replQuietOption);
             replCommand.Options.Add(replCaseSensitiveOption);
             replCommand.Options.Add(replCaseInsensitiveOption);
             replCommand.Options.Add(replIncludePathOption);
+            replCommand.Options.Add(replAllowFileWritesOption);
 
             replCommand.Validators.Add(commandResult =>
             {
@@ -325,6 +336,10 @@ namespace Zilf.Cli
                 Arity = ArgumentArity.ZeroOrMore
             };
             execSuppressWarningsOption.Aliases.Add("-Wno");
+            var execAllowFileWritesOption = new Option<bool>("--allow-file-writes")
+            {
+                Description = "Allow files to be opened for writing."
+            };
 
             execCommand.Arguments.Add(execInputArgument);
             execCommand.Options.Add(execExprOption);
@@ -335,6 +350,7 @@ namespace Zilf.Cli
             execCommand.Options.Add(execEnableAllWarningsOption);
             execCommand.Options.Add(execWarningsAsErrorsOption);
             execCommand.Options.Add(execSuppressWarningsOption);
+            execCommand.Options.Add(execAllowFileWritesOption);
 
             execCommand.Validators.Add(commandResult =>
             {
@@ -391,11 +407,13 @@ namespace Zilf.Cli
                 buildDefineFlagOption,
                 buildPublishOption,
                 buildPublishOutputOption,
+                buildAllowFileWritesOption,
                 replCommand,
                 replQuietOption,
                 replCaseSensitiveOption,
                 replCaseInsensitiveOption,
                 replIncludePathOption,
+                replAllowFileWritesOption,
                 execCommand,
                 execInputArgument,
                 execExprOption,
@@ -405,7 +423,8 @@ namespace Zilf.Cli
                 execIncludePathOption,
                 execEnableAllWarningsOption,
                 execWarningsAsErrorsOption,
-                execSuppressWarningsOption);
+                execSuppressWarningsOption,
+                execAllowFileWritesOption);
 
             root.SetAction(_ =>
             {

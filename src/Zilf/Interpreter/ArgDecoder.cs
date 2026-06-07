@@ -180,29 +180,50 @@ namespace Zilf.Interpreter
         }
     }
 
+    /// <summary>
+    /// Indicates that the value passed for a parameter must satisfy a DECL pattern.
+    /// </summary>
+    /// <param name="pattern">The DECL pattern.</param>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)]
     sealed class DeclAttribute(string pattern) : Attribute
     {
         public string Pattern { get; } = pattern;
     }
 
+    /// <summary>
+    /// Indicates that at least one value must be passed for an array parameter.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)]
     sealed class RequiredAttribute : Attribute
     {
     }
 
+    /// <summary>
+    /// Indicates that a struct type represents a structured parameter value.
+    /// </summary>
+    /// <param name="typeAtom">
+    /// The type of structure that must be passed for the parameter.
+    /// </param>
     [AttributeUsage(AttributeTargets.Struct)]
     sealed class ZilStructuredParamAttribute(StdAtom typeAtom) : Attribute
     {
         public StdAtom TypeAtom { get; } = typeAtom;
     }
 
+    /// <summary>
+    /// Indicates that a value does not need to be provided for a parameter.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)]
     sealed class ZilOptionalAttribute : Attribute
     {
         public object? Default { get; set; }
     }
 
+    /// <summary>
+    /// Indicates that the value passed for a parameter may satisfy any one of
+    /// a number of type constraints.
+    /// </summary>
+    /// <param name="types"></param>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)]
     sealed class EitherAttribute(params Type[] types) : Attribute
     {
@@ -210,11 +231,18 @@ namespace Zilf.Interpreter
         public string? DefaultParamDesc { get; set; }
     }
 
+    /// <summary>
+    /// Indicates that a struct type represents a sequence of parameter values.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Struct)]
     sealed class ZilSequenceParamAttribute : Attribute
     {
     }
 
+    /// <summary>
+    /// Provides a placeholder name for a parameter for use in documentation.
+    /// </summary>
+    /// <param name="description">The placeholder name.</param>
     [AttributeUsage(
         AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Interface |
         AttributeTargets.Parameter | AttributeTargets.Field)]

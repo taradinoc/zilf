@@ -29,6 +29,12 @@ namespace Zilf.Interpreter.Values
     {
         int HPos { get; }
     }
+    
+    interface IChannelWithStream
+    {
+        string Path { get; }
+        Stream? Stream { get; }
+    }
 
     [BuiltinType(StdAtom.CHANNEL, PrimType.VECTOR)]
     abstract class ZilChannel : ZilObject
@@ -52,10 +58,11 @@ namespace Zilf.Interpreter.Values
         public abstract bool WriteChar(char c);
         public abstract int WriteNewline();
         public abstract int WriteString(string s);
+        public abstract bool IsEOF { get; }
     }
 
     [BuiltinAlternate(typeof(ZilChannel))]
-    sealed class ZilFileChannel : ZilChannel
+    sealed class ZilFileChannel : ZilChannel, IChannelWithStream
     {
         readonly FileAccess fileAccess;
         readonly string path;
@@ -67,11 +74,14 @@ namespace Zilf.Interpreter.Values
             this.fileAccess = fileAccess;
         }
 
+        public string Path => path;
+        public Stream? Stream => stream;
+
         public override string ToString() =>
-            $"#CHANNEL [{(fileAccess == FileAccess.Read ? "READ" : "NONE")} {ZilString.Quote(path)}]";
+            $"#CHANNEL [{(fileAccess == FileAccess.Read ? "READ" : "PRINT")} {ZilString.Quote(path)}]";
 
         public override ZilObject GetPrimitive(Context ctx) =>
-            new ZilVector(ctx.GetStdAtom(fileAccess == FileAccess.Read ? StdAtom.READ : StdAtom.NONE),
+            new ZilVector(ctx.GetStdAtom(fileAccess == FileAccess.Read ? StdAtom.READ : StdAtom.PRINT),
                 ZilString.FromString(path));
 
         public override void Reset(Context ctx)
@@ -116,11 +126,38 @@ namespace Zilf.Interpreter.Values
             return result == -1 ? (char?)null : (char)result;
         }
 
-        public override bool WriteChar(char c) => false;
+        public override bool WriteChar(char c)
+        {
+            if (stream == null)
+            {
+                return false;
+            }
 
-        public override int WriteNewline() => 0;
+            stream.WriteByte((byte)c);
+            return true;
+        }
 
-        public override int WriteString(string s) => 0;
+        public override int WriteNewline()
+        {
+            return WriteChar('\n') ? 1 : 0;
+        }
+
+        public override int WriteString(string s)
+        {
+            if (stream == null)
+            {
+                return 0;
+            }
+
+            foreach (char c in s)
+            {
+                stream.WriteByte((byte)c);
+            }
+
+            return s.Length;
+        }
+
+        public override bool IsEOF => stream == null ? true : stream.Position >= stream.Length;
     }
 
     [BuiltinAlternate(typeof(ZilChannel))]
@@ -174,6 +211,8 @@ namespace Zilf.Interpreter.Values
             sb.Append(s);
             return s.Length;
         }
+
+        public override bool IsEOF => true;
     }
 
     [BuiltinAlternate(typeof(ZilChannel))]
@@ -221,6 +260,8 @@ namespace Zilf.Interpreter.Values
             Console.Write(s);
             return s.Length;
         }
+
+        public override bool IsEOF => true;
 
         public int HPos => Console.CursorLeft;
     }

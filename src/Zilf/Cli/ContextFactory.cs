@@ -48,6 +48,7 @@ namespace Zilf.Cli
             Option<bool> glulx16Option;
             Option<bool> cornerstoneOption;
             Option<string[]> defineFlagOption;
+            Option<bool> allowFileWritesOption;
 
             var commandResult = parseResult.CommandResult;
             if (commandResult.Command == spec.BuildCommand)
@@ -65,6 +66,7 @@ namespace Zilf.Cli
                 glulx16Option = spec.BuildGlulx16Option;
                 cornerstoneOption = spec.BuildCornerstoneOption;
                 defineFlagOption = spec.BuildDefineFlagOption;
+                allowFileWritesOption = spec.BuildAllowFileWritesOption;
             }
             else if (commandResult.Command == spec.ReplCommand)
             {
@@ -81,6 +83,7 @@ namespace Zilf.Cli
                 glulx16Option = default!;
                 cornerstoneOption = default!;
                 defineFlagOption = default!;
+                allowFileWritesOption = spec.ReplAllowFileWritesOption;
             }
             else if (commandResult.Command == spec.ExecCommand)
             {
@@ -97,6 +100,7 @@ namespace Zilf.Cli
                 glulx16Option = default!;
                 cornerstoneOption = default!;
                 defineFlagOption = default!;
+                allowFileWritesOption = spec.ExecAllowFileWritesOption;
             }
             else
             {
@@ -106,6 +110,7 @@ namespace Zilf.Cli
             var quiet = parseResult.GetValue(quietOption);
             var hasCaseSensitive = parseResult.GetResult(caseSensitiveOption) is not null;
             var hasCaseInsensitive = parseResult.GetResult(caseInsensitiveOption) is not null;
+            var allowFileWrites = parseResult.GetValue(allowFileWritesOption);
 
             var caseSensitive = hasCaseSensitive
                 ? true
@@ -132,7 +137,8 @@ namespace Zilf.Cli
                 WarningsAsErrors = warningsAsErrors,
                 SuppressNoisyWarnings = suppressNoisyWarnings,
                 RunMode = mode,
-                Quiet = quiet
+                Quiet = quiet,
+                AllowFileWrites = allowFileWrites
             };
 
             ctx.IncludePaths.AddRange(includePaths);

@@ -267,6 +267,8 @@ namespace Zilf.Interpreter
 
         public bool Quittable { get; set; } = true;
 
+        public bool AllowFileWrites { get; set; }
+
         ZilAtom[] InitStdAtoms()
         {
             var ids = Enum.GetValues<StdAtom>();

@@ -377,5 +377,7 @@ namespace Zilf.Diagnostics
         public const int _0_Requires_Glulx = 612;
         [Error("{0}: <VERSION GLULX> cannot be combined with '--glulx16'")]
         public const int _0_Glulx16_Cannot_Be_Combined_With_VERSION_GLULX = 613;
+        [Error("{0}: file writes are not permitted")]
+        public const int _0_File_Writes_Are_Not_Permitted = 614;
     }
 }
