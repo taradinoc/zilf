@@ -201,26 +201,27 @@ Adapted once more by Tara McGrew (2015)">>
         35  "Your score qualifies you as a Novice Class Adventurer."
         10  "You are obviously a Rank Amateur. Better luck next time.">>
 
-<ROUTINE PRINT-RANK (DEAD "AUX" MAX NR)
-    <COND (<NOT .DEAD> <RFALSE>)>
-    ;"Announce the player's rating based on their score."
-    <SET MAX <GET ,RANKS 0>>
-    <DO (I 1 .MAX 2)
-        (END
-        ;"Too low for any rating."
-        <TELL "Wow." CR>
-        <SET NR <- .MAX 1>>)
-        <COND (<G=? ,SCORE <GET ,RANKS .I>>
-                <TELL <GET ,RANKS <+ .I 1>> CR>
-                <SET I <- .I 2>>
-                <COND (<L? .I 1> <SET NR 0>) (ELSE <SET NR .I>)>
-                <RETURN>)>>
-    <TELL "To achieve the next higher rating">
-    <COND (.NR
-            <SET NR <+ <- <GET ,RANKS .NR> ,SCORE> 1>>
-            <TELL ", you need " N .NR " more point">
-            <COND (<1? .NR> <TELL "." CR>) (ELSE <TELL "s." CR>)>)
-          (ELSE <TELL " would be a neat trick!|Congratulations!!" CR>)>>
+<REPLACE-DEFINITION PRINT-RANK
+    <ROUTINE PRINT-RANK (DEAD "AUX" MAX NR)
+        <COND (<NOT .DEAD> <RFALSE>)>
+        ;"Announce the player's rating based on their score."
+        <SET MAX <GET ,RANKS 0>>
+        <DO (I 1 .MAX 2)
+            (END
+            ;"Too low for any rating."
+            <TELL "Wow." CR>
+            <SET NR <- .MAX 1>>)
+            <COND (<G=? ,SCORE <GET ,RANKS .I>>
+                    <TELL <GET ,RANKS <+ .I 1>> CR>
+                    <SET I <- .I 2>>
+                    <COND (<L? .I 1> <SET NR 0>) (ELSE <SET NR .I>)>
+                    <RETURN>)>>
+        <TELL "To achieve the next higher rating">
+        <COND (.NR
+                <SET NR <+ <- <GET ,RANKS .NR> ,SCORE> 1>>
+                <TELL ", you need " N .NR " more point">
+                <COND (<1? .NR> <TELL "." CR>) (ELSE <TELL "s." CR>)>)
+            (ELSE <TELL " would be a neat trick!|Congratulations!!" CR>)>>>
 
 <SCORING-ACHIEVEMENTS
     (STARTING "initial points")
