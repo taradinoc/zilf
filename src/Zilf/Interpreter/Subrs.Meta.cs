@@ -165,7 +165,7 @@ namespace Zilf.Interpreter
             if (state == null)
             {
                 // store the replacement now, insert it at the DEFAULT-DEFINITION
-                ctx.PutProp(name, replaceAtom, new ZilVector(body));
+                ctx.PutProp(name, replaceAtom, new ZilVector(body) { SourceLine = ctx.TopFrame.SourceLine });
                 return name;
             }
 

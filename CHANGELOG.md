@@ -19,6 +19,10 @@ and this project adheres to
 - The error thrown by invalid references to `P?DESC`, `P?LOC`, and `P?FLAGS` now
   includes an info message explaining that they're pseudo-properties.
 
+- A definition section that is used with `REPLACE-DEFINITION` or
+  `DELAY-DEFINITION`, but whose replacement definition is never actually
+  inserted, now issues warning ZIL0214 (if replaced) or ZIL0215 (if delayed).
+
 ### Changed
 
 - Updated `zillib/LICENSE.txt` to clarify that you may redistribute games

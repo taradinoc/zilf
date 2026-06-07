@@ -433,5 +433,31 @@ namespace Zilf.Compiler
                 }
             }
         }
+
+        private void WarnAboutUnusedDefinitionSections()
+        {
+            var replaceAtom = Context.GetStdAtom(StdAtom.REPLACE_DEFINITION);
+            var delayAtom = Context.GetStdAtom(StdAtom.DELAY_DEFINITION);
+
+            foreach (var asoc in Context.GetAllAssociations())
+            {
+                if (asoc.Indicator == replaceAtom)
+                {
+                    if (asoc.Value is ZilVector)
+                    {
+                        Context.HandleError(new CompilerError(
+                            asoc.Value.SourceLine,
+                            CompilerMessages.Replaced_Definition_Section_0_Is_Never_Inserted,
+                            asoc.Item));
+                    }
+                    else if (asoc.Value == delayAtom)
+                    {
+                        Context.HandleError(new CompilerError(
+                            CompilerMessages.Delayed_Definition_Section_0_Is_Never_Inserted,
+                            asoc.Item));
+                    }
+                }
+            }
+        }
     }
 }

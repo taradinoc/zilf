@@ -128,6 +128,10 @@ namespace Zilf.Diagnostics
         public const int Property_0_Is_Defined_But_Never_Used = 212;
         [Warning("routine '{0}' is defined but never used", Noisy = true)]
         public const int Routine_0_Is_Defined_But_Never_Used = 213;
+        [Warning("replaced definition section '{0}' is never inserted")]
+        public const int Replaced_Definition_Section_0_Is_Never_Inserted = 214;
+        [Warning("delayed definition section '{0}' is never inserted")]
+        public const int Delayed_Definition_Section_0_Is_Never_Inserted = 215;
 
         // Z-machine Structures - 0300
 

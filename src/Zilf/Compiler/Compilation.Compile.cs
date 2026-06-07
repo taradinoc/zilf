@@ -104,6 +104,7 @@ namespace Zilf.Compiler
             BuildHeaderExtensionTable();
 
             WarnAboutUnusedGlobals();
+            WarnAboutUnusedDefinitionSections();
 
             Game.Finish();
         }

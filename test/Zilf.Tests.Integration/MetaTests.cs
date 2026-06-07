@@ -295,5 +295,23 @@ namespace Zilf.Tests.Integration
                         !d.GetFormattedMessage().Contains("array")),
                     "Expected MDL0128 to mention only ATOM or STRING, not Object or array");
         }
+
+        [TestMethod]
+        public async Task Unused_Replacement_Definition_Section_Should_Warn()
+        {
+            await AssertGlobals("<REPLACE-DEFINITION FOO <BAR>>")
+                .WithWarnings("ZIL0214")
+                .CompilesAsync();
+        }
+
+        [TestMethod]
+        public async Task Unused_Delayed_Definition_Section_Should_Warn()
+        {
+            await AssertGlobals(
+                "<DELAY-DEFINITION FOO>",
+                "<DEFAULT-DEFINITION FOO <BAR>>")
+                .WithWarnings("ZIL0215")
+                .CompilesAsync();
+        }
     }
 }
