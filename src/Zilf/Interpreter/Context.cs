@@ -249,6 +249,8 @@ namespace Zilf.Interpreter
 
         public bool IsCornerstone => ZEnvironment.TargetPlatform == TargetPlatform.Cornerstone;
 
+        public bool IsZMachine => ZEnvironment.TargetPlatform == TargetPlatform.ZMachine;
+
         public int ZWordSize => IsGlulx16 ? 2 : IsGlulx ? 4 : 2;
 
         /// <summary>

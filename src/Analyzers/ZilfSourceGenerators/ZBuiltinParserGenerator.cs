@@ -185,9 +185,9 @@ namespace ZilfSourceGenerators
                 var numericValue = Convert.ToInt32(platformValue.Value);
                 return numericValue switch
                 {
-                    1 => BuiltinPlatformSetting.ZMachineOnly,
-                    2 => BuiltinPlatformSetting.GlulxOnly,
-                    3 => BuiltinPlatformSetting.CornerstoneOnly,
+                    1 => BuiltinPlatformSetting.ZMachine,
+                    2 => BuiltinPlatformSetting.Glulx,
+                    3 => BuiltinPlatformSetting.Cornerstone,
                     _ => BuiltinPlatformSetting.Any,
                 };
             }
@@ -528,9 +528,9 @@ namespace ZilfSourceGenerators
                 }
                 var platformCondition = info.Attribute.Platform switch
                 {
-                    BuiltinPlatformSetting.ZMachineOnly => "currentPlatform == BuiltinPlatform.ZMachineOnly",
-                    BuiltinPlatformSetting.GlulxOnly => "currentPlatform == BuiltinPlatform.GlulxOnly",
-                    BuiltinPlatformSetting.CornerstoneOnly => "currentPlatform == BuiltinPlatform.CornerstoneOnly",
+                    BuiltinPlatformSetting.ZMachine => "currentPlatform == BuiltinPlatform.ZMachine",
+                    BuiltinPlatformSetting.Glulx => "currentPlatform == BuiltinPlatform.Glulx",
+                    BuiltinPlatformSetting.Cornerstone => "currentPlatform == BuiltinPlatform.Cornerstone",
                     _ => "true"
                 };
 
@@ -913,71 +913,125 @@ namespace ZilfSourceGenerators
             }
 
             var cornerstoneCandidates = group.Overloads
-                .Where(o => o.Attribute.Platform is BuiltinPlatformSetting.Any or BuiltinPlatformSetting.CornerstoneOnly)
+                .Where(o => o.Attribute.Platform is BuiltinPlatformSetting.Any or BuiltinPlatformSetting.Cornerstone)
                 .ToList();
             var glulxCandidates = group.Overloads
-                .Where(o => o.Attribute.Platform is BuiltinPlatformSetting.Any or BuiltinPlatformSetting.GlulxOnly)
+                .Where(o => o.Attribute.Platform is BuiltinPlatformSetting.Any or BuiltinPlatformSetting.Glulx)
                 .ToList();
             var zMachineCandidates = group.Overloads
-                .Where(o => o.Attribute.Platform is BuiltinPlatformSetting.Any or BuiltinPlatformSetting.ZMachineOnly)
+                .Where(o => o.Attribute.Platform is BuiltinPlatformSetting.Any or BuiltinPlatformSetting.ZMachine)
                 .ToList();
 
             var supportsCornerstone = cornerstoneCandidates.Count > 0;
             var supportsGlulx = glulxCandidates.Count > 0;
             var supportsZMachine = zMachineCandidates.Count > 0;
 
-            sb.AppendLine("if (c.cc.Context.IsCornerstone)");
+            // Detect when platforms share the same implementation methods
+            bool csSameAsZM = supportsCornerstone && supportsZMachine &&
+                OverloadListsSameMethods(cornerstoneCandidates, zMachineCandidates);
+            bool csSameAsGlulx = supportsCornerstone && supportsGlulx &&
+                OverloadListsSameMethods(cornerstoneCandidates, glulxCandidates);
+            bool glulxSameAsZM = supportsGlulx && supportsZMachine &&
+                OverloadListsSameMethods(glulxCandidates, zMachineCandidates);
+
+            // Build platform branches, merging identical candidate sets
+            if (csSameAsZM && !csSameAsGlulx)
+            {
+                // Cornerstone and ZMachine share code, Glulx is separate
+                EmitPlatformBranch(sb, group, "!c.cc.Context.IsGlulx", cornerstoneCandidates, false,
+                    unsupportedPlatform: BuiltinPlatformSetting.Cornerstone);
+                EmitPlatformBranch(sb, group, null, glulxCandidates, true,
+                    unsupportedPlatform: BuiltinPlatformSetting.Glulx);
+            }
+            else if (csSameAsGlulx && !csSameAsZM)
+            {
+                // Cornerstone and Glulx share code, ZMachine is separate
+                EmitPlatformBranch(sb, group, "c.cc.Context.IsCornerstone || c.cc.Context.IsGlulx",
+                    cornerstoneCandidates, false,
+                    unsupportedPlatform: BuiltinPlatformSetting.Cornerstone);
+                EmitPlatformBranch(sb, group, null, zMachineCandidates, true,
+                    unsupportedPlatform: BuiltinPlatformSetting.ZMachine);
+            }
+            else if (glulxSameAsZM && !csSameAsGlulx)
+            {
+                // Glulx and ZMachine share code, Cornerstone is separate
+                EmitPlatformBranch(sb, group, "c.cc.Context.IsCornerstone", cornerstoneCandidates, false,
+                    unsupportedPlatform: BuiltinPlatformSetting.Cornerstone);
+                EmitPlatformBranch(sb, group, null, glulxCandidates, true,
+                    unsupportedPlatform: BuiltinPlatformSetting.Glulx);
+            }
+            else
+            {
+                // All three platforms have distinct implementations (or all share the same,
+                // which means hasPlatformRestrictions should have been false)
+                EmitPlatformBranch(sb, group, "c.cc.Context.IsCornerstone", cornerstoneCandidates, false,
+                    unsupportedPlatform: BuiltinPlatformSetting.Cornerstone);
+                EmitPlatformBranch(sb, group, "c.cc.Context.IsGlulx", glulxCandidates, false,
+                    unsupportedPlatform: BuiltinPlatformSetting.Glulx);
+                EmitPlatformBranch(sb, group, null, zMachineCandidates, true,
+                    unsupportedPlatform: BuiltinPlatformSetting.ZMachine);
+            }
+        }
+
+        /// <summary>
+        /// Compares two overload lists to determine if they contain the same methods
+        /// (i.e., the same implementation serves multiple platforms).
+        /// </summary>
+        private static bool OverloadListsSameMethods(List<OverloadInfo> a, List<OverloadInfo> b)
+        {
+            if (a.Count != b.Count)
+                return false;
+
+            for (int i = 0; i < a.Count; i++)
+            {
+                if (!SymbolEqualityComparer.Default.Equals(
+                        a[i].Method.MethodSymbol, b[i].Method.MethodSymbol))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Emits a single platform branch: either an if-block or an else-block.
+        /// </summary>
+        /// <param name="condition">The if condition, or null for the final else block.</param>
+        /// <param name="candidates">The candidate overloads for this branch.</param>
+        /// <param name="isElse">True if this is the final else block.</param>
+        /// <param name="unsupportedPlatform">If candidates is empty, which platform error to emit.</param>
+        private static void EmitPlatformBranch(
+            IndentedStringBuilder sb, OverloadGroup group, string? condition,
+            List<OverloadInfo> candidates, bool isElse,
+            BuiltinPlatformSetting unsupportedPlatform = BuiltinPlatformSetting.ZMachine)
+        {
+            if (isElse)
+            {
+                sb.AppendLine("else");
+            }
+            else
+            {
+                sb.AppendLine($"if ({condition})");
+            }
+
             sb.AppendLine("{");
             sb.Indent();
-            if (supportsCornerstone)
+
+            if (candidates.Count > 0)
             {
                 GenerateOverloadDispatchBodyCore(sb, new OverloadGroup
                 {
                     BuiltinName = group.BuiltinName ?? string.Empty,
                     CallType = group.CallType,
-                    Overloads = cornerstoneCandidates
+                    Overloads = candidates
                 });
             }
             else
             {
-                EmitPlatformError(sb, group.CallType, group.BuiltinName ?? string.Empty, BuiltinPlatformSetting.CornerstoneOnly);
+                EmitPlatformError(sb, group.CallType, group.BuiltinName ?? string.Empty, unsupportedPlatform);
             }
-            sb.Unindent();
-            sb.AppendLine("}");
-            sb.AppendLine("else if (c.cc.Context.IsGlulx)");
-            sb.AppendLine("{");
-            sb.Indent();
-            if (supportsGlulx)
-            {
-                GenerateOverloadDispatchBodyCore(sb, new OverloadGroup
-                {
-                    BuiltinName = group.BuiltinName ?? string.Empty,
-                    CallType = group.CallType,
-                    Overloads = glulxCandidates
-                });
-            }
-            else
-            {
-                EmitPlatformError(sb, group.CallType, group.BuiltinName ?? string.Empty, BuiltinPlatformSetting.GlulxOnly);
-            }
-            sb.Unindent();
-            sb.AppendLine("}");
-            sb.AppendLine("else");
-            sb.AppendLine("{");
-            sb.Indent();
-            if (supportsZMachine)
-            {
-                GenerateOverloadDispatchBodyCore(sb, new OverloadGroup
-                {
-                    BuiltinName = group.BuiltinName ?? string.Empty,
-                    CallType = group.CallType,
-                    Overloads = zMachineCandidates
-                });
-            }
-            else
-            {
-                EmitPlatformError(sb, group.CallType, group.BuiltinName ?? string.Empty, BuiltinPlatformSetting.ZMachineOnly);
-            }
+
             sb.Unindent();
             sb.AppendLine("}");
         }
@@ -1392,9 +1446,9 @@ namespace ZilfSourceGenerators
         {
             return platform switch
             {
-                BuiltinPlatformSetting.ZMachineOnly => "BuiltinPlatform.ZMachineOnly",
-                BuiltinPlatformSetting.GlulxOnly => "BuiltinPlatform.GlulxOnly",
-                BuiltinPlatformSetting.CornerstoneOnly => "BuiltinPlatform.CornerstoneOnly",
+                BuiltinPlatformSetting.ZMachine => "BuiltinPlatform.ZMachine",
+                BuiltinPlatformSetting.Glulx => "BuiltinPlatform.Glulx",
+                BuiltinPlatformSetting.Cornerstone => "BuiltinPlatform.Cornerstone",
                 _ => "BuiltinPlatform.Any",
             };
         }
@@ -1403,8 +1457,8 @@ namespace ZilfSourceGenerators
         {
             var messageId = currentPlatform switch
             {
-                BuiltinPlatformSetting.GlulxOnly => "CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx",
-                BuiltinPlatformSetting.CornerstoneOnly => "CompilerMessages._0_Is_Not_Supported_When_Targeting_Cornerstone",
+                BuiltinPlatformSetting.Glulx => "CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx",
+                BuiltinPlatformSetting.Cornerstone => "CompilerMessages._0_Is_Not_Supported_When_Targeting_Cornerstone",
                 _ => "CompilerMessages._0_Is_Not_Supported_When_Targeting_The_Zmachine",
             };
             var safeName = operationName.Replace("\\", "\\\\").Replace("\"", "\\\"");
@@ -2734,9 +2788,9 @@ namespace ZilfSourceGenerators
     public enum BuiltinPlatformSetting
     {
         Any = 0,
-        ZMachineOnly = 1,
-        GlulxOnly = 2,
-        CornerstoneOnly = 3,
+        ZMachine = 1,
+        Glulx = 2,
+        Cornerstone = 3,
     }
 
     public class ParameterInfo

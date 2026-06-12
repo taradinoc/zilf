@@ -141,7 +141,7 @@ namespace Zilf.Compiler
         }
 
         public static bool IsPredicate(this ZilObject zo, int zversion, bool isGlulx) =>
-            IsPredicate(zo, zversion, isGlulx ? BuiltinPlatform.GlulxOnly : BuiltinPlatform.ZMachineOnly);
+            IsPredicate(zo, zversion, isGlulx ? BuiltinPlatform.Glulx : BuiltinPlatform.ZMachine);
 
         /// <summary>
         /// Recursively expands macros and cracks ADECLs to prepare an expression for compilation.

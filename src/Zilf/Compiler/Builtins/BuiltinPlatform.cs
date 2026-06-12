@@ -21,8 +21,8 @@ namespace Zilf.Compiler.Builtins
     public enum BuiltinPlatform
     {
         Any = 0,
-        ZMachineOnly = 1,
-        GlulxOnly = 2,
-        CornerstoneOnly = 3,
+        ZMachine = 1,
+        Glulx = 2,
+        Cornerstone = 3,
     }
 }

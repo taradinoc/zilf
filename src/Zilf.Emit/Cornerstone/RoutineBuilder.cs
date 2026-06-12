@@ -22,12 +22,13 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Zilf.Emit.Glulx;
 
 namespace Zilf.Emit.Cornerstone
 {
     public sealed partial class GameBuilder
     {
-        internal sealed partial class RoutineBuilder : IRoutineBuilder, global::Zilf.Emit.IProvideLowCoreEmulation
+        internal sealed partial class RoutineBuilder : IRoutineBuilder, IProvideLowCoreEmulation, IProvideNoValuePredEmit
         {
             private static readonly Regex NumberedLocalOperandRegex = GetNumberedLocalOperandRegex();
             private static readonly Regex NumberedGlobalOperandRegex = GetNumberedGlobalOperandRegex();
@@ -262,16 +263,20 @@ namespace Zilf.Emit.Cornerstone
 
             public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form, IVariable result, ILabel label, bool polarity) => ThrowNotSupported(null);
 
-            public void EmitGetChild(IOperand value, IVariable result, ILabel label, bool polarity)
+            public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form, IVariable result) => ThrowNotSupported(null);
+
+            public void EmitGetChild(IOperand value, IVariable result, ILabel label, bool polarity) => ThrowNotSupported(null);
+
+            public void EmitGetChild(IOperand value, IVariable result)
             {
                 EmitRuntimeCall(RuntimeLib.GetChild, [value], result);
-                BranchIfZero(result, label, !polarity);
             }
 
-            public void EmitGetSibling(IOperand value, IVariable result, ILabel label, bool polarity)
+            public void EmitGetSibling(IOperand value, IVariable result, ILabel label, bool polarity) => ThrowNotSupported(null);
+
+            public void EmitGetSibling(IOperand value, IVariable result)
             {
                 EmitRuntimeCall(RuntimeLib.GetSibling, [value], result);
-                BranchIfZero(result, label, !polarity);
             }
 
             public void EmitNullary(NullaryOp op, IVariable? result)

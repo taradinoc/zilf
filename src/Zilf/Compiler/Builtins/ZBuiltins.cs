@@ -101,9 +101,9 @@ namespace Zilf.Compiler.Builtins
         {
             return targetPlatform switch
             {
-                TargetPlatform.Glulx16 or TargetPlatform.Glulx32 => BuiltinPlatform.GlulxOnly,
-                TargetPlatform.Cornerstone => BuiltinPlatform.CornerstoneOnly,
-                _ => BuiltinPlatform.ZMachineOnly,
+                TargetPlatform.Glulx16 or TargetPlatform.Glulx32 => BuiltinPlatform.Glulx,
+                TargetPlatform.Cornerstone => BuiltinPlatform.Cornerstone,
+                _ => BuiltinPlatform.ZMachine,
             };
         }
 
@@ -117,7 +117,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         public static bool IsBuiltinValueCall(string name, int zversion, int argCount, bool isGlulx) =>
-            IsBuiltinValueCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.GlulxOnly : BuiltinPlatform.ZMachineOnly);
+            IsBuiltinValueCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.Glulx : BuiltinPlatform.ZMachine);
 
         public static bool IsBuiltinVoidCall(string name, int zversion, int argCount, BuiltinPlatform currentPlatform)
         {
@@ -129,7 +129,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         public static bool IsBuiltinVoidCall(string name, int zversion, int argCount, bool isGlulx) =>
-            IsBuiltinVoidCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.GlulxOnly : BuiltinPlatform.ZMachineOnly);
+            IsBuiltinVoidCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.Glulx : BuiltinPlatform.ZMachine);
 
         public static bool IsBuiltinPredCall(string name, int zversion, int argCount, BuiltinPlatform currentPlatform)
         {
@@ -141,7 +141,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         public static bool IsBuiltinPredCall(string name, int zversion, int argCount, bool isGlulx) =>
-            IsBuiltinPredCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.GlulxOnly : BuiltinPlatform.ZMachineOnly);
+            IsBuiltinPredCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.Glulx : BuiltinPlatform.ZMachine);
 
         public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount, BuiltinPlatform currentPlatform)
         {
@@ -153,7 +153,7 @@ namespace Zilf.Compiler.Builtins
         }
 
         public static bool IsBuiltinValuePredCall(string name, int zversion, int argCount, bool isGlulx) =>
-            IsBuiltinValuePredCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.GlulxOnly : BuiltinPlatform.ZMachineOnly);
+            IsBuiltinValuePredCall(name, zversion, argCount, isGlulx ? BuiltinPlatform.Glulx : BuiltinPlatform.ZMachine);
 
         public static bool IsBuiltinWithSideEffects(string name, int zversion, int argCount)
         {
@@ -205,8 +205,8 @@ namespace Zilf.Compiler.Builtins
                 error = new CompilerError(
                     currentPlatform switch
                     {
-                        BuiltinPlatform.GlulxOnly => CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx,
-                        BuiltinPlatform.CornerstoneOnly => CompilerMessages._0_Is_Not_Supported_When_Targeting_Cornerstone,
+                        BuiltinPlatform.Glulx => CompilerMessages._0_Is_Not_Supported_When_Targeting_Glulx,
+                        BuiltinPlatform.Cornerstone => CompilerMessages._0_Is_Not_Supported_When_Targeting_Cornerstone,
                         _ => CompilerMessages._0_Is_Not_Supported_In_This_Zmachine_Version,
                     },
                     name);
@@ -232,9 +232,9 @@ namespace Zilf.Compiler.Builtins
                     {
                         bool platformMatch = zSignature.Platform switch
                         {
-                            BuiltinPlatform.ZMachineOnly => currentPlatform == BuiltinPlatform.ZMachineOnly,
-                            BuiltinPlatform.GlulxOnly => currentPlatform == BuiltinPlatform.GlulxOnly,
-                            BuiltinPlatform.CornerstoneOnly => currentPlatform == BuiltinPlatform.CornerstoneOnly,
+                            BuiltinPlatform.ZMachine => currentPlatform == BuiltinPlatform.ZMachine,
+                            BuiltinPlatform.Glulx => currentPlatform == BuiltinPlatform.Glulx,
+                            BuiltinPlatform.Cornerstone => currentPlatform == BuiltinPlatform.Cornerstone,
                             _ => true,
                         };
 
@@ -526,10 +526,14 @@ namespace Zilf.Compiler.Builtins
 
         #region Binary Opcodes
 
-        [Builtin("MOD", Data = BinaryOp.Mod, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the modulus (remainder) of two numbers.")]
-        [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Performs an arithmetic (signed) shift on a number.")]
-        [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Performs a logical (unsigned) shift on a number.")]
-        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Retrieves a property of a window.")]
+        [Builtin("MOD", Data = BinaryOp.Mod, Platform = BuiltinPlatform.ZMachine, Summary = "Computes the modulus (remainder) of two numbers.")]
+        [Builtin("MOD", Data = BinaryOp.Mod, Platform = BuiltinPlatform.Cornerstone, Summary = "Computes the modulus (remainder) of two numbers.")]
+        [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5, Platform = BuiltinPlatform.ZMachine, Summary = "Performs an arithmetic (signed) shift on a number.")]
+        [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5, Platform = BuiltinPlatform.Cornerstone, Summary = "Performs an arithmetic (signed) shift on a number.")]
+        [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5, Platform = BuiltinPlatform.ZMachine, Summary = "Performs a logical (unsigned) shift on a number.")]
+        [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5, Platform = BuiltinPlatform.Cornerstone, Summary = "Performs a logical (unsigned) shift on a number.")]
+        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6, Platform = BuiltinPlatform.ZMachine, Summary = "Retrieves a property of a window.")]
+        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6, Platform = BuiltinPlatform.Cornerstone, Summary = "Retrieves a property of a window.")]
         public static IOperand BinaryValueOp_Z(
             ValueCall c, [Data] BinaryOp op, IOperand left, IOperand right)
         {
@@ -554,10 +558,10 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("MOD", Data = BinaryOp.Mod, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the modulus (remainder) of two numbers.")]
-        [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5, Platform = BuiltinPlatform.GlulxOnly, Summary = "Performs an arithmetic (signed) shift on a number.")]
-        [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5, Platform = BuiltinPlatform.GlulxOnly, Summary = "Performs a logical (unsigned) shift on a number.")]
-        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6, Platform = BuiltinPlatform.GlulxOnly, Summary = "Retrieves a property of a window.")]
+        [Builtin("MOD", Data = BinaryOp.Mod, Platform = BuiltinPlatform.Glulx, Summary = "Computes the modulus (remainder) of two numbers.")]
+        [Builtin("ASH", "ASHIFT", Data = BinaryOp.ArtShift, MinVersion = 5, Platform = BuiltinPlatform.Glulx, Summary = "Performs an arithmetic (signed) shift on a number.")]
+        [Builtin("LSH", "SHIFT", Data = BinaryOp.LogShift, MinVersion = 5, Platform = BuiltinPlatform.Glulx, Summary = "Performs a logical (unsigned) shift on a number.")]
+        [Builtin("WINGET", Data = BinaryOp.GetWindowProperty, MinVersion = 6, Platform = BuiltinPlatform.Glulx, Summary = "Retrieves a property of a window.")]
         public static IOperand BinaryValueOp_Glulx(
             ValueCall c, [Data] BinaryOp op, IOperand left, IOperand right)
         {
@@ -627,12 +631,18 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("ADD", "+", Data = BinaryOp.Add, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the sum of two or more numbers.")]
-        [Builtin("SUB", "-", Data = BinaryOp.Sub, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the difference between two or more numbers.")]
-        [Builtin("MUL", "*", Data = BinaryOp.Mul, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the product of two or more numbers.")]
-        [Builtin("DIV", "/", Data = BinaryOp.Div, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the quotient of two or more numbers.")]
-        [Builtin("BAND", "ANDB", Data = BinaryOp.And, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the bitwise AND of two or more numbers.")]
-        [Builtin("BOR", "ORB", Data = BinaryOp.Or, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Computes the bitwise OR of two or more numbers.")]
+        [Builtin("ADD", "+", Data = BinaryOp.Add, Platform = BuiltinPlatform.ZMachine, Summary = "Computes the sum of two or more numbers.")]
+        [Builtin("ADD", "+", Data = BinaryOp.Add, Platform = BuiltinPlatform.Cornerstone, Summary = "Computes the sum of two or more numbers.")]
+        [Builtin("SUB", "-", Data = BinaryOp.Sub, Platform = BuiltinPlatform.ZMachine, Summary = "Computes the difference between two or more numbers.")]
+        [Builtin("SUB", "-", Data = BinaryOp.Sub, Platform = BuiltinPlatform.Cornerstone, Summary = "Computes the difference between two or more numbers.")]
+        [Builtin("MUL", "*", Data = BinaryOp.Mul, Platform = BuiltinPlatform.ZMachine, Summary = "Computes the product of two or more numbers.")]
+        [Builtin("MUL", "*", Data = BinaryOp.Mul, Platform = BuiltinPlatform.Cornerstone, Summary = "Computes the product of two or more numbers.")]
+        [Builtin("DIV", "/", Data = BinaryOp.Div, Platform = BuiltinPlatform.ZMachine, Summary = "Computes the quotient of two or more numbers.")]
+        [Builtin("DIV", "/", Data = BinaryOp.Div, Platform = BuiltinPlatform.Cornerstone, Summary = "Computes the quotient of two or more numbers.")]
+        [Builtin("BAND", "ANDB", Data = BinaryOp.And, Platform = BuiltinPlatform.ZMachine, Summary = "Computes the bitwise AND of two or more numbers.")]
+        [Builtin("BAND", "ANDB", Data = BinaryOp.And, Platform = BuiltinPlatform.Cornerstone, Summary = "Computes the bitwise AND of two or more numbers.")]
+        [Builtin("BOR", "ORB", Data = BinaryOp.Or, Platform = BuiltinPlatform.ZMachine, Summary = "Computes the bitwise OR of two or more numbers.")]
+        [Builtin("BOR", "ORB", Data = BinaryOp.Or, Platform = BuiltinPlatform.Cornerstone, Summary = "Computes the bitwise OR of two or more numbers.")]
         public static IOperand ArithmeticOp_Z(
             ValueCall c, [Data] BinaryOp op, params IOperand[] args)
         {
@@ -904,12 +914,12 @@ namespace Zilf.Compiler.Builtins
             return rebuilt != null ? rebuilt.ToArray() : args;
         }
 
-        [Builtin("ADD", "+", Data = BinaryOp.Add, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the sum of two or more numbers.")]
-        [Builtin("SUB", "-", Data = BinaryOp.Sub, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the difference between two or more numbers.")]
-        [Builtin("MUL", "*", Data = BinaryOp.Mul, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the product of two or more numbers.")]
-        [Builtin("DIV", "/", Data = BinaryOp.Div, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the quotient of two or more numbers.")]
-        [Builtin("BAND", "ANDB", Data = BinaryOp.And, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the bitwise AND of two or more numbers.")]
-        [Builtin("BOR", "ORB", Data = BinaryOp.Or, Platform = BuiltinPlatform.GlulxOnly, Summary = "Computes the bitwise OR of two or more numbers.")]
+        [Builtin("ADD", "+", Data = BinaryOp.Add, Platform = BuiltinPlatform.Glulx, Summary = "Computes the sum of two or more numbers.")]
+        [Builtin("SUB", "-", Data = BinaryOp.Sub, Platform = BuiltinPlatform.Glulx, Summary = "Computes the difference between two or more numbers.")]
+        [Builtin("MUL", "*", Data = BinaryOp.Mul, Platform = BuiltinPlatform.Glulx, Summary = "Computes the product of two or more numbers.")]
+        [Builtin("DIV", "/", Data = BinaryOp.Div, Platform = BuiltinPlatform.Glulx, Summary = "Computes the quotient of two or more numbers.")]
+        [Builtin("BAND", "ANDB", Data = BinaryOp.And, Platform = BuiltinPlatform.Glulx, Summary = "Computes the bitwise AND of two or more numbers.")]
+        [Builtin("BOR", "ORB", Data = BinaryOp.Or, Platform = BuiltinPlatform.Glulx, Summary = "Computes the bitwise OR of two or more numbers.")]
         public static IOperand ArithmeticOp_Glulx(
             ValueCall c, [Data] BinaryOp op, params IOperand[] args)
         {
@@ -1197,7 +1207,8 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <param name="left">The first number.</param>
         /// <param name="right">The second number.</param>
-        [Builtin("BAND", "ANDB", Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("BAND", "ANDB", Platform = BuiltinPlatform.ZMachine)]
+        [Builtin("BAND", "ANDB", Platform = BuiltinPlatform.Cornerstone)]
         public static void BinaryAndPredOp_Z(PredCall c, IOperand left, IOperand right)
         {
             var nleft = left as INumericOperand;
@@ -1257,7 +1268,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <param name="left">The first number.</param>
         /// <param name="right">The second number.</param>
-        [Builtin("BAND", "ANDB", Platform = BuiltinPlatform.GlulxOnly)]
+        [Builtin("BAND", "ANDB", Platform = BuiltinPlatform.Glulx)]
         public static void BinaryAndPredOp_Glulx(PredCall c, IOperand left, IOperand right)
         {
             var nleft = left as INumericOperand;
@@ -1631,8 +1642,8 @@ namespace Zilf.Compiler.Builtins
             return c.resultStorage;
         }
 
-        [Builtin("FIRST?", Data = false, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Gets the first child of an object.")]
-        [Builtin("NEXT?", Data = true, Platform = BuiltinPlatform.ZMachineOnly, Summary = "Gets the sibling of an object.")]
+        [Builtin("FIRST?", Data = false, Platform = BuiltinPlatform.ZMachine, Summary = "Gets the first child of an object.")]
+        [Builtin("NEXT?", Data = true, Platform = BuiltinPlatform.ZMachine, Summary = "Gets the sibling of an object.")]
         public static void UnaryObjectValuePredOp(
             ValuePredCall c, [Data] bool sibling, [Object] IOperand obj)
         {
@@ -1642,8 +1653,10 @@ namespace Zilf.Compiler.Builtins
                 c.rb.EmitGetChild(obj, c.resultStorage, c.label, c.polarity);
         }
 
-        [Builtin("FIRST?", Data = false, Platform = BuiltinPlatform.GlulxOnly, Summary = "Gets the first child of an object.")]
-        [Builtin("NEXT?", Data = true, Platform = BuiltinPlatform.GlulxOnly, Summary = "Gets the sibling of an object.")]
+        [Builtin("FIRST?", Data = false, Platform = BuiltinPlatform.Glulx, Summary = "Gets the first child of an object.")]
+        [Builtin("FIRST?", Data = false, Platform = BuiltinPlatform.Cornerstone, Summary = "Gets the first child of an object.")]
+        [Builtin("NEXT?", Data = true, Platform = BuiltinPlatform.Glulx, Summary = "Gets the sibling of an object.")]
+        [Builtin("NEXT?", Data = true, Platform = BuiltinPlatform.Cornerstone, Summary = "Gets the sibling of an object.")]
         public static IOperand UnaryObjectValueOp_Glulx(
             ValueCall c, [Data] bool sibling, [Object] IOperand obj)
         {
@@ -2474,7 +2487,7 @@ namespace Zilf.Compiler.Builtins
             c.rb.EmitPlaySound(number, effect, volume, routine);
         }
 
-        [Builtin("GLK", HasSideEffect = true, Platform = BuiltinPlatform.GlulxOnly)]
+        [Builtin("GLK", HasSideEffect = true, Platform = BuiltinPlatform.Glulx)]
         public static IOperand GlkValueOp(ValueCall c, ZilObject operation, params ZilObject[] args)
         {
             if (c.rb is IProvideGlkFromStackEmit emitter)
@@ -2501,7 +2514,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        [Builtin("GLK", HasSideEffect = true, Platform = BuiltinPlatform.GlulxOnly)]
+        [Builtin("GLK", HasSideEffect = true, Platform = BuiltinPlatform.Glulx)]
         public static void GlkVoidOp(VoidCall c, ZilObject operation, params ZilObject[] args)
         {
             if (c.rb is IProvideGlkFromStackEmit emitter)
@@ -2572,7 +2585,8 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <returns>False if the restore failed. Does not return if it succeeded.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("RESTORE", "ZRESTORE", MaxVersion = 3, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("RESTORE", "ZRESTORE", MaxVersion = 3, HasSideEffect = true, Platform = BuiltinPlatform.ZMachine)]
+        [Builtin("RESTORE", "ZRESTORE", HasSideEffect = true, Platform = BuiltinPlatform.Cornerstone)]
         public static void RestoreOp_V3(PredCall c)
         {
             if (c.rb.HasBranchSave)
@@ -2591,7 +2605,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <returns>Zero if the restore failed. Does not return if it succeeded.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("RESTORE", "ZRESTORE", MinVersion = 4, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("RESTORE", "ZRESTORE", MinVersion = 4, HasSideEffect = true, Platform = BuiltinPlatform.ZMachine)]
         public static IOperand RestoreOp_V4(ValueCall c)
         {
             if (c.rb.HasStoreSave)
@@ -2612,7 +2626,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="prompt">Whether to prompt the user to confirm the filename. If omitted, the interpreter decides.</param>
         /// <returns>The number of bytes loaded from the file, or zero if restoring a saved game state.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("RESTORE", "ZRESTORE", MinVersion = 5, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("RESTORE", "ZRESTORE", MinVersion = 5, HasSideEffect = true, Platform = BuiltinPlatform.ZMachine)]
         public static IOperand RestoreOp_V5(ValueCall c, [Table] IOperand table,
             IOperand bytes, [Table] IOperand name, IOperand? prompt = null)
         {
@@ -2624,7 +2638,7 @@ namespace Zilf.Compiler.Builtins
             throw new NotSupportedException($"{nameof(RestoreOp_V5)} without {nameof(c.rb.HasExtendedSave)}");
         }
 
-        [Builtin("RESTORE", "ZRESTORE", HasSideEffect = true, Platform = BuiltinPlatform.GlulxOnly)]
+        [Builtin("RESTORE", "ZRESTORE", HasSideEffect = true, Platform = BuiltinPlatform.Glulx)]
         public static IOperand RestoreOp_Glulx(ValueCall c)
         {
             c.rb.EmitRestore(c.resultStorage);
@@ -2637,7 +2651,8 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <returns>False if the save failed, or true if it succeeded.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("SAVE", "ZSAVE", MaxVersion = 3, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("SAVE", "ZSAVE", MaxVersion = 3, HasSideEffect = true, Platform = BuiltinPlatform.ZMachine)]
+        [Builtin("SAVE", "ZSAVE", HasSideEffect = true, Platform = BuiltinPlatform.Cornerstone)]
         public static void SaveOp_V3(PredCall c)
         {
             if (c.rb.HasBranchSave)
@@ -2656,7 +2671,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <returns>Zero if the save failed, 1 if it succeeded, or 2 when the game state is being restored later.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("SAVE", "ZSAVE", MinVersion = 4, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("SAVE", "ZSAVE", MinVersion = 4, HasSideEffect = true, Platform = BuiltinPlatform.ZMachine)]
         public static IOperand SaveOp_V4(ValueCall c)
         {
             if (c.rb.HasStoreSave)
@@ -2677,7 +2692,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="prompt">Whether to prompt the user to confirm the filename. If omitted, the interpreter decides.</param>
         /// <returns>Zero if the save failed, 1 if it succeeded, or 2 when the game state is being restored later.</returns>
         /// <exception cref="NotSupportedException">Wrong Z-machine version for this form of the opcode.</exception>
-        [Builtin("SAVE", "ZSAVE", MinVersion = 5, HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("SAVE", "ZSAVE", MinVersion = 5, HasSideEffect = true, Platform = BuiltinPlatform.ZMachine)]
         public static IOperand SaveOp_V5(ValueCall c, [Table] IOperand table,
             IOperand bytes, [Table] IOperand name, IOperand? prompt = null)
         {
@@ -2689,7 +2704,7 @@ namespace Zilf.Compiler.Builtins
             throw new NotSupportedException($"{nameof(SaveOp_V5)} without {nameof(c.rb.HasExtendedSave)}");
         }
 
-        [Builtin("SAVE", "ZSAVE", HasSideEffect = true, Platform = BuiltinPlatform.GlulxOnly)]
+        [Builtin("SAVE", "ZSAVE", HasSideEffect = true, Platform = BuiltinPlatform.Glulx)]
         public static IOperand SaveOp_Glulx(ValueCall c)
         {
             c.rb.EmitSave(c.resultStorage);
@@ -2853,7 +2868,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="table">The address of the table to search in.</param>
         /// <param name="length">The length of the table in words.</param>
         /// <returns>The address of the word in the table, or zero if it wasn't found.</returns>
-        [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4, Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("INTBL?", MinVersion = 4, MaxVersion = 4, Platform = BuiltinPlatform.ZMachine)]
         [return: Table]
         public static void IntblValuePredOp_V4(ValuePredCall c,
             IOperand value, [Table] IOperand table, IOperand length)
@@ -2869,7 +2884,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="table">The address of the table to search in.</param>
         /// <param name="length">The length of the table in words.</param>
         /// <param name="form">The length of each field in the table (in bytes), with the high bit set for words and cleared for bytes. If omitted, defaults to $82 (words, 2-byte fields).</param>
-        [Builtin("INTBL?", MinVersion = 5, Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("INTBL?", MinVersion = 5, Platform = BuiltinPlatform.ZMachine)]
         [return: Table]
         public static void IntblValuePredOp_V5(ValuePredCall c,
             IOperand value, [Table] IOperand table, IOperand length, IOperand? form = null)
@@ -2885,7 +2900,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="table">The address of the table to search in.</param>
         /// <param name="length">The length of the table in words.</param>
         /// <param name="form">The length of each field in the table (in bytes), with the high bit set for words and cleared for bytes. If omitted, defaults to $82 (words, 2-byte fields).</param>
-        [Builtin("INTBL?", Platform = BuiltinPlatform.GlulxOnly)]
+        [Builtin("INTBL?", Platform = BuiltinPlatform.Glulx)]
         [return: Table]
         public static IOperand IntblValueOp_Glulx(ValueCall c,
             IOperand value, [Table] IOperand table, IOperand length, IOperand? form = null)
@@ -2993,7 +3008,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <param name="fieldSpec">The name of a header field to read, or a list consisting of the header field name and either 0 or 1 to read the high or low byte.</param>
         /// <returns>The value of the header field.</returns>
-        [Builtin("LOWCORE", Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("LOWCORE", Platform = BuiltinPlatform.ZMachine)]
         public static IOperand LowCoreReadOp_Z(ValueCall c, ZilObject fieldSpec)
         {
             if (fieldSpec is ZilAtom fieldAtom && c.rb is IProvideLowCoreEmulation emulator)
@@ -3027,7 +3042,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <param name="fieldSpec">The name of a header field to write, or a list consisting of the header field name and either 0 or 1 to write the high or low byte.</param>
         /// <param name="newValue"></param>
-        [Builtin("LOWCORE", HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("LOWCORE", HasSideEffect = true, Platform = BuiltinPlatform.ZMachine)]
         public static void LowCoreWriteOp_Z(VoidCall c, ZilObject fieldSpec, IOperand newValue)
         {
             if (fieldSpec is ZilAtom fieldAtom && c.rb is IProvideLowCoreEmulation emulator)
@@ -3061,7 +3076,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="length">The number of bytes to iterate over.</param>
         /// <param name="handler">The handler routine to call for each byte.</param>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
-        [Builtin("LOWCORE-TABLE", HasSideEffect = true, Platform = BuiltinPlatform.ZMachineOnly)]
+        [Builtin("LOWCORE-TABLE", HasSideEffect = true, Platform = BuiltinPlatform.ZMachine)]
         public static void LowCoreTableOp_Z(VoidCall c, ZilObject fieldSpec, int length, ZilAtom handler)
         {
             if (fieldSpec is ZilAtom fieldAtom && c.rb is IProvideLowCoreEmulation emulator)
@@ -3133,7 +3148,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <param name="fieldSpec">The name of a header field to read, or a list consisting of the header field name and either 0 or 1 to read the high or low byte.</param>
         /// <returns>The value of the header field.</returns>
-        [Builtin("LOWCORE", Platform = BuiltinPlatform.GlulxOnly)]
+        [Builtin("LOWCORE", Platform = BuiltinPlatform.Glulx)]
         public static IOperand LowCoreReadOp_Glulx(ValueCall c, ZilAtom fieldSpec)
         {
             if (c.rb is IProvideLowCoreEmulation emulator)
@@ -3154,7 +3169,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="c"></param>
         /// <param name="fieldSpec">The name of a header field to write, or a list consisting of the header field name and either 0 or 1 to write the high or low byte.</param>
         /// <param name="newValue"></param>
-        [Builtin("LOWCORE", Platform = BuiltinPlatform.GlulxOnly)]
+        [Builtin("LOWCORE", Platform = BuiltinPlatform.Glulx)]
         public static void LowCoreWriteOp_Glulx(VoidCall c, ZilAtom fieldSpec, IOperand newValue)
         {
             if (c.rb is IProvideLowCoreEmulation emulator)
@@ -3393,7 +3408,7 @@ namespace Zilf.Compiler.Builtins
 
         #region Glulx16 Widening
 
-        [Builtin("WIDE", Platform = BuiltinPlatform.GlulxOnly, Summary = "Evaluates an expression using the native word size.")]
+        [Builtin("WIDE", Platform = BuiltinPlatform.Glulx, Summary = "Evaluates an expression using the native word size.")]
         public static IOperand WideValueOp(ValueCall c, ZilObject expr)
         {
             IDisposable? disposer = null;
@@ -3413,7 +3428,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        [Builtin("WIDE", Platform = BuiltinPlatform.GlulxOnly, Summary = "Evaluates an expression using the native word size.")]
+        [Builtin("WIDE", Platform = BuiltinPlatform.Glulx, Summary = "Evaluates an expression using the native word size.")]
         public static void WidePredOp(PredCall c, ZilObject expr)
         {
             IDisposable? disposer = null;
@@ -3433,7 +3448,7 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
-        [Builtin("WIDE", Platform = BuiltinPlatform.GlulxOnly, Summary = "Evaluates an expression using the native word size.")]
+        [Builtin("WIDE", Platform = BuiltinPlatform.Glulx, Summary = "Evaluates an expression using the native word size.")]
         public static void WideVoidOp(VoidCall c, ZilObject expr)
         {
             if (expr is ZilForm form)
