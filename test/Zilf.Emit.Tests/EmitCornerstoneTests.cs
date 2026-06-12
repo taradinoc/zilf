@@ -656,7 +656,7 @@ namespace Zilf.Emit.Tests
                 var hasFlag = routine.DefineLabel();
 
                 routine.EmitUnary(UnaryOp.GetParent, box, temp);
-                routine.EmitGetChild(room, temp, hasChild, true);
+                ((IProvideNoValuePredEmit)routine).EmitGetChild(room, temp);
                 routine.MarkLabel(hasChild);
                 routine.Branch(Condition.TestAttr, box, open, hasFlag, true);
                 routine.MarkLabel(hasFlag);
