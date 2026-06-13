@@ -798,7 +798,7 @@ namespace ZilfSourceGenerators
             return $"{string.Join(", ", distinct.Take(distinct.Count - 1))}, or {distinct[distinct.Count - 1]}";
         }
 
-internal static string GetDefaultValueString(IParameterSymbol parameter)
+        internal static string GetDefaultValueString(IParameterSymbol parameter)
         {
             if (parameter.HasExplicitDefaultValue)
             {
@@ -2753,31 +2753,74 @@ internal static string GetDefaultValueString(IParameterSymbol parameter)
                     sb.AppendLine("if (argIndex < args.Length)");
                     sb.AppendLine("{");
                     sb.Indent();
-                    if (optionalTrackedNodes.Length > 0)
+                    if (optionalTrackedNodes.Length == 1)
                     {
+                        // Single optional type: emit inline if/throw, no list/hashset/formatting needed
+                        var optNode = optionalTrackedNodes[0];
+                        var expectedDisplay = BuildExpectedTypeDisplay(optNode.GetErrorExpectedTypes(), optNode.GetExpectedTypeName());
+                        var expectedEscaped = expectedDisplay.Replace("\"", "\\\"");
                         sb.AppendLine("if (!ranker.HasError)");
                         sb.AppendLine("{");
                         sb.Indent();
-                        sb.AppendLine("var expectedTypes = new List<string>();");
-                        sb.AppendLine("var expectedSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);");
+                        sb.AppendLine($"if (optionalMismatch_{optNode.ParameterId})");
+                        sb.Indent();
+                        sb.AppendLine($"throw new ArgumentTypeError(site, argIndex, \"{expectedEscaped}\");");
+                        sb.Unindent();
+                        sb.Unindent();
+                        sb.AppendLine("}");
+                        sb.AppendLine("ranker.ThrowIfError();");
+                        sb.AppendLine("throw ArgumentCountError.TooMany(site, argIndex, null);");
+                    }
+                    else if (optionalTrackedNodes.Length == 2)
+                    {
+                        // Two optional types: zero-allocation ListFormatter2
+                        sb.AppendLine("if (!ranker.HasError)");
+                        sb.AppendLine("{");
+                        sb.Indent();
+                        sb.AppendLine("var expected = new ListFormatter2();");
                         foreach (var optionalNode in optionalTrackedNodes)
                         {
                             var expectedDisplay = BuildExpectedTypeDisplay(optionalNode.GetErrorExpectedTypes(), optionalNode.GetExpectedTypeName());
                             var expectedEscaped = expectedDisplay.Replace("\"", "\\\"");
-                            sb.AppendLine($"if (optionalMismatch_{optionalNode.ParameterId} && expectedSeen.Add(\"{expectedEscaped}\")) expectedTypes.Add(\"{expectedEscaped}\");");
+                            sb.AppendLine($"if (optionalMismatch_{optionalNode.ParameterId}) expected.Add(\"{expectedEscaped}\");");
                         }
-                        sb.AppendLine("if (expectedTypes.Count > 0)");
+                        sb.AppendLine("if (expected.Count > 0)");
+                        sb.Indent();
+                        sb.AppendLine("throw new ArgumentTypeError(site, argIndex, expected.ToString());");
+                        sb.Unindent();
+                        sb.Unindent();
+                        sb.AppendLine("}");
+                        sb.AppendLine("ranker.ThrowIfError();");
+                        sb.AppendLine("throw ArgumentCountError.TooMany(site, argIndex, null);");
+                    }
+                    else if (optionalTrackedNodes.Length > 2)
+                    {
+                        // Three or more optional types: general ListFormatterN
+                        sb.AppendLine("if (!ranker.HasError)");
                         sb.AppendLine("{");
                         sb.Indent();
-                        sb.AppendLine("var expected = expectedTypes.Count == 1 ? expectedTypes[0] : expectedTypes.Count == 2 ? expectedTypes[0] + \" or \" + expectedTypes[1] : string.Join(\", \", expectedTypes.GetRange(0, expectedTypes.Count - 1)) + \", or \" + expectedTypes[expectedTypes.Count - 1];");
-                        sb.AppendLine("throw new ArgumentTypeError(site, argIndex, expected);");
+                        sb.AppendLine("var expected = new ListFormatterN();");
+                        foreach (var optionalNode in optionalTrackedNodes)
+                        {
+                            var expectedDisplay = BuildExpectedTypeDisplay(optionalNode.GetErrorExpectedTypes(), optionalNode.GetExpectedTypeName());
+                            var expectedEscaped = expectedDisplay.Replace("\"", "\\\"");
+                            sb.AppendLine($"if (optionalMismatch_{optionalNode.ParameterId}) expected.Add(\"{expectedEscaped}\");");
+                        }
+                        sb.AppendLine("if (expected.Count > 0)");
+                        sb.Indent();
+                        sb.AppendLine("throw new ArgumentTypeError(site, argIndex, expected.ToString());");
+                        sb.Unindent();
                         sb.Unindent();
                         sb.AppendLine("}");
-                        sb.Unindent();
-                        sb.AppendLine("}");
+                        sb.AppendLine("ranker.ThrowIfError();");
+                        sb.AppendLine("throw ArgumentCountError.TooMany(site, argIndex, null);");
                     }
-                    sb.AppendLine("ranker.ThrowIfError();");
-                    sb.AppendLine("throw ArgumentCountError.TooMany(site, argIndex, null);");
+                    else
+                    {
+                        // No optional nodes: simple case
+                        sb.AppendLine("ranker.ThrowIfError();");
+                        sb.AppendLine("throw ArgumentCountError.TooMany(site, argIndex, null);");
+                    }
                     sb.Unindent();
                     sb.AppendLine("}");
                 }
