@@ -798,6 +798,18 @@ namespace ZilfSourceGenerators
             return $"{string.Join(", ", distinct.Take(distinct.Count - 1))}, or {distinct[distinct.Count - 1]}";
         }
 
+        /// <summary>
+        /// Gets the expected type string for a parameter node, including any <c>[Decl]</c> constraint
+        /// pattern if present on a <see cref="SimpleParameterNode"/>.
+        /// </summary>
+        private static string GetExpectedTypeString(ParameterNode node)
+        {
+            var display = BuildExpectedTypeDisplay(node.GetErrorExpectedTypes(), node.GetExpectedTypeName());
+            if (node is SimpleParameterNode simple && simple.HasDeclConstraint && !string.IsNullOrEmpty(simple.DeclPattern))
+                display = display + " matching " + simple.DeclPattern;
+            return display;
+        }
+
         internal static string GetDefaultValueString(IParameterSymbol parameter)
         {
             if (parameter.HasExplicitDefaultValue)
@@ -2757,7 +2769,7 @@ namespace ZilfSourceGenerators
                     {
                         // Single optional type: emit inline if/throw, no list/hashset/formatting needed
                         var optNode = optionalTrackedNodes[0];
-                        var expectedDisplay = BuildExpectedTypeDisplay(optNode.GetErrorExpectedTypes(), optNode.GetExpectedTypeName());
+                        var expectedDisplay = GetExpectedTypeString(optNode);
                         var expectedEscaped = expectedDisplay.Replace("\"", "\\\"");
                         sb.AppendLine("if (!ranker.HasError)");
                         sb.AppendLine("{");
@@ -2780,7 +2792,7 @@ namespace ZilfSourceGenerators
                         sb.AppendLine("var expected = new ListFormatter2();");
                         foreach (var optionalNode in optionalTrackedNodes)
                         {
-                            var expectedDisplay = BuildExpectedTypeDisplay(optionalNode.GetErrorExpectedTypes(), optionalNode.GetExpectedTypeName());
+                            var expectedDisplay = GetExpectedTypeString(optionalNode);
                             var expectedEscaped = expectedDisplay.Replace("\"", "\\\"");
                             sb.AppendLine($"if (optionalMismatch_{optionalNode.ParameterId}) expected.Add(\"{expectedEscaped}\");");
                         }
@@ -2802,7 +2814,7 @@ namespace ZilfSourceGenerators
                         sb.AppendLine("var expected = new ListFormatterN();");
                         foreach (var optionalNode in optionalTrackedNodes)
                         {
-                            var expectedDisplay = BuildExpectedTypeDisplay(optionalNode.GetErrorExpectedTypes(), optionalNode.GetExpectedTypeName());
+                            var expectedDisplay = GetExpectedTypeString(optionalNode);
                             var expectedEscaped = expectedDisplay.Replace("\"", "\\\"");
                             sb.AppendLine($"if (optionalMismatch_{optionalNode.ParameterId}) expected.Add(\"{expectedEscaped}\");");
                         }

@@ -55,6 +55,9 @@ and this project adheres to
 - Fixed `GO` breaking the object tree when used with an object instead of a
   direction.
 
+- Fixed `PARSE` producing a misleading error message when its second argument is
+  a FIX other than 10.
+
 ## [1.8](April 8, 2026)
 
 ### Added
