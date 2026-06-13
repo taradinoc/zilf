@@ -29,6 +29,12 @@ and this project adheres to
 - Added `READCHR`, to read a single character from an open file channel, or
   a control-Z character if the file is at EOF.
 
+- Added `TYI`, which is like `READCHR` but defaults to `.INCHAN` if no channel
+  is specified.
+
+- Added `TTYECHO`, to control whether characters read from a console channel
+  will be echoed to the console.
+
 - `OPEN` can now accept the file mode `"PRINT"` to open files for writing. This
   will only succeed if the command-line switch `--allow-file-writes` has been
   given.

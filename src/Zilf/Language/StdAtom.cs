@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2026 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -135,6 +135,7 @@ namespace Zilf.Language
         [Atom("IN-ZILCH")]
         IN_ZILCH,
         INC,
+        INCHAN,
         [Atom("INIT-ARGS")]
         INIT_ARGS,
         INITIAL,

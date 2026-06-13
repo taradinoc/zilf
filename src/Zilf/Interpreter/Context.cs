@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2026 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -182,6 +182,11 @@ namespace Zilf.Interpreter
             var consoleOutChannel = new ZilConsoleChannel(FileAccess.Write);
             SetLocalVal(outchanAtom, consoleOutChannel);
             SetGlobalVal(outchanAtom, consoleOutChannel);
+
+            var inchanAtom = GetStdAtom(StdAtom.INCHAN);
+            var consoleInChannel = new ZilConsoleChannel(FileAccess.Read);
+            SetLocalVal(inchanAtom, consoleInChannel);
+            SetGlobalVal(inchanAtom, consoleInChannel);
 
             AtTopLevel = true;
             TopFrame = new NativeFrame(this, SourceLines.TopLevel);

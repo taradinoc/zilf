@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2026 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -311,6 +311,53 @@ namespace Zilf.Interpreter
 
             char c = channel.ReadChar() ?? (char)0x1a;
             return new ZilChar(c);
+        }
+
+        /// <summary>
+        /// Reads a character from a channel.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="channel">The channel to read from. Defaults to the local value of INCHAN.</param>
+        /// <returns>The character read, or a control-Z character if the channel is at EOF.</returns>
+        /// <exception cref="InterpreterError">INCHAN has no local value.</exception>
+        [Subr]
+        public static ZilObject TYI(Context ctx, ZilChannel? channel = null)
+        {
+            if (channel == null)
+            {
+                if (ctx.GetLocalVal(ctx.GetStdAtom(StdAtom.INCHAN)) is ZilChannel inchan)
+                {
+                    channel = inchan;
+                }
+                else
+                {
+                    throw new InterpreterError(
+                        InterpreterMessages._0_Atom_1_Has_No_2_Value,
+                        "TYI",
+                        "INCHAN",
+                        "local");
+                }
+            }
+
+            return READCHR(ctx, channel);
+        }
+
+        /// <summary>
+        /// Turns the echoing of typed characters on a console input channel on or off.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="channel">The channel to control.</param>
+        /// <param name="enable">True to cause typed characters to echo, or false to hide them.</param>
+        /// <returns>The channel.</returns>
+        [Subr]
+        public static ZilObject TTYECHO(Context ctx, ZilChannel channel, bool enable)
+        {
+            if (channel is ZilConsoleChannel consoleChannel)
+            {
+                consoleChannel.EchoInput = enable;
+            }
+
+            return channel;
         }
 
         /// <summary>

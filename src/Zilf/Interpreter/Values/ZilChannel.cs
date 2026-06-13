@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+﻿/* Copyright 2010-2026 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -218,16 +218,25 @@ namespace Zilf.Interpreter.Values
     [BuiltinAlternate(typeof(ZilChannel))]
     sealed class ZilConsoleChannel : ZilChannel, IChannelWithHPos
     {
+        readonly FileAccess fileAccess;
+
+        public bool EchoInput { get; set; } = true;
+
         /// <exception cref="ArgumentException"><paramref name="fileAccess"/> is not <see cref="FileAccess.Write"/>.</exception>
         public ZilConsoleChannel(FileAccess fileAccess)
         {
-            if (fileAccess != FileAccess.Write)
-                throw new ArgumentException("Only Write mode is supported", nameof(fileAccess));
+            if (fileAccess is not (FileAccess.Read or FileAccess.Write))
+                throw new ArgumentException("Only exclusive read and write modes are supported", nameof(fileAccess));
+            
+            this.fileAccess = fileAccess;
         }
 
-        public override string ToString() => "#CHANNEL [PRINT CONSOLE]";
+        public override string ToString() => $"#CHANNEL [{(fileAccess == FileAccess.Read ? "READ" : "PRINT")} CONSOLE]";
 
-        public override ZilObject GetPrimitive(Context ctx) => new ZilVector(ctx.GetStdAtom(StdAtom.PRINT), ctx.GetStdAtom(StdAtom.CONSOLE));
+        public override ZilObject GetPrimitive(Context ctx) => new ZilVector(
+            ctx.GetStdAtom(fileAccess == FileAccess.Read ? StdAtom.READ : StdAtom.PRINT),
+            ctx.GetStdAtom(StdAtom.CONSOLE)
+        );
 
         public override void Reset(Context ctx)
         {
@@ -241,7 +250,14 @@ namespace Zilf.Interpreter.Values
 
         public override long? GetFileLength() => null;
 
-        public override char? ReadChar() => null;
+        public override char? ReadChar()
+        {
+            if (fileAccess != FileAccess.Read)
+                throw new InvalidOperationException("Channel is not open for read");
+
+            var keyInfo = Console.ReadKey(!EchoInput);
+            return keyInfo.KeyChar;
+        }
 
         public override bool WriteChar(char c)
         {
@@ -251,17 +267,23 @@ namespace Zilf.Interpreter.Values
 
         public override int WriteNewline()
         {
+            if (fileAccess != FileAccess.Write)
+                throw new InvalidOperationException("Channel is not open for write");
+
             Console.WriteLine();
             return Environment.NewLine.Length;
         }
 
         public override int WriteString(string s)
         {
+            if (fileAccess != FileAccess.Write)
+                throw new InvalidOperationException("Channel is not open for write");
+
             Console.Write(s);
             return s.Length;
         }
 
-        public override bool IsEOF => true;
+        public override bool IsEOF => fileAccess == FileAccess.Write;
 
         public int HPos => Console.CursorLeft;
     }
