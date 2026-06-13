@@ -163,6 +163,14 @@ namespace Zilf.Compiler.Builtins
             return GeneratedBuiltinParsers.HasSideEffects(name);
         }
 
+        public static bool IsBuiltinName(string name)
+        {
+            return GeneratedBuiltinParsers.VoidCallParsers.ContainsKey(name) ||
+                GeneratedBuiltinParsers.ValueCallParsers.ContainsKey(name) ||
+                GeneratedBuiltinParsers.PredCallParsers.ContainsKey(name) ||
+                GeneratedBuiltinParsers.ValuePredCallParsers.ContainsKey(name);
+        }
+
         public static bool IsNearMatchBuiltin(string name, int zversion, int argCount, BuiltinPlatform currentPlatform, [NotNullWhen(true)] out CompilerError? error)
         {
             // Check if the builtin name exists in any generated parser dictionary

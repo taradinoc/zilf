@@ -184,11 +184,12 @@ namespace Zilf.Diagnostics
         public const int _0_Unrecognized_Type_1 = 229;
         [Error("{0}: unrecognized primtype: {1}")]
         public const int _0_Unrecognized_Primtype_1 = 230;
-
         [Error("unrecognized value in DECL pattern: {0}")]
         public const int Unrecognized_Value_In_DECL_Pattern_0 = 231;
         [Error("unrecognized SUBR/FSUBR name: {0}")]
         public const int Unrecognized_SUBR_FSUBR_Name_0 = 232;
+        [Info("a Z-code builtin exists with that name; did you mean this to be part of a routine?")]
+        public const int A_Z_Code_Builtin_Exists_With_That_Name_Did_You_Mean_This_To_Be_Part_Of_A_Routine = 233;
 
         // Structured Values - 0300
 

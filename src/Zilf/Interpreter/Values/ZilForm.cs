@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Zilf.Compiler.Builtins;
 using Zilf.Diagnostics;
 using Zilf.Language;
 
@@ -120,14 +121,27 @@ namespace Zilf.Interpreter.Values
 
             using (DiagnosticContext.Push(SourceLine, frame))
             {
-                ZilObject target;
+                ZilObject? target;
                 if (First is ZilAtom fa)
                 {
                     target = ctx.GetGlobalVal(fa) ??
-                             ctx.GetLocalVal(fa) ??
-                             throw new InterpreterError(this,
-                                 InterpreterMessages.Calling_Unassigned_Atom_0,
-                                 fa.ToStringContext(ctx, false));
+                             ctx.GetLocalVal(fa);
+
+                    if (target == null)
+                    {
+                        var ex = new InterpreterError(this,
+                            InterpreterMessages.Calling_Unassigned_Atom_0,
+                            fa.ToStringContext(ctx, false));
+
+                        if (ZBuiltins.IsBuiltinName(fa.Text))
+                        {
+                            ex = ex.Combine(new InterpreterError(
+                                InterpreterMessages.A_Z_Code_Builtin_Exists_With_That_Name_Did_You_Mean_This_To_Be_Part_Of_A_Routine
+                            ));
+                        }
+
+                        throw ex;
+                    }
                 }
                 else
                 {

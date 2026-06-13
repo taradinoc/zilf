@@ -39,6 +39,10 @@ and this project adheres to
   will only succeed if the command-line switch `--allow-file-writes` has been
   given.
 
+- Calling an unassigned atom will now attach info message MDL0233 if the atom
+  matches the name of a Z-code builtin, suggesting that it was meant to be
+  called inside a routine.
+
 ### Changed
 
 - Updated `zillib/LICENSE.txt` to clarify that you may redistribute games
