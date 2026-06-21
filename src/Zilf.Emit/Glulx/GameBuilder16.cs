@@ -367,7 +367,7 @@ namespace Zilf.Emit.Glulx
             }
 
             for (int i = 0; i < globals.Count; i++)
-                writer.WriteLine(GameBuilder16.INDENT + "global_{0}_num = {1}", globals[i].Name, i);
+                writer.WriteLine(GameBuilder16.INDENT + "global_{0}_num = {1}", globals[i].Name, i + 16);
 
             base.FinishGlobals();
         }
