@@ -340,7 +340,7 @@ namespace Zilf.Emit.Cornerstone
                         return;
 
                     case UnaryOp.DirectOutput:
-                        EmitRuntimeCall(RuntimeLib.DirectOutput, [value], null);
+                        EmitRuntimeCall(RuntimeLib.DirectOutput, [owner.Zero, value], null);
                         return;
 
                     case UnaryOp.OutputStyle:
@@ -423,6 +423,10 @@ namespace Zilf.Emit.Cornerstone
 
                     case BinaryOp.ClearFlag:
                         EmitRuntimeCall(RuntimeLib.ClearFlag, [left, right], null);
+                        return;
+
+                    case BinaryOp.DirectOutput:
+                        EmitRuntimeCall(RuntimeLib.DirectOutput, [right, left], null);
                         return;
                 }
 

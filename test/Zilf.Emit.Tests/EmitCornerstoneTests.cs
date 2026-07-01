@@ -527,8 +527,9 @@ namespace Zilf.Emit.Tests
             StringAssert.Contains(output, ".local MODE");
             StringAssert.Contains(output, "    PUSH1");
             StringAssert.Contains(output, "    CALL1 __DirectInput");
+            StringAssert.Contains(output, "    PUSH0");
             StringAssert.Contains(output, "    PUSHL MODE");
-            StringAssert.Contains(output, "    CALL1 __DirectOutput");
+            StringAssert.Contains(output, "    CALL2 __DirectOutput");
             StringAssert.Contains(output, ".proc __DirectInput");
             StringAssert.Contains(output, ".proc __DirectOutput");
             StringAssert.Contains(output, "    OPEN 0x00");
@@ -788,7 +789,7 @@ namespace Zilf.Emit.Tests
             var output = streamFactory.GetOutput();
 
             StringAssert.Contains(output, "SELECTORS::");
-            StringAssert.Contains(output, ".word 0x001A");
+            StringAssert.Contains(output, ".word 0x001C");
         }
 
         [TestMethod]
@@ -982,7 +983,7 @@ namespace Zilf.Emit.Tests
             StringAssert.Contains(output, ".proc __LoadIndirectGlobal");
             StringAssert.Contains(output, "    PUSHW 0x0010");
             StringAssert.Contains(output, "    JUMPL load_global_missing");
-            StringAssert.Contains(output, "    PUSHW 0x001B");
+            StringAssert.Contains(output, "    PUSHW 0x001D");
             StringAssert.Contains(output, "    JUMPG load_global_missing");
             StringAssert.Contains(output, "    LOADG FIRST_GLOBAL");
             StringAssert.Contains(output, "    LOADG SECOND_GLOBAL");

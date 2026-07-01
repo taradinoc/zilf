@@ -70,6 +70,7 @@ namespace Zilf.Emit.Cornerstone
         public const string SetOutputStyle = nameof(SetOutputStyle);
         public const string TryReadCommandFileLine = nameof(TryReadCommandFileLine);
         public const string EchoReadLineToCommandFile = nameof(EchoReadLineToCommandFile);
+        public const string Stream3WriteChar = nameof(Stream3WriteChar);
         private const string PrintPackedObjDataCore = nameof(PrintPackedObjDataCore);
 
         private readonly Dictionary<string, RuntimeRoutineDefinition> routines = new(StringComparer.Ordinal);
@@ -171,10 +172,67 @@ namespace Zilf.Emit.Cornerstone
                     ReturnsValue: false));
 
             routines.Add(
+                Stream3WriteChar,
+                new RuntimeRoutineDefinition(
+                    "__Stream3WriteChar",
+                    [LoadWordAtBytePointer, StoreWordAtBytePointer, StoreByteAtBytePointer],
+                    static (builder, routine) =>
+                    {
+                        routine.DefineRequiredParameter("character");
+                        routine.DefineLocal("tableAddress");
+                        routine.DefineLocal("count");
+
+                        // Safety: if no stream 3 table is active, return.
+                        routine.EmitRawLine($"    LOADG {builder.Stream3TableGlobalIndex}");
+                        routine.EmitRawLine("    JUMPF no_stream3_table");
+                        routine.EmitRawLine($"    LOADG {builder.Stream3TableGlobalIndex}");
+                        routine.EmitRawLine("    PUTL 1");
+
+                        // Convert newlines (0x0A LF, 0x0D CR) to byte 13.
+                        routine.EmitRawLine("    PUSHL 0");
+                        routine.EmitRawLine("    PUSHB 0x0A");
+                        routine.EmitRawLine("    JUMPEQ write_newline_byte");
+                        routine.EmitRawLine("    PUSHL 0");
+                        routine.EmitRawLine("    PUSHB 0x0D");
+                        routine.EmitRawLine("    JUMPEQ write_newline_byte");
+                        routine.EmitRawLine("    JUMP write_byte_to_table");
+                        routine.EmitRawLine("write_newline_byte:");
+                        routine.EmitRawLine("    PUSHB 0x0D");
+                        routine.EmitRawLine("    PUTL 0");
+                        routine.EmitRawLine("write_byte_to_table:");
+
+                        // Read count from table[0] (word at byte offset 0).
+                        routine.EmitRawLine("    PUSHL 1");
+                        routine.EmitRawLine("    PUSH0");
+                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(LoadWordAtBytePointer)}");
+                        routine.EmitRawLine("    PUTL 2");
+
+                        // table[2 + count] = character (byte at byte offset 2 + count).
+                        routine.EmitRawLine("    PUSHL 1");
+                        routine.EmitRawLine("    PUSHL 2");
+                        routine.EmitRawLine("    PUSH2");
+                        routine.EmitRawLine("    ADD");
+                        routine.EmitRawLine("    PUSHL 0");
+                        routine.EmitRawLine($"    CALL3 {builder.RuntimeLib.Use(StoreByteAtBytePointer)}");
+
+                        // table[0] = count + 1 (word at byte offset 0).
+                        routine.EmitRawLine("    PUSHL 1");
+                        routine.EmitRawLine("    PUSH0");
+                        routine.EmitRawLine("    PUSHL 2");
+                        routine.EmitRawLine("    PUSH1");
+                        routine.EmitRawLine("    ADD");
+                        routine.EmitRawLine($"    CALL3 {builder.RuntimeLib.Use(StoreWordAtBytePointer)}");
+
+                        routine.EmitRawLine("no_stream3_table:");
+                        routine.EmitRawLine("    RET");
+                    },
+                    ReturnsValue: false));
+
+            routines.Add(
                 BufferedPrintCharacter,
                 new RuntimeRoutineDefinition(
                     "__BufferedPrintCharacter",
-                    [ConsoleAdvanceLine, FlushOutputBuffer],
+                    [ConsoleAdvanceLine, FlushOutputBuffer, Stream3WriteChar],
                     static (builder, routine) =>
                     {
                         var bufferName = builder.EnsureOutputBufferName();
@@ -194,6 +252,12 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    JUMPNZ have_character");
                         routine.EmitRawLine("    RET");
                         routine.EmitRawLine("have_character:");
+                        routine.EmitRawLine($"    LOADG {builder.Stream3TableGlobalIndex}");
+                        routine.EmitRawLine("    JUMPF normal_buffered_output");
+                        routine.EmitRawLine("    PUSHL 0");
+                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(Stream3WriteChar)}");
+                        routine.EmitRawLine("    RET");
+                        routine.EmitRawLine("normal_buffered_output:");
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHB 0x0A");
                         routine.EmitRawLine("    JUMPEQ emit_newline");
@@ -256,7 +320,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    JUMPNE wrap_at_space");
                         routine.EmitRawLine("    PUSHL 8");
                         routine.EmitRawLine("    JUMPZ hard_break_word");
-                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.usedRoutines[ConsoleAdvanceLine].Name}");
+                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(ConsoleAdvanceLine)}");
                         routine.EmitRawLine("    JUMP wrap_loop");
                         routine.EmitRawLine("hard_break_word:");
                         routine.EmitRawLine("    PUSHL 2");
@@ -282,7 +346,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    WPRINTV");
                         routine.EmitRawLine("    POP");
                         routine.EmitRawLine("skip_prefix_emit:");
-                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.usedRoutines[ConsoleAdvanceLine].Name}");
+                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(ConsoleAdvanceLine)}");
                         routine.EmitRawLine("    PUSHL 6");
                         routine.EmitRawLine("    PUTL 7");
                         routine.EmitRawLine("    PUSH0");
@@ -336,8 +400,8 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    VPUTW_ 0x00");
                         routine.EmitRawLine("    JUMP wrap_loop");
                         routine.EmitRawLine("emit_newline:");
-                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.usedRoutines[FlushOutputBuffer].Name}");
-                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.usedRoutines[ConsoleAdvanceLine].Name}");
+                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(FlushOutputBuffer)}");
+                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(ConsoleAdvanceLine)}");
                         routine.EmitRawLine("append_done:");
                         routine.EmitRawLine("    RET");
                     },
@@ -372,7 +436,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHB 0x03");
                         routine.EmitRawLine("    ADD");
                         routine.EmitRawLine("    VLOADB");
-                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.usedRoutines[BufferedPrintCharacter].Name}");
+                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(BufferedPrintCharacter)}");
                         routine.EmitRawLine("    PUSHL 2");
                         routine.EmitRawLine("    PUSH1");
                         routine.EmitRawLine("    ADD");
@@ -397,7 +461,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    JUMPGEZ print_nonnegative");
                         routine.EmitRawLine("    PUSHB 0x2D");
-                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.usedRoutines[BufferedPrintCharacter].Name}");
+                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(BufferedPrintCharacter)}");
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    NEG");
                         routine.EmitRawLine("    PUTL 1");
@@ -411,7 +475,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 1");
                         routine.EmitRawLine("    JUMPNZ extract_digits");
                         routine.EmitRawLine("    PUSHB 0x30");
-                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.usedRoutines[BufferedPrintCharacter].Name}");
+                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(BufferedPrintCharacter)}");
                         routine.EmitRawLine("    RET");
                         routine.EmitRawLine("extract_digits:");
                         routine.EmitRawLine("    PUSHL 1");
@@ -432,7 +496,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("print_digits:");
                         routine.EmitRawLine("    PUSHL 2");
                         routine.EmitRawLine("    JUMPZ print_done");
-                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.usedRoutines[BufferedPrintCharacter].Name}");
+                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(BufferedPrintCharacter)}");
                         routine.EmitRawLine("    PUSHL 2");
                         routine.EmitRawLine("    PUSH1");
                         routine.EmitRawLine("    SUB");
@@ -614,7 +678,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.DefineLocal("score");
                         routine.DefineLocal("moves");
 
-                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.usedRoutines[FlushOutputBuffer].Name}");
+                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(FlushOutputBuffer)}");
                         routine.EmitRawLine($"    LOADG {builder.ConsoleRowGlobalIndex}");
                         routine.EmitRawLine("    PUTL 0");
                         routine.EmitRawLine($"    LOADG {builder.ConsoleColumnGlobalIndex}");
@@ -844,13 +908,15 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine($"    LOADG {builder.CommandOutputChannelGlobalIndex}");
                         routine.EmitRawLine("    JUMPF flags_done");
                         routine.EmitRawLine("    PUSH0");
-                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(DirectOutput)}");
+                        routine.EmitRawLine("    PUSH0");
+                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(DirectOutput)}");
                         routine.EmitRawLine("    JUMP flags_done");
                         routine.EmitRawLine("want_transcript:");
                         routine.EmitRawLine($"    LOADG {builder.CommandOutputChannelGlobalIndex}");
                         routine.EmitRawLine("    JUMPNZ flags_done");
+                        routine.EmitRawLine("    PUSH0");
                         routine.EmitRawLine("    PUSHW 0x0004");
-                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(DirectOutput)}");
+                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(DirectOutput)}");
                         routine.EmitRawLine("flags_done:");
                         routine.EmitRawLine("    RET");
                     },
@@ -1692,8 +1758,8 @@ namespace Zilf.Emit.Cornerstone
                         routine.DefineLocal("commandLength");
                         routine.DefineLocal("usedCommandFile");
 
-                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.usedRoutines[FlushOutputBuffer].Name}");
-                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.usedRoutines[DrawStatusLine].Name}");
+                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(FlushOutputBuffer)}");
+                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(DrawStatusLine)}");
 
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUTL 9");
@@ -1734,7 +1800,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    JUMPNZ ABS:read_key");
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHL 2");
-                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.usedRoutines[TryReadCommandFileLine].Name}");
+                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(TryReadCommandFileLine)}");
                         routine.EmitRawLine("    PUTL 12");
                         routine.EmitRawLine("    PUSH_NIL");
                         routine.EmitRawLine("    PUSHL 12");
@@ -2108,7 +2174,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    JUMPNZ ABS:skip_command_echo");
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHL 7");
-                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.usedRoutines[EchoReadLineToCommandFile].Name}");
+                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(EchoReadLineToCommandFile)}");
                         routine.EmitRawLine("skip_command_echo:");
 
                         // Restore the external Z-machine-style buffer header in raw bytes.
@@ -2125,14 +2191,14 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    JUMPF ABS:no_lexbuf");
                         routine.EmitRawLine("    PUSHL 9");
                         routine.EmitRawLine("    PUSHL 10");
-                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.usedRoutines[TokenizeLine].Name}");
+                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(TokenizeLine)}");
                         routine.EmitRawLine("    POP");
                         routine.EmitRawLine("no_lexbuf:");
                         routine.EmitRawLine("    PUSHL 13");
                         routine.EmitRawLine("    JUMPF ABS:skip_command_flush");
-                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.usedRoutines[FlushOutputBuffer].Name}");
+                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(FlushOutputBuffer)}");
                         routine.EmitRawLine("skip_command_flush:");
-                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.usedRoutines[ConsoleAdvanceLine].Name}");
+                        routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(ConsoleAdvanceLine)}");
                         routine.EmitRawLine("    PUSHB 0x0D");
                         routine.EmitRawLine("    RETURN");
                     }));
@@ -2144,7 +2210,7 @@ namespace Zilf.Emit.Cornerstone
                     [ReadLine, PrintObjDataString, ConsoleAdvanceLine],
                     static (builder, routine) =>
                     {
-                        EmitDirectStreamRoutine(builder, routine, input: true);
+                        EmitDirectInputRoutine(builder, routine);
                     },
                     ReturnsValue: false));
 
@@ -2152,10 +2218,11 @@ namespace Zilf.Emit.Cornerstone
                 DirectOutput,
                 new RuntimeRoutineDefinition(
                     "__DirectOutput",
-                    [ReadLine, PrintObjDataString, ConsoleAdvanceLine],
+                    [ReadLine, PrintObjDataString, ConsoleAdvanceLine, Stream3WriteChar,
+                     LoadWordAtBytePointer, StoreWordAtBytePointer],
                     static (builder, routine) =>
                     {
-                        EmitDirectStreamRoutine(builder, routine, input: false);
+                        EmitDirectOutputRoutine(builder, routine);
                     },
                     ReturnsValue: false));
 
@@ -2379,7 +2446,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.DefineLocal("defaultAddress");
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHL 1");
-                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.usedRoutines[GetPropertyAddress].Name}");
+                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(GetPropertyAddress)}");
                         routine.EmitRawLine("    PUTL 2");
                         routine.EmitRawLine("    PUSHL 2");
                         routine.EmitRawLine("    JUMPNZ property_value_found");
@@ -2446,7 +2513,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.DefineLocal("propertyAddress");
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHL 1");
-                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.usedRoutines[GetPropertyAddress].Name}");
+                        routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(GetPropertyAddress)}");
                         routine.EmitRawLine("    PUTL 3");
                         routine.EmitRawLine("    PUSHL 3");
                         routine.EmitRawLine("    JUMPNZ write_property_value");
@@ -2484,7 +2551,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.DefineLocal("destinationRecord");
                         routine.DefineLocal("destinationChild");
                         routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.usedRoutines[RemoveObject].Name}");
+                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(RemoveObject)}");
                         routine.EmitRawLine("    PUSHL 1");
                         routine.EmitRawLine("    JUMPNZ have_destination");
                         routine.EmitRawLine("    RET");
@@ -2492,7 +2559,7 @@ namespace Zilf.Emit.Cornerstone
                         EmitObjectRecordLookup(routine, objectLocalIndex: 0, resultLocalIndex: 2, returnsValue: false);
                         EmitObjectRecordLookup(routine, objectLocalIndex: 1, resultLocalIndex: 3, returnsValue: false);
                         routine.EmitRawLine("    PUSHL 1");
-                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.usedRoutines[GetChild].Name}");
+                        routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(GetChild)}");
                         routine.EmitRawLine("    PUTL 4");
                         EmitStoreObjectRecordSlot(routine, recordLocalIndex: 2, slotOffset: GameBuilder.ObjectRecordParentOffset, valueLocalIndex: 1);
                         EmitStoreObjectRecordSlot(routine, recordLocalIndex: 2, slotOffset: GameBuilder.ObjectRecordSiblingOffset, valueLocalIndex: 4);
@@ -2525,7 +2592,7 @@ namespace Zilf.Emit.Cornerstone
                 throw new ArgumentException($"No such Cornerstone runtime routine: {name}", nameof(name));
 
             EnsureUsed(name);
-            return usedRoutines[name].Name;
+            return definition.BaseName;
 
             void EnsureUsed(string routineName)
             {
@@ -2533,11 +2600,19 @@ namespace Zilf.Emit.Cornerstone
                     return;
 
                 var routineDefinition = routines[routineName];
+
+                // Mark as in-progress before recursing into dependencies to break cycles.
+                // We use a placeholder value; the real RoutineBuilder replaces it below.
+                usedRoutines.Add(routineName, null!);
+
                 foreach (var dependency in routineDefinition.Dependencies)
-                    EnsureUsed(dependency);
+                {
+                    if (!usedRoutines.ContainsKey(dependency))
+                        EnsureUsed(dependency);
+                }
 
                 var runtimeRoutine = gameBuilder.CreateRuntimeRoutine(routineDefinition.BaseName);
-                usedRoutines.Add(routineName, runtimeRoutine);
+                usedRoutines[routineName] = runtimeRoutine;
                 routineDefinition.Emit(gameBuilder, runtimeRoutine);
             }
         }
@@ -2694,36 +2769,30 @@ namespace Zilf.Emit.Cornerstone
             routine.EmitRawLine("    PUTL 5");
         }
 
-        private static void EmitDirectStreamRoutine(GameBuilder builder, GameBuilder.RoutineBuilder routine, bool input)
+        private static void EmitDirectInputRoutine(GameBuilder builder, GameBuilder.RoutineBuilder routine)
         {
             routine.DefineRequiredParameter("streamId");
             routine.DefineLocal("channelId");
             routine.DefineLocal("length");
             routine.DefineLocal("index");
 
-            int streamValue = input ? 1 : 4;
-            int channelGlobalIndex = input ? builder.CommandInputChannelGlobalIndex : builder.CommandOutputChannelGlobalIndex;
-            int openMode = input ? 0x00 : 0x01;
-            string promptLabel = builder.RegisterObjString(input ? "Input file: " : "Output file: ").Location.Name;
-            string errorLabel = builder.RegisterObjString(input ? "Command file failed." : "Record file failed.").Location.Name;
+            string promptLabel = builder.RegisterObjString("Input file: ").Location.Name;
+            string errorLabel = builder.RegisterObjString("Command file failed.").Location.Name;
             string inputBufferName = builder.EnsureCommandFileInputBufferName();
             string fileNameBufferName = builder.EnsureCommandFileNameBufferName();
 
-            routine.EmitRawLine($"    LOADG {channelGlobalIndex}");
+            routine.EmitRawLine($"    LOADG {builder.CommandInputChannelGlobalIndex}");
             routine.EmitRawLine("    JUMPF no_existing_channel");
-            routine.EmitRawLine($"    LOADG {channelGlobalIndex}");
+            routine.EmitRawLine($"    LOADG {builder.CommandInputChannelGlobalIndex}");
             routine.EmitRawLine("    CLOSE");
             routine.EmitRawLine("    POP");
             routine.EmitRawLine("    PUSH_NIL");
-            routine.EmitRawLine($"    PUTG {channelGlobalIndex}");
-            if (input)
-            {
-                routine.EmitRawLine("    PUSH_NIL");
-                routine.EmitRawLine($"    PUTG {builder.CommandInputPendingByteGlobalIndex}");
-            }
+            routine.EmitRawLine($"    PUTG {builder.CommandInputChannelGlobalIndex}");
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.CommandInputPendingByteGlobalIndex}");
             routine.EmitRawLine("no_existing_channel:");
             routine.EmitRawLine("    PUSHL 0");
-            routine.EmitRawLine($"    PUSHW 0x{streamValue:X4}");
+            routine.EmitRawLine("    PUSHW 0x0001");
             routine.EmitRawLine("    JUMPEQ open_command_stream");
             routine.EmitRawLine("    RET");
             routine.EmitRawLine("open_command_stream:");
@@ -2737,11 +2806,8 @@ namespace Zilf.Emit.Cornerstone
             routine.EmitRawLine("    POP");
             routine.EmitRawLine("    PUSH0");
             routine.EmitRawLine($"    STOREG {builder.CommandFileBypassGlobalIndex}");
-            if (input)
-            {
-                routine.EmitRawLine("    PUSH_NIL");
-                routine.EmitRawLine($"    PUTG {builder.CommandInputPendingByteGlobalIndex}");
-            }
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.CommandInputPendingByteGlobalIndex}");
             routine.EmitRawLine($"    PUSHW {inputBufferName}");
             routine.EmitRawLine("    PUSH2");
             routine.EmitRawLine("    LOADVB2");
@@ -2780,23 +2846,248 @@ namespace Zilf.Emit.Cornerstone
             routine.EmitRawLine("open_file_channel:");
             routine.EmitRawLine($"    PUSHW {fileNameBufferName}");
             routine.EmitRawLine("    PUSH0");
-            routine.EmitRawLine($"    OPEN 0x{openMode:X2}");
-            routine.EmitRawLine($"    STOREG {channelGlobalIndex}");
+            routine.EmitRawLine("    OPEN 0x00");
+            routine.EmitRawLine($"    STOREG {builder.CommandInputChannelGlobalIndex}");
             routine.EmitRawLine("    JUMPF open_file_failed");
             routine.EmitRawLine("    POP");
             routine.EmitRawLine("    RET");
             routine.EmitRawLine("open_file_failed:");
             routine.EmitRawLine("    POP");
             routine.EmitRawLine("    PUSH_NIL");
-            routine.EmitRawLine($"    PUTG {channelGlobalIndex}");
-            if (input)
-            {
-                routine.EmitRawLine("    PUSH_NIL");
-                routine.EmitRawLine($"    PUTG {builder.CommandInputPendingByteGlobalIndex}");
-            }
+            routine.EmitRawLine($"    PUTG {builder.CommandInputChannelGlobalIndex}");
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.CommandInputPendingByteGlobalIndex}");
             routine.EmitRawLine($"    PUSHW {errorLabel}");
             routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(PrintObjDataString)}");
             routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(ConsoleAdvanceLine)}");
+            routine.EmitRawLine("    RET");
+        }
+
+        private static void EmitDirectOutputRoutine(GameBuilder builder, GameBuilder.RoutineBuilder routine)
+        {
+            routine.DefineRequiredParameter("streamId");
+            routine.DefineRequiredParameter("tableAddress");
+            routine.DefineLocal("channelId");
+            routine.DefineLocal("length");
+            routine.DefineLocal("index");
+
+            string promptLabel = builder.RegisterObjString("Output file: ").Location.Name;
+            string errorLabel = builder.RegisterObjString("Record file failed.").Location.Name;
+            string inputBufferName = builder.EnsureCommandFileInputBufferName();
+            string fileNameBufferName = builder.EnsureCommandFileNameBufferName();
+            string stackName = builder.EnsureStream3StackName();
+
+            // --- Stream 4 (command file / transcript) enable ---
+            routine.EmitRawLine("    PUSHL 0");
+            routine.EmitRawLine("    PUSHW 0x0004");
+            routine.EmitRawLine("    JUMPEQ enable_stream_4");
+
+            // --- Stream 3 (memory table) enable ---
+            routine.EmitRawLine("    PUSHL 0");
+            routine.EmitRawLine("    PUSHW 0x0003");
+            routine.EmitRawLine("    JUMPEQ enable_stream_3");
+
+            // --- Stream 0 (disable all) ---
+            routine.EmitRawLine("    PUSHL 0");
+            routine.EmitRawLine("    JUMPNZ handle_negative_stream");
+            routine.EmitRawLine("disable_all:");
+
+            // Clear stream 4.
+            routine.EmitRawLine($"    LOADG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("    JUMPF stream4_not_active");
+            routine.EmitRawLine($"    LOADG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("    CLOSE");
+            routine.EmitRawLine("    POP");
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("stream4_not_active:");
+
+            // Clear stream 3 state.
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.Stream3TableGlobalIndex}");
+            routine.EmitRawLine("    PUSH0");
+            routine.EmitRawLine($"    PUTG {builder.Stream3StackPointerGlobalIndex}");
+            routine.EmitRawLine("    RET");
+
+            // --- Negative stream values (disable) ---
+            routine.EmitRawLine("handle_negative_stream:");
+            routine.EmitRawLine("    PUSHL 0");
+            routine.EmitRawLine("    PUSHW 0xFFFC");  // -4
+            routine.EmitRawLine("    JUMPNE check_negative_3");
+
+            // streamId == -4: disable stream 4.
+            routine.EmitRawLine($"    LOADG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("    JUMPF stream4_not_active2");
+            routine.EmitRawLine($"    LOADG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("    CLOSE");
+            routine.EmitRawLine("    POP");
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("stream4_not_active2:");
+            routine.EmitRawLine("    RET");
+
+            routine.EmitRawLine("check_negative_3:");
+            routine.EmitRawLine("    PUSHL 0");
+            routine.EmitRawLine("    PUSHW 0xFFFD");  // -3
+            routine.EmitRawLine("    JUMPNE direct_output_done");
+
+            // streamId == -3: disable stream 3 (pop nesting stack).
+            routine.EmitRawLine($"    LOADG {builder.Stream3StackPointerGlobalIndex}");
+            routine.EmitRawLine("    JUMPZ clear_stream3");
+            // Pop from stack.
+            routine.EmitRawLine($"    LOADG {builder.Stream3StackPointerGlobalIndex}");
+            routine.EmitRawLine("    PUSH1");
+            routine.EmitRawLine("    SUB");
+            routine.EmitRawLine($"    STOREG {builder.Stream3StackPointerGlobalIndex}");
+            // Restore saved table address from stack.
+            routine.EmitRawLine($"    LOADG {builder.Stream3StackPointerGlobalIndex}");
+            routine.EmitRawLine("    PUSH2");
+            routine.EmitRawLine("    MUL");
+            routine.EmitRawLine($"    PUSHW {stackName}");
+            routine.EmitRawLine("    ADD");
+            routine.EmitRawLine("    VLOADW_ 0x00");
+            routine.EmitRawLine($"    STOREG {builder.Stream3TableGlobalIndex}");
+            routine.EmitRawLine("    RET");
+            routine.EmitRawLine("clear_stream3:");
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.Stream3TableGlobalIndex}");
+            routine.EmitRawLine("    PUSH0");
+            routine.EmitRawLine($"    PUTG {builder.Stream3StackPointerGlobalIndex}");
+            routine.EmitRawLine("    RET");
+
+            // --- Stream 4 enable ---
+            routine.EmitRawLine("enable_stream_4:");
+
+            // Close any existing stream 3 state — streams 3 and 4 are mutually exclusive.
+            routine.EmitRawLine($"    LOADG {builder.Stream3TableGlobalIndex}");
+            routine.EmitRawLine("    JUMPF no_stream3_to_close");
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.Stream3TableGlobalIndex}");
+            routine.EmitRawLine("    PUSH0");
+            routine.EmitRawLine($"    PUTG {builder.Stream3StackPointerGlobalIndex}");
+            routine.EmitRawLine("no_stream3_to_close:");
+
+            // Close existing stream 4 if open.
+            routine.EmitRawLine($"    LOADG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("    JUMPF no_existing_stream4");
+            routine.EmitRawLine($"    LOADG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("    CLOSE");
+            routine.EmitRawLine("    POP");
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("no_existing_stream4:");
+            routine.EmitRawLine($"    PUSHW {promptLabel}");
+            routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(PrintObjDataString)}");
+            routine.EmitRawLine("    PUSH1");
+            routine.EmitRawLine($"    STOREG {builder.CommandFileBypassGlobalIndex}");
+            routine.EmitRawLine($"    PUSHW byte:{inputBufferName}");
+            routine.EmitRawLine("    PUSH0");
+            routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(ReadLine)}");
+            routine.EmitRawLine("    POP");
+            routine.EmitRawLine("    PUSH0");
+            routine.EmitRawLine($"    STOREG {builder.CommandFileBypassGlobalIndex}");
+            routine.EmitRawLine($"    PUSHW {inputBufferName}");
+            routine.EmitRawLine("    PUSH2");
+            routine.EmitRawLine("    LOADVB2");
+            routine.EmitRawLine("    PUTL 2");
+            routine.EmitRawLine("    PUSHL 2");
+            routine.EmitRawLine("    JUMPNZ have_stream4_file_name");
+            routine.EmitRawLine($"    PUSHW {errorLabel}");
+            routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(PrintObjDataString)}");
+            routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(ConsoleAdvanceLine)}");
+            routine.EmitRawLine("    RET");
+            routine.EmitRawLine("have_stream4_file_name:");
+            routine.EmitRawLine($"    PUSHW {fileNameBufferName}");
+            routine.EmitRawLine("    PUSHL 2");
+            routine.EmitRawLine("    VPUTW_ 0x00");
+            routine.EmitRawLine("    PUSH1");
+            routine.EmitRawLine("    PUTL 3");
+            routine.EmitRawLine("stream4_copy_file_name_loop:");
+            routine.EmitRawLine("    PUSHL 2");
+            routine.EmitRawLine("    PUSHL 3");
+            routine.EmitRawLine("    JUMPLE stream4_copy_file_name_byte");
+            routine.EmitRawLine("    JUMP open_stream4_file_channel");
+            routine.EmitRawLine("stream4_copy_file_name_byte:");
+            routine.EmitRawLine($"    PUSHW {fileNameBufferName}");
+            routine.EmitRawLine("    PUSHL 3");
+            routine.EmitRawLine($"    PUSHW {inputBufferName}");
+            routine.EmitRawLine("    PUSHL 3");
+            routine.EmitRawLine("    PUSH2");
+            routine.EmitRawLine("    ADD");
+            routine.EmitRawLine("    LOADVB2");
+            routine.EmitRawLine("    VPUTB");
+            routine.EmitRawLine("    PUSHL 3");
+            routine.EmitRawLine("    PUSH1");
+            routine.EmitRawLine("    ADD");
+            routine.EmitRawLine("    PUTL 3");
+            routine.EmitRawLine("    JUMP stream4_copy_file_name_loop");
+            routine.EmitRawLine("open_stream4_file_channel:");
+            routine.EmitRawLine($"    PUSHW {fileNameBufferName}");
+            routine.EmitRawLine("    PUSH0");
+            routine.EmitRawLine("    OPEN 0x01");
+            routine.EmitRawLine($"    STOREG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("    JUMPF open_stream4_file_failed");
+            routine.EmitRawLine("    POP");
+            routine.EmitRawLine("    RET");
+            routine.EmitRawLine("open_stream4_file_failed:");
+            routine.EmitRawLine("    POP");
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine($"    PUSHW {errorLabel}");
+            routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(PrintObjDataString)}");
+            routine.EmitRawLine($"    CALL0 {builder.RuntimeLib.Use(ConsoleAdvanceLine)}");
+            routine.EmitRawLine("    RET");
+
+            // --- Stream 3 enable ---
+            routine.EmitRawLine("enable_stream_3:");
+
+            // Close any existing stream 4 — streams 3 and 4 are mutually exclusive.
+            routine.EmitRawLine($"    LOADG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("    JUMPF no_stream4_to_close");
+            routine.EmitRawLine($"    LOADG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("    CLOSE");
+            routine.EmitRawLine("    POP");
+            routine.EmitRawLine("    PUSH_NIL");
+            routine.EmitRawLine($"    PUTG {builder.CommandOutputChannelGlobalIndex}");
+            routine.EmitRawLine("no_stream4_to_close:");
+
+            // If already active, push current state onto the nesting stack.
+            routine.EmitRawLine($"    LOADG {builder.Stream3TableGlobalIndex}");
+            routine.EmitRawLine("    JUMPF stream3_not_active");
+            // Save current table address to stack[sp*2].
+            routine.EmitRawLine($"    LOADG {builder.Stream3StackPointerGlobalIndex}");
+            routine.EmitRawLine("    PUSH2");
+            routine.EmitRawLine("    MUL");
+            routine.EmitRawLine($"    PUSHW {stackName}");
+            routine.EmitRawLine("    ADD");
+            routine.EmitRawLine($"    LOADG {builder.Stream3TableGlobalIndex}");
+            routine.EmitRawLine("    VPUTW_ 0x00");
+            // Save current count (byte-pointer read) to stack[sp*2 + 1].
+            routine.EmitRawLine($"    LOADG {builder.Stream3TableGlobalIndex}");
+            routine.EmitRawLine("    PUSH0");
+            routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(LoadWordAtBytePointer)}");
+            routine.EmitRawLine($"    LOADG {builder.Stream3StackPointerGlobalIndex}");
+            routine.EmitRawLine("    PUSH2");
+            routine.EmitRawLine("    MUL");
+            routine.EmitRawLine($"    PUSHW {stackName}");
+            routine.EmitRawLine("    ADD");
+            routine.EmitRawLine("    PUSH1");
+            routine.EmitRawLine("    ADD");
+            routine.EmitRawLine("    VPUTW_ 0x00");
+            routine.EmitRawLine($"    LOADG {builder.Stream3StackPointerGlobalIndex}");
+            routine.EmitRawLine("    PUSH1");
+            routine.EmitRawLine("    ADD");
+            routine.EmitRawLine($"    STOREG {builder.Stream3StackPointerGlobalIndex}");
+            routine.EmitRawLine("stream3_not_active:");
+
+            // Set stream 3 table to tableAddress, initialize count to 0 (byte-pointer write).
+            routine.EmitRawLine("    PUSHL 1");
+            routine.EmitRawLine($"    STOREG {builder.Stream3TableGlobalIndex}");
+            routine.EmitRawLine("    PUSHL 1");
+            routine.EmitRawLine("    PUSH0");
+            routine.EmitRawLine("    PUSH0");
+            routine.EmitRawLine($"    CALL3 {builder.RuntimeLib.Use(StoreWordAtBytePointer)}");
+            routine.EmitRawLine("direct_output_done:");
             routine.EmitRawLine("    RET");
         }
 
@@ -2872,7 +3163,7 @@ namespace Zilf.Emit.Cornerstone
             routine.EmitRawLine("    PUSHL 3");
             routine.EmitRawLine("    VPUTB");
             routine.EmitRawLine("    PUSHL 3");
-            routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.usedRoutines[BufferedPrintCharacter].Name}");
+            routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(BufferedPrintCharacter)}");
             routine.EmitRawLine("    PUSHL 5");
             routine.EmitRawLine("    PUSH1");
             routine.EmitRawLine("    ADD");
@@ -2925,7 +3216,7 @@ namespace Zilf.Emit.Cornerstone
             routine.EmitRawLine("    PUSHL 4");
             routine.EmitRawLine("    VPUTB");
             routine.EmitRawLine("    PUSHL 4");
-            routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.usedRoutines[BufferedPrintCharacter].Name}");
+            routine.EmitRawLine($"    CALL1 {builder.RuntimeLib.Use(BufferedPrintCharacter)}");
             routine.EmitRawLine("    PUSHL 5");
             routine.EmitRawLine("    PUSH1");
             routine.EmitRawLine("    ADD");

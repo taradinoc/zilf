@@ -100,6 +100,9 @@ namespace Zilf.Emit.Cornerstone
         private readonly NamedVariable commandOutputChannel;
         private readonly NamedVariable commandFileBypass;
         private readonly NamedVariable commandInputPendingByte;
+        private readonly NamedVariable stream3Table;
+        private readonly NamedVariable stream3StackPointer;
+        private TableBuilder? stream3Stack;
         private TableBuilder? objDataBuffer;
         private TableBuilder? outputBuffer;
         private TableBuilder? outputWindowGeometry;
@@ -128,6 +131,10 @@ namespace Zilf.Emit.Cornerstone
         internal int CommandFileBypassGlobalIndex => commandFileBypass.Index;
 
         internal int CommandInputPendingByteGlobalIndex => commandInputPendingByte.Index;
+
+        internal int Stream3TableGlobalIndex => stream3Table.Index;
+
+        internal int Stream3StackPointerGlobalIndex => stream3StackPointer.Index;
 
         internal int EmulatedZMachineVersion => ((CornerstoneGameOptions)Options).ZMachineVersion;
 
@@ -176,6 +183,12 @@ namespace Zilf.Emit.Cornerstone
 
             commandInputPendingByte = AddGlobal("__COMMAND_INPUT_PENDING_BYTE");
             commandInputPendingByte.DefaultValue = MakeOperand(FalseSentinel);
+
+            stream3Table = AddGlobal("__STREAM3_TABLE");
+            stream3Table.DefaultValue = MakeOperand(FalseSentinel);
+
+            stream3StackPointer = AddGlobal("__STREAM3_SP");
+            stream3StackPointer.DefaultValue = Zero;
         }
 
         public IGameOptions Options { get; }
@@ -486,6 +499,22 @@ namespace Zilf.Emit.Cornerstone
 
             tables.Add(commandFileTransferBuffer);
             return commandFileTransferBuffer.Name;
+        }
+
+        internal string EnsureStream3StackName()
+        {
+            if (stream3Stack != null)
+                return stream3Stack.Name;
+
+            stream3Stack = new TableBuilder("__STREAM3_STACK", pure: false);
+            for (var i = 0; i < 16; i++)
+            {
+                stream3Stack.AddWord(0);  // saved table address
+                stream3Stack.AddWord(0);  // saved character count
+            }
+
+            tables.Add(stream3Stack);
+            return stream3Stack.Name;
         }
 
         private NamedConstant? FindConstant(string name) =>
