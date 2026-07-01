@@ -386,6 +386,7 @@ Returns:
     <REMOVE .O>
     <FREE-RASCAL-ITEM .O>
     <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+    <SET TOTAL <APPLY-GOLD-MODIFIER .TOTAL>>
     <SETG PLAYER-GOLD <+ ,PLAYER-GOLD .TOTAL>>
     <LOG "You pick up " N .TOTAL " gold pieces." CR>
     <RTRUE>>
@@ -588,6 +589,32 @@ Returns:
            <SETG PLAYER-TORPOR-TURNS 0>
            <SETG PLAYER-HUSTLE-TURNS ,HUSTLE-POTION-DURATION>
            <TELL/LOG .LOG? "You surge with restless energy." CR>)
+          (<==? .TYPE ,POTION-RAGING>
+           <SETG PLAYER-RAGING-TURNS ,RAGING-POTION-DURATION>
+           <TELL/LOG .LOG? "Fury blazes through your veins." CR>)
+          (<==? .TYPE ,POTION-ARMOUR>
+           <SETG PLAYER-ARMOUR-TURNS ,ARMOUR-POTION-DURATION>
+           <TELL/LOG .LOG? "A magical shell encases you." CR>)
+          (<==? .TYPE ,POTION-VIGOUR>
+           <SETG PLAYER-TORPOR-TURNS 0>
+           <SETG PLAYER-BLEEDING-TURNS 0>
+           <SETG PLAYER-STATS-HIDDEN-TURNS 0>
+           <SETG PLAYER-VIGOUR-TURNS ,VIGOUR-POTION-DURATION>
+           <TELL/LOG .LOG? "You feel invigorated." CR>)
+          (<==? .TYPE ,POTION-EXCESS>
+           <SETG PLAYER-EXCESS-TURNS ,EXCESS-POTION-DURATION>
+           <TELL/LOG .LOG? "Gold suddenly seems more plentiful." CR>)
+          (<==? .TYPE ,POTION-ALLURE>
+           <SETG PLAYER-ALLURE-TURNS ,ALLURE-POTION-DURATION>
+           <TELL/LOG .LOG? "You radiate charm and influence." CR>)
+          (<==? .TYPE ,POTION-SCHEMA>
+           <REVEAL-ENTIRE-FLOOR>
+           <MARK-ALL-DIRTY>
+           <TELL/LOG .LOG? "The floor layout imprints on your mind." CR>)
+          (<==? .TYPE ,POTION-ACUMEN>
+           <SETG PLAYER-ACUMEN-TURNS ,ACUMEN-POTION-DURATION>
+           <MARK-ALL-DIRTY>
+           <TELL/LOG .LOG? "Hidden details of the dungeon reveal themselves." CR>)
           (ELSE <TELL/LOG .LOG? "Nothing seems to happen." CR>)>
     <RTRUE>>
 
@@ -622,6 +649,82 @@ Returns:
                   <LOG "Your rush begins to ebb." CR>)
                  (<==? ,PLAYER-HUSTLE-TURNS 0>
             <LOG "Your burst of speed wears off." CR>)>)>
+    ;"potion of raging"
+    <COND (<G? ,PLAYER-RAGING-TURNS 0>
+           <SETG PLAYER-RAGING-TURNS <- ,PLAYER-RAGING-TURNS 1>>
+           <COND (<==? ,PLAYER-RAGING-TURNS ,POTION-TIMER-WARNING-TURNS>
+                  <LOG "Your fury begins to subside." CR>)
+                 (<==? ,PLAYER-RAGING-TURNS 0>
+                  <LOG "The rage leaves you." CR>)>)>
+    ;"potion of armour"
+    <COND (<G? ,PLAYER-ARMOUR-TURNS 0>
+           <SETG PLAYER-ARMOUR-TURNS <- ,PLAYER-ARMOUR-TURNS 1>>
+           <COND (<==? ,PLAYER-ARMOUR-TURNS ,POTION-TIMER-WARNING-TURNS>
+                  <LOG "The magical shell begins to crack." CR>)
+                 (<==? ,PLAYER-ARMOUR-TURNS 0>
+                  <LOG "Your armour dissipates." CR>)>)>
+    ;"potion of vigour"
+    <COND (<G? ,PLAYER-VIGOUR-TURNS 0>
+           <SETG PLAYER-VIGOUR-TURNS <- ,PLAYER-VIGOUR-TURNS 1>>
+           <COND (<G? ,PLAYER-VIGOUR-TURNS 0>
+                  <SETG PLAYER-HP <+ ,PLAYER-HP 3>>
+                  <HONORS-NOTE-PLAYER-HP>
+                  <COND (<G? ,PLAYER-HP ,PLAYER-MAX-HP>
+                         <SETG PLAYER-HP ,PLAYER-MAX-HP>)>)>
+           <COND (<==? ,PLAYER-VIGOUR-TURNS ,POTION-TIMER-WARNING-TURNS>
+                  <LOG "Your vigour begins to wane." CR>)
+                 (<==? ,PLAYER-VIGOUR-TURNS 0>
+                  <LOG "Your vigour fades." CR>)>)>
+    ;"potion of excess"
+    <COND (<G? ,PLAYER-EXCESS-TURNS 0>
+           <SETG PLAYER-EXCESS-TURNS <- ,PLAYER-EXCESS-TURNS 1>>
+           <COND (<==? ,PLAYER-EXCESS-TURNS ,POTION-TIMER-WARNING-TURNS>
+                  <LOG "Gold begins to lose its luster." CR>)
+                 (<==? ,PLAYER-EXCESS-TURNS 0>
+                  <LOG "Gold returns to normal." CR>)>)>
+    ;"potion of allure"
+    <COND (<G? ,PLAYER-ALLURE-TURNS 0>
+           <SETG PLAYER-ALLURE-TURNS <- ,PLAYER-ALLURE-TURNS 1>>
+           <COND (<==? ,PLAYER-ALLURE-TURNS ,POTION-TIMER-WARNING-TURNS>
+                  <LOG "Your charm begins to fade." CR>)
+                 (<==? ,PLAYER-ALLURE-TURNS 0>
+                  <LOG "Your charm wears off." CR>)>)>
+    ;"potion of acumen"
+    <COND (<G? ,PLAYER-ACUMEN-TURNS 0>
+           <SETG PLAYER-ACUMEN-TURNS <- ,PLAYER-ACUMEN-TURNS 1>>
+           <COND (<==? ,PLAYER-ACUMEN-TURNS ,POTION-TIMER-WARNING-TURNS>
+                  <LOG "Your insight begins to cloud." CR>)
+                 (<==? ,PLAYER-ACUMEN-TURNS 0>
+                  <MARK-ALL-DIRTY>
+                  <LOG "Your insight fades." CR>)>)>
+    ;"bleeding"
+    <COND (<G? ,PLAYER-BLEEDING-TURNS 0>
+           <SETG PLAYER-BLEEDING-TURNS <- ,PLAYER-BLEEDING-TURNS 1>>
+           <SETG PLAYER-HP <- ,PLAYER-HP 1>>
+           <HONORS-NOTE-PLAYER-HP>
+           <LOG "You bleed." CR>
+           <CHECK-END>
+           <COND (<==? ,PLAYER-BLEEDING-TURNS 0>
+                  <LOG "Your bleeding stops." CR>)>)>
+    ;"gold scarcity"
+    <COND (<G? ,PLAYER-GOLD-SCARCITY-TURNS 0>
+           <SETG PLAYER-GOLD-SCARCITY-TURNS <- ,PLAYER-GOLD-SCARCITY-TURNS 1>>
+           <COND (<==? ,PLAYER-GOLD-SCARCITY-TURNS ,POTION-TIMER-WARNING-TURNS>
+                  <LOG "Gold starts to look plentiful again." CR>)
+                 (<==? ,PLAYER-GOLD-SCARCITY-TURNS 0>
+                  <LOG "Gold returns to normal." CR>)>)>
+    ;"trader markup"
+    <COND (<G? ,PLAYER-TRADER-MARKUP-TURNS 0>
+           <SETG PLAYER-TRADER-MARKUP-TURNS <- ,PLAYER-TRADER-MARKUP-TURNS 1>>
+           <COND (<==? ,PLAYER-TRADER-MARKUP-TURNS ,POTION-TIMER-WARNING-TURNS>
+                  <LOG "Trader prices begin to settle." CR>)
+                 (<==? ,PLAYER-TRADER-MARKUP-TURNS 0>
+                  <LOG "Trader prices return to normal." CR>)>)>
+    ;"stats hidden"
+    <COND (<G? ,PLAYER-STATS-HIDDEN-TURNS 0>
+           <SETG PLAYER-STATS-HIDDEN-TURNS <- ,PLAYER-STATS-HIDDEN-TURNS 1>>
+           <COND (<==? ,PLAYER-STATS-HIDDEN-TURNS 0>
+                  <LOG "You can read your stats again." CR>)>)>
         <RTRUE>>
 
 ;"Drinks a potion given by color code, applying its effect and handling discovery.
@@ -635,7 +738,11 @@ Returns:
 <ROUTINE DRINK-POTION-COLOR (COLOR FLAGS "AUX" DISC TYPE LOG?)
     <SET LOG? <ANDB .FLAGS ,POTIONFX-FL-LOG>>
 
-    <COND (<OR <L? .COLOR 1> <G? .COLOR ,POTION-COLOR-COUNT>>
+    ;"Fixed potions (ITID > POTION-COLOR-COUNT) are always known."
+    <COND (<G? .COLOR ,POTION-COLOR-COUNT>
+           <SET DISC T>
+           <SET TYPE .COLOR>)
+          (<OR <L? .COLOR 1> <G? .COLOR ,POTION-COLOR-COUNT>>
            <SET DISC T>
            <SET TYPE 0>)
           (ELSE
@@ -643,7 +750,7 @@ Returns:
            <SET TYPE <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>>>)>
 
     <TELL/LOG .LOG? "You drink the ">
-    <COND (<AND <G? .COLOR 0> <L=? .COLOR ,POTION-COLOR-COUNT>>
+    <COND (<AND <G? .COLOR 0> <L=? .COLOR ,POTION-TYPE-COUNT>>
            <TELL/LOG .LOG? POTION-DISPLAY-NAME .COLOR>)
           (ELSE <TELL/LOG .LOG? "potion">)>
     <TELL/LOG .LOG? "." CR>

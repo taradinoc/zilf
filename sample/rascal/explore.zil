@@ -91,6 +91,41 @@ leaving room-tracking stuck in the previous state."
          <REVEAL-ROOM .RID>)>
   <RTRUE>>
 
+;"Reveals every tile on the current floor (potion of schema, etc.).
+  Also marks all rooms as discovered for room-discovery tracking.
+
+Returns:
+  T."
+
+<ROUTINE REVEAL-ENTIRE-FLOOR ("AUX" X Y IDX)
+    <SET Y 1>
+    <REPEAT ()
+        <COND (<G? .Y ,MAP-H> <RETURN T>)>
+        <SET X 1>
+        <REPEAT ()
+            <COND (<G? .X ,MAP-W>
+                   <SET Y <+ .Y 1>>
+                   <RETURN>)>
+            <COND (<NOT <REVEALED? .X .Y>>
+                   <SET IDX <MAP-INDEX .X .Y>>
+                   <REVEAL-IDX .IDX>)>
+            <SET X <+ .X 1>>>>
+    ;"Mark all rooms on the floor as discovered."
+    <DO (RID 1 ,MAX-ROOMS)
+        <COND (<AND <G? .RID 0>
+                    <L=? .RID ,MAX-ROOMS>
+                    <L=? ,CURRENT-FLOOR ,MAX-FLOORS>
+                    <L=? <GETB ,FLOOR-ROOM-DISCOVERED
+                               <ROOMDISC-IDX ,CURRENT-FLOOR .RID>>
+                         0>>
+               <PUTB ,FLOOR-ROOM-DISCOVERED
+                     <ROOMDISC-IDX ,CURRENT-FLOOR .RID>
+                     1>
+               <SETG DISCOVERED-ROOMS <+ ,DISCOVERED-ROOMS 1>>
+               <SETG STATS-ROOMS-DISCOVERED-TOTAL
+                   <+ ,STATS-ROOMS-DISCOVERED-TOTAL 1>>)>>
+    <RTRUE>>
+
 ;"Attempts to descend stairs to the next floor (>) if standing on down stairs.
 
 Args:
@@ -395,6 +430,7 @@ Reveals, picks up any items on the tile, and updates room discovery."
     <TRY-PICKUP-FOOD>
     <TRY-OPEN-COFFER>
     <TRY-PICKUP-GOLD>
+    <TRY-ACTIVATE-ALTAR>
     <TRY-ACTIVATE-SHRINE>
     <COND (<AND <G? <ROOMID-AT ,PLAYER-X ,PLAYER-Y> 0>
                 <N==? <ROOMID-AT ,PLAYER-X ,PLAYER-Y> ,CURRENT-ROOM>>

@@ -69,6 +69,11 @@ discovered and will display by effect name instead of color name."
 <GLOBAL SHRINE-OFFER2-ENCH 0>
 <GLOBAL SHRINE-OFFER2-AMT 0>
 
+;"Altar encounter state globals."
+<GLOBAL ALTAR-STATE 0>          ;"0=inactive, 1=choosing-category, 2=choosing-sacrifice"
+<GLOBAL ACTIVE-ALTAR-OBJ 0>     ;"the altar item object being interacted with"
+<GLOBAL ACTIVE-ALTAR-CATEGORY 0>;"chosen category (ALTAR-CATEGORY-*)"
+
 <GLOBAL SEED-HI 0>
 <GLOBAL SEED-LO 0>
 
@@ -89,6 +94,17 @@ discovered and will display by effect name instead of color name."
 <GLOBAL PLAYER-VISION-TURNS 0>
 <GLOBAL PLAYER-TORPOR-TURNS 0>
 <GLOBAL PLAYER-HUSTLE-TURNS 0>
+
+<GLOBAL PLAYER-RAGING-TURNS 0>
+<GLOBAL PLAYER-ARMOUR-TURNS 0>
+<GLOBAL PLAYER-VIGOUR-TURNS 0>
+<GLOBAL PLAYER-EXCESS-TURNS 0>
+<GLOBAL PLAYER-ALLURE-TURNS 0>
+<GLOBAL PLAYER-ACUMEN-TURNS 0>
+<GLOBAL PLAYER-BLEEDING-TURNS 0>
+<GLOBAL PLAYER-GOLD-SCARCITY-TURNS 0>
+<GLOBAL PLAYER-TRADER-MARKUP-TURNS 0>
+<GLOBAL PLAYER-STATS-HIDDEN-TURNS 0>
 
 <GLOBAL GAME-OVER? <>>
 <GLOBAL YOU-WIN? <>>
@@ -466,6 +482,13 @@ Returns the item object, or 0 if none."
     <SET O <SHRINE-OBJ-AT .X .Y>>
     <AND <G? .O 0> <NOT <FSET? .O ,OPENBIT>>>>
 
+<ROUTINE ALTAR-OBJ-AT (X Y)
+    <ITEM-OBJ-AT .X .Y ,ITEMKIND-ALTAR>>
+
+<ROUTINE ALTAR-ACTIVE-AT? (X Y "AUX" O)
+    <SET O <ALTAR-OBJ-AT .X .Y>>
+    <AND <G? .O 0> <L=? <GETP .O ,P?R-ITID> 0>>>
+
 <ROUTINE ADD-PENDING-KEY (F LOCKTYPE AVOIDRID "AUX" O)
     <SET O <ALLOC-RASCAL-ITEM>>
     <COND (<NOT .O> <RETURN 0>)>
@@ -502,6 +525,19 @@ Returns the item object, or 0 if none."
     <PUTP .O ,P?R-Y .Y>
     <MOVE .O <FLOOR-OBJ .F>>
     <FCLEAR .O ,OPENBIT>
+    .O>
+
+<ROUTINE ADD-ALTAR (F X Y "AUX" O)
+    <SET O <ALLOC-RASCAL-ITEM>>
+    <COND (<NOT .O> <RETURN 0>)>
+    <PUTP .O ,P?R-ITKIND ,ITEMKIND-ALTAR>
+    <PUTP .O ,P?R-ITID 0>  ;"0 = unused, 1 = consumed"
+    <PUTP .O ,P?R-ITLVL 0>
+    <PUTP .O ,P?R-ITENCH 0>
+    <PUTP .O ,P?R-ITAMT 0>
+    <PUTP .O ,P?R-X .X>
+    <PUTP .O ,P?R-Y .Y>
+    <MOVE .O <FLOOR-OBJ .F>>
     .O>
 
 <ROUTINE ADD-COFFER (F X Y SUBTYPE GOLD "AUX" O)
@@ -910,6 +946,45 @@ Returns the item object, or 0 if none."
                            <SET DX <+ .DX 1>>>>)>
             <SET X <+ .X 1>>>>>
 
+;"Place altars in eligible nooks on a floor. Mirrors PRECOMPUTE-SHRINES but with
+  ALTAR-SPAWN-PCT (20%). Altars are placed before shrines so they get first pick
+  of available nooks.
+
+Args:
+  F: Floor number (1-based).
+
+Returns:
+  T."
+
+<ROUTINE PRECOMPUTE-ALTARS-FOR-CURRENT-FLOOR (F "AUX" X Y DX DY CX CY)
+    <SET Y 1>
+    <REPEAT ()
+        <COND (<G? .Y ,MAP-H> <RTRUE>)>
+        <SET X 1>
+        <REPEAT ()
+            <COND (<G? .X ,MAP-W>
+                   <SET Y <+ .Y 1>>
+                   <RETURN>)>
+            <COND (<==? <TILE-AT .X .Y> ,TILE-DOOR>
+                   <SET DY -1>
+                   <REPEAT ()
+                       <COND (<G? .DY 1> <RETURN>)>
+                       <SET DX -1>
+                       <REPEAT ()
+                           <COND (<G? .DX 1>
+                                  <SET DY <+ .DY 1>>
+                                  <RETURN>)>
+                           <COND (<NOT <AND <==? .DX 0> <==? .DY 0>>>
+                                  <SET CX <+ .X .DX>>
+                                  <SET CY <+ .Y .DY>>
+                                  <COND (<AND <SHRINE-NOOK-CANDIDATE? .CX .CY>
+                                              <L=? <ALTAR-OBJ-AT .CX .CY> 0>
+                                              <L=? <RNG 100> ,ALTAR-SPAWN-PCT>>
+                                         <COND (<ADD-ALTAR .F .CX .CY>
+                                                <FORCE-PASSABLE .CX .CY>)>)>)>
+                           <SET DX <+ .DX 1>>>>)>
+            <SET X <+ .X 1>>>>>
+
 ;"Pick a key floor for a locked door based on the lock metal.
 
 Golden and silver keys may appear on any floor.
@@ -1126,6 +1201,7 @@ This simulates a full descent so keys can be placed on earlier floors."
                                        .LOCKTYPE
                                        <COND (<==? .CHOICE .F> .RID)
                                              (ELSE 0)>>)>)>
+        <PRECOMPUTE-ALTARS-FOR-CURRENT-FLOOR .F>
         <PRECOMPUTE-SHRINES-FOR-CURRENT-FLOOR .F>>
     <RTRUE>>
 
@@ -1340,6 +1416,500 @@ Locked doors and keys are created during startup precompute."
            <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
            <RTRUE>)>
     <RFALSE>>
+
+;"Altar encounter system"
+
+;"Computes the sacrifice value of an inventory item for altar use.
+
+Args:
+  O: Item object.
+
+Returns:
+  Sacrifice value (positive integer)."
+
+<ROUTINE ALTAR-SACRIFICE-VALUE (O "AUX" K ID LVL ENCH PRICE)
+    <SET K <GETP .O ,P?R-ITKIND>>
+    <SET ID <GETP .O ,P?R-ITID>>
+    <SET LVL <GETP .O ,P?R-ITLVL>>
+    <SET ENCH <GETP .O ,P?R-ITENCH>>
+    <SET PRICE <TRADER-BUY-PRICE .K .ID .LVL .ENCH>>
+    ;"Preferred-category multiplier."
+    <COND (<OR <AND <==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-COMBAT>
+                    <==? .K ,ITEMKIND-WEAPON>>
+               <AND <==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-HEALTH>
+                    <==? .K ,ITEMKIND-FOOD>>
+               <AND <==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-WEALTH>
+                    <==? .K ,ITEMKIND-KEY>>
+               <AND <==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-WISDOM>
+                    <==? .K ,ITEMKIND-POTION>>>
+           <SET PRICE <* .PRICE ,ALTAR-PREFERRED-MULTIPLIER>>)>
+    .PRICE>
+
+;"Computes bad/neutral/good outcome chances based on sacrifice value.
+  Results are stored in ALTAR-CHANCE-BAD, ALTAR-CHANCE-GOOD (neutral = 100 - both)."
+
+<GLOBAL ALTAR-CHANCE-BAD 0>
+<GLOBAL ALTAR-CHANCE-GOOD 0>
+
+<ROUTINE ALTAR-GET-CHANCES (VALUE "AUX" T)
+    <COND (<L=? .VALUE ,ALTAR-INSULTING-THRESHOLD>
+           <SETG ALTAR-CHANCE-BAD 85>
+           <SETG ALTAR-CHANCE-GOOD 2>)
+          (<G=? .VALUE ,ALTAR-PLEASING-THRESHOLD>
+           <SETG ALTAR-CHANCE-BAD 2>
+           <SETG ALTAR-CHANCE-GOOD 85>)
+          (ELSE
+           ;"Linear interpolation between low and high anchors."
+           <SET T </ <- .VALUE ,ALTAR-INSULTING-THRESHOLD>
+                      <- ,ALTAR-PLEASING-THRESHOLD ,ALTAR-INSULTING-THRESHOLD>>>
+           <SETG ALTAR-CHANCE-BAD <- 85 <* 83 .T>>>
+           <SETG ALTAR-CHANCE-GOOD <+ 2 <* 83 .T>>>)>
+    <RTRUE>>
+
+;"Step onto an altar, initiating the encounter.
+
+Returns:
+  T if an altar was activated; FALSE otherwise."
+
+<ROUTINE TRY-ACTIVATE-ALTAR ("AUX" O C SLOT)
+    <SET O <ALTAR-OBJ-AT ,PLAYER-X ,PLAYER-Y>>
+    <COND (<L=? .O 0> <RFALSE>)>
+    ;"Already consumed."
+    <COND (<G? <GETP .O ,P?R-ITID> 0>
+           <LOG "The altar is quiet." CR>
+           <RFALSE>)>
+
+    <SETG ACTIVE-ALTAR-OBJ .O>
+    <SETG ALTAR-STATE 1>
+    <SET C <POPUP-ALTAR-CATEGORY-GETCHAR>>
+    <COND (<==? .C !\1> <SETG ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-COMBAT>)
+          (<==? .C !\2> <SETG ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-HEALTH>)
+          (<==? .C !\3> <SETG ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-WEALTH>)
+          (<==? .C !\4> <SETG ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-WISDOM>)
+          (ELSE <SETG ALTAR-STATE 0> <SETG ACTIVE-ALTAR-OBJ 0> <RFALSE>)>
+
+    <SETG ALTAR-STATE 2>
+    <SET C <POPUP-ALTAR-SACRIFICE-GETCHAR>>
+    <COND (<==? .C !\Q !\q>
+           <SETG ALTAR-STATE 0> <SETG ACTIVE-ALTAR-OBJ 0>
+           <LOG "You leave the altar unanswered." CR>
+           <RFALSE>)>
+
+    <SET SLOT <DIGIT-TO-SLOT .C>>
+    <COND (<OR <L? .SLOT 1> <G? .SLOT ,INV-SIZE>>
+           <SETG ALTAR-STATE 0> <SETG ACTIVE-ALTAR-OBJ 0>
+           <RFALSE>)>
+
+    <RESOLVE-ALTAR-SACRIFICE .SLOT>
+    <RTRUE>>
+
+;"Resolves an altar sacrifice from the given inventory slot.
+
+Args:
+  SLOT: Inventory slot number (1-based).
+
+Returns:
+  T."
+
+<ROUTINE RESOLVE-ALTAR-SACRIFICE (SLOT "AUX" O V ROLL NEUTRAL)
+    <SET O <INV-NTH-OBJ .SLOT>>
+    <COND (<NOT .O>
+           <SETG ALTAR-STATE 0> <SETG ACTIVE-ALTAR-OBJ 0>
+           <LOG "The altar rejects your empty offering." CR>
+           <RTRUE>)>
+
+    <SET V <ALTAR-SACRIFICE-VALUE .O>>
+    ;"Log the sacrifice before removing the item, so ITEM-NAME still works."
+    <LOG "You place the " ITEM-NAME .O
+         " on the altar, and it vanishes in a puff of smoke." CR>
+    ;"Remove the sacrificed item."
+    <COND (<==? ,EQUIPPED-WEAPON .O> <SETG EQUIPPED-WEAPON <>>)>
+    <INV-CLEAR-SLOT .SLOT>
+    <REMOVE .O>
+    <FREE-RASCAL-ITEM .O>
+
+    <ALTAR-GET-CHANCES .V>
+    <SET ROLL <RNG 100>>
+    <SET NEUTRAL <- 100 <+ ,ALTAR-CHANCE-BAD ,ALTAR-CHANCE-GOOD>>>
+
+    <COND (<L=? .ROLL ,ALTAR-CHANCE-BAD>
+           <COND (<ALTAR-APPLY-ANTIBOON>)
+                 (ELSE
+                  <LOG "The altar accepts your sacrifice with an unimpressed silence." CR>)>)
+          (<L=? .ROLL <+ ,ALTAR-CHANCE-BAD .NEUTRAL>>
+           <LOG "The altar accepts your sacrifice with an unimpressed silence." CR>)
+          (ELSE
+           <COND (<ALTAR-APPLY-BOON>)
+                 (ELSE
+                  <LOG "The altar accepts your sacrifice with an unimpressed silence." CR>)>)>
+
+    ;"Consume the altar."
+    <PUTP ,ACTIVE-ALTAR-OBJ ,P?R-ITID 1>
+    <MARK-DIRTY ,PLAYER-X ,PLAYER-Y>
+    <SETG ALTAR-STATE 0>
+    <SETG ACTIVE-ALTAR-OBJ 0>
+    <SETG ACTIVE-ALTAR-CATEGORY 0>
+    <RTRUE>>
+
+;"Apply a random boon based on the chosen altar category.
+  Returns T if a boon was applied, FALSE if no candidates were valid."
+
+<ROUTINE ALTAR-APPLY-BOON ()
+    <COND (<==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-COMBAT>
+           <ALTAR-APPLY-COMBAT-BOON> <RTRUE>)
+          (<==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-HEALTH>
+           <ALTAR-APPLY-HEALTH-BOON> <RTRUE>)
+          (<==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-WEALTH>
+           <ALTAR-APPLY-WEALTH-BOON> <RTRUE>)
+          (<==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-WISDOM>
+           <ALTAR-APPLY-WISDOM-BOON> <RTRUE>)
+          (ELSE <RFALSE>)>>
+
+;"Apply a random anti-boon based on the chosen altar category.
+  Returns T if an anti-boon was applied, FALSE if no candidates were valid."
+
+<ROUTINE ALTAR-APPLY-ANTIBOON ()
+    <COND (<==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-COMBAT>
+           <ALTAR-APPLY-COMBAT-ANTIBOON>)
+          (<==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-HEALTH>
+           <ALTAR-APPLY-HEALTH-ANTIBOON> <RTRUE>)
+          (<==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-WEALTH>
+           <ALTAR-APPLY-WEALTH-ANTIBOON> <RTRUE>)
+          (<==? ,ACTIVE-ALTAR-CATEGORY ,ALTAR-CATEGORY-WISDOM>
+           <ALTAR-APPLY-WISDOM-ANTIBOON> <RTRUE>)
+          (ELSE <RFALSE>)>>
+
+;"Helper: grants a fixed potion type, dropping it near the player if the pack is full."
+
+<ROUTINE ALTAR-GRANT-POTION (POTTYPE "AUX" O)
+    <SET O <INV-ADD ,ITEMKIND-POTION .POTTYPE>>
+    <COND (<NOT .O>
+           <DROP-POTION-NEAR ,PLAYER-X ,PLAYER-Y .POTTYPE>)>
+    <LOG "The altar grants you a " POTION-DISPLAY-NAME .POTTYPE "." CR>
+    <RTRUE>>
+
+;"Helper: returns T if the player has at least one enchanted weapon."
+
+<ROUTINE HAS-ENCHANTED-WEAPON? ()
+    <G? <ALTAR-FIND-ENCHANTED-WEAPON> 0>>
+
+;"Helper: returns T if the player has food that is not already caviar."
+
+<ROUTINE HAS-UPGRADEABLE-FOOD? ("AUX" O)
+    <DO (I 1 ,INV-SIZE)
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (<AND .O <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-FOOD>
+                    <N==? <GETP .O ,P?R-ITID> ,FOOD-CAVIAR>>
+               <RTRUE>)>>
+    <RFALSE>>
+
+;"Helper: returns T if the player has food that is not grapes or banana."
+
+<ROUTINE HAS-SPOILABLE-FOOD? ("AUX" O ID)
+    <DO (I 1 ,INV-SIZE)
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (<AND .O <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-FOOD>>
+               <SET ID <GETP .O ,P?R-ITID>>
+               <COND (<AND <N==? .ID ,FOOD-GRAPES> <N==? .ID ,FOOD-BANANA>>
+                      <RTRUE>)>)>>
+    <RFALSE>>
+
+;"Combat Boons:
+  1) +2 enchant to a random weapon
+  2) Grant a potion of raging
+  3) +1 strength"
+
+<ROUTINE ALTAR-APPLY-COMBAT-BOON ("AUX" PICK)
+    <SET PICK <RNG 3>>
+    <COND (<==? .PICK 1> <ALTAR-BOON-ENCHANT-WEAPON>)
+          (<==? .PICK 2> <ALTAR-BOON-GRANT-RAGING>)
+          (ELSE <ALTAR-BOON-STRENGTH>)>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-ENCHANT-WEAPON ("AUX" O ENCH)
+    <SET O <ALTAR-FIND-ENCHANTED-WEAPON>>
+    <SET ENCH <GETP .O ,P?R-ITENCH>>
+    <SET ENCH <+ .ENCH 2>>
+    <COND (<G? .ENCH 255> <SET ENCH 255>)>
+    <PUTP .O ,P?R-ITENCH .ENCH>
+    <LOG "Your " WEAPON-NAME <GETP .O ,P?R-ITID> " gleams with magical energy." CR>
+    <RTRUE>>
+
+<ROUTINE ALTAR-FIND-ENCHANTED-WEAPON ("AUX" O)
+    <COND (<AND ,EQUIPPED-WEAPON <G? <GETP ,EQUIPPED-WEAPON ,P?R-ITENCH> 0>>
+           ,EQUIPPED-WEAPON)>
+    <DO (I 1 ,INV-SIZE)
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (<AND .O <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-WEAPON>
+                    <G? <GETP .O ,P?R-ITENCH> 0>>
+               <RETURN .O>)>>
+    ;"Fallback: any weapon, enchanted or not."
+    <DO (I 1 ,INV-SIZE)
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (<AND .O <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-WEAPON>>
+               <RETURN .O>)>>
+    0>
+
+<ROUTINE ALTAR-BOON-GRANT-RAGING ()
+    <ALTAR-GRANT-POTION ,POTION-RAGING>
+    <LOG "You blaze with white-hot fury." CR>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-STRENGTH ()
+    <SETG PLAYER-STR <+ ,PLAYER-STR 1>>
+    ;"Boost equipped weapon level too."
+    <COND (<AND ,EQUIPPED-WEAPON
+                <==? <GETP ,EQUIPPED-WEAPON ,P?R-ITKIND> ,ITEMKIND-WEAPON>>
+           <PUTP ,EQUIPPED-WEAPON ,P?R-ITLVL
+               <+ <GETP ,EQUIPPED-WEAPON ,P?R-ITLVL> 1>>)>
+    <LOG "Power surges through your arms. Your strength is now "
+         N ,PLAYER-STR "." CR>
+    <RTRUE>>
+
+;"Combat Anti-Boons:
+  1) Disenchant a random weapon (requires enchanted weapon)
+  2) -1 strength (requires strength > 1)"
+
+<ROUTINE ALTAR-APPLY-COMBAT-ANTIBOON ("AUX" PICK HAS-DISENCH HAS-WEAKEN)
+    <SET HAS-DISENCH <HAS-ENCHANTED-WEAPON?>>
+    <SET HAS-WEAKEN <G? ,PLAYER-STR 1>>
+    <COND (<NOT <OR .HAS-DISENCH .HAS-WEAKEN>> <RFALSE>)>
+    <COND (<AND .HAS-DISENCH .HAS-WEAKEN>
+           <SET PICK <RNG 2>>
+           <COND (<==? .PICK 1> <ALTAR-ANTIBOON-DISENCHANT>)
+                 (ELSE <ALTAR-ANTIBOON-WEAKEN>)>)
+          (.HAS-DISENCH <ALTAR-ANTIBOON-DISENCHANT>)
+          (ELSE <ALTAR-ANTIBOON-WEAKEN>)>
+    <RTRUE>>
+
+<ROUTINE ALTAR-ANTIBOON-DISENCHANT ("AUX" O)
+    <SET O <ALTAR-FIND-ENCHANTED-WEAPON>>
+    <COND (<L=? .O 0> <LOG "Nothing happens." CR> <RTRUE>)>
+    <PUTP .O ,P?R-ITENCH 0>
+    <LOG "The altar drains the magic from your "
+         WEAPON-NAME <GETP .O ,P?R-ITID> "." CR>
+    <RTRUE>>
+
+<ROUTINE ALTAR-ANTIBOON-WEAKEN ()
+    <COND (<G? ,PLAYER-STR 1> <SETG PLAYER-STR <- ,PLAYER-STR 1>>)>
+    <LOG "Your arms suddenly feel weak. Your strength is now "
+         N ,PLAYER-STR "." CR>
+    <RTRUE>>
+
+;"Health Boons:
+  1) +1 defense (always)
+  2) Grant potion of armour (always, drops on floor if full)
+  3) Grant potion of vigour (always, drops on floor if full)
+  4) Convert all food to caviar (requires non-caviar food)
+  5) Grant 2 caviar (always, drops on floor if full)"
+
+<ROUTINE ALTAR-APPLY-HEALTH-BOON ("AUX" PICK HAS-FOOD VALID)
+    <SET HAS-FOOD <HAS-UPGRADEABLE-FOOD?>>
+    <SET VALID <+ 4 <COND (.HAS-FOOD 1) (ELSE 0)>>>
+    <SET PICK <RNG .VALID>>
+    <COND (<==? .PICK 1> <SETG PLAYER-DEF <+ ,PLAYER-DEF 1>>
+                           <LOG "Your skin tingles. Your defense is now "
+                                N ,PLAYER-DEF "." CR>)
+          (<==? .PICK 2> <ALTAR-BOON-GRANT-ARMOUR>)
+          (<==? .PICK 3> <ALTAR-BOON-GRANT-VIGOUR>)
+          (<AND <==? .PICK 4> .HAS-FOOD> <ALTAR-BOON-ENRICH-FOOD>)
+          (ELSE <ALTAR-BOON-CAVIAR-FEAST>)>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-GRANT-ARMOUR ()
+    <ALTAR-GRANT-POTION ,POTION-ARMOUR>
+    <LOG "You feel invincible and unthreatened." CR>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-GRANT-VIGOUR ()
+    <ALTAR-GRANT-POTION ,POTION-VIGOUR>
+    <LOG "You are infused with a healing vigour." CR>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-ENRICH-FOOD ("AUX" O)
+    <DO (I 1 ,INV-SIZE)
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (<AND .O <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-FOOD>>
+               <PUTP .O ,P?R-ITID ,FOOD-CAVIAR>)>>
+    <LOG "Your provisions glisten with impossible richness." CR>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-CAVIAR-FEAST ("AUX" HELD DROPPED O)
+    <SET HELD 0>
+    <SET DROPPED 0>
+    <DO (COUNT 1 2)
+        <SET O <INV-ADD ,ITEMKIND-FOOD ,FOOD-CAVIAR>>
+        <COND (.O <SET HELD <+ .HELD 1>>)
+              (ELSE <COND (<DROP-FOOD-NEAR ,PLAYER-X ,PLAYER-Y ,FOOD-CAVIAR>
+                           <SET DROPPED <+ .DROPPED 1>>)>)>>
+    <COND (<L=? .DROPPED 0>
+           <LOG "The altar lays out a decadent feast, "
+                "which you scoop into your pack." CR>)
+          (ELSE
+           <LOG "The altar lays out a decadent feast. "
+                "You take " N .HELD " caviar and "
+                N .DROPPED " more fall"
+                <COND (<==? .DROPPED 1> "s") (ELSE "")>
+                " nearby." CR>)>
+    <RTRUE>>
+
+;"Health Anti-Boons:
+  1) Set HP to 1 (requires HP > 1)
+  2) Bleeding for 8 turns (always)
+  3) Spoil all food (requires spoilable food)"
+
+<ROUTINE ALTAR-APPLY-HEALTH-ANTIBOON ("AUX" PICK HAS-LASTBREATH HAS-SPOIL VALID)
+    <SET HAS-LASTBREATH <G? ,PLAYER-HP 1>>
+    <SET HAS-SPOIL <HAS-SPOILABLE-FOOD?>>
+    <SET VALID <+ 1 <COND (.HAS-LASTBREATH 1) (ELSE 0)>
+                    <COND (.HAS-SPOIL 1) (ELSE 0)>>>
+    <SET PICK <RNG .VALID>>
+    <COND (<AND <L=? .PICK 1> .HAS-LASTBREATH>
+           <SETG PLAYER-HP 1>
+           <HONORS-NOTE-PLAYER-HP>
+           <LOG "A burst of intense pain knocks you to the floor." CR>)
+          (<OR <AND <L=? .PICK 1> <NOT .HAS-LASTBREATH>>
+               <==? .PICK 2>>
+           <SETG PLAYER-BLEEDING-TURNS ,BLEEDING-DURATION>
+           <LOG "An unseen wound opens and will not quite close." CR>)
+          (ELSE <ALTAR-ANTIBOON-SPOIL-FOOD>)>
+    <RTRUE>>
+
+<ROUTINE ALTAR-ANTIBOON-SPOIL-FOOD ("AUX" O)
+    <DO (I 1 ,INV-SIZE)
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (<AND .O <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-FOOD>>
+               <PUTP .O ,P?R-ITID
+                   <COND (<==? <RNG 2> 1> ,FOOD-BANANA)
+                         (ELSE ,FOOD-GRAPES)>>)>>
+    <LOG "Your food buzzes unnaturally, "
+         "and you can almost smell the nutrition escaping it." CR>
+    <RTRUE>>
+
+;"Wealth Boons:
+  1) Grant potion of excess (always, drops on floor if full)
+  2) Grant potion of allure (always, drops on floor if full)
+  3) +25% gold (requires gold > 0)
+  4) +300 gold (always)"
+
+<ROUTINE ALTAR-APPLY-WEALTH-BOON ("AUX" PICK AMT HAS-GOLD VALID)
+    <SET HAS-GOLD <G? ,PLAYER-GOLD 0>>
+    <SET VALID <+ 3 <COND (.HAS-GOLD 1) (ELSE 0)>>>
+    <SET PICK <RNG .VALID>>
+    <COND (<==? .PICK 1> <ALTAR-BOON-GRANT-EXCESS>)
+          (<==? .PICK 2> <ALTAR-BOON-GRANT-ALLURE>)
+          (<AND <==? .PICK 3> .HAS-GOLD>
+           <SET AMT </ <* ,PLAYER-GOLD 25> 100>>
+           <SET AMT <APPLY-GOLD-MODIFIER .AMT>>
+           <SETG PLAYER-GOLD <+ ,PLAYER-GOLD .AMT>>
+           <LOG "Your pockets bulge with an additional "
+                N .AMT " gold." CR>)
+          (ELSE
+           <SET AMT <APPLY-GOLD-MODIFIER 300>>
+           <SETG PLAYER-GOLD <+ ,PLAYER-GOLD .AMT>>
+           <LOG "The altar conjures up a stack of "
+                N .AMT " gold." CR>)>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-GRANT-EXCESS ()
+    <ALTAR-GRANT-POTION ,POTION-EXCESS>
+    <LOG "The world suddenly feels flush with possibility." CR>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-GRANT-ALLURE ()
+    <ALTAR-GRANT-POTION ,POTION-ALLURE>
+    <LOG "You feel confident enough to talk anyone into anything." CR>
+    <RTRUE>>
+
+;"Wealth Anti-Boons:
+  1) -25% gold (requires gold > 0)
+  2) -150 gold (requires gold > 0)
+  3) Gold scarcity for 80 turns (always)
+  4) Trader markup for 80 turns (always)"
+
+<ROUTINE ALTAR-APPLY-WEALTH-ANTIBOON ("AUX" PICK AMT HAS-GOLD VALID)
+    <SET HAS-GOLD <G? ,PLAYER-GOLD 0>>
+    <SET VALID <+ 2 <COND (.HAS-GOLD 2) (ELSE 0)>>>
+    <SET PICK <RNG .VALID>>
+    <COND (<AND <L=? .PICK 1> .HAS-GOLD>
+           <SET AMT </ <* ,PLAYER-GOLD 25> 100>>
+           <SETG PLAYER-GOLD <- ,PLAYER-GOLD .AMT>>
+           <COND (<L? ,PLAYER-GOLD 0> <SETG PLAYER-GOLD 0>)>
+           <LOG "Your pockets feel lighter, as if "
+                N .AMT " gold simply evaporated." CR>)
+          (<AND <L=? <+ <COND (.HAS-GOLD 1) (ELSE 0)> 1> .PICK> .HAS-GOLD>
+           <SET AMT 150>
+           <COND (<G? .AMT ,PLAYER-GOLD> <SET AMT ,PLAYER-GOLD>)>
+           <SETG PLAYER-GOLD <- ,PLAYER-GOLD .AMT>>
+           <LOG "The altar demands " N .AMT
+                " gold in tribute." CR>)
+          (<OR <AND <L=? .PICK 1> <NOT .HAS-GOLD>>
+               <==? .PICK 2>>
+           <SETG PLAYER-GOLD-SCARCITY-TURNS ,GOLD-SCARCITY-DURATION>
+           <LOG "Future riches suddenly feel much farther away." CR>)
+          (ELSE
+           <SETG PLAYER-TRADER-MARKUP-TURNS ,TRADER-MARKUP-DURATION>
+           <LOG "Merchants will not greet you kindly for a while." CR>)>
+    <RTRUE>>
+
+;"Wisdom Boons:
+  1) Grant potion of schema
+  2) Grant potion of acumen
+  3) Reveal one unidentified potion"
+
+<ROUTINE ALTAR-APPLY-WISDOM-BOON ("AUX" PICK)
+    <SET PICK <RNG 3>>
+    <COND (<==? .PICK 1> <ALTAR-BOON-GRANT-SCHEMA>)
+          (<==? .PICK 2> <ALTAR-BOON-GRANT-ACUMEN>)
+          (ELSE <ALTAR-BOON-IDENTIFY-POTION>)>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-GRANT-SCHEMA ()
+    <ALTAR-GRANT-POTION ,POTION-SCHEMA>
+    <LOG "The current floor unfolds perfectly in your mind." CR>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-GRANT-ACUMEN ()
+    <ALTAR-GRANT-POTION ,POTION-ACUMEN>
+    <LOG "Your mind sharpens to a dangerous edge." CR>
+    <RTRUE>>
+
+<ROUTINE ALTAR-BOON-IDENTIFY-POTION ("AUX" COLOR)
+    <SET COLOR <ALTAR-FIND-UNIDENTIFIED-POTION>>
+    <COND (<L=? .COLOR 0> <LOG "You have no unidentified potions." CR> <RTRUE>)>
+    <PUTB ,POTION-DISCOVERED <- .COLOR 1> 1>
+    <LOG "You instantly know that your "
+         POTION-COLOR-NAME .COLOR " is a "
+         POTION-TYPE-NAME <GETB ,POTION-TYPE-FOR-COLOR <- .COLOR 1>> "." CR>
+    <RTRUE>>
+
+<ROUTINE ALTAR-FIND-UNIDENTIFIED-POTION ("AUX" O COLOR)
+    <DO (I 1 ,INV-SIZE)
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (<AND .O <==? <GETP .O ,P?R-ITKIND> ,ITEMKIND-POTION>>
+               <SET COLOR <GETP .O ,P?R-ITID>>
+               <COND (<AND <G? .COLOR 0>
+                           <L=? .COLOR ,POTION-COLOR-COUNT>
+                           <L=? <GETB ,POTION-DISCOVERED <- .COLOR 1>> 0>>
+                      <RETURN .COLOR>)>)>>
+    0>
+
+;"Wisdom Anti-Boons:
+  1) Scramble potion knowledge
+  2) Shadow current floor
+  3) Hide stats for 50 turns"
+
+<ROUTINE ALTAR-APPLY-WISDOM-ANTIBOON ("AUX" PICK)
+    <SET PICK <RNG 3>>
+    <COND (<==? .PICK 1> <INIT-POTIONS>
+                           <LOG "Your knowledge of potions slips away "
+                                "and reforms into new lies." CR>)
+          (<==? .PICK 2> <SHADOW-CURRENT-FLOOR>
+                           <MARK-ALL-DIRTY>
+                           <LOG "You suddenly feel disoriented." CR>)
+          (ELSE <SETG PLAYER-STATS-HIDDEN-TURNS ,STATS-HIDDEN-DURATION>
+                 <LOG "The altar clouds your sense of self." CR>)>
+    <RTRUE>>
 
 ;"Find a poison potion object at (X,Y), or 0 if none or not poison."
 
@@ -1616,6 +2186,7 @@ Returns:
         <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-KEY>
         <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-LOCKEDDOOR>
         <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-SHRINE>
+        <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-ALTAR>
         <FREE-RASCAL-ITEM-CHILDREN <FLOOR-OBJ .F> ,ITEMKIND-COFFER>
         <PUTB ,TREASURE-ROOM-DOOR-X <- .F 1> 0>
         <PUTB ,TREASURE-ROOM-DOOR-Y <- .F 1> 0>
@@ -1663,6 +2234,16 @@ Returns:
     <SETG PLAYER-VISION-TURNS 0>
     <SETG PLAYER-TORPOR-TURNS 0>
     <SETG PLAYER-HUSTLE-TURNS 0>
+    <SETG PLAYER-RAGING-TURNS 0>
+    <SETG PLAYER-ARMOUR-TURNS 0>
+    <SETG PLAYER-VIGOUR-TURNS 0>
+    <SETG PLAYER-EXCESS-TURNS 0>
+    <SETG PLAYER-ALLURE-TURNS 0>
+    <SETG PLAYER-ACUMEN-TURNS 0>
+    <SETG PLAYER-BLEEDING-TURNS 0>
+    <SETG PLAYER-GOLD-SCARCITY-TURNS 0>
+    <SETG PLAYER-TRADER-MARKUP-TURNS 0>
+    <SETG PLAYER-STATS-HIDDEN-TURNS 0>
     <SETG TRADER-ON? <>>
     <SETG TRADER-X 0>
     <SETG TRADER-Y 0>

@@ -413,7 +413,8 @@ Returns:
         <SET MAX <WEAPON-MAX-DMG .TYPE .LVL .ENCH .S>>
         <SET DMG <+ <- .MIN 1> <RNG <+ <- .MAX .MIN> 1>>>>
         <SET PCT <WEAPON-CRIT-PCT .TYPE>>
-           <COND (<AND <G? .PCT 0> <L=? <RNG 100> .PCT>>
+           <COND (<OR <G? ,PLAYER-RAGING-TURNS 0>
+                     <AND <G? .PCT 0> <L=? <RNG 100> .PCT>>>
                   <SETG LAST-HIT-CRIT? T>
             <SET BONUS <WEAPON-CRIT-BONUS-DMG .TYPE .LVL .ENCH .S>>
             <SET DMG <+ .DMG .BONUS>>)>
@@ -440,7 +441,9 @@ Returns:
     <RTRUE>>
 
 <ROUTINE PLAYER-CRIT-MSG ("AUX" TYPE O)
-    <COND (<G? <SET O <EQUIPPED-WEAPON-OBJ>> 0>
+    <COND (<G? ,PLAYER-RAGING-TURNS 0>
+           "(Your rage fuels the blow!!)")
+          (<G? <SET O <EQUIPPED-WEAPON-OBJ>> 0>
            <SET TYPE <GETP .O ,P?R-ITID>>
            <COND (<==? .TYPE ,WEAPON-DAGGER> "(A ROGUEISH BLOW!!)")
                  (<==? .TYPE ,WEAPON-KATANA> "(A SAMURAI-LIKE BLOW!!)")
@@ -479,10 +482,19 @@ Returns:
 
 <ROUTINE ENEMY-ATTACK-PLAYER (O "AUX" TYPE RAW DMG)
     <COND (<NOT .O> <RTRUE>)>
+    ;"Invisibility: enemies can't attack an invisible player."
+    <COND (<G? ,PLAYER-INVIS-TURNS 0> <RTRUE>)>
+    ;"Armour: negates all damage."
+    <COND (<G? ,PLAYER-ARMOUR-TURNS 0>
+           <LOG "Your armour absorbs the blow." CR>
+           <RTRUE>)>
     <SET TYPE <GETP .O ,P?R-ETYPE>>
     <SETG STATS-ENEMY-ATTACKS <+ ,STATS-ENEMY-ATTACKS 1>>
     <SET RAW <ENEMY-DAMAGE-RAND .TYPE>>
     <SET DMG <APPLY-PLAYER-DEFENSE .RAW>>
+    ;"Raging: halve incoming damage (round up)."
+    <COND (<G? ,PLAYER-RAGING-TURNS 0>
+           <SET DMG </ <+ .DMG 1> 2>>)>
     <COND (<G? .DMG ,STATS-BIGGEST-HIT-TAKEN>
            <SETG STATS-BIGGEST-HIT-TAKEN .DMG>)>
     <SETG STATS-DMG-TAKEN <+ ,STATS-DMG-TAKEN .DMG>>

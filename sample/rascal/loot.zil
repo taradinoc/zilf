@@ -15,6 +15,23 @@
 
 <GLOBAL POTION-COLOR-POOL <ITABLE ,POTION-COLOR-COUNT (BYTE) 0>>
 
+;"Applies Excess/Gold Scarcity modifiers to a gold amount.
+
+Args:
+  AMT: Raw gold amount (positive integer).
+
+Returns:
+  Adjusted gold amount (positive integer)."
+
+<ROUTINE APPLY-GOLD-MODIFIER (AMT "AUX" RESULT)
+    <SET RESULT .AMT>
+    ;"Excess: double gold gains."
+    <COND (<G? ,PLAYER-EXCESS-TURNS 0> <SET RESULT <* .RESULT 2>>)>
+    ;"Gold Scarcity: halve gold gains (round up)."
+    <COND (<G? ,PLAYER-GOLD-SCARCITY-TURNS 0>
+           <SET RESULT </ <+ .RESULT 1> 2>>)>
+    <COND (<L=? .RESULT 0> 1) (ELSE .RESULT)>>
+
 ;"Allowed initial spawn floor ranges per treasure (1-based floors)."
 <GLOBAL TREASURE-MIN-FLOOR
     <PTABLE (BYTE)

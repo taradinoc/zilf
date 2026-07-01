@@ -29,6 +29,8 @@
 <CONSTANT TILE-TRADER !\t>
 <CONSTANT TILE-WEAPON !\)>
 <CONSTANT TILE-COFFER !\n>
+<CONSTANT TILE-ALTAR-ACTIVE !\ä>
+<CONSTANT TILE-ALTAR-INACTIVE !\a>
 <CONSTANT TILE-MIMICK !\u>
 <CONSTANT TILE-BANANA !\b>
 <CONSTANT TILE-CHEESE !\C>
@@ -408,6 +410,10 @@ Returns:
           (<==? .CH ,TILE-SHRINE-ACTIVE>
            <UI-FG ,UI-RGB-TREASURE ,ZCOL-CYAN ,H-BOLD>)
           (<==? .CH ,TILE-SHRINE-INACTIVE>
+           <UI-FG ,UI-RGB-CORRIDOR ,ZCOL-WHITE>)
+          (<==? .CH ,TILE-ALTAR-ACTIVE>
+           <UI-FG ,UI-RGB-TREASURE ,ZCOL-CYAN ,H-BOLD>)
+          (<==? .CH ,TILE-ALTAR-INACTIVE>
            <UI-FG ,UI-RGB-CORRIDOR ,ZCOL-WHITE>)
           (<==? .CH ,TILE-FLOOR> <UI-FG ,UI-RGB-FLOOR ,ZCOL-WHITE>)
           (<==? .CH ,TILE-CORRIDOR> <UI-FG ,UI-RGB-CORRIDOR ,ZCOL-WHITE>)
@@ -956,6 +962,74 @@ Returns:
 
     <POPUP-CLOSE-BOX>
 
+    .C>
+
+;"Displays the altar category selection popup. Returns a character (1-4 or Q)."
+
+<ROUTINE POPUP-ALTAR-CATEGORY-GETCHAR ("AUX" C)
+    <POPUP-OPEN-BOX 54 7 40>
+
+    <CURSET <+ ,POPUP-TOP 1> <+ ,POPUP-LEFT 2>>
+    <TELL "An altar awaits your request.">
+
+    <CURSET <+ ,POPUP-TOP 2> <+ ,POPUP-LEFT 2>>
+    <TELL "Choose a boon:">
+
+    <CURSET <+ ,POPUP-TOP 3> <+ ,POPUP-LEFT 2>>
+    <TELL "1) Combat   2) Health">
+
+    <CURSET <+ ,POPUP-TOP 4> <+ ,POPUP-LEFT 2>>
+    <TELL "3) Wealth   4) Wisdom">
+
+    <CURSET <+ ,POPUP-TOP 5> <+ ,POPUP-LEFT 2>>
+    <TELL "(1-4, Q cancels)">
+
+    <PROG ()
+        <SET C <GETCHAR>>
+        <COND (<==? .C 254> <AGAIN>)>
+        <COND (<OR <==? .C !\1>
+                   <==? .C !\2>
+                   <==? .C !\3>
+                   <==? .C !\4>
+                   <==? .C !\Q>
+                   <==? .C !\q>>
+               <RETURN>)>
+        <AGAIN>>
+
+    <POPUP-CLOSE-BOX>
+    .C>
+
+;"Displays the altar sacrifice selection popup. Shows inventory with sacrifice
+  values. Returns a digit character (0-9) or Q."
+
+<ROUTINE POPUP-ALTAR-SACRIFICE-GETCHAR ("AUX" C O ROW)
+    <POPUP-OPEN-BOX 54 14 40>
+
+    <CURSET <+ ,POPUP-TOP 1> <+ ,POPUP-LEFT 2>>
+    <TELL "Choose a sacrifice:">
+
+    <DO (I 1 ,INV-SIZE)
+        <SET ROW <+ ,POPUP-TOP 1 .I>>
+        <CURSET .ROW <+ ,POPUP-LEFT 2>>
+        <SET O <INV-NTH-OBJ .I>>
+        <COND (.O
+               <COND (<==? .I 10> <TELL "0) ">)
+                     (ELSE <TELL N .I ") ">)>
+               <TELL ITEM-NAME .O>)>>
+
+    <CURSET <+ ,POPUP-TOP 12> <+ ,POPUP-LEFT 2>>
+    <TELL "(0-9 to sacrifice, Q to leave)">
+
+    <PROG ()
+        <SET C <GETCHAR>>
+        <COND (<==? .C 254> <AGAIN>)>
+        <COND (<OR <==? .C !\0>
+                   <==? .C !\Q>
+                   <==? .C !\q>> <RETURN>)>
+        <COND (<DIGIT-TO-SLOT .C> <RETURN>)>
+        <AGAIN>>
+
+    <POPUP-CLOSE-BOX>
     .C>
 
 <CONSTANT ATSIGN-COLOR <RGB 10 25 25>>
@@ -1540,6 +1614,8 @@ Returns:
           (<GOLD-OBJ-AT .X .Y> ,TILE-GOLD)
           (<SHRINE-ACTIVE-AT? .X .Y> ,TILE-SHRINE-ACTIVE)
           (<SHRINE-OBJ-AT .X .Y> ,TILE-SHRINE-INACTIVE)
+          (<ALTAR-ACTIVE-AT? .X .Y> ,TILE-ALTAR-ACTIVE)
+          (<ALTAR-OBJ-AT .X .Y> ,TILE-ALTAR-INACTIVE)
           (<AND <==? .T ,TILE-DOOR> <LOCKED-DOOR-CLOSED-AT? .X .Y>>
            ,TILE-LOCKEDDOOR)
           (ELSE .T)>>

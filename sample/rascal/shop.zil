@@ -58,6 +58,9 @@ Returns:
                (ELSE 1)>>
     <COND (<AND ,EXPERT-MODE? <N==? .KIND ,ITEMKIND-TREASURE>>
            <SET PRICE <* 2 .PRICE>>)> 
+    ;"Trader Markup: trader pays less for your items."
+    <COND (<G? ,PLAYER-TRADER-MARKUP-TURNS 0>
+           <SET PRICE </ <+ .PRICE 1> 2>>)>
     .PRICE>
 
 ;"Computes the trader sell price for an item (what the player pays the trader).
@@ -73,8 +76,12 @@ Args:
 Returns:
   Gold value as a positive integer."
 
-<ROUTINE TRADER-SELL-PRICE (KIND ID LVL ENCH)
-    <* 2 <TRADER-BUY-PRICE .KIND .ID .LVL .ENCH>>>
+<ROUTINE TRADER-SELL-PRICE (KIND ID LVL ENCH "AUX" PRICE)
+    <SET PRICE <* 2 <TRADER-BUY-PRICE .KIND .ID .LVL .ENCH>>>
+    ;"Allure: halve trader sell prices."
+    <COND (<G? ,PLAYER-ALLURE-TURNS 0>
+           <SET PRICE </ <+ .PRICE 1> 2>>)>
+    .PRICE>
 
 <ROUTINE TRINV-ADD-FLOOR (F KIND ID LVL ENCH "AUX" O SLOT)
     <SET SLOT <TRINV-FIRST-FREE-SLOT-FLOOR .F>>
