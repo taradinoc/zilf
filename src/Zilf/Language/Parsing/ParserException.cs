@@ -17,6 +17,7 @@
  */
 
 using System;
+using Zilf.Diagnostics;
 
 namespace Zilf.Language.Parsing
 {
@@ -53,10 +54,10 @@ namespace Zilf.Language.Parsing
         }
     }
 
-    sealed class ExpectedButFound : ParserException
+    class ExpectedButFound : ParserException
     {
-        public ExpectedButFound(string expected, string actual, Exception? innerException = null)
-            : base($"expected {expected} but found {actual}", innerException) { }
+        public ExpectedButFound(string expected, string actual)
+            : base($"expected {expected} but found {actual}") { }
 
         public ExpectedButFound()
         {
@@ -68,6 +69,20 @@ namespace Zilf.Language.Parsing
 
         public ExpectedButFound(string message, Exception innerException) : base(message, innerException)
         {
+        }
+    }
+
+    sealed class MismatchedTerminator(string expected, string actual) : ExpectedButFound(expected, actual)
+    {
+        // Explicitly store it in a field to avoid CS9107
+        private readonly string actual = actual;
+
+        public InterpreterError ToWarning(ISourceLine src)
+        {
+            return new InterpreterError(
+                src,
+                InterpreterMessages.Ignoring_Mismatched_Terminator_0,
+                actual);
         }
     }
 }

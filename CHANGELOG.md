@@ -4,6 +4,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to
 [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- ZILF's behavior when reading a mismatched closing bracket is now closer to
+  MDL's. When executing code read from a file or the REPL, ZILF will ignore a
+  top-level mismatched bracket and issue warning MDL0136. The REPL has been
+  changed to allow input with excess close brackets. When executing in other
+  contexts (e.g. `LPARSE`), ZILF will silently ignore top-level mismatched
+  brackets. Mismatched brackets inside a structure still issue error MDL0100 as
+  before.
+
 ## [1.9] (June 13, 2026)
 
 ### Added

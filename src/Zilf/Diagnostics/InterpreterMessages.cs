@@ -112,13 +112,14 @@ namespace Zilf.Diagnostics
         public const int _0_Unrecognized_Clause_In_Arg_Spec_1 = 131;
         [Error("unrecognized token in syntax pattern: {0}")]
         public const int Unrecognized_Token_In_Syntax_Pattern_0 = 132;
-
         [Error("{0}: \"CALL\" clause must not be combined with other argument bindings")]
         public const int _0_CALL_Clause_Must_Not_Be_Combined_With_Other_Argument_Bindings = 133;
         [Warning("{0}: likely missing closing bracket before nested '{1}'")]
         public const int _0_Likely_Missing_Closing_Bracket_Before_Nested_1 = 134;
         [Error("{0}: required arguments may not have defaults (missing \"OPT\" or \"AUX\"?)")]
         public const int _0_Required_Arguments_May_Not_Have_Defaults_Missing_OPT_Or_AUX = 135;
+        [Warning("ignoring mismatched terminator {0}")]
+        public const int Ignoring_Mismatched_Terminator_0 = 136;
 
         // Type/Format/DECL - 0200
 

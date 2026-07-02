@@ -232,17 +232,22 @@ namespace Zilf
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse(Context ctx, IEnumerable<char> chars)
         {
-            return Parse(ctx, null, chars, null);
+            return Parse(ctx, null, chars, wantWarnings: false, null);
         }
 
         /// <exception cref="InterpreterError">Syntax error.</exception>
         public static IEnumerable<ZilObject> Parse(Context ctx, IEnumerable<char> chars, params ZilObject[] templateParams)
         {
-            return Parse(ctx, null, chars, templateParams);
+            return Parse(ctx, null, chars, wantWarnings: false, templateParams);
+        }
+
+        public static IEnumerable<ZilObject> Parse(Context ctx, ISourceLine? src, IEnumerable<char> chars, params ZilObject[]? templateParams)
+        {
+            return Parse(ctx, src, chars, wantWarnings: false, templateParams);
         }
 
         /// <exception cref="InterpreterError">Syntax error.</exception>
-        public static IEnumerable<ZilObject> Parse(Context ctx, ISourceLine? src, IEnumerable<char> chars, params ZilObject[]? templateParams)
+        public static IEnumerable<ZilObject> Parse(Context ctx, ISourceLine? src, IEnumerable<char> chars, bool wantWarnings, params ZilObject[]? templateParams)
         {
             var parser = new Parser(ctx, src, templateParams);
 
@@ -261,11 +266,22 @@ namespace Zilf
                         yield break;
 
                     case ParserOutputType.SyntaxError:
-                        throw new InterpreterError(
-                            src ?? new FileSourceSpan(ctx.CurrentFile.Path, parser.Line, parser.Column, parser.Line, parser.Column),
-                            InterpreterMessages.Syntax_Error_0, po.Exception.Message);
+                        src ??= new FileSourceSpan(ctx.CurrentFile.Path, parser.Line, parser.Column, parser.Line, parser.Column);
+                        if (po.Exception is MismatchedTerminator mte)
+                        {
+                            if (wantWarnings)
+                            {
+                                // emit the warning and keep parsing
+                                ctx.HandleError(mte.ToWarning(src));
+                            }
+
+                            // silently ignore it
+                            continue;
+                        }
+                        throw new InterpreterError(src, InterpreterMessages.Syntax_Error_0, po.Exception.Message);
 
                     case ParserOutputType.Terminator:
+                        // We probably never get here, because Parser turns it into a SyntaxError
                         throw new InterpreterError(
                             src ?? new FileSourceSpan(ctx.CurrentFile.Path, parser.Line, parser.Column, parser.Line, parser.Column),
                             InterpreterMessages.Syntax_Error_0, "misplaced terminator");
@@ -288,9 +304,9 @@ namespace Zilf
         }
 
         // ReSharper disable once UnusedMethodReturnValue.Global
-        public static ZilObject? Evaluate(Context ctx, Stream stream, bool wantExceptions = false)
+        public static ZilObject? Evaluate(Context ctx, Stream stream, bool wantExceptions = false, bool wantSyntaxWarnings = false)
         {
-            return Evaluate(ctx, ReadAllChars(stream), wantExceptions);
+            return Evaluate(ctx, ReadAllChars(stream), wantExceptions, wantSyntaxWarnings);
         }
 
         /// <summary>
@@ -300,14 +316,16 @@ namespace Zilf
         /// <param name="chars">The code to evaluate.</param>
         /// <param name="wantExceptions"><see langword="true"/> if the method should be allowed to throw
         /// <see cref="InterpreterError"/>, or <see langword="false"/> to catch it.</param>
+        /// <param name="wantSyntaxWarnings"><see langword="true"/> if syntax warnings should be sent to <paramref name="ctx"/> for
+        /// handling, or <see langword="false"/> to silently ignore them.</param>
         /// <returns>The result of evaluating the last object in the code; or <see langword="null"/> if either the code contained
         /// no objects, or <paramref name="wantExceptions"/> was <see langword="false"/> and an <see cref="InterpreterError"/> was caught.</returns>
         [SuppressMessage("Microsoft.Usage", "CA2202:Do not dispose objects multiple times")]
-        public static ZilObject? Evaluate(Context ctx, IEnumerable<char> chars, bool wantExceptions = false)
+        public static ZilObject? Evaluate(Context ctx, IEnumerable<char> chars, bool wantExceptions = false, bool wantSyntaxWarnings = false)
         {
             try
             {
-                var ztree = Parse(ctx, chars);
+                var ztree = Parse(ctx, null, chars, wantWarnings: wantSyntaxWarnings);
 
                 ZilObject? result = null;
                 bool first = true;

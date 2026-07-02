@@ -66,30 +66,33 @@ namespace Zilf.Language.Parsing
 
             try
             {
-            while (true)
-            {
-                var po = ParseOne(chars, out var src);
-
-                switch (po.Type)
+                while (true)
                 {
-                    case ParserOutputType.SyntaxError:
-                    case ParserOutputType.EndOfInput:
-                        yield return po;
-                        yield break;
+                    var po = ParseOne(chars, out var src);
 
-                    case ParserOutputType.Terminator:
-                        yield return ParserOutput.FromException(new ExpectedButFound("object",
-                            $"'{chars.Current.Rebang()}'"));
-                        yield break;
+                    switch (po.Type)
+                    {
+                        case ParserOutputType.SyntaxError:
+                        case ParserOutputType.EndOfInput:
+                            yield return po;
+                            yield break;
 
-                    default:
-                        if (po.Object != null)
-                            po.Object.SourceLine = srcOverride ?? src;
+                        case ParserOutputType.Terminator:
+                            yield return ParserOutput.FromException(new MismatchedTerminator("object",
+                                $"'{chars.Current.Rebang()}'"));
+                            // consume the terminator to avoid looping forever
+                            chars.MoveNext();
+                            // keep parsing
+                            break;
 
-                        yield return po;
-                        break;
+                        default:
+                            if (po.Object != null)
+                                po.Object.SourceLine = srcOverride ?? src;
+
+                            yield return po;
+                            break;
+                    }
                 }
-            }
             }
             finally
             {

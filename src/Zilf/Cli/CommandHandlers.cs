@@ -584,9 +584,9 @@ namespace Zilf.Cli
                             }
                         }
 
-                        if (angles == 0 && rounds == 0 && squares == 0 && quotes == 0)
+                        if (angles <= 0 && rounds <= 0 && squares <= 0 && quotes <= 0)
                         {
-                            var result = Program.Evaluate(ctx, sb.ToString());
+                            var result = Program.Evaluate(ctx, sb.ToString(), wantSyntaxWarnings: true);
                             if (result != null)
                             {
                                 try

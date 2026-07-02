@@ -59,9 +59,9 @@ namespace Zilf.Language.Parsing
         public ZilObject Object;
         public ParserException Exception;
 
-        public bool IsIgnorable => Type == ParserOutputType.Comment || Type == ParserOutputType.EmptySplice;
+        public readonly bool IsIgnorable => Type == ParserOutputType.Comment || Type == ParserOutputType.EmptySplice;
 
-        public override string ToString()
+        public override readonly string ToString()
         {
             var sb = new StringBuilder();
 

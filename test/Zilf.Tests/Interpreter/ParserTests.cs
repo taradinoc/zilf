@@ -494,5 +494,18 @@ namespace Zilf.Tests.Interpreter
                     "Expected second result to be {0} but found {1}", ParserOutput.EndOfInput, resultStr);
             }
         }
+
+        [TestMethod]
+        public void TestParsingUnmatchedTerminators()
+        {
+            var parser = new Parser(site);
+            var results = parser.Parse("123]456").ToArray();
+            Assert.AreEqual(4, results.Length);
+            Assert.AreEqual(ParserOutputType.Object, results[0].Type);
+            Assert.AreEqual(ParserOutputType.SyntaxError, results[1].Type);
+            Assert.IsInstanceOfType<MismatchedTerminator>(results[1].Exception);
+            Assert.AreEqual(ParserOutputType.Object, results[2].Type);
+            Assert.AreEqual(ParserOutputType.EndOfInput, results[3].Type);
+        }
     }
 }

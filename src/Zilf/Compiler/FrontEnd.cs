@@ -315,7 +315,7 @@ namespace Zilf.Compiler
                 ctx.IncludePaths.AddRange(IncludePaths);
                 try
                 {
-                    Program.Evaluate(ctx, inputStream);
+                    Program.Evaluate(ctx, inputStream, wantSyntaxWarnings: true);
                 }
                 catch (ZilErrorBase ex)
                 {
