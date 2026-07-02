@@ -1467,10 +1467,35 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSH2");
                         routine.EmitRawLine("    PUSH0");
                         routine.EmitRawLine("    PUTVB2");
+                        // V3 format: scan charBuffer for zero terminator to find text length.
+                        // LOADVB2 indices are 1-based raw bytes; first char at raw byte 1 = index 2.
                         routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    PUSH2");
+                        routine.EmitRawLine("    PUSH1");
                         routine.EmitRawLine("    LOADVB2");
+                        routine.EmitRawLine("    PUTL 9");
+                        routine.EmitRawLine("    PUSHL 9");
+                        routine.EmitRawLine("    JUMPZ ABS:tokenize_done");
+                        routine.EmitRawLine("    PUSH0");
                         routine.EmitRawLine("    PUTL 2");
+                        routine.EmitRawLine("    PUSH2");
+                        routine.EmitRawLine("    PUTL 4");
+                        routine.EmitRawLine("find_text_length_v3:");
+                        routine.EmitRawLine("    PUSHL 0");
+                        routine.EmitRawLine("    PUSHL 4");
+                        routine.EmitRawLine("    LOADVB2");
+                        routine.EmitRawLine("    JUMPZ ABS:text_length_found_v3");
+                        routine.EmitRawLine("    PUSHL 4");
+                        routine.EmitRawLine("    PUSH1");
+                        routine.EmitRawLine("    ADD");
+                        routine.EmitRawLine("    PUTL 4");
+                        routine.EmitRawLine("    PUSHL 2");
+                        routine.EmitRawLine("    PUSH1");
+                        routine.EmitRawLine("    ADD");
+                        routine.EmitRawLine("    PUTL 2");
+                        routine.EmitRawLine("    PUSHL 9");
+                        routine.EmitRawLine("    PUSHL 2");
+                        routine.EmitRawLine("    JUMPL ABS:find_text_length_v3");
+                        routine.EmitRawLine("text_length_found_v3:");
                         routine.EmitRawLine("    PUSH0");
                         routine.EmitRawLine("    PUTL 4");
                         routine.EmitRawLine("    PUSH0");
@@ -1490,7 +1515,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    JUMPEQ ABS:tokenize_done");
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHL 4");
-                        routine.EmitRawLine("    PUSH3");
+                        routine.EmitRawLine("    PUSH2");
                         routine.EmitRawLine("    ADD");
                         routine.EmitRawLine("    LOADVB2");
                         routine.EmitRawLine("    PUTL 9");
@@ -1549,7 +1574,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    JUMPEQ ABS:finish_regular_word");
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHL 4");
-                        routine.EmitRawLine("    PUSH3");
+                        routine.EmitRawLine("    PUSH2");
                         routine.EmitRawLine("    ADD");
                         routine.EmitRawLine("    LOADVB2");
                         routine.EmitRawLine("    PUTL 9");
@@ -1626,7 +1651,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 6");
                         routine.EmitRawLine("    PUSHL 15");
                         routine.EmitRawLine("    ADD");
-                        routine.EmitRawLine("    PUSH3");
+                        routine.EmitRawLine("    PUSH2");
                         routine.EmitRawLine("    ADD");
                         routine.EmitRawLine("    LOADVB2");
                         routine.EmitRawLine("    VPUTB");
@@ -1723,7 +1748,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSH2");
                         routine.EmitRawLine("    ADD");
                         routine.EmitRawLine("    PUSHL 6");
-                        routine.EmitRawLine("    PUSH2");
+                        routine.EmitRawLine("    PUSH1");
                         routine.EmitRawLine("    ADD");
                         routine.EmitRawLine("    PUTVB2");
                         routine.EmitRawLine("    PUSHL 1");
@@ -1774,7 +1799,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    DIV");
                         routine.EmitRawLine("    PUTL 1");
 
-                        // maxLength = raw charBuffer[1] in the Z-machine-style input buffer.
+                        // maxLength = raw charBuffer[1] (LOADVB2 index 1 = raw byte 0).
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSH1");
                         routine.EmitRawLine("    LOADVB2");
@@ -1786,12 +1811,11 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine($"    LOADG {builder.ConsoleColumnGlobalIndex}");
                         routine.EmitRawLine("    PUTL 6");
 
-                        // cursor = 0; internal length word = 0
+                        // cursor = 0; length = 0 (tracked in L7, not written to buffer).
                         routine.EmitRawLine("    PUSH0");
                         routine.EmitRawLine("    PUTL 3");
-                        routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSH0");
-                        routine.EmitRawLine("    VPUTW_ 0x00");
+                        routine.EmitRawLine("    PUTL 7");
                         routine.EmitRawLine("    PUSH0");
                         routine.EmitRawLine("    PUTL 11");
                         routine.EmitRawLine("    PUSH0");
@@ -1838,11 +1862,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 4");
                         routine.EmitRawLine("    JUMPEQ ABS:read_key");
 
-                        // Keep the current payload length in L7 for editing decisions.
-                        routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    VLOADW_ 0x00");
-                        routine.EmitRawLine("    PUTL 7");
-
+                        // L7 tracks the current payload length throughout.
                         // Backspace deletes one character.
                         routine.EmitRawLine("    PUSHB 0x08");
                         routine.EmitRawLine("    PUSHL 4");
@@ -1869,19 +1889,18 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 3");
                         routine.EmitRawLine("    SUB");
                         routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    PUSHL 3");
-                        routine.EmitRawLine("    PUSHL 3");
+                        // VECCPYB uses payload offsets; char at VPUTB offset cursor = VECCPYB offset cursor-1.
                         routine.EmitRawLine("    PUSH1");
-                        routine.EmitRawLine("    ADD");
+                        routine.EmitRawLine("    PUSHL 3");
+                        routine.EmitRawLine("    SUB");
+                        routine.EmitRawLine("    PUSHL 3");
                         routine.EmitRawLine("    VECCPYB");
                         routine.EmitRawLine("    POP");
 
                         routine.EmitRawLine("store_char:");
-                        // charBuffer[length + 1] = key
+                        // charBuffer[cursor] = key (VPUTB offset cursor = raw byte cursor+1).
                         routine.EmitRawLine("    PUSHL 0");
                         routine.EmitRawLine("    PUSHL 3");
-                        routine.EmitRawLine("    PUSH1");
-                        routine.EmitRawLine("    ADD");
                         routine.EmitRawLine("    PUSHL 4");
                         routine.EmitRawLine("    VPUTB");
 
@@ -1890,11 +1909,6 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSH1");
                         routine.EmitRawLine("    ADD");
                         routine.EmitRawLine("    PUTL 7");
-
-                        // internal length word = length
-                        routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    PUSHL 7");
-                        routine.EmitRawLine("    VPUTW_ 0x00");
 
                         // Redraw from the insertion point, then restore the final cursor.
                         routine.EmitRawLine("    PUSHL 3");
@@ -1913,10 +1927,6 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUTL 4");
                         routine.EmitRawLine("    PUSHL 4");
                         routine.EmitRawLine("    JUMPF ABS:escape_key");
-
-                        routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    VLOADW_ 0x00");
-                        routine.EmitRawLine("    PUTL 7");
 
                         routine.EmitRawLine("    PUSHB 0x4B");
                         routine.EmitRawLine("    PUSHL 4");
@@ -1992,8 +2002,13 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 3");
                         routine.EmitRawLine("    SUB");
                         routine.EmitRawLine("    PUSHL 0");
+                        // VECCPYB src = cursor-1 (char at VPUTB cursor), dst = cursor-2 (new position).
+                        routine.EmitRawLine("    PUSH1");
                         routine.EmitRawLine("    PUSHL 3");
-                        routine.EmitRawLine("    PUSHL 8");
+                        routine.EmitRawLine("    SUB");
+                        routine.EmitRawLine("    PUSH2");
+                        routine.EmitRawLine("    PUSHL 3");
+                        routine.EmitRawLine("    SUB");
                         routine.EmitRawLine("    VECCPYB");
                         routine.EmitRawLine("    POP");
 
@@ -2006,11 +2021,6 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUTL 3");
                         routine.EmitRawLine("    PUSHL 3");
                         routine.EmitRawLine("    PUTL 8");
-
-                        // internal length word = length
-                        routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    PUSHL 7");
-                        routine.EmitRawLine("    VPUTW_ 0x00");
 
                         routine.EmitRawLine("    JUMP ABS:redraw_after_edit");
 
@@ -2027,8 +2037,11 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 3");
                         routine.EmitRawLine("    SUB");
                         routine.EmitRawLine("    PUSHL 0");
+                        // VECCPYB src = cursor-1 (char at VPUTB cursor), dst = -1 (VPUTB 0 = raw byte 1).
+                        routine.EmitRawLine("    PUSH1");
                         routine.EmitRawLine("    PUSHL 3");
-                        routine.EmitRawLine("    PUSH0");
+                        routine.EmitRawLine("    SUB");
+                        routine.EmitRawLine("    PUSHm1");
                         routine.EmitRawLine("    VECCPYB");
                         routine.EmitRawLine("    POP");
                         routine.EmitRawLine("clear_prefix:");
@@ -2040,9 +2053,6 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUTL 3");
                         routine.EmitRawLine("    PUSH0");
                         routine.EmitRawLine("    PUTL 8");
-                        routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    PUSHL 7");
-                        routine.EmitRawLine("    VPUTW_ 0x00");
                         routine.EmitRawLine("    JUMP ABS:redraw_after_edit");
 
                         routine.EmitRawLine("delete_char:");
@@ -2063,10 +2073,11 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSH1");
                         routine.EmitRawLine("    SUB");
                         routine.EmitRawLine("    PUSHL 0");
+                        // VECCPYB src = cursor (char at VPUTB cursor+1), dst = cursor-1 (new VPUTB cursor).
                         routine.EmitRawLine("    PUSHL 3");
                         routine.EmitRawLine("    PUSH1");
-                        routine.EmitRawLine("    ADD");
                         routine.EmitRawLine("    PUSHL 3");
+                        routine.EmitRawLine("    SUB");
                         routine.EmitRawLine("    VECCPYB");
                         routine.EmitRawLine("    POP");
                         routine.EmitRawLine("shorten_buffer:");
@@ -2076,9 +2087,6 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUTL 7");
                         routine.EmitRawLine("    PUSHL 3");
                         routine.EmitRawLine("    PUTL 8");
-                        routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    PUSHL 7");
-                        routine.EmitRawLine("    VPUTW_ 0x00");
                         routine.EmitRawLine("    JUMP ABS:redraw_after_edit");
 
                         routine.EmitRawLine("delete_to_end:");
@@ -2091,9 +2099,6 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUTL 7");
                         routine.EmitRawLine("    PUSHL 3");
                         routine.EmitRawLine("    PUTL 8");
-                        routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    PUSHL 7");
-                        routine.EmitRawLine("    VPUTW_ 0x00");
                         routine.EmitRawLine("    JUMP ABS:redraw_after_edit");
 
                         routine.EmitRawLine("redraw_after_edit:");
@@ -2103,12 +2108,7 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    PUSHL 8");
                         routine.EmitRawLine("    ADD");
                         routine.EmitRawLine($"    PUTMG 0x{GameBuilder.CursorColumnSlot:X2}");
-                        routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    VLOADW_ 0x00");
-                        routine.EmitRawLine("    PUTL 7");
                         routine.EmitRawLine("    PUSHL 8");
-                        routine.EmitRawLine("    PUSH1");
-                        routine.EmitRawLine("    ADD");
                         routine.EmitRawLine("    PUTL 4");
                         routine.EmitRawLine("    PUSHL 7");
                         routine.EmitRawLine("    PUSHL 8");
@@ -2165,9 +2165,6 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine("    JUMP ABS:read_key");
 
                         routine.EmitRawLine("input_done:");
-                        routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    VLOADW_ 0x00");
-                        routine.EmitRawLine("    PUTL 7");
                         routine.EmitRawLine($"    LOADG {builder.CommandFileBypassGlobalIndex}");
                         routine.EmitRawLine("    JUMPNZ ABS:skip_command_echo");
                         routine.EmitRawLine("    PUSHL 13");
@@ -2177,15 +2174,11 @@ namespace Zilf.Emit.Cornerstone
                         routine.EmitRawLine($"    CALL2 {builder.RuntimeLib.Use(EchoReadLineToCommandFile)}");
                         routine.EmitRawLine("skip_command_echo:");
 
-                        // Restore the external Z-machine-style buffer header in raw bytes.
+                        // V3 format: zero-terminate the input string (zero at VPUTB offset length = raw byte length+1).
                         routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    PUSH1");
-                        routine.EmitRawLine("    PUSHL 2");
-                        routine.EmitRawLine("    PUTVB2");
-                        routine.EmitRawLine("    PUSHL 0");
-                        routine.EmitRawLine("    PUSH2");
                         routine.EmitRawLine("    PUSHL 7");
-                        routine.EmitRawLine("    PUTVB2");
+                        routine.EmitRawLine("    PUSH0");
+                        routine.EmitRawLine("    VPUTB");
 
                         routine.EmitRawLine("    PUSHL 1");
                         routine.EmitRawLine("    JUMPF ABS:no_lexbuf");
@@ -3258,8 +3251,6 @@ namespace Zilf.Emit.Cornerstone
             routine.EmitRawLine("echo_char_body:");
             routine.EmitRawLine("    PUSHL 0");
             routine.EmitRawLine("    PUSHL 2");
-            routine.EmitRawLine("    PUSH1");
-            routine.EmitRawLine("    ADD");
             routine.EmitRawLine("    VLOADB");
             routine.EmitRawLine("    PUTL 3");
             routine.EmitRawLine("    PUSH0");

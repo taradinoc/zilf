@@ -545,7 +545,7 @@ namespace Zilf.Emit.Tests
             var writeWordCount = echoProcText.Split("    PUSH1\n    WRITE", StringSplitOptions.None).Length - 1;
             Assert.AreEqual(3, writeWordCount, "Expected one-word writes for characters plus CR and LF terminators.");
             StringAssert.Contains(echoProcText, "echo_char_loop:");
-            StringAssert.Contains(echoProcText, "    PUSH1\n    ADD\n    VLOADB");
+            StringAssert.Contains(echoProcText, "    PUSHL index\n    VLOADB");
 
             var transferBufferStart = output.IndexOf("__COMMAND_FILE_TRANSFER_BUFFER::", StringComparison.Ordinal);
             Assert.IsTrue(transferBufferStart >= 0, "Expected command file transfer buffer in output.");
@@ -1146,7 +1146,8 @@ namespace Zilf.Emit.Tests
             StringAssert.Contains(output, "    PUSH2\n    DIV\n    PUTL lexBuffer");
             StringAssert.Contains(output, "    PUSH1\n    LOADVB2\n    PUTL maxLength");
             StringAssert.Contains(output, "    PUSH2\n    PUSH0\n    PUTVB2");
-            StringAssert.Contains(output, "    PUSH2\n    LOADVB2\n    PUTL textLength");
+            StringAssert.Contains(output, "find_text_length_v3:");
+            StringAssert.Contains(output, "text_length_found_v3:");
             StringAssert.Contains(output, "binary_search_vocabulary:");
             StringAssert.Contains(output, "token_compare_ready:");
             StringAssert.Contains(output, "search_lower_half:");
@@ -1155,10 +1156,9 @@ namespace Zilf.Emit.Tests
             StringAssert.Contains(output, "    PUSHW VOCAB_TABLE\n    PUSH1\n    ADD\n    PUSHL vocabMid\n    PUSH 5\n    MUL\n    ADD\n    PUTL entryPointer");
             StringAssert.Contains(output, "    PUSHL entryPointer\n    PUSHW __TOKEN_COMPARE_BUFFER\n    PUSHL entryChar\n    PUSH0\n    PUSHL compareLength\n    STRICMP");
             StringAssert.Contains(output, "    PUSH4\n    MUL\n    PUSH1\n    ADD\n    PUSHL wordLength\n    PUTVB2");
-            StringAssert.Contains(output, "    PUSH4\n    MUL\n    PUSH2\n    ADD\n    PUSHL wordStart\n    PUSH2\n    ADD\n    PUTVB2");
+            StringAssert.Contains(output, "    PUSH4\n    MUL\n    PUSH2\n    ADD\n    PUSHL wordStart\n    PUSH1\n    ADD\n    PUTVB2");
             StringAssert.Contains(output, "    PUSH2\n    PUSHL wordCount\n    PUTVB2");
-            StringAssert.Contains(output, "    PUSH1\n    PUSHL maxLength\n    PUTVB2");
-            StringAssert.Contains(output, "    PUSH2\n    PUSHL length\n    PUTVB2");
+            StringAssert.Contains(output, "    PUSHL length\n    PUSH0\n    VPUTB");
             StringAssert.Contains(output, ".word 0x0002");
             StringAssert.Contains(output, "WORD_1::\n.word OBJSTR_0000\n.byte 0xC0, 0xA5");
             StringAssert.Contains(output, "__VOCAB_ENTRY_0001::");

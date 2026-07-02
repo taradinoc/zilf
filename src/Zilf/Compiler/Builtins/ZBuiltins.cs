@@ -3017,6 +3017,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="fieldSpec">The name of a header field to read, or a list consisting of the header field name and either 0 or 1 to read the high or low byte.</param>
         /// <returns>The value of the header field.</returns>
         [Builtin("LOWCORE", Platform = BuiltinPlatform.ZMachine)]
+        [Builtin("LOWCORE", Platform = BuiltinPlatform.Cornerstone)]
         public static IOperand LowCoreReadOp_Z(ValueCall c, ZilObject fieldSpec)
         {
             if (fieldSpec is ZilAtom fieldAtom && c.rb is IProvideLowCoreEmulation emulator)
@@ -3051,6 +3052,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="fieldSpec">The name of a header field to write, or a list consisting of the header field name and either 0 or 1 to write the high or low byte.</param>
         /// <param name="newValue"></param>
         [Builtin("LOWCORE", HasSideEffect = true, Platform = BuiltinPlatform.ZMachine)]
+        [Builtin("LOWCORE", HasSideEffect = true, Platform = BuiltinPlatform.Cornerstone)]
         public static void LowCoreWriteOp_Z(VoidCall c, ZilObject fieldSpec, IOperand newValue)
         {
             if (fieldSpec is ZilAtom fieldAtom && c.rb is IProvideLowCoreEmulation emulator)
@@ -3085,6 +3087,7 @@ namespace Zilf.Compiler.Builtins
         /// <param name="handler">The handler routine to call for each byte.</param>
         /// <exception cref="CompilerError">Local variables are not allowed here.</exception>
         [Builtin("LOWCORE-TABLE", HasSideEffect = true, Platform = BuiltinPlatform.ZMachine)]
+        [Builtin("LOWCORE-TABLE", HasSideEffect = true, Platform = BuiltinPlatform.Cornerstone)]
         public static void LowCoreTableOp_Z(VoidCall c, ZilObject fieldSpec, int length, ZilAtom handler)
         {
             if (fieldSpec is ZilAtom fieldAtom && c.rb is IProvideLowCoreEmulation emulator)
