@@ -71,6 +71,10 @@
                       <TELL " " <GET ,ACHIEVEMENTS .I> CR>)>
                <SET I <+ .I ,ACHTBL-ENTRY-LENGTH>>>)>>
 
+;"Prints a number right-aligned in a five-character field.
+
+Returns:
+  T."
 <ROUTINE PRINTN-RIGHT-ALIGNED (N)
     <COND (<G=? .N 1000> <TELL " ">)
           (<G=? .N 100> <TELL "  ">)
@@ -80,7 +84,8 @@
           (<L=? .N -100> <TELL " ">)
           (<L=? .N -10> <TELL "  ">)
           (ELSE        <TELL "   ">)>
-    <TELL N .N>>
+    <TELL N .N>
+    <RTRUE>>
 
 <SYNTAX NOTIFY ON OBJECT (FIND KLUDGEBIT) = V-NOTIFY-ON>
 <SYNTAX NOTIFY = V-NOTIFY-ON>
@@ -95,6 +100,10 @@
     <SETG NOTIFY-SCORE? <>>
     <TELL <LIBRARY-MESSAGE NOTIFY-OFF SUCCESS> CR>>
 
+;"Prints a score-change notification when notifications are enabled.
+
+Returns:
+  True if the score changed, otherwise false."
 <ROUTINE NOTIFY-SCORE ("AUX" D DOWN?)
     <COND (<NOT ,NOTIFY-SCORE?> <RFALSE>)>
     <SET D <- ,SCORE ,PREV-SCORE>>
@@ -154,6 +163,15 @@
         <COND (<NOT <GETPROP MAX-SCORE ZVAL>>
                <ERROR MAX-SCORE-NOT-DEFINED>)>>>
 
+;"Adds points to the player's score, optionally recording an achievement.
+
+Args:
+  PTS: The number of points to add. May be negative.
+  ACH: The achievement index, or -1 to award unclassified points.
+
+Returns:
+  True if the points were awarded. False if a non-repeatable achievement had
+  already been awarded."
 <ROUTINE AWARD-POINTS (PTS "OPT" (ACH -1) "AUX" P F)
     <COND (<G=? .ACH 0>
            <SET P <+ ,ACHIEVEMENTS <* <* ,ACHTBL-ENTRY-LENGTH ,WORD-SIZE> .ACH>>>

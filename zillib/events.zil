@@ -15,11 +15,15 @@ Args:
   IRTN: The interrupt routine to enqueue.
   TURNZ: The number of turns to count. 1 means the end of the current turn,
     2 means the end of the next turn, etc. If TURNZ is -1, the interrupt will
-    run after every subsequent turn until dequeued."
+    run after every subsequent turn until dequeued.
+
+Returns:
+  T."
 <ROUTINE QUEUE (IRTN TURNZ)
     <SETG IQ-LENGTH <+ ,IQ-LENGTH 2>>
     <PUT ,IQUEUE <- ,IQ-LENGTH 1> .IRTN>
-    <PUT ,IQUEUE ,IQ-LENGTH .TURNZ>>
+    <PUT ,IQUEUE ,IQ-LENGTH .TURNZ>
+    <RTRUE>>
 
 ;"Removes an interrupt routine from the event queue.
 
@@ -30,15 +34,18 @@ Uses and sets:
   IQUEUE (contents)
 
 Args:
-  IRTN: The interrupt routine."
+  IRTN: The interrupt routine.
+
+Returns:
+  T, whether or not the routine was queued."
 <ROUTINE DEQUEUE (IRTN "AUX" S)
     <REPEAT ()
         <SET S <+ .S 2>>
-        <COND (<G? .S ,IQ-LENGTH> <RETURN>)
+        <COND (<G? .S ,IQ-LENGTH> <RETURN T>)
               (<EQUAL? <GET ,IQUEUE <- .S 1>> .IRTN>
                <DEL-EVENT .S>
                <IQUEUE-CLEANUP>
-               <RETURN>)>>>
+               <RETURN T>)>>>
 
 ;"Marks a slot in the interrupt queue as deleted. Internal use only.
 
@@ -134,7 +141,10 @@ Returns:
 a message.
 
 Args:
-  TURNS: The number of turns to wait."
+  TURNS: The number of turns to wait.
+
+Returns:
+  T."
 <ROUTINE WAIT-TURNS (TURNS "AUX" T INTERRUPT ENDACT BACKUP-WAIT)
     <SET BACKUP-WAIT ,STANDARD-WAIT>
     <SETG STANDARD-WAIT .TURNS>
@@ -147,4 +157,4 @@ Args:
                    .ENDACT
                    .INTERRUPT>
                <SETG STANDARD-WAIT .BACKUP-WAIT>
-               <RETURN>)>>>
+               <RETURN T>)>>>

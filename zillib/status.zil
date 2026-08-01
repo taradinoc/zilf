@@ -170,6 +170,10 @@
                     <CURSET ~.ROW ~.COL>
                     <APPLY ~.CONTENT-RTN>>)>>
 
+;"Prints status-line content centered within a field.
+
+Returns:
+  T."
 <ROUTINE PRINT-CENTER (ROW COL WIDTH CONTENT-RTN "AUX" CWID SLACK LPAD)
     <DIROUT 3 ,SL-CONTENT-BUFFER>
     <APPLY .CONTENT-RTN>
@@ -184,8 +188,13 @@
               (ELSE <CURSET .ROW <+ .COL .LPAD>>)>
     <CURSET .ROW <+ .COL .LPAD>>
     <SET CWID <+ .CWID 1>>
-    <DO (I 2 .CWID) <PRINTC <GETB ,SL-CONTENT-BUFFER .I>>>>
+    <DO (I 2 .CWID) <PRINTC <GETB ,SL-CONTENT-BUFFER .I>>>
+    <RTRUE>>
 
+;"Prints status-line content right-aligned within a field.
+
+Returns:
+  T."
 <ROUTINE PRINT-RIGHT (ROW COL WIDTH CONTENT-RTN "AUX" CWID SLACK ;LPAD)
     <DIROUT 3 ,SL-CONTENT-BUFFER>
     <APPLY .CONTENT-RTN>
@@ -199,7 +208,8 @@
     <VERSION? (YZIP <YZIP-CURSET .ROW <+ .COL .SLACK>>)
               (ELSE <CURSET .ROW <+ .COL .SLACK>>)>
     <SET CWID <+ .CWID 1>>
-    <DO (I 2 .CWID) <PRINTC <GETB ,SL-CONTENT-BUFFER .I>>>>
+    <DO (I 2 .CWID) <PRINTC <GETB ,SL-CONTENT-BUFFER .I>>>
+    <RTRUE>>
 
 "Reusable sections"
 

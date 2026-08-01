@@ -374,6 +374,25 @@ Returns:
 
 <DEFAULT-DEFINITION DARKNESS-F
 
+    ;"Implements various darkness-related behavior, depending on its argument.
+    
+      M-LOOK:
+        Called when the player looks around in darkness.
+        Returns T.
+
+      M-SCOPE?:
+        Called to check whether the current scope stage applies in darkness.
+        Returns true if the current scope stage should apply, otherwise false.
+
+      M-NOW-DARK:
+        Called to print a message when the player enters darkness.
+        Returns T.
+
+      M-NOW-LIT:
+        Called to print a message when the player leaves darkness.
+        Returns false if a V-LOOK should automatically follow, or true if
+        the routine has printed everything the player needs to see.
+    "
     <ROUTINE DARKNESS-F (ARG)
         <COND (<=? .ARG ,M-LOOK>
                <TELL <LIBRARY-MESSAGE DARKNESS LOOK> CR>)
@@ -401,7 +420,10 @@ Uses:
   WINNER
 
 Args:
-  RM: The room."
+  RM: The room.
+
+Returns:
+  T."
 
     <ROUTINE DESCRIBE-OBJECTS (RM "AUX" P N)
         <MAP-CONTENTS (I .RM)
@@ -452,7 +474,8 @@ Args:
                <CRLF>
                <LIST-OBJECTS .RM NPC-DESC? <+ ,L-SUFFIX ,L-CAP>>
                <TELL " here." CR>
-               <CONTENTS-ARE-IT .RM NPC-DESC?>)>>
+               <CONTENTS-ARE-IT .RM NPC-DESC?>)>
+        <RTRUE>>
 
     <ROUTINE GENERIC-DESC? (OBJ "AUX" P)
         <T? <NOT <OR <==? .OBJ ,WINNER>
@@ -475,7 +498,10 @@ Args:
                           <AND <SET P <GETP .OBJ ,P?DESCFCN>> <APPLY .P ,M-OBJDESC?>>>>>>>
 
     ;"Only describe contents if it contains something besides WINNER.
-      Unlike GENERIC-DESC?, we might still describe the contents of a vehicle the player is in."
+      Unlike GENERIC-DESC?, we might still describe the contents of a vehicle the player is in.
+
+    Returns:
+      True if the object's contents should be described, otherwise false."
     <ROUTINE CONTENTS-DESC? (OBJ "AUX" P)
         <T? <AND <SET P <FIRST? .OBJ>>
                  <OR <N==? .P ,WINNER> <NEXT? .P>>
@@ -493,7 +519,10 @@ Args:
                 <- .?TMP 32>)
                (ELSE .?TMP)>>>
 
-;"Prints a (short) string with the first letter capitalized."
+;"Prints a (short) string with the first letter capitalized.
+
+Returns:
+  T."
 <ROUTINE PRINT-CAP-STR (S "AUX" MAX C)
     <DIROUT 3 ,TEMPTABLE>
     <PRINT .S>
@@ -504,9 +533,13 @@ Args:
            <DO (I 2 .MAX)
                <SET C <GETB ,TEMPTABLE .I>>
                <AND <=? .I 2> <SET C <UPPERCASE-CHAR .C>>>
-               <PRINTC .C>>)>>
+               <PRINTC .C>>)>
+    <RTRUE>>
 
-;"Prints an object name with the first letter capitalized."
+;"Prints an object name with the first letter capitalized.
+
+Returns:
+  T."
 <ROUTINE PRINT-CAP-OBJ (OBJ "AUX" MAX C)
     <DIROUT 3 ,TEMPTABLE>
     <PRINTD .OBJ>
@@ -517,28 +550,44 @@ Args:
            <DO (I 2 .MAX)
                <SET C <GETB ,TEMPTABLE .I>>
                <AND <=? .I 2> <SET C <UPPERCASE-CHAR .C>>>
-               <PRINTC .C>>)>>
+               <PRINTC .C>>)>
+    <RTRUE>>
 
-;"Implements <TELL A .OBJ>."
+;"Implements <TELL A .OBJ>.
+
+Returns:
+  T."
 <ROUTINE PRINT-INDEF (OBJ "AUX" A)
     <COND (<FSET? .OBJ ,NARTICLEBIT>)
           (<SET A <GETP .OBJ ,P?ARTICLE>> <TELL .A> <PRINTC !\ >)
           (<FSET? .OBJ ,PLURALBIT> <TELL "some ">)
           (<FSET? .OBJ ,VOWELBIT> <TELL "an ">)
           (ELSE <TELL "a ">)>
-    <PRINTD .OBJ>>
+    <PRINTD .OBJ>
+    <RTRUE>>
 
-;"Implements <TELL T .OBJ>."
+;"Implements <TELL T .OBJ>.
+
+Returns:
+  T."
 <ROUTINE PRINT-DEF (OBJ)
     <COND (<NOT <FSET? .OBJ ,NARTICLEBIT>> <TELL "the ">)>
-    <PRINTD .OBJ>>
+    <PRINTD .OBJ>
+    <RTRUE>>
 
-;"Implements <TELL P .OBJ>."
+;"Implements <TELL P .OBJ>.
+
+Returns:
+  T."
 <ROUTINE PRINT-PLURAL (OBJ "AUX" P)
     <COND (<SET P <GETP .OBJ ,P?PDESC>> <TELL .P>)
-          (ELSE <TELL D .OBJ !\s>)>>
+          (ELSE <TELL D .OBJ !\s>)>
+    <RTRUE>>
 
-;"Implements <TELL CA .OBJ>."
+;"Implements <TELL CA .OBJ>.
+
+Returns:
+  T."
 <ROUTINE PRINT-CINDEF (OBJ "AUX" A)
     <COND (<FSET? .OBJ ,NARTICLEBIT>
            <PRINT-CAP-OBJ .OBJ>
@@ -547,30 +596,46 @@ Args:
           (<FSET? .OBJ ,PLURALBIT> <TELL "Some ">)
           (<FSET? .OBJ ,VOWELBIT> <TELL "An ">)
           (ELSE <TELL "A ">)>
-    <PRINTD .OBJ>>
+    <PRINTD .OBJ>
+    <RTRUE>>
 
-;"Implements <TELL CT .OBJ>."
+;"Implements <TELL CT .OBJ>.
+
+Returns:
+  T."
 <ROUTINE PRINT-CDEF (OBJ)
     <COND (<FSET? .OBJ ,NARTICLEBIT>
            <PRINT-CAP-OBJ .OBJ>
            <RTRUE>)
-          (ELSE <TELL "The " D .OBJ>)>>
+          (ELSE <TELL "The " D .OBJ>)>
+    <RTRUE>>
 
-;"Implements <TELL CP .OBJ>."
+;"Implements <TELL CP .OBJ>.
+
+Returns:
+  T."
 <ROUTINE PRINT-CPLURAL (OBJ "AUX" P)
     <COND (<SET P <GETP .OBJ ,P?PDESC>> <PRINT-CAP-STR .P>)
-          (ELSE <PRINT-CAP-OBJ .OBJ> <TELL !\s>)>>
+          (ELSE <PRINT-CAP-OBJ .OBJ> <TELL !\s>)>
+    <RTRUE>>
 
-;"Prints a sentence describing the contents of a surface or container."
+;"Prints a sentence describing the contents of a surface or container.
+
+Returns:
+  T."
 <ROUTINE DESCRIBE-CONTENTS (OBJ)
     <COND (<FSET? .OBJ ,SURFACEBIT> <TELL "On">)
           (ELSE <TELL "In">)>
     <TELL " " T .OBJ " ">
     <LIST-OBJECTS .OBJ NOT-WINNER? ,L-ISARE>
     <TELL "." CR>
-    <CONTENTS-ARE-IT .OBJ NOT-WINNER?>>
+    <CONTENTS-ARE-IT .OBJ NOT-WINNER?>
+    <RTRUE>>
 
-;"A filter routine to exclude WINNER from contents listings."
+;"A filter routine to exclude WINNER from contents listings.
+
+Returns:
+  True unless OBJ is WINNER."
 <ROUTINE NOT-WINNER? (OBJ) <N==? .OBJ ,WINNER>>
 
 ;"Prints a list describing a set of objects, usually the contents of a
@@ -704,6 +769,10 @@ Returns:
            <AND <BTST .FLAGS ,L-SUFFIX> <TELL " are">>)>
     <RETURN .N>>
 
+;"Prints one entry in an object list.
+
+Returns:
+  T."
 <ROUTINE LIST-OBJECTS-PRINT (O FLAGS "OPT" CNT "AUX" (CAP? <BAND .FLAGS ,L-CAP>))
     <COND (<AND <=? .O ,PSEUDO-OBJECT>
                 <BTST .FLAGS ,L-SCENERY>>
@@ -720,12 +789,18 @@ Returns:
                  (ELSE <TELL CA .O>)>)
           (ELSE
            <COND (<BTST .FLAGS ,L-THE> <TELL T .O>)
-                 (ELSE <TELL A .O>)>)>>
+                 (ELSE <TELL A .O>)>)>
+    <RTRUE>>
 
+;"Prints a small positive integer as an English word when possible.
+
+Returns:
+  T."
 <ROUTINE PRINT-ENGLISH-NUM (N "OPT" CAP?)
     <COND (<G? .N <GET ,ENGLISH-NUM-STRS 0>> <TELL N .N>)
           (.CAP? <PRINT-CAP-STR <GET ,ENGLISH-NUM-STRS .N>>)
-          (ELSE <TELL <GET ,ENGLISH-NUM-STRS .N>>)>>
+          (ELSE <TELL <GET ,ENGLISH-NUM-STRS .N>>)>
+    <RTRUE>>
 
 ;"Counts indistinguishable objects in a PRSTBL, filters each set down to a
   single object, and fills a tag table with the corresponding counts.
@@ -961,7 +1036,10 @@ Returns:
                   <RTRUE>)>)
           (ELSE <TELL <LIBRARY-MESSAGE EXIT NOT-EXITABLE> CR>)>>
 
-;"Performs the WALK action with a direction."
+;"Performs the WALK action with a direction.
+
+Returns:
+  True if the action was handled, otherwise false."
 <ROUTINE DO-WALK (DIR)
     <WITH-GLOBAL ((PRSO-DIR T)) <PERFORM ,V?WALK .DIR>>>
 
@@ -1050,7 +1128,10 @@ Returns:
            <TELL <LIBRARY-MESSAGE INVENTORY TOO-DARK> CR>)>>
 
 ;"Prints a space followed by a parenthetical describing the contents of a
-surface or container, for use in inventory listings."
+surface or container, for use in inventory listings.
+
+Returns:
+  T."
 
 <ROUTINE INV-DESCRIBE-CONTENTS (OBJ "AUX" F)
     <COND (<FSET? .OBJ ,SURFACEBIT>
@@ -1060,13 +1141,17 @@ surface or container, for use in inventory listings."
     <COND (<NOT .F>
            <TELL <LIBRARY-MESSAGE INVENTORY NOTHING>
                  <LIBRARY-MESSAGE INVENTORY CONTENTS-2>>
-           <RETURN>)>
+           <RETURN T>)>
     <LIST-OBJECTS .OBJ>
-    <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-2>>>
+    <TELL <LIBRARY-MESSAGE INVENTORY CONTENTS-2>>
+    <RTRUE>>
 
 <DEFAULT-DEFINITION INV-PRINT-DETAILS
     ;"Prints the attributes following an object in an inventory listing,
-      including the contents of open containers."
+      including the contents of open containers.
+
+    Returns:
+      T."
     <ROUTINE INV-PRINT-DETAILS (O)
         <AND <FSET? .O ,WORNBIT> <TELL <LIBRARY-MESSAGE INVENTORY WORN>>>
         <AND <FSET? .O ,LIGHTBIT> <TELL <LIBRARY-MESSAGE INVENTORY LIGHTING>>>
@@ -1076,7 +1161,8 @@ surface or container, for use in inventory listings."
                       <COND (<FSET? .O ,OPENBIT>
                              <TELL <LIBRARY-MESSAGE INVENTORY OPEN>>)
                             (ELSE <TELL <LIBRARY-MESSAGE INVENTORY CLOSED>>)>)>
-               <COND (<SEE-INSIDE? .O> <INV-DESCRIBE-CONTENTS .O>)>)>>>
+               <COND (<SEE-INSIDE? .O> <INV-DESCRIBE-CONTENTS .O>)>)>
+        <RTRUE>>>
 
 <DEFAULT-DEFINITION INV-EXTRA-DETAILS
     ;"The game can replace this to show more details for inventory objects."
@@ -1090,7 +1176,10 @@ surface or container, for use in inventory listings."
     ;"Checks whether two objects are indistinguishable for inventory purposes,
       i.e., whether they should be combined in an inventory listing, where
       they'd appear with attributes like (worn) or (providing light) and, for
-      open containers, their contents."
+      open containers, their contents.
+
+    Returns:
+      True if the objects should be combined, otherwise false."
     <ROUTINE INV-INDISTINGUISHABLE? (A B)
         <AND <INDISTINGUISHABLE? .A .B>
              <==? <FSET? .A ,WORNBIT> <FSET? .B ,WORNBIT>>
@@ -1219,6 +1308,10 @@ Returns:
                       <OR .HAD-ALLOWER? <SET ALLOWER .L>>)>>)>
     <OR .BLOCKER .ALLOWER>>
 
+;"Checks whether an object blocks taking something through it.
+
+Returns:
+  True for people and closed openable containers, otherwise false."
 <ROUTINE BLOCKS-TAKE? (OBJ)
     <T? <OR <FSET? .OBJ ,PERSONBIT>
             <AND <FSET? .OBJ ,CONTBIT>
@@ -1249,6 +1342,10 @@ This assumes that if the objects have a common parent, it's within HERE."
 
 <DEFAULT-DEFINITION TAKE-CAPACITY-CHECK
 
+    ;"Checks whether WINNER can carry an additional object without exceeding capacity.
+
+    Returns:
+      True if the object can be carried, otherwise false."
     <ROUTINE TAKE-CAPACITY-CHECK (O "OPT" SILENT "AUX" (CAP <GETP ,WINNER ,P?CAPACITY>) CWT NWT)
         <COND (<L? .CAP 0> <RTRUE>)>
         <SET CWT <- <WEIGHT ,WINNER> <GETP ,WINNER ,P?SIZE>>>
@@ -1366,7 +1463,10 @@ This assumes that if the objects have a common parent, it's within HERE."
     <COND (<SHORT-REPORT?> <TELL <LIBRARY-MESSAGE PUT-IN SUCCESS-SHORT> CR>)
           (ELSE <TELL <LIBRARY-MESSAGE PUT-IN SUCCESS ((OBJ ,PRSO) (HOLDER ,PRSI))> CR>)>)>>
 
-;"Calculates the weight of all objects in a container, non-recursively."
+;"Calculates the weight of all objects in a container, non-recursively.
+
+Returns:
+  The total weight of the container's immediate children."
 <ROUTINE CONTENTS-WEIGHT (O "AUX" W)
     ;"add size of objects inside container - does not recurse through containers
       within this container"
@@ -1374,7 +1474,10 @@ This assumes that if the objects have a common parent, it's within HERE."
         <SET W <+ .W <GETP .I ,P?SIZE>>>>
     .W>
 
-;"Calculates the weight of an object, including its contents recursively."
+;"Calculates the weight of an object, including its contents recursively.
+
+Returns:
+  The total weight of the object and all of its descendants."
 <ROUTINE WEIGHT (O "AUX" X W)
     ;"Unlike CONTENTS-WEIGHT - drills down through all contents, adding sizes of all objects + contents"
     ;"start with size of container itself"

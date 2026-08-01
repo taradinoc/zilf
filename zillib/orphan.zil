@@ -192,6 +192,11 @@ Returns:
            <SETG P-CONT 0>
            <RETURN ,O-RES-FAILED>)>>
 
+;"Parses a count at the start of an orphaned response.
+
+Returns:
+  The requested count, or false if the response is not a count followed by
+  another word."
 <ROUTINE PARSE-ORPHAN-COUNT? (WN "AUX" W C)
     <COND (<L? ,P-LEN .WN> <RFALSE>)>
     <SET W <GETWORD? .WN>>

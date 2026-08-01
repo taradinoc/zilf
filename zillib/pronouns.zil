@@ -114,18 +114,25 @@
 
 <CONSTANT EXPAND-PRONOUN-FAILED -1>
 
-;"Sets the appropriate pronouns to refer to an object."
+;"Sets the appropriate pronouns to refer to an object.
+
+Returns:
+  T."
 <ROUTINE THIS-IS-IT (O)
     <PUTB ,P-XOBJS 0 1>
     <PUT/B ,P-XOBJS 1 .O>
-    <SET-PRONOUNS .O ,P-XOBJS>>
+    <SET-PRONOUNS .O ,P-XOBJS>
+    <RTRUE>>
 
 ;"Sets the appropriate pronouns to refer to the contents of an object,
   possibly after filtering through a routine.
 
   Args:
      CTNR: The object whose contents will have pronouns set.
-     FILTER: A routine that returns false if an object should be skipped."
+     FILTER: A routine that returns false if an object should be skipped.
+
+  Returns:
+     T."
 <ROUTINE CONTENTS-ARE-IT (CTNR "OPT" FILTER "AUX" N)
     <MAP-CONTENTS (I .CTNR)
         <COND (<OR <NOT .FILTER> <APPLY .FILTER .I>>
@@ -133,10 +140,11 @@
                <PUT/B ,P-XOBJS .N .I>
                <COND (<=? .N ,P-MAX-OBJECTS> <RETURN>)>)>>
     <PUTB ,P-XOBJS 0 .N>
-    <COND (<0? .N> <RETURN>)
+    <COND (<0? .N> <RETURN T>)
           (<1? .N> <SET N <GET/B ,P-XOBJS 1>>)
           (ELSE <SET N ,MANY-OBJECTS>)>
-    <SET-PRONOUNS .N ,P-XOBJS>>
+    <SET-PRONOUNS .N ,P-XOBJS>
+    <RTRUE>>
 
 ;"Helper for the PRONOUN property. This turns (PRONOUN IT HIM) into
   (PRONOUN PRO-FORCE-SET-IT PRO-FORCE-SET-HIM)."

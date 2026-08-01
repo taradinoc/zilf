@@ -387,13 +387,16 @@ Returns:
 ;"Prints the word at the given index in LEXBUF.
 
 Args:
-  N: The index, starting at 1."
+  N: The index, starting at 1.
+
+Returns:
+  T."
 <ROUTINE PRINT-WORD (N "AUX" I MAX)
     <SET I <LEXBUF-W-OFFSET ,LEXBUF .N>>
     <SET MAX <- <+ .I <LEXBUF-W-LENGTH ,LEXBUF .N>> 1>>
     <REPEAT ()
         <PRINTC <GETB ,READBUF .I>>
-        <AND <IGRTR? I .MAX> <RETURN>>>>
+        <AND <IGRTR? I .MAX> <RETURN T>>>>
 
 <GLOBAL P-LEN 0>            ;"Number of words in the command"
 <GLOBAL P-V <>>             ;"Verb number"
@@ -488,22 +491,33 @@ Args:
   (OBJSPEC-NOUN VOC)
   (OBJSPEC-QUANT FIX)>
 
-;"Resets a noun phrase to be empty with no mode."
+;"Resets a noun phrase to be empty with no mode.
+
+Returns:
+  T."
 <ROUTINE CLEAR-NOUN-PHRASE (NP)
     <NP-YCNT .NP 0>
     <NP-NCNT .NP 0>
-    <NP-MODE .NP 0>>
+    <NP-MODE .NP 0>
+    <RTRUE>>
 
-;"Copies the contents of one noun phrase into another."
+;"Copies the contents of one noun phrase into another.
+
+Returns:
+  T."
 <ROUTINE COPY-NOUN-PHRASE (SRC DEST "AUX" C)
     <NP-YCNT .DEST <SET C <NP-YCNT .SRC>>>
     <COPY-TABLE-B <NP-YTBL .SRC> <NP-YTBL .DEST> <* ,P-OBJSPEC-SIZE .C>>
     <NP-NCNT .DEST <SET C <NP-NCNT .SRC>>>
     <COPY-TABLE-B <NP-NTBL .SRC> <NP-NTBL .DEST> <* ,P-OBJSPEC-SIZE .C>>
-    <NP-MODE .DEST <NP-MODE .SRC>>>
+    <NP-MODE .DEST <NP-MODE .SRC>>
+    <RTRUE>>
 
 <IF-DEBUG
-    ;"Prints the meaning of a noun phrase."
+    ;"Prints the meaning of a noun phrase.
+
+    Returns:
+      T."
     <ROUTINE PRINT-NOUN-PHRASE (NP "AUX" CNT F S)
         ;"Mode"
         <SET F <NP-MODE .NP>>
@@ -747,7 +761,10 @@ Returns:
 ;"Reads a command and processes it, repeating forever.
 
 The behavior of MAIN-LOOP can be extended by overriding macros such as HOOK-BEFORE-PARSER.
-These extensions will be respected by other code that simulates the main loop, e.g. V-WAIT."
+These extensions will be respected by other code that simulates the main loop, e.g. V-WAIT.
+
+Returns:
+  Never returns."
 <ROUTINE MAIN-LOOP ()
     <REPEAT () <MAIN-LOOP-ITERATION>>>
 
@@ -877,6 +894,9 @@ Sets:
   P-NP-IOBJ
   P-OOPS-DATA
   P-CONT
+
+Returns:
+  True if a command was parsed successfully, otherwise false.
 "
 <ROUTINE PARSER ("AUX" NOBJ VAL DIR DIR-WN O-R KEEP OW OH OHL)
     ;"Need to (re)initialize locals here since we use AGAIN"
@@ -1244,17 +1264,24 @@ Sets:
     <DEFMAC ORDERING? ()
         '<N=? ,WINNER ,CURRENT-PLAYER>>>
 
-;"Stores WN and P-CONT in P-OOPS-WN/CONT, and copies LEXBUF/READBUF to EDIT-LEXBUF/READBUF if needed."
+;"Stores WN and P-CONT in P-OOPS-WN/CONT, and copies LEXBUF/READBUF to EDIT-LEXBUF/READBUF if needed.
+
+Returns:
+  T."
 <ROUTINE STORE-OOPS (WN)
     <COND (<N=? ,LEXBUF ,EDIT-LEXBUF>
            <COPY-TO-BUFS "EDIT">)>
     ;"NOTE: P-OOPS-O-REASON is not set here."
     <P-OOPS-CONT ,P-CONT>
     <P-OOPS-WINNER ,WINNER>
-    <P-OOPS-WN .WN>>
+    <P-OOPS-WN .WN>
+    <RTRUE>>
 
 ;"Replaces word P-OOPS-WN in EDIT-LEXBUF (and -READBUF) with word N from the active buffer, then
-  sets the active buffer to the held buffer."
+  sets the active buffer to the held buffer.
+
+Returns:
+  T."
 <ROUTINE HANDLE-OOPS (N "AUX" W WN SS SL DS DL BL MAX DELTA
                       (LBUF ,EDIT-LEXBUF) (RBUF ,EDIT-READBUF))
     <SET W <GETWORD? .N>>
@@ -1297,7 +1324,8 @@ Sets:
     <SETG WINNER <P-OOPS-WINNER>>
     <P-OOPS-WN 0>
     <P-OOPS-CONT 0>
-    <P-OOPS-O-REASON <>>>
+    <P-OOPS-O-REASON <>>
+    <RTRUE>>
 
 <ROUTINE REPLACE-HELD-WORD (N NEW-WORD "AUX" S OL NL BL MAX DELTA
                             (LBUF ,EDIT-LEXBUF) (RBUF ,EDIT-READBUF))
@@ -1552,11 +1580,15 @@ Returns:
         Args:
           SRC: A pointer to the source table.
           DEST: A pointer to the destination table.
-          LEN: The number of words to copy."
+          LEN: The number of words to copy.
+
+        Returns:
+          T."
         <ROUTINE COPY-TABLE (SRC DEST LEN)
             <SET LEN <- .LEN 1>>
             <DO (I 0 .LEN)
-                <PUT .DEST .I <GET .SRC .I>>>>
+                <PUT .DEST .I <GET .SRC .I>>>
+            <RTRUE>>
 
         ;"Copies a number of bytes from one table to another.
 
@@ -1565,21 +1597,27 @@ Returns:
         Args:
           SRC: A pointer to the source table.
           DEST: A pointer to the destination table.
-          LEN: The number of bytes to copy."
+          LEN: The number of bytes to copy.
+
+        Returns:
+          T."
         <ROUTINE COPY-TABLE-B (SRC DEST LEN)
             <SET LEN <- .LEN 1>>
             <DO (I 0 .LEN)
-                <PUTB .DEST .I <GETB .SRC .I>>>>)
+                <PUTB .DEST .I <GETB .SRC .I>>>
+            <RTRUE>>)
     (EZIP
         <ROUTINE COPY-TABLE (SRC DEST LEN)
             <SET LEN <- .LEN 1>>
             <DO (I 0 .LEN)
-                <PUT .DEST .I <GET .SRC .I>>>>
+                <PUT .DEST .I <GET .SRC .I>>>
+            <RTRUE>>
 
         <ROUTINE COPY-TABLE-B (SRC DEST LEN)
             <SET LEN <- .LEN 1>>
             <DO (I 0 .LEN)
-                <PUTB .DEST .I <GETB .SRC .I>>>>)
+                <PUTB .DEST .I <GETB .SRC .I>>>
+            <RTRUE>>)
     (ELSE
         <DEFMAC COPY-TABLE ('SRC 'DEST 'LEN "AUX" BYTES)
             ;"someday the compiler should do this optimization on its own..."
@@ -1639,6 +1677,10 @@ Returns:
 
 <MAKE-ENGLISH-NUMS ONE TWO THREE FOUR FIVE SIX SEVEN EIGHT NINE TEN>
 
+;"Gets the numeric value of a quantifier word.
+
+Returns:
+  The quantifier value, or false if W is not a recognized quantifier."
 <ROUTINE QUANTIFIER-VALUE? (W "AUX" V)
     <COND (<=? .W ,W?\,NUMBER> <SET V ,P-NUMBER>)
           (ELSE <SET V <ENGLISH-NUM-VALUE? .W>>)>
@@ -2077,7 +2119,10 @@ Returns:
   based on the verb's syntax table and the prepositions we've already parsed.
 
   This is used during initial word classification so that TOPIC slots can accept
-  arbitrary vocab words without requiring them to be flagged as OBJECT/ADJ."
+  arbitrary vocab words without requiring them to be flagged as OBJECT/ADJ.
+
+Returns:
+  True if the next noun phrase could be a TOPIC slot, otherwise false."
 <ROUTINE TOPIC-NP-POSSIBLE? (SLOT "AUX" PTR CNT NOBJ PREP1 PREP2)
     <COND (<NOT ,P-V> <RFALSE>)>
     <SET PTR <GET ,VERBS <- 255 ,P-V>>>
@@ -2104,7 +2149,10 @@ Returns:
   position, and no matching syntax line uses a normal OBJECT slot for this position.
 
   This is used so TOPIC slots can accept normal noun-phrase starters like 'THE'
-  without accidentally invoking the object noun-phrase parser."
+  without accidentally invoking the object noun-phrase parser.
+
+Returns:
+  True if the next noun phrase must be a TOPIC slot, otherwise false."
 <ROUTINE TOPIC-NP-REQUIRED? (SLOT "AUX" PTR CNT NOBJ PREP1 PREP2 SAW-TOPIC SAW-OBJECT)
     <COND (<NOT ,P-V> <RFALSE>)>
     <SET PTR <GET ,VERBS <- 255 ,P-V>>>
@@ -2638,6 +2686,12 @@ Returns:
     <TRACE-OUT>
     <RTRUE>>
 
+;"Checks whether an object is not visible to the player.
+
+This is the opposite of VISIBLE?.
+
+Returns:
+  True if the object is not visible, otherwise false."
 <ROUTINE NOT-VISIBLE? (O)
     <NOT <VISIBLE? .O>>>
 
@@ -2697,6 +2751,10 @@ Returns:
           (ELSE <RFALSE>)>
 >
 
+;"Looks up the vocabulary word for a preposition number.
+
+Returns:
+  The vocabulary word, or false if the preposition is not found."
 <ROUTINE GET-PREP-WORD GPW (PREP "AUX" MAX)
     <SET MAX <- <* <GET ,PREPOSITIONS 0> 2> 1>>
     <DO (I 1 .MAX 2)
@@ -2972,7 +3030,10 @@ Returns:
                            <FSET? .OBJ ,TRYTAKEBIT>>>>>>>
 
 ;"Tries to remove all but one of each set of indistinguishable objects from
-  a PRSTBL."
+  a PRSTBL.
+
+Returns:
+  T."
 <ROUTINE TRY-NARROW-INDISTINGUISHABLE (TBL "AUX" (CNT <GETB .TBL 0>) OBJ)
     <TRACE-IN>
     <DO (I 1 <G=? .I .CNT>)
@@ -2988,7 +3049,8 @@ Returns:
                    ;"Compare item I to the new item J next"
                    <SET J <- .J 1>>)>>>
     <PUTB .TBL 0 .CNT>
-    <TRACE-OUT>>
+    <TRACE-OUT>
+    <RTRUE>>
 
 ;"We assume everything is distinguishable by default. The game has to opt in by replacing this definition."
 <DEFAULT-DEFINITION INDISTINGUISHABLE?
@@ -3039,10 +3101,15 @@ Returns:
         <COND (<SET R <APPLY .F .TBL>>
                <RETURN .R>)>>>
 
+;"Prints a disambiguation question for a table of objects.
+
+Returns:
+  T."
 <ROUTINE WHICH-DO-YOU-MEAN (TBL)
     <TELL <LIBRARY-MESSAGE ORPHANING WHICH-DO-YOU-MEAN-1>>
     <LIST-OBJECTS .TBL <> <+ ,L-PRSTABLE ,L-THE ,L-OR>>
-    <TELL <LIBRARY-MESSAGE ORPHANING WHICH-DO-YOU-MEAN-2> CR>>
+    <TELL <LIBRARY-MESSAGE ORPHANING WHICH-DO-YOU-MEAN-2> CR>
+    <RTRUE>>
 
 ;"Determines whether an object is included by a NOUN-PHRASE's YTBL.
   Note: NP may be evaluated twice."
@@ -3052,6 +3119,10 @@ Returns:
 <DEFMAC NP-INCLUDES-PSEUDO? ('NP 'PDO)
     `<ANY-SPEC-REFERS-PSEUDO? <NP-YTBL ~.NP> <NP-YCNT ~.NP> ~.PDO>>
 
+;"Checks whether any OBJSPEC in a table refers to an object.
+
+Returns:
+  True if any specification refers to O, otherwise false."
 <ROUTINE ANY-SPEC-REFERS? (TBL N O)
     <COND (<0? .N> <RFALSE>)>
     <DO (I 1 .N)
@@ -3059,6 +3130,10 @@ Returns:
         <SET TBL <+ .TBL ,P-OBJSPEC-SIZE>>>
     <RFALSE>>
 
+;"Checks whether any OBJSPEC in a table refers to a pseudo-object entry.
+
+Returns:
+  True if any specification refers to PDO, otherwise false."
 <ROUTINE ANY-SPEC-REFERS-PSEUDO? (TBL N PDO)
     <COND (<0? .N> <RFALSE>)>
     <DO (I 1 .N)
@@ -3116,6 +3191,10 @@ Returns:
           (.A <COND (<IN-PB/WTBL? .O ,P?ADJECTIVE .A> <RETURN 1>)>)>
     <RETURN 0>>
 
+;"Measures how well a noun matches an object.
+
+Returns:
+  3 for a synonym, 2 for a plural, or 0 for no match."
 <ROUTINE NOUN-MATCH-QUALITY (O N)
     <COND (<IN-PWTBL? .O ,P?SYNONYM .N> <RETURN 3>)
           (<IN-PWTBL? .O ,P?PLURAL .N> <RETURN 2>)>
@@ -3235,16 +3314,27 @@ Returns:
                <TELL ")">)
               (ELSE <TELL "---">)>>>
 
-;"Copies a LEXBUF-like table."
+;"Copies a LEXBUF-like table.
+
+Returns:
+  T."
 <ROUTINE COPY-LEXBUF (SRC DEST "AUX" (WDS <GETB .SRC 1>))
     <PUTB .DEST 1 .WDS>
-    <COPY-TABLE <REST .SRC ,WORD-SIZE> <REST .DEST ,WORD-SIZE> <* 2 .WDS>>>
+    <COPY-TABLE <REST .SRC ,WORD-SIZE> <REST .DEST ,WORD-SIZE> <* 2 .WDS>>
+    <RTRUE>>
 
-;"Copies a READBUF-like table."
+;"Copies a READBUF-like table.
+
+Returns:
+  T."
 <ROUTINE COPY-READBUF (SRC DEST)
-    <COPY-TABLE .SRC .DEST </ <+ ,READBUF-SIZE ,WORD-SIZE -1> ,WORD-SIZE>>>
+    <COPY-TABLE .SRC .DEST </ <+ ,READBUF-SIZE ,WORD-SIZE -1> ,WORD-SIZE>>
+    <RTRUE>>
 
-;"Measures the length of a READBUF-like table (not including the null terminator on V3-4)."
+;"Measures the length of a READBUF-like table (not including the null terminator on V3-4).
+
+Returns:
+  The number of characters in the buffer."
 <ROUTINE READBUF-LENGTH (TBL)
     <VERSION? (ZIP
                <REPEAT ((P 1))
@@ -3348,7 +3438,10 @@ Sets (temporarily):
   PRSA
   PRSO
   PRSO-DIR
-  PRSI"
+  PRSI
+
+Returns:
+  True if the action was handled, otherwise false."
 <ROUTINE PERFORM (ACT "OPT" DOBJ IOBJ "AUX" PRTN RTN OA OD ODD OI WON CNT ORM)
     <TRACE 1 "[PERFORM: ACT=" N .ACT>
     <TRACE-DO 1
@@ -3401,6 +3494,10 @@ Sets (temporarily):
     <SETG REPORT-MODE .ORM>
     .WON>
 
+;"Counts appearances of an object in PRSO and PRSI, including multiple-object tables.
+
+Returns:
+  The number of appearances."
 <ROUTINE COUNT-PRS-APPEARANCES (O "AUX" R MAX)
     <COND (<PRSO? .O> <INC R>)
           (<PRSO? ,MANY-OBJECTS>
@@ -3502,7 +3599,10 @@ Sets:
   HERE
 
 Args:
-  RM: The room to move into."
+  RM: The room to move into.
+
+Returns:
+  T."
 <ROUTINE GOTO (RM "AUX" WAS-LIT F (OWINNER <>))
     <COND (<ORDERING?>
            <SET OWINNER ,WINNER>
@@ -3597,7 +3697,10 @@ Returns:
 ;"Prints a string with italics for emphasis (if supported).
 
 Args:
-  STR: The string to emphasize."
+  STR: The string to emphasize.
+
+Returns:
+  T."
 <ROUTINE ITALICIZE (STR)
     <VERSION? (ZIP)
               (T <HLIGHT ,H-ITALIC>)>
@@ -3701,7 +3804,8 @@ Returns:
                 <TELL <LIBRARY-MESSAGE PARSER STATUS-LINE-MOVES>>
                 <PRINTN ,MOVES>
                 <SCREEN 0>
-                <HLIGHT ,H-NORMAL>>
+    <HLIGHT ,H-NORMAL>
+    <RTRUE>>
 
             <GLOBAL CURRENT-STATUS-LINE <>>
             <DEFMAC UPDATE-STATUS-LINE ()
@@ -3761,9 +3865,13 @@ Returns:
     ;"Prints a message explaining that the game is over or the player has died.
       This is called after JIGS-UP has already printed the message passed in to
       describe the specific circumstances, so usually this should print a generic
-      message appropriate for the game's theme."
+      message appropriate for the game's theme.
+
+    Returns:
+      T."
     <ROUTINE PRINT-GAME-OVER ()
-        <TELL <LIBRARY-MESSAGE JIGS-UP GAME-OVER> CR>>
+        <TELL <LIBRARY-MESSAGE JIGS-UP GAME-OVER> CR>
+        <RTRUE>>
 >
 
 <DEFAULT-DEFINITION RESURRECT?
@@ -3784,14 +3892,18 @@ is a person.
 Args:
   VICTIM: The object that will be emptied.
   DEST: The object where the contents will be placed. If omitted or false,
-    the contents will be removed from play instead."
+    the contents will be removed from play instead.
+
+Returns:
+  T."
 <ROUTINE ROB (VICTIM "OPT" DEST "AUX" DEST-IS-PERSON)
     <COND (<AND .DEST <FSET? .DEST ,PERSONBIT>>
            <SET DEST-IS-PERSON T>)>
     <MAP-CONTENTS (I N .VICTIM)
         <COND (<NOT .DEST-IS-PERSON> <FCLEAR .I ,WORNBIT>)>
         <COND (<NOT .DEST> <REMOVE .I>)
-              (ELSE <MOVE .I .DEST>)>>>
+              (ELSE <MOVE .I .DEST>)>>
+    <RTRUE>>
 
 ;"Prompts the player to answer a yes/no question by pressing 'y' or 'n',
 repeating the prompt if they press any other key.
@@ -3875,6 +3987,10 @@ Returns:
                <RFALSE>)
               (ELSE <SET P <LOC .P>>)>>>
 
+;"Finds the highest object through which the player can see.
+
+Returns:
+  The visibility ceiling."
 <ROUTINE VIS-CEILING ("AUX" (L <LOC ,WINNER>))
     ;"the visibility ceiling is <LOC ,WINNER> if they're inside an opaque container,
       or HERE otherwise"
@@ -3949,23 +4065,31 @@ Returns:
 ;"Checks whether the player has entered darkness, printing a message if so.
 
 This should be called when the player has done something that might cause
-a light source to go away."
+a light source to go away.
+
+Returns:
+  True if darkness began, otherwise false."
 <ROUTINE NOW-DARK? ()
     <COND (<AND ,HERE-LIT
                 <NOT <SEARCH-FOR-LIGHT>>>
            <SETG HERE-LIT <>>
-           <DARKNESS-F ,M-NOW-DARK>)>>
+           <DARKNESS-F ,M-NOW-DARK>
+           <RTRUE>)>>
 
 ;"Checks whether the player is no longer in darkness, printing a message if so.
 
 This should be called when the player has done something that might activate
-or reveal a light source."
+or reveal a light source.
+
+Returns:
+  True if light returned, otherwise false."
 <ROUTINE NOW-LIT? ()
     <COND (<AND <NOT ,HERE-LIT>
                 <SEARCH-FOR-LIGHT>>
            <SETG HERE-LIT T>
            <FSET ,HERE ,TOUCHBIT>
-           <OR <DARKNESS-F ,M-NOW-LIT> <V-LOOK>>)>>
+           <OR <DARKNESS-F ,M-NOW-LIT> <V-LOOK>>
+           <RTRUE>)>>
 
 <INSERT-FILE "events">
 

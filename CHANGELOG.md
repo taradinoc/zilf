@@ -16,6 +16,8 @@ and this project adheres to
   brackets. Mismatched brackets inside a structure still issue error MDL0100 as
   before.
 
+- Various `zillib` routines now document their return values.
+
 ## [1.9] (June 13, 2026)
 
 ### Added

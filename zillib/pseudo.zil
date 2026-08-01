@@ -99,7 +99,13 @@ Returns:
               (<REFERS-PSEUDO? .SPEC .PT> <RETURN .PT>)>
         <SET PT <REST .PT ,PDO-SIZE>>>>
 
-;"Initializes PSEUDO-OBJECT from a pseudo entry and returns it."
+;"Initializes PSEUDO-OBJECT from a pseudo entry.
+
+Args:
+  PDO: The pseudo-object entry.
+
+Returns:
+  PSEUDO-OBJECT."
 <ROUTINE MAKE-PSEUDO (PDO)
     <PUTP ,PSEUDO-OBJECT ,P?ACTION <PDO-ACTION .PDO>>
     <SETG PSEUDO-LOC ,HERE>
