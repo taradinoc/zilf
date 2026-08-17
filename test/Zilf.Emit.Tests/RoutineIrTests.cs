@@ -4,6 +4,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Zilf.Emit;
@@ -81,6 +82,78 @@ namespace Zilf.Emit.Tests
             new RoutineIrOptimizer().Optimize(routine);
 
             Assert.AreEqual(1, routine.Entry.Instructions.Count);
+        }
+
+        [TestMethod]
+        public void Sccp_Uses_Only_Executable_Phi_Inputs()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateConstant(1), left, right);
+            left.Terminator = new IrTerminator.Jump(join);
+            right.Terminator = new IrTerminator.Jump(join);
+            var phi = routine.Append(join, IrOpcode.Phi,
+                [routine.CreateConstant(17), routine.CreateConstant(99)], payload: new[] { left, right });
+            join.Terminator = new IrTerminator.Return(phi.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsFalse(routine.Blocks.Contains(right));
+            Assert.AreEqual(17, ((IrTerminator.Return)join.Terminator).Value?.Constant);
+        }
+
+        [TestMethod]
+        public void Sccp_Does_Not_Fold_Division_By_Zero()
+        {
+            var routine = new RoutineIr();
+            var divide = routine.Append(routine.Entry, IrOpcode.Divide,
+                [routine.CreateConstant(12), routine.CreateConstant(0)]);
+            routine.Entry.Terminator = new IrTerminator.Return(divide.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreEqual(1, routine.Entry.Instructions.Count);
+            Assert.AreSame(divide.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
+        }
+
+        [TestMethod]
+        public void Gvn_Removes_Dominated_Commutative_Expression()
+        {
+            var routine = new RoutineIr();
+            var child = routine.CreateBlock();
+            var left = routine.CreateValue();
+            var right = routine.CreateValue();
+            var first = routine.Append(routine.Entry, IrOpcode.Add, [left, right]);
+            routine.Entry.Terminator = new IrTerminator.Jump(child);
+            routine.Append(child, IrOpcode.Add, [right, left]);
+            var duplicate = child.Instructions[0].Result;
+            child.Terminator = new IrTerminator.Return(duplicate);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreEqual(0, child.Instructions.Count);
+            Assert.AreSame(first.Result, ((IrTerminator.Return)child.Terminator).Value);
+        }
+
+        [TestMethod]
+        public void Gvn_Does_Not_Reuse_Value_From_Sibling_Block()
+        {
+            var routine = new RoutineIr();
+            var leftBlock = routine.CreateBlock();
+            var rightBlock = routine.CreateBlock();
+            var value = routine.CreateValue();
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), leftBlock, rightBlock);
+            var left = routine.Append(leftBlock, IrOpcode.Negate, [value]);
+            leftBlock.Terminator = new IrTerminator.Return(left.Result);
+            var right = routine.Append(rightBlock, IrOpcode.Negate, [value]);
+            rightBlock.Terminator = new IrTerminator.Return(right.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreEqual(1, leftBlock.Instructions.Count);
+            Assert.AreEqual(1, rightBlock.Instructions.Count);
         }
 
         [DataTestMethod]
@@ -162,6 +235,66 @@ namespace Zilf.Emit.Tests
             builder.Finish();
 
             target.Verify(t => t.EmitPrintNewLine(), Times.Once);
+        }
+
+        [TestMethod]
+        public void IrRoutineBuilder_Sccp_Folds_Production_Arithmetic()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var local = new Mock<ILocalBuilder>();
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.Setup(t => t.DefineLocal("TEMP")).Returns(local.Object);
+            var operands = new Dictionary<int, INumericOperand>();
+            INumericOperand MakeOperand(int value)
+            {
+                if (!operands.TryGetValue(value, out var operand))
+                {
+                    var mock = new Mock<INumericOperand>();
+                    mock.SetupGet(item => item.Value).Returns(value);
+                    operand = mock.Object;
+                    operands.Add(value, operand);
+                }
+                return operand;
+            }
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true, MakeOperand);
+            var temp = builder.DefineLocal("TEMP");
+            builder.EmitBinary(BinaryOp.Add, MakeOperand(20), MakeOperand(22), temp);
+            builder.Return(temp);
+            builder.Finish();
+
+            target.Verify(t => t.EmitBinary(It.IsAny<BinaryOp>(), It.IsAny<IOperand>(), It.IsAny<IOperand>(),
+                It.IsAny<IVariable>()), Times.Never);
+            target.Verify(t => t.Return(operands[42]), Times.Once);
+        }
+
+        [TestMethod]
+        public void IrRoutineBuilder_Gvn_Eliminates_Production_Arithmetic()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var left = Mock.Of<ILocalBuilder>();
+            var right = Mock.Of<ILocalBuilder>();
+            var temp = Mock.Of<ILocalBuilder>();
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.Setup(t => t.DefineRequiredParameter("LEFT")).Returns(left);
+            target.Setup(t => t.DefineRequiredParameter("RIGHT")).Returns(right);
+            target.Setup(t => t.DefineLocal("TEMP")).Returns(temp);
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true);
+            var leftValue = builder.DefineRequiredParameter("LEFT");
+            var rightValue = builder.DefineRequiredParameter("RIGHT");
+            var result = builder.DefineLocal("TEMP");
+            builder.EmitBinary(BinaryOp.Add, leftValue, rightValue, result);
+            builder.EmitBinary(BinaryOp.Add, rightValue, leftValue, result);
+            builder.Return(result);
+            builder.Finish();
+
+            target.Verify(t => t.EmitBinary(BinaryOp.Add, left, right, temp), Times.Once);
+            target.Verify(t => t.EmitBinary(BinaryOp.Add, right, left, temp), Times.Never);
         }
 
         private static void AssertFoldedBinary(

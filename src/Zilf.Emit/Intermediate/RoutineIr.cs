@@ -23,6 +23,8 @@ using System.Linq;
 
 namespace Zilf.Emit.Intermediate
 {
+    internal sealed record IrLoweringOperation(Action<IReadOnlyList<IOperand>> Emit, IVariable? ResultHome = null);
+
     internal enum IrEffect
     {
         None,
@@ -45,8 +47,15 @@ namespace Zilf.Emit.Intermediate
         BitwiseAnd,
         BitwiseOr,
         BitwiseNot,
+        Negate,
         ShiftLeft,
         ShiftRight,
+        Equal,
+        LessThan,
+        LessThanOrEqual,
+        GreaterThan,
+        GreaterThanOrEqual,
+        BitTest,
         Phi,
         TargetOperation,
     }

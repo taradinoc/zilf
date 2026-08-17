@@ -27,8 +27,9 @@ namespace Zilf.Emit.Glulx
     {
         protected readonly RoutineBuilder GlulxTarget;
 
-        public GlulxIrRoutineBuilder(RoutineBuilder target, IrNumericSemantics numericSemantics, bool optimize)
-            : base(target, numericSemantics, optimize)
+        public GlulxIrRoutineBuilder(RoutineBuilder target, IrNumericSemantics numericSemantics, bool optimize,
+            Func<int, INumericOperand> makeOperand)
+            : base(target, numericSemantics, optimize, makeOperand)
         {
             GlulxTarget = target;
         }
@@ -76,8 +77,8 @@ namespace Zilf.Emit.Glulx
         private readonly Stack<IDisposable> loweringContexts = [];
         private int compilationDepth;
 
-        public Glulx16IrRoutineBuilder(RoutineBuilder16 target, bool optimize)
-            : base(target, IrNumericSemantics.ZMachine16, optimize)
+        public Glulx16IrRoutineBuilder(RoutineBuilder16 target, bool optimize, Func<int, INumericOperand> makeOperand)
+            : base(target, IrNumericSemantics.ZMachine16, optimize, makeOperand)
         {
             wideTarget = target;
         }

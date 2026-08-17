@@ -233,8 +233,8 @@ namespace Zilf.Emit.Glulx
             var target = CreateRoutineBuilder(name, entryPoint, cleanStack);
             var result = target switch
             {
-                RoutineBuilder16 rb16 => new Glulx16IrRoutineBuilder(rb16, OptimizeRoutineIr),
-                RoutineBuilder rb => new GlulxIrRoutineBuilder(rb, IrNumericSemantics.Glulx32, OptimizeRoutineIr),
+                RoutineBuilder16 rb16 => new Glulx16IrRoutineBuilder(rb16, OptimizeRoutineIr, MakeOperand),
+                RoutineBuilder rb => new GlulxIrRoutineBuilder(rb, IrNumericSemantics.Glulx32, OptimizeRoutineIr, MakeOperand),
                 _ => target,
             };
             symbols.Add(name, "routine");
