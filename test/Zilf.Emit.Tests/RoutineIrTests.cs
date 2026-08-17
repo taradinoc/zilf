@@ -297,6 +297,23 @@ namespace Zilf.Emit.Tests
             target.Verify(t => t.EmitBinary(BinaryOp.Add, right, left, temp), Times.Never);
         }
 
+        [TestMethod]
+        public void IrRoutineBuilder_Preserves_Original_Named_Constant_Operand()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var namedConstant = new Mock<INumericOperand>();
+            namedConstant.SetupGet(operand => operand.Value).Returns(42);
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true);
+            builder.Return(namedConstant.Object);
+            builder.Finish();
+
+            target.Verify(t => t.Return(namedConstant.Object), Times.Once);
+        }
+
         private static void AssertFoldedBinary(
             IrNumericSemantics semantics,
             IrOpcode opcode,

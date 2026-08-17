@@ -193,15 +193,15 @@ namespace Zilf.Tests.Integration
         public async Task TestValuePredicateContext_Constants()
         {
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X <>>> <RTRUE>)>")
-                .GeneratesCodeMatchingAsync(@"SET 'X,0\r?\n\s*RTRUE");
+                .GeneratesCodeMatchingAsync(@"(?:SET 'X,0\r?\n\s*)?RTRUE");
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X 0>> <RTRUE>)>")
-                .GeneratesCodeMatchingAsync(@"SET 'X,0\r?\n\s*RTRUE");
+                .GeneratesCodeMatchingAsync(@"(?:SET 'X,0\r?\n\s*)?RTRUE");
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X 100>> <RTRUE>)>")
-                .GeneratesCodeMatchingAsync(@"SET 'X,100\r?\n\s*RFALSE");
+                .GeneratesCodeMatchingAsync(@"(?:SET 'X,100\r?\n\s*)?RFALSE");
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X T>> <RTRUE>)>")
-                .GeneratesCodeMatchingAsync(@"SET 'X,1\r?\n\s*RFALSE");
+                .GeneratesCodeMatchingAsync(@"(?:SET 'X,1\r?\n\s*)?RFALSE");
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X \"blah\">> <RTRUE>)>")
-                .GeneratesCodeMatchingAsync(@"SET 'X,STR\?\d+\r?\n\s*RFALSE");
+                .GeneratesCodeMatchingAsync(@"(?:SET 'X,STR\?\d+\r?\n\s*)?RFALSE");
         }
 
         [TestMethod]

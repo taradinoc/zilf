@@ -224,12 +224,27 @@ namespace Zilf.Emit.Intermediate
                 {
                     for (var i = 0; i < instruction.Operands.Count; i++)
                         instruction.Operands[i] = Resolve(instruction.Operands[i]);
+                    var resultHome = (instruction.Payload as IrLoweringOperation)?.ResultHome;
+                    (IrOpcode Opcode, string Operands)? currentKey = null;
+                    if (instruction.Result != null && IsValueNumberable(instruction))
+                    {
+                        var currentIds = instruction.Operands.Select(operand => operand.Id).ToArray();
+                        if (IsCommutative(instruction.Opcode))
+                            Array.Sort(currentIds);
+                        currentKey = (instruction.Opcode, string.Join(",", currentIds));
+                    }
+                    if (resultHome != null)
+                    {
+                        foreach (var staleKey in available
+                            .Where(pair => !currentKey.HasValue || pair.Key != currentKey.Value)
+                            .Where(pair => ReferenceEquals(
+                                (pair.Value.Instruction.Payload as IrLoweringOperation)?.ResultHome, resultHome))
+                            .Select(pair => pair.Key).ToArray())
+                            available.Remove(staleKey);
+                    }
                     if (instruction.Result == null || !IsValueNumberable(instruction))
                         continue;
-                    var ids = instruction.Operands.Select(operand => operand.Id).ToArray();
-                    if (IsCommutative(instruction.Opcode))
-                        Array.Sort(ids);
-                    var key = (instruction.Opcode, string.Join(",", ids));
+                    var key = currentKey!.Value;
                     if (available.TryGetValue(key, out var prior) && CanReusePhysicalHome(prior.Instruction, instruction))
                         replacements[instruction.Result] = Resolve(prior.Value);
                     else

@@ -158,7 +158,6 @@ namespace Zilf.Emit.Intermediate
             AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.Opaque,
                 operands => target.Return(operands[0]), hasResult: false);
             current.Terminator = new IrTerminator.Return(value);
-            localValues.Clear();
             dirtyLocals.Clear();
             StartFallthrough();
         }
@@ -275,8 +274,7 @@ namespace Zilf.Emit.Intermediate
             Record(() => target.EmitCall(routineOperand, capturedArgs, result));
         }
 
-        public void EmitStore(IVariable dest, IOperand src)
-            => Record(() => target.EmitStore(dest, src));
+        public void EmitStore(IVariable dest, IOperand src) => Record(() => target.EmitStore(dest, src));
 
         public void EmitPopStack() => Record(target.EmitPopStack);
 
@@ -360,7 +358,11 @@ namespace Zilf.Emit.Intermediate
         private IrValue GetValue(IOperand operand)
         {
             if (operand is INumericOperand numeric)
-                return routine.CreateConstant(numeric.Value);
+            {
+                var constant = routine.CreateConstant(numeric.Value);
+                valueHomes[constant] = operand;
+                return constant;
+            }
             if (operand is IVariable variable && locals.Contains(variable))
             {
                 if (localValues.TryGetValue(variable, out var value))
@@ -395,10 +397,10 @@ namespace Zilf.Emit.Intermediate
 
         private IOperand ResolveOperand(IrValue value)
         {
-            if (value.Constant is int constant)
-                return makeOperand(constant);
             if (valueHomes.TryGetValue(value, out var operand))
                 return operand;
+            if (value.Constant is int constant)
+                return makeOperand(constant);
             throw new InvalidOperationException($"No physical operand is available for {value}.");
         }
 
