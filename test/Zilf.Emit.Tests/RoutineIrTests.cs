@@ -314,6 +314,41 @@ namespace Zilf.Emit.Tests
             target.Verify(t => t.Return(namedConstant.Object), Times.Once);
         }
 
+        [TestMethod]
+        public void IrRoutineBuilder_Propagates_Stored_Compiler_Temporary_Through_Arithmetic()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var local = Mock.Of<ILocalBuilder>();
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.Setup(t => t.DefineLocal("?TMP")).Returns(local);
+            var operands = new Dictionary<int, INumericOperand>();
+            INumericOperand MakeOperand(int value)
+            {
+                if (!operands.TryGetValue(value, out var operand))
+                {
+                    var mock = new Mock<INumericOperand>();
+                    mock.SetupGet(item => item.Value).Returns(value);
+                    operand = mock.Object;
+                    operands.Add(value, operand);
+                }
+                return operand;
+            }
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true, MakeOperand);
+            var temp = builder.DefineLocal("?TMP");
+            builder.EmitStore(temp, MakeOperand(20));
+            builder.EmitBinary(BinaryOp.Add, temp, MakeOperand(22), temp);
+            builder.Return(temp);
+            builder.Finish();
+
+            target.Verify(t => t.EmitStore(It.IsAny<IVariable>(), It.IsAny<IOperand>()), Times.Never);
+            target.Verify(t => t.EmitBinary(It.IsAny<BinaryOp>(), It.IsAny<IOperand>(), It.IsAny<IOperand>(),
+                It.IsAny<IVariable>()), Times.Never);
+            target.Verify(t => t.Return(operands[42]), Times.Once);
+        }
+
         private static void AssertFoldedBinary(
             IrNumericSemantics semantics,
             IrOpcode opcode,

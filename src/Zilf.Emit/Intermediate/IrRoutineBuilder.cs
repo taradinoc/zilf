@@ -35,6 +35,7 @@ namespace Zilf.Emit.Intermediate
         private readonly Func<int, INumericOperand> makeOperand;
         private readonly Dictionary<ILabel, IrBlock> labelBlocks = [];
         private readonly HashSet<IVariable> locals = [];
+        private readonly HashSet<IVariable> compilerTemporaries = [];
         private readonly Dictionary<IVariable, IrValue> localValues = [];
         private readonly HashSet<IVariable> dirtyLocals = [];
         private readonly Dictionary<IrValue, IOperand> valueHomes = [];
@@ -91,7 +92,13 @@ namespace Zilf.Emit.Intermediate
         public ILocalBuilder DefineOptionalParameter(string paramName) =>
             TrackLocal(target.DefineOptionalParameter(paramName));
 
-        public ILocalBuilder DefineLocal(string localName) => TrackLocal(target.DefineLocal(localName));
+        public ILocalBuilder DefineLocal(string localName)
+        {
+            var local = TrackLocal(target.DefineLocal(localName));
+            if (localName.StartsWith("?TMP", StringComparison.Ordinal))
+                compilerTemporaries.Add(local);
+            return local;
+        }
 
         public ILabel DefineLabel()
         {
@@ -223,6 +230,12 @@ namespace Zilf.Emit.Intermediate
 
         public void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable? result)
         {
+            if (op == BinaryOp.StoreIndirect && left is IIndirectOperand { Variable: var variable } &&
+                locals.Contains(variable))
+            {
+                Record(() => target.EmitBinary(op, left, right, result));
+                return;
+            }
             if (result != null && locals.Contains(result) && TryMap(op, out var opcode))
             {
                 var instruction = AppendLowering(opcode, [GetValue(left), GetValue(right)], IrEffect.None,
@@ -274,7 +287,16 @@ namespace Zilf.Emit.Intermediate
             Record(() => target.EmitCall(routineOperand, capturedArgs, result));
         }
 
-        public void EmitStore(IVariable dest, IOperand src) => Record(() => target.EmitStore(dest, src));
+        public void EmitStore(IVariable dest, IOperand src)
+        {
+            if (compilerTemporaries.Contains(dest) && !ReferenceEquals(src, Stack))
+            {
+                var copy = AppendLowering(IrOpcode.Copy, [GetValue(src)], IrEffect.None, _ => { }, resultHome: dest);
+                SetLocalValue(dest, copy.Result!);
+                return;
+            }
+            Record(() => target.EmitStore(dest, src));
+        }
 
         public void EmitPopStack() => Record(target.EmitPopStack);
 
