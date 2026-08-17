@@ -24,6 +24,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Zilf.Common.StringEncoding;
+using Zilf.Emit.Intermediate;
 
 namespace Zilf.Emit.Glulx
 {
@@ -60,6 +61,7 @@ namespace Zilf.Emit.Glulx
         private protected readonly GlulxGameOptions options;
         private protected readonly bool zCompatibilityMode;
         private protected readonly int zCompatVersion;
+        internal bool OptimizeRoutineIr => !options.DisableIrOptimization;
 
 #if DEBUG
         readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
@@ -139,7 +141,8 @@ namespace Zilf.Emit.Glulx
                     // transparent constants that are replaced with their values at compile time
                     transparentConstants.Add(name);
                     return new TransparentConstantOperand(name, value.ToString() ?? "<bug>");
-            };
+            }
+            ;
         }
 
         /// <exception cref="ArgumentException">A symbol called <paramref name="name"/> is already defined.</exception>
@@ -227,7 +230,13 @@ namespace Zilf.Emit.Glulx
             if (entryPoint && entryRoutine != null)
                 throw new ArgumentException("Entry routine already defined");
 
-            var result = CreateRoutineBuilder(name, entryPoint, cleanStack);
+            var target = CreateRoutineBuilder(name, entryPoint, cleanStack);
+            var result = target switch
+            {
+                RoutineBuilder16 rb16 => new Glulx16IrRoutineBuilder(rb16, OptimizeRoutineIr),
+                RoutineBuilder rb => new GlulxIrRoutineBuilder(rb, IrNumericSemantics.Glulx32, OptimizeRoutineIr),
+                _ => target,
+            };
             symbols.Add(name, "routine");
 
             if (entryPoint)
@@ -651,9 +660,10 @@ namespace Zilf.Emit.Glulx
 
             // property defaults
             var propDefaultQuery = from p in props
-                                   where p.Value.DefaultValue is not (null or INumericOperand { Value: 0})
+                                   where p.Value.DefaultValue is not (null or INumericOperand { Value: 0 })
                                    orderby p.Value.Number
-                                   select new {
+                                   select new
+                                   {
                                        num = p.Value.Number,
                                        name = p.Key,
                                        def = p.Value.DefaultValue?.StripIndirect()
@@ -863,7 +873,10 @@ namespace Zilf.Emit.Glulx
             writer.WriteLine("update_status_line_hook:");
             writer.WriteLine(INDENT + "function");
 
-            if (updateStatusLineHook is RoutineBuilder rb)
+            var concreteUpdateStatusLineHook = updateStatusLineHook is IrRoutineBuilder ir
+                ? ir.Target
+                : updateStatusLineHook;
+            if (concreteUpdateStatusLineHook is RoutineBuilder rb)
             {
                 writer.WriteLine(INDENT + $"callf {rb.Name}");
             }

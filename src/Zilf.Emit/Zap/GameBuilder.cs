@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Zilf.Common.StringEncoding;
+using Zilf.Emit.Intermediate;
 
 namespace Zilf.Emit.Zap
 {
@@ -32,6 +33,12 @@ namespace Zilf.Emit.Zap
         None = 0,
         WantDebugInfo = 1,
         WantFrequentWords = 2,
+
+        /// <summary>
+        /// Disables routine IR optimization while retaining normal IR construction and lowering.
+        /// Intended for diagnostics and optimizer differential tests.
+        /// </summary>
+        DisableIrOptimization = 4,
     }
 
     public sealed partial class GameBuilder : IGameBuilder
@@ -68,10 +75,11 @@ namespace Zilf.Emit.Zap
         internal readonly int zversion;
         internal readonly DebugFileBuilder? debug;
         internal readonly AbbrevFinder? abbrevs;
+        internal readonly bool optimizeRoutineIr;
         readonly GameOptions options;
 
 #if DEBUG
-    readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
+        readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
 #endif
 
         IRoutineBuilder? entryRoutine;
@@ -111,6 +119,7 @@ namespace Zilf.Emit.Zap
 
             debug = builderOptions.HasFlag(GameBuilderOptions.WantDebugInfo) ? new DebugFileBuilder() : null;
             abbrevs = builderOptions.HasFlag(GameBuilderOptions.WantFrequentWords) ? new AbbrevFinder() : null;
+            optimizeRoutineIr = !builderOptions.HasFlag(GameBuilderOptions.DisableIrOptimization);
 
             stream = streamFactory.CreateMainStream();
             writer = new StreamWriter(stream);
@@ -351,7 +360,8 @@ namespace Zilf.Emit.Zap
             if (entryPoint && entryRoutine != null)
                 throw new ArgumentException("Entry routine already defined");
 
-            var result = new RoutineBuilder(this, name, entryPoint, cleanStack);
+            var target = new RoutineBuilder(this, name, entryPoint, cleanStack);
+            var result = new IrRoutineBuilder(target, IrNumericSemantics.ZMachine16, optimizeRoutineIr);
             symbols.Add(name, "routine");
 
             if (entryPoint)

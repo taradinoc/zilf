@@ -60,7 +60,8 @@ namespace Zilf.Emit.Glulx
                 Combiner = new PeepholeCombiner(LocalExists),
                 LabelFactory = DefineLabel,
                 TracingEnabled = shouldTrace,
-                TracingName = shouldTrace ? name : null
+                TracingName = shouldTrace ? name : null,
+                OptimizationEnabled = true,
             };
             RoutineStart = DefineLabel();
         }
@@ -991,6 +992,9 @@ namespace Zilf.Emit.Glulx
             return false;
         }
 
+        internal virtual bool SupportsLowCoreRead(string field) =>
+            field is "SCRH" or "SCRV" or "RELEASEID" or "ZORKID" or "MEMSIZE" or "FLAGS" or "ZVERSION";
+
         public bool TryEmitLowCoreWrite(string field, IOperand value)
         {
             switch (field)
@@ -1003,6 +1007,8 @@ namespace Zilf.Emit.Glulx
             return false;
         }
 
+        internal bool SupportsLowCoreWrite(string field) => field == "FLAGS";
+
         public virtual bool TryEmitLowCoreGetTable(string field, IVariable resultStorage)
         {
             switch (field)
@@ -1014,6 +1020,8 @@ namespace Zilf.Emit.Glulx
 
             return false;
         }
+
+        internal virtual bool SupportsLowCoreGetTable(string field) => field == "SERIAL";
 
         protected virtual void WriteOptionalPreamble(StringBuilder sb)
         {

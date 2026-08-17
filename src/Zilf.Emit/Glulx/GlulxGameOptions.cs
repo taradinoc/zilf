@@ -34,6 +34,12 @@ namespace Zilf.Emit.Glulx
         /// <summary>
         /// Enables the "time" status line when emulating V3.
         /// </summary>
-        public bool TimeStatusLine {get; init; }
+        public bool TimeStatusLine { get; init; }
+
+        /// <summary>
+        /// Disables routine IR optimization while retaining normal IR construction and lowering.
+        /// Intended for diagnostics and optimizer differential tests.
+        /// </summary>
+        public bool DisableIrOptimization { get; init; }
     }
 }

@@ -269,18 +269,24 @@ namespace Zilf.Emit
             }
         }
 
-    ILabel? pendingLabel;
-    readonly Dictionary<ILabel, ILabel> aliases = new();
-    readonly LinkedList<Line> lines = new();
-    readonly OptimizationDescriptor[] optimizationPipeline;
+        ILabel? pendingLabel;
+        readonly Dictionary<ILabel, ILabel> aliases = new();
+        readonly LinkedList<Line> lines = new();
+        readonly OptimizationDescriptor[] optimizationPipeline;
 #if DEBUG
-    readonly OptimizationStats[] optimizationStats;
+        readonly OptimizationStats[] optimizationStats;
 #endif
 
         /// <summary>
         /// Gets or sets the object that will be used to combine adjacent instructions.
         /// </summary>
         public IPeepholeCombiner<TCode>? Combiner { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether optimization is performed before lowering the buffered routine.
+        /// This switch exists to compare optimized IR output with unoptimized lowering.
+        /// </summary>
+        public bool OptimizationEnabled { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the factory used to allocate new labels for optimizations that need them.
@@ -460,7 +466,8 @@ namespace Zilf.Emit
         /// </remarks>
         public void Finish(Action<ILabel?, TCode, ILabel?, PeepholeLineType> handler)
         {
-            Optimize();
+            if (OptimizationEnabled)
+                Optimize();
 
             foreach (var line in lines)
                 handler(line.Label, line.Code, line.TargetLabel, line.Type);

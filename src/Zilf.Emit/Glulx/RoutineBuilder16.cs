@@ -18,6 +18,7 @@
 
 using System;
 using System.Text;
+using Zilf.Emit.Intermediate;
 
 namespace Zilf.Emit.Glulx
 {
@@ -244,6 +245,7 @@ namespace Zilf.Emit.Glulx
             return routine switch
             {
                 RoutineBuilder16 r => r.Name,
+                IrRoutineBuilder { Target: RoutineBuilder16 r } => r.Name,
                 _ => base.FormatDirectCall(routine)
             };
         }
@@ -259,6 +261,8 @@ namespace Zilf.Emit.Glulx
 
             return base.TryEmitLowCoreRead(field, resultStorage);
         }
+
+        internal override bool SupportsLowCoreRead(string field) => field == "STDREV" || base.SupportsLowCoreRead(field);
 
         public override bool TryEmitLowCoreGetTable(string field, IVariable resultStorage)
         {

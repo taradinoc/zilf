@@ -17,6 +17,7 @@
  */
 
 using System.Collections.Generic;
+using Zilf.Emit.Intermediate;
 
 namespace Zilf.Emit.Zap
 {
@@ -59,13 +60,17 @@ namespace Zilf.Emit.Zap
 
         public void MarkRoutine(IRoutineBuilder routine, DebugLineRef start, DebugLineRef end)
         {
-            ((RoutineBuilder)routine).defnStart = start;
-            ((RoutineBuilder)routine).defnEnd = end;
+            var target = routine is IrRoutineBuilder ir ? ir.Target : routine;
+            ((RoutineBuilder)target).defnStart = start;
+            ((RoutineBuilder)target).defnEnd = end;
         }
 
         public void MarkSequencePoint(IRoutineBuilder routine, DebugLineRef point)
         {
-            ((RoutineBuilder)routine).MarkSequencePoint(point);
+            if (routine is IrRoutineBuilder ir)
+                ir.RecordTargetAction(() => ((RoutineBuilder)ir.Target).MarkSequencePoint(point));
+            else
+                ((RoutineBuilder)routine).MarkSequencePoint(point);
         }
     }
 }
