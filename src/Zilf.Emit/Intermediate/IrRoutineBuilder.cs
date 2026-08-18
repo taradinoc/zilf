@@ -452,7 +452,6 @@ namespace Zilf.Emit.Intermediate
 
             var values = operands.Select(GetValue).ToArray();
             PreserveStackValues();
-            FlushPromotedLocals();
             if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)))
             {
                 var instruction = AppendLowering(IrOpcode.TargetOperation, values, IrEffect.Call,
@@ -472,7 +471,7 @@ namespace Zilf.Emit.Intermediate
 
         public void EmitStore(IVariable dest, IOperand src)
         {
-            if (compilerTemporaries.Contains(dest) && ReferenceEquals(src, Stack) && stackValues.Count > 0)
+            if (locals.Contains(dest) && ReferenceEquals(src, Stack) && stackValues.Count > 0)
             {
                 var index = stackValues.Count - 1;
                 var value = stackValues[index];
@@ -490,7 +489,7 @@ namespace Zilf.Emit.Intermediate
                 }
                 stackValues.Add(value);
             }
-            if (compilerTemporaries.Contains(dest) && !ReferenceEquals(src, Stack))
+            if (locals.Contains(dest) && !ReferenceEquals(src, Stack))
             {
                 var copy = AppendLowering(IrOpcode.Copy, [GetValue(src)], IrEffect.None,
                     operands => target.EmitStore(dest, operands[0]), resultHome: dest);
@@ -504,17 +503,6 @@ namespace Zilf.Emit.Intermediate
                 AppendLowering(IrOpcode.TargetOperation, [GetValue(src)], IrEffect.WriteMemory,
                     operands => target.EmitStore(dest, operands[0]), hasResult: false,
                     writeRegions: IrMemoryRegion.Globals);
-                return;
-            }
-            if (locals.Contains(dest))
-            {
-                var value = GetValue(src);
-                PreserveStackValues();
-                FlushPromotedLocals();
-                AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.Control,
-                    operands => target.EmitStore(dest, operands[0]), hasResult: false, resultHome: dest);
-                localValues.Remove(dest);
-                dirtyLocals.Remove(dest);
                 return;
             }
             Record(() => target.EmitStore(dest, src));
@@ -711,6 +699,8 @@ namespace Zilf.Emit.Intermediate
             var instruction = routine.Append(current, opcode, operands, effect,
                 new IrLoweringOperation(emit, resultHome, ReferenceEquals(resultHome, Stack), emitTo), hasResult,
                 readRegions, writeRegions, callSummary);
+            if (instruction.Result != null && resultHome != null)
+                instruction.Result.PhysicalHome = resultHome;
             effectSummary.DirectWrites |= effect switch
             {
                 IrEffect.WriteMemory when writeRegions == IrMemoryRegion.None => IrMemoryRegion.All,
@@ -750,6 +740,7 @@ namespace Zilf.Emit.Intermediate
                 if (localValues.TryGetValue(variable, out var value))
                     return value;
                 var localValue = routine.CreateValue();
+                localValue.PhysicalHome = variable;
                 localValues[variable] = localValue;
                 valueHomes[localValue] = variable;
                 return localValue;
@@ -757,6 +748,7 @@ namespace Zilf.Emit.Intermediate
             if (!ReferenceEquals(operand, Stack) && externalValues.TryGetValue(operand, out var existing))
                 return existing;
             var external = routine.CreateExternalValue(operand is IVariable or IIndirectOperand);
+            external.PhysicalHome = operand;
             valueHomes[external] = operand;
             if (!ReferenceEquals(operand, Stack))
                 externalValues[operand] = external;
@@ -768,6 +760,7 @@ namespace Zilf.Emit.Intermediate
             localValues[variable] = value;
             dirtyLocals.Add(variable);
             valueHomes[value] = variable;
+            value.PhysicalHome = variable;
         }
 
         private void SetProducedValue(IVariable variable, IrValue value)
@@ -791,8 +784,14 @@ namespace Zilf.Emit.Intermediate
                     lowering.StackEscapes = true;
             }
 
-            AppendLowering(IrOpcode.TargetOperation, stackValues.ToArray(), IrEffect.InputOutput, _ => { },
-                hasResult: false);
+            AppendLowering(IrOpcode.TargetOperation, stackValues.ToArray(), IrEffect.Stack, operands =>
+            {
+                foreach (var operand in operands)
+                {
+                    if (!ReferenceEquals(operand, Stack))
+                        target.EmitStore(Stack, operand);
+                }
+            }, hasResult: false);
             stackValues.Clear();
         }
 
@@ -801,8 +800,9 @@ namespace Zilf.Emit.Intermediate
             foreach (var variable in dirtyLocals.Where(variable => predicate == null || predicate(variable)).ToArray())
             {
                 var value = localValues[variable];
-                AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.Control,
-                    operands => target.EmitStore(variable, operands[0]), hasResult: false);
+                var materialization = AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.Control,
+                    operands => target.EmitStore(variable, operands[0]), hasResult: false, resultHome: variable);
+                ((IrLoweringOperation)materialization.Payload!).IsMaterialization = true;
                 dirtyLocals.Remove(variable);
             }
         }

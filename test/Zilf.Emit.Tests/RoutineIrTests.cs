@@ -272,6 +272,75 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Optimizer_Preserves_Copy_When_Source_Home_Is_Clobbered_Before_Use()
+        {
+            var routine = new RoutineIr();
+            var sourceHome = Mock.Of<IVariable>();
+            var snapshotHome = Mock.Of<IVariable>();
+            var source = routine.CreateValue();
+            source.PhysicalHome = sourceHome;
+            var snapshot = routine.Append(routine.Entry, IrOpcode.Copy, [source], payload:
+                new IrLoweringOperation(_ => { }, snapshotHome));
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Call,
+                new IrLoweringOperation(_ => { }, sourceHome), callSummary: new IrRoutineEffectSummary
+                {
+                    IsComplete = true,
+                });
+            routine.Entry.Terminator = new IrTerminator.Return(snapshot.Result);
+
+            new RoutineIrOptimizer(emitCopy: (_, _) => { }).Optimize(routine);
+
+            var preserved = routine.Entry.Instructions.Single(instruction =>
+                ReferenceEquals(instruction.Result, snapshot.Result));
+            Assert.IsTrue(((IrLoweringOperation)preserved.Payload!).RequiredHome);
+            Assert.AreSame(snapshotHome, ((IrLoweringOperation)preserved.Payload!).ResultHome);
+        }
+
+        [TestMethod]
+        public void Optimizer_Does_Not_Retarget_Producer_Whose_Original_Home_Is_Required()
+        {
+            var routine = new RoutineIr();
+            var sourceHome = Mock.Of<IVariable>();
+            var copyHome = Mock.Of<IVariable>();
+            var producerLowering = new IrLoweringOperation(_ => { }, sourceHome, emitTo: (_, _) => { })
+            {
+                RequiredHome = true,
+            };
+            var producer = routine.Append(routine.Entry, IrOpcode.Add,
+                [routine.CreateValue(), routine.CreateValue()], payload: producerLowering);
+            var copyLowering = new IrLoweringOperation(_ => { }, copyHome)
+            {
+                RequiredHome = true,
+            };
+            var copy = routine.Append(routine.Entry, IrOpcode.Copy, [producer.Result!], payload: copyLowering);
+            routine.Entry.Terminator = new IrTerminator.Return(copy.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(sourceHome, producerLowering.ResultHome);
+            Assert.IsTrue(routine.Entry.Instructions.Any(instruction => ReferenceEquals(instruction.Result,
+                copy.Result)));
+        }
+
+        [TestMethod]
+        public void Optimizer_Does_Not_Retarget_Call_Result()
+        {
+            var routine = new RoutineIr();
+            var callHome = Mock.Of<IVariable>();
+            var copyHome = Mock.Of<IVariable>();
+            var callLowering = new IrLoweringOperation(_ => { }, callHome, emitTo: (_, _) => { });
+            var call = routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Call,
+                callLowering, callSummary: new IrRoutineEffectSummary { IsComplete = true });
+            var copy = routine.Append(routine.Entry, IrOpcode.Copy, [call.Result!], payload:
+                new IrLoweringOperation(_ => { }, copyHome));
+            routine.Entry.Terminator = new IrTerminator.Return(copy.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(callHome, callLowering.ResultHome);
+        }
+
+        [TestMethod]
         public void Gvn_Invalidates_Global_Expression_Across_Call()
         {
             var routine = new RoutineIr();
@@ -673,6 +742,65 @@ namespace Zilf.Emit.Tests
             target.Verify(t => t.EmitBinary(It.IsAny<BinaryOp>(), It.IsAny<IOperand>(), It.IsAny<IOperand>(),
                 It.IsAny<IVariable>()), Times.Never);
             target.Verify(t => t.Return(operands[42]), Times.Once);
+        }
+
+        [TestMethod]
+        public void IrRoutineBuilder_Preserves_Promoted_User_Local_Across_Call()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var local = Mock.Of<ILocalBuilder>();
+            var calledRoutine = Mock.Of<IOperand>();
+            var constant = new Mock<INumericOperand>();
+            constant.SetupGet(operand => operand.Value).Returns(42);
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.Setup(t => t.DefineLocal("LOCAL")).Returns(local);
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true);
+            var promoted = builder.DefineLocal("LOCAL");
+            builder.EmitStore(promoted, constant.Object);
+            builder.EmitCall(calledRoutine, [], null);
+            builder.Return(promoted);
+            builder.Finish();
+
+            target.Verify(t => t.EmitStore(local, It.IsAny<IOperand>()), Times.Never);
+            target.Verify(t => t.EmitCall(calledRoutine, It.IsAny<IOperand[]>(), null), Times.Once);
+            target.Verify(t => t.Return(constant.Object), Times.Once);
+        }
+
+        [TestMethod]
+        public void IrRoutineBuilder_Materializes_Folded_Value_That_Escapes_To_Stack()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var stack = Mock.Of<IVariable>();
+            var operands = new Dictionary<int, INumericOperand>();
+            INumericOperand MakeOperand(int value)
+            {
+                if (!operands.TryGetValue(value, out var operand))
+                {
+                    var mock = new Mock<INumericOperand>();
+                    mock.SetupGet(item => item.Value).Returns(value);
+                    operand = mock.Object;
+                    operands.Add(value, operand);
+                }
+                return operand;
+            }
+            target.SetupGet(t => t.Stack).Returns(stack);
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            var emitted = new List<string>();
+            target.Setup(t => t.EmitStore(stack, It.IsAny<IOperand>())).Callback(() => emitted.Add("push"));
+            target.Setup(t => t.EmitPrint(PrintOp.Number, stack)).Callback(() => emitted.Add("print"));
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true, MakeOperand);
+            builder.EmitBinary(BinaryOp.Add, MakeOperand(60), MakeOperand(1), builder.Stack);
+            builder.EmitPrint(PrintOp.Number, builder.Stack);
+            builder.Finish();
+
+            CollectionAssert.AreEqual(new[] { "push", "print" }, emitted);
+            target.Verify(t => t.EmitStore(stack, operands[61]), Times.Once);
         }
 
         [TestMethod]

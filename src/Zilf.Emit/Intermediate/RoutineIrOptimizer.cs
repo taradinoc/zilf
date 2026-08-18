@@ -45,6 +45,8 @@ namespace Zilf.Emit.Intermediate
         public void Optimize(RoutineIr routine)
         {
             routine.Verify();
+            ProtectCopiesAcrossClobbers(routine);
+            RemoveRedundantMaterializations(routine);
             ForwardCopyDestinations(routine);
             SparseConditionalConstantPropagation(routine);
             SimplifyControlFlow(routine);
@@ -59,6 +61,73 @@ namespace Zilf.Emit.Intermediate
                 changed |= RemoveUnreachableBlocks(routine);
             }
             routine.Verify();
+        }
+
+        private static void ProtectCopiesAcrossClobbers(RoutineIr routine)
+        {
+            foreach (var block in routine.Blocks)
+            {
+                for (var i = 0; i < block.Instructions.Count; i++)
+                {
+                    var copy = block.Instructions[i];
+                    if (copy.Opcode != IrOpcode.Copy || copy.Result == null || copy.Operands.Count != 1 ||
+                        copy.Payload is not IrLoweringOperation copyLowering)
+                        continue;
+                    var sourceHome = GetPhysicalHome(copy.Operands[0]);
+                    if (sourceHome == null)
+                        continue;
+
+                    var clobbered = false;
+                    for (var j = i + 1; j < block.Instructions.Count; j++)
+                    {
+                        var instruction = block.Instructions[j];
+                        if (clobbered && instruction.Operands.Any(operand => ReferenceEquals(operand, copy.Result)))
+                        {
+                            copyLowering.RequiredHome = true;
+                            break;
+                        }
+                        if (instruction.Payload is IrLoweringOperation { ResultHome: not null } lowering &&
+                            ReferenceEquals(lowering.ResultHome, sourceHome))
+                            clobbered = true;
+                    }
+                    if (!copyLowering.RequiredHome && clobbered && block.Terminator switch
+                        {
+                            IrTerminator.Branch branch => ReferenceEquals(branch.Condition, copy.Result),
+                            IrTerminator.Return ret => ReferenceEquals(ret.Value, copy.Result),
+                            _ => false,
+                        })
+                        copyLowering.RequiredHome = true;
+                }
+            }
+        }
+
+        private static IOperand? GetPhysicalHome(IrValue value) => value.PhysicalHome;
+
+        private static void RemoveRedundantMaterializations(RoutineIr routine)
+        {
+            var definitions = routine.Blocks.SelectMany(block => block.Instructions)
+                .Where(instruction => instruction.Result != null)
+                .ToDictionary(instruction => instruction.Result!);
+            foreach (var block in routine.Blocks)
+            {
+                for (var i = block.Instructions.Count - 1; i >= 0; i--)
+                {
+                    var instruction = block.Instructions[i];
+                    if (instruction.Operands.Count != 1 ||
+                        instruction.Payload is not IrLoweringOperation
+                        {
+                            IsMaterialization: true,
+                            ResultHome: not null,
+                        } materialization ||
+                        !definitions.TryGetValue(instruction.Operands[0], out var definition) ||
+                        definition.Payload is not IrLoweringOperation { ResultHome: not null } producer ||
+                        !ReferenceEquals(materialization.ResultHome, producer.ResultHome))
+                        continue;
+
+                    producer.RequiredHome = true;
+                    block.Instructions.RemoveAt(i);
+                }
+            }
         }
 
         private static void ForwardCopyDestinations(RoutineIr routine)
@@ -76,8 +145,13 @@ namespace Zilf.Emit.Intermediate
 
                     var producer = block.Instructions[i - 1];
                     if (!ReferenceEquals(producer.Result, copy.Operands[0]) || producer.Result == null ||
+                        producer.Effect == IrEffect.Call ||
                         useCounts.GetValueOrDefault(producer.Result) != 1 ||
-                        producer.Payload is not IrLoweringOperation { EmitTo: not null } producerLowering)
+                        producer.Payload is not IrLoweringOperation
+                        {
+                            EmitTo: not null,
+                            RequiredHome: false,
+                        } producerLowering)
                         continue;
 
                     producerLowering.ResultHome = copyLowering.ResultHome;
@@ -517,9 +591,10 @@ namespace Zilf.Emit.Intermediate
                         continue;
 
                     if (instruction.Opcode == IrOpcode.Copy && instruction.Operands.Count == 1 &&
-                        !instruction.Operands[0].MutableExternal)
+                        !instruction.Operands[0].MutableExternal && CanReplaceRequiredHome(instruction))
                     {
                         replacements[instruction.Result] = instruction.Operands[0];
+                        PreserveRequiredHome(instruction, instruction.Operands[0]);
                         continue;
                     }
 
@@ -531,14 +606,19 @@ namespace Zilf.Emit.Intermediate
                         continue;
                     }
 
-                    if (TrySimplifyIdentity(instruction, out var replacement))
+                    if (CanReplaceRequiredHome(instruction) && TrySimplifyIdentity(instruction, out var replacement))
                     {
                         replacements[instruction.Result] = replacement;
+                        PreserveRequiredHome(instruction, replacement);
                         continue;
                     }
 
-                    if (TryFold(instruction, out var value))
-                        replacements[instruction.Result] = routine.CreateConstant(value);
+                    if (CanReplaceRequiredHome(instruction) && TryFold(instruction, out var value))
+                    {
+                        var constant = routine.CreateConstant(value);
+                        replacements[instruction.Result] = constant;
+                        PreserveRequiredHome(instruction, constant);
+                    }
                 }
 
                 block.Terminator = block.Terminator switch
@@ -563,6 +643,29 @@ namespace Zilf.Emit.Intermediate
 
             return true;
         }
+
+        private void PreserveRequiredHome(IrInstruction instruction, IrValue replacement)
+        {
+            if (emitCopy == null || instruction.Payload is not IrLoweringOperation
+                {
+                    RequiredHome: true,
+                    ResultHome: not null,
+                } lowering)
+                return;
+
+            var resultHome = lowering.ResultHome;
+            instruction.Opcode = IrOpcode.TargetOperation;
+            instruction.Operands.Clear();
+            instruction.Operands.Add(replacement);
+            instruction.Payload = new IrLoweringOperation(
+                operands => emitCopy(resultHome, operands[0]), resultHome)
+            {
+                RequiredHome = true,
+            };
+        }
+
+        private bool CanReplaceRequiredHome(IrInstruction instruction) =>
+            instruction.Payload is not IrLoweringOperation { RequiredHome: true } || emitCopy != null;
 
         private bool TrySimplifyIdentity(IrInstruction instruction, out IrValue replacement)
         {
@@ -707,8 +810,9 @@ namespace Zilf.Emit.Intermediate
             return changed;
         }
 
-        private static bool IsRemovable(IrInstruction instruction) => instruction.IsPure ||
-            instruction.Effect == IrEffect.ReadMemory && IsMemoryRead(instruction.Opcode);
+        private static bool IsRemovable(IrInstruction instruction) =>
+            instruction.Payload is not IrLoweringOperation { RequiredHome: true } &&
+            (instruction.IsPure || instruction.Effect == IrEffect.ReadMemory && IsMemoryRead(instruction.Opcode));
 
         private static bool RemoveUnreachableBlocks(RoutineIr routine)
         {

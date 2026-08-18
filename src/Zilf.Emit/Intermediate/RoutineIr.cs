@@ -42,6 +42,10 @@ namespace Zilf.Emit.Intermediate
 
         public bool StackEscapes { get; set; }
 
+        public bool RequiredHome { get; set; }
+
+        public bool IsMaterialization { get; set; }
+
         public Action<IReadOnlyList<IOperand>, IVariable?>? EmitTo { get; }
 
         public void Replay(IReadOnlyList<IOperand> operands)
@@ -156,6 +160,8 @@ namespace Zilf.Emit.Intermediate
         public int? Constant { get; }
 
         public bool MutableExternal { get; }
+
+        public IOperand? PhysicalHome { get; set; }
 
         public override string ToString() => Constant is int value ? value.ToString() : $"%{Id}";
     }
