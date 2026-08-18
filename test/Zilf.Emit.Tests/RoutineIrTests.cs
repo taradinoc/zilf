@@ -204,6 +204,73 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Gvn_Preserves_Local_Expression_Across_Call()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateValue();
+            var right = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.Add, [left, right], payload:
+                new IrLoweringOperation(_ => { }, home));
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Call, hasResult: false);
+            var second = routine.Append(routine.Entry, IrOpcode.Add, [left, right], payload:
+                new IrLoweringOperation(_ => { }, home));
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(first.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
+            Assert.AreEqual(1, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Add));
+        }
+
+        [TestMethod]
+        public void Gvn_Invalidates_Global_Expression_Across_Call()
+        {
+            var routine = new RoutineIr();
+            var global = routine.CreateExternalValue(mutable: true);
+            var one = routine.CreateConstant(1);
+            var home = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.Add, [global, one], payload:
+                new IrLoweringOperation(_ => { }, home));
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.InputOutput,
+                hasResult: false);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Call, hasResult: false);
+            var second = routine.Append(routine.Entry, IrOpcode.Add, [global, one], payload:
+                new IrLoweringOperation(_ => { }, home));
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreEqual(2, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Add));
+        }
+
+        [TestMethod]
+        public void Gvn_Invalidates_Expressions_Transitively_Derived_From_Global_Across_Call()
+        {
+            var routine = new RoutineIr();
+            var global = routine.CreateExternalValue(mutable: true);
+            var one = routine.CreateConstant(1);
+            var two = routine.CreateConstant(2);
+            var firstHome = Mock.Of<IVariable>();
+            var secondHome = Mock.Of<IVariable>();
+            var baseValue = routine.Append(routine.Entry, IrOpcode.Add, [global, one], payload:
+                new IrLoweringOperation(_ => { }, firstHome));
+            var first = routine.Append(routine.Entry, IrOpcode.Multiply, [baseValue.Result!, two], payload:
+                new IrLoweringOperation(_ => { }, secondHome));
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.InputOutput,
+                hasResult: false);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Call, hasResult: false);
+            var second = routine.Append(routine.Entry, IrOpcode.Multiply, [baseValue.Result!, two], payload:
+                new IrLoweringOperation(_ => { }, secondHome));
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreEqual(2,
+                routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Multiply));
+        }
+
+        [TestMethod]
         public void Sccp_Uses_Only_Executable_Phi_Inputs()
         {
             var routine = new RoutineIr();
@@ -473,7 +540,7 @@ namespace Zilf.Emit.Tests
         {
             var target = new Mock<IRoutineBuilder>();
             var temp = Mock.Of<ILocalBuilder>();
-            var global = Mock.Of<IOperand>();
+            var global = Mock.Of<IVariable>();
             var calledRoutine = Mock.Of<IOperand>();
             var emitted = new List<string>();
             target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());

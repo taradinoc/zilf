@@ -432,8 +432,33 @@ namespace Zilf.Emit.Intermediate
 
         public void EmitCall(IOperand routineOperand, IOperand[] args, IVariable? result)
         {
-            var capturedArgs = (IOperand[])args.Clone();
-            Record(() => target.EmitCall(routineOperand, capturedArgs, result));
+            var operands = new IOperand[args.Length + 1];
+            operands[0] = routineOperand;
+            Array.Copy(args, 0, operands, 1, args.Length);
+            if (operands.Any(operand => operand is IIndirectOperand { Variable: var variable } &&
+                locals.Contains(variable)))
+            {
+                var capturedArgs = (IOperand[])args.Clone();
+                Record(() => target.EmitCall(routineOperand, capturedArgs, result));
+                return;
+            }
+
+            var values = operands.Select(GetValue).ToArray();
+            PreserveStackValues();
+            FlushPromotedLocals();
+            if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)))
+            {
+                var instruction = AppendLowering(IrOpcode.TargetOperation, values, IrEffect.Call,
+                    resolved => target.EmitCall(resolved[0], resolved.Skip(1).ToArray(), result), resultHome: result,
+                    emitTo: (resolved, home) => target.EmitCall(resolved[0], resolved.Skip(1).ToArray(), home));
+                SetProducedValue(result, instruction.Result!);
+                dirtyLocals.Remove(result);
+            }
+            else
+            {
+                AppendLowering(IrOpcode.TargetOperation, values, IrEffect.Call,
+                    resolved => target.EmitCall(resolved[0], resolved.Skip(1).ToArray(), result), hasResult: false);
+            }
         }
 
         public void EmitStore(IVariable dest, IOperand src)
@@ -688,7 +713,7 @@ namespace Zilf.Emit.Intermediate
             }
             if (!ReferenceEquals(operand, Stack) && externalValues.TryGetValue(operand, out var existing))
                 return existing;
-            var external = routine.CreateValue();
+            var external = routine.CreateExternalValue(operand is IVariable or IIndirectOperand);
             valueHomes[external] = operand;
             if (!ReferenceEquals(operand, Stack))
                 externalValues[operand] = external;

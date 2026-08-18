@@ -106,15 +106,18 @@ namespace Zilf.Emit.Intermediate
 
     internal sealed class IrValue
     {
-        internal IrValue(int id, int? constant = null)
+        internal IrValue(int id, int? constant = null, bool mutableExternal = false)
         {
             Id = id;
             Constant = constant;
+            MutableExternal = mutableExternal;
         }
 
         public int Id { get; }
 
         public int? Constant { get; }
+
+        public bool MutableExternal { get; }
 
         public override string ToString() => Constant is int value ? value.ToString() : $"%{Id}";
     }
@@ -213,6 +216,8 @@ namespace Zilf.Emit.Intermediate
         }
 
         public IrValue CreateValue() => new(nextValueId++);
+
+        public IrValue CreateExternalValue(bool mutable) => new(nextValueId++, mutableExternal: mutable);
 
         public IrValue CreateConstant(int value) => new(nextValueId++, value);
 

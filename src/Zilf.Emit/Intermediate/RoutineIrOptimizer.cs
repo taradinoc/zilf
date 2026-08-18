@@ -179,6 +179,7 @@ namespace Zilf.Emit.Intermediate
         {
             routine.RebuildPredecessors();
             var blocks = routine.Blocks.ToArray();
+            var stateDependentValues = FindStateDependentValues(blocks);
             var all = blocks.ToHashSet();
             var dominators = blocks.ToDictionary(block => block,
                 block => ReferenceEquals(block, routine.Entry) ? new HashSet<IrBlock> { block } : new HashSet<IrBlock>(all));
@@ -229,12 +230,15 @@ namespace Zilf.Emit.Intermediate
                         instruction.Operands[i] = Resolve(instruction.Operands[i]);
                     if (instruction.Effect is IrEffect.WriteMemory or IrEffect.Call or IrEffect.Opaque)
                     {
-                        if (instruction.Effect is IrEffect.Call or IrEffect.Opaque)
+                        if (instruction.Effect == IrEffect.Opaque)
                             available.Clear();
                         else
-                            foreach (var memoryKey in available.Keys
-                                .Where(key => IsMemoryRead(key.Opcode)).ToArray())
-                                available.Remove(memoryKey);
+                        {
+                            foreach (var invalidKey in available
+                                .Where(pair => stateDependentValues.Contains(pair.Value.Value))
+                                .Select(pair => pair.Key).ToArray())
+                                available.Remove(invalidKey);
+                        }
                     }
                     var resultHome = (instruction.Payload as IrLoweringOperation)?.ResultHome;
                     (IrOpcode Opcode, string Operands)? currentKey = null;
@@ -280,6 +284,26 @@ namespace Zilf.Emit.Intermediate
 
             Visit(routine.Entry, []);
             ReplaceValues(routine, replacements);
+        }
+
+        private static HashSet<IrValue> FindStateDependentValues(IEnumerable<IrBlock> blocks)
+        {
+            var instructions = blocks.SelectMany(block => block.Instructions).ToArray();
+            var result = instructions.SelectMany(instruction => instruction.Operands)
+                .Where(value => value.MutableExternal).ToHashSet();
+            var changed = true;
+            while (changed)
+            {
+                changed = false;
+                foreach (var instruction in instructions)
+                {
+                    if (instruction.Result != null &&
+                        (IsMemoryRead(instruction.Opcode) || instruction.Operands.Any(result.Contains)) &&
+                        result.Add(instruction.Result))
+                        changed = true;
+                }
+            }
+            return result;
         }
 
         private bool TryPromoteStackValue(IrInstruction prior, IrInstruction current)
@@ -391,7 +415,8 @@ namespace Zilf.Emit.Intermediate
                     if (instruction.Result == null)
                         continue;
 
-                    if (instruction.Opcode == IrOpcode.Copy && instruction.Operands.Count == 1)
+                    if (instruction.Opcode == IrOpcode.Copy && instruction.Operands.Count == 1 &&
+                        !instruction.Operands[0].MutableExternal)
                     {
                         replacements[instruction.Result] = instruction.Operands[0];
                         continue;
