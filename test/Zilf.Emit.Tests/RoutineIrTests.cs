@@ -224,6 +224,54 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Gvn_Rewrites_Duplicate_With_Different_Home_As_Copy()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateValue();
+            var right = routine.CreateValue();
+            var firstHome = Mock.Of<IVariable>();
+            var secondHome = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.Add, [left, right], payload:
+                new IrLoweringOperation(_ => { }, firstHome));
+            var second = routine.Append(routine.Entry, IrOpcode.Add, [left, right], payload:
+                new IrLoweringOperation(_ => { }, secondHome));
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+            var copies = new List<(IVariable Destination, IOperand Source)>();
+
+            new RoutineIrOptimizer(emitCopy: (destination, source) => copies.Add((destination, source)))
+                .Optimize(routine);
+            var rewritten = routine.Entry.Instructions.Single(instruction => ReferenceEquals(instruction.Result,
+                second.Result));
+            ((IrLoweringOperation)rewritten.Payload!).Replay([firstHome]);
+
+            Assert.AreEqual(IrOpcode.TargetOperation, rewritten.Opcode);
+            Assert.AreSame(first.Result, rewritten.Operands[0]);
+            Assert.AreEqual((secondHome, firstHome), copies.Single());
+        }
+
+        [TestMethod]
+        public void Optimizer_Forwards_Sole_Result_Into_Adjacent_Copy_Destination()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateValue();
+            var right = routine.CreateValue();
+            var stack = Mock.Of<IVariable>();
+            var local = Mock.Of<IVariable>();
+            var add = routine.Append(routine.Entry, IrOpcode.Add, [left, right], payload:
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, (_, _) => { }));
+            var copy = routine.Append(routine.Entry, IrOpcode.Copy, [add.Result!], payload:
+                new IrLoweringOperation(_ => { }, local));
+            routine.Entry.Terminator = new IrTerminator.Return(copy.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreEqual(1, routine.Entry.Instructions.Count);
+            Assert.AreEqual(IrOpcode.Add, routine.Entry.Instructions[0].Opcode);
+            Assert.AreSame(local, ((IrLoweringOperation)routine.Entry.Instructions[0].Payload!).ResultHome);
+            Assert.AreSame(add.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
+        }
+
+        [TestMethod]
         public void Gvn_Invalidates_Global_Expression_Across_Call()
         {
             var routine = new RoutineIr();

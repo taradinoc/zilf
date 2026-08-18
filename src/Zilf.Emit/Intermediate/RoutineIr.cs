@@ -144,7 +144,7 @@ namespace Zilf.Emit.Intermediate
 
         public IrEffect Effect { get; }
 
-        public object? Payload { get; }
+        public object? Payload { get; set; }
 
         public bool IsPure => Effect == IrEffect.None;
 

@@ -60,7 +60,7 @@ namespace Zilf.Emit.Intermediate
                 var temporary = TrackLocal(target.DefineLocal($"?IR{nextIrTemporary++}"));
                 compilerTemporaries.Add(temporary);
                 return temporary;
-            });
+            }, (destination, value) => target.EmitStore(destination, value));
             current = routine.Entry;
             layout.Add(current);
             labelBlocks.Add(target.RoutineStart, current);

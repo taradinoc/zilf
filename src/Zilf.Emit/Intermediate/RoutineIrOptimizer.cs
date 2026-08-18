@@ -32,17 +32,20 @@ namespace Zilf.Emit.Intermediate
     {
         private readonly IrNumericSemantics numericSemantics;
         private readonly Func<IVariable?> acquireTemporary;
+        private readonly Action<IVariable, IOperand>? emitCopy;
 
         public RoutineIrOptimizer(IrNumericSemantics numericSemantics = IrNumericSemantics.Glulx32,
-            Func<IVariable?>? acquireTemporary = null)
+            Func<IVariable?>? acquireTemporary = null, Action<IVariable, IOperand>? emitCopy = null)
         {
             this.numericSemantics = numericSemantics;
             this.acquireTemporary = acquireTemporary ?? (() => null);
+            this.emitCopy = emitCopy;
         }
 
         public void Optimize(RoutineIr routine)
         {
             routine.Verify();
+            ForwardCopyDestinations(routine);
             SparseConditionalConstantPropagation(routine);
             SimplifyControlFlow(routine);
             RemoveUnreachableBlocks(routine);
@@ -56,6 +59,56 @@ namespace Zilf.Emit.Intermediate
                 changed |= RemoveUnreachableBlocks(routine);
             }
             routine.Verify();
+        }
+
+        private static void ForwardCopyDestinations(RoutineIr routine)
+        {
+            var useCounts = CountUses(routine);
+            var replacements = new Dictionary<IrValue, IrValue>();
+            foreach (var block in routine.Blocks)
+            {
+                for (var i = 1; i < block.Instructions.Count; i++)
+                {
+                    var copy = block.Instructions[i];
+                    if (copy.Opcode != IrOpcode.Copy || copy.Result == null || copy.Operands.Count != 1 ||
+                        copy.Payload is not IrLoweringOperation { ResultHome: not null } copyLowering)
+                        continue;
+
+                    var producer = block.Instructions[i - 1];
+                    if (!ReferenceEquals(producer.Result, copy.Operands[0]) || producer.Result == null ||
+                        useCounts.GetValueOrDefault(producer.Result) != 1 ||
+                        producer.Payload is not IrLoweringOperation { EmitTo: not null } producerLowering)
+                        continue;
+
+                    producerLowering.ResultHome = copyLowering.ResultHome;
+                    producerLowering.IsStackResult = copyLowering.IsStackResult;
+                    replacements[copy.Result] = producer.Result;
+                    block.Instructions.RemoveAt(i);
+                    i--;
+                }
+            }
+            ReplaceValues(routine, replacements);
+        }
+
+        private static Dictionary<IrValue, int> CountUses(RoutineIr routine)
+        {
+            var result = new Dictionary<IrValue, int>();
+            void Add(IrValue value) => result[value] = result.GetValueOrDefault(value) + 1;
+            foreach (var block in routine.Blocks)
+            {
+                foreach (var operand in block.Instructions.SelectMany(instruction => instruction.Operands))
+                    Add(operand);
+                switch (block.Terminator)
+                {
+                    case IrTerminator.Branch branch:
+                        Add(branch.Condition);
+                        break;
+                    case IrTerminator.Return { Value: not null } ret:
+                        Add(ret.Value);
+                        break;
+                }
+            }
+            return result;
         }
 
         private enum LatticeKind
@@ -267,6 +320,10 @@ namespace Zilf.Emit.Intermediate
                     {
                         replacements[instruction.Result] = Resolve(prior.Value);
                     }
+                    else if (available.TryGetValue(key, out prior) && TryRewriteAsCopy(prior.Value, instruction))
+                    {
+                        available[key] = (instruction.Result, instruction);
+                    }
                     else
                     {
                         available[key] = (instruction.Result, instruction);
@@ -284,6 +341,24 @@ namespace Zilf.Emit.Intermediate
 
             Visit(routine.Entry, []);
             ReplaceValues(routine, replacements);
+        }
+
+        private bool TryRewriteAsCopy(IrValue priorValue, IrInstruction instruction)
+        {
+            if (emitCopy == null || instruction.Payload is not IrLoweringOperation
+                {
+                    ResultHome: not null,
+                    IsStackResult: false,
+                } lowering || instruction.Operands.Count == 0)
+                return false;
+
+            var resultHome = lowering.ResultHome;
+            instruction.Opcode = IrOpcode.TargetOperation;
+            instruction.Operands.Clear();
+            instruction.Operands.Add(priorValue);
+            instruction.Payload = new IrLoweringOperation(
+                operands => emitCopy(resultHome, operands[0]), resultHome);
+            return true;
         }
 
         private static HashSet<IrValue> FindStateDependentValues(IEnumerable<IrBlock> blocks)
