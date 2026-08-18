@@ -386,6 +386,8 @@ namespace Zilf.Emit.Intermediate
             routine.RebuildPredecessors();
             var blocks = routine.Blocks.ToArray();
             var stateDependencies = FindStateDependencies(blocks);
+            var instructionBlocks = blocks.SelectMany(block => block.Instructions.Select(instruction =>
+                (instruction, block))).ToDictionary(pair => pair.instruction, pair => pair.block);
             var all = blocks.ToHashSet();
             var dominators = blocks.ToDictionary(block => block,
                 block => ReferenceEquals(block, routine.Entry) ? new HashSet<IrBlock> { block } : new HashSet<IrBlock>(all));
@@ -426,10 +428,82 @@ namespace Zilf.Emit.Intermediate
                 return value;
             }
 
+            bool IsAvailableOnAllPaths(IrInstruction definition, IrBlock useBlock)
+            {
+                var dependencies = definition.Result == null
+                    ? IrMemoryRegion.None
+                    : stateDependencies.GetValueOrDefault(definition.Result);
+                if (dependencies == IrMemoryRegion.None ||
+                    !instructionBlocks.TryGetValue(definition, out var definitionBlock) ||
+                    ReferenceEquals(definitionBlock, useBlock))
+                    return true;
+
+                var canReachUse = new HashSet<IrBlock> { useBlock };
+                var pendingPredecessors = new Stack<IrBlock>();
+                pendingPredecessors.Push(useBlock);
+                while (pendingPredecessors.Count > 0)
+                {
+                    var reachable = pendingPredecessors.Pop();
+                    foreach (var predecessor in reachable.Predecessors)
+                    {
+                        if (canReachUse.Add(predecessor))
+                            pendingPredecessors.Push(predecessor);
+                    }
+                }
+
+                var pending = new Stack<(IrBlock Block, int Start)>();
+                pending.Push((definitionBlock, definitionBlock.Instructions.IndexOf(definition) + 1));
+                var visited = new HashSet<IrBlock>();
+                while (pending.Count > 0)
+                {
+                    var (block, start) = pending.Pop();
+                    if (ReferenceEquals(block, useBlock))
+                        continue;
+                    if (!visited.Add(block))
+                        continue;
+
+                    for (var i = start; i < block.Instructions.Count; i++)
+                    {
+                        var instruction = block.Instructions[i];
+                        var writtenRegions = instruction.Effect switch
+                        {
+                            IrEffect.Call => instruction.CallSummary?.GetWrittenRegions() ?? IrMemoryRegion.All,
+                            IrEffect.Opaque => IrMemoryRegion.All,
+                            IrEffect.WriteMemory when instruction.WriteRegions == IrMemoryRegion.None =>
+                                IrMemoryRegion.All,
+                            IrEffect.WriteMemory => instruction.WriteRegions,
+                            _ => IrMemoryRegion.None,
+                        };
+                        if ((writtenRegions & dependencies) != 0)
+                            return false;
+                    }
+
+                    foreach (var successor in RoutineIr.GetSuccessors(block))
+                    {
+                        if (canReachUse.Contains(successor))
+                            pending.Push((successor, 0));
+                    }
+                }
+                return true;
+            }
+
+            var visitedDominatorBlocks = new HashSet<IrBlock>();
+            var pendingDominatorBlocks = new Stack<(IrBlock Block,
+                Dictionary<(IrOpcode Opcode, string Operands), (IrValue Value, IrInstruction Instruction)>
+                    Available)>();
             void Visit(IrBlock block,
                 Dictionary<(IrOpcode Opcode, string Operands), (IrValue Value, IrInstruction Instruction)> available)
             {
+                if (!visitedDominatorBlocks.Add(block))
+                    return;
                 available = new(available);
+                if (block.Predecessors.Count > 1)
+                {
+                    foreach (var unavailable in available
+                        .Where(pair => !IsAvailableOnAllPaths(pair.Value.Instruction, block))
+                        .Select(pair => pair.Key).ToArray())
+                        available.Remove(unavailable);
+                }
                 foreach (var instruction in block.Instructions)
                 {
                     for (var i = 0; i < instruction.Operands.Count; i++)
@@ -474,10 +548,22 @@ namespace Zilf.Emit.Intermediate
                         continue;
                     var key = currentKey!.Value;
                     if (available.TryGetValue(key, out var prior) &&
-                        (CanReusePhysicalHome(prior.Instruction, instruction) ||
-                         TryPromoteStackValue(prior.Instruction, instruction)))
+                        CanReusePhysicalHome(prior.Instruction, instruction))
                     {
                         replacements[instruction.Result] = Resolve(prior.Value);
+                    }
+                    else if (available.TryGetValue(key, out prior) &&
+                        TryPromoteStackValue(prior.Instruction, instruction))
+                    {
+                        if (instruction.Payload is IrLoweringOperation { RequiredHome: true })
+                        {
+                            if (TryRewriteAsCopy(prior.Value, prior.Instruction, instruction))
+                                available[key] = (instruction.Result, instruction);
+                        }
+                        else
+                        {
+                            replacements[instruction.Result] = Resolve(prior.Value);
+                        }
                     }
                     else if (available.TryGetValue(key, out prior) &&
                         TryRewriteAsCopy(prior.Value, prior.Instruction, instruction))
@@ -495,11 +581,16 @@ namespace Zilf.Emit.Intermediate
                     IrTerminator.Return { Value: not null } ret => ret with { Value = Resolve(ret.Value) },
                     _ => block.Terminator,
                 };
-                foreach (var child in children[block])
-                    Visit(child, available);
+                foreach (var child in children[block].AsEnumerable().Reverse())
+                    pendingDominatorBlocks.Push((child, available));
             }
 
-            Visit(routine.Entry, []);
+            pendingDominatorBlocks.Push((routine.Entry, []));
+            while (pendingDominatorBlocks.Count > 0)
+            {
+                var (block, available) = pendingDominatorBlocks.Pop();
+                Visit(block, available);
+            }
             ReplaceValues(routine, replacements);
         }
 
@@ -571,11 +662,8 @@ namespace Zilf.Emit.Intermediate
                     StackEscapes: false,
                     EmitTo: not null,
                 } priorLowering ||
-                current.Payload is not IrLoweringOperation
-                {
-                    IsStackResult: true,
-                    StackEscapes: false,
-                })
+                current.Payload is not IrLoweringOperation currentLowering ||
+                currentLowering.IsStackResult && currentLowering.StackEscapes)
                 return false;
 
             var temporary = acquireTemporary();
@@ -604,7 +692,8 @@ namespace Zilf.Emit.Intermediate
         }
 
         private static bool IsValueNumberable(IrInstruction instruction) =>
-            instruction.Payload is not IrLoweringOperation { RequiredHome: true } &&
+            (instruction.Payload is not IrLoweringOperation { RequiredHome: true } ||
+             IsMemoryRead(instruction.Opcode)) &&
             (instruction.IsPure || instruction.Effect == IrEffect.ReadMemory) && instruction.Opcode is
             IrOpcode.Add or IrOpcode.Subtract or IrOpcode.Multiply or IrOpcode.Divide or IrOpcode.Modulo or
             IrOpcode.BitwiseAnd or IrOpcode.BitwiseOr or IrOpcode.BitwiseNot or IrOpcode.Negate or

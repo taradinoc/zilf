@@ -376,6 +376,102 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Gvn_Preserves_Dominating_Stack_Value_Across_Cfg_Edge()
+        {
+            var routine = new RoutineIr();
+            var continuation = routine.CreateBlock();
+            var source = routine.CreateValue();
+            var offset = routine.CreateConstant(1);
+            var condition = routine.CreateValue();
+            var stack = Mock.Of<IVariable>();
+            var local = Mock.Of<IVariable>();
+            var temporary = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.LoadByte, [source, offset], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }),
+                readRegions: IrMemoryRegion.Tables);
+            routine.Entry.Terminator = new IrTerminator.Branch(condition, continuation, continuation);
+            var second = routine.Append(continuation, IrOpcode.LoadByte, [source, offset], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, local, emitTo: (_, _) => { }),
+                readRegions: IrMemoryRegion.Tables);
+            continuation.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer(acquireTemporary: () => temporary).Optimize(routine);
+
+            Assert.AreEqual(1, routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+            Assert.AreSame(temporary, ((IrLoweringOperation)first.Payload!).ResultHome);
+            Assert.AreSame(first.Result, ((IrTerminator.Return)continuation.Terminator).Value);
+        }
+
+        [TestMethod]
+        public void Gvn_Copies_Dominating_Memory_Value_Into_Required_Home_Across_Cfg_Edge()
+        {
+            var routine = new RoutineIr();
+            var continuation = routine.CreateBlock();
+            var source = routine.CreateValue();
+            var offset = routine.CreateConstant(1);
+            var condition = routine.CreateValue();
+            var stack = Mock.Of<IVariable>();
+            var local = Mock.Of<IVariable>();
+            var temporary = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.LoadByte, [source, offset], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }),
+                readRegions: IrMemoryRegion.Tables);
+            routine.Entry.Terminator = new IrTerminator.Branch(condition, continuation, continuation);
+            var requiredLowering = new IrLoweringOperation(_ => { }, local, emitTo: (_, _) => { })
+            {
+                RequiredHome = true,
+            };
+            var second = routine.Append(continuation, IrOpcode.LoadByte, [source, offset], IrEffect.ReadMemory,
+                requiredLowering, readRegions: IrMemoryRegion.Tables);
+            continuation.Terminator = new IrTerminator.Return(second.Result);
+            var copies = new List<(IVariable Destination, IOperand Source)>();
+
+            new RoutineIrOptimizer(acquireTemporary: () => temporary,
+                emitCopy: (destination, value) => copies.Add((destination, value))).Optimize(routine);
+            var copy = continuation.Instructions.Single(instruction => ReferenceEquals(instruction.Result,
+                second.Result));
+            ((IrLoweringOperation)copy.Payload!).Replay([temporary]);
+
+            Assert.AreEqual(1, routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+            Assert.AreEqual(IrOpcode.TargetOperation, copy.Opcode);
+            Assert.AreSame(first.Result, copy.Operands[0]);
+            Assert.AreSame(temporary, ((IrLoweringOperation)first.Payload!).ResultHome);
+            Assert.AreEqual((local, temporary), copies.Single());
+        }
+
+        [TestMethod]
+        public void Gvn_Does_Not_Preserve_Memory_Value_Across_Clobbering_Diamond_Path()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            var source = routine.CreateValue();
+            var offset = routine.CreateConstant(1);
+            var condition = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.LoadByte, [source, offset], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.InputOutput,
+                hasResult: false);
+            routine.Entry.Terminator = new IrTerminator.Branch(condition, left, right);
+            left.Instructions.Add(new IrInstruction(IrOpcode.TargetOperation, null, [], IrEffect.Call));
+            left.Terminator = new IrTerminator.Jump(join);
+            right.Terminator = new IrTerminator.Jump(join);
+            var second = routine.Append(join, IrOpcode.LoadByte, [source, offset], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables);
+            join.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(second.Result, ((IrTerminator.Return)join.Terminator).Value);
+            Assert.AreEqual(2, routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
         public void Optimizer_Forwards_Sole_Result_Into_Adjacent_Copy_Destination()
         {
             var routine = new RoutineIr();
