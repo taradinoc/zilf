@@ -663,6 +663,7 @@ namespace Zilf.Emit.Intermediate
             instruction.Operands.Add(priorValue);
             instruction.Payload = new IrLoweringOperation(
                 operands => emitCopy(resultHome, operands[0]), resultHome);
+            ((IrLoweringOperation)instruction.Payload).IsMaterialization = true;
             return true;
         }
 
@@ -941,6 +942,7 @@ namespace Zilf.Emit.Intermediate
             instruction.Payload = new IrLoweringOperation(
                 operands => emitCopy(resultHome, operands[0]), resultHome)
             {
+                IsMaterialization = true,
                 RequiredHome = true,
             };
         }

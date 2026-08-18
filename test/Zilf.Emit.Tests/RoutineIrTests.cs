@@ -1180,6 +1180,31 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void IrRoutineBuilder_Does_Not_Treat_Zero_Argument_Call_Result_As_Routine_Address()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var first = Mock.Of<ILocalBuilder>();
+            var second = Mock.Of<ILocalBuilder>();
+            var calledRoutine = Mock.Of<IConstantOperand>();
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.Setup(t => t.DefineLocal("FIRST")).Returns(first);
+            target.Setup(t => t.DefineLocal("SECOND")).Returns(second);
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true,
+                preferConstantHome: _ => true);
+            var firstLocal = builder.DefineLocal("FIRST");
+            var secondLocal = builder.DefineLocal("SECOND");
+            builder.EmitCall(calledRoutine, [], firstLocal);
+            builder.EmitCall(calledRoutine, [], secondLocal);
+            builder.Finish();
+
+            target.Verify(t => t.EmitCall(calledRoutine, It.IsAny<IOperand[]>(), first), Times.Once);
+            target.Verify(t => t.EmitCall(calledRoutine, It.IsAny<IOperand[]>(), second), Times.Once);
+        }
+
+        [TestMethod]
         public void IrRoutineBuilder_Does_Not_Materialize_Dead_Local_Before_Global_Store()
         {
             var target = new Mock<IRoutineBuilder>();

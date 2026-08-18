@@ -911,7 +911,8 @@ namespace Zilf.Emit.Intermediate
                 lowering.IsStackResult || ReferenceEquals(destination, Stack))
                 return;
             homes.Remove(destination);
-            if (instruction.Opcode is IrOpcode.Copy or IrOpcode.TargetOperation &&
+            if (instruction.Opcode == IrOpcode.Copy ||
+                instruction.Payload is IrLoweringOperation { IsMaterialization: true } &&
                 instruction.Operands.Count == 1 && IsReusableConstant(instruction.Operands[0]))
                 homes[destination] = instruction.Operands[0];
         }
