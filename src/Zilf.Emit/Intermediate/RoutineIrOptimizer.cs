@@ -479,7 +479,8 @@ namespace Zilf.Emit.Intermediate
                     {
                         replacements[instruction.Result] = Resolve(prior.Value);
                     }
-                    else if (available.TryGetValue(key, out prior) && TryRewriteAsCopy(prior.Value, instruction))
+                    else if (available.TryGetValue(key, out prior) &&
+                        TryRewriteAsCopy(prior.Value, prior.Instruction, instruction))
                     {
                         available[key] = (instruction.Result, instruction);
                     }
@@ -502,9 +503,11 @@ namespace Zilf.Emit.Intermediate
             ReplaceValues(routine, replacements);
         }
 
-        private bool TryRewriteAsCopy(IrValue priorValue, IrInstruction instruction)
+        private bool TryRewriteAsCopy(IrValue priorValue, IrInstruction priorInstruction, IrInstruction instruction)
         {
-            if (emitCopy == null || instruction.Payload is not IrLoweringOperation
+            if (emitCopy == null ||
+                priorInstruction.Payload is IrLoweringOperation { IsStackResult: true } ||
+                instruction.Payload is not IrLoweringOperation
                 {
                     ResultHome: not null,
                     IsStackResult: false,
@@ -581,6 +584,7 @@ namespace Zilf.Emit.Intermediate
 
             priorLowering.ResultHome = temporary;
             priorLowering.IsStackResult = false;
+            prior.Result!.PhysicalHome = temporary;
             return true;
         }
 
@@ -598,6 +602,7 @@ namespace Zilf.Emit.Intermediate
         }
 
         private static bool IsValueNumberable(IrInstruction instruction) =>
+            instruction.Payload is not IrLoweringOperation { RequiredHome: true } &&
             (instruction.IsPure || instruction.Effect == IrEffect.ReadMemory) && instruction.Opcode is
             IrOpcode.Add or IrOpcode.Subtract or IrOpcode.Multiply or IrOpcode.Divide or IrOpcode.Modulo or
             IrOpcode.BitwiseAnd or IrOpcode.BitwiseOr or IrOpcode.BitwiseNot or IrOpcode.Negate or

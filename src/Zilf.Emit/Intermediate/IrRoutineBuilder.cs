@@ -501,9 +501,8 @@ namespace Zilf.Emit.Intermediate
             }
             if (!locals.Contains(dest) && dest is not IIndirectOperand)
             {
-                PreserveStackValues();
-                FlushPromotedLocals();
-                AppendLowering(IrOpcode.TargetOperation, [GetValue(src)], IrEffect.WriteMemory,
+                var value = GetValue(src);
+                AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.WriteMemory,
                     operands => target.EmitStore(dest, operands[0]), hasResult: false,
                     writeRegions: IrMemoryRegion.Globals);
                 return;
@@ -690,7 +689,7 @@ namespace Zilf.Emit.Intermediate
             FinishConditional(label, instruction.Result!, polarity, instruction);
         }
 
-        private bool IsEffectBarrierOperand(IOperand operand) => ReferenceEquals(operand, Stack) ||
+        private bool IsEffectBarrierOperand(IOperand operand) =>
             operand is IIndirectOperand { Variable: var variable } && locals.Contains(variable);
 
         private IrInstruction AppendLowering(IrOpcode opcode, IReadOnlyList<IrValue> operands, IrEffect effect,
