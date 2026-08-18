@@ -350,6 +350,32 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Gvn_Reuses_Promoted_Stack_Result_For_Later_Stack_Expressions()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateValue();
+            var right = routine.CreateConstant(1);
+            var stack = Mock.Of<IVariable>();
+            var temporary = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.Subtract, [left, right], payload:
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }));
+            var second = routine.Append(routine.Entry, IrOpcode.Subtract, [left, right], payload:
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }));
+            var third = routine.Append(routine.Entry, IrOpcode.Subtract, [left, right], payload:
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }));
+            routine.Entry.Terminator = new IrTerminator.Return(third.Result);
+
+            new RoutineIrOptimizer(acquireTemporary: () => temporary).Optimize(routine);
+
+            Assert.AreEqual(1, routine.Entry.Instructions.Count(instruction =>
+                instruction.Opcode == IrOpcode.Subtract));
+            Assert.AreSame(temporary, ((IrLoweringOperation)first.Payload!).ResultHome);
+            Assert.AreSame(first.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
+            Assert.IsFalse(routine.Entry.Instructions.Any(instruction => ReferenceEquals(instruction.Result,
+                second.Result) || ReferenceEquals(instruction.Result, third.Result)));
+        }
+
+        [TestMethod]
         public void Optimizer_Forwards_Sole_Result_Into_Adjacent_Copy_Destination()
         {
             var routine = new RoutineIr();

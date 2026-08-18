@@ -593,8 +593,10 @@ namespace Zilf.Emit.Intermediate
             if (prior.Payload is not IrLoweringOperation priorLowering ||
                 current.Payload is not IrLoweringOperation currentLowering)
                 return true;
-            if (priorLowering.IsStackResult || currentLowering.IsStackResult)
+            if (priorLowering.IsStackResult)
                 return false;
+            if (currentLowering.IsStackResult)
+                return !currentLowering.StackEscapes && priorLowering.ResultHome != null;
             if (IsMemoryRead(prior.Opcode) && prior.Opcode == current.Opcode)
                 return priorLowering.ResultHome != null && currentLowering.ResultHome != null;
             return priorLowering.ResultHome != null &&
