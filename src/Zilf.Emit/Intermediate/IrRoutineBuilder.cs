@@ -245,7 +245,20 @@ namespace Zilf.Emit.Intermediate
             FinishConditional(label);
         }
 
-        public void EmitNullary(NullaryOp op, IVariable? result) => Record(() => target.EmitNullary(op, result));
+        public void EmitNullary(NullaryOp op, IVariable? result)
+        {
+            var effect = op switch
+            {
+                NullaryOp.ShowStatus => IrEffect.InputOutput,
+                NullaryOp.Catch => IrEffect.Nondeterministic,
+                _ => IrEffect.Opaque,
+            };
+            if (effect == IrEffect.Opaque)
+                Record(() => target.EmitNullary(op, result));
+            else
+                RecordEffectfulOperation([], _ => target.EmitNullary(op, result), effect, result,
+                    (_, home) => target.EmitNullary(op, home));
+        }
 
         public void EmitUnary(UnaryOp op, IOperand value, IVariable? result)
         {
@@ -267,8 +280,9 @@ namespace Zilf.Emit.Intermediate
                 SetProducedValue(result, instruction.Result!);
                 return;
             }
-            if (op == UnaryOp.Random)
-                Record(() => target.EmitUnary(op, value, result));
+            if (TryClassify(op, out var effect))
+                RecordEffectfulOperation([value], operands => target.EmitUnary(op, operands[0], result), effect, result,
+                    (operands, home) => target.EmitUnary(op, operands[0], home));
             else
                 RecordTemporaryOperation([value], operands => target.EmitUnary(op, operands[0], result), result);
         }
@@ -299,13 +313,29 @@ namespace Zilf.Emit.Intermediate
                 SetProducedValue(result, instruction.Result!);
                 return;
             }
+            if (TryClassify(op, out var effect))
+            {
+                RecordEffectfulOperation([left, right],
+                    operands => target.EmitBinary(op, operands[0], operands[1], result), effect, result,
+                    (operands, home) => target.EmitBinary(op, operands[0], operands[1], home));
+                return;
+            }
             RecordTemporaryOperation([left, right],
                 operands => target.EmitBinary(op, operands[0], operands[1], result), result);
         }
 
-        public void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right, IVariable? result) =>
+        public void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right, IVariable? result)
+        {
+            if (TryClassify(op, out var effect))
+            {
+                RecordEffectfulOperation([left, center, right],
+                    operands => target.EmitTernary(op, operands[0], operands[1], operands[2], result), effect, result,
+                    (operands, home) => target.EmitTernary(op, operands[0], operands[1], operands[2], home));
+                return;
+            }
             RecordTemporaryOperation([left, center, right],
                 operands => target.EmitTernary(op, operands[0], operands[1], operands[2], result), result);
+        }
 
         public void EmitPrint(string text, bool crlfRtrue)
         {
@@ -323,8 +353,20 @@ namespace Zilf.Emit.Intermediate
         public void EmitPrint(PrintOp op, IOperand value) => RecordOrderedOperation([value],
             operands => target.EmitPrint(op, operands[0]), IrEffect.InputOutput);
 
-        public void EmitPrintTable(IOperand table, IOperand width, IOperand? height, IOperand? skip) =>
-            Record(() => target.EmitPrintTable(table, width, height, skip));
+        public void EmitPrintTable(IOperand table, IOperand width, IOperand? height, IOperand? skip)
+        {
+            var operands = new List<IOperand> { table, width };
+            if (height != null)
+                operands.Add(height);
+            if (skip != null)
+                operands.Add(skip);
+            RecordOrderedOperation(operands, resolved =>
+            {
+                var index = 2;
+                target.EmitPrintTable(resolved[0], resolved[1], height == null ? null : resolved[index++],
+                    skip == null ? null : resolved[index]);
+            }, IrEffect.InputOutput);
+        }
 
         public void EmitPrintNewLine() => RecordOrderedOperation([], _ => target.EmitPrintNewLine(), IrEffect.InputOutput);
 
@@ -335,13 +377,19 @@ namespace Zilf.Emit.Intermediate
             Record(() => target.EmitReadChar(interval, routineOperand, result));
 
         public void EmitPlaySound(IOperand number, IOperand? effect, IOperand? volume, IOperand? routineOperand) =>
-            Record(() => target.EmitPlaySound(number, effect, volume, routineOperand));
+            RecordEffectfulOptionalOperation([number, effect, volume, routineOperand],
+                operands => target.EmitPlaySound(operands[0]!, operands[1], operands[2], operands[3]),
+                routineOperand == null ? IrEffect.InputOutput : IrEffect.Call);
 
         public void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset, IOperand dest) =>
-            Record(() => target.EmitEncodeText(src, length, srcOffset, dest));
+            RecordOrderedOperation([src, length, srcOffset, dest],
+                operands => target.EmitEncodeText(operands[0], operands[1], operands[2], operands[3]),
+                IrEffect.WriteMemory);
 
         public void EmitTokenize(IOperand text, IOperand parse, IOperand? dictionary, IOperand? flag) =>
-            Record(() => target.EmitTokenize(text, parse, dictionary, flag));
+            RecordEffectfulOptionalOperation([text, parse, dictionary, flag],
+                operands => target.EmitTokenize(operands[0]!, operands[1]!, operands[2], operands[3]),
+                IrEffect.WriteMemory);
 
         public void EmitCall(IOperand routineOperand, IOperand[] args, IVariable? result)
         {
@@ -379,7 +427,11 @@ namespace Zilf.Emit.Intermediate
             Record(() => target.EmitStore(dest, src));
         }
 
-        public void EmitPopStack() => Record(target.EmitPopStack);
+        public void EmitPopStack()
+        {
+            PreserveStackValues();
+            AppendLowering(IrOpcode.TargetOperation, [], IrEffect.Stack, _ => target.EmitPopStack(), hasResult: false);
+        }
 
         public void EmitPushUserStack(IOperand value, IOperand stack, ILabel label, bool polarity)
         {
@@ -428,7 +480,8 @@ namespace Zilf.Emit.Intermediate
 
         protected void RecordExtension(Action action) => Record(action);
 
-        internal void RecordTargetAction(Action action) => Record(action);
+        internal void RecordTargetAction(Action action) =>
+            RecordOrderedOperation([], _ => action(), IrEffect.Control);
 
         private void Record(Action action)
         {
@@ -483,6 +536,40 @@ namespace Zilf.Emit.Intermediate
 
             AppendLowering(IrOpcode.TargetOperation, operands.Select(GetValue).ToArray(), effect, emit,
                 hasResult: false);
+        }
+
+        private void RecordEffectfulOperation(IReadOnlyList<IOperand> operands,
+            Action<IReadOnlyList<IOperand>> emit, IrEffect effect, IVariable? result,
+            Action<IReadOnlyList<IOperand>, IVariable?> emitTo)
+        {
+            if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
+                !operands.Any(IsEffectBarrierOperand))
+            {
+                var instruction = AppendLowering(IrOpcode.TargetOperation, operands.Select(GetValue).ToArray(), effect,
+                    emit, resultHome: result, emitTo: emitTo);
+                SetProducedValue(result, instruction.Result!);
+                return;
+            }
+
+            RecordOrderedOperation(operands, emit, effect);
+        }
+
+        private void RecordEffectfulOptionalOperation(IReadOnlyList<IOperand?> operands,
+            Action<IReadOnlyList<IOperand?>> emit, IrEffect effect)
+        {
+            if (operands.Where(operand => operand != null).Any(operand => IsEffectBarrierOperand(operand!)))
+            {
+                Record(() => emit(operands));
+                return;
+            }
+
+            var present = operands.Where(operand => operand != null).Cast<IOperand>().ToArray();
+            var values = present.Select(GetValue).ToArray();
+            AppendLowering(IrOpcode.TargetOperation, values, effect, resolved =>
+            {
+                var index = 0;
+                emit(operands.Select(operand => operand == null ? null : resolved[index++]).ToArray());
+            }, hasResult: false);
         }
 
         private void RecordEqualityBranch(IReadOnlyList<IOperand> operands, ILabel label, bool polarity,
@@ -656,6 +743,53 @@ namespace Zilf.Emit.Intermediate
                 _ => IrOpcode.TargetOperation,
             };
             return opcode != IrOpcode.TargetOperation;
+        }
+
+        private static bool TryClassify(UnaryOp op, out IrEffect effect)
+        {
+            effect = op switch
+            {
+                UnaryOp.Random => IrEffect.Nondeterministic,
+                UnaryOp.RemoveObject or UnaryOp.GetCursor or UnaryOp.ReadMouse or UnaryOp.DirectOutput =>
+                    IrEffect.WriteMemory,
+                UnaryOp.DirectInput or UnaryOp.OutputStyle or UnaryOp.OutputBuffer or
+                    UnaryOp.SplitWindow or UnaryOp.SelectWindow or UnaryOp.ClearWindow or UnaryOp.EraseLine or
+                    UnaryOp.SetFont or UnaryOp.CheckUnicode or UnaryOp.PictureTable or UnaryOp.MouseWindow or
+                    UnaryOp.PrintForm or UnaryOp.BufferScreen => IrEffect.InputOutput,
+                UnaryOp.PopUserStack or UnaryOp.FlushStack => IrEffect.Stack,
+                _ => IrEffect.Opaque,
+            };
+            return effect != IrEffect.Opaque;
+        }
+
+        private static bool TryClassify(BinaryOp op, out IrEffect effect)
+        {
+            effect = op switch
+            {
+                BinaryOp.MoveObject or BinaryOp.SetFlag or BinaryOp.ClearFlag or BinaryOp.DirectOutput =>
+                    IrEffect.WriteMemory,
+                BinaryOp.SetCursor or BinaryOp.SetColor or BinaryOp.SetTrueColor or
+                    BinaryOp.GetWindowProperty or BinaryOp.ScrollWindow or BinaryOp.SetFont => IrEffect.InputOutput,
+                BinaryOp.FlushUserStack => IrEffect.Stack,
+                _ => IrEffect.Opaque,
+            };
+            return effect != IrEffect.Opaque;
+        }
+
+        private static bool TryClassify(TernaryOp op, out IrEffect effect)
+        {
+            effect = op switch
+            {
+                TernaryOp.PutByte or TernaryOp.PutWord or TernaryOp.PutProperty or TernaryOp.CopyTable or
+                    TernaryOp.DirectOutput =>
+                    IrEffect.WriteMemory,
+                TernaryOp.PutWindowProperty or TernaryOp.DrawPicture or TernaryOp.WindowStyle or
+                    TernaryOp.MoveWindow or TernaryOp.WindowSize or TernaryOp.SetMargins or TernaryOp.SetCursor or
+                    TernaryOp.ErasePicture or TernaryOp.SetColor or
+                    TernaryOp.SetTrueColor => IrEffect.InputOutput,
+                _ => IrEffect.Opaque,
+            };
+            return effect != IrEffect.Opaque;
         }
 
         private static bool TryMap(Condition condition, out IrOpcode opcode)

@@ -159,6 +159,27 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Optimizer_Eliminates_Memory_Read_Across_Nondeterministic_Operation()
+        {
+            var routine = new RoutineIr();
+            var table = routine.CreateValue();
+            var index = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home));
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Nondeterministic,
+                hasResult: false);
+            var second = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home));
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(first.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
+            Assert.AreEqual(1, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
         public void Optimizer_Eliminates_Property_Read_Across_Control_Flow_Markers()
         {
             var routine = new RoutineIr();

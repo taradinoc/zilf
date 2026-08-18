@@ -60,6 +60,8 @@ namespace Zilf.Emit.Intermediate
         WriteMemory,
         Call,
         InputOutput,
+        Nondeterministic,
+        Stack,
         Control,
         Opaque,
     }
