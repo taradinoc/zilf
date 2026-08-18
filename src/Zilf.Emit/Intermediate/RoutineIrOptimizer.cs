@@ -233,7 +233,7 @@ namespace Zilf.Emit.Intermediate
                             available.Clear();
                         else
                             foreach (var memoryKey in available.Keys
-                                .Where(key => key.Opcode is IrOpcode.LoadByte or IrOpcode.LoadWord).ToArray())
+                                .Where(key => IsMemoryRead(key.Opcode)).ToArray())
                                 available.Remove(memoryKey);
                     }
                     var resultHome = (instruction.Payload as IrLoweringOperation)?.ResultHome;
@@ -313,7 +313,7 @@ namespace Zilf.Emit.Intermediate
                 return true;
             if (priorLowering.IsStackResult || currentLowering.IsStackResult)
                 return false;
-            if (prior.Opcode is IrOpcode.LoadByte or IrOpcode.LoadWord && prior.Opcode == current.Opcode)
+            if (IsMemoryRead(prior.Opcode) && prior.Opcode == current.Opcode)
                 return priorLowering.ResultHome != null && currentLowering.ResultHome != null;
             return priorLowering.ResultHome != null &&
                 ReferenceEquals(priorLowering.ResultHome, currentLowering.ResultHome);
@@ -325,7 +325,13 @@ namespace Zilf.Emit.Intermediate
             IrOpcode.BitwiseAnd or IrOpcode.BitwiseOr or IrOpcode.BitwiseNot or IrOpcode.Negate or
             IrOpcode.ShiftLeft or IrOpcode.ShiftRight or IrOpcode.Equal or IrOpcode.LessThan or
             IrOpcode.LessThanOrEqual or IrOpcode.GreaterThan or IrOpcode.GreaterThanOrEqual or IrOpcode.BitTest or
-            IrOpcode.LoadByte or IrOpcode.LoadWord;
+            IrOpcode.LoadByte or IrOpcode.LoadWord or IrOpcode.LoadProperty or IrOpcode.LoadPropertyAddress or
+            IrOpcode.LoadNextProperty or IrOpcode.LoadPropertySize or IrOpcode.LoadParent or IrOpcode.LoadChild or
+            IrOpcode.LoadSibling;
+
+        private static bool IsMemoryRead(IrOpcode opcode) => opcode is IrOpcode.LoadByte or IrOpcode.LoadWord or
+            IrOpcode.LoadProperty or IrOpcode.LoadPropertyAddress or IrOpcode.LoadNextProperty or
+            IrOpcode.LoadPropertySize or IrOpcode.LoadParent or IrOpcode.LoadChild or IrOpcode.LoadSibling;
 
         private static bool IsCommutative(IrOpcode opcode) => opcode is IrOpcode.Add or IrOpcode.Multiply or
             IrOpcode.BitwiseAnd or IrOpcode.BitwiseOr or IrOpcode.Equal;
@@ -576,7 +582,7 @@ namespace Zilf.Emit.Intermediate
         }
 
         private static bool IsRemovable(IrInstruction instruction) => instruction.IsPure ||
-            instruction.Effect == IrEffect.ReadMemory && instruction.Opcode is IrOpcode.LoadByte or IrOpcode.LoadWord;
+            instruction.Effect == IrEffect.ReadMemory && IsMemoryRead(instruction.Opcode);
 
         private static bool RemoveUnreachableBlocks(RoutineIr routine)
         {

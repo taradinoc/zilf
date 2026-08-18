@@ -60,6 +60,7 @@ namespace Zilf.Emit.Intermediate
         WriteMemory,
         Call,
         InputOutput,
+        Control,
         Opaque,
     }
 
@@ -84,8 +85,18 @@ namespace Zilf.Emit.Intermediate
         GreaterThan,
         GreaterThanOrEqual,
         BitTest,
+        Inside,
+        HasAttribute,
+        ArgumentProvided,
         LoadByte,
         LoadWord,
+        LoadProperty,
+        LoadPropertyAddress,
+        LoadNextProperty,
+        LoadPropertySize,
+        LoadParent,
+        LoadChild,
+        LoadSibling,
         Phi,
         TargetOperation,
     }

@@ -128,47 +128,65 @@ namespace Zilf.Emit.Intermediate
             current = block;
             if (!layout.Contains(block))
                 layout.Add(block);
-            RecordRaw(() => target.MarkLabel(label));
+            RecordOrderedOperation([], _ => target.MarkLabel(label), IrEffect.InputOutput);
             localValues.Clear();
             dirtyLocals.Clear();
         }
 
         public void Branch(ILabel label)
         {
-            Record(() => target.Branch(label));
+            PreserveStackValues();
+            FlushPromotedLocals();
+            RecordOrderedOperation([], _ => target.Branch(label), IrEffect.InputOutput);
             current.Terminator = new IrTerminator.Jump(GetLabelBlock(label));
             StartFallthrough();
         }
 
         public void Branch(Condition cond, IOperand? left, IOperand? right, ILabel label, bool polarity)
         {
+            if (left != null && TryMap(cond, out var opcode) &&
+                (right != null || cond == Condition.ArgProvided))
+            {
+                var operands = right == null ? new[] { left } : new[] { left, right };
+                var values = operands.Select(GetValue).ToArray();
+                PreserveStackValues();
+                FlushPromotedLocals();
+                var instruction = AppendLowering(opcode, values, IrEffect.Control,
+                    resolved => target.Branch(cond, resolved[0], right == null ? null : resolved[1], label, polarity));
+                FinishConditional(label, instruction.Result!, polarity);
+                return;
+            }
             Record(() => target.Branch(cond, left, right, label, polarity));
             FinishConditional(label);
         }
 
         public void BranchIfZero(IOperand operand, ILabel label, bool polarity)
         {
-            Record(() => target.BranchIfZero(operand, label, polarity));
-            FinishConditional(label);
+            var value = GetValue(operand);
+            PreserveStackValues();
+            FlushPromotedLocals();
+            var instruction = AppendLowering(IrOpcode.Equal, [value, routine.CreateConstant(0)],
+                IrEffect.Control, resolved => target.BranchIfZero(resolved[0], label, polarity));
+            FinishConditional(label, instruction.Result!, polarity);
         }
 
         public void BranchIfEqual(IOperand value, IOperand option1, ILabel label, bool polarity)
         {
-            Record(() => target.BranchIfEqual(value, option1, label, polarity));
-            FinishConditional(label);
+            RecordEqualityBranch([value, option1], label, polarity,
+                operands => target.BranchIfEqual(operands[0], operands[1], label, polarity));
         }
 
         public void BranchIfEqual(IOperand value, IOperand option1, IOperand option2, ILabel label, bool polarity)
         {
-            Record(() => target.BranchIfEqual(value, option1, option2, label, polarity));
-            FinishConditional(label);
+            RecordEqualityBranch([value, option1, option2], label, polarity,
+                operands => target.BranchIfEqual(operands[0], operands[1], operands[2], label, polarity));
         }
 
         public void BranchIfEqual(IOperand value, IOperand option1, IOperand option2, IOperand option3,
             ILabel label, bool polarity)
         {
-            Record(() => target.BranchIfEqual(value, option1, option2, option3, label, polarity));
-            FinishConditional(label);
+            RecordEqualityBranch([value, option1, option2, option3], label, polarity,
+                operands => target.BranchIfEqual(operands[0], operands[1], operands[2], operands[3], label, polarity));
         }
 
         public void Return(IOperand result)
@@ -235,6 +253,15 @@ namespace Zilf.Emit.Intermediate
                 TryMap(op, out var opcode))
             {
                 var instruction = AppendLowering(opcode, [GetValue(value)], IrEffect.None,
+                    operands => target.EmitUnary(op, operands[0], result), resultHome: result,
+                    emitTo: (operands, home) => target.EmitUnary(op, operands[0], home));
+                SetProducedValue(result, instruction.Result!);
+                return;
+            }
+            if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
+                TryMapMemoryRead(op, out opcode))
+            {
+                var instruction = AppendLowering(opcode, [GetValue(value)], IrEffect.ReadMemory,
                     operands => target.EmitUnary(op, operands[0], result), resultHome: result,
                     emitTo: (operands, home) => target.EmitUnary(op, operands[0], home));
                 SetProducedValue(result, instruction.Result!);
@@ -387,7 +414,8 @@ namespace Zilf.Emit.Intermediate
                         lowering.Replay(instruction.Operands.Select(ResolveOperand).ToArray());
                     else
                         ((Action)instruction.Payload!).Invoke();
-                    if (instruction.Result != null && instruction.Payload is IrLoweringOperation &&
+                    if (instruction.Result != null && instruction.Payload is IrLoweringOperation
+                        { ResultHome: not null } &&
                         !valueHomes.ContainsKey(instruction.Result))
                         throw new InvalidOperationException($"No physical home was assigned to {instruction.Result}.");
                 }
@@ -455,6 +483,16 @@ namespace Zilf.Emit.Intermediate
 
             AppendLowering(IrOpcode.TargetOperation, operands.Select(GetValue).ToArray(), effect, emit,
                 hasResult: false);
+        }
+
+        private void RecordEqualityBranch(IReadOnlyList<IOperand> operands, ILabel label, bool polarity,
+            Action<IReadOnlyList<IOperand>> emit)
+        {
+            var values = operands.Select(GetValue).ToArray();
+            PreserveStackValues();
+            FlushPromotedLocals();
+            var instruction = AppendLowering(IrOpcode.Equal, values, IrEffect.Control, emit);
+            FinishConditional(label, instruction.Result!, polarity);
         }
 
         private bool IsEffectBarrierOperand(IOperand operand) => ReferenceEquals(operand, Stack) ||
@@ -548,7 +586,7 @@ namespace Zilf.Emit.Intermediate
             foreach (var variable in dirtyLocals.Where(variable => predicate == null || predicate(variable)).ToArray())
             {
                 var value = localValues[variable];
-                AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.Opaque,
+                AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.Control,
                     operands => target.EmitStore(variable, operands[0]), hasResult: false);
                 dirtyLocals.Remove(variable);
             }
@@ -599,6 +637,37 @@ namespace Zilf.Emit.Intermediate
             {
                 BinaryOp.GetByte => IrOpcode.LoadByte,
                 BinaryOp.GetWord => IrOpcode.LoadWord,
+                BinaryOp.GetProperty => IrOpcode.LoadProperty,
+                BinaryOp.GetPropAddress => IrOpcode.LoadPropertyAddress,
+                BinaryOp.GetNextProp => IrOpcode.LoadNextProperty,
+                _ => IrOpcode.TargetOperation,
+            };
+            return opcode != IrOpcode.TargetOperation;
+        }
+
+        private static bool TryMapMemoryRead(UnaryOp op, out IrOpcode opcode)
+        {
+            opcode = op switch
+            {
+                UnaryOp.GetParent => IrOpcode.LoadParent,
+                UnaryOp.GetChild => IrOpcode.LoadChild,
+                UnaryOp.GetSibling => IrOpcode.LoadSibling,
+                UnaryOp.GetPropSize => IrOpcode.LoadPropertySize,
+                _ => IrOpcode.TargetOperation,
+            };
+            return opcode != IrOpcode.TargetOperation;
+        }
+
+        private static bool TryMap(Condition condition, out IrOpcode opcode)
+        {
+            opcode = condition switch
+            {
+                Condition.Less => IrOpcode.LessThan,
+                Condition.Greater => IrOpcode.GreaterThan,
+                Condition.TestBits => IrOpcode.BitTest,
+                Condition.Inside => IrOpcode.Inside,
+                Condition.TestAttr => IrOpcode.HasAttribute,
+                Condition.ArgProvided => IrOpcode.ArgumentProvided,
                 _ => IrOpcode.TargetOperation,
             };
             return opcode != IrOpcode.TargetOperation;
@@ -622,6 +691,15 @@ namespace Zilf.Emit.Intermediate
         {
             var fallthrough = CreateLayoutBlock();
             current.Terminator = new IrTerminator.Branch(routine.CreateValue(), GetLabelBlock(label), fallthrough);
+            current = fallthrough;
+        }
+
+        private void FinishConditional(ILabel label, IrValue condition, bool polarity)
+        {
+            var fallthrough = CreateLayoutBlock();
+            current.Terminator = polarity
+                ? new IrTerminator.Branch(condition, GetLabelBlock(label), fallthrough)
+                : new IrTerminator.Branch(condition, fallthrough, GetLabelBlock(label));
             current = fallthrough;
         }
 

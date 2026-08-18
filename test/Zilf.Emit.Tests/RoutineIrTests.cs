@@ -159,6 +159,30 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Optimizer_Eliminates_Property_Read_Across_Control_Flow_Markers()
+        {
+            var routine = new RoutineIr();
+            var next = routine.CreateBlock();
+            var obj = routine.CreateValue();
+            var property = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.LoadProperty, [obj, property], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home));
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Control, hasResult: false);
+            routine.Entry.Terminator = new IrTerminator.Jump(next);
+            routine.Append(next, IrOpcode.TargetOperation, [], IrEffect.Control, hasResult: false);
+            var second = routine.Append(next, IrOpcode.LoadProperty, [obj, property], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home));
+            next.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(first.Result, ((IrTerminator.Return)next.Terminator).Value);
+            Assert.AreEqual(1, routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Opcode == IrOpcode.LoadProperty));
+        }
+
+        [TestMethod]
         public void Sccp_Uses_Only_Executable_Phi_Inputs()
         {
             var routine = new RoutineIr();
