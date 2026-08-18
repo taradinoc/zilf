@@ -1202,7 +1202,8 @@ This simulates a full descent so keys can be placed on earlier floors."
                                        <COND (<==? .CHOICE .F> .RID)
                                              (ELSE 0)>>)>)>
         <PRECOMPUTE-ALTARS-FOR-CURRENT-FLOOR .F>
-        <PRECOMPUTE-SHRINES-FOR-CURRENT-FLOOR .F>>
+        <PRECOMPUTE-SHRINES-FOR-CURRENT-FLOOR .F>
+        <UPDATE-LOADING-PROGRESS .F>>
     <RTRUE>>
 
 ;"Place precomputed treasure loot for a floor.
@@ -2207,6 +2208,7 @@ Returns:
     <INIT-TREASURES>
     <INIT-POTIONS>
     <INIT-INTERIOR-ENTRANCES>
+    <DRAW-LOADING-SCREEN>
     <PRECOMPUTE-TREASURE-ROOM-PLANS>
     <SETG GAME-OVER? <>>
     <SETG YOU-WIN? <>>
@@ -2248,6 +2250,7 @@ Returns:
     <SETG TRADER-X 0>
     <SETG TRADER-Y 0>
     <SETG CURRENT-FLOOR 1>
+    <FINISH-LOADING-SCREEN>
     <ENTER-FLOOR 1 0 0 0>
     <SETG ORIG-SPAWN-X ,PLAYER-X>
     <SETG ORIG-SPAWN-Y ,PLAYER-Y>

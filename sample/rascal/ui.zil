@@ -51,6 +51,12 @@
 <CONSTANT RECOMMENDED-SCRV 30>
 <CONSTANT RECOMMENDED-SCRH 80>
 
+<CONSTANT LOADING-WIDTH 40>
+<CONSTANT LOADING-PROGRESS-ROW 12>
+<CONSTANT LOADING-CHASE-ROW 14>
+
+<GLOBAL LOADING-VARIANT 0>
+
 <CONSTANT MAX-DIRTY 2048>
 
 <GLOBAL DIRTY-COUNT 0>
@@ -442,6 +448,100 @@ Returns:
           (<==? .CH ,TILE-MONKEY> <UI-FG ,UI-RGB-MONKEY ,ZCOL-YELLOW ,H-BOLD>)
           (<==? .CH ,TILE-SPIRIT> <UI-FG ,UI-RGB-SPIRIT ,ZCOL-MAGENTA ,H-BOLD>)
           (ELSE <UI-RESET>)>
+    <RTRUE>>
+
+<DEFMAC CENTER-STR (S WIDTH "AUX" I (LEN <LENGTH .S>))
+    #DECL ((S) STRING (WIDTH) FIX (VALUE) STRING)
+    <REPEAT ()
+        <COND (<G=? .LEN .WIDTH> <RETURN>)>
+        <SET S <STRING !\  .S>>
+        <SET LEN <+ .LEN 2>>>
+    .S>
+
+;"Draws the startup screen shown while all dungeon floors are planned."
+
+<ROUTINE DRAW-LOADING-SCREEN ("AUX" COL)
+    <SPLIT <LOWCORE SCRV>>
+    <SCREEN 1>
+    <UI-RESET>
+    <CLEAR -2>
+    <SET COL </ <- <LOWCORE SCRH> ,LOADING-WIDTH> 2>>
+    <COND (<L? .COL 1> <SET COL 1>)>
+    <SETG LOADING-VARIANT <- <RANDOM 6> 1>>
+
+    <CURSET 8 .COL>
+    <TELL <CENTER-STR "PREPARING DUNGEON" ,LOADING-WIDTH>>
+    <CURSET 10 .COL>
+    <TELL <CENTER-STR "PLANNING FLOORS" ,LOADING-WIDTH>>
+    <UPDATE-LOADING-PROGRESS 0>
+    <RTRUE>>
+
+;"Updates the loading floor counter and moves one of three chase pairs toward
+  a staircase. Variants 0..2 run left-to-right; 3..5 run right-to-left."
+
+<ROUTINE UPDATE-LOADING-PROGRESS (COMPLETED "AUX" COL START STAIRS CHASER CHASED CHASERX CHASEDX REVERSE?)
+    <SET COL </ <- <LOWCORE SCRH> ,LOADING-WIDTH> 2>>
+    <COND (<L? .COL 1> <SET COL 1>)>
+    <COND (<G? .COMPLETED ,MAX-FLOORS> <SET COMPLETED ,MAX-FLOORS>)>
+
+    <CURSET ,LOADING-PROGRESS-ROW .COL>
+    <ERASE 1>
+    <TELL "               FLOOR " N .COMPLETED "/" N ,MAX-FLOORS>
+
+    <SET REVERSE? <G? ,LOADING-VARIANT 2>>
+    <COND (<OR <==? ,LOADING-VARIANT 0> <==? ,LOADING-VARIANT 3>>
+           <SET CHASER ,TILE-PLAYER>
+           <SET CHASED ,TILE-MONKEY>)
+          (<OR <==? ,LOADING-VARIANT 1> <==? ,LOADING-VARIANT 4>>
+           <SET CHASER ,TILE-SPIRIT>
+           <SET CHASED ,TILE-PLAYER>)
+          (ELSE
+           <SET CHASER ,TILE-BEES>
+           <SET CHASED ,TILE-PLAYER>)>
+
+    <COND (.REVERSE?
+           <SET STAIRS <+ .COL 7>>
+           <SET START <+ .STAIRS ,MAX-FLOORS>>
+           <SET CHASERX <- .START .COMPLETED>>
+           <SET CHASEDX <- .CHASERX 2>>)
+          (ELSE
+           <SET START <+ .COL 7>>
+           <SET STAIRS <+ .START ,MAX-FLOORS>>
+           <SET CHASERX <+ .START .COMPLETED>>
+           <SET CHASEDX <+ .CHASERX 2>>)>
+
+    <CURSET ,LOADING-CHASE-ROW .COL>
+    <ERASE 1>
+    <DO (I 0 ,MAX-FLOORS)
+        <CURSET ,LOADING-CHASE-ROW <+ <COND (.REVERSE? .STAIRS) (ELSE .START)> .I>>
+        <APPLY-SPRITE-COLOR ,TILE-FLOOR>
+        <PRINTC ,TILE-FLOOR>>
+    <CURSET ,LOADING-CHASE-ROW .STAIRS>
+    <APPLY-SPRITE-COLOR ,TILE-STAIR-DOWN>
+    <PRINTC ,TILE-STAIR-DOWN>
+    <COND (<AND <L? .COMPLETED <- ,MAX-FLOORS 1>>
+                <G? .CHASEDX .COL>
+                <L? .CHASEDX <+ .COL ,LOADING-WIDTH>>>
+           <CURSET ,LOADING-CHASE-ROW .CHASEDX>
+           <APPLY-SPRITE-COLOR .CHASED>
+           <PRINTC .CHASED>)>
+    <CURSET ,LOADING-CHASE-ROW .CHASERX>
+    <APPLY-SPRITE-COLOR .CHASER>
+    <PRINTC .CHASER>
+    <CURSET <LOWCORE SCRV> <LOWCORE SCRH>>
+    <UI-RESET>
+    <RTRUE>>
+
+;"Clears the loading display and restores the normal game windows. Clearing
+  both windows also resets the lower window's pagination state before the
+  welcome message is printed."
+
+<ROUTINE FINISH-LOADING-SCREEN ()
+    <UI-RESET>
+    <CLEAR -1>
+    <SPLIT ,UPPER-HEIGHT>
+    <SCREEN 1>
+    <SETG FULL-REDRAW? T>
     <RTRUE>>
 
 <ROUTINE SPLASH ("AUX" COL C)
