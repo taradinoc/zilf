@@ -6,6 +6,13 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Added a new optimizer layer that analyzes control and data flow, enabling
+  optimizations like common subexpression elimination. For Rascal, this saves
+  ~150 instructions and ~600 bytes in the compiled story file. For Advent, it
+  saves ~50 instructions and ~70 bytes in the compiled story file.
+
 ### Changed
 
 - ZILF's behavior when reading a mismatched closing bracket is now closer to
