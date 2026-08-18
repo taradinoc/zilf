@@ -283,12 +283,6 @@ namespace Zilf.Emit
         public IPeepholeCombiner<TCode>? Combiner { get; set; }
 
         /// <summary>
-        /// Gets or sets whether optimization is performed before lowering the buffered routine.
-        /// This switch exists to compare optimized IR output with unoptimized lowering.
-        /// </summary>
-        public bool OptimizationEnabled { get; set; } = true;
-
-        /// <summary>
         /// Gets or sets the factory used to allocate new labels for optimizations that need them.
         /// </summary>
         public Func<ILabel>? LabelFactory { get; set; }
@@ -466,8 +460,7 @@ namespace Zilf.Emit
         /// </remarks>
         public void Finish(Action<ILabel?, TCode, ILabel?, PeepholeLineType> handler)
         {
-            if (OptimizationEnabled)
-                Optimize();
+            Optimize();
 
             foreach (var line in lines)
                 handler(line.Label, line.Code, line.TargetLabel, line.Type);

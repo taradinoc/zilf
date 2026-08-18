@@ -293,7 +293,6 @@ namespace Zilf.Emit.Intermediate
             }
 
             var executableBlocks = new HashSet<IrBlock> { routine.Entry };
-            var executableEdges = new HashSet<(IrBlock From, IrBlock To)>();
             var changed = true;
             while (changed)
             {
@@ -306,19 +305,7 @@ namespace Zilf.Emit.Intermediate
                             continue;
 
                         LatticeValue next;
-                        if (instruction.Opcode == IrOpcode.Phi)
-                        {
-                            next = default;
-                            var predecessors = instruction.Payload as IReadOnlyList<IrBlock>;
-                            for (var i = 0; i < instruction.Operands.Count; i++)
-                            {
-                                if (predecessors != null &&
-                                    (i >= predecessors.Count || !executableEdges.Contains((predecessors[i], block))))
-                                    continue;
-                                next = LatticeValue.Meet(next, State(instruction.Operands[i]));
-                            }
-                        }
-                        else if (!instruction.IsPure || instruction.Opcode == IrOpcode.TargetOperation)
+                        if (!instruction.IsPure || instruction.Opcode == IrOpcode.TargetOperation)
                         {
                             next = new(LatticeKind.Overdefined);
                         }
@@ -359,8 +346,6 @@ namespace Zilf.Emit.Intermediate
                     };
                     foreach (var successor in successors)
                     {
-                        if (executableEdges.Add((block, successor)))
-                            changed = true;
                         if (executableBlocks.Add(successor))
                             changed = true;
                     }
@@ -899,14 +884,6 @@ namespace Zilf.Emit.Intermediate
                     {
                         replacements[instruction.Result] = instruction.Operands[0];
                         PreserveRequiredHome(instruction, instruction.Operands[0]);
-                        continue;
-                    }
-
-                    if (instruction.Opcode == IrOpcode.Phi &&
-                        instruction.Operands.Count > 0 &&
-                        instruction.Operands.All(operand => ReferenceEquals(operand, instruction.Operands[0])))
-                    {
-                        replacements[instruction.Result] = instruction.Operands[0];
                         continue;
                     }
 

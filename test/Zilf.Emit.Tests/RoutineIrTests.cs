@@ -109,36 +109,6 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
-        public void SsaBuilder_Inserts_Phi_At_Diamond_Join()
-        {
-            var routine = new RoutineIr();
-            var left = routine.CreateBlock();
-            var right = routine.CreateBlock();
-            var join = routine.CreateBlock();
-            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), left, right);
-            left.Terminator = new IrTerminator.Jump(join);
-            right.Terminator = new IrTerminator.Jump(join);
-            join.Terminator = new IrTerminator.Return(null);
-            routine.RebuildPredecessors();
-
-            var variable = new object();
-            var builder = new SsaBuilder(routine);
-            builder.SealBlock(routine.Entry);
-            builder.WriteVariable(left, variable, routine.CreateConstant(1));
-            builder.WriteVariable(right, variable, routine.CreateConstant(2));
-            builder.SealBlock(left);
-            builder.SealBlock(right);
-
-            var value = builder.ReadVariable(join, variable);
-            builder.SealBlock(join);
-
-            Assert.AreEqual(1, join.Instructions.Count);
-            Assert.AreEqual(IrOpcode.Phi, join.Instructions[0].Opcode);
-            Assert.AreSame(value, join.Instructions[0].Result);
-            Assert.AreEqual(2, join.Instructions[0].Operands.Count);
-        }
-
-        [TestMethod]
         public void Optimizer_Preserves_Effectful_Operations()
         {
             var routine = new RoutineIr();
@@ -858,26 +828,6 @@ namespace Zilf.Emit.Tests
             Assert.AreSame(first.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
             Assert.AreEqual(1,
                 routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
-        }
-
-        [TestMethod]
-        public void Sccp_Uses_Only_Executable_Phi_Inputs()
-        {
-            var routine = new RoutineIr();
-            var left = routine.CreateBlock();
-            var right = routine.CreateBlock();
-            var join = routine.CreateBlock();
-            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateConstant(1), left, right);
-            left.Terminator = new IrTerminator.Jump(join);
-            right.Terminator = new IrTerminator.Jump(join);
-            var phi = routine.Append(join, IrOpcode.Phi,
-                [routine.CreateConstant(17), routine.CreateConstant(99)], payload: new[] { left, right });
-            join.Terminator = new IrTerminator.Return(phi.Result);
-
-            new RoutineIrOptimizer().Optimize(routine);
-
-            Assert.IsFalse(routine.Blocks.Contains(right));
-            Assert.AreEqual(17, ((IrTerminator.Return)join.Terminator).Value?.Constant);
         }
 
         [TestMethod]

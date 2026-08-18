@@ -142,7 +142,6 @@ namespace Zilf.Emit.Intermediate
         LoadChild,
         LoadSibling,
         ScanTable,
-        Phi,
         TargetOperation,
     }
 

@@ -250,19 +250,8 @@ namespace Zilf.Emit.Glulx
             };
         }
 
-        public override bool TryEmitLowCoreRead(string field, IVariable resultStorage)
-        {
-            switch (field)
-            {
-                case "STDREV":
-                    Emit($"copy 0x101 -> {FormatStore(resultStorage)}", "copy");
-                    return true;
-            }
-
-            return base.TryEmitLowCoreRead(field, resultStorage);
-        }
-
-        internal override bool SupportsLowCoreRead(string field) => field == "STDREV" || base.SupportsLowCoreRead(field);
+        private protected override LowCoreRead GetLowCoreRead(string field) =>
+            field == "STDREV" ? LowCoreRead.StandardRevision : base.GetLowCoreRead(field);
 
         public override bool TryEmitLowCoreGetTable(string field, IVariable resultStorage)
         {

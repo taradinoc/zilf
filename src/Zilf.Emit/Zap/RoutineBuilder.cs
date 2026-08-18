@@ -63,7 +63,6 @@ namespace Zilf.Emit.Zap
             {
                 Combiner = new PeepholeCombiner(game),
                 LabelFactory = DefineLabel,
-                OptimizationEnabled = true,
             };
             RoutineStart = DefineLabel();
         }
