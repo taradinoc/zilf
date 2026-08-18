@@ -144,6 +144,19 @@ namespace Zilf.Emit.Intermediate
 
         public void Branch(Condition cond, IOperand? left, IOperand? right, ILabel label, bool polarity)
         {
+            if (cond is Condition.IncCheck or Condition.DecCheck && left is IVariable variable && right != null)
+            {
+                var rightValue = GetValue(right);
+                PreserveStackValues();
+                FlushPromotedLocals();
+                AppendLowering(IrOpcode.TargetOperation, [rightValue], IrEffect.Control,
+                    operands => target.Branch(cond, variable, operands[0], label, polarity), hasResult: false,
+                    resultHome: variable);
+                localValues.Remove(variable);
+                dirtyLocals.Remove(variable);
+                FinishConditional(label);
+                return;
+            }
             if (left != null && TryMap(cond, out var opcode) &&
                 (right != null || cond == Condition.ArgProvided))
             {
@@ -229,18 +242,44 @@ namespace Zilf.Emit.Intermediate
         public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form,
             IVariable result, ILabel label, bool polarity)
         {
+            if (locals.Contains(result) || ReferenceEquals(result, Stack))
+            {
+                var operands = new List<IOperand> { value, table, length };
+                if (form != null)
+                    operands.Add(form);
+                RecordReadBranch(IrOpcode.ScanTable, operands, result, label, polarity, resolved =>
+                    target.EmitScanTable(resolved[0], resolved[1], resolved[2], form == null ? null : resolved[3],
+                        result, label, polarity),
+                    (resolved, home) => target.EmitScanTable(resolved[0], resolved[1], resolved[2],
+                        form == null ? null : resolved[3], home!, label, polarity));
+                return;
+            }
             Record(() => target.EmitScanTable(value, table, length, form, result, label, polarity));
             FinishConditional(label);
         }
 
         public void EmitGetChild(IOperand value, IVariable result, ILabel label, bool polarity)
         {
+            if (locals.Contains(result) || ReferenceEquals(result, Stack))
+            {
+                RecordReadBranch(IrOpcode.LoadChild, [value], result, label, polarity,
+                    operands => target.EmitGetChild(operands[0], result, label, polarity),
+                    (operands, home) => target.EmitGetChild(operands[0], home!, label, polarity));
+                return;
+            }
             Record(() => target.EmitGetChild(value, result, label, polarity));
             FinishConditional(label);
         }
 
         public void EmitGetSibling(IOperand value, IVariable result, ILabel label, bool polarity)
         {
+            if (locals.Contains(result) || ReferenceEquals(result, Stack))
+            {
+                RecordReadBranch(IrOpcode.LoadSibling, [value], result, label, polarity,
+                    operands => target.EmitGetSibling(operands[0], result, label, polarity),
+                    (operands, home) => target.EmitGetSibling(operands[0], home!, label, polarity));
+                return;
+            }
             Record(() => target.EmitGetSibling(value, result, label, polarity));
             FinishConditional(label);
         }
@@ -435,7 +474,11 @@ namespace Zilf.Emit.Intermediate
 
         public void EmitPushUserStack(IOperand value, IOperand stack, ILabel label, bool polarity)
         {
-            Record(() => target.EmitPushUserStack(value, stack, label, polarity));
+            var values = new[] { GetValue(value), GetValue(stack) };
+            PreserveStackValues();
+            FlushPromotedLocals();
+            AppendLowering(IrOpcode.TargetOperation, values, IrEffect.WriteMemory,
+                operands => target.EmitPushUserStack(operands[0], operands[1], label, polarity), hasResult: false);
             FinishConditional(label);
         }
 
@@ -479,6 +522,9 @@ namespace Zilf.Emit.Intermediate
         public override string ToString() => target.ToString()!;
 
         protected void RecordExtension(Action action) => Record(action);
+
+        protected void RecordExtension(Action action, IrEffect effect) =>
+            RecordOrderedOperation([], _ => action(), effect);
 
         internal void RecordTargetAction(Action action) =>
             RecordOrderedOperation([], _ => action(), IrEffect.Control);
@@ -525,7 +571,7 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
-        private void RecordOrderedOperation(IReadOnlyList<IOperand> operands,
+        protected void RecordOrderedOperation(IReadOnlyList<IOperand> operands,
             Action<IReadOnlyList<IOperand>> emit, IrEffect effect)
         {
             if (operands.Any(IsEffectBarrierOperand))
@@ -538,7 +584,7 @@ namespace Zilf.Emit.Intermediate
                 hasResult: false);
         }
 
-        private void RecordEffectfulOperation(IReadOnlyList<IOperand> operands,
+        protected void RecordEffectfulOperation(IReadOnlyList<IOperand> operands,
             Action<IReadOnlyList<IOperand>> emit, IrEffect effect, IVariable? result,
             Action<IReadOnlyList<IOperand>, IVariable?> emitTo)
         {
@@ -579,6 +625,20 @@ namespace Zilf.Emit.Intermediate
             PreserveStackValues();
             FlushPromotedLocals();
             var instruction = AppendLowering(IrOpcode.Equal, values, IrEffect.Control, emit);
+            FinishConditional(label, instruction.Result!, polarity);
+        }
+
+        private void RecordReadBranch(IrOpcode opcode, IReadOnlyList<IOperand> operands, IVariable result,
+            ILabel label, bool polarity, Action<IReadOnlyList<IOperand>> emit,
+            Action<IReadOnlyList<IOperand>, IVariable?> emitTo)
+        {
+            var values = operands.Select(GetValue).ToArray();
+            PreserveStackValues();
+            FlushPromotedLocals();
+            var instruction = AppendLowering(opcode, values, IrEffect.Control, emit, resultHome: result,
+                emitTo: emitTo);
+            SetProducedValue(result, instruction.Result!);
+            dirtyLocals.Remove(result);
             FinishConditional(label, instruction.Result!, polarity);
         }
 

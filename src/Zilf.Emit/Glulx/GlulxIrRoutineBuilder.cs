@@ -38,7 +38,9 @@ namespace Zilf.Emit.Glulx
         {
             if (!GlulxTarget.SupportsLowCoreRead(field))
                 return false;
-            RecordExtension(() => GlulxTarget.TryEmitLowCoreRead(field, resultStorage));
+            RecordEffectfulOperation([], _ => GlulxTarget.TryEmitLowCoreRead(field, resultStorage),
+                IrEffect.ReadMemory, resultStorage,
+                (_, home) => GlulxTarget.TryEmitLowCoreRead(field, home!));
             return true;
         }
 
@@ -46,7 +48,8 @@ namespace Zilf.Emit.Glulx
         {
             if (!GlulxTarget.SupportsLowCoreWrite(field))
                 return false;
-            RecordExtension(() => GlulxTarget.TryEmitLowCoreWrite(field, newValue));
+            RecordOrderedOperation([newValue],
+                operands => GlulxTarget.TryEmitLowCoreWrite(field, operands[0]), IrEffect.WriteMemory);
             return true;
         }
 
@@ -54,18 +57,29 @@ namespace Zilf.Emit.Glulx
         {
             if (!GlulxTarget.SupportsLowCoreGetTable(field))
                 return false;
-            RecordExtension(() => GlulxTarget.TryEmitLowCoreGetTable(field, resultStorage));
+            RecordEffectfulOperation([], _ => GlulxTarget.TryEmitLowCoreGetTable(field, resultStorage),
+                IrEffect.ReadMemory, resultStorage,
+                (_, home) => GlulxTarget.TryEmitLowCoreGetTable(field, home!));
             return true;
         }
 
-        public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form, IVariable result) =>
-            RecordExtension(() => GlulxTarget.EmitScanTable(value, table, length, form, result));
+        public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form, IVariable result)
+        {
+            var operands = form == null ? new[] { value, table, length } : [value, table, length, form];
+            RecordEffectfulOperation(operands,
+                resolved => GlulxTarget.EmitScanTable(resolved[0], resolved[1], resolved[2],
+                    form == null ? null : resolved[3], result), IrEffect.ReadMemory, result,
+                (resolved, home) => GlulxTarget.EmitScanTable(resolved[0], resolved[1], resolved[2],
+                    form == null ? null : resolved[3], home!));
+        }
 
         public void EmitGetChild(IOperand value, IVariable result) =>
-            RecordExtension(() => GlulxTarget.EmitGetChild(value, result));
+            RecordEffectfulOperation([value], operands => GlulxTarget.EmitGetChild(operands[0], result),
+                IrEffect.ReadMemory, result, (operands, home) => GlulxTarget.EmitGetChild(operands[0], home!));
 
         public void EmitGetSibling(IOperand value, IVariable result) =>
-            RecordExtension(() => GlulxTarget.EmitGetSibling(value, result));
+            RecordEffectfulOperation([value], operands => GlulxTarget.EmitGetSibling(operands[0], result),
+                IrEffect.ReadMemory, result, (operands, home) => GlulxTarget.EmitGetSibling(operands[0], home!));
 
         public void EmitGlkFromStack(IOperand operation, int argCount, IVariable? resultStorage = null) =>
             RecordExtension(() => GlulxTarget.EmitGlkFromStack(operation, argCount, resultStorage));
@@ -88,7 +102,7 @@ namespace Zilf.Emit.Glulx
         public IDisposable EnterWideContext()
         {
             compilationDepth++;
-            RecordExtension(() => loweringContexts.Push(wideTarget.EnterWideContext()));
+            RecordExtension(() => loweringContexts.Push(wideTarget.EnterWideContext()), IrEffect.Control);
             return new WideContext(this);
         }
 
@@ -102,7 +116,7 @@ namespace Zilf.Emit.Glulx
                     return;
                 disposed = true;
                 owner.compilationDepth--;
-                owner.RecordExtension(() => owner.loweringContexts.Pop().Dispose());
+                owner.RecordExtension(() => owner.loweringContexts.Pop().Dispose(), IrEffect.Control);
             }
         }
     }
