@@ -38,6 +38,64 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Optimizer_Removes_Never_Taken_Recorded_Branch()
+        {
+            var routine = new RoutineIr();
+            var target = routine.CreateBlock();
+            var fallthrough = routine.CreateBlock();
+            var branchInstruction = routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Control,
+                new IrLoweringOperation(_ => Assert.Fail("The branch should have been removed.")), hasResult: false);
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateConstant(0), target, fallthrough,
+                _ => { }, branchInstruction, target);
+            target.Terminator = new IrTerminator.Return(null);
+            fallthrough.Terminator = new IrTerminator.Return(null);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsFalse(routine.Entry.Instructions.Contains(branchInstruction));
+            Assert.AreSame(fallthrough, ((IrTerminator.Jump)routine.Entry.Terminator).Target);
+        }
+
+        [TestMethod]
+        public void Optimizer_Rewrites_Always_Taken_Recorded_Branch_As_Jump()
+        {
+            var routine = new RoutineIr();
+            var target = routine.CreateBlock();
+            var fallthrough = routine.CreateBlock();
+            IrBlock emittedTarget = null!;
+            var branchInstruction = routine.Append(routine.Entry, IrOpcode.Equal, [], IrEffect.Control,
+                new IrLoweringOperation(_ => Assert.Fail("The conditional branch should have been replaced.")));
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateConstant(1), target, fallthrough,
+                block => emittedTarget = block, branchInstruction, target);
+            target.Terminator = new IrTerminator.Return(null);
+            fallthrough.Terminator = new IrTerminator.Return(null);
+
+            new RoutineIrOptimizer().Optimize(routine);
+            ((IrLoweringOperation)branchInstruction.Payload!).Replay([]);
+
+            Assert.AreSame(target, emittedTarget);
+            Assert.AreEqual(IrOpcode.TargetOperation, branchInstruction.Opcode);
+            Assert.AreEqual(0, branchInstruction.Operands.Count);
+        }
+
+        [TestMethod]
+        public void Optimizer_Folds_Zero_Test_Of_Known_Nonzero_Symbol()
+        {
+            var routine = new RoutineIr();
+            var target = routine.CreateBlock();
+            var fallthrough = routine.CreateBlock();
+            var symbol = routine.CreateExternalValue(mutable: false, knownNonzero: true);
+            var comparison = routine.Append(routine.Entry, IrOpcode.Equal, [symbol, routine.CreateConstant(0)]);
+            routine.Entry.Terminator = new IrTerminator.Branch(comparison.Result!, target, fallthrough);
+            target.Terminator = new IrTerminator.Return(null);
+            fallthrough.Terminator = new IrTerminator.Return(null);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(fallthrough, ((IrTerminator.Jump)routine.Entry.Terminator).Target);
+        }
+
+        [TestMethod]
         public void SsaBuilder_Inserts_Phi_At_Diamond_Join()
         {
             var routine = new RoutineIr();

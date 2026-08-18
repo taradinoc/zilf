@@ -322,7 +322,9 @@ namespace Zilf.Emit.Intermediate
                         else
                         {
                             var operandStates = instruction.Operands.Select(State).ToArray();
-                            if (operandStates.Any(state => state.Kind == LatticeKind.Overdefined))
+                            if (TryEvaluateKnownFacts(instruction, out var knownResult))
+                                next = new(LatticeKind.Constant, knownResult);
+                            else if (operandStates.Any(state => state.Kind == LatticeKind.Overdefined))
                                 next = new(LatticeKind.Overdefined);
                             else if (operandStates.Any(state => state.Kind == LatticeKind.Undefined))
                                 next = default;
@@ -365,6 +367,18 @@ namespace Zilf.Emit.Intermediate
             var replacements = states.Where(pair => pair.Value.Kind == LatticeKind.Constant)
                 .ToDictionary(pair => pair.Key, pair => routine.CreateConstant(pair.Value.Constant));
             ReplaceValues(routine, replacements);
+        }
+
+        private static bool TryEvaluateKnownFacts(IrInstruction instruction, out int value)
+        {
+            value = 0;
+            if (instruction.Opcode != IrOpcode.Equal || instruction.Operands.Count != 2)
+                return false;
+            var left = instruction.Operands[0];
+            var right = instruction.Operands[1];
+            if ((left.Constant == 0 && right.KnownNonzero) || (right.Constant == 0 && left.KnownNonzero))
+                return true;
+            return false;
         }
 
         private void GlobalValueNumbering(RoutineIr routine)
@@ -825,11 +839,28 @@ namespace Zilf.Emit.Intermediate
             {
                 if (block.Terminator is IrTerminator.Branch { Condition.Constant: int value } branch)
                 {
-                    block.Terminator = new IrTerminator.Jump(value != 0 ? branch.WhenTrue : branch.WhenFalse);
+                    var target = value != 0 ? branch.WhenTrue : branch.WhenFalse;
+                    if (branch.Instruction != null && branch.EmitJump != null)
+                    {
+                        if (ReferenceEquals(target, branch.ExplicitTarget))
+                        {
+                            branch.Instruction.Opcode = IrOpcode.TargetOperation;
+                            branch.Instruction.Operands.Clear();
+                            branch.Instruction.Payload = new IrLoweringOperation(_ => branch.EmitJump(target));
+                        }
+                        else
+                        {
+                            block.Instructions.Remove(branch.Instruction);
+                        }
+                    }
+                    block.Terminator = new IrTerminator.Jump(target, branch.EmitJump,
+                        ReferenceEquals(target, branch.ExplicitTarget) ? branch.Instruction : null);
                     changed = true;
                 }
                 else if (block.Terminator is IrTerminator.Branch same && ReferenceEquals(same.WhenTrue, same.WhenFalse))
                 {
+                    if (same.Instruction != null)
+                        block.Instructions.Remove(same.Instruction);
                     block.Terminator = new IrTerminator.Jump(same.WhenTrue);
                     changed = true;
                 }

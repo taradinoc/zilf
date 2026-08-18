@@ -35,6 +35,7 @@ namespace Zilf.Emit.Intermediate
         private readonly bool optimize;
         private readonly Func<int, INumericOperand> makeOperand;
         private readonly Dictionary<ILabel, IrBlock> labelBlocks = [];
+        private readonly Dictionary<IrBlock, ILabel> blockLabels = [];
         private readonly HashSet<IVariable> locals = [];
         private readonly HashSet<IVariable> compilerTemporaries = [];
         private readonly Dictionary<IVariable, IrValue> localValues = [];
@@ -65,6 +66,7 @@ namespace Zilf.Emit.Intermediate
             current = routine.Entry;
             layout.Add(current);
             labelBlocks.Add(target.RoutineStart, current);
+            blockLabels.Add(current, target.RoutineStart);
 
             var trueBlock = GetLabelBlock(target.RTrue);
             trueBlock.Terminator = new IrTerminator.Return(routine.CreateConstant(1));
@@ -140,8 +142,9 @@ namespace Zilf.Emit.Intermediate
         {
             PreserveStackValues();
             FlushPromotedLocals();
-            RecordOrderedOperation([], _ => target.Branch(label), IrEffect.InputOutput);
-            current.Terminator = new IrTerminator.Jump(GetLabelBlock(label));
+            var instruction = AppendLowering(IrOpcode.TargetOperation, [], IrEffect.Control,
+                _ => target.Branch(label), hasResult: false);
+            current.Terminator = new IrTerminator.Jump(GetLabelBlock(label), EmitJump, instruction);
             StartFallthrough();
         }
 
@@ -169,7 +172,7 @@ namespace Zilf.Emit.Intermediate
                 FlushPromotedLocals();
                 var instruction = AppendLowering(opcode, values, IrEffect.Control,
                     resolved => target.Branch(cond, resolved[0], right == null ? null : resolved[1], label, polarity));
-                FinishConditional(label, instruction.Result!, polarity);
+                FinishConditional(label, instruction.Result!, polarity, instruction);
                 return;
             }
             Record(() => target.Branch(cond, left, right, label, polarity), IrMemoryRegion.None);
@@ -183,7 +186,7 @@ namespace Zilf.Emit.Intermediate
             FlushPromotedLocals();
             var instruction = AppendLowering(IrOpcode.Equal, [value, routine.CreateConstant(0)],
                 IrEffect.Control, resolved => target.BranchIfZero(resolved[0], label, polarity));
-            FinishConditional(label, instruction.Result!, polarity);
+            FinishConditional(label, instruction.Result!, polarity, instruction);
         }
 
         public void BranchIfEqual(IOperand value, IOperand option1, ILabel label, bool polarity)
@@ -670,7 +673,7 @@ namespace Zilf.Emit.Intermediate
             PreserveStackValues();
             FlushPromotedLocals();
             var instruction = AppendLowering(IrOpcode.Equal, values, IrEffect.Control, emit);
-            FinishConditional(label, instruction.Result!, polarity);
+            FinishConditional(label, instruction.Result!, polarity, instruction);
         }
 
         private void RecordReadBranch(IrOpcode opcode, IReadOnlyList<IOperand> operands, IVariable result,
@@ -684,7 +687,7 @@ namespace Zilf.Emit.Intermediate
                 emitTo: emitTo);
             SetProducedValue(result, instruction.Result!);
             dirtyLocals.Remove(result);
-            FinishConditional(label, instruction.Result!, polarity);
+            FinishConditional(label, instruction.Result!, polarity, instruction);
         }
 
         private bool IsEffectBarrierOperand(IOperand operand) => ReferenceEquals(operand, Stack) ||
@@ -747,7 +750,8 @@ namespace Zilf.Emit.Intermediate
             }
             if (!ReferenceEquals(operand, Stack) && externalValues.TryGetValue(operand, out var existing))
                 return existing;
-            var external = routine.CreateExternalValue(operand is IVariable or IIndirectOperand);
+            var external = routine.CreateExternalValue(operand is IVariable or IIndirectOperand,
+                operand is INonzeroConstantOperand);
             external.PhysicalHome = operand;
             valueHomes[external] = operand;
             if (!ReferenceEquals(operand, Stack))
@@ -995,14 +999,17 @@ namespace Zilf.Emit.Intermediate
             current = fallthrough;
         }
 
-        private void FinishConditional(ILabel label, IrValue condition, bool polarity)
+        private void FinishConditional(ILabel label, IrValue condition, bool polarity, IrInstruction instruction)
         {
             var fallthrough = CreateLayoutBlock();
+            var targetBlock = GetLabelBlock(label);
             current.Terminator = polarity
-                ? new IrTerminator.Branch(condition, GetLabelBlock(label), fallthrough)
-                : new IrTerminator.Branch(condition, fallthrough, GetLabelBlock(label));
+                ? new IrTerminator.Branch(condition, targetBlock, fallthrough, EmitJump, instruction, targetBlock)
+                : new IrTerminator.Branch(condition, fallthrough, targetBlock, EmitJump, instruction, targetBlock);
             current = fallthrough;
         }
+
+        private void EmitJump(IrBlock block) => target.Branch(blockLabels[block]);
 
         private void StartFallthrough()
         {
@@ -1024,6 +1031,7 @@ namespace Zilf.Emit.Intermediate
                 return block;
             block = routine.CreateBlock();
             labelBlocks.Add(label, block);
+            blockLabels.Add(block, label);
             return block;
         }
     }

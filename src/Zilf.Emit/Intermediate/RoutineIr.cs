@@ -148,11 +148,12 @@ namespace Zilf.Emit.Intermediate
 
     internal sealed class IrValue
     {
-        internal IrValue(int id, int? constant = null, bool mutableExternal = false)
+        internal IrValue(int id, int? constant = null, bool mutableExternal = false, bool knownNonzero = false)
         {
             Id = id;
             Constant = constant;
             MutableExternal = mutableExternal;
+            KnownNonzero = knownNonzero || constant is not null and not 0;
         }
 
         public int Id { get; }
@@ -160,6 +161,8 @@ namespace Zilf.Emit.Intermediate
         public int? Constant { get; }
 
         public bool MutableExternal { get; }
+
+        public bool KnownNonzero { get; }
 
         public IOperand? PhysicalHome { get; set; }
 
@@ -214,9 +217,12 @@ namespace Zilf.Emit.Intermediate
 
     internal abstract record IrTerminator
     {
-        public sealed record Jump(IrBlock Target) : IrTerminator;
+        public sealed record Jump(IrBlock Target, Action<IrBlock>? EmitJump = null,
+            IrInstruction? Instruction = null) : IrTerminator;
 
-        public sealed record Branch(IrValue Condition, IrBlock WhenTrue, IrBlock WhenFalse) : IrTerminator;
+        public sealed record Branch(IrValue Condition, IrBlock WhenTrue, IrBlock WhenFalse,
+            Action<IrBlock>? EmitJump = null, IrInstruction? Instruction = null,
+            IrBlock? ExplicitTarget = null) : IrTerminator;
 
         public sealed record Return(IrValue? Value) : IrTerminator;
     }
@@ -271,7 +277,8 @@ namespace Zilf.Emit.Intermediate
 
         public IrValue CreateValue() => new(nextValueId++);
 
-        public IrValue CreateExternalValue(bool mutable) => new(nextValueId++, mutableExternal: mutable);
+        public IrValue CreateExternalValue(bool mutable, bool knownNonzero = false) =>
+            new(nextValueId++, mutableExternal: mutable, knownNonzero: knownNonzero);
 
         public IrValue CreateConstant(int value) => new(nextValueId++, value);
 

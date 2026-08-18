@@ -1435,6 +1435,7 @@ namespace Zilf.Emit.Zap
             private CombinerOptimizationDescriptor[] BuildOptimizationPipeline() =>
             [
                 new("simplify zero test", TrySimplifyEqualZero),
+                new("fold known nonzero branch", TryFoldKnownNonzeroBranch),
                 new("remove redundant zero? after set", TryRemoveZeroAfterNonzeroSet),
                 new("rewrite jump to boolean", TryRewriteJumpToBoolean),
                 new("fold push/rstack pair", TrySimplifyPushRStack),
@@ -1506,6 +1507,31 @@ namespace Zilf.Emit.Zap
                                 matches[0].Target);
                         }
 
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryFoldKnownNonzeroBranch(IEnumerable<CombinableLine<ZapCode>> lines,
+                out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    if (Match(line => line.Code.Instruction.Name == "ZERO?" &&
+                        line.Code.Instruction.Operands.Count == 1 &&
+                        IsKnownNonzeroValue(line.Code.Instruction.Operands[0]) &&
+                        line.Type == PeepholeLineType.BranchNegative && line.Target != null))
+                    {
+                        result = Combine1To1(new Instruction("JUMP"), PeepholeLineType.BranchAlways,
+                            matches![0].Target);
                         return true;
                     }
 
