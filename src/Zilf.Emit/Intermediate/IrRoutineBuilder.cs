@@ -39,9 +39,13 @@ namespace Zilf.Emit.Intermediate
         private readonly Dictionary<IVariable, IrValue> localValues = [];
         private readonly HashSet<IVariable> dirtyLocals = [];
         private readonly Dictionary<IrValue, IOperand> valueHomes = [];
+        private readonly Dictionary<IrValue, IrInstruction> definitions = [];
+        private readonly Dictionary<IOperand, IrValue> externalValues = [];
+        private readonly List<IrValue> stackValues = [];
         private readonly List<IrBlock> layout = [];
         private IrBlock current;
         private bool finished;
+        private int nextIrTemporary;
 
         public IrRoutineBuilder(IRoutineBuilder target, IrNumericSemantics numericSemantics, bool optimize,
             Func<int, INumericOperand>? makeOperand = null)
@@ -49,7 +53,14 @@ namespace Zilf.Emit.Intermediate
             this.target = target;
             this.optimize = optimize;
             this.makeOperand = makeOperand ?? (value => new DeferredNumericOperand(value));
-            optimizer = new RoutineIrOptimizer(numericSemantics);
+            optimizer = new RoutineIrOptimizer(numericSemantics, () =>
+            {
+                if (numericSemantics == IrNumericSemantics.ZMachine16 && locals.Count >= 15)
+                    return null;
+                var temporary = TrackLocal(target.DefineLocal($"?IR{nextIrTemporary++}"));
+                compilerTemporaries.Add(temporary);
+                return temporary;
+            });
             current = routine.Entry;
             layout.Add(current);
             labelBlocks.Add(target.RoutineStart, current);
@@ -109,6 +120,7 @@ namespace Zilf.Emit.Intermediate
 
         public void MarkLabel(ILabel label)
         {
+            PreserveStackValues();
             FlushPromotedLocals();
             var block = GetLabelBlock(label);
             if (!ReferenceEquals(current, block) && current.Terminator == null)
@@ -162,6 +174,7 @@ namespace Zilf.Emit.Intermediate
         public void Return(IOperand result)
         {
             var value = GetValue(result);
+            PreserveStackValues();
             AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.Opaque,
                 operands => target.Return(operands[0]), hasResult: false);
             current.Terminator = new IrTerminator.Return(value);
@@ -218,14 +231,19 @@ namespace Zilf.Emit.Intermediate
 
         public void EmitUnary(UnaryOp op, IOperand value, IVariable? result)
         {
-            if (result != null && locals.Contains(result) && TryMap(op, out var opcode))
+            if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
+                TryMap(op, out var opcode))
             {
                 var instruction = AppendLowering(opcode, [GetValue(value)], IrEffect.None,
-                    operands => target.EmitUnary(op, operands[0], result), resultHome: result);
-                SetLocalValue(result, instruction.Result!);
+                    operands => target.EmitUnary(op, operands[0], result), resultHome: result,
+                    emitTo: (operands, home) => target.EmitUnary(op, operands[0], home));
+                SetProducedValue(result, instruction.Result!);
                 return;
             }
-            Record(() => target.EmitUnary(op, value, result));
+            if (op == UnaryOp.Random)
+                Record(() => target.EmitUnary(op, value, result));
+            else
+                RecordTemporaryOperation([value], operands => target.EmitUnary(op, operands[0], result), result);
         }
 
         public void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable? result)
@@ -236,22 +254,38 @@ namespace Zilf.Emit.Intermediate
                 Record(() => target.EmitBinary(op, left, right, result));
                 return;
             }
-            if (result != null && locals.Contains(result) && TryMap(op, out var opcode))
+            if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
+                TryMapMemoryRead(op, out var loadOpcode))
             {
-                var instruction = AppendLowering(opcode, [GetValue(left), GetValue(right)], IrEffect.None,
-                    operands => target.EmitBinary(op, operands[0], operands[1], result), resultHome: result);
-                SetLocalValue(result, instruction.Result!);
+                var instruction = AppendLowering(loadOpcode, [GetValue(left), GetValue(right)], IrEffect.ReadMemory,
+                    operands => target.EmitBinary(op, operands[0], operands[1], result), resultHome: result,
+                    emitTo: (operands, home) => target.EmitBinary(op, operands[0], operands[1], home));
+                SetProducedValue(result, instruction.Result!);
                 return;
             }
-            Record(() => target.EmitBinary(op, left, right, result));
+            if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
+                TryMap(op, out var opcode))
+            {
+                var instruction = AppendLowering(opcode, [GetValue(left), GetValue(right)], IrEffect.None,
+                    operands => target.EmitBinary(op, operands[0], operands[1], result), resultHome: result,
+                    emitTo: (operands, home) => target.EmitBinary(op, operands[0], operands[1], home));
+                SetProducedValue(result, instruction.Result!);
+                return;
+            }
+            RecordTemporaryOperation([left, right],
+                operands => target.EmitBinary(op, operands[0], operands[1], result), result);
         }
 
         public void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right, IVariable? result) =>
-            Record(() => target.EmitTernary(op, left, center, right, result));
+            RecordTemporaryOperation([left, center, right],
+                operands => target.EmitTernary(op, operands[0], operands[1], operands[2], result), result);
 
         public void EmitPrint(string text, bool crlfRtrue)
         {
-            Record(() => target.EmitPrint(text, crlfRtrue));
+            if (crlfRtrue)
+                Record(() => target.EmitPrint(text, true));
+            else
+                RecordOrderedOperation([], _ => target.EmitPrint(text, false), IrEffect.InputOutput);
             if (crlfRtrue)
             {
                 current.Terminator = new IrTerminator.Return(routine.CreateConstant(1));
@@ -259,12 +293,13 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
-        public void EmitPrint(PrintOp op, IOperand value) => Record(() => target.EmitPrint(op, value));
+        public void EmitPrint(PrintOp op, IOperand value) => RecordOrderedOperation([value],
+            operands => target.EmitPrint(op, operands[0]), IrEffect.InputOutput);
 
         public void EmitPrintTable(IOperand table, IOperand width, IOperand? height, IOperand? skip) =>
             Record(() => target.EmitPrintTable(table, width, height, skip));
 
-        public void EmitPrintNewLine() => Record(target.EmitPrintNewLine);
+        public void EmitPrintNewLine() => RecordOrderedOperation([], _ => target.EmitPrintNewLine(), IrEffect.InputOutput);
 
         public void EmitRead(IOperand chrbuf, IOperand? lexbuf, IOperand? interval, IOperand? routineOperand,
             IVariable? result) => Record(() => target.EmitRead(chrbuf, lexbuf, interval, routineOperand, result));
@@ -289,9 +324,28 @@ namespace Zilf.Emit.Intermediate
 
         public void EmitStore(IVariable dest, IOperand src)
         {
+            if (compilerTemporaries.Contains(dest) && ReferenceEquals(src, Stack) && stackValues.Count > 0)
+            {
+                var index = stackValues.Count - 1;
+                var value = stackValues[index];
+                stackValues.RemoveAt(index);
+                if (definitions.TryGetValue(value, out var definition) &&
+                    definition.Payload is IrLoweringOperation { EmitTo: not null } lowering)
+                {
+                    lowering.ResultHome = dest;
+                    lowering.IsStackResult = false;
+                    SetLocalValue(dest, value);
+                    dirtyLocals.Remove(dest);
+                    AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.InputOutput, _ => { },
+                        hasResult: false);
+                    return;
+                }
+                stackValues.Add(value);
+            }
             if (compilerTemporaries.Contains(dest) && !ReferenceEquals(src, Stack))
             {
-                var copy = AppendLowering(IrOpcode.Copy, [GetValue(src)], IrEffect.None, _ => { }, resultHome: dest);
+                var copy = AppendLowering(IrOpcode.Copy, [GetValue(src)], IrEffect.None,
+                    operands => target.EmitStore(dest, operands[0]), resultHome: dest);
                 SetLocalValue(dest, copy.Result!);
                 return;
             }
@@ -315,6 +369,7 @@ namespace Zilf.Emit.Intermediate
             foreach (var block in routine.Blocks)
                 block.Terminator ??= new IrTerminator.Return(null);
 
+            PreserveStackValues();
             FlushPromotedLocals();
 
             if (optimize)
@@ -329,7 +384,7 @@ namespace Zilf.Emit.Intermediate
                 foreach (var instruction in block.Instructions)
                 {
                     if (instruction.Payload is IrLoweringOperation lowering)
-                        lowering.Emit(instruction.Operands.Select(ResolveOperand).ToArray());
+                        lowering.Replay(instruction.Operands.Select(ResolveOperand).ToArray());
                     else
                         ((Action)instruction.Payload!).Invoke();
                     if (instruction.Result != null && instruction.Payload is IrLoweringOperation &&
@@ -349,6 +404,7 @@ namespace Zilf.Emit.Intermediate
 
         private void Record(Action action)
         {
+            PreserveStackValues();
             FlushPromotedLocals();
             RecordRaw(action);
             localValues.Clear();
@@ -363,11 +419,55 @@ namespace Zilf.Emit.Intermediate
             action,
             hasResult: false);
 
+        private void RecordTemporaryOperation(IReadOnlyList<IOperand> operands,
+            Action<IReadOnlyList<IOperand>> emit, IVariable? result = null)
+        {
+            if (operands.Any(IsEffectBarrierOperand))
+            {
+                Record(() => emit(operands));
+                return;
+            }
+
+            FlushPromotedLocals(variable => !compilerTemporaries.Contains(variable));
+            foreach (var variable in localValues.Keys.Where(variable => !compilerTemporaries.Contains(variable)).ToArray())
+                localValues.Remove(variable);
+
+            var values = operands.Select(GetValue).ToArray();
+            var hasTemporaryResult = result != null && compilerTemporaries.Contains(result);
+            var instruction = AppendLowering(IrOpcode.TargetOperation, values, IrEffect.Opaque, emit,
+                hasResult: hasTemporaryResult, resultHome: hasTemporaryResult ? result : null);
+            if (hasTemporaryResult)
+            {
+                localValues[result!] = instruction.Result!;
+                valueHomes[instruction.Result!] = result!;
+                dirtyLocals.Remove(result!);
+            }
+        }
+
+        private void RecordOrderedOperation(IReadOnlyList<IOperand> operands,
+            Action<IReadOnlyList<IOperand>> emit, IrEffect effect)
+        {
+            if (operands.Any(IsEffectBarrierOperand))
+            {
+                Record(() => emit(operands));
+                return;
+            }
+
+            AppendLowering(IrOpcode.TargetOperation, operands.Select(GetValue).ToArray(), effect, emit,
+                hasResult: false);
+        }
+
+        private bool IsEffectBarrierOperand(IOperand operand) => ReferenceEquals(operand, Stack) ||
+            operand is IIndirectOperand { Variable: var variable } && locals.Contains(variable);
+
         private IrInstruction AppendLowering(IrOpcode opcode, IReadOnlyList<IrValue> operands, IrEffect effect,
-            Action<IReadOnlyList<IOperand>> emit, bool hasResult = true, IVariable? resultHome = null)
+            Action<IReadOnlyList<IOperand>> emit, bool hasResult = true, IVariable? resultHome = null,
+            Action<IReadOnlyList<IOperand>, IVariable?>? emitTo = null)
         {
             var instruction = routine.Append(current, opcode, operands, effect,
-                new IrLoweringOperation(emit, resultHome), hasResult);
+                new IrLoweringOperation(emit, resultHome, ReferenceEquals(resultHome, Stack), emitTo), hasResult);
+            if (instruction.Result != null)
+                definitions[instruction.Result] = instruction;
             return instruction;
         }
 
@@ -379,6 +479,13 @@ namespace Zilf.Emit.Intermediate
 
         private IrValue GetValue(IOperand operand)
         {
+            if (ReferenceEquals(operand, Stack) && stackValues.Count > 0)
+            {
+                var index = stackValues.Count - 1;
+                var value = stackValues[index];
+                stackValues.RemoveAt(index);
+                return value;
+            }
             if (operand is INumericOperand numeric)
             {
                 var constant = routine.CreateConstant(numeric.Value);
@@ -394,8 +501,12 @@ namespace Zilf.Emit.Intermediate
                 valueHomes[localValue] = variable;
                 return localValue;
             }
+            if (!ReferenceEquals(operand, Stack) && externalValues.TryGetValue(operand, out var existing))
+                return existing;
             var external = routine.CreateValue();
             valueHomes[external] = operand;
+            if (!ReferenceEquals(operand, Stack))
+                externalValues[operand] = external;
             return external;
         }
 
@@ -406,19 +517,48 @@ namespace Zilf.Emit.Intermediate
             valueHomes[value] = variable;
         }
 
-        private void FlushPromotedLocals()
+        private void SetProducedValue(IVariable variable, IrValue value)
         {
-            foreach (var variable in dirtyLocals)
+            valueHomes[value] = variable;
+            if (ReferenceEquals(variable, Stack))
+                stackValues.Add(value);
+            else
+                SetLocalValue(variable, value);
+        }
+
+        private void PreserveStackValues()
+        {
+            if (stackValues.Count == 0)
+                return;
+
+            foreach (var value in stackValues)
+            {
+                if (definitions.TryGetValue(value, out var definition) &&
+                    definition.Payload is IrLoweringOperation lowering)
+                    lowering.StackEscapes = true;
+            }
+
+            AppendLowering(IrOpcode.TargetOperation, stackValues.ToArray(), IrEffect.InputOutput, _ => { },
+                hasResult: false);
+            stackValues.Clear();
+        }
+
+        private void FlushPromotedLocals(Func<IVariable, bool>? predicate = null)
+        {
+            foreach (var variable in dirtyLocals.Where(variable => predicate == null || predicate(variable)).ToArray())
             {
                 var value = localValues[variable];
                 AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.Opaque,
                     operands => target.EmitStore(variable, operands[0]), hasResult: false);
+                dirtyLocals.Remove(variable);
             }
-            dirtyLocals.Clear();
         }
 
         private IOperand ResolveOperand(IrValue value)
         {
+            if (definitions.TryGetValue(value, out var definition) &&
+                definition.Payload is IrLoweringOperation { ResultHome: not null } lowering)
+                return lowering.ResultHome;
             if (valueHomes.TryGetValue(value, out var operand))
                 return operand;
             if (value.Constant is int constant)
@@ -448,6 +588,17 @@ namespace Zilf.Emit.Intermediate
                 BinaryOp.Mod => IrOpcode.Modulo,
                 BinaryOp.And => IrOpcode.BitwiseAnd,
                 BinaryOp.Or => IrOpcode.BitwiseOr,
+                _ => IrOpcode.TargetOperation,
+            };
+            return opcode != IrOpcode.TargetOperation;
+        }
+
+        private static bool TryMapMemoryRead(BinaryOp op, out IrOpcode opcode)
+        {
+            opcode = op switch
+            {
+                BinaryOp.GetByte => IrOpcode.LoadByte,
+                BinaryOp.GetWord => IrOpcode.LoadWord,
                 _ => IrOpcode.TargetOperation,
             };
             return opcode != IrOpcode.TargetOperation;

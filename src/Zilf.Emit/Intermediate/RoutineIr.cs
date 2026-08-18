@@ -23,7 +23,35 @@ using System.Linq;
 
 namespace Zilf.Emit.Intermediate
 {
-    internal sealed record IrLoweringOperation(Action<IReadOnlyList<IOperand>> Emit, IVariable? ResultHome = null);
+    internal sealed class IrLoweringOperation
+    {
+        public IrLoweringOperation(Action<IReadOnlyList<IOperand>> emit, IVariable? resultHome = null,
+            bool isStackResult = false, Action<IReadOnlyList<IOperand>, IVariable?>? emitTo = null)
+        {
+            Emit = emit;
+            ResultHome = resultHome;
+            IsStackResult = isStackResult;
+            EmitTo = emitTo;
+        }
+
+        public Action<IReadOnlyList<IOperand>> Emit { get; }
+
+        public IVariable? ResultHome { get; set; }
+
+        public bool IsStackResult { get; set; }
+
+        public bool StackEscapes { get; set; }
+
+        public Action<IReadOnlyList<IOperand>, IVariable?>? EmitTo { get; }
+
+        public void Replay(IReadOnlyList<IOperand> operands)
+        {
+            if (EmitTo != null)
+                EmitTo(operands, ResultHome);
+            else
+                Emit(operands);
+        }
+    }
 
     internal enum IrEffect
     {
@@ -56,6 +84,8 @@ namespace Zilf.Emit.Intermediate
         GreaterThan,
         GreaterThanOrEqual,
         BitTest,
+        LoadByte,
+        LoadWord,
         Phi,
         TargetOperation,
     }

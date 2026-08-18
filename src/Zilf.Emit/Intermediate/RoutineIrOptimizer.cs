@@ -31,10 +31,13 @@ namespace Zilf.Emit.Intermediate
     internal sealed class RoutineIrOptimizer
     {
         private readonly IrNumericSemantics numericSemantics;
+        private readonly Func<IVariable?> acquireTemporary;
 
-        public RoutineIrOptimizer(IrNumericSemantics numericSemantics = IrNumericSemantics.Glulx32)
+        public RoutineIrOptimizer(IrNumericSemantics numericSemantics = IrNumericSemantics.Glulx32,
+            Func<IVariable?>? acquireTemporary = null)
         {
             this.numericSemantics = numericSemantics;
+            this.acquireTemporary = acquireTemporary ?? (() => null);
         }
 
         public void Optimize(RoutineIr routine)
@@ -172,7 +175,7 @@ namespace Zilf.Emit.Intermediate
             ReplaceValues(routine, replacements);
         }
 
-        private static void GlobalValueNumbering(RoutineIr routine)
+        private void GlobalValueNumbering(RoutineIr routine)
         {
             routine.RebuildPredecessors();
             var blocks = routine.Blocks.ToArray();
@@ -224,11 +227,20 @@ namespace Zilf.Emit.Intermediate
                 {
                     for (var i = 0; i < instruction.Operands.Count; i++)
                         instruction.Operands[i] = Resolve(instruction.Operands[i]);
+                    if (instruction.Effect is IrEffect.WriteMemory or IrEffect.Call or IrEffect.Opaque)
+                    {
+                        if (instruction.Effect is IrEffect.Call or IrEffect.Opaque)
+                            available.Clear();
+                        else
+                            foreach (var memoryKey in available.Keys
+                                .Where(key => key.Opcode is IrOpcode.LoadByte or IrOpcode.LoadWord).ToArray())
+                                available.Remove(memoryKey);
+                    }
                     var resultHome = (instruction.Payload as IrLoweringOperation)?.ResultHome;
                     (IrOpcode Opcode, string Operands)? currentKey = null;
                     if (instruction.Result != null && IsValueNumberable(instruction))
                     {
-                        var currentIds = instruction.Operands.Select(operand => operand.Id).ToArray();
+                        var currentIds = instruction.Operands.Select(OperandKey).ToArray();
                         if (IsCommutative(instruction.Opcode))
                             Array.Sort(currentIds);
                         currentKey = (instruction.Opcode, string.Join(",", currentIds));
@@ -245,10 +257,16 @@ namespace Zilf.Emit.Intermediate
                     if (instruction.Result == null || !IsValueNumberable(instruction))
                         continue;
                     var key = currentKey!.Value;
-                    if (available.TryGetValue(key, out var prior) && CanReusePhysicalHome(prior.Instruction, instruction))
+                    if (available.TryGetValue(key, out var prior) &&
+                        (CanReusePhysicalHome(prior.Instruction, instruction) ||
+                         TryPromoteStackValue(prior.Instruction, instruction)))
+                    {
                         replacements[instruction.Result] = Resolve(prior.Value);
+                    }
                     else
+                    {
                         available[key] = (instruction.Result, instruction);
+                    }
                 }
                 block.Terminator = block.Terminator switch
                 {
@@ -264,23 +282,57 @@ namespace Zilf.Emit.Intermediate
             ReplaceValues(routine, replacements);
         }
 
+        private bool TryPromoteStackValue(IrInstruction prior, IrInstruction current)
+        {
+            if (prior.Payload is not IrLoweringOperation
+                {
+                    IsStackResult: true,
+                    StackEscapes: false,
+                    EmitTo: not null,
+                } priorLowering ||
+                current.Payload is not IrLoweringOperation
+                {
+                    IsStackResult: true,
+                    StackEscapes: false,
+                })
+                return false;
+
+            var temporary = acquireTemporary();
+            if (temporary == null)
+                return false;
+
+            priorLowering.ResultHome = temporary;
+            priorLowering.IsStackResult = false;
+            return true;
+        }
+
         private static bool CanReusePhysicalHome(IrInstruction prior, IrInstruction current)
         {
             if (prior.Payload is not IrLoweringOperation priorLowering ||
                 current.Payload is not IrLoweringOperation currentLowering)
                 return true;
+            if (priorLowering.IsStackResult || currentLowering.IsStackResult)
+                return false;
+            if (prior.Opcode is IrOpcode.LoadByte or IrOpcode.LoadWord && prior.Opcode == current.Opcode)
+                return priorLowering.ResultHome != null && currentLowering.ResultHome != null;
             return priorLowering.ResultHome != null &&
                 ReferenceEquals(priorLowering.ResultHome, currentLowering.ResultHome);
         }
 
-        private static bool IsValueNumberable(IrInstruction instruction) => instruction.IsPure && instruction.Opcode is
+        private static bool IsValueNumberable(IrInstruction instruction) =>
+            (instruction.IsPure || instruction.Effect == IrEffect.ReadMemory) && instruction.Opcode is
             IrOpcode.Add or IrOpcode.Subtract or IrOpcode.Multiply or IrOpcode.Divide or IrOpcode.Modulo or
             IrOpcode.BitwiseAnd or IrOpcode.BitwiseOr or IrOpcode.BitwiseNot or IrOpcode.Negate or
             IrOpcode.ShiftLeft or IrOpcode.ShiftRight or IrOpcode.Equal or IrOpcode.LessThan or
-            IrOpcode.LessThanOrEqual or IrOpcode.GreaterThan or IrOpcode.GreaterThanOrEqual or IrOpcode.BitTest;
+            IrOpcode.LessThanOrEqual or IrOpcode.GreaterThan or IrOpcode.GreaterThanOrEqual or IrOpcode.BitTest or
+            IrOpcode.LoadByte or IrOpcode.LoadWord;
 
         private static bool IsCommutative(IrOpcode opcode) => opcode is IrOpcode.Add or IrOpcode.Multiply or
             IrOpcode.BitwiseAnd or IrOpcode.BitwiseOr or IrOpcode.Equal;
+
+        private static string OperandKey(IrValue value) => value.Constant is int constant
+            ? $"C{constant}"
+            : $"V{value.Id}";
 
         private static void ReplaceValues(RoutineIr routine, IReadOnlyDictionary<IrValue, IrValue> replacements)
         {
@@ -347,6 +399,12 @@ namespace Zilf.Emit.Intermediate
                         continue;
                     }
 
+                    if (TrySimplifyIdentity(instruction, out var replacement))
+                    {
+                        replacements[instruction.Result] = replacement;
+                        continue;
+                    }
+
                     if (TryFold(instruction, out var value))
                         replacements[instruction.Result] = routine.CreateConstant(value);
                 }
@@ -372,6 +430,34 @@ namespace Zilf.Emit.Intermediate
             }
 
             return true;
+        }
+
+        private bool TrySimplifyIdentity(IrInstruction instruction, out IrValue replacement)
+        {
+            replacement = null!;
+            if (instruction.Operands.Count != 2)
+                return false;
+
+            var left = instruction.Operands[0];
+            var right = instruction.Operands[1];
+            var allBits = Normalize(-1);
+            replacement = instruction.Opcode switch
+            {
+                IrOpcode.Add when left.Constant == 0 => right,
+                IrOpcode.Add when right.Constant == 0 => left,
+                IrOpcode.Subtract when right.Constant == 0 => left,
+                IrOpcode.Multiply when left.Constant == 1 => right,
+                IrOpcode.Multiply when right.Constant == 1 => left,
+                IrOpcode.Divide when right.Constant == 1 => left,
+                IrOpcode.BitwiseOr when left.Constant == 0 => right,
+                IrOpcode.BitwiseOr when right.Constant == 0 => left,
+                IrOpcode.BitwiseAnd when left.Constant == allBits => right,
+                IrOpcode.BitwiseAnd when right.Constant == allBits => left,
+                IrOpcode.ShiftLeft when right.Constant == 0 => left,
+                IrOpcode.ShiftRight when right.Constant == 0 => left,
+                _ => null!,
+            };
+            return replacement != null;
         }
 
         private bool TryFold(IrInstruction instruction, out int value)
@@ -479,7 +565,7 @@ namespace Zilf.Emit.Intermediate
                 for (var i = block.Instructions.Count - 1; i >= 0; i--)
                 {
                     var instruction = block.Instructions[i];
-                    if (instruction.Result != null && instruction.IsPure && !used.Contains(instruction.Result))
+                    if (instruction.Result != null && IsRemovable(instruction) && !used.Contains(instruction.Result))
                     {
                         block.Instructions.RemoveAt(i);
                         changed = true;
@@ -488,6 +574,9 @@ namespace Zilf.Emit.Intermediate
             }
             return changed;
         }
+
+        private static bool IsRemovable(IrInstruction instruction) => instruction.IsPure ||
+            instruction.Effect == IrEffect.ReadMemory && instruction.Opcode is IrOpcode.LoadByte or IrOpcode.LoadWord;
 
         private static bool RemoveUnreachableBlocks(RoutineIr routine)
         {
