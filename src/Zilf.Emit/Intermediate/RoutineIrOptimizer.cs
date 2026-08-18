@@ -46,6 +46,7 @@ namespace Zilf.Emit.Intermediate
         {
             routine.Verify();
             ProtectCopiesAcrossClobbers(routine);
+            CoalesceMaterializationDestinations(routine);
             RemoveRedundantMaterializations(routine);
             ForwardCopyDestinations(routine);
             SparseConditionalConstantPropagation(routine);
@@ -130,21 +131,62 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        private static void CoalesceMaterializationDestinations(RoutineIr routine)
+        {
+            foreach (var block in routine.Blocks)
+            {
+                var definitions = block.Instructions.Select((instruction, index) => (instruction, index))
+                    .Where(item => item.instruction.Result != null)
+                    .ToDictionary(item => item.instruction.Result!, item => item);
+                for (var i = block.Instructions.Count - 1; i >= 0; i--)
+                {
+                    var materialization = block.Instructions[i];
+                    if (materialization.Operands.Count != 1 ||
+                        materialization.Payload is not IrLoweringOperation
+                        {
+                            IsMaterialization: true,
+                            ResultHome: not null,
+                        } materializationLowering ||
+                        !definitions.TryGetValue(materialization.Operands[0], out var definition) ||
+                        definition.index >= i ||
+                        definition.instruction.Effect == IrEffect.Call ||
+                        definition.instruction.Payload is not IrLoweringOperation
+                        {
+                            EmitTo: not null,
+                            RequiredHome: false,
+                            IsStackResult: false,
+                        } producerLowering ||
+                        !CanKeepValueInHome(block, definition.index, i, materializationLowering.ResultHome))
+                        continue;
+
+                    producerLowering.ResultHome = materializationLowering.ResultHome;
+                    producerLowering.RequiredHome = true;
+                    definition.instruction.Result!.PhysicalHome = materializationLowering.ResultHome;
+                    block.Instructions.RemoveAt(i);
+                }
+            }
+        }
+
         private static void ForwardCopyDestinations(RoutineIr routine)
         {
             var useCounts = CountUses(routine);
             var replacements = new Dictionary<IrValue, IrValue>();
             foreach (var block in routine.Blocks)
             {
-                for (var i = 1; i < block.Instructions.Count; i++)
+                var definitions = block.Instructions.Select((instruction, index) => (instruction, index))
+                    .Where(item => item.instruction.Result != null)
+                    .ToDictionary(item => item.instruction.Result!, item => item);
+                for (var i = 0; i < block.Instructions.Count; i++)
                 {
                     var copy = block.Instructions[i];
                     if (copy.Opcode != IrOpcode.Copy || copy.Result == null || copy.Operands.Count != 1 ||
                         copy.Payload is not IrLoweringOperation { ResultHome: not null } copyLowering)
                         continue;
 
-                    var producer = block.Instructions[i - 1];
-                    if (!ReferenceEquals(producer.Result, copy.Operands[0]) || producer.Result == null ||
+                    if (!definitions.TryGetValue(copy.Operands[0], out var definition) || definition.index >= i)
+                        continue;
+                    var producer = definition.instruction;
+                    if (producer.Result == null ||
                         producer.Effect == IrEffect.Call ||
                         useCounts.GetValueOrDefault(producer.Result) != 1 ||
                         producer.Payload is not IrLoweringOperation
@@ -154,14 +196,37 @@ namespace Zilf.Emit.Intermediate
                         } producerLowering)
                         continue;
 
+                    if (!CanKeepValueInHome(block, definition.index, i, copyLowering.ResultHome))
+                        continue;
+
                     producerLowering.ResultHome = copyLowering.ResultHome;
+                    producer.Result.PhysicalHome = copyLowering.ResultHome;
                     producerLowering.IsStackResult = copyLowering.IsStackResult;
                     replacements[copy.Result] = producer.Result;
                     block.Instructions.RemoveAt(i);
+                    definitions.Remove(copy.Result);
+                    foreach (var value in definitions.Values.Where(value => value.index > i).ToArray())
+                        definitions[value.instruction.Result!] = (value.instruction, value.index - 1);
                     i--;
                 }
             }
             ReplaceValues(routine, replacements);
+        }
+
+        private static bool CanKeepValueInHome(IrBlock block, int definitionIndex, int copyIndex,
+            IVariable destination)
+        {
+            for (var i = definitionIndex + 1; i < copyIndex; i++)
+            {
+                var instruction = block.Instructions[i];
+                if (instruction.Effect == IrEffect.Opaque ||
+                    instruction.Payload is IrLoweringOperation { ResultHome: not null } lowering &&
+                    ReferenceEquals(lowering.ResultHome, destination))
+                    return false;
+                if (instruction.Operands.Any(operand => ReferenceEquals(GetPhysicalHome(operand), destination)))
+                    return false;
+            }
+            return true;
         }
 
         private static Dictionary<IrValue, int> CountUses(RoutineIr routine)

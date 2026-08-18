@@ -272,6 +272,77 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Optimizer_Coalesces_Result_With_Nonadjacent_Copy_Destination()
+        {
+            var routine = new RoutineIr();
+            var originalHome = Mock.Of<IVariable>();
+            var destination = Mock.Of<IVariable>();
+            var lowering = new IrLoweringOperation(_ => { }, originalHome, emitTo: (_, _) => { });
+            var producer = routine.Append(routine.Entry, IrOpcode.Add,
+                [routine.CreateValue(), routine.CreateValue()], payload: lowering);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.InputOutput, hasResult: false);
+            var copyLowering = new IrLoweringOperation(_ => { }, destination) { RequiredHome = true };
+            var copy = routine.Append(routine.Entry, IrOpcode.Copy, [producer.Result!], payload: copyLowering);
+            routine.Entry.Terminator = new IrTerminator.Return(copy.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(destination, lowering.ResultHome);
+            Assert.IsFalse(routine.Entry.Instructions.Any(instruction => ReferenceEquals(instruction.Result,
+                copy.Result)));
+        }
+
+        [TestMethod]
+        public void Optimizer_Coalesces_Result_With_End_Of_Block_Materialization()
+        {
+            var routine = new RoutineIr();
+            var originalHome = Mock.Of<IVariable>();
+            var destination = Mock.Of<IVariable>();
+            var lowering = new IrLoweringOperation(_ => { }, originalHome, emitTo: (_, _) => { });
+            var producer = routine.Append(routine.Entry, IrOpcode.Add,
+                [routine.CreateValue(), routine.CreateValue()], payload: lowering);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.InputOutput, hasResult: false);
+            var materializationLowering = new IrLoweringOperation(_ => { }, destination)
+            {
+                IsMaterialization = true,
+            };
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [producer.Result!], IrEffect.Control,
+                materializationLowering, hasResult: false);
+            routine.Entry.Terminator = new IrTerminator.Return(null);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(destination, lowering.ResultHome);
+            Assert.IsTrue(lowering.RequiredHome);
+            Assert.IsFalse(routine.Entry.Instructions.Any(instruction =>
+                ReferenceEquals(instruction.Payload, materializationLowering)));
+        }
+
+        [TestMethod]
+        public void Optimizer_Does_Not_Coalesce_Across_Destination_Home_Use()
+        {
+            var routine = new RoutineIr();
+            var originalHome = Mock.Of<IVariable>();
+            var destination = Mock.Of<IVariable>();
+            var destinationValue = routine.CreateValue();
+            destinationValue.PhysicalHome = destination;
+            var lowering = new IrLoweringOperation(_ => { }, originalHome, emitTo: (_, _) => { });
+            var producer = routine.Append(routine.Entry, IrOpcode.Add,
+                [routine.CreateValue(), routine.CreateValue()], payload: lowering);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [destinationValue], IrEffect.InputOutput,
+                hasResult: false);
+            var copyLowering = new IrLoweringOperation(_ => { }, destination) { RequiredHome = true };
+            var copy = routine.Append(routine.Entry, IrOpcode.Copy, [producer.Result!], payload: copyLowering);
+            routine.Entry.Terminator = new IrTerminator.Return(copy.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(originalHome, lowering.ResultHome);
+            Assert.IsTrue(routine.Entry.Instructions.Any(instruction => ReferenceEquals(instruction.Result,
+                copy.Result)));
+        }
+
+        [TestMethod]
         public void Optimizer_Preserves_Copy_When_Source_Home_Is_Clobbered_Before_Use()
         {
             var routine = new RoutineIr();
