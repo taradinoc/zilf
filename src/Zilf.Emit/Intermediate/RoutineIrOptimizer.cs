@@ -32,14 +32,17 @@ namespace Zilf.Emit.Intermediate
     {
         private readonly IrNumericSemantics numericSemantics;
         private readonly Func<IVariable?> acquireTemporary;
+        private readonly Func<IEnumerable<IVariable>> reusableTemporaries;
         private readonly Action<IVariable, IOperand>? emitCopy;
 
         public RoutineIrOptimizer(IrNumericSemantics numericSemantics = IrNumericSemantics.Glulx32,
-            Func<IVariable?>? acquireTemporary = null, Action<IVariable, IOperand>? emitCopy = null)
+            Func<IVariable?>? acquireTemporary = null, Action<IVariable, IOperand>? emitCopy = null,
+            Func<IEnumerable<IVariable>>? reusableTemporaries = null)
         {
             this.numericSemantics = numericSemantics;
             this.acquireTemporary = acquireTemporary ?? (() => null);
             this.emitCopy = emitCopy;
+            this.reusableTemporaries = reusableTemporaries ?? (() => []);
         }
 
         public void Optimize(RoutineIr routine)
@@ -386,8 +389,29 @@ namespace Zilf.Emit.Intermediate
             routine.RebuildPredecessors();
             var blocks = routine.Blocks.ToArray();
             var stateDependencies = FindStateDependencies(blocks);
+            var liveHomesAfter = FindLiveHomesAfter(blocks);
             var instructionBlocks = blocks.SelectMany(block => block.Instructions.Select(instruction =>
                 (instruction, block))).ToDictionary(pair => pair.instruction, pair => pair.block);
+            var instructionIndices = blocks.SelectMany(block => block.Instructions.Select((instruction, index) =>
+                (instruction, index))).ToDictionary(pair => pair.instruction, pair => pair.index);
+            var lastUseIndices = new Dictionary<IrValue, int>();
+            foreach (var block in blocks)
+            {
+                for (var i = 0; i < block.Instructions.Count; i++)
+                {
+                    foreach (var operand in block.Instructions[i].Operands)
+                        lastUseIndices[operand] = Math.Max(lastUseIndices.GetValueOrDefault(operand, -1), i);
+                }
+                IEnumerable<IrValue> terminatorOperands = block.Terminator switch
+                {
+                    IrTerminator.Branch branch => [branch.Condition],
+                    IrTerminator.Return { Value: not null } ret => [ret.Value],
+                    _ => [],
+                };
+                foreach (var operand in terminatorOperands)
+                    lastUseIndices[operand] = block.Instructions.Count;
+            }
+            var homeReservations = new Dictionary<(IrBlock Block, IVariable Home), int>();
             var all = blocks.ToHashSet();
             var dominators = blocks.ToDictionary(block => block,
                 block => ReferenceEquals(block, routine.Entry) ? new HashSet<IrBlock> { block } : new HashSet<IrBlock>(all));
@@ -527,6 +551,7 @@ namespace Zilf.Emit.Intermediate
                         }
                     }
                     var resultHome = (instruction.Payload as IrLoweringOperation)?.ResultHome;
+                    var isStackResult = instruction.Payload is IrLoweringOperation { IsStackResult: true };
                     (IrOpcode Opcode, string Operands)? currentKey = null;
                     if (instruction.Result != null && IsValueNumberable(instruction))
                     {
@@ -535,7 +560,7 @@ namespace Zilf.Emit.Intermediate
                             Array.Sort(currentIds);
                         currentKey = (instruction.Opcode, string.Join(",", currentIds));
                     }
-                    if (resultHome != null)
+                    if (resultHome != null && !isStackResult)
                     {
                         foreach (var staleKey in available
                             .Where(pair => !currentKey.HasValue || pair.Key != currentKey.Value)
@@ -551,18 +576,34 @@ namespace Zilf.Emit.Intermediate
                         CanReusePhysicalHome(prior.Instruction, instruction))
                     {
                         replacements[instruction.Result] = Resolve(prior.Value);
+                        ReserveHomeThroughUse(prior.Instruction, instruction.Result);
                     }
                     else if (available.TryGetValue(key, out prior) &&
-                        TryPromoteStackValue(prior.Instruction, instruction))
+                        TryPromoteStackValue(prior.Instruction, instruction,
+                            FindReusableTemporary(prior.Instruction, instruction)))
                     {
+                        var promotedHome = (prior.Instruction.Payload as IrLoweringOperation)?.ResultHome;
+                        if (promotedHome != null)
+                        {
+                            foreach (var staleKey in available
+                                .Where(pair => !ReferenceEquals(pair.Value.Instruction, prior.Instruction) &&
+                                    ReferenceEquals((pair.Value.Instruction.Payload as IrLoweringOperation)?.ResultHome,
+                                        promotedHome))
+                                .Select(pair => pair.Key).ToArray())
+                                available.Remove(staleKey);
+                        }
                         if (instruction.Payload is IrLoweringOperation { RequiredHome: true })
                         {
                             if (TryRewriteAsCopy(prior.Value, prior.Instruction, instruction))
+                            {
                                 available[key] = (instruction.Result, instruction);
+                                ReserveHomeThroughUse(prior.Instruction, instruction.Result);
+                            }
                         }
                         else
                         {
                             replacements[instruction.Result] = Resolve(prior.Value);
+                            ReserveHomeThroughUse(prior.Instruction, instruction.Result);
                         }
                     }
                     else if (available.TryGetValue(key, out prior) &&
@@ -592,6 +633,32 @@ namespace Zilf.Emit.Intermediate
                 Visit(block, available);
             }
             ReplaceValues(routine, replacements);
+
+            IVariable? FindReusableTemporary(IrInstruction definition, IrInstruction use)
+            {
+                if (!instructionBlocks.TryGetValue(definition, out var definitionBlock) ||
+                    !instructionBlocks.TryGetValue(use, out var useBlock) ||
+                    !ReferenceEquals(definitionBlock, useBlock))
+                    return null;
+                var live = liveHomesAfter.GetValueOrDefault(definition);
+                var definitionIndex = instructionIndices[definition];
+                return reusableTemporaries().FirstOrDefault(candidate =>
+                    (live == null || !live.Contains(candidate)) &&
+                    homeReservations.GetValueOrDefault((definitionBlock, candidate), -1) < definitionIndex);
+            }
+
+            void ReserveHomeThroughUse(IrInstruction definition, IrValue? replacedValue = null)
+            {
+                if (definition.Payload is not IrLoweringOperation { ResultHome: not null } lowering ||
+                    !instructionBlocks.TryGetValue(definition, out var block))
+                    return;
+                var lastUse = lastUseIndices.GetValueOrDefault(definition.Result!, instructionIndices[definition]);
+                if (replacedValue != null)
+                    lastUse = Math.Max(lastUse, lastUseIndices.GetValueOrDefault(replacedValue, lastUse));
+                var reservation = (block, lowering.ResultHome);
+                homeReservations[reservation] = Math.Max(homeReservations.GetValueOrDefault(reservation, -1),
+                    lastUse);
+            }
         }
 
         private bool TryRewriteAsCopy(IrValue priorValue, IrInstruction priorInstruction, IrInstruction instruction)
@@ -654,7 +721,7 @@ namespace Zilf.Emit.Intermediate
             _ => IrMemoryRegion.None,
         };
 
-        private bool TryPromoteStackValue(IrInstruction prior, IrInstruction current)
+        private bool TryPromoteStackValue(IrInstruction prior, IrInstruction current, IVariable? reusableTemporary)
         {
             if (prior.Payload is not IrLoweringOperation
                 {
@@ -666,7 +733,7 @@ namespace Zilf.Emit.Intermediate
                 currentLowering.IsStackResult && currentLowering.StackEscapes)
                 return false;
 
-            var temporary = acquireTemporary();
+            var temporary = acquireTemporary() ?? reusableTemporary;
             if (temporary == null)
                 return false;
 
@@ -674,6 +741,68 @@ namespace Zilf.Emit.Intermediate
             priorLowering.IsStackResult = false;
             prior.Result!.PhysicalHome = temporary;
             return true;
+        }
+
+        private static Dictionary<IrInstruction, HashSet<IVariable>> FindLiveHomesAfter(IEnumerable<IrBlock> blocks)
+        {
+            var blockArray = blocks.ToArray();
+            var liveIn = blockArray.ToDictionary(block => block, _ => new HashSet<IVariable>());
+            var liveOut = blockArray.ToDictionary(block => block, _ => new HashSet<IVariable>());
+            var changed = true;
+            while (changed)
+            {
+                changed = false;
+                foreach (var block in blockArray.Reverse())
+                {
+                    var nextOut = RoutineIr.GetSuccessors(block)
+                        .SelectMany(successor => liveIn[successor]).ToHashSet();
+                    var nextIn = new HashSet<IVariable>(nextOut);
+                    for (var i = block.Instructions.Count - 1; i >= 0; i--)
+                    {
+                        var instruction = block.Instructions[i];
+                        if (instruction.Payload is IrLoweringOperation
+                            {
+                                ResultHome: not null,
+                                IsStackResult: false,
+                            } lowering)
+                            nextIn.Remove(lowering.ResultHome);
+                        foreach (var home in instruction.Operands.Select(operand => operand.PhysicalHome)
+                            .OfType<IVariable>())
+                            nextIn.Add(home);
+                    }
+                    if (!nextOut.SetEquals(liveOut[block]))
+                    {
+                        liveOut[block] = nextOut;
+                        changed = true;
+                    }
+                    if (!nextIn.SetEquals(liveIn[block]))
+                    {
+                        liveIn[block] = nextIn;
+                        changed = true;
+                    }
+                }
+            }
+
+            var result = new Dictionary<IrInstruction, HashSet<IVariable>>();
+            foreach (var block in blockArray)
+            {
+                var live = new HashSet<IVariable>(liveOut[block]);
+                for (var i = block.Instructions.Count - 1; i >= 0; i--)
+                {
+                    var instruction = block.Instructions[i];
+                    result[instruction] = new HashSet<IVariable>(live);
+                    if (instruction.Payload is IrLoweringOperation
+                        {
+                            ResultHome: not null,
+                            IsStackResult: false,
+                        } lowering)
+                        live.Remove(lowering.ResultHome);
+                    foreach (var home in instruction.Operands.Select(operand => operand.PhysicalHome)
+                        .OfType<IVariable>())
+                        live.Add(home);
+                }
+            }
+            return result;
         }
 
         private static bool CanReusePhysicalHome(IrInstruction prior, IrInstruction current)

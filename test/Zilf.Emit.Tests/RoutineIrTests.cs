@@ -1,6 +1,19 @@
 /* Copyright 2010-2026 Tara McGrew
- *
+ * 
  * This file is part of ZILF.
+ * 
+ * ZILF is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * ZILF is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 using System;
@@ -373,6 +386,81 @@ namespace Zilf.Emit.Tests
             Assert.AreSame(first.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
             Assert.IsFalse(routine.Entry.Instructions.Any(instruction => ReferenceEquals(instruction.Result,
                 second.Result) || ReferenceEquals(instruction.Result, third.Result)));
+        }
+
+        [TestMethod]
+        public void Gvn_Preserves_Multiple_Virtual_Stack_Expressions_Until_Later_Uses()
+        {
+            var routine = new RoutineIr();
+            var source = routine.CreateValue();
+            var firstOffset = routine.CreateConstant(1);
+            var secondOffset = routine.CreateConstant(2);
+            var stack = Mock.Of<IVariable>();
+            var firstTemporary = Mock.Of<IVariable>();
+            var secondTemporary = Mock.Of<IVariable>();
+            var temporaries = new Queue<IVariable>([firstTemporary, secondTemporary]);
+            var first = routine.Append(routine.Entry, IrOpcode.LoadProperty, [source, firstOffset],
+                IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }),
+                readRegions: IrMemoryRegion.Properties);
+            var second = routine.Append(routine.Entry, IrOpcode.LoadProperty, [source, secondOffset],
+                IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }),
+                readRegions: IrMemoryRegion.Properties);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!, second.Result!],
+                IrEffect.Control, hasResult: false);
+            var firstDuplicate = routine.Append(routine.Entry, IrOpcode.LoadProperty, [source, firstOffset],
+                IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }),
+                readRegions: IrMemoryRegion.Properties);
+            var secondDuplicate = routine.Append(routine.Entry, IrOpcode.LoadProperty, [source, secondOffset],
+                IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }),
+                readRegions: IrMemoryRegion.Properties);
+            routine.Entry.Terminator = new IrTerminator.Return(secondDuplicate.Result);
+
+            new RoutineIrOptimizer(acquireTemporary: () => temporaries.Dequeue()).Optimize(routine);
+
+            Assert.AreEqual(2, routine.Entry.Instructions.Count(instruction =>
+                instruction.Opcode == IrOpcode.LoadProperty));
+            Assert.AreSame(firstTemporary, ((IrLoweringOperation)first.Payload!).ResultHome);
+            Assert.AreSame(secondTemporary, ((IrLoweringOperation)second.Payload!).ResultHome);
+            Assert.IsFalse(routine.Entry.Instructions.Any(instruction =>
+                ReferenceEquals(instruction.Result, firstDuplicate.Result) ||
+                ReferenceEquals(instruction.Result, secondDuplicate.Result)));
+        }
+
+        [TestMethod]
+        public void Gvn_Invalidates_Old_Expression_When_Scavenged_Home_Is_Reused()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateValue();
+            var firstRight = routine.CreateConstant(1);
+            var secondRight = routine.CreateConstant(2);
+            var stack = Mock.Of<IVariable>();
+            var reusable = Mock.Of<IVariable>();
+            IrInstruction Add(IrValue right) => routine.Append(routine.Entry, IrOpcode.Add, [left, right],
+                payload: new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }));
+            var first = Add(firstRight);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.Control,
+                hasResult: false);
+            var second = Add(secondRight);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [second.Result!], IrEffect.Control,
+                hasResult: false);
+            var firstDuplicate = Add(firstRight);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [firstDuplicate.Result!], IrEffect.Control,
+                hasResult: false);
+            var secondDuplicate = Add(secondRight);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [secondDuplicate.Result!], IrEffect.Control,
+                hasResult: false);
+            var finalFirst = Add(firstRight);
+            routine.Entry.Terminator = new IrTerminator.Return(finalFirst.Result);
+
+            new RoutineIrOptimizer(reusableTemporaries: () => [reusable]).Optimize(routine);
+
+            Assert.AreEqual(3, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Add));
+            Assert.IsTrue(routine.Entry.Instructions.Any(instruction => ReferenceEquals(instruction.Result,
+                secondDuplicate.Result)));
         }
 
         [TestMethod]
