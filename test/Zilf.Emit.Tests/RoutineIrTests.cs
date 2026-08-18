@@ -1091,6 +1091,85 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void IrRoutineBuilder_Uses_Available_Local_For_Large_ZMachine_Constant()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var first = Mock.Of<ILocalBuilder>();
+            var second = Mock.Of<ILocalBuilder>();
+            var large = new Mock<INumericOperand>();
+            large.SetupGet(operand => operand.Value).Returns(500);
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.Setup(t => t.DefineLocal("FIRST")).Returns(first);
+            target.Setup(t => t.DefineLocal("SECOND")).Returns(second);
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true,
+                preferConstantHome: operand => operand is not INumericOperand numeric || numeric.Value > 255);
+            var firstLocal = builder.DefineLocal("FIRST");
+            var secondLocal = builder.DefineLocal("SECOND");
+            builder.EmitStore(firstLocal, large.Object);
+            builder.EmitStore(secondLocal, firstLocal);
+            builder.Finish();
+
+            target.Verify(t => t.EmitStore(first, large.Object), Times.Once);
+            target.Verify(t => t.EmitStore(second, first), Times.Once);
+            target.Verify(t => t.EmitStore(second, large.Object), Times.Never);
+        }
+
+        [TestMethod]
+        public void IrRoutineBuilder_Keeps_Small_ZMachine_Constant_Immediate()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var first = Mock.Of<ILocalBuilder>();
+            var second = Mock.Of<ILocalBuilder>();
+            var small = new Mock<INumericOperand>();
+            small.SetupGet(operand => operand.Value).Returns(50);
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.Setup(t => t.DefineLocal("FIRST")).Returns(first);
+            target.Setup(t => t.DefineLocal("SECOND")).Returns(second);
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true,
+                preferConstantHome: operand => operand is not INumericOperand numeric || numeric.Value > 255);
+            var firstLocal = builder.DefineLocal("FIRST");
+            var secondLocal = builder.DefineLocal("SECOND");
+            builder.EmitStore(firstLocal, small.Object);
+            builder.EmitStore(secondLocal, firstLocal);
+            builder.Finish();
+
+            target.Verify(t => t.EmitStore(second, small.Object), Times.Once);
+            target.Verify(t => t.EmitStore(second, first), Times.Never);
+        }
+
+        [TestMethod]
+        public void IrRoutineBuilder_Uses_Available_Local_For_Symbolic_ZMachine_Constant()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var first = Mock.Of<ILocalBuilder>();
+            var second = Mock.Of<ILocalBuilder>();
+            var symbolic = Mock.Of<IConstantOperand>();
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.Setup(t => t.DefineLocal("FIRST")).Returns(first);
+            target.Setup(t => t.DefineLocal("SECOND")).Returns(second);
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true,
+                preferConstantHome: operand => operand is not INumericOperand numeric || numeric.Value > 255);
+            var firstLocal = builder.DefineLocal("FIRST");
+            var secondLocal = builder.DefineLocal("SECOND");
+            builder.EmitStore(firstLocal, symbolic);
+            builder.EmitStore(secondLocal, firstLocal);
+            builder.Finish();
+
+            target.Verify(t => t.EmitStore(first, symbolic), Times.Once);
+            target.Verify(t => t.EmitStore(second, first), Times.Once);
+            target.Verify(t => t.EmitStore(second, symbolic), Times.Never);
+        }
+
+        [TestMethod]
         public void IrRoutineBuilder_Propagates_Stored_Compiler_Temporary_Through_Arithmetic()
         {
             var target = new Mock<IRoutineBuilder>();

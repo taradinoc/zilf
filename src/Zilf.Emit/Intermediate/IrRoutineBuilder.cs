@@ -33,6 +33,7 @@ namespace Zilf.Emit.Intermediate
         private readonly IrRoutineEffectSummary effectSummary = new();
         private readonly RoutineIrOptimizer optimizer;
         private readonly bool optimize;
+        private readonly Func<IOperand, bool>? preferConstantHome;
         private readonly Func<int, INumericOperand> makeOperand;
         private readonly Dictionary<ILabel, IrBlock> labelBlocks = [];
         private readonly Dictionary<IrBlock, ILabel> blockLabels = [];
@@ -50,10 +51,11 @@ namespace Zilf.Emit.Intermediate
         private int nextIrTemporary;
 
         public IrRoutineBuilder(IRoutineBuilder target, IrNumericSemantics numericSemantics, bool optimize,
-            Func<int, INumericOperand>? makeOperand = null)
+            Func<int, INumericOperand>? makeOperand = null, Func<IOperand, bool>? preferConstantHome = null)
         {
             this.target = target;
             this.optimize = optimize;
+            this.preferConstantHome = preferConstantHome;
             this.makeOperand = makeOperand ?? (value => new DeferredNumericOperand(value));
             optimizer = new RoutineIrOptimizer(numericSemantics, () =>
             {
@@ -545,14 +547,27 @@ namespace Zilf.Emit.Intermediate
             else
                 routine.Verify();
 
+            var availableConstantHomes = preferConstantHome != null
+                ? FindAvailableConstantHomes()
+                : null;
+
             foreach (var block in layout)
             {
                 if (!routine.Blocks.Contains(block))
                     continue;
+                var blockConstantHomes = availableConstantHomes != null &&
+                    availableConstantHomes.TryGetValue(block, out var incoming)
+                    ? new Dictionary<IVariable, IrValue>(incoming)
+                    : null;
                 foreach (var instruction in block.Instructions)
                 {
                     if (instruction.Payload is IrLoweringOperation lowering)
-                        lowering.Replay(instruction.Operands.Select(ResolveOperand).ToArray());
+                    {
+                        lowering.Replay(instruction.Operands
+                            .Select(value => ResolveOperand(value, blockConstantHomes, lowering.ResultHome)).ToArray());
+                        if (blockConstantHomes != null)
+                            UpdateAvailableConstantHomes(blockConstantHomes, instruction);
+                    }
                     else
                         ((Action)instruction.Payload!).Invoke();
                     if (instruction.Result != null && instruction.Payload is IrLoweringOperation
@@ -811,16 +826,106 @@ namespace Zilf.Emit.Intermediate
         }
 
         private IOperand ResolveOperand(IrValue value)
+            => ResolveOperand(value, null, null);
+
+        private IOperand ResolveOperand(IrValue value, IReadOnlyDictionary<IVariable, IrValue>? constantHomes,
+            IVariable? destination)
         {
             if (definitions.TryGetValue(value, out var definition) &&
                 definition.Payload is IrLoweringOperation { ResultHome: not null } lowering)
                 return lowering.ResultHome;
-            if (valueHomes.TryGetValue(value, out var operand))
-                return operand;
-            if (value.Constant is int constant)
-                return makeOperand(constant);
+            var directOperand = valueHomes.TryGetValue(value, out var existingOperand)
+                ? existingOperand
+                : value.Constant is int constant ? makeOperand(constant) : null;
+            if (directOperand != null)
+            {
+                if (constantHomes != null && preferConstantHome!(directOperand))
+                {
+                    var home = constantHomes.FirstOrDefault(pair => ValuesEquivalent(pair.Value, value) &&
+                        !ReferenceEquals(pair.Key, destination)).Key;
+                    if (home != null)
+                        return home;
+                }
+                return directOperand;
+            }
             throw new InvalidOperationException($"No physical operand is available for {value}.");
         }
+
+        private Dictionary<IrBlock, Dictionary<IVariable, IrValue>> FindAvailableConstantHomes()
+        {
+            routine.RebuildPredecessors();
+            var result = routine.Blocks.ToDictionary(block => block,
+                _ => new Dictionary<IVariable, IrValue>());
+            var outgoing = routine.Blocks.ToDictionary(block => block,
+                _ => new Dictionary<IVariable, IrValue>());
+            bool changed;
+            do
+            {
+                changed = false;
+                foreach (var block in routine.Blocks)
+                {
+                    var incoming = block == routine.Entry || block.Predecessors.Count == 0
+                        ? []
+                        : IntersectConstantHomes(block.Predecessors.Select(predecessor => outgoing[predecessor]));
+                    var nextOutgoing = new Dictionary<IVariable, IrValue>(incoming);
+                    foreach (var instruction in block.Instructions)
+                        UpdateAvailableConstantHomes(nextOutgoing, instruction);
+                    if (!ConstantHomesEqual(result[block], incoming))
+                    {
+                        result[block] = incoming;
+                        changed = true;
+                    }
+                    if (!ConstantHomesEqual(outgoing[block], nextOutgoing))
+                    {
+                        outgoing[block] = nextOutgoing;
+                        changed = true;
+                    }
+                }
+            }
+            while (changed);
+            return result;
+        }
+
+        private static Dictionary<IVariable, IrValue> IntersectConstantHomes(
+            IEnumerable<Dictionary<IVariable, IrValue>> predecessors)
+        {
+            using var enumerator = predecessors.GetEnumerator();
+            if (!enumerator.MoveNext())
+                return [];
+            var result = new Dictionary<IVariable, IrValue>(enumerator.Current);
+            while (enumerator.MoveNext())
+            {
+                foreach (var pair in result.ToArray())
+                {
+                    if (!enumerator.Current.TryGetValue(pair.Key, out var value) ||
+                        !ValuesEquivalent(value, pair.Value))
+                        result.Remove(pair.Key);
+                }
+            }
+            return result;
+        }
+
+        private void UpdateAvailableConstantHomes(Dictionary<IVariable, IrValue> homes, IrInstruction instruction)
+        {
+            if (instruction.Payload is not IrLoweringOperation { ResultHome: IVariable destination } lowering ||
+                lowering.IsStackResult || ReferenceEquals(destination, Stack))
+                return;
+            homes.Remove(destination);
+            if (instruction.Opcode is IrOpcode.Copy or IrOpcode.TargetOperation &&
+                instruction.Operands.Count == 1 && IsReusableConstant(instruction.Operands[0]))
+                homes[destination] = instruction.Operands[0];
+        }
+
+        private static bool ConstantHomesEqual(IReadOnlyDictionary<IVariable, IrValue> left,
+            IReadOnlyDictionary<IVariable, IrValue> right) =>
+            left.Count == right.Count && left.All(pair => right.TryGetValue(pair.Key, out var value) &&
+                ValuesEquivalent(value, pair.Value));
+
+        private bool IsReusableConstant(IrValue value) => value.Constant != null ||
+            !value.MutableExternal && valueHomes.TryGetValue(value, out var operand) && operand is IConstantOperand;
+
+        private static bool ValuesEquivalent(IrValue left, IrValue right) => ReferenceEquals(left, right) ||
+            left.Constant is int leftConstant && right.Constant == leftConstant;
 
         private static bool TryMap(UnaryOp op, out IrOpcode opcode)
         {

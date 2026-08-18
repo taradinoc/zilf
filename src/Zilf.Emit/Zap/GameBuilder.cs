@@ -361,7 +361,9 @@ namespace Zilf.Emit.Zap
                 throw new ArgumentException("Entry routine already defined");
 
             var target = new RoutineBuilder(this, name, entryPoint, cleanStack);
-            var result = new IrRoutineBuilder(target, IrNumericSemantics.ZMachine16, optimizeRoutineIr, MakeOperand);
+            var result = new IrRoutineBuilder(target, IrNumericSemantics.ZMachine16, optimizeRoutineIr, MakeOperand,
+                preferConstantHome: operand => operand is not INumericOperand numeric ||
+                    (ushort)numeric.Value > byte.MaxValue);
             symbols.Add(name, "routine");
 
             if (entryPoint)
