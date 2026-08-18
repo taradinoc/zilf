@@ -319,6 +319,98 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Gvn_Preserves_Table_Read_Across_Unrelated_Property_Write()
+        {
+            var routine = new RoutineIr();
+            var table = routine.CreateValue();
+            var index = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, hasResult: false,
+                writeRegions: IrMemoryRegion.Properties);
+            var second = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables);
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(first.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
+            Assert.AreEqual(1,
+                routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
+        public void Gvn_Invalidates_Table_Read_Across_Table_Write()
+        {
+            var routine = new RoutineIr();
+            var table = routine.CreateValue();
+            var index = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.InputOutput,
+                hasResult: false);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, hasResult: false,
+                writeRegions: IrMemoryRegion.Tables);
+            var second = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables);
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreEqual(2,
+                routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
+        public void Routine_Effect_Summaries_Reach_A_Fixed_Point_Across_Recursion()
+        {
+            var first = new IrRoutineEffectSummary
+            {
+                DirectWrites = IrMemoryRegion.Globals,
+                IsComplete = true,
+            };
+            var second = new IrRoutineEffectSummary
+            {
+                DirectWrites = IrMemoryRegion.Tables,
+                IsComplete = true,
+            };
+            first.AddCallee(second);
+            second.AddCallee(first);
+
+            Assert.AreEqual(IrMemoryRegion.Globals | IrMemoryRegion.Tables, first.GetWrittenRegions());
+            Assert.AreEqual(IrMemoryRegion.Globals | IrMemoryRegion.Tables, second.GetWrittenRegions());
+        }
+
+        [TestMethod]
+        public void Gvn_Uses_Routine_Effect_Summary_At_Call()
+        {
+            var routine = new RoutineIr();
+            var table = routine.CreateValue();
+            var index = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            var summary = new IrRoutineEffectSummary
+            {
+                DirectWrites = IrMemoryRegion.Properties,
+                IsComplete = true,
+            };
+            var first = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Call, hasResult: false,
+                callSummary: summary);
+            var second = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables);
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreSame(first.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
+            Assert.AreEqual(1,
+                routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
         public void Sccp_Uses_Only_Executable_Phi_Inputs()
         {
             var routine = new RoutineIr();

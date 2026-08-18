@@ -232,7 +232,7 @@ namespace Zilf.Emit.Intermediate
         {
             routine.RebuildPredecessors();
             var blocks = routine.Blocks.ToArray();
-            var stateDependentValues = FindStateDependentValues(blocks);
+            var stateDependencies = FindStateDependencies(blocks);
             var all = blocks.ToHashSet();
             var dominators = blocks.ToDictionary(block => block,
                 block => ReferenceEquals(block, routine.Entry) ? new HashSet<IrBlock> { block } : new HashSet<IrBlock>(all));
@@ -287,8 +287,14 @@ namespace Zilf.Emit.Intermediate
                             available.Clear();
                         else
                         {
+                            var writtenRegions = instruction.Effect == IrEffect.Call
+                                ? instruction.CallSummary?.GetWrittenRegions() ?? IrMemoryRegion.All
+                                : instruction.WriteRegions == IrMemoryRegion.None
+                                    ? IrMemoryRegion.All
+                                    : instruction.WriteRegions;
                             foreach (var invalidKey in available
-                                .Where(pair => stateDependentValues.Contains(pair.Value.Value))
+                                .Where(pair => (stateDependencies.GetValueOrDefault(pair.Value.Value) &
+                                    writtenRegions) != 0)
                                 .Select(pair => pair.Key).ToArray())
                                 available.Remove(invalidKey);
                         }
@@ -361,25 +367,45 @@ namespace Zilf.Emit.Intermediate
             return true;
         }
 
-        private static HashSet<IrValue> FindStateDependentValues(IEnumerable<IrBlock> blocks)
+        private static Dictionary<IrValue, IrMemoryRegion> FindStateDependencies(IEnumerable<IrBlock> blocks)
         {
             var instructions = blocks.SelectMany(block => block.Instructions).ToArray();
             var result = instructions.SelectMany(instruction => instruction.Operands)
-                .Where(value => value.MutableExternal).ToHashSet();
+                .Where(value => value.MutableExternal)
+                .Distinct().ToDictionary(value => value, _ => IrMemoryRegion.Globals);
             var changed = true;
             while (changed)
             {
                 changed = false;
                 foreach (var instruction in instructions)
                 {
-                    if (instruction.Result != null &&
-                        (IsMemoryRead(instruction.Opcode) || instruction.Operands.Any(result.Contains)) &&
-                        result.Add(instruction.Result))
+                    if (instruction.Result == null)
+                        continue;
+                    var dependencies = instruction.ReadRegions != IrMemoryRegion.None
+                        ? instruction.ReadRegions
+                        : GetReadRegions(instruction.Opcode);
+                    foreach (var operand in instruction.Operands)
+                        dependencies |= result.GetValueOrDefault(operand);
+                    if (dependencies != result.GetValueOrDefault(instruction.Result))
+                    {
+                        result[instruction.Result] = dependencies;
                         changed = true;
+                    }
                 }
             }
             return result;
         }
+
+        private static IrMemoryRegion GetReadRegions(IrOpcode opcode) => opcode switch
+        {
+            IrOpcode.LoadByte or IrOpcode.LoadWord or IrOpcode.ScanTable => IrMemoryRegion.Tables,
+            IrOpcode.LoadProperty or IrOpcode.LoadPropertyAddress or IrOpcode.LoadNextProperty or
+                IrOpcode.LoadPropertySize => IrMemoryRegion.Properties,
+            IrOpcode.LoadParent or IrOpcode.LoadChild or IrOpcode.LoadSibling or IrOpcode.Inside =>
+                IrMemoryRegion.ObjectTree,
+            IrOpcode.HasAttribute => IrMemoryRegion.Attributes,
+            _ => IrMemoryRegion.None,
+        };
 
         private bool TryPromoteStackValue(IrInstruction prior, IrInstruction current)
         {
