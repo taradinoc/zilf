@@ -532,14 +532,18 @@ Returns:
     <UI-RESET>
     <RTRUE>>
 
-;"Clears the loading display and restores the normal game windows. Clearing
-  both windows also resets the lower window's pagination state before the
-  welcome message is printed."
+;"Clears the loading display and restores the normal game windows. The upper
+  window must be erased before it is shrunk, since some interpreters leave the
+  discarded rows visible. Clearing the lower window also resets its pagination
+  state before the welcome message is printed."
 
 <ROUTINE FINISH-LOADING-SCREEN ()
     <UI-RESET>
-    <CLEAR -1>
+    <SCREEN 1>
+    <CLEAR -2>
     <SPLIT ,UPPER-HEIGHT>
+    <SCREEN 0>
+    <CLEAR 0>
     <SCREEN 1>
     <SETG FULL-REDRAW? T>
     <RTRUE>>
