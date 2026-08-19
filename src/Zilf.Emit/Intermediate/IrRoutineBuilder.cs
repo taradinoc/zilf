@@ -507,6 +507,7 @@ namespace Zilf.Emit.Intermediate
                 AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.WriteMemory,
                     operands => target.EmitStore(dest, operands[0]), hasResult: false,
                     writeRegions: IrMemoryRegion.Globals);
+                externalValues.Remove(dest);
                 return;
             }
             Record(() => target.EmitStore(dest, src));
