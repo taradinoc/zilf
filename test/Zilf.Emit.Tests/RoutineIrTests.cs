@@ -914,6 +914,183 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Licm_Does_Not_Hoist_Global_Derived_Expression_Across_Global_Writing_Call()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var global = routine.CreateExternalValue(mutable: true);
+            var home = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var expression = routine.Append(header, IrOpcode.Add, [global, routine.CreateConstant(2)], payload:
+                new IrLoweringOperation(_ => { }, home));
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            routine.Append(body, IrOpcode.TargetOperation, [], IrEffect.Call, hasResult: false);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(expression.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsTrue(header.Instructions.Contains(expression));
+            Assert.IsFalse(routine.Entry.Instructions.Contains(expression));
+        }
+
+        [TestMethod]
+        public void Licm_Hoists_Global_Derived_Expression_Across_Unrelated_Write()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var global = routine.CreateExternalValue(mutable: true);
+            var home = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var expression = routine.Append(header, IrOpcode.Add, [global, routine.CreateConstant(2)], payload:
+                new IrLoweringOperation(_ => { }, home));
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            routine.Append(body, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, hasResult: false,
+                writeRegions: IrMemoryRegion.Properties);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(expression.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsTrue(routine.Entry.Instructions.Contains(expression));
+            Assert.IsFalse(header.Instructions.Contains(expression));
+        }
+
+        [TestMethod]
+        public void Licm_Does_Not_Hoist_Transitively_Global_Derived_Expression_Across_Call()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var global = routine.CreateExternalValue(mutable: true);
+            var firstHome = Mock.Of<IVariable>();
+            var secondHome = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var first = routine.Append(header, IrOpcode.Add, [global, routine.CreateConstant(1)], payload:
+                new IrLoweringOperation(_ => { }, firstHome));
+            var second = routine.Append(header, IrOpcode.Multiply, [first.Result!, routine.CreateConstant(2)], payload:
+                new IrLoweringOperation(_ => { }, secondHome));
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            routine.Append(body, IrOpcode.TargetOperation, [], IrEffect.Call, hasResult: false);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsTrue(header.Instructions.Contains(first));
+            Assert.IsTrue(header.Instructions.Contains(second));
+        }
+
+        [TestMethod]
+        public void Gvn_Memory_Versions_Differ_When_One_Join_Path_Writes()
+        {
+            var routine = new RoutineIr();
+            var changed = routine.CreateBlock();
+            var unchanged = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            var table = routine.CreateValue();
+            var index = routine.CreateValue();
+            var firstHome = Mock.Of<IVariable>();
+            var secondHome = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, firstHome), readRegions: IrMemoryRegion.Tables);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.InputOutput,
+                hasResult: false);
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), changed, unchanged);
+            changed.Instructions.Add(new IrInstruction(IrOpcode.TargetOperation, null, [], IrEffect.WriteMemory,
+                writeRegions: IrMemoryRegion.Tables));
+            changed.Terminator = new IrTerminator.Jump(join);
+            unchanged.Terminator = new IrTerminator.Jump(join);
+            var second = routine.Append(join, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, secondHome), readRegions: IrMemoryRegion.Tables);
+            join.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.AreEqual(2, routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
+        public void Licm_Hoists_Invariant_Arithmetic_Into_Existing_Preheader()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var left = routine.CreateValue();
+            var right = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var invariant = routine.Append(header, IrOpcode.Add, [left, right], payload:
+                new IrLoweringOperation(_ => { }, home));
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(invariant.Result);
+
+            var optimizer = new RoutineIrOptimizer();
+            optimizer.Optimize(routine);
+
+            Assert.IsTrue(routine.Entry.Instructions.Contains(invariant));
+            Assert.IsFalse(header.Instructions.Contains(invariant));
+            Assert.AreEqual(1, optimizer.GetStatistics().Single(stat =>
+                stat.Name == "LICM hoisted instructions").Count);
+        }
+
+        [TestMethod]
+        public void Licm_Hoists_Unchanged_Table_Read_From_Loop_Header()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var table = routine.CreateValue();
+            var index = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var invariant = routine.Append(header, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables);
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(invariant.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsTrue(routine.Entry.Instructions.Contains(invariant));
+            Assert.IsFalse(header.Instructions.Contains(invariant));
+        }
+
+        [TestMethod]
+        public void Licm_Does_Not_Hoist_Table_Read_Across_Loop_Write()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var table = routine.CreateValue();
+            var index = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var read = routine.Append(header, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables);
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            routine.Append(body, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, hasResult: false,
+                writeRegions: IrMemoryRegion.Tables);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(read.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsTrue(header.Instructions.Contains(read));
+            Assert.IsFalse(routine.Entry.Instructions.Contains(read));
+        }
+
+        [TestMethod]
         public void Sccp_Does_Not_Fold_Division_By_Zero()
         {
             var routine = new RoutineIr();

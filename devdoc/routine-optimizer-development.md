@@ -57,10 +57,11 @@ home availability; those remain responsibilities of recording and optimization c
 4. Coalesce and remove materializations, and forward copy destinations.
 5. Run sparse conditional constant propagation (SCCP), including phi values.
 6. Simplify branches and remove unreachable blocks.
-7. Run dominator-based global value numbering (GVN), including supported memory reads.
-8. Iterate constant/copy folding, CFG simplification, dead-instruction removal, and unreachable-block removal to a
+7. Discover reducible natural loops and hoist conservative loop-invariant computations into existing preheaders.
+8. Run dominator-based global value numbering (GVN), including supported memory reads and region-versioned state.
+9. Iterate constant/copy folding, CFG simplification, dead-instruction removal, and unreachable-block removal to a
    fixed point.
-9. Verify the resulting IR.
+10. Verify the resulting IR.
 
 Lowering then resolves values to physical operands and replays `IrLoweringOperation` delegates. Zap also performs a
 size-aware choice between a constant and an equivalent available local. Unresolved symbolic constants, such as object
@@ -101,9 +102,30 @@ Current memory regions are globals, tables, properties, object tree, and attribu
 model, not documentation: an incorrect narrow region can miscompile a game. Use `All` until a narrower classification
 is proven.
 
+GVN computes a stable version for each memory region at every instruction. Writes and calls produce new versions for
+the regions they may change, while joins use a stable merge version when predecessor versions differ. Memory-dependent
+expressions include these versions in their value-numbering keys. This avoids repeated path searches and makes loop
+back-edge invalidation explicit. Dependencies inherited through mutable external values are included. The versions
+deliberately have region-level precision: they do not distinguish two globals, tables, properties, or objects within
+the same region.
+
 A call does not inherently overwrite the caller's routine locals. However, values captured from globals or memory must
 remain snapshots when required. Never move a local materialization from before a call to after it if the local exists to
 preserve a pre-call value.
+
+## Loop-invariant code motion
+
+The optimizer recognizes natural loops from dominance back edges and processes nested loops from inner to outer. LICM
+currently requires an existing dedicated preheader: one predecessor outside the loop whose only successor is the loop
+header. The optimizer does not create blocks because lowering uses the recorder's separate block layout.
+
+Eligible instructions must be value-numberable, have loop-invariant operands, use a non-stack physical home that is not
+otherwise clobbered in the loop, and be free of required-home constraints. Memory reads are hoisted only when the loop
+does not write an overlapping region; this check includes state inherited transitively from mutable globals. The
+instruction's block must dominate every latch and exit source, preventing a conditional read from becoming
+unconditional. Calls, writes, phi nodes, materializations, stack results, opaque or ordered operations, and potentially
+trapping arithmetic are not hoisted. Induction-variable simplification, strength reduction, preheader creation, and
+identity-based memory aliasing remain future work.
 
 ## Adding or de-opaquifying an IR operation
 
@@ -187,15 +209,16 @@ These are directions, not assumptions that the prerequisites already exist:
 - **More aggressive phi lowering.** The current edge materializations avoid critical-edge and parallel-copy hazards
   without consuming extra Z locals. A future pass could remove more of those stores by splitting critical edges and
   resolving parallel-copy cycles with stack-backed scratch storage when profitable.
-- **Memory SSA or versioned memory.** Track versions per region, and eventually per proven-disjoint table or object, so
-  redundant loads and store-to-load forwarding survive more control flow without repeated path searches.
+- **More precise versioned memory.** Refine the current region versions per proven-disjoint global, table, or object,
+  and add
+  store-to-load forwarding where both address and stored value are available.
 - **A target cost model.** Compare immediate size, variable operands, instruction form, required copies, stack traffic,
   and local pressure. An algebraic or CSE rewrite should be rejected when it merely replaces an instruction with an
   equal-cost copy or forces a worse encoding.
 - **Algebraic simplification and reassociation.** Extend identities cautiously under fixed-width semantics. Reassociation
   can expose constants and common subexpressions but can also change overflow behavior if modeled incorrectly.
-- **Loop optimization.** After explicit SSA and stronger memory dependence are available, consider loop-invariant code
-  motion, induction-variable simplification, and strength reduction. Do not hoist trapping or effectful operations.
+- **More loop optimization.** Extend the current conservative LICM with preheader creation, induction-variable
+  simplification, and strength reduction after a target cost model is available.
 - **Stronger interprocedural summaries.** More precise read/write and purity summaries can preserve values across known
   calls. Recursive and indirect calls require conservative fixed-point handling.
 - **Global and memory value promotion.** Defer this until aliasing, calls, save/restore behavior, and observable physical

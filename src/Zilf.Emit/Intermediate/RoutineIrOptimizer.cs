@@ -60,6 +60,7 @@ namespace Zilf.Emit.Intermediate
             Record("SCCP constants", SparseConditionalConstantPropagation(routine));
             SimplifyControlFlow(routine);
             RemoveUnreachableBlocks(routine);
+            LoopInvariantCodeMotion(routine);
             GlobalValueNumbering(routine);
             var changed = true;
             while (changed)
@@ -388,11 +389,269 @@ namespace Zilf.Emit.Intermediate
             return false;
         }
 
+        private void LoopInvariantCodeMotion(RoutineIr routine)
+        {
+            var cfg = CfgAnalysis.Create(routine);
+            Record("Loops detected", cfg.Loops.Count);
+            if (cfg.Loops.Count == 0)
+                return;
+
+            var stateDependencies = FindStateDependencies(routine.Blocks);
+            var definitions = routine.Blocks.SelectMany(block => block.Instructions.Select(instruction =>
+                (instruction, block))).Where(pair => pair.instruction.Result != null)
+                .ToDictionary(pair => pair.instruction.Result!, pair => pair);
+
+            foreach (var loop in cfg.Loops.OrderBy(loop => loop.Blocks.Count))
+            {
+                if (loop.Preheader == null)
+                {
+                    Record("LICM rejected: no preheader");
+                    continue;
+                }
+
+                var writtenRegions = loop.Blocks.SelectMany(block => block.Instructions)
+                    .Aggregate(IrMemoryRegion.None, (regions, instruction) => regions | GetWrittenRegions(instruction));
+                var clobberedHomes = loop.Blocks.SelectMany(block => block.Instructions)
+                    .Select(instruction => (instruction.Payload as IrLoweringOperation)?.ResultHome)
+                    .OfType<IVariable>().GroupBy(home => home).Where(group => group.Count() > 1)
+                    .Select(group => group.Key).ToHashSet();
+                var invariantValues = definitions.Where(pair => !loop.Blocks.Contains(pair.Value.block))
+                    .Select(pair => pair.Key).ToHashSet();
+                foreach (var value in loop.Blocks.SelectMany(block => block.Instructions)
+                    .SelectMany(instruction => instruction.Operands).Where(value => !definitions.ContainsKey(value)))
+                    invariantValues.Add(value);
+
+                var changed = true;
+                while (changed)
+                {
+                    changed = false;
+                    foreach (var block in loop.Blocks.OrderBy(block => routine.Blocks.IndexOf(block)).ToArray())
+                    {
+                        for (var index = 0; index < block.Instructions.Count; index++)
+                        {
+                            var instruction = block.Instructions[index];
+                            if (instruction.Result == null || invariantValues.Contains(instruction.Result) ||
+                                instruction.Opcode == IrOpcode.Phi || !IsValueNumberable(instruction) ||
+                                instruction.Operands.Any(operand => !invariantValues.Contains(operand)))
+                                continue;
+
+                            Record("LICM candidates");
+                            if (instruction.Payload is not IrLoweringOperation
+                                {
+                                    ResultHome: IVariable home,
+                                    IsStackResult: false,
+                                    RequiredHome: false,
+                                } || clobberedHomes.Contains(home))
+                            {
+                                Record("LICM rejected: physical availability");
+                                continue;
+                            }
+
+                            var dependencies = stateDependencies.GetValueOrDefault(instruction.Result);
+                            if ((dependencies & writtenRegions) != 0)
+                            {
+                                Record("LICM rejected: memory changed");
+                                continue;
+                            }
+                            if (!IsSafeToSpeculate(instruction) &&
+                                (!loop.ExitSources.All(exit => cfg.Dominates(block, exit)) ||
+                                 !loop.Latches.All(latch => cfg.Dominates(block, latch))))
+                            {
+                                Record("LICM rejected: conditional execution");
+                                continue;
+                            }
+
+                            block.Instructions.RemoveAt(index--);
+                            loop.Preheader.Instructions.Add(instruction);
+                            invariantValues.Add(instruction.Result);
+                            Record("LICM hoisted instructions");
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        private static bool IsSafeToSpeculate(IrInstruction instruction) => instruction.IsPure && instruction.Opcode
+            is not IrOpcode.Divide and not IrOpcode.Modulo and not IrOpcode.ShiftLeft and not IrOpcode.ShiftRight
+            and not IrOpcode.ArithmeticShift and not IrOpcode.LogicalShift;
+
+        private static IrMemoryRegion GetWrittenRegions(IrInstruction instruction) => instruction.Effect switch
+        {
+            IrEffect.Call => instruction.CallSummary?.GetWrittenRegions() ?? IrMemoryRegion.All,
+            IrEffect.Opaque => IrMemoryRegion.All,
+            IrEffect.WriteMemory when instruction.WriteRegions == IrMemoryRegion.None => IrMemoryRegion.All,
+            IrEffect.WriteMemory => instruction.WriteRegions,
+            _ => IrMemoryRegion.None,
+        };
+
+        private sealed class CfgAnalysis
+        {
+            private readonly IReadOnlyDictionary<IrBlock, HashSet<IrBlock>> dominators;
+
+            private CfgAnalysis(IReadOnlyDictionary<IrBlock, HashSet<IrBlock>> dominators,
+                IReadOnlyList<NaturalLoop> loops)
+            {
+                this.dominators = dominators;
+                Loops = loops;
+            }
+
+            public IReadOnlyList<NaturalLoop> Loops { get; }
+
+            public bool Dominates(IrBlock dominator, IrBlock block) => dominators[block].Contains(dominator);
+
+            public static CfgAnalysis Create(RoutineIr routine)
+            {
+                routine.RebuildPredecessors();
+                var blocks = routine.Blocks.ToArray();
+                var all = blocks.ToHashSet();
+                var dominators = blocks.ToDictionary(block => block, block => ReferenceEquals(block, routine.Entry)
+                    ? new HashSet<IrBlock> { block }
+                    : new HashSet<IrBlock>(all));
+                var changed = true;
+                while (changed)
+                {
+                    changed = false;
+                    foreach (var block in blocks.Where(block => !ReferenceEquals(block, routine.Entry)))
+                    {
+                        var next = block.Predecessors.Count == 0
+                            ? []
+                            : new HashSet<IrBlock>(dominators[block.Predecessors[0]]);
+                        foreach (var predecessor in block.Predecessors.Skip(1))
+                            next.IntersectWith(dominators[predecessor]);
+                        next.Add(block);
+                        if (!next.SetEquals(dominators[block]))
+                        {
+                            dominators[block] = next;
+                            changed = true;
+                        }
+                    }
+                }
+
+                var loops = new List<NaturalLoop>();
+                foreach (var headerGroup in blocks.SelectMany(tail => RoutineIr.GetSuccessors(tail)
+                    .Where(header => dominators[tail].Contains(header)).Select(header => (header, tail)))
+                    .GroupBy(edge => edge.header))
+                {
+                    var header = headerGroup.Key;
+                    var latches = headerGroup.Select(edge => edge.tail).ToHashSet();
+                    var loopBlocks = new HashSet<IrBlock> { header };
+                    var pending = new Stack<IrBlock>(latches);
+                    while (pending.TryPop(out var block))
+                    {
+                        if (!loopBlocks.Add(block))
+                            continue;
+                        foreach (var predecessor in block.Predecessors)
+                            pending.Push(predecessor);
+                    }
+                    var external = header.Predecessors.Where(predecessor => !loopBlocks.Contains(predecessor))
+                        .ToArray();
+                    var preheader = external.Length == 1 &&
+                        RoutineIr.GetSuccessors(external[0]).Count() == 1 ? external[0] : null;
+                    var exits = loopBlocks.Where(block => RoutineIr.GetSuccessors(block)
+                        .Any(successor => !loopBlocks.Contains(successor))).ToHashSet();
+                    loops.Add(new NaturalLoop(header, loopBlocks, latches, exits, preheader));
+                }
+                return new CfgAnalysis(dominators, loops);
+            }
+        }
+
+        private sealed record NaturalLoop(IrBlock Header, HashSet<IrBlock> Blocks, HashSet<IrBlock> Latches,
+            HashSet<IrBlock> ExitSources, IrBlock? Preheader);
+
+        private sealed class MemoryVersionAnalysis
+        {
+            private static readonly IrMemoryRegion[] Regions =
+            [
+                IrMemoryRegion.Globals,
+                IrMemoryRegion.Tables,
+                IrMemoryRegion.Properties,
+                IrMemoryRegion.ObjectTree,
+                IrMemoryRegion.Attributes,
+            ];
+
+            private readonly Dictionary<IrInstruction, Dictionary<IrMemoryRegion, int>> before;
+
+            private MemoryVersionAnalysis(Dictionary<IrInstruction, Dictionary<IrMemoryRegion, int>> before) =>
+                this.before = before;
+
+            public string GetKey(IrInstruction instruction, IrMemoryRegion dependencies) => string.Join(",",
+                Regions.Where(region => (dependencies & region) != 0).Select(region => before[instruction][region]));
+
+            public static MemoryVersionAnalysis Create(RoutineIr routine)
+            {
+                routine.RebuildPredecessors();
+                var nextVersion = 1;
+                var initial = Regions.ToDictionary(region => region, _ => nextVersion++);
+                var writeVersions = routine.Blocks.SelectMany(block => block.Instructions)
+                    .SelectMany(instruction => Regions.Where(region => (GetWrittenRegions(instruction) & region) != 0)
+                        .Select(region => (instruction, region)))
+                    .ToDictionary(pair => pair, _ => nextVersion++);
+                var mergeVersions = routine.Blocks.SelectMany(block => Regions.Select(region => (block, region)))
+                    .ToDictionary(pair => pair, _ => nextVersion++);
+                var incoming = routine.Blocks.ToDictionary(block => block,
+                    _ => new Dictionary<IrMemoryRegion, int>(initial));
+                var outgoing = routine.Blocks.ToDictionary(block => block,
+                    _ => new Dictionary<IrMemoryRegion, int>(initial));
+
+                var changed = true;
+                while (changed)
+                {
+                    changed = false;
+                    foreach (var block in routine.Blocks)
+                    {
+                        var nextIn = new Dictionary<IrMemoryRegion, int>();
+                        foreach (var region in Regions)
+                        {
+                            if (ReferenceEquals(block, routine.Entry) || block.Predecessors.Count == 0)
+                                nextIn[region] = initial[region];
+                            else
+                            {
+                                var versions = block.Predecessors.Select(predecessor => outgoing[predecessor][region])
+                                    .Distinct().ToArray();
+                                nextIn[region] = versions.Length == 1 ? versions[0] : mergeVersions[(block, region)];
+                            }
+                        }
+                        var nextOut = new Dictionary<IrMemoryRegion, int>(nextIn);
+                        foreach (var instruction in block.Instructions)
+                            foreach (var region in Regions.Where(region =>
+                                (GetWrittenRegions(instruction) & region) != 0))
+                                nextOut[region] = writeVersions[(instruction, region)];
+                        if (!nextIn.SequenceEqual(incoming[block]))
+                        {
+                            incoming[block] = nextIn;
+                            changed = true;
+                        }
+                        if (!nextOut.SequenceEqual(outgoing[block]))
+                        {
+                            outgoing[block] = nextOut;
+                            changed = true;
+                        }
+                    }
+                }
+
+                var before = new Dictionary<IrInstruction, Dictionary<IrMemoryRegion, int>>();
+                foreach (var block in routine.Blocks)
+                {
+                    var current = new Dictionary<IrMemoryRegion, int>(incoming[block]);
+                    foreach (var instruction in block.Instructions)
+                    {
+                        before[instruction] = new Dictionary<IrMemoryRegion, int>(current);
+                        foreach (var region in Regions.Where(region =>
+                            (GetWrittenRegions(instruction) & region) != 0))
+                            current[region] = writeVersions[(instruction, region)];
+                    }
+                }
+                return new MemoryVersionAnalysis(before);
+            }
+        }
+
         private void GlobalValueNumbering(RoutineIr routine)
         {
             routine.RebuildPredecessors();
             var blocks = routine.Blocks.ToArray();
             var stateDependencies = FindStateDependencies(blocks);
+            var memoryVersions = MemoryVersionAnalysis.Create(routine);
             var liveHomesAfter = FindLiveHomesAfter(blocks);
             var instructionBlocks = blocks.SelectMany(block => block.Instructions.Select(instruction =>
                 (instruction, block))).ToDictionary(pair => pair.instruction, pair => pair.block);
@@ -456,65 +715,6 @@ namespace Zilf.Emit.Intermediate
                 return value;
             }
 
-            bool IsAvailableOnAllPaths(IrInstruction definition, IrBlock useBlock)
-            {
-                var dependencies = definition.Result == null
-                    ? IrMemoryRegion.None
-                    : stateDependencies.GetValueOrDefault(definition.Result);
-                if (dependencies == IrMemoryRegion.None ||
-                    !instructionBlocks.TryGetValue(definition, out var definitionBlock) ||
-                    ReferenceEquals(definitionBlock, useBlock))
-                    return true;
-
-                var canReachUse = new HashSet<IrBlock> { useBlock };
-                var pendingPredecessors = new Stack<IrBlock>();
-                pendingPredecessors.Push(useBlock);
-                while (pendingPredecessors.Count > 0)
-                {
-                    var reachable = pendingPredecessors.Pop();
-                    foreach (var predecessor in reachable.Predecessors)
-                    {
-                        if (canReachUse.Add(predecessor))
-                            pendingPredecessors.Push(predecessor);
-                    }
-                }
-
-                var pending = new Stack<(IrBlock Block, int Start)>();
-                pending.Push((definitionBlock, definitionBlock.Instructions.IndexOf(definition) + 1));
-                var visited = new HashSet<IrBlock>();
-                while (pending.Count > 0)
-                {
-                    var (block, start) = pending.Pop();
-                    if (ReferenceEquals(block, useBlock))
-                        continue;
-                    if (!visited.Add(block))
-                        continue;
-
-                    for (var i = start; i < block.Instructions.Count; i++)
-                    {
-                        var instruction = block.Instructions[i];
-                        var writtenRegions = instruction.Effect switch
-                        {
-                            IrEffect.Call => instruction.CallSummary?.GetWrittenRegions() ?? IrMemoryRegion.All,
-                            IrEffect.Opaque => IrMemoryRegion.All,
-                            IrEffect.WriteMemory when instruction.WriteRegions == IrMemoryRegion.None =>
-                                IrMemoryRegion.All,
-                            IrEffect.WriteMemory => instruction.WriteRegions,
-                            _ => IrMemoryRegion.None,
-                        };
-                        if ((writtenRegions & dependencies) != 0)
-                            return false;
-                    }
-
-                    foreach (var successor in RoutineIr.GetSuccessors(block))
-                    {
-                        if (canReachUse.Contains(successor))
-                            pending.Push((successor, 0));
-                    }
-                }
-                return true;
-            }
-
             var visitedDominatorBlocks = new HashSet<IrBlock>();
             var pendingDominatorBlocks = new Stack<(IrBlock Block,
                 Dictionary<(IrOpcode Opcode, string Operands), (IrValue Value, IrInstruction Instruction)>
@@ -525,13 +725,6 @@ namespace Zilf.Emit.Intermediate
                 if (!visitedDominatorBlocks.Add(block))
                     return;
                 available = new(available);
-                if (block.Predecessors.Count > 1)
-                {
-                    foreach (var unavailable in available
-                        .Where(pair => !IsAvailableOnAllPaths(pair.Value.Instruction, block))
-                        .Select(pair => pair.Key).ToArray())
-                        available.Remove(unavailable);
-                }
                 foreach (var instruction in block.Instructions)
                 {
                     for (var i = 0; i < instruction.Operands.Count; i++)
@@ -563,7 +756,9 @@ namespace Zilf.Emit.Intermediate
                         var currentIds = instruction.Operands.Select(OperandKey).ToArray();
                         if (IsCommutative(instruction.Opcode))
                             Array.Sort(currentIds);
-                        currentKey = (instruction.Opcode, string.Join(",", currentIds));
+                        var dependencies = stateDependencies.GetValueOrDefault(instruction.Result);
+                        currentKey = (instruction.Opcode,
+                            $"{string.Join(",", currentIds)}|{memoryVersions.GetKey(instruction, dependencies)}");
                     }
                     if (resultHome != null && !isStackResult)
                     {
