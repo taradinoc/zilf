@@ -1036,6 +1036,83 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Licm_Hoists_Exact_Global_Across_Different_Global_Write()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var firstKey = new object();
+            var secondKey = new object();
+            var firstIdentity = new IrMemoryIdentity(IrMemoryRegion.Globals, firstKey);
+            var global = routine.CreateExternalValue(mutable: true, memoryIdentity: firstIdentity);
+            var home = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var expression = routine.Append(header, IrOpcode.Add, [global, routine.CreateConstant(2)], payload:
+                new IrLoweringOperation(_ => { }, home));
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            routine.Append(body, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, hasResult: false,
+                writeRegions: IrMemoryRegion.Globals,
+                writeIdentity: new IrMemoryIdentity(IrMemoryRegion.Globals, secondKey));
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(expression.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsTrue(routine.Entry.Instructions.Contains(expression));
+        }
+
+        [TestMethod]
+        public void Licm_Does_Not_Hoist_Exact_Global_Across_Same_Global_Write()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var identity = new IrMemoryIdentity(IrMemoryRegion.Globals, new object());
+            var global = routine.CreateExternalValue(mutable: true, memoryIdentity: identity);
+            var home = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var expression = routine.Append(header, IrOpcode.Add, [global, routine.CreateConstant(2)], payload:
+                new IrLoweringOperation(_ => { }, home));
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            routine.Append(body, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, hasResult: false,
+                writeRegions: IrMemoryRegion.Globals, writeIdentity: identity);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(expression.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsTrue(header.Instructions.Contains(expression));
+        }
+
+        [TestMethod]
+        public void Licm_Conservatively_Uses_Regions_From_Complete_Callee()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var readIdentity = new IrMemoryIdentity(IrMemoryRegion.Globals, new object());
+            var summary = new IrRoutineEffectSummary { IsComplete = true };
+            summary.AddWrite(IrMemoryRegion.Globals,
+                new IrMemoryIdentity(IrMemoryRegion.Globals, new object()));
+            var global = routine.CreateExternalValue(mutable: true, memoryIdentity: readIdentity);
+            var home = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var expression = routine.Append(header, IrOpcode.Add, [global, routine.CreateConstant(2)], payload:
+                new IrLoweringOperation(_ => { }, home));
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            routine.Append(body, IrOpcode.TargetOperation, [], IrEffect.Call, hasResult: false, callSummary: summary);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(expression.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsTrue(header.Instructions.Contains(expression));
+        }
+
+        [TestMethod]
         public void Licm_Does_Not_Hoist_Transitively_Global_Derived_Expression_Across_Call()
         {
             var routine = new RoutineIr();
@@ -1227,6 +1304,33 @@ namespace Zilf.Emit.Tests
 
             Assert.IsTrue(header.Instructions.Contains(read));
             Assert.IsFalse(routine.Entry.Instructions.Contains(read));
+        }
+
+        [TestMethod]
+        public void Licm_Hoists_Constant_Table_Read_Across_Different_Table_Write()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var readIdentity = new IrMemoryIdentity(IrMemoryRegion.Tables, new object());
+            var table = routine.CreateValue();
+            var index = routine.CreateValue();
+            var home = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var read = routine.Append(header, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables,
+                readIdentity: readIdentity);
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            routine.Append(body, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, hasResult: false,
+                writeRegions: IrMemoryRegion.Tables,
+                writeIdentity: new IrMemoryIdentity(IrMemoryRegion.Tables, new object()));
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(read.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsTrue(routine.Entry.Instructions.Contains(read));
         }
 
         [TestMethod]

@@ -335,7 +335,8 @@ namespace Zilf.Emit.Intermediate
                 var instruction = AppendLowering(opcode, [GetValue(value)], IrEffect.ReadMemory,
                     operands => target.EmitUnary(op, operands[0], result), resultHome: result,
                     emitTo: (operands, home) => target.EmitUnary(op, operands[0], home),
-                    readRegions: GetReadRegions(opcode));
+                    readRegions: GetReadRegions(opcode),
+                    readIdentity: TryGetMemoryIdentity(value, GetReadRegions(opcode)));
                 SetProducedValue(result, instruction.Result!);
                 return;
             }
@@ -362,7 +363,8 @@ namespace Zilf.Emit.Intermediate
                 var instruction = AppendLowering(loadOpcode, [GetValue(left), GetValue(right)], IrEffect.ReadMemory,
                     operands => target.EmitBinary(op, operands[0], operands[1], result), resultHome: result,
                     emitTo: (operands, home) => target.EmitBinary(op, operands[0], operands[1], home),
-                    readRegions: GetReadRegions(loadOpcode));
+                    readRegions: GetReadRegions(loadOpcode),
+                    readIdentity: TryGetMemoryIdentity(left, GetReadRegions(loadOpcode)));
                 SetProducedValue(result, instruction.Result!);
                 return;
             }
@@ -393,7 +395,7 @@ namespace Zilf.Emit.Intermediate
                 RecordEffectfulOperation([left, center, right],
                     operands => target.EmitTernary(op, operands[0], operands[1], operands[2], result), effect, result,
                     (operands, home) => target.EmitTernary(op, operands[0], operands[1], operands[2], home),
-                    GetWriteRegions(op));
+                    GetWriteRegions(op), TryGetMemoryIdentity(left, GetWriteRegions(op)));
                 return;
             }
             RecordTemporaryOperation([left, center, right],
@@ -487,8 +489,7 @@ namespace Zilf.Emit.Intermediate
                     resolved => target.EmitCall(resolved[0], resolved.Skip(1).ToArray(), result), hasResult: false,
                     callSummary: callSummary);
             }
-            if (callSummary == null || (callSummary.GetWrittenRegions() & IrMemoryRegion.Globals) != 0)
-                InvalidateMutableExternalValues();
+            InvalidateMutableExternalValues(callSummary);
         }
 
         public void EmitStore(IVariable dest, IOperand src)
@@ -523,7 +524,8 @@ namespace Zilf.Emit.Intermediate
                 var value = GetValue(src);
                 AppendLowering(IrOpcode.TargetOperation, [value], IrEffect.WriteMemory,
                     operands => target.EmitStore(dest, operands[0]), hasResult: false,
-                    writeRegions: IrMemoryRegion.Globals);
+                    writeRegions: IrMemoryRegion.Globals,
+                    writeIdentity: new IrMemoryIdentity(IrMemoryRegion.Globals, GetStableMemoryKey(dest)));
                 externalValues.Remove(dest);
                 return;
             }
@@ -684,18 +686,23 @@ namespace Zilf.Emit.Intermediate
         protected void RecordEffectfulOperation(IReadOnlyList<IOperand> operands,
             Action<IReadOnlyList<IOperand>> emit, IrEffect effect, IVariable? result,
             Action<IReadOnlyList<IOperand>, IVariable?> emitTo,
-            IrMemoryRegion writeRegions = IrMemoryRegion.None)
+            IrMemoryRegion writeRegions = IrMemoryRegion.None, IrMemoryIdentity? writeIdentity = null)
         {
             if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
                 !operands.Any(IsEffectBarrierOperand))
             {
                 var instruction = AppendLowering(IrOpcode.TargetOperation, operands.Select(GetValue).ToArray(), effect,
-                    emit, resultHome: result, emitTo: emitTo, writeRegions: writeRegions);
+                    emit, resultHome: result, emitTo: emitTo, writeRegions: writeRegions,
+                    writeIdentity: writeIdentity);
                 SetProducedValue(result, instruction.Result!);
                 return;
             }
 
-            RecordOrderedOperation(operands, emit, effect, writeRegions);
+            if (writeIdentity == null)
+                RecordOrderedOperation(operands, emit, effect, writeRegions);
+            else
+                AppendLowering(IrOpcode.TargetOperation, operands.Select(GetValue).ToArray(), effect, emit,
+                    hasResult: false, writeRegions: writeRegions, writeIdentity: writeIdentity);
         }
 
         private void RecordEffectfulOptionalOperation(IReadOnlyList<IOperand?> operands,
@@ -748,19 +755,22 @@ namespace Zilf.Emit.Intermediate
             Action<IReadOnlyList<IOperand>> emit, bool hasResult = true, IVariable? resultHome = null,
             Action<IReadOnlyList<IOperand>, IVariable?>? emitTo = null,
             IrMemoryRegion readRegions = IrMemoryRegion.None, IrMemoryRegion writeRegions = IrMemoryRegion.None,
-            IrRoutineEffectSummary? callSummary = null)
+            IrRoutineEffectSummary? callSummary = null, IrMemoryIdentity? readIdentity = null,
+            IrMemoryIdentity? writeIdentity = null)
         {
             var instruction = routine.Append(current, opcode, operands, effect,
                 new IrLoweringOperation(emit, resultHome, ReferenceEquals(resultHome, Stack), emitTo), hasResult,
-                readRegions, writeRegions, callSummary);
+                readRegions, writeRegions, callSummary, readIdentity, writeIdentity);
             if (instruction.Result != null && resultHome != null)
                 instruction.Result.PhysicalHome = resultHome;
-            effectSummary.DirectWrites |= effect switch
+            var writtenRegions = effect switch
             {
                 IrEffect.WriteMemory when writeRegions == IrMemoryRegion.None => IrMemoryRegion.All,
                 IrEffect.Call when callSummary == null => IrMemoryRegion.All,
                 _ => writeRegions,
             };
+            if (writtenRegions != IrMemoryRegion.None)
+                effectSummary.AddWrite(writtenRegions, writeIdentity);
             if (callSummary != null)
                 effectSummary.AddCallee(callSummary);
             if (instruction.Result != null)
@@ -801,14 +811,29 @@ namespace Zilf.Emit.Intermediate
             }
             if (!ReferenceEquals(operand, Stack) && externalValues.TryGetValue(operand, out var existing))
                 return existing;
-            var external = routine.CreateExternalValue(operand is IVariable or IIndirectOperand,
-                operand is INonzeroConstantOperand);
+            var mutable = operand is IVariable or IIndirectOperand;
+            var external = routine.CreateExternalValue(mutable, operand is INonzeroConstantOperand,
+                mutable && operand is not IIndirectOperand
+                    ? new IrMemoryIdentity(IrMemoryRegion.Globals, GetStableMemoryKey(operand))
+                    : null);
             external.PhysicalHome = operand;
             valueHomes[external] = operand;
             if (!ReferenceEquals(operand, Stack))
                 externalValues[operand] = external;
             return external;
         }
+
+        private static IrMemoryIdentity? TryGetMemoryIdentity(IOperand operand, IrMemoryRegion region) =>
+            region == IrMemoryRegion.Globals && operand is IConstantOperand
+                ? new IrMemoryIdentity(region, GetStableMemoryKey(operand))
+                : null;
+
+        private static object GetStableMemoryKey(IOperand operand) => operand switch
+        {
+            IGlobalBuilder => operand,
+            INumericOperand numeric => numeric.Value,
+            _ => operand.ToString()!,
+        };
 
         private void SetLocalValue(IVariable variable, IrValue value)
         {
@@ -821,6 +846,19 @@ namespace Zilf.Emit.Intermediate
         private void InvalidateMutableExternalValues()
         {
             foreach (var pair in externalValues.Where(pair => pair.Value.MutableExternal).ToArray())
+                externalValues.Remove(pair.Key);
+        }
+
+        private void InvalidateMutableExternalValues(IrRoutineEffectSummary? summary)
+        {
+            if (summary == null || (summary.GetWrittenRegions() & IrMemoryRegion.Globals) != 0)
+            {
+                InvalidateMutableExternalValues();
+                return;
+            }
+            var written = summary.GetWrittenIdentities();
+            foreach (var pair in externalValues.Where(pair => pair.Value.MutableExternal &&
+                pair.Value.MemoryIdentity != null && written.Contains(pair.Value.MemoryIdentity)).ToArray())
                 externalValues.Remove(pair.Key);
         }
 

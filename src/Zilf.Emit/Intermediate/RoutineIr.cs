@@ -84,17 +84,48 @@ namespace Zilf.Emit.Intermediate
         All = Globals | Tables | Properties | ObjectTree | Attributes,
     }
 
+    internal sealed record IrMemoryIdentity(IrMemoryRegion Region, object Key);
+
     internal sealed class IrRoutineEffectSummary
     {
         private readonly List<IrRoutineEffectSummary> callees = [];
+        private readonly HashSet<IrMemoryIdentity> directWriteIdentities = [];
+        private IrMemoryRegion directWrites;
+        private IrMemoryRegion directUnknownWrites;
 
-        public IrMemoryRegion DirectWrites { get; set; }
+        public IrMemoryRegion DirectWrites
+        {
+            get => directWrites;
+            set
+            {
+                directWrites = value;
+                directUnknownWrites |= value;
+            }
+        }
 
         public bool IsComplete { get; set; }
 
         public void AddCallee(IrRoutineEffectSummary callee) => callees.Add(callee);
 
+        public void AddWrite(IrMemoryRegion regions, IrMemoryIdentity? identity = null)
+        {
+            directWrites |= regions;
+            if (identity == null)
+                directUnknownWrites |= regions;
+            else
+                directWriteIdentities.Add(identity);
+        }
+
         public IrMemoryRegion GetWrittenRegions() => GetWrittenRegions([]);
+
+        public IrMemoryRegion GetUnknownWrittenRegions() => GetUnknownWrittenRegions([]);
+
+        public IReadOnlySet<IrMemoryIdentity> GetWrittenIdentities()
+        {
+            var result = new HashSet<IrMemoryIdentity>();
+            CollectWrittenIdentities(result, []);
+            return result;
+        }
 
         private IrMemoryRegion GetWrittenRegions(HashSet<IrRoutineEffectSummary> active)
         {
@@ -107,6 +138,30 @@ namespace Zilf.Emit.Intermediate
                 result |= callee.GetWrittenRegions(active);
             active.Remove(this);
             return result;
+        }
+
+        private IrMemoryRegion GetUnknownWrittenRegions(HashSet<IrRoutineEffectSummary> active)
+        {
+            if (!IsComplete)
+                return IrMemoryRegion.All;
+            if (!active.Add(this))
+                return directUnknownWrites;
+            var result = directUnknownWrites;
+            foreach (var callee in callees)
+                result |= callee.GetUnknownWrittenRegions(active);
+            active.Remove(this);
+            return result;
+        }
+
+        private void CollectWrittenIdentities(HashSet<IrMemoryIdentity> result,
+            HashSet<IrRoutineEffectSummary> active)
+        {
+            if (!IsComplete || !active.Add(this))
+                return;
+            result.UnionWith(directWriteIdentities);
+            foreach (var callee in callees)
+                callee.CollectWrittenIdentities(result, active);
+            active.Remove(this);
         }
     }
 
@@ -152,12 +207,14 @@ namespace Zilf.Emit.Intermediate
 
     internal sealed class IrValue
     {
-        internal IrValue(int id, int? constant = null, bool mutableExternal = false, bool knownNonzero = false)
+        internal IrValue(int id, int? constant = null, bool mutableExternal = false, bool knownNonzero = false,
+            IrMemoryIdentity? memoryIdentity = null)
         {
             Id = id;
             Constant = constant;
             MutableExternal = mutableExternal;
             KnownNonzero = knownNonzero || constant is not null and not 0;
+            MemoryIdentity = memoryIdentity;
         }
 
         public int Id { get; }
@@ -167,6 +224,8 @@ namespace Zilf.Emit.Intermediate
         public bool MutableExternal { get; }
 
         public bool KnownNonzero { get; }
+
+        public IrMemoryIdentity? MemoryIdentity { get; }
 
         public IOperand? PhysicalHome { get; set; }
 
@@ -179,7 +238,8 @@ namespace Zilf.Emit.Intermediate
 
         internal IrInstruction(IrOpcode opcode, IrValue? result, IEnumerable<IrValue> operands,
             IrEffect effect = IrEffect.None, object? payload = null, IrMemoryRegion readRegions = IrMemoryRegion.None,
-            IrMemoryRegion writeRegions = IrMemoryRegion.None, IrRoutineEffectSummary? callSummary = null)
+            IrMemoryRegion writeRegions = IrMemoryRegion.None, IrRoutineEffectSummary? callSummary = null,
+            IrMemoryIdentity? readIdentity = null, IrMemoryIdentity? writeIdentity = null)
         {
             Opcode = opcode;
             Result = result;
@@ -189,6 +249,8 @@ namespace Zilf.Emit.Intermediate
             ReadRegions = readRegions;
             WriteRegions = writeRegions;
             CallSummary = callSummary;
+            ReadIdentity = readIdentity;
+            WriteIdentity = writeIdentity;
         }
 
         public IrOpcode Opcode { get; set; }
@@ -206,6 +268,10 @@ namespace Zilf.Emit.Intermediate
         public IrMemoryRegion WriteRegions { get; }
 
         public IrRoutineEffectSummary? CallSummary { get; }
+
+        public IrMemoryIdentity? ReadIdentity { get; }
+
+        public IrMemoryIdentity? WriteIdentity { get; }
 
         public bool IsPure => Effect == IrEffect.None;
 
@@ -290,18 +356,20 @@ namespace Zilf.Emit.Intermediate
 
         public IrValue CreateValue() => new(nextValueId++);
 
-        public IrValue CreateExternalValue(bool mutable, bool knownNonzero = false) =>
-            new(nextValueId++, mutableExternal: mutable, knownNonzero: knownNonzero);
+        public IrValue CreateExternalValue(bool mutable, bool knownNonzero = false,
+            IrMemoryIdentity? memoryIdentity = null) =>
+            new(nextValueId++, mutableExternal: mutable, knownNonzero: knownNonzero, memoryIdentity: memoryIdentity);
 
         public IrValue CreateConstant(int value) => new(nextValueId++, value);
 
         public IrInstruction Append(IrBlock block, IrOpcode opcode, IEnumerable<IrValue> operands,
             IrEffect effect = IrEffect.None, object? payload = null, bool hasResult = true,
             IrMemoryRegion readRegions = IrMemoryRegion.None, IrMemoryRegion writeRegions = IrMemoryRegion.None,
-            IrRoutineEffectSummary? callSummary = null)
+            IrRoutineEffectSummary? callSummary = null, IrMemoryIdentity? readIdentity = null,
+            IrMemoryIdentity? writeIdentity = null)
         {
             var instruction = new IrInstruction(opcode, hasResult ? CreateValue() : null, operands, effect, payload,
-                readRegions, writeRegions, callSummary);
+                readRegions, writeRegions, callSummary, readIdentity, writeIdentity);
             block.Instructions.Add(instruction);
             return instruction;
         }

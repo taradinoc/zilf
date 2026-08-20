@@ -102,12 +102,18 @@ Current memory regions are globals, tables, properties, object tree, and attribu
 model, not documentation: an incorrect narrow region can miscompile a game. Use `All` until a narrower classification
 is proven.
 
+Within those regions, the recorder assigns exact identities to directly addressed globals. Global identities use the
+canonical `IGlobalBuilder` supplied by the game builder, so they remain stable across routine builders. Dynamic or
+indirect addresses retain region-wide dependencies. Routine summaries record exact writes, but callers currently
+consume their transitive effects at region granularity: the call graph and its summaries are still being completed while
+routines are recorded. Incomplete calls, opaque operations, and unclassified writes remain region-wide barriers.
+
 GVN computes a stable version for each memory region at every instruction. Writes and calls produce new versions for
 the regions they may change, while joins use a stable merge version when predecessor versions differ. Memory-dependent
 expressions include these versions in their value-numbering keys. This avoids repeated path searches and makes loop
 back-edge invalidation explicit. Dependencies inherited through mutable external values are included. The versions
-deliberately have region-level precision: they do not distinguish two globals, tables, properties, or objects within
-the same region.
+remain region-versioned for GVN; exact identities currently refine LICM for writes visible in the same routine.
+Extending GVN's version keys and closed-call-graph summaries to these identities remains future work.
 
 A call does not inherently overwrite the caller's routine locals. However, values captured from globals or memory must
 remain snapshots when required. Never move a local materialization from before a call to after it if the local exists to
@@ -220,9 +226,8 @@ These are directions, not assumptions that the prerequisites already exist:
 - **More aggressive phi lowering.** The current edge materializations avoid critical-edge and parallel-copy hazards
   without consuming extra Z locals. A future pass could remove more of those stores by splitting critical edges and
   resolving parallel-copy cycles with stack-backed scratch storage when profitable.
-- **More precise versioned memory.** Refine the current region versions per proven-disjoint global, table, or object,
-  and add
-  store-to-load forwarding where both address and stored value are available.
+- **More precise versioned memory.** Add exact global and constant-base identities to GVN's version keys, extend proven
+  identities to objects and properties, and add store-to-load forwarding where address and value are available.
 - **A target cost model.** Compare immediate size, variable operands, instruction form, required copies, stack traffic,
   and local pressure. An algebraic or CSE rewrite should be rejected when it merely replaces an instruction with an
   equal-cost copy or forces a worse encoding.

@@ -564,7 +564,8 @@ namespace Zilf.Emit.Intermediate
             if (cfg.Loops.Count == 0)
                 return;
 
-            var stateDependencies = FindStateDependencies(routine.Blocks);
+            var stateDependencies = FindUnknownStateDependencies(routine.Blocks);
+            var identityDependencies = FindIdentityDependencies(routine.Blocks);
             var definitions = routine.Blocks.SelectMany(block => block.Instructions.Select(instruction =>
                 (instruction, block))).Where(pair => pair.instruction.Result != null)
                 .ToDictionary(pair => pair.instruction.Result!, pair => pair);
@@ -578,7 +579,10 @@ namespace Zilf.Emit.Intermediate
                 }
 
                 var writtenRegions = loop.Blocks.SelectMany(block => block.Instructions)
-                    .Aggregate(IrMemoryRegion.None, (regions, instruction) => regions | GetWrittenRegions(instruction));
+                    .Aggregate(IrMemoryRegion.None, (regions, instruction) =>
+                        regions | GetUnknownWrittenRegions(instruction));
+                var writtenIdentities = loop.Blocks.SelectMany(block => block.Instructions)
+                    .SelectMany(GetWrittenIdentities).ToHashSet();
                 var clobberedHomes = loop.Blocks.SelectMany(block => block.Instructions)
                     .Select(instruction => (instruction.Payload as IrLoweringOperation)?.ResultHome)
                     .OfType<IVariable>().GroupBy(home => home).Where(group => group.Count() > 1)
@@ -605,7 +609,9 @@ namespace Zilf.Emit.Intermediate
 
                             Record("LICM candidates");
                             var dependencies = stateDependencies.GetValueOrDefault(instruction.Result);
-                            if ((dependencies & writtenRegions) != 0)
+                            var identities = identityDependencies.GetValueOrDefault(instruction.Result);
+                            if ((dependencies & writtenRegions) != 0 || identities != null && identities.Any(identity =>
+                                (writtenRegions & identity.Region) != 0 || writtenIdentities.Contains(identity)))
                             {
                                 Record("LICM rejected: memory changed");
                                 continue;
@@ -699,6 +705,23 @@ namespace Zilf.Emit.Intermediate
             IrEffect.WriteMemory => instruction.WriteRegions,
             _ => IrMemoryRegion.None,
         };
+
+        private static IrMemoryRegion GetUnknownWrittenRegions(IrInstruction instruction) => instruction.Effect switch
+        {
+            IrEffect.Call => instruction.CallSummary?.GetWrittenRegions() ?? IrMemoryRegion.All,
+            IrEffect.Opaque => IrMemoryRegion.All,
+            IrEffect.WriteMemory when instruction.WriteIdentity != null => IrMemoryRegion.None,
+            IrEffect.WriteMemory when instruction.WriteRegions == IrMemoryRegion.None => IrMemoryRegion.All,
+            IrEffect.WriteMemory => instruction.WriteRegions,
+            _ => IrMemoryRegion.None,
+        };
+
+        private static IEnumerable<IrMemoryIdentity> GetWrittenIdentities(IrInstruction instruction) =>
+            instruction.Effect switch
+            {
+                IrEffect.WriteMemory when instruction.WriteIdentity != null => [instruction.WriteIdentity],
+                _ => [],
+            };
 
         private sealed class CfgAnalysis
         {
@@ -1124,6 +1147,67 @@ namespace Zilf.Emit.Intermediate
                     if (dependencies != result.GetValueOrDefault(instruction.Result))
                     {
                         result[instruction.Result] = dependencies;
+                        changed = true;
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static Dictionary<IrValue, IrMemoryRegion> FindUnknownStateDependencies(IEnumerable<IrBlock> blocks)
+        {
+            var instructions = blocks.SelectMany(block => block.Instructions).ToArray();
+            var result = instructions.SelectMany(instruction => instruction.Operands)
+                .Where(value => value.MutableExternal && value.MemoryIdentity == null)
+                .Distinct().ToDictionary(value => value, _ => IrMemoryRegion.Globals);
+            var changed = true;
+            while (changed)
+            {
+                changed = false;
+                foreach (var instruction in instructions.Where(instruction => instruction.Result != null))
+                {
+                    var dependencies = instruction.ReadIdentity == null
+                        ? instruction.ReadRegions != IrMemoryRegion.None
+                            ? instruction.ReadRegions
+                            : GetReadRegions(instruction.Opcode)
+                        : IrMemoryRegion.None;
+                    foreach (var operand in instruction.Operands)
+                        dependencies |= result.GetValueOrDefault(operand);
+                    if (dependencies != result.GetValueOrDefault(instruction.Result!))
+                    {
+                        result[instruction.Result!] = dependencies;
+                        changed = true;
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static Dictionary<IrValue, HashSet<IrMemoryIdentity>> FindIdentityDependencies(
+            IEnumerable<IrBlock> blocks)
+        {
+            var instructions = blocks.SelectMany(block => block.Instructions).ToArray();
+            var result = instructions.SelectMany(instruction => instruction.Operands)
+                .Where(value => value.MemoryIdentity != null).Distinct()
+                .ToDictionary(value => value, value => new HashSet<IrMemoryIdentity> { value.MemoryIdentity! });
+            var changed = true;
+            while (changed)
+            {
+                changed = false;
+                foreach (var instruction in instructions.Where(instruction => instruction.Result != null))
+                {
+                    var dependencies = instruction.ReadIdentity == null
+                        ? []
+                        : new HashSet<IrMemoryIdentity> { instruction.ReadIdentity };
+                    foreach (var operand in instruction.Operands)
+                    {
+                        if (result.TryGetValue(operand, out var operandDependencies))
+                            dependencies.UnionWith(operandDependencies);
+                    }
+                    if (!result.TryGetValue(instruction.Result!, out var existing) ||
+                        !existing.SetEquals(dependencies))
+                    {
+                        result[instruction.Result!] = dependencies;
                         changed = true;
                     }
                 }
