@@ -486,6 +486,8 @@ namespace Zilf.Emit.Intermediate
                     resolved => target.EmitCall(resolved[0], resolved.Skip(1).ToArray(), result), hasResult: false,
                     callSummary: callSummary);
             }
+            if (callSummary == null || (callSummary.GetWrittenRegions() & IrMemoryRegion.Globals) != 0)
+                InvalidateMutableExternalValues();
         }
 
         public void EmitStore(IVariable dest, IOperand src)
@@ -808,6 +810,12 @@ namespace Zilf.Emit.Intermediate
             dirtyLocals.Add(variable);
             valueHomes[value] = variable;
             value.PhysicalHome = variable;
+        }
+
+        private void InvalidateMutableExternalValues()
+        {
+            foreach (var pair in externalValues.Where(pair => pair.Value.MutableExternal).ToArray())
+                externalValues.Remove(pair.Key);
         }
 
         private void SetProducedValue(IVariable variable, IrValue value)

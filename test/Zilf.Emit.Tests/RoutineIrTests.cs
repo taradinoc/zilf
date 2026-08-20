@@ -1377,6 +1377,34 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void IrRoutineBuilder_Reads_Global_Again_After_Unknown_Call()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var oldValue = Mock.Of<ILocalBuilder>();
+            var newValue = Mock.Of<ILocalBuilder>();
+            var global = Mock.Of<IVariable>();
+            var calledRoutine = Mock.Of<IOperand>();
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.Setup(t => t.DefineLocal("OLD")).Returns(oldValue);
+            target.Setup(t => t.DefineLocal("NEW")).Returns(newValue);
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true);
+            var oldLocal = builder.DefineLocal("OLD");
+            var newLocal = builder.DefineLocal("NEW");
+            builder.EmitStore(oldLocal, global);
+            builder.EmitCall(calledRoutine, [], null);
+            builder.EmitStore(newLocal, global);
+            builder.Finish();
+
+            target.Verify(t => t.EmitStore(oldValue, global), Times.Once);
+            target.Verify(t => t.EmitCall(calledRoutine, It.IsAny<IOperand[]>(), null), Times.Once);
+            target.Verify(t => t.EmitStore(newValue, global), Times.Once);
+            target.Verify(t => t.EmitStore(newValue, oldValue), Times.Never);
+        }
+
+        [TestMethod]
         public void IrRoutineBuilder_Forwards_Folded_Stack_Value_Into_Ordered_Operation()
         {
             var target = new Mock<IRoutineBuilder>();
