@@ -121,12 +121,15 @@ the current lowering metadata. The recorder inserts the new labeled block immedi
 order. Header phi inputs from external predecessors are merged in the preheader. Unsupported targeted conditional
 edges are left unchanged rather than retargeted unsafely.
 
-Eligible instructions must be value-numberable, have loop-invariant operands, use a non-stack physical home that is not
-otherwise clobbered in the loop, and be free of required-home constraints. Memory reads are hoisted only when the loop
-does not write an overlapping region; this check includes state inherited transitively from mutable globals. The
-instruction's block must dominate every latch and exit source, preventing a conditional read from becoming
-unconditional. Calls, writes, phi nodes, materializations, stack results, opaque or ordered operations, and potentially
-trapping arithmetic are not hoisted. Induction-variable simplification, strength reduction, preheader creation, and
+Eligible instructions must be value-numberable, have loop-invariant operands, and be free of required-home constraints.
+A stable non-stack physical home is reused when available. An unescaped virtual-stack result with an `EmitTo` lowering
+path is promoted to a compiler temporary when the backend can allocate one; Zap allocation still respects the 15-local
+limit. Before allocating, LICM checks the preheader for an equivalent pure expression with an available non-stack home;
+such candidates are left for GVN, avoiding an unused temporary and equal-cost copy. Memory reads are hoisted only when
+the loop does not write an overlapping region; this check includes state
+inherited transitively from mutable globals. The instruction's block must dominate every latch and exit source,
+preventing a conditional read from becoming unconditional. Calls, writes, phi nodes, materializations, escaping stack
+results, opaque or ordered operations, and potentially trapping arithmetic are not hoisted. Strength reduction and
 identity-based memory aliasing remain future work.
 
 The induction-variable pass recognizes single-latch basic induction phis whose update adds or subtracts a constant. If

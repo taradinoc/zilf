@@ -1118,6 +1118,70 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Licm_Promotes_Invariant_Stack_Result_To_Compiler_Temporary()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var stack = Mock.Of<IVariable>();
+            var temporary = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var lowering = new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { });
+            var invariant = routine.Append(header, IrOpcode.Add,
+                [routine.CreateValue(), routine.CreateValue()], payload: lowering);
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(invariant.Result);
+
+            var optimizer = new RoutineIrOptimizer(acquireTemporary: () => temporary);
+            optimizer.Optimize(routine);
+
+            Assert.IsTrue(routine.Entry.Instructions.Contains(invariant));
+            Assert.AreSame(temporary, lowering.ResultHome);
+            Assert.IsFalse(lowering.IsStackResult);
+            Assert.AreSame(temporary, invariant.Result.PhysicalHome);
+            Assert.AreEqual(1, optimizer.GetStatistics().Single(stat =>
+                stat.Name == "LICM promoted stack results").Count);
+        }
+
+        [TestMethod]
+        public void Licm_Does_Not_Allocate_Temporary_When_Expression_Is_Already_In_Preheader()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var left = routine.CreateValue();
+            var right = routine.CreateValue();
+            var existingHome = Mock.Of<IVariable>();
+            var stack = Mock.Of<IVariable>();
+            var existing = routine.Append(routine.Entry, IrOpcode.Subtract, [left, right], payload:
+                new IrLoweringOperation(_ => { }, existingHome));
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var duplicate = routine.Append(header, IrOpcode.Subtract, [left, right], payload:
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }));
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(duplicate.Result);
+            var allocations = 0;
+
+            var optimizer = new RoutineIrOptimizer(acquireTemporary: () =>
+            {
+                allocations++;
+                return Mock.Of<IVariable>();
+            });
+            optimizer.Optimize(routine);
+
+            Assert.AreEqual(0, allocations);
+            Assert.AreEqual(1, routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Opcode == IrOpcode.Subtract));
+            Assert.AreSame(existing.Result, ((IrTerminator.Return)exit.Terminator).Value);
+            Assert.AreEqual(1, optimizer.GetStatistics().Single(stat =>
+                stat.Name == "LICM deferred: already available").Count);
+        }
+
+        [TestMethod]
         public void Licm_Hoists_Unchanged_Table_Read_From_Loop_Header()
         {
             var routine = new RoutineIr();

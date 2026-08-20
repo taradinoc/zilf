@@ -604,17 +604,6 @@ namespace Zilf.Emit.Intermediate
                                 continue;
 
                             Record("LICM candidates");
-                            if (instruction.Payload is not IrLoweringOperation
-                                {
-                                    ResultHome: IVariable home,
-                                    IsStackResult: false,
-                                    RequiredHome: false,
-                                } || clobberedHomes.Contains(home))
-                            {
-                                Record("LICM rejected: physical availability");
-                                continue;
-                            }
-
                             var dependencies = stateDependencies.GetValueOrDefault(instruction.Result);
                             if ((dependencies & writtenRegions) != 0)
                             {
@@ -628,6 +617,23 @@ namespace Zilf.Emit.Intermediate
                                 Record("LICM rejected: conditional execution");
                                 continue;
                             }
+                            if (instruction.IsPure && instruction.Payload is IrLoweringOperation
+                                { IsStackResult: true } && loop.Preheader.Instructions.Any(prior =>
+                                    EquivalentExpression(prior, instruction) &&
+                                    prior.Payload is IrLoweringOperation
+                                    {
+                                        ResultHome: not null,
+                                        IsStackResult: false,
+                                    }))
+                            {
+                                Record("LICM deferred: already available");
+                                continue;
+                            }
+                            if (!TryPrepareLicmHome(instruction, clobberedHomes))
+                            {
+                                Record("LICM rejected: physical availability");
+                                continue;
+                            }
 
                             block.Instructions.RemoveAt(index--);
                             loop.Preheader.Instructions.Add(instruction);
@@ -638,6 +644,47 @@ namespace Zilf.Emit.Intermediate
                     }
                 }
             }
+        }
+
+        private static bool EquivalentExpression(IrInstruction left, IrInstruction right)
+        {
+            if (left.Result == null || !IsValueNumberable(left) || left.Opcode != right.Opcode ||
+                left.Operands.Count != right.Operands.Count)
+                return false;
+            if (!IsCommutative(left.Opcode))
+                return left.Operands.Zip(right.Operands).All(pair =>
+                    StateValuesEquivalent(pair.First, pair.Second));
+            var unmatched = right.Operands.ToList();
+            foreach (var operand in left.Operands)
+            {
+                var index = unmatched.FindIndex(candidate => StateValuesEquivalent(operand, candidate));
+                if (index < 0)
+                    return false;
+                unmatched.RemoveAt(index);
+            }
+            return true;
+        }
+
+        private bool TryPrepareLicmHome(IrInstruction instruction, IReadOnlySet<IVariable> clobberedHomes)
+        {
+            if (instruction.Payload is not IrLoweringOperation
+                {
+                    ResultHome: IVariable home,
+                    RequiredHome: false,
+                } lowering)
+                return false;
+            if (!lowering.IsStackResult)
+                return !clobberedHomes.Contains(home);
+            if (lowering.StackEscapes || lowering.EmitTo == null)
+                return false;
+            var temporary = acquireTemporary();
+            if (temporary == null)
+                return false;
+            lowering.ResultHome = temporary;
+            lowering.IsStackResult = false;
+            instruction.Result!.PhysicalHome = temporary;
+            Record("LICM promoted stack results");
+            return true;
         }
 
         private static bool IsSafeToSpeculate(IrInstruction instruction) => instruction.IsPure && instruction.Opcode
