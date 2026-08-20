@@ -113,6 +113,7 @@ namespace Zilf.Emit.Intermediate
     internal enum IrOpcode
     {
         Constant,
+        Phi,
         Copy,
         Add,
         Subtract,
@@ -218,6 +219,15 @@ namespace Zilf.Emit.Intermediate
         }
     }
 
+    internal sealed class IrPhi
+    {
+        public IrPhi(IVariable variable) => Variable = variable;
+
+        public IVariable Variable { get; }
+
+        public IDictionary<IrBlock, IrValue> Incoming { get; } = new Dictionary<IrBlock, IrValue>();
+    }
+
     internal abstract record IrTerminator
     {
         public sealed record Jump(IrBlock Target, Action<IrBlock>? EmitJump = null,
@@ -306,7 +316,180 @@ namespace Zilf.Emit.Intermediate
                 foreach (var successor in GetSuccessors(block))
                     successor.AddPredecessor(block);
             }
+
+            foreach (var block in blocks)
+            {
+                foreach (var instruction in block.Instructions.Where(instruction =>
+                    instruction.Opcode == IrOpcode.Phi && instruction.Payload is IrPhi))
+                {
+                    var phi = (IrPhi)instruction.Payload!;
+                    instruction.Operands.Clear();
+                    foreach (var predecessor in block.Predecessors)
+                    {
+                        if (phi.Incoming.TryGetValue(predecessor, out var value))
+                            instruction.Operands.Add(value);
+                    }
+                }
+            }
         }
+
+        public int PromoteLocalsToSsa(IEnumerable<IVariable> variables)
+        {
+            RebuildPredecessors();
+            var promotable = variables.ToHashSet();
+            if (promotable.Count == 0)
+                return 0;
+
+            var definitions = blocks.SelectMany(block => block.Instructions)
+                .Where(instruction => instruction.Result != null)
+                .Select(instruction => instruction.Result!)
+                .ToHashSet();
+            var initialValues = new Dictionary<IVariable, IrValue>();
+            foreach (var value in blocks.SelectMany(block => block.Instructions)
+                .SelectMany(instruction => instruction.Operands).Where(value => !definitions.Contains(value)))
+            {
+                if (value.PhysicalHome is IVariable variable && promotable.Contains(variable))
+                    initialValues.TryAdd(variable, value);
+            }
+            foreach (var variable in promotable.Where(variable => !initialValues.ContainsKey(variable)))
+            {
+                var value = CreateExternalValue(mutable: true);
+                value.PhysicalHome = variable;
+                initialValues.Add(variable, value);
+            }
+
+            var incoming = blocks.ToDictionary(block => block,
+                _ => new Dictionary<IVariable, IrValue>(initialValues));
+            var outgoing = blocks.ToDictionary(block => block,
+                _ => new Dictionary<IVariable, IrValue>(initialValues));
+            var phis = new Dictionary<(IrBlock Block, IVariable Variable), IrInstruction>();
+            var changed = true;
+            while (changed)
+            {
+                changed = false;
+                foreach (var block in blocks)
+                {
+                    var nextIncoming = new Dictionary<IVariable, IrValue>();
+                    foreach (var variable in promotable)
+                    {
+                        var predecessorValues = block.Predecessors
+                            .Select(predecessor => outgoing[predecessor][variable])
+                            .Distinct()
+                            .ToArray();
+                        IrValue value;
+                        if (ReferenceEquals(block, Entry) || predecessorValues.Length == 0)
+                        {
+                            value = initialValues[variable];
+                        }
+                        else if (predecessorValues.Length == 1)
+                        {
+                            value = predecessorValues[0];
+                        }
+                        else
+                        {
+                            var key = (block, variable);
+                            if (!phis.TryGetValue(key, out var phi))
+                            {
+                                phi = new IrInstruction(IrOpcode.Phi, CreateValue(), [], payload: new IrPhi(variable));
+                                phi.Result!.PhysicalHome = variable;
+                                block.Instructions.Insert(0, phi);
+                                phis.Add(key, phi);
+                            }
+                            value = phi.Result!;
+                        }
+                        nextIncoming[variable] = value;
+                    }
+
+                    var nextOutgoing = TransferLocalValues(block, nextIncoming, promotable);
+                    if (!LocalValuesEqual(incoming[block], nextIncoming))
+                    {
+                        incoming[block] = nextIncoming;
+                        changed = true;
+                    }
+                    if (!LocalValuesEqual(outgoing[block], nextOutgoing))
+                    {
+                        outgoing[block] = nextOutgoing;
+                        changed = true;
+                    }
+                }
+            }
+
+            foreach (var ((block, variable), phi) in phis)
+            {
+                phi.Operands.Clear();
+                foreach (var predecessor in block.Predecessors)
+                {
+                    var value = outgoing[predecessor][variable];
+                    ((IrPhi)phi.Payload!).Incoming[predecessor] = value;
+                    phi.Operands.Add(value);
+                }
+            }
+
+            foreach (var block in blocks)
+            {
+                var values = new Dictionary<IVariable, IrValue>(incoming[block]);
+                foreach (var instruction in block.Instructions)
+                {
+                    if (instruction.Opcode != IrOpcode.Phi)
+                    {
+                        for (var i = 0; i < instruction.Operands.Count; i++)
+                        {
+                            var operand = instruction.Operands[i];
+                            if (!definitions.Contains(operand) && operand.PhysicalHome is IVariable variable &&
+                                promotable.Contains(variable))
+                                instruction.Operands[i] = values[variable];
+                        }
+                    }
+                    ApplyLocalDefinition(instruction, values, promotable);
+                }
+                block.Terminator = block.Terminator switch
+                {
+                    IrTerminator.Branch branch => branch with { Condition = RewriteLocal(branch.Condition, values,
+                        definitions, promotable) },
+                    IrTerminator.Return { Value: not null } ret => ret with { Value = RewriteLocal(ret.Value, values,
+                        definitions, promotable) },
+                    _ => block.Terminator,
+                };
+            }
+            return phis.Count;
+        }
+
+        private static Dictionary<IVariable, IrValue> TransferLocalValues(IrBlock block,
+            IReadOnlyDictionary<IVariable, IrValue> incoming, IReadOnlySet<IVariable> promotable)
+        {
+            var result = new Dictionary<IVariable, IrValue>(incoming);
+            foreach (var instruction in block.Instructions)
+                ApplyLocalDefinition(instruction, result, promotable);
+            return result;
+        }
+
+        private static void ApplyLocalDefinition(IrInstruction instruction, IDictionary<IVariable, IrValue> values,
+            IReadOnlySet<IVariable> promotable)
+        {
+            if (instruction.Opcode == IrOpcode.Phi && instruction.Payload is IrPhi phi)
+            {
+                values[phi.Variable] = instruction.Result!;
+                return;
+            }
+            if (instruction.Payload is not IrLoweringOperation { ResultHome: IVariable variable } lowering ||
+                !promotable.Contains(variable))
+                return;
+            if (instruction.Result != null)
+                values[variable] = instruction.Result;
+            else if (lowering.IsMaterialization && instruction.Operands.Count == 1)
+                values[variable] = instruction.Operands[0];
+        }
+
+        private static IrValue RewriteLocal(IrValue value, IReadOnlyDictionary<IVariable, IrValue> values,
+            IReadOnlySet<IrValue> definitions, IReadOnlySet<IVariable> promotable) =>
+            !definitions.Contains(value) && value.PhysicalHome is IVariable variable && promotable.Contains(variable)
+                ? values[variable]
+                : value;
+
+        private static bool LocalValuesEqual(IReadOnlyDictionary<IVariable, IrValue> left,
+            IReadOnlyDictionary<IVariable, IrValue> right) =>
+            left.Count == right.Count && left.All(pair => right.TryGetValue(pair.Key, out var value) &&
+                ReferenceEquals(pair.Value, value));
 
         public static IEnumerable<IrBlock> GetSuccessors(IrBlock block) => block.Terminator switch
         {
@@ -330,6 +513,9 @@ namespace Zilf.Emit.Intermediate
 
                 foreach (var instruction in block.Instructions)
                 {
+                    if (instruction.Opcode == IrOpcode.Phi &&
+                        (instruction.Payload is not IrPhi || instruction.Operands.Count != block.Predecessors.Count))
+                        throw new InvalidOperationException($"Phi in {block} does not match its predecessors.");
                     if (instruction.Result != null && !defined.Add(instruction.Result))
                         throw new InvalidOperationException($"Value {instruction.Result} is defined more than once.");
                 }

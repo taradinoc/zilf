@@ -32,10 +32,16 @@ indirect variables, story memory, and the evaluation stack are not ordinary prom
 are materialized before an operation that requires their physical state. A local accessed indirectly forces a
 conservative flush because the indirect access aliases its physical home.
 
-The current representation is SSA-like because every instruction result has a unique `IrValue`, but it does **not**
-have explicit phi instructions or a sealed-block SSA builder. Recording clears the simple local-value map at some CFG
-boundaries, and later availability analyses recover only values that are safe on all relevant paths. Do not design a
-pass on the assumption that arbitrary local values already flow through joins or loop headers as SSA values.
+The current representation uses explicit SSA for eligible routine locals and compiler temporaries. After recording,
+`RoutineIr.PromoteLocalsToSsa` computes reaching local definitions, inserts predecessor-aligned `Phi` instructions at
+joins and loop headers, and rewrites local snapshots to their SSA definitions. Globals, indirect variables, story
+memory, and the evaluation stack remain outside this promotion. Phi results retain the promoted local as their
+physical home; the recorder's edge materializations establish those homes before control transfers, so phi
+instructions do not emit target operations during lowering.
+
+CFG rewrites must call `RebuildPredecessors`, which also removes obsolete phi inputs. A phi's operands are ordered to
+match its block's predecessor list. Optimizations may use this correspondence, but must not treat a phi like an
+ordinary instruction whose operands are all evaluated in the phi's block.
 
 Every block must have one terminator: `Jump`, `Branch`, or `Return`. `RoutineIr.Verify` checks basic structural
 invariants and rebuilds predecessor lists. It does not prove dominance, effect correctness, stack balance, or physical
@@ -46,14 +52,15 @@ home availability; those remain responsibilities of recording and optimization c
 `RoutineIrOptimizer.Optimize` currently runs these stages:
 
 1. Verify the recorded IR.
-2. Protect copies whose source homes will be clobbered.
-3. Coalesce and remove materializations, and forward copy destinations.
-4. Run sparse conditional constant propagation (SCCP).
-5. Simplify branches and remove unreachable blocks.
-6. Run dominator-based global value numbering (GVN), including supported memory reads.
-7. Iterate constant/copy folding, CFG simplification, dead-instruction removal, and unreachable-block removal to a
+2. Promote eligible locals to explicit SSA and insert phi nodes.
+3. Protect copies whose source homes will be clobbered.
+4. Coalesce and remove materializations, and forward copy destinations.
+5. Run sparse conditional constant propagation (SCCP), including phi values.
+6. Simplify branches and remove unreachable blocks.
+7. Run dominator-based global value numbering (GVN), including supported memory reads.
+8. Iterate constant/copy folding, CFG simplification, dead-instruction removal, and unreachable-block removal to a
    fixed point.
-8. Verify the resulting IR.
+9. Verify the resulting IR.
 
 Lowering then resolves values to physical operands and replays `IrLoweringOperation` delegates. Zap also performs a
 size-aware choice between a constant and an equivalent available local. Unresolved symbolic constants, such as object
@@ -177,9 +184,9 @@ These are directions, not assumptions that the prerequisites already exist:
 
 - **De-opaquify remaining operations.** First classify operations that are ordered but do not mutate story memory, then
   structure result-producing reads and predicates. This often unlocks existing GVN without adding a new pass.
-- **Explicit SSA with phi nodes.** Promote eligible locals through joins and loops, split critical edges during
-  lowering, and resolve parallel-copy cycles without consuming extra Z locals. This would improve SCCP and CSE beyond
-  the current conservative CFG availability.
+- **More aggressive phi lowering.** The current edge materializations avoid critical-edge and parallel-copy hazards
+  without consuming extra Z locals. A future pass could remove more of those stores by splitting critical edges and
+  resolving parallel-copy cycles with stack-backed scratch storage when profitable.
 - **Memory SSA or versioned memory.** Track versions per region, and eventually per proven-disjoint table or object, so
   redundant loads and store-to-load forwarding survive more control flow without repeated path searches.
 - **A target cost model.** Compare immediate size, variable operands, instruction form, required copies, stack traffic,

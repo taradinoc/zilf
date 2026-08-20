@@ -560,10 +560,13 @@ namespace Zilf.Emit.Intermediate
             effectSummary.IsComplete = true;
 
             IEnumerable<IrOptimizationStat> optimizationStatistics;
+            var phiCount = routine.PromoteLocalsToSsa(locals);
             if (optimize)
             {
                 optimizer.Optimize(routine);
-                optimizationStatistics = optimizer.GetStatistics();
+                optimizationStatistics = optimizer.GetStatistics().Concat(phiCount == 0
+                    ? []
+                    : [new IrOptimizationStat("SSA phi nodes", phiCount)]);
             }
             else
             {
@@ -587,6 +590,8 @@ namespace Zilf.Emit.Intermediate
                     : null;
                 foreach (var instruction in block.Instructions)
                 {
+                    if (instruction.Opcode == IrOpcode.Phi)
+                        continue;
                     if (instruction.Payload is IrLoweringOperation lowering)
                     {
                         lowering.Replay(instruction.Operands
@@ -873,7 +878,7 @@ namespace Zilf.Emit.Intermediate
                 return lowering.ResultHome;
             var directOperand = valueHomes.TryGetValue(value, out var existingOperand)
                 ? existingOperand
-                : value.Constant is int constant ? makeOperand(constant) : null;
+                : value.Constant is int constant ? makeOperand(constant) : value.PhysicalHome;
             if (directOperand != null)
             {
                 if (constantHomes != null && preferConstantHome!(directOperand))

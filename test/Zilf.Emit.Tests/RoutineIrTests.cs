@@ -30,6 +30,64 @@ namespace Zilf.Emit.Tests
     public sealed class RoutineIrTests
     {
         [TestMethod]
+        public void Ssa_Promotion_Inserts_Phi_At_Local_Join()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            var local = Mock.Of<IVariable>();
+            var condition = routine.CreateExternalValue(mutable: false);
+            routine.Entry.Terminator = new IrTerminator.Branch(condition, left, right);
+            AppendMaterialization(routine, left, local, routine.CreateConstant(1));
+            left.Terminator = new IrTerminator.Jump(join);
+            AppendMaterialization(routine, right, local, routine.CreateConstant(2));
+            right.Terminator = new IrTerminator.Jump(join);
+            var localRead = routine.CreateExternalValue(mutable: true);
+            localRead.PhysicalHome = local;
+            var use = routine.Append(join, IrOpcode.Add, [localRead, routine.CreateConstant(3)]);
+            join.Terminator = new IrTerminator.Return(use.Result);
+
+            var count = routine.PromoteLocalsToSsa([local]);
+
+            var phi = join.Instructions.Single(instruction => instruction.Opcode == IrOpcode.Phi);
+            Assert.AreEqual(1, count);
+            CollectionAssert.AreEqual(new int?[] { 1, 2 }, phi.Operands.Select(value => value.Constant).ToArray());
+            Assert.AreSame(phi.Result, use.Operands[0]);
+            routine.Verify();
+        }
+
+        [TestMethod]
+        public void Ssa_Promotion_Connects_Loop_Carried_Local_To_Phi()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var local = Mock.Of<IVariable>();
+            AppendMaterialization(routine, routine.Entry, local, routine.CreateConstant(0));
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var headerRead = routine.CreateExternalValue(mutable: true);
+            headerRead.PhysicalHome = local;
+            header.Terminator = new IrTerminator.Branch(routine.CreateExternalValue(mutable: false), body, exit);
+            var increment = routine.Append(body, IrOpcode.Add, [headerRead, routine.CreateConstant(1)], payload:
+                new IrLoweringOperation(_ => { }, local));
+            AppendMaterialization(routine, body, local, increment.Result!);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(headerRead);
+
+            routine.PromoteLocalsToSsa([local]);
+
+            var phi = header.Instructions.Single(instruction => instruction.Opcode == IrOpcode.Phi);
+            Assert.AreEqual(2, phi.Operands.Count);
+            Assert.AreEqual(0, phi.Operands[0].Constant);
+            Assert.AreSame(increment.Result, phi.Operands[1]);
+            Assert.AreSame(phi.Result, increment.Operands[0]);
+            Assert.AreSame(phi.Result, ((IrTerminator.Return)exit.Terminator).Value);
+            routine.Verify();
+        }
+
+        [TestMethod]
         public void Optimizer_Folds_Constants_And_Removes_Dead_Branch()
         {
             var routine = new RoutineIr();
@@ -1586,6 +1644,12 @@ namespace Zilf.Emit.Tests
             var result = ((IrTerminator.Return)routine.Entry.Terminator).Value;
             Assert.IsNotNull(result);
             Assert.AreEqual(expected, result.Constant);
+        }
+
+        private static void AppendMaterialization(RoutineIr routine, IrBlock block, IVariable home, IrValue value)
+        {
+            var lowering = new IrLoweringOperation(_ => { }, home) { IsMaterialization = true };
+            routine.Append(block, IrOpcode.TargetOperation, [value], IrEffect.Control, lowering, hasResult: false);
         }
 
         private static (IrRoutineBuilder Builder, Mock<IRoutineBuilder> Target, ILabel Label)
