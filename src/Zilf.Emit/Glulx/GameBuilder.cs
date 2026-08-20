@@ -65,6 +65,7 @@ namespace Zilf.Emit.Glulx
 
 #if DEBUG
         readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
+        readonly Dictionary<string, int> irOptimizationStats = new(StringComparer.Ordinal);
 #endif
 
         protected IRoutineBuilder? entryRoutine;
@@ -233,8 +234,10 @@ namespace Zilf.Emit.Glulx
             var target = CreateRoutineBuilder(name, entryPoint, cleanStack);
             var result = target switch
             {
-                RoutineBuilder16 rb16 => new Glulx16IrRoutineBuilder(rb16, OptimizeRoutineIr, MakeOperand),
-                RoutineBuilder rb => new GlulxIrRoutineBuilder(rb, IrNumericSemantics.Glulx32, OptimizeRoutineIr, MakeOperand),
+                RoutineBuilder16 rb16 => new Glulx16IrRoutineBuilder(rb16, OptimizeRoutineIr, MakeOperand,
+                    RecordIrOptimizationStats),
+                RoutineBuilder rb => new GlulxIrRoutineBuilder(rb, IrNumericSemantics.Glulx32, OptimizeRoutineIr,
+                    MakeOperand, RecordIrOptimizationStats),
                 _ => target,
             };
             symbols.Add(name, "routine");
@@ -991,6 +994,12 @@ namespace Zilf.Emit.Glulx
         }
 
 #if DEBUG
+        internal void RecordIrOptimizationStats(IEnumerable<IrOptimizationStat> stats)
+        {
+            foreach (var stat in stats)
+                irOptimizationStats[stat.Name] = irOptimizationStats.GetValueOrDefault(stat.Name) + stat.Count;
+        }
+
         internal void RecordPeepholeStats(IEnumerable<PeepholeOptimizationStat> stats)
         {
             foreach (var stat in stats)
@@ -1013,6 +1022,14 @@ namespace Zilf.Emit.Glulx
 
         void WritePeepholeStats()
         {
+            if (irOptimizationStats.Count != 0)
+            {
+                writer.WriteLine(INDENT + "; Routine IR optimization statistics (debug build)");
+                foreach (var entry in irOptimizationStats.OrderBy(static entry => entry.Key, StringComparer.Ordinal))
+                    writer.WriteLine(INDENT + $";   {entry.Key}: {entry.Value}");
+                writer.WriteLine();
+            }
+
             if (peepholeStats.Count == 0)
                 return;
 
@@ -1029,6 +1046,12 @@ namespace Zilf.Emit.Glulx
             }
 
             writer.WriteLine();
+        }
+#endif
+
+#if !DEBUG
+        private static void RecordIrOptimizationStats(IEnumerable<IrOptimizationStat> stats)
+        {
         }
 #endif
     }

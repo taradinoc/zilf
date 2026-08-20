@@ -23,6 +23,8 @@ using System.Linq;
 
 namespace Zilf.Emit.Intermediate
 {
+    internal readonly record struct IrOptimizationStat(string Name, int Count);
+
     internal sealed class IrLoweringOperation
     {
         public IrLoweringOperation(Action<IReadOnlyList<IOperand>> emit, IVariable? resultHome = null,
@@ -123,6 +125,8 @@ namespace Zilf.Emit.Intermediate
         Negate,
         ShiftLeft,
         ShiftRight,
+        ArithmeticShift,
+        LogicalShift,
         Equal,
         LessThan,
         LessThanOrEqual,

@@ -34,6 +34,7 @@ namespace Zilf.Emit.Intermediate
         private readonly Func<IVariable?> acquireTemporary;
         private readonly Func<IEnumerable<IVariable>> reusableTemporaries;
         private readonly Action<IVariable, IOperand>? emitCopy;
+        private readonly Dictionary<string, int> statistics = new(StringComparer.Ordinal);
 
         public RoutineIrOptimizer(IrNumericSemantics numericSemantics = IrNumericSemantics.Glulx32,
             Func<IVariable?>? acquireTemporary = null, Action<IVariable, IOperand>? emitCopy = null,
@@ -47,12 +48,16 @@ namespace Zilf.Emit.Intermediate
 
         public void Optimize(RoutineIr routine)
         {
+            statistics.Clear();
             routine.Verify();
+            statistics["Input instructions"] = routine.Blocks.Sum(block => block.Instructions.Count);
+            statistics["Input opaque operations"] = routine.Blocks.Sum(block => block.Instructions.Count(instruction =>
+                instruction.Effect == IrEffect.Opaque));
             ProtectCopiesAcrossClobbers(routine);
             CoalesceMaterializationDestinations(routine);
             RemoveRedundantMaterializations(routine);
             ForwardCopyDestinations(routine);
-            SparseConditionalConstantPropagation(routine);
+            Record("SCCP constants", SparseConditionalConstantPropagation(routine));
             SimplifyControlFlow(routine);
             RemoveUnreachableBlocks(routine);
             GlobalValueNumbering(routine);
@@ -65,6 +70,19 @@ namespace Zilf.Emit.Intermediate
                 changed |= RemoveUnreachableBlocks(routine);
             }
             routine.Verify();
+            statistics["Output instructions"] = routine.Blocks.Sum(block => block.Instructions.Count);
+            statistics["Output opaque operations"] = routine.Blocks.Sum(block => block.Instructions.Count(instruction =>
+                instruction.Effect == IrEffect.Opaque));
+        }
+
+        public IEnumerable<IrOptimizationStat> GetStatistics() => statistics
+            .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => new IrOptimizationStat(pair.Key, pair.Value));
+
+        private void Record(string name, int count = 1)
+        {
+            if (count != 0)
+                statistics[name] = statistics.GetValueOrDefault(name) + count;
         }
 
         private static void ProtectCopiesAcrossClobbers(RoutineIr routine)
@@ -275,7 +293,7 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
-        private void SparseConditionalConstantPropagation(RoutineIr routine)
+        private int SparseConditionalConstantPropagation(RoutineIr routine)
         {
             var states = new Dictionary<IrValue, LatticeValue>();
             var definitions = routine.Blocks.SelectMany(block => block.Instructions)
@@ -355,6 +373,7 @@ namespace Zilf.Emit.Intermediate
             var replacements = states.Where(pair => pair.Value.Kind == LatticeKind.Constant)
                 .ToDictionary(pair => pair.Key, pair => routine.CreateConstant(pair.Value.Constant));
             ReplaceValues(routine, replacements);
+            return replacements.Count;
         }
 
         private static bool TryEvaluateKnownFacts(IrInstruction instruction, out int value)
@@ -540,6 +559,7 @@ namespace Zilf.Emit.Intermediate
                     (IrOpcode Opcode, string Operands)? currentKey = null;
                     if (instruction.Result != null && IsValueNumberable(instruction))
                     {
+                        Record("GVN candidates");
                         var currentIds = instruction.Operands.Select(OperandKey).ToArray();
                         if (IsCommutative(instruction.Opcode))
                             Array.Sort(currentIds);
@@ -560,6 +580,7 @@ namespace Zilf.Emit.Intermediate
                     if (available.TryGetValue(key, out var prior) &&
                         CanReusePhysicalHome(prior.Instruction, instruction))
                     {
+                        Record("GVN eliminated expressions");
                         replacements[instruction.Result] = Resolve(prior.Value);
                         ReserveHomeThroughUse(prior.Instruction, instruction.Result);
                     }
@@ -567,6 +588,7 @@ namespace Zilf.Emit.Intermediate
                         TryPromoteStackValue(prior.Instruction, instruction,
                             FindReusableTemporary(prior.Instruction, instruction)))
                     {
+                        Record("GVN promoted stack results");
                         var promotedHome = (prior.Instruction.Payload as IrLoweringOperation)?.ResultHome;
                         if (promotedHome != null)
                         {
@@ -594,10 +616,13 @@ namespace Zilf.Emit.Intermediate
                     else if (available.TryGetValue(key, out prior) &&
                         TryRewriteAsCopy(prior.Value, prior.Instruction, instruction))
                     {
+                        Record("GVN rewrote expressions as copies");
                         available[key] = (instruction.Result, instruction);
                     }
                     else
                     {
+                        if (available.ContainsKey(key))
+                            Record("GVN rejected: physical availability");
                         available[key] = (instruction.Result, instruction);
                     }
                 }
@@ -813,6 +838,7 @@ namespace Zilf.Emit.Intermediate
             IrOpcode.Add or IrOpcode.Subtract or IrOpcode.Multiply or IrOpcode.Divide or IrOpcode.Modulo or
             IrOpcode.BitwiseAnd or IrOpcode.BitwiseOr or IrOpcode.BitwiseNot or IrOpcode.Negate or
             IrOpcode.ShiftLeft or IrOpcode.ShiftRight or IrOpcode.Equal or IrOpcode.LessThan or
+            IrOpcode.ArithmeticShift or IrOpcode.LogicalShift or
             IrOpcode.LessThanOrEqual or IrOpcode.GreaterThan or IrOpcode.GreaterThanOrEqual or IrOpcode.BitTest or
             IrOpcode.LoadByte or IrOpcode.LoadWord or IrOpcode.LoadProperty or IrOpcode.LoadPropertyAddress or
             IrOpcode.LoadNextProperty or IrOpcode.LoadPropertySize or IrOpcode.LoadParent or IrOpcode.LoadChild or
@@ -883,6 +909,7 @@ namespace Zilf.Emit.Intermediate
                     if (instruction.Opcode == IrOpcode.Copy && instruction.Operands.Count == 1 &&
                         !instruction.Operands[0].MutableExternal && CanReplaceRequiredHome(instruction))
                     {
+                        Record("Copy propagation");
                         replacements[instruction.Result] = instruction.Operands[0];
                         PreserveRequiredHome(instruction, instruction.Operands[0]);
                         continue;
@@ -890,6 +917,7 @@ namespace Zilf.Emit.Intermediate
 
                     if (CanReplaceRequiredHome(instruction) && TrySimplifyIdentity(instruction, out var replacement))
                     {
+                        Record("Algebraic identities");
                         replacements[instruction.Result] = replacement;
                         PreserveRequiredHome(instruction, replacement);
                         continue;
@@ -897,6 +925,7 @@ namespace Zilf.Emit.Intermediate
 
                     if (CanReplaceRequiredHome(instruction) && TryFold(instruction, out var value))
                     {
+                        Record("Constant folds");
                         var constant = routine.CreateConstant(value);
                         replacements[instruction.Result] = constant;
                         PreserveRequiredHome(instruction, constant);
@@ -973,6 +1002,8 @@ namespace Zilf.Emit.Intermediate
                 IrOpcode.BitwiseAnd when right.Constant == allBits => left,
                 IrOpcode.ShiftLeft when right.Constant == 0 => left,
                 IrOpcode.ShiftRight when right.Constant == 0 => left,
+                IrOpcode.ArithmeticShift when right.Constant == 0 => left,
+                IrOpcode.LogicalShift when right.Constant == 0 => left,
                 _ => null!,
             };
             return replacement != null;
@@ -1010,6 +1041,11 @@ namespace Zilf.Emit.Intermediate
                         operands[0] << operands[1],
                     IrOpcode.ShiftRight when operands.Count == 2 && IsValidShift(operands[1]) =>
                         operands[0] >> operands[1],
+                    IrOpcode.ArithmeticShift when operands.Count == 2 && TryGetShift(operands[1], out var shift) =>
+                        shift >= 0 ? operands[0] << shift : operands[0] >> -shift,
+                    IrOpcode.LogicalShift when operands.Count == 2 &&
+                        TryGetShift(operands[1], out var logicalShift) =>
+                        LogicalShift(operands[0], logicalShift),
                     IrOpcode.Equal when operands.Count == 2 => operands[0] == operands[1] ? 1 : 0,
                     IrOpcode.LessThan when operands.Count == 2 => operands[0] < operands[1] ? 1 : 0,
                     IrOpcode.LessThanOrEqual when operands.Count == 2 => operands[0] <= operands[1] ? 1 : 0,
@@ -1036,7 +1072,24 @@ namespace Zilf.Emit.Intermediate
 
         private bool IsValidShift(int count) => count >= 0 && count < (numericSemantics == IrNumericSemantics.ZMachine16 ? 16 : 32);
 
-        private static bool SimplifyControlFlow(RoutineIr routine)
+        private bool TryGetShift(int count, out int shift)
+        {
+            shift = count;
+            return count != int.MinValue && IsValidShift(Math.Abs(count));
+        }
+
+        private int LogicalShift(int value, int shift) => numericSemantics switch
+        {
+            IrNumericSemantics.ZMachine16 => shift >= 0
+                ? (ushort)value << shift
+                : (ushort)value >> -shift,
+            IrNumericSemantics.Glulx32 => shift >= 0
+                ? unchecked((int)((uint)value << shift))
+                : unchecked((int)((uint)value >> -shift)),
+            _ => throw new InvalidOperationException($"Unknown numeric semantics: {numericSemantics}"),
+        };
+
+        private bool SimplifyControlFlow(RoutineIr routine)
         {
             var changed = false;
             foreach (var block in routine.Blocks)
@@ -1059,6 +1112,7 @@ namespace Zilf.Emit.Intermediate
                     }
                     block.Terminator = new IrTerminator.Jump(target, branch.EmitJump,
                         ReferenceEquals(target, branch.ExplicitTarget) ? branch.Instruction : null);
+                    Record("Folded branches");
                     changed = true;
                 }
                 else if (block.Terminator is IrTerminator.Branch same && ReferenceEquals(same.WhenTrue, same.WhenFalse))
@@ -1066,13 +1120,14 @@ namespace Zilf.Emit.Intermediate
                     if (same.Instruction != null)
                         block.Instructions.Remove(same.Instruction);
                     block.Terminator = new IrTerminator.Jump(same.WhenTrue);
+                    Record("Folded branches");
                     changed = true;
                 }
             }
             return changed;
         }
 
-        private static bool RemoveDeadInstructions(RoutineIr routine)
+        private bool RemoveDeadInstructions(RoutineIr routine)
         {
             var used = new HashSet<IrValue>();
             foreach (var block in routine.Blocks)
@@ -1103,6 +1158,7 @@ namespace Zilf.Emit.Intermediate
                     if (instruction.Result != null && IsRemovable(instruction) && !used.Contains(instruction.Result))
                     {
                         block.Instructions.RemoveAt(i);
+                        Record("Dead instructions removed");
                         changed = true;
                     }
                 }
@@ -1114,7 +1170,7 @@ namespace Zilf.Emit.Intermediate
             instruction.Payload is not IrLoweringOperation { RequiredHome: true } &&
             (instruction.IsPure || instruction.Effect == IrEffect.ReadMemory && IsMemoryRead(instruction.Opcode));
 
-        private static bool RemoveUnreachableBlocks(RoutineIr routine)
+        private bool RemoveUnreachableBlocks(RoutineIr routine)
         {
             var reachable = new HashSet<IrBlock>();
             var work = new Stack<IrBlock>();
@@ -1133,6 +1189,7 @@ namespace Zilf.Emit.Intermediate
                 if (!reachable.Contains(routine.Blocks[i]))
                 {
                     routine.Blocks.RemoveAt(i);
+                    Record("Unreachable blocks removed");
                     removed = true;
                 }
             }

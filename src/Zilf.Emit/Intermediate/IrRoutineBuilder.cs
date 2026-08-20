@@ -34,6 +34,7 @@ namespace Zilf.Emit.Intermediate
         private readonly RoutineIrOptimizer optimizer;
         private readonly bool optimize;
         private readonly Func<IOperand, bool>? preferConstantHome;
+        private readonly Action<IEnumerable<IrOptimizationStat>>? recordOptimizationStats;
         private readonly Func<int, INumericOperand> makeOperand;
         private readonly Dictionary<ILabel, IrBlock> labelBlocks = [];
         private readonly Dictionary<IrBlock, ILabel> blockLabels = [];
@@ -44,6 +45,7 @@ namespace Zilf.Emit.Intermediate
         private readonly Dictionary<IrValue, IOperand> valueHomes = [];
         private readonly Dictionary<IrValue, IrInstruction> definitions = [];
         private readonly Dictionary<IOperand, IrValue> externalValues = [];
+        private readonly Dictionary<string, int> recordingStatistics = new(StringComparer.Ordinal);
         private readonly List<IrValue> stackValues = [];
         private readonly List<IrBlock> layout = [];
         private IrBlock current;
@@ -51,11 +53,13 @@ namespace Zilf.Emit.Intermediate
         private int nextIrTemporary;
 
         public IrRoutineBuilder(IRoutineBuilder target, IrNumericSemantics numericSemantics, bool optimize,
-            Func<int, INumericOperand>? makeOperand = null, Func<IOperand, bool>? preferConstantHome = null)
+            Func<int, INumericOperand>? makeOperand = null, Func<IOperand, bool>? preferConstantHome = null,
+            Action<IEnumerable<IrOptimizationStat>>? recordOptimizationStats = null)
         {
             this.target = target;
             this.optimize = optimize;
             this.preferConstantHome = preferConstantHome;
+            this.recordOptimizationStats = recordOptimizationStats;
             this.makeOperand = makeOperand ?? (value => new DeferredNumericOperand(value));
             optimizer = new RoutineIrOptimizer(numericSemantics, () =>
             {
@@ -177,7 +181,8 @@ namespace Zilf.Emit.Intermediate
                 FinishConditional(label, instruction.Result!, polarity, instruction);
                 return;
             }
-            Record(() => target.Branch(cond, left, right, label, polarity), IrMemoryRegion.None);
+            Record(() => target.Branch(cond, left, right, label, polarity), IrMemoryRegion.None,
+                $"Branch.{cond}");
             FinishConditional(label);
         }
 
@@ -227,25 +232,27 @@ namespace Zilf.Emit.Intermediate
 
         public void EmitSave(ILabel label, bool polarity)
         {
-            Record(() => target.EmitSave(label, polarity));
+            Record(() => target.EmitSave(label, polarity), diagnosticName: "SaveBranch");
             FinishConditional(label);
         }
 
         public void EmitRestore(ILabel label, bool polarity)
         {
-            Record(() => target.EmitRestore(label, polarity));
+            Record(() => target.EmitRestore(label, polarity), diagnosticName: "RestoreBranch");
             FinishConditional(label);
         }
 
-        public void EmitSave(IVariable result) => Record(() => target.EmitSave(result));
+        public void EmitSave(IVariable result) =>
+            Record(() => target.EmitSave(result), diagnosticName: "SaveResult");
 
-        public void EmitRestore(IVariable result) => Record(() => target.EmitRestore(result));
+        public void EmitRestore(IVariable result) =>
+            Record(() => target.EmitRestore(result), diagnosticName: "RestoreResult");
 
         public void EmitSave(IOperand table, IOperand size, IOperand name, IOperand? prompt, IVariable result) =>
-            Record(() => target.EmitSave(table, size, name, prompt, result));
+            Record(() => target.EmitSave(table, size, name, prompt, result), diagnosticName: "SaveTable");
 
         public void EmitRestore(IOperand table, IOperand size, IOperand name, IOperand? prompt, IVariable result) =>
-            Record(() => target.EmitRestore(table, size, name, prompt, result));
+            Record(() => target.EmitRestore(table, size, name, prompt, result), diagnosticName: "RestoreTable");
 
         public void EmitScanTable(IOperand value, IOperand table, IOperand length, IOperand? form,
             IVariable result, ILabel label, bool polarity)
@@ -262,7 +269,8 @@ namespace Zilf.Emit.Intermediate
                         form == null ? null : resolved[3], home!, label, polarity));
                 return;
             }
-            Record(() => target.EmitScanTable(value, table, length, form, result, label, polarity));
+            Record(() => target.EmitScanTable(value, table, length, form, result, label, polarity),
+                diagnosticName: "ScanTableUnpromotedResult");
             FinishConditional(label);
         }
 
@@ -275,7 +283,8 @@ namespace Zilf.Emit.Intermediate
                     (operands, home) => target.EmitGetChild(operands[0], home!, label, polarity));
                 return;
             }
-            Record(() => target.EmitGetChild(value, result, label, polarity));
+            Record(() => target.EmitGetChild(value, result, label, polarity),
+                diagnosticName: "GetChildUnpromotedResult");
             FinishConditional(label);
         }
 
@@ -288,7 +297,8 @@ namespace Zilf.Emit.Intermediate
                     (operands, home) => target.EmitGetSibling(operands[0], home!, label, polarity));
                 return;
             }
-            Record(() => target.EmitGetSibling(value, result, label, polarity));
+            Record(() => target.EmitGetSibling(value, result, label, polarity),
+                diagnosticName: "GetSiblingUnpromotedResult");
             FinishConditional(label);
         }
 
@@ -301,7 +311,7 @@ namespace Zilf.Emit.Intermediate
                 _ => IrEffect.Opaque,
             };
             if (effect == IrEffect.Opaque)
-                Record(() => target.EmitNullary(op, result));
+                Record(() => target.EmitNullary(op, result), diagnosticName: $"Nullary.{op}");
             else
                 RecordEffectfulOperation([], _ => target.EmitNullary(op, result), effect, result,
                     (_, home) => target.EmitNullary(op, home));
@@ -332,7 +342,8 @@ namespace Zilf.Emit.Intermediate
                 RecordEffectfulOperation([value], operands => target.EmitUnary(op, operands[0], result), effect, result,
                     (operands, home) => target.EmitUnary(op, operands[0], home), GetWriteRegions(op));
             else
-                RecordTemporaryOperation([value], operands => target.EmitUnary(op, operands[0], result), result);
+                RecordTemporaryOperation([value], operands => target.EmitUnary(op, operands[0], result), result,
+                    $"Unary.{op}");
         }
 
         public void EmitBinary(BinaryOp op, IOperand left, IOperand right, IVariable? result)
@@ -340,7 +351,8 @@ namespace Zilf.Emit.Intermediate
             if (op == BinaryOp.StoreIndirect && left is IIndirectOperand { Variable: var variable } &&
                 locals.Contains(variable))
             {
-                Record(() => target.EmitBinary(op, left, right, result), IrMemoryRegion.None);
+                Record(() => target.EmitBinary(op, left, right, result), IrMemoryRegion.None,
+                    $"Binary.{op}.IndirectLocal");
                 return;
             }
             if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
@@ -370,7 +382,7 @@ namespace Zilf.Emit.Intermediate
                 return;
             }
             RecordTemporaryOperation([left, right],
-                operands => target.EmitBinary(op, operands[0], operands[1], result), result);
+                operands => target.EmitBinary(op, operands[0], operands[1], result), result, $"Binary.{op}");
         }
 
         public void EmitTernary(TernaryOp op, IOperand left, IOperand center, IOperand right, IVariable? result)
@@ -384,7 +396,8 @@ namespace Zilf.Emit.Intermediate
                 return;
             }
             RecordTemporaryOperation([left, center, right],
-                operands => target.EmitTernary(op, operands[0], operands[1], operands[2], result), result);
+                operands => target.EmitTernary(op, operands[0], operands[1], operands[2], result), result,
+                $"Ternary.{op}");
         }
 
         public void EmitPrint(string text, bool crlfRtrue)
@@ -421,10 +434,11 @@ namespace Zilf.Emit.Intermediate
         public void EmitPrintNewLine() => RecordOrderedOperation([], _ => target.EmitPrintNewLine(), IrEffect.InputOutput);
 
         public void EmitRead(IOperand chrbuf, IOperand? lexbuf, IOperand? interval, IOperand? routineOperand,
-            IVariable? result) => Record(() => target.EmitRead(chrbuf, lexbuf, interval, routineOperand, result));
+            IVariable? result) => Record(() => target.EmitRead(chrbuf, lexbuf, interval, routineOperand, result),
+                diagnosticName: "Read");
 
         public void EmitReadChar(IOperand? interval, IOperand? routineOperand, IVariable result) =>
-            Record(() => target.EmitReadChar(interval, routineOperand, result));
+            Record(() => target.EmitReadChar(interval, routineOperand, result), diagnosticName: "ReadChar");
 
         public void EmitPlaySound(IOperand number, IOperand? effect, IOperand? volume, IOperand? routineOperand) =>
             RecordEffectfulOptionalOperation([number, effect, volume, routineOperand],
@@ -510,7 +524,7 @@ namespace Zilf.Emit.Intermediate
                 externalValues.Remove(dest);
                 return;
             }
-            Record(() => target.EmitStore(dest, src));
+            Record(() => target.EmitStore(dest, src), diagnosticName: "StoreIndirect");
         }
 
         public void EmitPopStack()
@@ -543,10 +557,19 @@ namespace Zilf.Emit.Intermediate
             FlushPromotedLocals();
             effectSummary.IsComplete = true;
 
+            IEnumerable<IrOptimizationStat> optimizationStatistics;
             if (optimize)
+            {
                 optimizer.Optimize(routine);
+                optimizationStatistics = optimizer.GetStatistics();
+            }
             else
+            {
                 routine.Verify();
+                optimizationStatistics = [];
+            }
+            recordOptimizationStats?.Invoke(optimizationStatistics.Concat(recordingStatistics.Select(pair =>
+                new IrOptimizationStat($"Recorded opaque: {pair.Key}", pair.Value))));
 
             var availableConstantHomes = preferConstantHome != null
                 ? FindAvailableConstantHomes()
@@ -591,27 +614,30 @@ namespace Zilf.Emit.Intermediate
         internal void RecordTargetAction(Action action) =>
             RecordOrderedOperation([], _ => action(), IrEffect.Control);
 
-        private void Record(Action action, IrMemoryRegion writeRegions = IrMemoryRegion.All)
+        private void Record(Action action, IrMemoryRegion writeRegions = IrMemoryRegion.All,
+            string? diagnosticName = null)
         {
             PreserveStackValues();
             FlushPromotedLocals();
-            RecordRaw(action, writeRegions);
+            RecordRaw(action, writeRegions, diagnosticName);
             localValues.Clear();
             dirtyLocals.Clear();
         }
 
-        private void RecordRaw(Action action, IrMemoryRegion writeRegions)
+        private void RecordRaw(Action action, IrMemoryRegion writeRegions, string? diagnosticName = null)
         {
+            if (diagnosticName != null)
+                recordingStatistics[diagnosticName] = recordingStatistics.GetValueOrDefault(diagnosticName) + 1;
             effectSummary.DirectWrites |= writeRegions;
             routine.Append(current, IrOpcode.TargetOperation, [], IrEffect.Opaque, action, hasResult: false);
         }
 
         private void RecordTemporaryOperation(IReadOnlyList<IOperand> operands,
-            Action<IReadOnlyList<IOperand>> emit, IVariable? result = null)
+            Action<IReadOnlyList<IOperand>> emit, IVariable? result = null, string? diagnosticName = null)
         {
             if (operands.Any(IsEffectBarrierOperand))
             {
-                Record(() => emit(operands), IrMemoryRegion.None);
+                Record(() => emit(operands), IrMemoryRegion.None, diagnosticName);
                 return;
             }
 
@@ -623,6 +649,8 @@ namespace Zilf.Emit.Intermediate
             var hasTemporaryResult = result != null && compilerTemporaries.Contains(result);
             var instruction = AppendLowering(IrOpcode.TargetOperation, values, IrEffect.Opaque, emit,
                 hasResult: hasTemporaryResult, resultHome: hasTemporaryResult ? result : null);
+            if (diagnosticName != null)
+                recordingStatistics[diagnosticName] = recordingStatistics.GetValueOrDefault(diagnosticName) + 1;
             if (hasTemporaryResult)
             {
                 localValues[result!] = instruction.Result!;
@@ -951,6 +979,8 @@ namespace Zilf.Emit.Intermediate
                 BinaryOp.Mod => IrOpcode.Modulo,
                 BinaryOp.And => IrOpcode.BitwiseAnd,
                 BinaryOp.Or => IrOpcode.BitwiseOr,
+                BinaryOp.ArtShift => IrOpcode.ArithmeticShift,
+                BinaryOp.LogShift => IrOpcode.LogicalShift,
                 _ => IrOpcode.TargetOperation,
             };
             return opcode != IrOpcode.TargetOperation;

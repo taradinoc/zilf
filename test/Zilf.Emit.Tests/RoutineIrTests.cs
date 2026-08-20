@@ -160,6 +160,31 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Optimizer_Reports_Applications_Rejections_And_Opaque_Counts()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateValue();
+            var right = routine.CreateValue();
+            var firstHome = Mock.Of<IVariable>();
+            var secondHome = Mock.Of<IVariable>();
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Opaque, hasResult: false);
+            routine.Append(routine.Entry, IrOpcode.Add, [left, right], IrEffect.None,
+                new IrLoweringOperation(_ => { }, firstHome));
+            var duplicate = routine.Append(routine.Entry, IrOpcode.Add, [left, right], IrEffect.None,
+                new IrLoweringOperation(_ => { }, secondHome));
+            routine.Entry.Terminator = new IrTerminator.Return(duplicate.Result);
+            var optimizer = new RoutineIrOptimizer();
+
+            optimizer.Optimize(routine);
+
+            var stats = optimizer.GetStatistics().ToDictionary(stat => stat.Name, stat => stat.Count);
+            Assert.AreEqual(1, stats["Input opaque operations"]);
+            Assert.AreEqual(1, stats["Output opaque operations"]);
+            Assert.AreEqual(2, stats["GVN candidates"]);
+            Assert.AreEqual(1, stats["GVN rejected: physical availability"]);
+        }
+
+        [TestMethod]
         public void Optimizer_Does_Not_Eliminate_Memory_Read_Across_Write_Barrier()
         {
             var routine = new RoutineIr();
@@ -911,6 +936,38 @@ namespace Zilf.Emit.Tests
         }
 
         [DataTestMethod]
+        [DataRow((int)IrNumericSemantics.ZMachine16, (int)IrOpcode.ArithmeticShift, 0x8000, -1, -16384)]
+        [DataRow((int)IrNumericSemantics.ZMachine16, (int)IrOpcode.LogicalShift, 0x8000, -1, 16384)]
+        [DataRow((int)IrNumericSemantics.Glulx32, (int)IrOpcode.ArithmeticShift, int.MinValue, -1,
+            -1073741824)]
+        [DataRow((int)IrNumericSemantics.Glulx32, (int)IrOpcode.LogicalShift, int.MinValue, -1,
+            1073741824)]
+        [DataRow((int)IrNumericSemantics.ZMachine16, (int)IrOpcode.ArithmeticShift, 1, 15, -32768)]
+        [DataRow((int)IrNumericSemantics.Glulx32, (int)IrOpcode.LogicalShift, 1, 31, int.MinValue)]
+        public void ConstantFolding_Shifts_Use_Target_Semantics(
+            int semantics,
+            int opcode,
+            int left,
+            int right,
+            int expected)
+        {
+            AssertFoldedBinary((IrNumericSemantics)semantics, (IrOpcode)opcode, left, right, expected);
+        }
+
+        [TestMethod]
+        public void ConstantFolding_Declines_Invalid_Signed_Shift()
+        {
+            var routine = new RoutineIr();
+            var instruction = routine.Append(routine.Entry, IrOpcode.ArithmeticShift,
+                [routine.CreateConstant(1), routine.CreateConstant(16)]);
+            routine.Entry.Terminator = new IrTerminator.Return(instruction.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.IsTrue(routine.Entry.Instructions.Any(item => item.Opcode == IrOpcode.ArithmeticShift));
+        }
+
+        [DataTestMethod]
         [DataRow((int)IrNumericSemantics.ZMachine16, 0x8000, -32768)]
         [DataRow((int)IrNumericSemantics.Glulx32, 0x8000, 32768)]
         [DataRow((int)IrNumericSemantics.ZMachine16, 0xffff, -1)]
@@ -994,6 +1051,68 @@ namespace Zilf.Emit.Tests
             target.Verify(t => t.EmitBinary(It.IsAny<BinaryOp>(), It.IsAny<IOperand>(), It.IsAny<IOperand>(),
                 It.IsAny<IVariable>()), Times.Never);
             target.Verify(t => t.Return(operands[42]), Times.Once);
+        }
+
+        [TestMethod]
+        public void IrRoutineBuilder_Sccp_Folds_Production_Logical_Shift()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var local = Mock.Of<ILocalBuilder>();
+            var operands = new Dictionary<int, INumericOperand>();
+            INumericOperand MakeOperand(int value)
+            {
+                if (!operands.TryGetValue(value, out var operand))
+                {
+                    var mock = new Mock<INumericOperand>();
+                    mock.SetupGet(item => item.Value).Returns(value);
+                    operand = mock.Object;
+                    operands.Add(value, operand);
+                }
+                return operand;
+            }
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.Setup(t => t.DefineLocal("TEMP")).Returns(local);
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true, MakeOperand);
+            var temp = builder.DefineLocal("TEMP");
+            builder.EmitBinary(BinaryOp.LogShift, MakeOperand(0x8000), MakeOperand(-1), temp);
+            builder.Return(temp);
+            builder.Finish();
+
+            target.Verify(t => t.EmitBinary(It.IsAny<BinaryOp>(), It.IsAny<IOperand>(), It.IsAny<IOperand>(),
+                It.IsAny<IVariable>()), Times.Never);
+            target.Verify(t => t.Return(operands[16384]), Times.Once);
+        }
+
+        [TestMethod]
+        public void IrRoutineBuilder_Reports_Unstructured_Binary_As_Opaque()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var left = Mock.Of<IVariable>();
+            var destination = Mock.Of<IVariable>();
+            var one = new Mock<INumericOperand>();
+            one.SetupGet(operand => operand.Value).Returns(1);
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            var stats = new Dictionary<string, int>();
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true,
+                recordOptimizationStats: values =>
+                {
+                    foreach (var stat in values)
+                        stats[stat.Name] = stat.Count;
+                });
+            builder.EmitBinary(BinaryOp.Add, left, one.Object, destination);
+            builder.Return(destination);
+            builder.Finish();
+
+            Assert.AreEqual(1, stats["Input opaque operations"]);
+            Assert.AreEqual(1, stats["Recorded opaque: Binary.Add"]);
+            target.Verify(t => t.EmitBinary(BinaryOp.Add, left, one.Object, destination), Times.Once);
+            target.Verify(t => t.Return(destination), Times.Once);
         }
 
         [TestMethod]

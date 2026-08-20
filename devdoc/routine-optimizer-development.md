@@ -157,9 +157,10 @@ representative project:
 5. Run the stories or the available project tests. Pay special attention to calls, indirect locals, memory mutation,
    stack balance, optional parameters, and debug builds.
 
-When a pass finds no sites, instrument or temporarily count its rejection reasons. Determine whether the source truly
-lacks candidates, recording left the operation opaque, an effect invalidated availability, or physical-home
-profitability rejected the rewrite.
+Debug builds append stable routine-IR statistics to the generated assembly. These include input and output instruction
+and opaque-operation counts, applications by optimization, GVN physical-availability rejections, and opaque recording
+fallbacks grouped by operation. Use them to determine whether the source truly lacks candidates, recording left the
+operation opaque, an effect invalidated availability, or physical-home profitability rejected the rewrite.
 
 Run the fast solution suite after changes:
 
@@ -192,9 +193,6 @@ These are directions, not assumptions that the prerequisites already exist:
   calls. Recursive and indirect calls require conservative fixed-point handling.
 - **Global and memory value promotion.** Defer this until aliasing, calls, save/restore behavior, and observable physical
   state are modeled well enough to prove correctness.
-- **Optimizer diagnostics.** Stable per-pass counters and rejection reasons would make real-project validation easier
-  and prevent label-only diffs from being mistaken for useful optimization.
-
 The usual priority is to improve semantic modeling before adding a more aggressive rewrite. Existing SCCP, GVN, CFG
 cleanup, and DCE become more effective as fewer operations are opaque and as memory and physical availability become
 more precise.

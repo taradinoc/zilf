@@ -80,6 +80,7 @@ namespace Zilf.Emit.Zap
 
 #if DEBUG
         readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
+        readonly Dictionary<string, int> irOptimizationStats = new(StringComparer.Ordinal);
 #endif
 
         IRoutineBuilder? entryRoutine;
@@ -363,7 +364,8 @@ namespace Zilf.Emit.Zap
             var target = new RoutineBuilder(this, name, entryPoint, cleanStack);
             var result = new IrRoutineBuilder(target, IrNumericSemantics.ZMachine16, optimizeRoutineIr, MakeOperand,
                 preferConstantHome: operand => operand is not INumericOperand numeric ||
-                    (ushort)numeric.Value > byte.MaxValue);
+                    (ushort)numeric.Value > byte.MaxValue,
+                recordOptimizationStats: RecordIrOptimizationStats);
             symbols.Add(name, "routine");
 
             if (entryPoint)
@@ -982,6 +984,12 @@ namespace Zilf.Emit.Zap
         }
 
 #if DEBUG
+        internal void RecordIrOptimizationStats(IEnumerable<IrOptimizationStat> stats)
+        {
+            foreach (var stat in stats)
+                irOptimizationStats[stat.Name] = irOptimizationStats.GetValueOrDefault(stat.Name) + stat.Count;
+        }
+
         internal void RecordPeepholeStats(IEnumerable<PeepholeOptimizationStat> stats)
         {
             foreach (var stat in stats)
@@ -1004,6 +1012,14 @@ namespace Zilf.Emit.Zap
 
         void WritePeepholeStats()
         {
+            if (irOptimizationStats.Count != 0)
+            {
+                writer.WriteLine(INDENT + "; Routine IR optimization statistics (debug build)");
+                foreach (var entry in irOptimizationStats.OrderBy(static entry => entry.Key, StringComparer.Ordinal))
+                    writer.WriteLine(INDENT + $";   {entry.Key}: {entry.Value}");
+                writer.WriteLine();
+            }
+
             if (peepholeStats.Count == 0)
                 return;
 
@@ -1020,6 +1036,12 @@ namespace Zilf.Emit.Zap
             }
 
             writer.WriteLine();
+        }
+#endif
+
+#if !DEBUG
+        private static void RecordIrOptimizationStats(IEnumerable<IrOptimizationStat> stats)
+        {
         }
 #endif
     }
