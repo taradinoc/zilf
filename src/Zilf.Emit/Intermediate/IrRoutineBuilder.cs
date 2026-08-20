@@ -68,7 +68,8 @@ namespace Zilf.Emit.Intermediate
                 var temporary = TrackLocal(target.DefineLocal($"?IR{nextIrTemporary++}"));
                 compilerTemporaries.Add(temporary);
                 return temporary;
-            }, (destination, value) => target.EmitStore(destination, value), () => compilerTemporaries);
+            }, (destination, value) => target.EmitStore(destination, value), () => compilerTemporaries,
+                CreateOptimizerPreheader);
             current = routine.Entry;
             layout.Add(current);
             labelBlocks.Add(target.RoutineStart, current);
@@ -1171,6 +1172,22 @@ namespace Zilf.Emit.Intermediate
         {
             var block = routine.CreateBlock();
             layout.Add(block);
+            return block;
+        }
+
+        private IrBlock CreateOptimizerPreheader(IrBlock header)
+        {
+            var label = target.DefineLabel();
+            var block = routine.CreateBlock();
+            labelBlocks.Add(label, block);
+            blockLabels.Add(block, label);
+            var headerIndex = layout.IndexOf(header);
+            if (headerIndex < 0)
+                throw new InvalidOperationException($"Cannot insert a preheader before non-layout block {header}.");
+            layout.Insert(headerIndex, block);
+            routine.Append(block, IrOpcode.TargetOperation, [], IrEffect.InputOutput,
+                new IrLoweringOperation(_ => target.MarkLabel(label)), hasResult: false);
+            block.Terminator = new IrTerminator.Jump(header);
             return block;
         }
 

@@ -937,6 +937,81 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Licm_Creates_Preheader_When_External_Edges_Are_Redirectable()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var home = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), left, right);
+            left.Terminator = new IrTerminator.Jump(header);
+            right.Terminator = new IrTerminator.Jump(header);
+            var invariant = routine.Append(header, IrOpcode.Add,
+                [routine.CreateValue(), routine.CreateValue()], payload: new IrLoweringOperation(_ => { }, home));
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(invariant.Result);
+
+            IrBlock created = null;
+            var optimizer = new RoutineIrOptimizer(createPreheader: target =>
+            {
+                created = routine.CreateBlock();
+                created.Terminator = new IrTerminator.Jump(target);
+                return created;
+            });
+            optimizer.Optimize(routine);
+
+            Assert.IsNotNull(created);
+            Assert.AreSame(created, ((IrTerminator.Jump)left.Terminator).Target);
+            Assert.AreSame(created, ((IrTerminator.Jump)right.Terminator).Target);
+            Assert.IsTrue(created.Instructions.Contains(invariant));
+            Assert.AreEqual(1, optimizer.GetStatistics().Single(stat => stat.Name == "Preheaders created").Count);
+        }
+
+        [TestMethod]
+        public void Optimizer_Removes_Redundant_Basic_Induction_Variable()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var firstVariable = Mock.Of<IVariable>();
+            var secondVariable = Mock.Of<IVariable>();
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var firstPhi = new IrInstruction(IrOpcode.Phi, routine.CreateValue(), [], payload:
+                new IrPhi(firstVariable));
+            var secondPhi = new IrInstruction(IrOpcode.Phi, routine.CreateValue(), [], payload:
+                new IrPhi(secondVariable));
+            firstPhi.Result!.PhysicalHome = firstVariable;
+            secondPhi.Result!.PhysicalHome = secondVariable;
+            header.Instructions.Add(firstPhi);
+            header.Instructions.Add(secondPhi);
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            var firstUpdate = routine.Append(body, IrOpcode.Add, [firstPhi.Result, routine.CreateConstant(1)], payload:
+                new IrLoweringOperation(_ => { }, firstVariable));
+            var secondUpdate = routine.Append(body, IrOpcode.Add, [secondPhi.Result, routine.CreateConstant(1)], payload:
+                new IrLoweringOperation(_ => { }, secondVariable));
+            ((IrPhi)firstPhi.Payload!).Incoming[routine.Entry] = routine.CreateConstant(0);
+            ((IrPhi)firstPhi.Payload!).Incoming[body] = firstUpdate.Result!;
+            ((IrPhi)secondPhi.Payload!).Incoming[routine.Entry] = routine.CreateConstant(0);
+            ((IrPhi)secondPhi.Payload!).Incoming[body] = secondUpdate.Result!;
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(secondPhi.Result);
+
+            var optimizer = new RoutineIrOptimizer();
+            optimizer.Optimize(routine);
+
+            Assert.AreEqual(1, header.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Phi));
+            Assert.AreEqual(1, body.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Add));
+            Assert.AreSame(firstPhi.Result, ((IrTerminator.Return)exit.Terminator).Value);
+            Assert.AreEqual(1, optimizer.GetStatistics().Single(stat =>
+                stat.Name == "Redundant induction variables removed").Count);
+        }
+
+        [TestMethod]
         public void Licm_Hoists_Global_Derived_Expression_Across_Unrelated_Write()
         {
             var routine = new RoutineIr();

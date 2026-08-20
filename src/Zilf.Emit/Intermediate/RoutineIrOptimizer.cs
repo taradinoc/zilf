@@ -34,16 +34,19 @@ namespace Zilf.Emit.Intermediate
         private readonly Func<IVariable?> acquireTemporary;
         private readonly Func<IEnumerable<IVariable>> reusableTemporaries;
         private readonly Action<IVariable, IOperand>? emitCopy;
+        private readonly Func<IrBlock, IrBlock>? createPreheader;
         private readonly Dictionary<string, int> statistics = new(StringComparer.Ordinal);
 
         public RoutineIrOptimizer(IrNumericSemantics numericSemantics = IrNumericSemantics.Glulx32,
             Func<IVariable?>? acquireTemporary = null, Action<IVariable, IOperand>? emitCopy = null,
-            Func<IEnumerable<IVariable>>? reusableTemporaries = null)
+            Func<IEnumerable<IVariable>>? reusableTemporaries = null,
+            Func<IrBlock, IrBlock>? createPreheader = null)
         {
             this.numericSemantics = numericSemantics;
             this.acquireTemporary = acquireTemporary ?? (() => null);
             this.emitCopy = emitCopy;
             this.reusableTemporaries = reusableTemporaries ?? (() => []);
+            this.createPreheader = createPreheader;
         }
 
         public void Optimize(RoutineIr routine)
@@ -60,6 +63,8 @@ namespace Zilf.Emit.Intermediate
             Record("SCCP constants", SparseConditionalConstantPropagation(routine));
             SimplifyControlFlow(routine);
             RemoveUnreachableBlocks(routine);
+            CreateLoopPreheaders(routine);
+            SimplifyInductionVariables(routine);
             LoopInvariantCodeMotion(routine);
             GlobalValueNumbering(routine);
             var changed = true;
@@ -386,6 +391,169 @@ namespace Zilf.Emit.Intermediate
             var right = instruction.Operands[1];
             if ((left.Constant == 0 && right.KnownNonzero) || (right.Constant == 0 && left.KnownNonzero))
                 return true;
+            return false;
+        }
+
+        private void CreateLoopPreheaders(RoutineIr routine)
+        {
+            if (createPreheader == null)
+                return;
+            foreach (var loop in CfgAnalysis.Create(routine).Loops.Where(loop => loop.Preheader == null)
+                .OrderBy(loop => loop.Blocks.Count).ToArray())
+            {
+                var external = loop.Header.Predecessors.Where(predecessor => !loop.Blocks.Contains(predecessor))
+                    .ToArray();
+                if (external.Length == 0 || external.Any(predecessor => !CanRedirectEdge(predecessor, loop.Header)))
+                {
+                    Record("Preheaders rejected: unredirectable edge");
+                    continue;
+                }
+
+                var preheader = createPreheader(loop.Header);
+                foreach (var predecessor in external)
+                    RedirectEdge(predecessor, loop.Header, preheader);
+                foreach (var instruction in loop.Header.Instructions.Where(instruction =>
+                    instruction.Opcode == IrOpcode.Phi && instruction.Payload is IrPhi))
+                {
+                    var phi = (IrPhi)instruction.Payload!;
+                    var incoming = external.Select(predecessor => phi.Incoming[predecessor]).ToArray();
+                    IrValue merged;
+                    if (incoming.Skip(1).All(value => StateValuesEquivalent(value, incoming[0])))
+                        merged = incoming[0];
+                    else
+                    {
+                        var preheaderPhi = new IrInstruction(IrOpcode.Phi, routine.CreateValue(), [],
+                            payload: new IrPhi(phi.Variable));
+                        preheaderPhi.Result!.PhysicalHome = phi.Variable;
+                        var payload = (IrPhi)preheaderPhi.Payload!;
+                        foreach (var predecessor in external)
+                            payload.Incoming[predecessor] = phi.Incoming[predecessor];
+                        preheader.Instructions.Insert(0, preheaderPhi);
+                        merged = preheaderPhi.Result;
+                    }
+                    foreach (var predecessor in external)
+                        phi.Incoming.Remove(predecessor);
+                    phi.Incoming[preheader] = merged;
+                }
+                routine.RebuildPredecessors();
+                Record("Preheaders created");
+            }
+        }
+
+        private static bool CanRedirectEdge(IrBlock predecessor, IrBlock target) => predecessor.Terminator switch
+        {
+            IrTerminator.Jump jump when ReferenceEquals(jump.Target, target) =>
+                jump.Instruction == null || jump.EmitJump != null,
+            IrTerminator.Branch branch when ReferenceEquals(branch.WhenTrue, target) ||
+                ReferenceEquals(branch.WhenFalse, target) => branch.Instruction == null ||
+                !ReferenceEquals(branch.ExplicitTarget, target),
+            _ => false,
+        };
+
+        private static void RedirectEdge(IrBlock predecessor, IrBlock oldTarget, IrBlock newTarget)
+        {
+            predecessor.Terminator = predecessor.Terminator switch
+            {
+                IrTerminator.Jump jump when ReferenceEquals(jump.Target, oldTarget) =>
+                    RedirectJump(jump, newTarget),
+                IrTerminator.Branch branch => branch with
+                {
+                    WhenTrue = ReferenceEquals(branch.WhenTrue, oldTarget) ? newTarget : branch.WhenTrue,
+                    WhenFalse = ReferenceEquals(branch.WhenFalse, oldTarget) ? newTarget : branch.WhenFalse,
+                },
+                _ => throw new InvalidOperationException($"Block {predecessor} has no edge to {oldTarget}."),
+            };
+        }
+
+        private static IrTerminator.Jump RedirectJump(IrTerminator.Jump jump, IrBlock newTarget)
+        {
+            if (jump.Instruction?.Payload is IrLoweringOperation lowering && jump.EmitJump != null)
+                jump.Instruction.Payload = new IrLoweringOperation(_ => jump.EmitJump(newTarget),
+                    lowering.ResultHome, lowering.IsStackResult, lowering.EmitTo);
+            return jump with { Target = newTarget };
+        }
+
+        private void SimplifyInductionVariables(RoutineIr routine)
+        {
+            var cfg = CfgAnalysis.Create(routine);
+            var definitions = routine.Blocks.SelectMany(block => block.Instructions)
+                .Where(instruction => instruction.Result != null).ToDictionary(instruction => instruction.Result!);
+            var replacements = new Dictionary<IrValue, IrValue>();
+            foreach (var loop in cfg.Loops.Where(loop => loop.Preheader != null && loop.Latches.Count == 1))
+            {
+                var latch = loop.Latches.Single();
+                var inductions = new List<(IrInstruction Phi, IrInstruction Update, IrValue Initial, int Step)>();
+                foreach (var phi in loop.Header.Instructions.Where(instruction =>
+                    instruction.Opcode == IrOpcode.Phi && instruction.Payload is IrPhi))
+                {
+                    var payload = (IrPhi)phi.Payload!;
+                    if (!payload.Incoming.TryGetValue(loop.Preheader!, out var initial) ||
+                        !payload.Incoming.TryGetValue(latch, out var next) || !definitions.TryGetValue(next, out var update) ||
+                        !TryGetInductionStep(phi.Result!, update, out var step) ||
+                        update.Payload is IrLoweringOperation { RequiredHome: true })
+                        continue;
+                    inductions.Add((phi, update, initial, step));
+                }
+
+                foreach (var group in inductions.GroupBy(item => item.Step))
+                {
+                    var items = group.ToArray();
+                    for (var index = 1; index < items.Length; index++)
+                    {
+                        var redundant = items[index];
+                        var canonical = items.Take(index).FirstOrDefault(candidate =>
+                            StateValuesEquivalent(candidate.Initial, redundant.Initial));
+                        if (canonical.Phi == null)
+                            continue;
+                        replacements[redundant.Phi.Result!] = canonical.Phi.Result!;
+                        replacements[redundant.Update.Result!] = canonical.Update.Result!;
+                        loop.Header.Instructions.Remove(redundant.Phi);
+                        foreach (var block in loop.Blocks)
+                        {
+                            for (var i = block.Instructions.Count - 1; i >= 0; i--)
+                            {
+                                if (ReferenceEquals(block.Instructions[i], redundant.Update) ||
+                                    block.Instructions[i].Payload is IrLoweringOperation
+                                    {
+                                        IsMaterialization: true,
+                                        ResultHome: not null,
+                                    } materialization && ReferenceEquals(materialization.ResultHome,
+                                        ((IrPhi)redundant.Phi.Payload!).Variable))
+                                    block.Instructions.RemoveAt(i);
+                            }
+                        }
+                        Record("Redundant induction variables removed");
+                    }
+                }
+            }
+            ReplaceValues(routine, replacements);
+            routine.RebuildPredecessors();
+        }
+
+        private int NormalizeStep(int value) => Normalize(value);
+
+        private static bool StateValuesEquivalent(IrValue left, IrValue right) => ReferenceEquals(left, right) ||
+            left.Constant is int leftConstant && right.Constant == leftConstant;
+
+        private bool TryGetInductionStep(IrValue phi, IrInstruction update, out int step)
+        {
+            step = 0;
+            if (update.Opcode == IrOpcode.Add && update.Operands.Count == 2)
+            {
+                if (ReferenceEquals(update.Operands[0], phi) && update.Operands[1].Constant is int right)
+                    step = NormalizeStep(right);
+                else if (ReferenceEquals(update.Operands[1], phi) && update.Operands[0].Constant is int left)
+                    step = NormalizeStep(left);
+                else
+                    return false;
+                return true;
+            }
+            if (update.Opcode == IrOpcode.Subtract && update.Operands.Count == 2 &&
+                ReferenceEquals(update.Operands[0], phi) && update.Operands[1].Constant is int subtrahend)
+            {
+                step = NormalizeStep(-subtrahend);
+                return true;
+            }
             return false;
         }
 

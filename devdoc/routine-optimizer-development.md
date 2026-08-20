@@ -115,9 +115,11 @@ preserve a pre-call value.
 
 ## Loop-invariant code motion
 
-The optimizer recognizes natural loops from dominance back edges and processes nested loops from inner to outer. LICM
-currently requires an existing dedicated preheader: one predecessor outside the loop whose only successor is the loop
-header. The optimizer does not create blocks because lowering uses the recorder's separate block layout.
+The optimizer recognizes natural loops from dominance back edges and processes nested loops from inner to outer. When
+a loop lacks a dedicated preheader, the optimizer creates one if every external edge can be represented faithfully by
+the current lowering metadata. The recorder inserts the new labeled block immediately before the header in lowering
+order. Header phi inputs from external predecessors are merged in the preheader. Unsupported targeted conditional
+edges are left unchanged rather than retargeted unsafely.
 
 Eligible instructions must be value-numberable, have loop-invariant operands, use a non-stack physical home that is not
 otherwise clobbered in the loop, and be free of required-home constraints. Memory reads are hoisted only when the loop
@@ -126,6 +128,12 @@ instruction's block must dominate every latch and exit source, preventing a cond
 unconditional. Calls, writes, phi nodes, materializations, stack results, opaque or ordered operations, and potentially
 trapping arithmetic are not hoisted. Induction-variable simplification, strength reduction, preheader creation, and
 identity-based memory aliasing remain future work.
+
+The induction-variable pass recognizes single-latch basic induction phis whose update adds or subtracts a constant. If
+two promoted locals have equivalent initial values and normalized steps, uses of the redundant induction variable are
+rewritten to the canonical one, its update and phi are removed, and obsolete edge materializations for its physical
+home are discarded. Different initial values, steps, multiple latches, required homes, and derived induction variables
+are currently left unchanged.
 
 ## Adding or de-opaquifying an IR operation
 
@@ -217,8 +225,8 @@ These are directions, not assumptions that the prerequisites already exist:
   equal-cost copy or forces a worse encoding.
 - **Algebraic simplification and reassociation.** Extend identities cautiously under fixed-width semantics. Reassociation
   can expose constants and common subexpressions but can also change overflow behavior if modeled incorrectly.
-- **More loop optimization.** Extend the current conservative LICM with preheader creation, induction-variable
-  simplification, and strength reduction after a target cost model is available.
+- **More loop optimization.** Extend basic induction recognition to derived induction variables and strength reduction
+  after a target cost model is available, and teach branch lowering to retarget every conditional edge form.
 - **Stronger interprocedural summaries.** More precise read/write and purity summaries can preserve values across known
   calls. Recursive and indirect calls require conservative fixed-point handling.
 - **Global and memory value promotion.** Defer this until aliasing, calls, save/restore behavior, and observable physical
