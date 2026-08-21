@@ -104,9 +104,8 @@ namespace Zilf.Emit.Intermediate
             return jump with { Target = newTarget };
         }
 
-        private void SimplifyInductionVariables(RoutineIr routine)
+        private void SimplifyInductionVariables(RoutineIr routine, CfgAnalysis cfg)
         {
-            var cfg = CfgAnalysis.Create(routine);
             var definitions = routine.Blocks.SelectMany(block => block.Instructions)
                 .Where(instruction => instruction.Result != null).ToDictionary(instruction => instruction.Result!);
             var replacements = new Dictionary<IrValue, IrValue>();
@@ -188,9 +187,8 @@ namespace Zilf.Emit.Intermediate
             return false;
         }
 
-        private void LoopInvariantCodeMotion(RoutineIr routine)
+        private void LoopInvariantCodeMotion(RoutineIr routine, CfgAnalysis cfg)
         {
-            var cfg = CfgAnalysis.Create(routine);
             Record("Loops detected", cfg.Loops.Count);
             if (cfg.Loops.Count == 0)
                 return;
@@ -385,10 +383,9 @@ namespace Zilf.Emit.Intermediate
             return true;
         }
 
-        private void EliminatePartialRedundancies(RoutineIr routine)
+        private void EliminatePartialRedundancies(RoutineIr routine, CfgAnalysis cfg)
         {
             routine.RebuildPredecessors();
-            var cfg = CfgAnalysis.Create(routine);
             var definitions = routine.Blocks.SelectMany(block => block.Instructions.Select(instruction =>
                 (instruction, block))).Where(pair => pair.instruction.Result != null)
                 .ToDictionary(pair => pair.instruction.Result!, pair => pair.block);

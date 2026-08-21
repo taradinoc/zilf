@@ -37,6 +37,11 @@ namespace Zilf.Emit.Intermediate
         private readonly Func<IrBlock, IrBlock>? createPreheader;
         private readonly IIrOptimizationCostPolicy costPolicy;
         private readonly Dictionary<string, int> statistics = new(StringComparer.Ordinal);
+#if DEBUG
+        private const bool CollectStatistics = true;
+#else
+        private const bool CollectStatistics = false;
+#endif
 
         public RoutineIrOptimizer(IrNumericSemantics numericSemantics = IrNumericSemantics.Glulx32,
             Func<IVariable?>? acquireTemporary = null, Action<IVariable, IOperand>? emitCopy = null,
@@ -55,28 +60,32 @@ namespace Zilf.Emit.Intermediate
         {
             statistics.Clear();
             routine.Verify();
+#if DEBUG
             statistics["Input instructions"] = routine.Blocks.Sum(block => block.Instructions.Count);
-            statistics["Input opaque operations"] = routine.Blocks.Sum(block => block.Instructions.Count(instruction =>
-                instruction.Effect == IrEffect.Opaque));
+            statistics["Input opaque operations"] = routine.Blocks.Sum(block =>
+                block.Instructions.Count(instruction => instruction.Effect == IrEffect.Opaque));
             Record("Exact memory locations", routine.Blocks.SelectMany(block => block.Instructions)
                 .SelectMany(instruction => new[] { instruction.ReadIdentity, instruction.WriteIdentity })
                 .OfType<IrMemoryIdentity>().Distinct().Count());
             Record("Calls with precise effects", routine.Blocks.SelectMany(block => block.Instructions)
                 .Count(instruction => instruction.Effect == IrEffect.Call && instruction.CallSummary != null &&
                     instruction.CallSummary.GetUnknownWrittenRegions() != IrMemoryRegion.All));
+#endif
             ProtectCopiesAcrossClobbers(routine);
             CoalesceMaterializationDestinations(routine);
             RemoveRedundantMaterializations(routine);
             ForwardCopyDestinations(routine);
-            Record("SCCP constants", SparseConditionalConstantPropagation(routine));
+            var sccpConstants = SparseConditionalConstantPropagation(routine);
+            Record("SCCP constants", sccpConstants);
             SimplifyControlFlow(routine);
             RemoveUnreachableBlocks(routine);
             CreateLoopPreheaders(routine);
-            SimplifyInductionVariables(routine);
-            LoopInvariantCodeMotion(routine);
-            EliminatePartialRedundancies(routine);
+            var cfg = CfgAnalysis.Create(routine);
+            SimplifyInductionVariables(routine, cfg);
+            LoopInvariantCodeMotion(routine, cfg);
+            EliminatePartialRedundancies(routine, cfg);
             ForwardStoredConstants(routine);
-            GlobalValueNumbering(routine);
+            GlobalValueNumbering(routine, cfg);
             var changed = true;
             while (changed)
             {
@@ -86,9 +95,11 @@ namespace Zilf.Emit.Intermediate
                 changed |= RemoveUnreachableBlocks(routine);
             }
             routine.Verify();
+#if DEBUG
             statistics["Output instructions"] = routine.Blocks.Sum(block => block.Instructions.Count);
-            statistics["Output opaque operations"] = routine.Blocks.Sum(block => block.Instructions.Count(instruction =>
-                instruction.Effect == IrEffect.Opaque));
+            statistics["Output opaque operations"] = routine.Blocks.Sum(block =>
+                block.Instructions.Count(instruction => instruction.Effect == IrEffect.Opaque));
+#endif
         }
 
         public IEnumerable<IrOptimizationStat> GetStatistics() => statistics
@@ -97,7 +108,7 @@ namespace Zilf.Emit.Intermediate
 
         private void Record(string name, int count = 1)
         {
-            if (count != 0)
+            if (CollectStatistics && count != 0)
                 statistics[name] = statistics.GetValueOrDefault(name) + count;
         }
 

@@ -91,15 +91,7 @@ namespace Zilf.Emit.Intermediate
             if (replacements.Count == 0)
                 return changed;
 
-            foreach (var block in routine.Blocks)
-            {
-                foreach (var instruction in block.Instructions)
-                {
-                    foreach (var replacement in replacements)
-                        instruction.ReplaceOperand(replacement.Key, Resolve(replacement.Value));
-                }
-            }
-
+            ReplaceValues(routine, replacements);
             return true;
         }
 

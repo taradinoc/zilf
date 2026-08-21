@@ -591,53 +591,52 @@ namespace Zilf.Emit.Intermediate
             var outgoing = blocks.ToDictionary(block => block,
                 _ => new Dictionary<IVariable, IrValue>(initialValues));
             var phis = new Dictionary<(IrBlock Block, IVariable Variable), IrInstruction>();
-            var changed = true;
-            while (changed)
+            var pending = new Queue<IrBlock>(blocks);
+            var queued = blocks.ToHashSet();
+            while (pending.TryDequeue(out var block))
             {
-                changed = false;
-                foreach (var block in blocks)
+                queued.Remove(block);
+                var nextIncoming = new Dictionary<IVariable, IrValue>();
+                foreach (var variable in promotable)
                 {
-                    var nextIncoming = new Dictionary<IVariable, IrValue>();
-                    foreach (var variable in promotable)
+                    var predecessorValues = block.Predecessors
+                        .Select(predecessor => outgoing[predecessor][variable])
+                        .Distinct()
+                        .ToArray();
+                    IrValue value;
+                    if (ReferenceEquals(block, Entry) || predecessorValues.Length == 0)
                     {
-                        var predecessorValues = block.Predecessors
-                            .Select(predecessor => outgoing[predecessor][variable])
-                            .Distinct()
-                            .ToArray();
-                        IrValue value;
-                        if (ReferenceEquals(block, Entry) || predecessorValues.Length == 0)
-                        {
-                            value = initialValues[variable];
-                        }
-                        else if (predecessorValues.Length == 1)
-                        {
-                            value = predecessorValues[0];
-                        }
-                        else
-                        {
-                            var key = (block, variable);
-                            if (!phis.TryGetValue(key, out var phi))
-                            {
-                                phi = new IrInstruction(IrOpcode.Phi, CreateValue(), [], payload: new IrPhi(variable));
-                                phi.Result!.PhysicalHome = variable;
-                                block.Instructions.Insert(0, phi);
-                                phis.Add(key, phi);
-                            }
-                            value = phi.Result!;
-                        }
-                        nextIncoming[variable] = value;
+                        value = initialValues[variable];
                     }
+                    else if (predecessorValues.Length == 1)
+                    {
+                        value = predecessorValues[0];
+                    }
+                    else
+                    {
+                        var key = (block, variable);
+                        if (!phis.TryGetValue(key, out var phi))
+                        {
+                            phi = new IrInstruction(IrOpcode.Phi, CreateValue(), [], payload: new IrPhi(variable));
+                            phi.Result!.PhysicalHome = variable;
+                            block.Instructions.Insert(0, phi);
+                            phis.Add(key, phi);
+                        }
+                        value = phi.Result!;
+                    }
+                    nextIncoming[variable] = value;
+                }
 
-                    var nextOutgoing = TransferLocalValues(block, nextIncoming, promotable);
-                    if (!LocalValuesEqual(incoming[block], nextIncoming))
+                var nextOutgoing = TransferLocalValues(block, nextIncoming, promotable);
+                if (!LocalValuesEqual(incoming[block], nextIncoming))
+                    incoming[block] = nextIncoming;
+                if (!LocalValuesEqual(outgoing[block], nextOutgoing))
+                {
+                    outgoing[block] = nextOutgoing;
+                    foreach (var successor in GetSuccessors(block))
                     {
-                        incoming[block] = nextIncoming;
-                        changed = true;
-                    }
-                    if (!LocalValuesEqual(outgoing[block], nextOutgoing))
-                    {
-                        outgoing[block] = nextOutgoing;
-                        changed = true;
+                        if (queued.Add(successor))
+                            pending.Enqueue(successor);
                     }
                 }
             }

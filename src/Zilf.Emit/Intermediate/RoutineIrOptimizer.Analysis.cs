@@ -132,6 +132,8 @@ namespace Zilf.Emit.Intermediate
 
             public IReadOnlyList<NaturalLoop> Loops { get; }
 
+            public IReadOnlyDictionary<IrBlock, HashSet<IrBlock>> Dominators => dominators;
+
             public bool Dominates(IrBlock dominator, IrBlock block) => dominators[block].Contains(dominator);
 
             public static CfgAnalysis Create(RoutineIr routine)
@@ -219,34 +221,49 @@ namespace Zilf.Emit.Intermediate
             public string GetKey(IrInstruction instruction, IrMemoryRegion dependencies,
                 IEnumerable<IrMemoryIdentity> exactDependencies)
             {
-                var regionKey = string.Join(",", Regions.Where(region => (dependencies & region) != 0)
-                    .Select(region => before[instruction][region]));
-                var exactKey = string.Join(",", exactDependencies.OrderBy(identity => identity.GetHashCode())
-                    .Select(identity => exactBefore[instruction].GetValueOrDefault(identity)));
+                var regionKey = dependencies == IrMemoryRegion.None
+                    ? ""
+                    : string.Join(",", Regions.Where(region => (dependencies & region) != 0)
+                        .Select(region => before[instruction][region]));
+                var exactKey = exactBefore.TryGetValue(instruction, out var exactVersions)
+                    ? string.Join(",", exactDependencies.OrderBy(identity => identity.GetHashCode())
+                        .Select(identity => exactVersions.GetValueOrDefault(identity)))
+                    : "";
                 return $"{regionKey}|{exactKey}";
             }
 
-            public static MemoryVersionAnalysis Create(RoutineIr routine)
+            public static MemoryVersionAnalysis Create(RoutineIr routine,
+                IReadOnlyDictionary<IrValue, IrMemoryRegion> stateDependencies,
+                IReadOnlyDictionary<IrValue, HashSet<IrMemoryIdentity>> identityDependencies)
             {
                 routine.RebuildPredecessors();
                 var nextVersion = 1;
-                var initial = Regions.ToDictionary(region => region, _ => nextVersion++);
                 var instructions = routine.Blocks.SelectMany(block => block.Instructions).ToArray();
-                var exactIdentities = instructions.Select(instruction => instruction.ReadIdentity)
-                    .OfType<IrMemoryIdentity>()
-                    .Concat(instructions.SelectMany(instruction => instruction.Operands.Append(instruction.Result))
-                        .Where(value => value?.MemoryIdentity != null).Select(value => value!.MemoryIdentity!))
+                var valueNumberable = instructions.Where(instruction => instruction.Result != null &&
+                    IsValueNumberable(instruction)).ToHashSet();
+                var relevantRegions = valueNumberable.Aggregate(IrMemoryRegion.None, (regions, instruction) =>
+                    regions | stateDependencies.GetValueOrDefault(instruction.Result!));
+                var regions = Regions.Where(region => (relevantRegions & region) != 0).ToArray();
+                var exactIdentities = valueNumberable.SelectMany(instruction =>
+                        identityDependencies.GetValueOrDefault(instruction.Result!) ?? [])
                     .Distinct().ToArray();
+                if (regions.Length == 0 && exactIdentities.Length == 0)
+                    return new([], []);
+                var initial = regions.ToDictionary(region => region, _ => nextVersion++);
                 var unknownWritesByInstruction = instructions.ToDictionary(instruction => instruction,
                     GetUnknownWrittenRegions);
                 var writtenIdentitiesByInstruction = instructions.ToDictionary(instruction => instruction,
                     instruction => GetWrittenIdentities(instruction).ToArray());
+                var identitiesByRegion = exactIdentities.GroupBy(identity => identity.Region)
+                    .ToDictionary(group => group.Key, group => group.ToArray());
                 var affectedIdentitiesByInstruction = instructions.ToDictionary(instruction => instruction,
-                    instruction => exactIdentities.Where(identity => writtenIdentitiesByInstruction[instruction]
-                        .Any(written => identity.MayAlias(written))).ToArray());
+                    instruction => writtenIdentitiesByInstruction[instruction]
+                        .SelectMany(written => identitiesByRegion.GetValueOrDefault(written.Region) ?? [])
+                        .Distinct().Where(identity => writtenIdentitiesByInstruction[instruction]
+                            .Any(identity.MayAlias)).ToArray());
                 var exactInitial = exactIdentities.ToDictionary(identity => identity, _ => nextVersion++);
                 var writeVersions = routine.Blocks.SelectMany(block => block.Instructions)
-                    .SelectMany(instruction => Regions.Where(region =>
+                    .SelectMany(instruction => regions.Where(region =>
                             (unknownWritesByInstruction[instruction] & region) != 0)
                         .Select(region => (instruction, region)))
                     .ToDictionary(pair => pair, _ => nextVersion++);
@@ -254,7 +271,7 @@ namespace Zilf.Emit.Intermediate
                     .SelectMany(instruction => affectedIdentitiesByInstruction[instruction]
                         .Select(identity => (instruction, identity)))
                     .ToDictionary(pair => pair, _ => nextVersion++);
-                var mergeVersions = routine.Blocks.SelectMany(block => Regions.Select(region => (block, region)))
+                var mergeVersions = routine.Blocks.SelectMany(block => regions.Select(region => (block, region)))
                     .ToDictionary(pair => pair, _ => nextVersion++);
                 var exactMergeVersions = routine.Blocks
                     .SelectMany(block => exactIdentities.Select(identity => (block, identity)))
@@ -268,72 +285,67 @@ namespace Zilf.Emit.Intermediate
                 var exactOutgoing = routine.Blocks.ToDictionary(block => block,
                     _ => new Dictionary<IrMemoryIdentity, int>(exactInitial));
 
-                var changed = true;
-                while (changed)
+                var pendingBlocks = new Queue<IrBlock>(routine.Blocks);
+                var queuedBlocks = routine.Blocks.ToHashSet();
+                while (pendingBlocks.TryDequeue(out var block))
                 {
-                    changed = false;
-                    foreach (var block in routine.Blocks)
+                    queuedBlocks.Remove(block);
+                    var nextIn = new Dictionary<IrMemoryRegion, int>();
+                    foreach (var region in regions)
                     {
-                        var nextIn = new Dictionary<IrMemoryRegion, int>();
-                        foreach (var region in Regions)
+                        if (ReferenceEquals(block, routine.Entry) || block.Predecessors.Count == 0)
+                            nextIn[region] = initial[region];
+                        else
                         {
-                            if (ReferenceEquals(block, routine.Entry) || block.Predecessors.Count == 0)
-                                nextIn[region] = initial[region];
-                            else
-                            {
-                                var versions = block.Predecessors.Select(predecessor => outgoing[predecessor][region])
-                                    .Distinct().ToArray();
-                                nextIn[region] = versions.Length == 1 ? versions[0] : mergeVersions[(block, region)];
-                            }
+                            var versions = block.Predecessors.Select(predecessor => outgoing[predecessor][region])
+                                .Distinct().ToArray();
+                            nextIn[region] = versions.Length == 1 ? versions[0] : mergeVersions[(block, region)];
                         }
-                        var nextExactIn = new Dictionary<IrMemoryIdentity, int>();
-                        foreach (var identity in exactIdentities)
+                    }
+                    var nextExactIn = new Dictionary<IrMemoryIdentity, int>();
+                    foreach (var identity in exactIdentities)
+                    {
+                        if (ReferenceEquals(block, routine.Entry) || block.Predecessors.Count == 0)
+                            nextExactIn[identity] = exactInitial[identity];
+                        else
                         {
-                            if (ReferenceEquals(block, routine.Entry) || block.Predecessors.Count == 0)
-                                nextExactIn[identity] = exactInitial[identity];
-                            else
-                            {
-                                var versions = block.Predecessors
-                                    .Select(predecessor => exactOutgoing[predecessor][identity]).Distinct().ToArray();
-                                nextExactIn[identity] = versions.Length == 1
-                                    ? versions[0]
-                                    : exactMergeVersions[(block, identity)];
-                            }
+                            var versions = block.Predecessors
+                                .Select(predecessor => exactOutgoing[predecessor][identity]).Distinct().ToArray();
+                            nextExactIn[identity] = versions.Length == 1
+                                ? versions[0]
+                                : exactMergeVersions[(block, identity)];
                         }
-                        var nextOut = new Dictionary<IrMemoryRegion, int>(nextIn);
-                        var nextExactOut = new Dictionary<IrMemoryIdentity, int>(nextExactIn);
-                        foreach (var instruction in block.Instructions)
+                    }
+                    var nextOut = new Dictionary<IrMemoryRegion, int>(nextIn);
+                    var nextExactOut = new Dictionary<IrMemoryIdentity, int>(nextExactIn);
+                    foreach (var instruction in block.Instructions)
+                    {
+                        var unknownWrites = unknownWritesByInstruction[instruction];
+                        foreach (var region in regions.Where(region => (unknownWrites & region) != 0))
                         {
-                            var unknownWrites = unknownWritesByInstruction[instruction];
-                            foreach (var region in Regions.Where(region => (unknownWrites & region) != 0))
-                            {
-                                nextOut[region] = writeVersions[(instruction, region)];
-                                foreach (var identity in exactIdentities.Where(identity => identity.Region == region))
-                                    nextExactOut[identity] = writeVersions[(instruction, region)];
-                            }
-                            foreach (var identity in affectedIdentitiesByInstruction[instruction])
-                                nextExactOut[identity] = exactWriteVersions[(instruction, identity)];
+                            nextOut[region] = writeVersions[(instruction, region)];
+                            foreach (var identity in exactIdentities.Where(identity => identity.Region == region))
+                                nextExactOut[identity] = writeVersions[(instruction, region)];
                         }
-                        if (!nextIn.SequenceEqual(incoming[block]))
-                        {
-                            incoming[block] = nextIn;
-                            changed = true;
-                        }
-                        if (!nextOut.SequenceEqual(outgoing[block]))
-                        {
-                            outgoing[block] = nextOut;
-                            changed = true;
-                        }
-                        if (!nextExactIn.SequenceEqual(exactIncoming[block]))
-                        {
-                            exactIncoming[block] = nextExactIn;
-                            changed = true;
-                        }
-                        if (!nextExactOut.SequenceEqual(exactOutgoing[block]))
-                        {
-                            exactOutgoing[block] = nextExactOut;
-                            changed = true;
-                        }
+                        foreach (var identity in affectedIdentitiesByInstruction[instruction])
+                            nextExactOut[identity] = exactWriteVersions[(instruction, identity)];
+                    }
+                    if (!nextIn.SequenceEqual(incoming[block]))
+                        incoming[block] = nextIn;
+                    if (!nextExactIn.SequenceEqual(exactIncoming[block]))
+                        exactIncoming[block] = nextExactIn;
+                    var outgoingChanged = !nextOut.SequenceEqual(outgoing[block]) ||
+                        !nextExactOut.SequenceEqual(exactOutgoing[block]);
+                    if (!nextOut.SequenceEqual(outgoing[block]))
+                        outgoing[block] = nextOut;
+                    if (!nextExactOut.SequenceEqual(exactOutgoing[block]))
+                        exactOutgoing[block] = nextExactOut;
+                    if (!outgoingChanged)
+                        continue;
+                    foreach (var successor in RoutineIr.GetSuccessors(block))
+                    {
+                        if (queuedBlocks.Add(successor))
+                            pendingBlocks.Enqueue(successor);
                     }
                 }
 
@@ -345,10 +357,18 @@ namespace Zilf.Emit.Intermediate
                     var exactCurrent = new Dictionary<IrMemoryIdentity, int>(exactIncoming[block]);
                     foreach (var instruction in block.Instructions)
                     {
-                        before[instruction] = new Dictionary<IrMemoryRegion, int>(current);
-                        exactBefore[instruction] = new Dictionary<IrMemoryIdentity, int>(exactCurrent);
+                        if (valueNumberable.Contains(instruction) &&
+                            stateDependencies.GetValueOrDefault(instruction.Result!) is var dependencies &&
+                            dependencies != IrMemoryRegion.None)
+                            before[instruction] = regions.Where(region => (dependencies & region) != 0)
+                                .ToDictionary(region => region, region => current[region]);
+                        if (valueNumberable.Contains(instruction) &&
+                            identityDependencies.TryGetValue(instruction.Result!, out var identities) &&
+                            identities.Count != 0)
+                            exactBefore[instruction] = identities.ToDictionary(identity => identity,
+                                identity => exactCurrent[identity]);
                         var unknownWrites = unknownWritesByInstruction[instruction];
-                        foreach (var region in Regions.Where(region => (unknownWrites & region) != 0))
+                        foreach (var region in regions.Where(region => (unknownWrites & region) != 0))
                         {
                             current[region] = writeVersions[(instruction, region)];
                             foreach (var identity in exactIdentities.Where(identity => identity.Region == region))
@@ -367,14 +387,14 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
-        private void GlobalValueNumbering(RoutineIr routine)
+        private void GlobalValueNumbering(RoutineIr routine, CfgAnalysis cfg)
         {
             routine.RebuildPredecessors();
             var blocks = routine.Blocks.ToArray();
             var stateDependencies = FindStateDependencies(blocks);
             var unknownStateDependencies = FindUnknownStateDependencies(blocks);
             var identityDependencies = FindIdentityDependencies(blocks);
-            var memoryVersions = MemoryVersionAnalysis.Create(routine);
+            var memoryVersions = MemoryVersionAnalysis.Create(routine, stateDependencies, identityDependencies);
             Record("Exact memory version merges", memoryVersions.ExactMergeCount);
             var liveHomesAfter = FindLiveHomesAfter(blocks);
             var instructionBlocks = blocks.SelectMany(block => block.Instructions.Select(instruction =>
@@ -401,34 +421,11 @@ namespace Zilf.Emit.Intermediate
                     lastUseIndices[operand] = block.Instructions.Count;
             }
             var homeReservations = new Dictionary<(IrBlock Block, IVariable Home), int>();
-            var all = blocks.ToHashSet();
-            var dominators = blocks.ToDictionary(block => block,
-                block => ReferenceEquals(block, routine.Entry) ? new HashSet<IrBlock> { block } : new HashSet<IrBlock>(all));
-            var changed = true;
-            while (changed)
-            {
-                changed = false;
-                foreach (var block in blocks.Where(block => !ReferenceEquals(block, routine.Entry)))
-                {
-                    var next = block.Predecessors.Count == 0
-                        ? new HashSet<IrBlock>()
-                        : new HashSet<IrBlock>(dominators[block.Predecessors[0]]);
-                    foreach (var predecessor in block.Predecessors.Skip(1))
-                        next.IntersectWith(dominators[predecessor]);
-                    next.Add(block);
-                    if (!next.SetEquals(dominators[block]))
-                    {
-                        dominators[block] = next;
-                        changed = true;
-                    }
-                }
-            }
-
             var children = blocks.ToDictionary(block => block, _ => new List<IrBlock>());
             foreach (var block in blocks.Where(block => !ReferenceEquals(block, routine.Entry)))
             {
-                var idom = dominators[block].Where(candidate => !ReferenceEquals(candidate, block))
-                    .OrderByDescending(candidate => dominators[candidate].Count).FirstOrDefault();
+                var idom = cfg.Dominators[block].Where(candidate => !ReferenceEquals(candidate, block))
+                    .OrderByDescending(candidate => cfg.Dominators[candidate].Count).FirstOrDefault();
                 if (idom != null)
                     children[idom].Add(block);
             }
@@ -525,7 +522,6 @@ namespace Zilf.Emit.Intermediate
                         replacements[instruction.Result] = Resolve(prior.Value);
                         instruction.Result.PhysicalHome = Resolve(prior.Value).PhysicalHome;
                         ReserveHomeThroughUse(prior.Instruction, instruction.Result);
-                        liveHomesAfter = FindLiveHomesAfter(blocks);
                     }
                     else if (available.TryGetValue(key, out prior) &&
                         TryPromoteStackValue(prior.Instruction, instruction,
@@ -696,9 +692,11 @@ namespace Zilf.Emit.Intermediate
         private void RecordMemoryRejection(string optimization, IrOpcode opcode, IrMemoryRegion regions,
             string barrier)
         {
+#if DEBUG
             foreach (var region in Enum.GetValues<IrMemoryRegion>().Where(region => region != IrMemoryRegion.None &&
                 region != IrMemoryRegion.All && (regions & region) != 0))
                 Record($"{optimization} rejected: {opcode}: {region}: {barrier}");
+#endif
         }
 
         private static string GetBarrierKind(IrInstruction instruction, bool unknown) => instruction.Effect switch
@@ -738,24 +736,26 @@ namespace Zilf.Emit.Intermediate
             var result = instructions.SelectMany(instruction => instruction.Operands)
                 .Where(value => value.MutableExternal)
                 .Distinct().ToDictionary(value => value, _ => IrMemoryRegion.Globals);
-            var changed = true;
-            while (changed)
+            var users = BuildUsers(instructions);
+            var pending = new Queue<IrInstruction>(instructions.Where(instruction => instruction.Result != null));
+            var queued = pending.ToHashSet();
+            while (pending.TryDequeue(out var instruction))
             {
-                changed = false;
-                foreach (var instruction in instructions)
+                queued.Remove(instruction);
+                var dependencies = instruction.ReadRegions != IrMemoryRegion.None
+                    ? instruction.ReadRegions
+                    : GetReadRegions(instruction.Opcode);
+                foreach (var operand in instruction.Operands)
+                    dependencies |= result.GetValueOrDefault(operand);
+                if (dependencies == result.GetValueOrDefault(instruction.Result!))
+                    continue;
+                result[instruction.Result!] = dependencies;
+                if (!users.TryGetValue(instruction.Result!, out var consumers))
+                    continue;
+                foreach (var consumer in consumers)
                 {
-                    if (instruction.Result == null)
-                        continue;
-                    var dependencies = instruction.ReadRegions != IrMemoryRegion.None
-                        ? instruction.ReadRegions
-                        : GetReadRegions(instruction.Opcode);
-                    foreach (var operand in instruction.Operands)
-                        dependencies |= result.GetValueOrDefault(operand);
-                    if (dependencies != result.GetValueOrDefault(instruction.Result))
-                    {
-                        result[instruction.Result] = dependencies;
-                        changed = true;
-                    }
+                    if (consumer.Result != null && queued.Add(consumer))
+                        pending.Enqueue(consumer);
                 }
             }
             return result;
@@ -767,24 +767,28 @@ namespace Zilf.Emit.Intermediate
             var result = instructions.SelectMany(instruction => instruction.Operands)
                 .Where(value => value.MutableExternal && value.MemoryIdentity == null)
                 .Distinct().ToDictionary(value => value, _ => IrMemoryRegion.Globals);
-            var changed = true;
-            while (changed)
+            var users = BuildUsers(instructions);
+            var pending = new Queue<IrInstruction>(instructions.Where(instruction => instruction.Result != null));
+            var queued = pending.ToHashSet();
+            while (pending.TryDequeue(out var instruction))
             {
-                changed = false;
-                foreach (var instruction in instructions.Where(instruction => instruction.Result != null))
+                queued.Remove(instruction);
+                var dependencies = instruction.ReadIdentity == null
+                    ? instruction.ReadRegions != IrMemoryRegion.None
+                        ? instruction.ReadRegions
+                        : GetReadRegions(instruction.Opcode)
+                    : IrMemoryRegion.None;
+                foreach (var operand in instruction.Operands)
+                    dependencies |= result.GetValueOrDefault(operand);
+                if (dependencies == result.GetValueOrDefault(instruction.Result!))
+                    continue;
+                result[instruction.Result!] = dependencies;
+                if (!users.TryGetValue(instruction.Result!, out var consumers))
+                    continue;
+                foreach (var consumer in consumers)
                 {
-                    var dependencies = instruction.ReadIdentity == null
-                        ? instruction.ReadRegions != IrMemoryRegion.None
-                            ? instruction.ReadRegions
-                            : GetReadRegions(instruction.Opcode)
-                        : IrMemoryRegion.None;
-                    foreach (var operand in instruction.Operands)
-                        dependencies |= result.GetValueOrDefault(operand);
-                    if (dependencies != result.GetValueOrDefault(instruction.Result!))
-                    {
-                        result[instruction.Result!] = dependencies;
-                        changed = true;
-                    }
+                    if (consumer.Result != null && queued.Add(consumer))
+                        pending.Enqueue(consumer);
                 }
             }
             return result;
@@ -797,26 +801,44 @@ namespace Zilf.Emit.Intermediate
             var result = instructions.SelectMany(instruction => instruction.Operands)
                 .Where(value => value.MemoryIdentity != null).Distinct()
                 .ToDictionary(value => value, value => new HashSet<IrMemoryIdentity> { value.MemoryIdentity! });
-            var changed = true;
-            while (changed)
+            var users = BuildUsers(instructions);
+            var pending = new Queue<IrInstruction>(instructions.Where(instruction => instruction.Result != null));
+            var queued = pending.ToHashSet();
+            while (pending.TryDequeue(out var instruction))
             {
-                changed = false;
-                foreach (var instruction in instructions.Where(instruction => instruction.Result != null))
+                queued.Remove(instruction);
+                var dependencies = instruction.ReadIdentity == null
+                    ? []
+                    : new HashSet<IrMemoryIdentity> { instruction.ReadIdentity };
+                foreach (var operand in instruction.Operands)
                 {
-                    var dependencies = instruction.ReadIdentity == null
-                        ? []
-                        : new HashSet<IrMemoryIdentity> { instruction.ReadIdentity };
-                    foreach (var operand in instruction.Operands)
-                    {
-                        if (result.TryGetValue(operand, out var operandDependencies))
-                            dependencies.UnionWith(operandDependencies);
-                    }
-                    if (!result.TryGetValue(instruction.Result!, out var existing) ||
-                        !existing.SetEquals(dependencies))
-                    {
-                        result[instruction.Result!] = dependencies;
-                        changed = true;
-                    }
+                    if (result.TryGetValue(operand, out var operandDependencies))
+                        dependencies.UnionWith(operandDependencies);
+                }
+                if (result.TryGetValue(instruction.Result!, out var existing) && existing.SetEquals(dependencies))
+                    continue;
+                result[instruction.Result!] = dependencies;
+                if (!users.TryGetValue(instruction.Result!, out var consumers))
+                    continue;
+                foreach (var consumer in consumers)
+                {
+                    if (consumer.Result != null && queued.Add(consumer))
+                        pending.Enqueue(consumer);
+                }
+            }
+            return result;
+        }
+
+        private static Dictionary<IrValue, List<IrInstruction>> BuildUsers(IEnumerable<IrInstruction> instructions)
+        {
+            var result = new Dictionary<IrValue, List<IrInstruction>>();
+            foreach (var instruction in instructions)
+            {
+                foreach (var operand in instruction.Operands)
+                {
+                    if (!result.TryGetValue(operand, out var users))
+                        result[operand] = users = [];
+                    users.Add(instruction);
                 }
             }
             return result;
