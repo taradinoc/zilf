@@ -1072,6 +1072,21 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Routine_Effect_Summary_Degrades_Parameter_Effects_Across_Recursive_Cycle()
+        {
+            var recursive = new IrRoutineEffectSummary { IsComplete = true };
+            recursive.AddWrite(IrMemoryRegion.Tables,
+                new IrMemoryIdentity(IrMemoryRegion.Tables, recursive.GetParameterKey(0), 0, 1));
+            recursive.AddCallee(recursive, [new IrMemoryBinding(recursive.GetParameterKey(0), 1)]);
+
+            IrRoutineEffectSummary.Close([recursive]);
+
+            Assert.AreEqual(IrMemoryRegion.None, recursive.GetUnknownWrittenRegions());
+            CollectionAssert.Contains(recursive.GetWrittenIdentities().ToArray(),
+                new IrMemoryIdentity(IrMemoryRegion.Tables, recursive.GetParameterKey(0)));
+        }
+
+        [TestMethod]
         public void Gvn_Uses_Routine_Effect_Summary_At_Call()
         {
             var routine = new RoutineIr();
@@ -2531,6 +2546,144 @@ namespace Zilf.Emit.Tests
             Assert.AreEqual(42, ((IrTerminator.Return)join.Terminator).Value!.Constant);
             Assert.AreEqual(0, routine.Blocks.SelectMany(block => block.Instructions)
                 .Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
+        public void StoreToLoad_Forwards_Nonconstant_Value_With_Available_Local_Home()
+        {
+            var routine = new RoutineIr();
+            var identity = new IrMemoryIdentity(IrMemoryRegion.Tables, new object(), 4, 1);
+            var value = routine.CreateValue();
+            value.PhysicalHome = Mock.Of<ILocalBuilder>();
+            var store = routine.Append(routine.Entry, IrOpcode.TargetOperation, [value], IrEffect.WriteMemory,
+                () => { }, hasResult: false, writeRegions: IrMemoryRegion.Tables, writeIdentity: identity);
+            store.WrittenValue = value;
+            var load = routine.Append(routine.Entry, IrOpcode.LoadByte,
+                [routine.CreateValue(), routine.CreateConstant(4)], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }), readRegions: IrMemoryRegion.Tables, readIdentity: identity);
+            routine.Entry.Terminator = new IrTerminator.Return(load.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreSame(value, ((IrTerminator.Return)routine.Entry.Terminator).Value);
+            Assert.AreEqual(0, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
+        public void StoreToLoad_Does_Not_Forward_After_Source_Home_Is_Clobbered()
+        {
+            var routine = new RoutineIr();
+            var identity = new IrMemoryIdentity(IrMemoryRegion.Tables, new object(), 4, 1);
+            var home = Mock.Of<ILocalBuilder>();
+            var value = routine.CreateValue();
+            value.PhysicalHome = home;
+            var store = routine.Append(routine.Entry, IrOpcode.TargetOperation, [value], IrEffect.WriteMemory,
+                () => { }, hasResult: false, writeRegions: IrMemoryRegion.Tables, writeIdentity: identity);
+            store.WrittenValue = value;
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [routine.CreateValue()], IrEffect.Control,
+                new IrLoweringOperation(_ => { }, home), hasResult: false);
+            var load = routine.Append(routine.Entry, IrOpcode.LoadByte,
+                [routine.CreateValue(), routine.CreateConstant(4)], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }), readRegions: IrMemoryRegion.Tables, readIdentity: identity);
+            routine.Entry.Terminator = new IrTerminator.Return(load.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreEqual(1, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
+        public void StoreToLoad_Does_Not_Forward_Different_Nonconstant_Values_Through_Join()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            var identity = new IrMemoryIdentity(IrMemoryRegion.Tables, new object(), 4, 1);
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), left, right);
+            foreach (var block in new[] { left, right })
+            {
+                var value = routine.CreateValue();
+                value.PhysicalHome = Mock.Of<ILocalBuilder>();
+                var store = routine.Append(block, IrOpcode.TargetOperation, [value], IrEffect.WriteMemory,
+                    () => { }, hasResult: false, writeRegions: IrMemoryRegion.Tables, writeIdentity: identity);
+                store.WrittenValue = value;
+                block.Terminator = new IrTerminator.Jump(join);
+            }
+            var load = routine.Append(join, IrOpcode.LoadByte,
+                [routine.CreateValue(), routine.CreateConstant(4)], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }), readRegions: IrMemoryRegion.Tables, readIdentity: identity);
+            join.Terminator = new IrTerminator.Return(load.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreEqual(1, routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
+        public void Pointer_Provenance_Flows_Through_Copy_And_Constant_Offset()
+        {
+            var routine = new RoutineIr();
+            var allocation = new object();
+            var address = routine.CreateExternalValue(false, memoryIdentity:
+                new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 10));
+            var copy = routine.Append(routine.Entry, IrOpcode.Copy, [address], payload: new IrLoweringOperation(_ => { }));
+            var derived = routine.Append(routine.Entry, IrOpcode.Add, [copy.Result!, routine.CreateConstant(2)],
+                payload: new IrLoweringOperation(_ => { }));
+            var load = routine.Append(routine.Entry, IrOpcode.LoadByte, [derived.Result!, routine.CreateConstant(3)],
+                IrEffect.ReadMemory, new IrLoweringOperation(_ => { }), readRegions: IrMemoryRegion.Tables);
+            routine.Entry.Terminator = new IrTerminator.Return(load.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreEqual(new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 15, 1), load.ReadIdentity);
+        }
+
+        [TestMethod]
+        public void Pointer_Provenance_Merges_Equal_Phi_Offsets()
+        {
+            var (routine, load, allocation) = CreatePointerPhiRoutine(10, 10);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreEqual(new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 12, 1), load.ReadIdentity);
+        }
+
+        [TestMethod]
+        public void Pointer_Provenance_Retains_Allocation_But_Loses_Differing_Phi_Offset()
+        {
+            var (routine, load, allocation) = CreatePointerPhiRoutine(10, 20);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreEqual(new IrMemoryIdentity(IrMemoryRegion.Tables, allocation), load.ReadIdentity);
+        }
+
+        private static (RoutineIr Routine, IrInstruction Load, object Allocation) CreatePointerPhiRoutine(
+            int leftOffset, int rightOffset)
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), left, right);
+            left.Terminator = new IrTerminator.Jump(join);
+            right.Terminator = new IrTerminator.Jump(join);
+            var allocation = new object();
+            var leftAddress = routine.CreateExternalValue(false, memoryIdentity:
+                new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, leftOffset));
+            var rightAddress = routine.CreateExternalValue(false, memoryIdentity:
+                new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, rightOffset));
+            var phiPayload = new IrPhi(Mock.Of<ILocalBuilder>());
+            phiPayload.Incoming[left] = leftAddress;
+            phiPayload.Incoming[right] = rightAddress;
+            var phi = new IrInstruction(IrOpcode.Phi, routine.CreateValue(), [], payload: phiPayload);
+            join.Instructions.Add(phi);
+            var load = routine.Append(join, IrOpcode.LoadByte, [phi.Result!, routine.CreateConstant(2)],
+                IrEffect.ReadMemory, new IrLoweringOperation(_ => { }), readRegions: IrMemoryRegion.Tables);
+            join.Terminator = new IrTerminator.Return(load.Result);
+            return (routine, load, allocation);
         }
 
         [TestMethod]

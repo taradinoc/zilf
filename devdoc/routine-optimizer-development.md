@@ -132,6 +132,12 @@ closed-world finalization.
 A global initialized with an allocated table address can provide table points-to identity when the closed summaries
 prove that no routine can write that global. This is alias evidence only: lowering still reads the global normally.
 
+Table points-to identities propagate through SSA copies and constant address addition or subtraction. Phi nodes retain
+an allocation when every incoming pointer names that allocation; they retain an exact base offset only when every
+incoming offset agrees. A differing or unknown offset never becomes zero implicitly. Exact stores can forward their
+stored SSA value to a later matching load when all paths agree, no overlapping write intervenes, and the value still
+has a stable non-stack local home. Constants remain forwardable without a physical home.
+
 GVN computes stable versions for region-wide unknown-write epochs and every exact location used by a routine. Exact
 writes update aliasing locations; unknown writes update the region epoch and all exact locations in that region. Joins
 use stable merge versions when predecessor versions differ. Read keys contain both their exact-location versions and

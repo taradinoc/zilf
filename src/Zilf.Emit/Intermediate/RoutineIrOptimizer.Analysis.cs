@@ -25,7 +25,96 @@ namespace Zilf.Emit.Intermediate
 {
     internal sealed partial class RoutineIrOptimizer
     {
-        private void ForwardStoredConstants(RoutineIr routine)
+        private void PropagateMemoryIdentities(RoutineIr routine)
+        {
+            var changed = true;
+            var propagationIterations = 0;
+            while (changed)
+            {
+                if (propagationIterations++ > routine.Blocks.Count + 1)
+                    throw new InvalidOperationException("Memory identity propagation did not converge.");
+                changed = false;
+                foreach (var instruction in routine.Blocks.SelectMany(block => block.Instructions))
+                {
+                    if (instruction.Result != null && TryInferMemoryIdentity(instruction) is { } inferred &&
+                        instruction.Result.MemoryIdentity != inferred)
+                    {
+                        instruction.Result.MemoryIdentity = inferred;
+                        changed = true;
+                        Record("Pointer identities propagated");
+                    }
+
+                    if (instruction.ReadIdentity == null && instruction.Opcode is IrOpcode.LoadByte or IrOpcode.LoadWord &&
+                        TryGetAccessIdentity(instruction) is { } readIdentity)
+                    {
+                        instruction.ReadIdentity = readIdentity;
+                        changed = true;
+                        Record("Derived memory reads identified");
+                    }
+                }
+            }
+        }
+
+        private IrMemoryIdentity? TryInferMemoryIdentity(IrInstruction instruction)
+        {
+            if (instruction.Opcode == IrOpcode.Copy && instruction.Operands.Count == 1)
+                return instruction.Operands[0].MemoryIdentity;
+            if (instruction.Opcode == IrOpcode.Phi && instruction.Operands.Count > 0)
+            {
+                var identities = instruction.Operands.Select(operand => operand.MemoryIdentity).ToArray();
+                if (identities.Any(identity => identity is not { Region: IrMemoryRegion.Tables }))
+                    return null;
+                var first = identities[0]!;
+                if (identities.Skip(1).Any(identity => !Equals(identity!.Key, first.Key)))
+                    return null;
+                var mergedOffset = identities.All(identity => identity!.Offset == first.Offset) ? first.Offset : null;
+                return first with { Offset = mergedOffset, Length = null };
+            }
+            if (instruction.Opcode is not (IrOpcode.Add or IrOpcode.Subtract) || instruction.Operands.Count != 2)
+                return null;
+            IrMemoryIdentity? identity;
+            int delta;
+            if (instruction.Operands[0].MemoryIdentity is { Region: IrMemoryRegion.Tables } left &&
+                instruction.Operands[1].Constant is int right)
+            {
+                identity = left;
+                delta = instruction.Opcode == IrOpcode.Add ? right : -right;
+            }
+            else if (instruction.Opcode == IrOpcode.Add && instruction.Operands[0].Constant is int leftConstant &&
+                instruction.Operands[1].MemoryIdentity is { Region: IrMemoryRegion.Tables } rightIdentity)
+            {
+                identity = rightIdentity;
+                delta = leftConstant;
+            }
+            else
+                return null;
+            if (identity.Offset == null)
+                return identity with { Length = null };
+            var offset = (long)identity.Offset.Value + delta;
+            return offset is >= int.MinValue and <= int.MaxValue
+                ? identity with { Offset = (int)offset, Length = null }
+                : null;
+        }
+
+        private IrMemoryIdentity? TryGetAccessIdentity(IrInstruction instruction)
+        {
+            if (instruction.Operands.Count < 2 ||
+                instruction.Operands[0].MemoryIdentity is not { Region: IrMemoryRegion.Tables } identity)
+                return null;
+            var width = instruction.Opcode == IrOpcode.LoadByte
+                ? 1
+                : numericSemantics == IrNumericSemantics.ZMachine16 ? 2 : 4;
+            if (instruction.Operands[1].Constant is not int index)
+                return identity with { Offset = null, Length = null };
+            if (identity.Offset == null)
+                return identity with { Length = null };
+            var offset = (long)identity.Offset.Value + (long)index * width;
+            return offset is >= int.MinValue and <= int.MaxValue
+                ? identity with { Offset = (int)offset, Length = width }
+                : null;
+        }
+
+        private void ForwardStoredValues(RoutineIr routine)
         {
             routine.RebuildPredecessors();
             var input = routine.Blocks.ToDictionary(block => block,
@@ -33,8 +122,11 @@ namespace Zilf.Emit.Intermediate
             var output = routine.Blocks.ToDictionary(block => block,
                 _ => new Dictionary<IrMemoryIdentity, IrValue>());
             var changed = true;
+            var forwardingIterations = 0;
             while (changed)
             {
+                if (forwardingIterations++ > routine.Blocks.Count + 1)
+                    throw new InvalidOperationException("Store-to-load analysis did not converge.");
                 changed = false;
                 foreach (var block in routine.Blocks)
                 {
@@ -48,8 +140,8 @@ namespace Zilf.Emit.Intermediate
                     foreach (var instruction in block.Instructions)
                     {
                         KillStoredValues(current, instruction);
-                        if (instruction.WriteIdentity is { } identity && instruction.WrittenValue is
-                            { Constant: not null } value)
+                        if (instruction.WriteIdentity is { } identity && instruction.WrittenValue is { } value &&
+                            IsReusableStoredValue(value))
                             current[identity] = value;
                     }
                     if (!StoredValuesEqual(output[block], current))
@@ -67,20 +159,30 @@ namespace Zilf.Emit.Intermediate
                 foreach (var instruction in block.Instructions)
                 {
                     if (instruction.ReadIdentity is { } readIdentity && instruction.Result != null &&
-                        instruction.Payload is not IrLoweringOperation { RequiredHome: true } &&
                         current.TryGetValue(readIdentity, out var stored))
                     {
-                        replacements[instruction.Result] = stored;
-                        Record("Store-to-load forwarded constants");
+                        if (instruction.Payload is IrLoweringOperation { RequiredHome: true })
+                            Record("Store-to-load rejected: required home");
+                        else
+                        {
+                            replacements[instruction.Result] = stored;
+                            instruction.Result.PhysicalHome = stored.PhysicalHome;
+                            Record(stored.Constant != null
+                                ? "Store-to-load forwarded constants"
+                                : "Store-to-load forwarded values");
+                        }
                     }
                     KillStoredValues(current, instruction);
-                    if (instruction.WriteIdentity is { } writeIdentity && instruction.WrittenValue is
-                        { Constant: not null } value)
+                    if (instruction.WriteIdentity is { } writeIdentity && instruction.WrittenValue is { } value &&
+                        IsReusableStoredValue(value))
                         current[writeIdentity] = value;
                 }
             }
             ReplaceValues(routine, replacements);
         }
+
+        private static bool IsReusableStoredValue(IrValue value) =>
+            value.Constant != null || value.PhysicalHome is ILocalBuilder;
 
         private static Dictionary<IrMemoryIdentity, IrValue> MergeStoredValues(
             IEnumerable<Dictionary<IrMemoryIdentity, IrValue>> predecessors)
@@ -94,7 +196,7 @@ namespace Zilf.Emit.Intermediate
                 foreach (var pair in result.ToArray())
                 {
                     if (!enumerator.Current.TryGetValue(pair.Key, out var value) ||
-                        value.Constant != pair.Value.Constant)
+                        !StoredValueEqual(value, pair.Value))
                         result.Remove(pair.Key);
                 }
             }
@@ -103,7 +205,10 @@ namespace Zilf.Emit.Intermediate
 
         private static bool StoredValuesEqual(Dictionary<IrMemoryIdentity, IrValue> left,
             Dictionary<IrMemoryIdentity, IrValue> right) => left.Count == right.Count && left.All(pair =>
-                right.TryGetValue(pair.Key, out var value) && value.Constant == pair.Value.Constant);
+                right.TryGetValue(pair.Key, out var value) && StoredValueEqual(value, pair.Value));
+
+        private static bool StoredValueEqual(IrValue left, IrValue right) => ReferenceEquals(left, right) ||
+            left.Constant is int constant && right.Constant == constant;
 
         private static void KillStoredValues(Dictionary<IrMemoryIdentity, IrValue> values, IrInstruction instruction)
         {
@@ -114,8 +219,13 @@ namespace Zilf.Emit.Intermediate
             }
             var unknown = GetUnknownWrittenRegions(instruction);
             var exact = GetWrittenIdentities(instruction).ToArray();
+            var writtenHome = instruction.Payload is IrLoweringOperation
+                { ResultHome: IVariable home, IsStackResult: false }
+                ? home
+                : null;
             foreach (var identity in values.Keys.Where(identity => (unknown & identity.Region) != 0 ||
-                exact.Any(identity.MayAlias)).ToArray())
+                exact.Any(identity.MayAlias) || writtenHome != null &&
+                ReferenceEquals(values[identity].PhysicalHome, writtenHome)).ToArray())
                 values.Remove(identity);
         }
 

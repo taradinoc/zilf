@@ -60,6 +60,7 @@ namespace Zilf.Emit.Intermediate
         {
             statistics.Clear();
             routine.Verify();
+            PropagateMemoryIdentities(routine);
 #if DEBUG
             statistics["Input instructions"] = routine.Blocks.Sum(block => block.Instructions.Count);
             statistics["Input opaque operations"] = routine.Blocks.Sum(block =>
@@ -90,7 +91,7 @@ namespace Zilf.Emit.Intermediate
             SimplifyInductionVariables(routine, cfg);
             LoopInvariantCodeMotion(routine, cfg);
             EliminatePartialRedundancies(routine, cfg);
-            ForwardStoredConstants(routine);
+            ForwardStoredValues(routine);
             GlobalValueNumbering(routine, cfg);
             var changed = true;
             while (changed)

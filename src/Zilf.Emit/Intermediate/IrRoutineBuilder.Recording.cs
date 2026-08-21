@@ -174,9 +174,11 @@ namespace Zilf.Emit.Intermediate
             IrRoutineEffectSummary? callSummary = null, IrMemoryIdentity? readIdentity = null,
             IrMemoryIdentity? writeIdentity = null)
         {
+            var instructionReadIdentity = readIdentity is { IsParameterRelative: true } ? null : readIdentity;
+            var instructionWriteIdentity = writeIdentity is { IsParameterRelative: true } ? null : writeIdentity;
             var instruction = routine.Append(current, opcode, operands, effect,
                 new IrLoweringOperation(emit, resultHome, ReferenceEquals(resultHome, Stack), emitTo), hasResult,
-                readRegions, writeRegions, callSummary, readIdentity, writeIdentity);
+                readRegions, writeRegions, callSummary, instructionReadIdentity, instructionWriteIdentity);
             if (instruction.Result != null && resultHome != null)
                 instruction.Result.PhysicalHome = resultHome;
             var writtenRegions = effect switch
@@ -213,23 +215,23 @@ namespace Zilf.Emit.Intermediate
             return parameter;
         }
 
-        private IrRoutineEffectSummary BindCallSummary(IrRoutineEffectSummary callee, IReadOnlyList<IOperand> args)
+        private IrRoutineEffectSummary BindCallSummary(IrRoutineEffectSummary callee,
+            IReadOnlyList<IrValue> args)
         {
             var summary = new IrRoutineEffectSummary { IsComplete = true };
             summary.AddCallee(callee, args.Select(GetMemoryBinding).ToArray());
             return summary;
         }
 
-        private IrMemoryBinding? GetMemoryBinding(IOperand operand)
+        private IrMemoryBinding? GetMemoryBinding(IrValue value)
         {
-            if (operand is IVariable variable && parameters.TryGetValue(variable, out var parameter))
+            if (value.MemoryIdentity is { } identity)
+                return new IrMemoryBinding(identity.Key, identity.Offset ?? 0);
+            if (value.PhysicalHome is IVariable variable && parameters.TryGetValue(variable, out var parameter))
                 return new IrMemoryBinding(parameter);
-            if (operand is IMemoryAddressOperand address &&
-                address.TryGetMemoryAddress(out var allocation, out var offset))
-                return new IrMemoryBinding(allocation, offset);
-            if (operand is IConstantOperand)
-                return new IrMemoryBinding(GetStableMemoryKey(operand));
-            return null;
+            return value.PhysicalHome is IConstantOperand operand
+                ? new IrMemoryBinding(GetStableMemoryKey(operand))
+                : null;
         }
 
         private IrValue GetValue(IOperand operand)
@@ -244,6 +246,7 @@ namespace Zilf.Emit.Intermediate
             if (operand is INumericOperand numeric)
             {
                 var constant = routine.CreateConstant(numeric.Value);
+                constant.PhysicalHome = operand;
                 valueHomes[constant] = operand;
                 return constant;
             }
@@ -325,7 +328,9 @@ namespace Zilf.Emit.Intermediate
                 return null;
             if (index.Constant is not int numeric)
                 return identity with { Offset = null, Length = null };
-            var offset = (long)(identity.Offset ?? 0) + (long)numeric * scale;
+            if (identity.Offset == null)
+                return identity with { Length = null };
+            var offset = (long)identity.Offset.Value + (long)numeric * scale;
             return offset is >= int.MinValue and <= int.MaxValue
                 ? identity with { Offset = (int)offset, Length = length }
                 : null;
@@ -355,7 +360,12 @@ namespace Zilf.Emit.Intermediate
                 return;
             }
             var identity = address.MemoryIdentity!;
-            var offset = (long)(identity.Offset ?? 0) + delta;
+            if (identity.Offset == null)
+            {
+                instruction.Result.MemoryIdentity = identity with { Length = null };
+                return;
+            }
+            var offset = (long)identity.Offset.Value + delta;
             if (offset is >= int.MinValue and <= int.MaxValue)
                 instruction.Result.MemoryIdentity = identity with { Offset = (int)offset, Length = null };
         }

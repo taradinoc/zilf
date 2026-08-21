@@ -113,6 +113,10 @@ namespace Zilf.Emit.Intermediate
         internal static void FinalizeRoutines(IReadOnlyCollection<IrRoutineBuilder> routines)
         {
             IrRoutineEffectSummary.Close(routines.Select(routine => routine.effectSummary));
+            foreach (var summary in routines.SelectMany(routine => routine.routine.Blocks)
+                .SelectMany(block => block.Instructions).Select(instruction => instruction.CallSummary)
+                .OfType<IrRoutineEffectSummary>().Distinct())
+                summary.CloseBoundView();
             var hasUnknownGlobalWrite = routines.Any(routine =>
                 (routine.effectSummary.GetUnknownWrittenRegions() & IrMemoryRegion.Globals) != 0);
             var writtenGlobals = routines.SelectMany(routine => routine.effectSummary.GetWrittenIdentities())
@@ -164,4 +168,3 @@ namespace Zilf.Emit.Intermediate
 
     }
 }
-

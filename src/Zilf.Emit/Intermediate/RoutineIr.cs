@@ -112,6 +112,9 @@ namespace Zilf.Emit.Intermediate
 
     internal sealed record IrMemoryIdentity(IrMemoryRegion Region, object Key, int? Offset = null, int? Length = null)
     {
+        public bool IsParameterRelative => Key is IrParameterMemoryKey ||
+            Key is IrObjectMemberKey { Object: IrParameterMemoryKey };
+
         public bool MayAlias(IrMemoryIdentity other)
         {
             if (Region != other.Region || !Equals(Key, other.Key))
@@ -164,8 +167,32 @@ namespace Zilf.Emit.Intermediate
 
         public bool HasArgumentBindings => callees.Any(call => call.Arguments.Count > 0);
 
-        public void AddCallee(IrRoutineEffectSummary callee, IReadOnlyList<IrMemoryBinding?>? arguments = null) =>
-            callees.Add(new IrSummaryCall(callee, arguments ?? []));
+        private bool IsBoundView => directWrites == IrMemoryRegion.None && directReads == IrMemoryRegion.None &&
+            directEffects.Count == 0 && callees.Count == 1 && callees[0].Arguments.Count > 0;
+
+        public void AddCallee(IrRoutineEffectSummary callee, IReadOnlyList<IrMemoryBinding?>? arguments = null)
+        {
+            if (arguments == null && callee.IsBoundView)
+                callees.Add(new IrSummaryCall(callee.callees[0].Callee, []));
+            else
+                callees.Add(new IrSummaryCall(callee, arguments ?? []));
+        }
+
+        public void CloseBoundView()
+        {
+            if (!IsBoundView)
+                return;
+            var call = callees[0];
+            closedWrites = call.Callee.GetWrittenRegions();
+            closedUnknownWrites = BindUnknownRegions(call.Callee.GetUnknownWrittenRegions(),
+                call.Callee.GetWrittenIdentities(), call, false);
+            closedReads = call.Callee.GetReadRegions();
+            closedUnknownReads = BindUnknownRegions(call.Callee.GetUnknownReadRegions(),
+                call.Callee.GetReadIdentities(), call, false);
+            closedWriteIdentities = [.. BindIdentities(call.Callee.GetWrittenIdentities(), call, false)];
+            closedReadIdentities = [.. BindIdentities(call.Callee.GetReadIdentities(), call, false)];
+            closedEffects = [.. call.Callee.GetEffects()];
+        }
 
         public IrParameterMemoryKey GetParameterKey(int index) => new(this, index);
 
@@ -247,38 +274,114 @@ namespace Zilf.Emit.Intermediate
                 summary.closedReadIdentities = [.. summary.directReadIdentities];
                 summary.closedEffects = [.. summary.directEffects];
             }
+            var cyclicCalls = FindCyclicCalls(all);
+            var widened = new HashSet<IrRoutineEffectSummary>();
             var changed = true;
+            var iteration = 0;
             while (changed)
             {
                 changed = false;
                 foreach (var summary in all.Where(summary => summary.IsComplete))
                 {
+                    var summaryChanged = false;
                     foreach (var call in summary.callees)
                     {
                         var callee = call.Callee;
-                        changed |= Union(ref summary.closedWrites, callee.GetWrittenRegions());
-                        changed |= Union(ref summary.closedUnknownWrites,
-                            BindUnknownRegions(callee.GetUnknownWrittenRegions(), callee.GetWrittenIdentities(), call));
-                        changed |= Union(ref summary.closedReads, callee.GetReadRegions());
-                        changed |= Union(ref summary.closedUnknownReads,
-                            BindUnknownRegions(callee.GetUnknownReadRegions(), callee.GetReadIdentities(), call));
-                        changed |= Union(summary.closedWriteIdentities!, BindIdentities(callee.GetWrittenIdentities(), call));
-                        changed |= Union(summary.closedReadIdentities!, BindIdentities(callee.GetReadIdentities(), call));
-                        changed |= Union(summary.closedEffects!, callee.GetEffects());
+                        var cyclic = cyclicCalls.Contains(call);
+                        summaryChanged |= Union(ref summary.closedWrites, callee.GetWrittenRegions());
+                        summaryChanged |= Union(ref summary.closedUnknownWrites,
+                            BindUnknownRegions(callee.GetUnknownWrittenRegions(), callee.GetWrittenIdentities(), call,
+                                cyclic));
+                        summaryChanged |= Union(ref summary.closedReads, callee.GetReadRegions());
+                        summaryChanged |= Union(ref summary.closedUnknownReads,
+                            BindUnknownRegions(callee.GetUnknownReadRegions(), callee.GetReadIdentities(), call,
+                                cyclic));
+                        if (!widened.Contains(summary))
+                        {
+                            summaryChanged |= Union(summary.closedWriteIdentities!,
+                                BindIdentities(callee.GetWrittenIdentities(), call, cyclic));
+                            summaryChanged |= Union(summary.closedReadIdentities!,
+                                BindIdentities(callee.GetReadIdentities(), call, cyclic));
+                        }
+                        summaryChanged |= Union(summary.closedEffects!, callee.GetEffects());
+                    }
+                    changed |= summaryChanged;
+                    if ((iteration >= 32 || summary.closedWriteIdentities!.Count +
+                            summary.closedReadIdentities!.Count > 32) && summaryChanged && widened.Add(summary))
+                    {
+                        summary.closedUnknownWrites |= summary.closedWrites;
+                        summary.closedUnknownReads |= summary.closedReads;
+                        summary.closedWriteIdentities!.Clear();
+                        summary.closedReadIdentities!.Clear();
                     }
                 }
+                iteration++;
             }
         }
 
+        private static HashSet<IrSummaryCall> FindCyclicCalls(IEnumerable<IrRoutineEffectSummary> summaries)
+        {
+            var nextIndex = 0;
+            var nextComponent = 0;
+            var indices = new Dictionary<IrRoutineEffectSummary, int>();
+            var lowLinks = new Dictionary<IrRoutineEffectSummary, int>();
+            var components = new Dictionary<IrRoutineEffectSummary, int>();
+            var stack = new Stack<IrRoutineEffectSummary>();
+            var onStack = new HashSet<IrRoutineEffectSummary>();
+
+            void Visit(IrRoutineEffectSummary summary)
+            {
+                indices[summary] = nextIndex;
+                lowLinks[summary] = nextIndex++;
+                stack.Push(summary);
+                onStack.Add(summary);
+                foreach (var call in summary.callees)
+                {
+                    var callee = call.Callee;
+                    if (!indices.ContainsKey(callee))
+                    {
+                        Visit(callee);
+                        lowLinks[summary] = Math.Min(lowLinks[summary], lowLinks[callee]);
+                    }
+                    else if (onStack.Contains(callee))
+                        lowLinks[summary] = Math.Min(lowLinks[summary], indices[callee]);
+                }
+                if (lowLinks[summary] != indices[summary])
+                    return;
+                IrRoutineEffectSummary member;
+                do
+                {
+                    member = stack.Pop();
+                    onStack.Remove(member);
+                    components[member] = nextComponent;
+                }
+                while (!ReferenceEquals(member, summary));
+                nextComponent++;
+            }
+
+            foreach (var summary in summaries)
+            {
+                if (!indices.ContainsKey(summary))
+                    Visit(summary);
+            }
+            return summaries.SelectMany(summary => summary.callees.Select(call => (summary, call)))
+                .Where(edge => components[edge.summary] == components[edge.call.Callee] &&
+                    (!ReferenceEquals(edge.summary, edge.call.Callee) ||
+                        edge.summary.callees.Any(call => ReferenceEquals(call.Callee, edge.summary))))
+                .Select(edge => edge.call)
+                .ToHashSet();
+        }
+
         private static IEnumerable<IrMemoryIdentity> BindIdentities(IEnumerable<IrMemoryIdentity> identities,
-            IrSummaryCall call) => identities.Select(identity => BindIdentity(identity, call)).OfType<IrMemoryIdentity>();
+            IrSummaryCall call, bool cyclic) => identities
+                .Select(identity => BindIdentity(identity, call, cyclic)).OfType<IrMemoryIdentity>().ToArray();
 
         private static IrMemoryRegion BindUnknownRegions(IrMemoryRegion unknown,
-            IEnumerable<IrMemoryIdentity> identities, IrSummaryCall call)
+            IEnumerable<IrMemoryIdentity> identities, IrSummaryCall call, bool cyclic)
         {
             foreach (var identity in identities)
             {
-                if (ContainsParameter(identity.Key) && BindIdentity(identity, call) == null)
+                if (ContainsParameter(identity.Key) && BindIdentity(identity, call, cyclic) == null)
                     unknown |= identity.Region;
             }
             return unknown;
@@ -291,16 +394,18 @@ namespace Zilf.Emit.Intermediate
             _ => false,
         };
 
-        private static IrMemoryIdentity? BindIdentity(IrMemoryIdentity identity, IrSummaryCall call)
+        private static IrMemoryIdentity? BindIdentity(IrMemoryIdentity identity, IrSummaryCall call,
+            bool cyclic = false)
         {
             if (identity.Key is IrParameterMemoryKey parameter && ReferenceEquals(parameter.Owner, call.Callee))
             {
                 if (parameter.Index >= call.Arguments.Count || call.Arguments[parameter.Index] is not { } binding)
                     return null;
                 long? offset = identity.Offset == null ? null : (long)binding.Offset + identity.Offset.Value;
-                return offset is < int.MinValue or > int.MaxValue
+                var bound = offset is < int.MinValue or > int.MaxValue
                     ? null
                     : identity with { Key = binding.Key, Offset = (int?)offset };
+                return cyclic && bound != null ? bound with { Offset = null, Length = null } : bound;
             }
             if (identity.Key is IrObjectMemberKey { Object: IrParameterMemoryKey memberParameter } member &&
                 ReferenceEquals(memberParameter.Owner, call.Callee))

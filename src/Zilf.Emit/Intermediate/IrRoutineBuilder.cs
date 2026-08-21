@@ -540,7 +540,6 @@ namespace Zilf.Emit.Intermediate
         public void EmitCall(IOperand routineOperand, IOperand[] args, IVariable? result)
         {
             var calleeSummary = (routineOperand as IrRoutineBuilder)?.EffectSummary;
-            var callSummary = calleeSummary == null ? null : BindCallSummary(calleeSummary, args);
             var operands = new IOperand[args.Length + 1];
             operands[0] = routineOperand;
             Array.Copy(args, 0, operands, 1, args.Length);
@@ -553,6 +552,7 @@ namespace Zilf.Emit.Intermediate
             }
 
             var values = operands.Select(GetValue).ToArray();
+            var callSummary = calleeSummary == null ? null : BindCallSummary(calleeSummary, values.Skip(1).ToArray());
             PreserveStackValues();
             if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)))
             {
