@@ -1407,6 +1407,40 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Licm_Eliminates_Duplicate_Invariant_Expressions_With_Equivalent_Global_Snapshots()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var globalIdentity = new IrMemoryIdentity(IrMemoryRegion.Globals, new object());
+            var firstGlobal = routine.CreateExternalValue(true, false, globalIdentity);
+            var secondGlobal = routine.CreateExternalValue(true, false, globalIdentity);
+            var one = routine.CreateConstant(1);
+            var stack = Mock.Of<IVariable>();
+            var temporary = Mock.Of<IVariable>();
+            var callSummary = new IrRoutineEffectSummary { IsComplete = true };
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var first = routine.Append(header, IrOpcode.Subtract, [firstGlobal, one], payload:
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }));
+            routine.Append(header, IrOpcode.TargetOperation, [first.Result!], IrEffect.Call,
+                callSummary: callSummary);
+            var second = routine.Append(header, IrOpcode.Subtract, [secondGlobal, one], payload:
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }));
+            routine.Append(header, IrOpcode.TargetOperation, [second.Result!], IrEffect.Call,
+                callSummary: callSummary);
+            header.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer(acquireTemporary: () => temporary).Optimize(routine);
+
+            Assert.AreEqual(1, routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Opcode == IrOpcode.Subtract));
+            Assert.AreSame(first.Result, ((IrTerminator.Return)exit.Terminator).Value);
+        }
+
+        [TestMethod]
         public void Licm_Hoists_Unchanged_Table_Read_From_Loop_Header()
         {
             var routine = new RoutineIr();

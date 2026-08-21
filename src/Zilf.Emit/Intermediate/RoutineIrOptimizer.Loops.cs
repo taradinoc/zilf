@@ -260,15 +260,19 @@ namespace Zilf.Emit.Intermediate
                                 Record("LICM rejected: conditional execution");
                                 continue;
                             }
-                            if (instruction.IsPure && instruction.Payload is IrLoweringOperation
-                                { IsStackResult: true } && loop.Preheader.Instructions.Any(prior =>
-                                    EquivalentExpression(prior, instruction) &&
+                            var availablePrior = instruction.IsPure && instruction.Payload is IrLoweringOperation
+                                { IsStackResult: true }
+                                ? loop.Preheader.Instructions.FirstOrDefault(prior =>
+                                    EquivalentLoopInvariantExpression(prior, instruction) &&
                                     prior.Payload is IrLoweringOperation
                                     {
                                         ResultHome: not null,
                                         IsStackResult: false,
-                                    }))
+                                    })
+                                : null;
+                            if (availablePrior != null)
                             {
+                                CanonicalizeLoopInvariantOperands(availablePrior, instruction);
                                 Record("LICM deferred: already available");
                                 continue;
                             }
@@ -307,6 +311,47 @@ namespace Zilf.Emit.Intermediate
             }
             return true;
         }
+
+        private static bool EquivalentLoopInvariantExpression(IrInstruction left, IrInstruction right)
+        {
+            if (left.Result == null || !IsValueNumberable(left) || left.Opcode != right.Opcode ||
+                left.Operands.Count != right.Operands.Count)
+                return false;
+            if (!IsCommutative(left.Opcode))
+                return left.Operands.Zip(right.Operands).All(pair =>
+                    LoopInvariantValuesEquivalent(pair.First, pair.Second));
+            var unmatched = right.Operands.ToList();
+            foreach (var operand in left.Operands)
+            {
+                var index = unmatched.FindIndex(candidate => LoopInvariantValuesEquivalent(operand, candidate));
+                if (index < 0)
+                    return false;
+                unmatched.RemoveAt(index);
+            }
+            return true;
+        }
+
+        private static void CanonicalizeLoopInvariantOperands(IrInstruction canonical, IrInstruction duplicate)
+        {
+            if (!IsCommutative(canonical.Opcode))
+            {
+                for (var i = 0; i < canonical.Operands.Count; i++)
+                    duplicate.Operands[i] = canonical.Operands[i];
+                return;
+            }
+            var unmatched = duplicate.Operands.ToList();
+            for (var i = 0; i < canonical.Operands.Count; i++)
+            {
+                var index = unmatched.FindIndex(candidate =>
+                    LoopInvariantValuesEquivalent(canonical.Operands[i], candidate));
+                duplicate.Operands[i] = canonical.Operands[i];
+                unmatched.RemoveAt(index);
+            }
+        }
+
+        private static bool LoopInvariantValuesEquivalent(IrValue left, IrValue right) =>
+            StateValuesEquivalent(left, right) || left.MutableExternal && right.MutableExternal &&
+            left.MemoryIdentity != null && left.MemoryIdentity.Equals(right.MemoryIdentity);
 
         private bool TryPrepareLicmHome(IrInstruction instruction, IReadOnlySet<IVariable> clobberedHomes)
         {
@@ -363,4 +408,3 @@ namespace Zilf.Emit.Intermediate
 
     }
 }
-
