@@ -120,11 +120,14 @@ indices produce byte ranges, while dynamic indices retain allocation identity wi
 allocations do not alias, and ranges in one allocation alias only when they overlap or either range is unknown.
 Properties, attributes, and object-tree state remain region-wide.
 
-Routine summaries record exact and unknown reads and writes plus non-memory effects. Once all sealed routines are
-available, recursive summary queries compute transitive effects over the closed direct-call graph. Optimizer call
-handling consumes exact effects; indirect, external, incomplete, and opaque calls remain region-wide barriers. The IR
-recorder itself still invalidates cached mutable global operands at region granularity while recording, because this
-happens before closed-world finalization.
+Routine summaries record exact and unknown reads and writes plus non-memory effects. Formal parameters used as table
+roots or constant-member objects retain symbolic identities in the summary. Direct-call edges bind those identities to
+the caller's constant allocation, object, or enclosing formal parameter; unresolved arguments degrade only the
+affected region to an unknown access. Once all sealed routines are available, the binding-aware fixed point computes
+transitive effects over the closed direct-call graph, including recursion. Optimizer call handling consumes the bound
+exact effects; indirect, external, incomplete, and opaque calls remain region-wide barriers. The IR recorder itself
+still invalidates cached mutable global operands at region granularity while recording, because this happens before
+closed-world finalization.
 
 A global initialized with an allocated table address can provide table points-to identity when the closed summaries
 prove that no routine can write that global. This is alias evidence only: lowering still reads the global normally.

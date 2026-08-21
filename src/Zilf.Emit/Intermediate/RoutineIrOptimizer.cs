@@ -70,6 +70,12 @@ namespace Zilf.Emit.Intermediate
             Record("Calls with precise effects", routine.Blocks.SelectMany(block => block.Instructions)
                 .Count(instruction => instruction.Effect == IrEffect.Call && instruction.CallSummary != null &&
                     instruction.CallSummary.GetUnknownWrittenRegions() != IrMemoryRegion.All));
+            Record("Calls with bound exact writes", routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.CallSummary is { HasArgumentBindings: true } summary &&
+                    summary.GetWrittenIdentities().Count > 0));
+            Record("Calls with unresolved bound writes", routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.CallSummary is { HasArgumentBindings: true } summary &&
+                    summary.GetUnknownWrittenRegions() != IrMemoryRegion.None));
 #endif
             ProtectCopiesAcrossClobbers(routine);
             CoalesceMaterializationDestinations(routine);

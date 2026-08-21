@@ -1021,6 +1021,57 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Routine_Effect_Summary_Binds_Parameter_Relative_Table_Write()
+        {
+            var callee = new IrRoutineEffectSummary { IsComplete = true };
+            callee.AddWrite(IrMemoryRegion.Tables,
+                new IrMemoryIdentity(IrMemoryRegion.Tables, callee.GetParameterKey(0), 3, 1));
+            var caller = new IrRoutineEffectSummary { IsComplete = true };
+            var allocation = new object();
+            caller.AddCallee(callee, [new IrMemoryBinding(allocation, 5)]);
+
+            IrRoutineEffectSummary.Close([caller, callee]);
+
+            CollectionAssert.Contains(caller.GetWrittenIdentities().ToArray(),
+                new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 8, 1));
+            Assert.AreEqual(IrMemoryRegion.None, caller.GetUnknownWrittenRegions());
+        }
+
+        [TestMethod]
+        public void Routine_Effect_Summary_Degrades_Unbound_Parameter_Write_To_Its_Region()
+        {
+            var callee = new IrRoutineEffectSummary { IsComplete = true };
+            callee.AddWrite(IrMemoryRegion.Properties,
+                new IrMemoryIdentity(IrMemoryRegion.Properties,
+                    new IrObjectMemberKey(callee.GetParameterKey(0), new object())));
+            var caller = new IrRoutineEffectSummary { IsComplete = true };
+            caller.AddCallee(callee, [null]);
+
+            IrRoutineEffectSummary.Close([caller, callee]);
+
+            Assert.AreEqual(IrMemoryRegion.Properties, caller.GetUnknownWrittenRegions());
+            Assert.AreEqual(0, caller.GetWrittenIdentities().Count);
+        }
+
+        [TestMethod]
+        public void Routine_Effect_Summary_Composes_Parameter_Bindings_Across_Calls()
+        {
+            var leaf = new IrRoutineEffectSummary { IsComplete = true };
+            leaf.AddWrite(IrMemoryRegion.Tables,
+                new IrMemoryIdentity(IrMemoryRegion.Tables, leaf.GetParameterKey(0), 2, 1));
+            var middle = new IrRoutineEffectSummary { IsComplete = true };
+            middle.AddCallee(leaf, [new IrMemoryBinding(middle.GetParameterKey(0), 4)]);
+            var root = new IrRoutineEffectSummary { IsComplete = true };
+            var allocation = new object();
+            root.AddCallee(middle, [new IrMemoryBinding(allocation, 8)]);
+
+            IrRoutineEffectSummary.Close([root, middle, leaf]);
+
+            CollectionAssert.Contains(root.GetWrittenIdentities().ToArray(),
+                new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 14, 1));
+        }
+
+        [TestMethod]
         public void Gvn_Uses_Routine_Effect_Summary_At_Call()
         {
             var routine = new RoutineIr();

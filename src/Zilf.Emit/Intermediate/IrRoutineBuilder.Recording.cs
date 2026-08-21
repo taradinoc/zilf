@@ -206,6 +206,32 @@ namespace Zilf.Emit.Intermediate
             return local;
         }
 
+        private ILocalBuilder TrackParameter(ILocalBuilder parameter)
+        {
+            TrackLocal(parameter);
+            parameters.Add(parameter, effectSummary.GetParameterKey(parameters.Count));
+            return parameter;
+        }
+
+        private IrRoutineEffectSummary BindCallSummary(IrRoutineEffectSummary callee, IReadOnlyList<IOperand> args)
+        {
+            var summary = new IrRoutineEffectSummary { IsComplete = true };
+            summary.AddCallee(callee, args.Select(GetMemoryBinding).ToArray());
+            return summary;
+        }
+
+        private IrMemoryBinding? GetMemoryBinding(IOperand operand)
+        {
+            if (operand is IVariable variable && parameters.TryGetValue(variable, out var parameter))
+                return new IrMemoryBinding(parameter);
+            if (operand is IMemoryAddressOperand address &&
+                address.TryGetMemoryAddress(out var allocation, out var offset))
+                return new IrMemoryBinding(allocation, offset);
+            if (operand is IConstantOperand)
+                return new IrMemoryBinding(GetStableMemoryKey(operand));
+            return null;
+        }
+
         private IrValue GetValue(IOperand operand)
         {
             if (ReferenceEquals(operand, Stack) && stackValues.Count > 0)
@@ -253,17 +279,36 @@ namespace Zilf.Emit.Intermediate
                 ? new IrMemoryIdentity(region, GetStableMemoryKey(operand))
                 : null;
 
-        private static IrMemoryIdentity? TryGetObjectMemberIdentity(IOperand obj, IOperand member,
-            IrMemoryRegion region) => obj is IConstantOperand && member is IConstantOperand
+        private IrMemoryIdentity? TryGetObjectMemberIdentity(IOperand obj, IOperand member,
+            IrMemoryRegion region)
+        {
+            var objectKey = obj switch
+            {
+                IConstantOperand => GetStableMemoryKey(obj),
+                IVariable variable when parameters.TryGetValue(variable, out var parameter) => parameter,
+                _ => null,
+            };
+            return objectKey != null && member is IConstantOperand
                 ? new IrMemoryIdentity(region,
-                    new IrObjectMemberKey(GetStableMemoryKey(obj), GetStableMemoryKey(member)))
+                    new IrObjectMemberKey(objectKey, GetStableMemoryKey(member)))
                 : null;
+        }
 
-        private static IrMemoryIdentity? TryGetTableMemoryIdentity(IOperand address, IOperand index, int scale,
+        private IrMemoryIdentity? TryGetTableMemoryIdentity(IOperand address, IOperand index, int scale,
             int length)
         {
-            if (address is not IMemoryAddressOperand memoryAddress ||
-                !memoryAddress.TryGetMemoryAddress(out var allocation, out var baseOffset))
+            object allocation;
+            int baseOffset;
+            if (address is IMemoryAddressOperand memoryAddress &&
+                memoryAddress.TryGetMemoryAddress(out allocation, out baseOffset))
+            {
+            }
+            else if (address is IVariable variable && parameters.TryGetValue(variable, out var parameter))
+            {
+                allocation = parameter;
+                baseOffset = 0;
+            }
+            else
                 return null;
             if (index is not INumericOperand numeric)
                 return new IrMemoryIdentity(IrMemoryRegion.Tables, allocation);

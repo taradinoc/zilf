@@ -125,9 +125,16 @@ namespace Zilf.Emit.Intermediate
 
     internal readonly record struct IrObjectMemberKey(object Object, object Member);
 
+    internal sealed record IrParameterMemoryKey(IrRoutineEffectSummary Owner, int Index);
+
+    internal readonly record struct IrMemoryBinding(object Key, int Offset = 0);
+
+    internal sealed record IrSummaryCall(IrRoutineEffectSummary Callee,
+        IReadOnlyList<IrMemoryBinding?> Arguments);
+
     internal sealed class IrRoutineEffectSummary
     {
-        private readonly List<IrRoutineEffectSummary> callees = [];
+        private readonly List<IrSummaryCall> callees = [];
         private readonly HashSet<IrMemoryIdentity> directWriteIdentities = [];
         private readonly HashSet<IrMemoryIdentity> directReadIdentities = [];
         private readonly HashSet<IrEffect> directEffects = [];
@@ -155,7 +162,12 @@ namespace Zilf.Emit.Intermediate
 
         public bool IsComplete { get; set; }
 
-        public void AddCallee(IrRoutineEffectSummary callee) => callees.Add(callee);
+        public bool HasArgumentBindings => callees.Any(call => call.Arguments.Count > 0);
+
+        public void AddCallee(IrRoutineEffectSummary callee, IReadOnlyList<IrMemoryBinding?>? arguments = null) =>
+            callees.Add(new IrSummaryCall(callee, arguments ?? []));
+
+        public IrParameterMemoryKey GetParameterKey(int index) => new(this, index);
 
         public void AddWrite(IrMemoryRegion regions, IrMemoryIdentity? identity = null)
         {
@@ -215,7 +227,16 @@ namespace Zilf.Emit.Intermediate
 
         public static void Close(IEnumerable<IrRoutineEffectSummary> summaries)
         {
-            var all = summaries.Distinct().ToArray();
+            var discovered = new HashSet<IrRoutineEffectSummary>();
+            var pending = new Stack<IrRoutineEffectSummary>(summaries);
+            while (pending.TryPop(out var summary))
+            {
+                if (!discovered.Add(summary))
+                    continue;
+                foreach (var call in summary.callees)
+                    pending.Push(call.Callee);
+            }
+            var all = discovered.ToArray();
             foreach (var summary in all)
             {
                 summary.closedWrites = summary.IsComplete ? summary.directWrites : IrMemoryRegion.All;
@@ -232,18 +253,64 @@ namespace Zilf.Emit.Intermediate
                 changed = false;
                 foreach (var summary in all.Where(summary => summary.IsComplete))
                 {
-                    foreach (var callee in summary.callees)
+                    foreach (var call in summary.callees)
                     {
+                        var callee = call.Callee;
                         changed |= Union(ref summary.closedWrites, callee.GetWrittenRegions());
-                        changed |= Union(ref summary.closedUnknownWrites, callee.GetUnknownWrittenRegions());
+                        changed |= Union(ref summary.closedUnknownWrites,
+                            BindUnknownRegions(callee.GetUnknownWrittenRegions(), callee.GetWrittenIdentities(), call));
                         changed |= Union(ref summary.closedReads, callee.GetReadRegions());
-                        changed |= Union(ref summary.closedUnknownReads, callee.GetUnknownReadRegions());
-                        changed |= Union(summary.closedWriteIdentities!, callee.GetWrittenIdentities());
-                        changed |= Union(summary.closedReadIdentities!, callee.GetReadIdentities());
+                        changed |= Union(ref summary.closedUnknownReads,
+                            BindUnknownRegions(callee.GetUnknownReadRegions(), callee.GetReadIdentities(), call));
+                        changed |= Union(summary.closedWriteIdentities!, BindIdentities(callee.GetWrittenIdentities(), call));
+                        changed |= Union(summary.closedReadIdentities!, BindIdentities(callee.GetReadIdentities(), call));
                         changed |= Union(summary.closedEffects!, callee.GetEffects());
                     }
                 }
             }
+        }
+
+        private static IEnumerable<IrMemoryIdentity> BindIdentities(IEnumerable<IrMemoryIdentity> identities,
+            IrSummaryCall call) => identities.Select(identity => BindIdentity(identity, call)).OfType<IrMemoryIdentity>();
+
+        private static IrMemoryRegion BindUnknownRegions(IrMemoryRegion unknown,
+            IEnumerable<IrMemoryIdentity> identities, IrSummaryCall call)
+        {
+            foreach (var identity in identities)
+            {
+                if (ContainsParameter(identity.Key) && BindIdentity(identity, call) == null)
+                    unknown |= identity.Region;
+            }
+            return unknown;
+        }
+
+        private static bool ContainsParameter(object key) => key switch
+        {
+            IrParameterMemoryKey => true,
+            IrObjectMemberKey member => ContainsParameter(member.Object),
+            _ => false,
+        };
+
+        private static IrMemoryIdentity? BindIdentity(IrMemoryIdentity identity, IrSummaryCall call)
+        {
+            if (identity.Key is IrParameterMemoryKey parameter && ReferenceEquals(parameter.Owner, call.Callee))
+            {
+                if (parameter.Index >= call.Arguments.Count || call.Arguments[parameter.Index] is not { } binding)
+                    return null;
+                long? offset = identity.Offset == null ? null : (long)binding.Offset + identity.Offset.Value;
+                return offset is < int.MinValue or > int.MaxValue
+                    ? null
+                    : identity with { Key = binding.Key, Offset = (int?)offset };
+            }
+            if (identity.Key is IrObjectMemberKey { Object: IrParameterMemoryKey memberParameter } member &&
+                ReferenceEquals(memberParameter.Owner, call.Callee))
+            {
+                if (memberParameter.Index >= call.Arguments.Count ||
+                    call.Arguments[memberParameter.Index] is not { } binding)
+                    return null;
+                return identity with { Key = member with { Object = binding.Key } };
+            }
+            return identity;
         }
 
         private static bool Union(ref IrMemoryRegion? target, IrMemoryRegion value)
@@ -268,8 +335,8 @@ namespace Zilf.Emit.Intermediate
             if (!active.Add(this))
                 return selector(this);
             var result = selector(this);
-            foreach (var callee in callees)
-                result |= callee.CollectRegions(selector, active);
+            foreach (var call in callees)
+                result |= call.Callee.CollectRegions(selector, active);
             active.Remove(this);
             return result;
         }
@@ -280,8 +347,8 @@ namespace Zilf.Emit.Intermediate
             if (!IsComplete || !active.Add(this))
                 return;
             result.UnionWith(selector(this));
-            foreach (var callee in callees)
-                callee.CollectSet(result, selector, active);
+            foreach (var call in callees)
+                call.Callee.CollectSet(result, selector, active);
             active.Remove(this);
         }
 
@@ -292,8 +359,8 @@ namespace Zilf.Emit.Intermediate
             if (!active.Add(this))
                 return DirectWrites;
             var result = DirectWrites;
-            foreach (var callee in callees)
-                result |= callee.GetWrittenRegions(active);
+            foreach (var call in callees)
+                result |= call.Callee.GetWrittenRegions(active);
             active.Remove(this);
             return result;
         }
@@ -305,8 +372,8 @@ namespace Zilf.Emit.Intermediate
             if (!active.Add(this))
                 return directUnknownWrites;
             var result = directUnknownWrites;
-            foreach (var callee in callees)
-                result |= callee.GetUnknownWrittenRegions(active);
+            foreach (var call in callees)
+                result |= call.Callee.GetUnknownWrittenRegions(active);
             active.Remove(this);
             return result;
         }
@@ -317,8 +384,8 @@ namespace Zilf.Emit.Intermediate
             if (!IsComplete || !active.Add(this))
                 return;
             result.UnionWith(directWriteIdentities);
-            foreach (var callee in callees)
-                callee.CollectWrittenIdentities(result, active);
+            foreach (var call in callees)
+                call.Callee.CollectWrittenIdentities(result, active);
             active.Remove(this);
         }
     }

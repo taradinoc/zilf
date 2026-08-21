@@ -41,6 +41,7 @@ namespace Zilf.Emit.Intermediate
         private readonly Dictionary<ILabel, IrBlock> labelBlocks = [];
         private readonly Dictionary<IrBlock, ILabel> blockLabels = [];
         private readonly HashSet<IVariable> locals = [];
+        private readonly Dictionary<IVariable, IrParameterMemoryKey> parameters = [];
         private readonly HashSet<IVariable> compilerTemporaries = [];
         private readonly Dictionary<IVariable, IrValue> localValues = [];
         private readonly HashSet<IVariable> dirtyLocals = [];
@@ -117,10 +118,10 @@ namespace Zilf.Emit.Intermediate
         public IConstantOperand Add(IConstantOperand other) =>
             target.Add(other is IrRoutineBuilder ir ? (IConstantOperand)ir.Target : other);
 
-        public ILocalBuilder DefineRequiredParameter(string name) => TrackLocal(target.DefineRequiredParameter(name));
+        public ILocalBuilder DefineRequiredParameter(string name) => TrackParameter(target.DefineRequiredParameter(name));
 
         public ILocalBuilder DefineOptionalParameter(string paramName) =>
-            TrackLocal(target.DefineOptionalParameter(paramName));
+            TrackParameter(target.DefineOptionalParameter(paramName));
 
         public ILocalBuilder DefineLocal(string localName)
         {
@@ -538,7 +539,8 @@ namespace Zilf.Emit.Intermediate
 
         public void EmitCall(IOperand routineOperand, IOperand[] args, IVariable? result)
         {
-            var callSummary = (routineOperand as IrRoutineBuilder)?.EffectSummary;
+            var calleeSummary = (routineOperand as IrRoutineBuilder)?.EffectSummary;
+            var callSummary = calleeSummary == null ? null : BindCallSummary(calleeSummary, args);
             var operands = new IOperand[args.Length + 1];
             operands[0] = routineOperand;
             Array.Copy(args, 0, operands, 1, args.Length);
