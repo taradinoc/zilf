@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -29,6 +30,46 @@ namespace Zilf.Emit.Tests
     [TestClass]
     public sealed class RoutineIrTests
     {
+        [TestMethod]
+        public void MemoryAddressOperand_Resolves_Address_On_Either_Side()
+        {
+            var allocation = new object();
+            var address = CreateAddressOperand(allocation, 10);
+            var offset = CreateNumericOperand(4);
+
+            Assert.IsTrue(MemoryAddressOperand.TryGetSumAddress(address, offset, out var forwardAllocation,
+                out var forwardOffset));
+            Assert.AreSame(allocation, forwardAllocation);
+            Assert.AreEqual(14, forwardOffset);
+            Assert.IsTrue(MemoryAddressOperand.TryGetSumAddress(offset, address, out var reverseAllocation,
+                out var reverseOffset));
+            Assert.AreSame(allocation, reverseAllocation);
+            Assert.AreEqual(14, reverseOffset);
+        }
+
+        [TestMethod]
+        public void MemoryAddressOperand_Resolves_Nested_Sums()
+        {
+            var allocation = new object();
+            IConstantOperand nested = new Zilf.Emit.Zap.SumOperand(CreateAddressOperand(allocation, 3),
+                CreateNumericOperand(4));
+
+            Assert.IsTrue(MemoryAddressOperand.TryGetSumAddress(nested, CreateNumericOperand(5),
+                out var actualAllocation, out var offset));
+            Assert.AreSame(allocation, actualAllocation);
+            Assert.AreEqual(12, offset);
+        }
+
+        [TestMethod]
+        public void MemoryAddressOperand_Rejects_Unsupported_And_Overflowing_Sums()
+        {
+            var unsupported = Mock.Of<IConstantOperand>();
+            Assert.IsFalse(MemoryAddressOperand.TryGetSumAddress(unsupported, unsupported, out _, out _));
+
+            var address = CreateAddressOperand(new object(), int.MaxValue);
+            Assert.IsFalse(MemoryAddressOperand.TryGetSumAddress(address, CreateNumericOperand(1), out _, out _));
+        }
+
         [TestMethod]
         public void Ssa_Promotion_Inserts_Phi_At_Local_Join()
         {
@@ -1620,6 +1661,51 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void IrRoutineCoordinator_Finalizes_In_Order_And_Clears_Pending_Routines()
+        {
+            var finalizationOrder = new List<string>();
+            var coordinator = new IrRoutineCoordinator();
+
+            IrRoutineBuilder CreateBuilder(string name)
+            {
+                var target = new Mock<IRoutineBuilder>();
+                target.SetupGet(item => item.RoutineStart).Returns(Mock.Of<ILabel>());
+                target.SetupGet(item => item.RTrue).Returns(Mock.Of<ILabel>());
+                target.SetupGet(item => item.RFalse).Returns(Mock.Of<ILabel>());
+                target.Setup(item => item.Finish()).Callback(() => finalizationOrder.Add(name));
+                return new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, optimize: true,
+                    deferFinalization: coordinator.Add);
+            }
+
+            var first = CreateBuilder("first");
+            var second = CreateBuilder("second");
+            first.EmitQuit();
+            first.Finish();
+            second.EmitQuit();
+            second.Finish();
+
+            Assert.AreEqual(2, coordinator.PendingCount);
+            coordinator.FinalizeRoutines();
+
+            CollectionAssert.AreEqual(new[] { "first", "second" }, finalizationOrder);
+            Assert.AreEqual(0, coordinator.PendingCount);
+        }
+
+#if DEBUG
+        [TestMethod]
+        public void IrRoutineCoordinator_Aggregates_Optimization_Statistics()
+        {
+            var coordinator = new IrRoutineCoordinator();
+            coordinator.RecordOptimizationStatistics([new("folded", 2), new("folded", 3)]);
+            using var writer = new StringWriter();
+
+            coordinator.WriteOptimizationStatistics(writer, "\t");
+
+            StringAssert.Contains(writer.ToString(), "\t;   folded: 5");
+        }
+#endif
+
+        [TestMethod]
         public void IrRoutineBuilder_DisableOptimization_Preserves_Unreachable_Operations()
         {
             var (builder, target, label) = CreateRecordingBuilder(optimize: false);
@@ -2205,6 +2291,29 @@ namespace Zilf.Emit.Tests
         {
             var lowering = new IrLoweringOperation(_ => { }, home) { IsMaterialization = true };
             routine.Append(block, IrOpcode.TargetOperation, [value], IrEffect.Control, lowering, hasResult: false);
+        }
+
+        private static IConstantOperand CreateAddressOperand(object allocation, int offset)
+            => new TestAddressOperand(allocation, offset);
+
+        private static INumericOperand CreateNumericOperand(int value)
+        {
+            var operand = new Mock<INumericOperand>();
+            operand.SetupGet(numeric => numeric.Value).Returns(value);
+            return operand.Object;
+        }
+
+        private sealed class TestAddressOperand(object allocation, int offset) :
+            IConstantOperand, IMemoryAddressOperand
+        {
+            public IConstantOperand Add(IConstantOperand other) => throw new NotSupportedException();
+
+            public bool TryGetMemoryAddress(out object actualAllocation, out int actualOffset)
+            {
+                actualAllocation = allocation;
+                actualOffset = offset;
+                return true;
+            }
         }
 
         private static (IrRoutineBuilder Builder, Mock<IRoutineBuilder> Target, ILabel Label)

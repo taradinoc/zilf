@@ -62,7 +62,7 @@ namespace Zilf.Emit.Zap
         readonly List<TableBuilder> impureTables = new(10);
         readonly List<TableBuilder> pureTables = new(10);
         readonly List<WordBuilder> vocabulary = new(100);
-        readonly List<IrRoutineBuilder> irRoutines = [];
+        readonly IrRoutineCoordinator irRoutineCoordinator = new();
         readonly HashSet<char> siBreaks = new();
         readonly Dictionary<string, IOperand> stringPool = new(100);
         readonly Dictionary<int, NumericOperand> numberPool = new(50);
@@ -81,7 +81,6 @@ namespace Zilf.Emit.Zap
 
 #if DEBUG
         readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
-        readonly Dictionary<string, int> irOptimizationStats = new(StringComparer.Ordinal);
 #endif
 
         IRoutineBuilder? entryRoutine;
@@ -366,7 +365,8 @@ namespace Zilf.Emit.Zap
             var result = new IrRoutineBuilder(target, IrNumericSemantics.ZMachine16, optimizeRoutineIr, MakeOperand,
                 preferConstantHome: operand => operand is not INumericOperand numeric ||
                     (ushort)numeric.Value > byte.MaxValue,
-                recordOptimizationStats: RecordIrOptimizationStats, deferFinalization: irRoutines.Add);
+                recordOptimizationStats: irRoutineCoordinator.RecordOptimizationStatistics,
+                deferFinalization: irRoutineCoordinator.Add);
             symbols.Add(name, "routine");
 
             if (entryPoint)
@@ -544,8 +544,7 @@ namespace Zilf.Emit.Zap
 
         public void Finish()
         {
-            IrRoutineBuilder.FinalizeRoutines(irRoutines);
-            irRoutines.Clear();
+            irRoutineCoordinator.FinalizeRoutines();
 
             // finish main file
             writer.WriteLine();
@@ -988,12 +987,6 @@ namespace Zilf.Emit.Zap
         }
 
 #if DEBUG
-        internal void RecordIrOptimizationStats(IEnumerable<IrOptimizationStat> stats)
-        {
-            foreach (var stat in stats)
-                irOptimizationStats[stat.Name] = irOptimizationStats.GetValueOrDefault(stat.Name) + stat.Count;
-        }
-
         internal void RecordPeepholeStats(IEnumerable<PeepholeOptimizationStat> stats)
         {
             foreach (var stat in stats)
@@ -1016,13 +1009,7 @@ namespace Zilf.Emit.Zap
 
         void WritePeepholeStats()
         {
-            if (irOptimizationStats.Count != 0)
-            {
-                writer.WriteLine(INDENT + "; Routine IR optimization statistics (debug build)");
-                foreach (var entry in irOptimizationStats.OrderBy(static entry => entry.Key, StringComparer.Ordinal))
-                    writer.WriteLine(INDENT + $";   {entry.Key}: {entry.Value}");
-                writer.WriteLine();
-            }
+            irRoutineCoordinator.WriteOptimizationStatistics(writer, INDENT);
 
             if (peepholeStats.Count == 0)
                 return;
@@ -1043,10 +1030,5 @@ namespace Zilf.Emit.Zap
         }
 #endif
 
-#if !DEBUG
-        private static void RecordIrOptimizationStats(IEnumerable<IrOptimizationStat> stats)
-        {
-        }
-#endif
     }
 }

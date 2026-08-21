@@ -41,29 +41,6 @@ namespace Zilf.Emit.Zap
         }
 
         public bool TryGetMemoryAddress(out object allocation, out int offset)
-        {
-            if (Left is IMemoryAddressOperand address && Right is INumericOperand numeric &&
-                address.TryGetMemoryAddress(out allocation, out offset))
-            {
-                return TryAddOffset(numeric.Value, ref offset);
-            }
-            if (Right is IMemoryAddressOperand reverseAddress && Left is INumericOperand reverseNumeric &&
-                reverseAddress.TryGetMemoryAddress(out allocation, out offset))
-            {
-                return TryAddOffset(reverseNumeric.Value, ref offset);
-            }
-            allocation = null!;
-            offset = 0;
-            return false;
-        }
-
-        private static bool TryAddOffset(int value, ref int offset)
-        {
-            var result = (long)offset + value;
-            if (result is < int.MinValue or > int.MaxValue)
-                return false;
-            offset = (int)result;
-            return true;
-        }
+            => MemoryAddressOperand.TryGetSumAddress(Left, Right, out allocation, out offset);
     }
 }

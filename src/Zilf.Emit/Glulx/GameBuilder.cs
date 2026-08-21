@@ -53,7 +53,7 @@ namespace Zilf.Emit.Glulx
         private protected readonly List<TableBuilder> pureTables = new(10);
         private protected readonly List<(TableBuilder Table, string OriginalName)> tracedTables = new(10);
         private protected readonly List<WordBuilder> vocabulary = new(100);
-        private protected readonly List<IrRoutineBuilder> irRoutines = [];
+        private protected readonly IrRoutineCoordinator irRoutineCoordinator = new();
         private protected readonly HashSet<char> siBreaks = new();
         private protected readonly Dictionary<string, IOperand> stringPool = new(100);
         private protected readonly Dictionary<int, NumericOperand> numberPool = new(50);
@@ -66,7 +66,6 @@ namespace Zilf.Emit.Glulx
 
 #if DEBUG
         readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
-        readonly Dictionary<string, int> irOptimizationStats = new(StringComparer.Ordinal);
 #endif
 
         protected IRoutineBuilder? entryRoutine;
@@ -236,12 +235,11 @@ namespace Zilf.Emit.Glulx
             var result = target switch
             {
                 RoutineBuilder16 rb16 => new Glulx16IrRoutineBuilder(rb16, OptimizeRoutineIr, MakeOperand,
-                    RecordIrOptimizationStats, irRoutines.Add),
+                    irRoutineCoordinator.RecordOptimizationStatistics, irRoutineCoordinator.Add),
                 RoutineBuilder rb => new GlulxIrRoutineBuilder(rb, IrNumericSemantics.Glulx32, OptimizeRoutineIr,
-                    MakeOperand, RecordIrOptimizationStats, irRoutines.Add),
+                    MakeOperand, irRoutineCoordinator.RecordOptimizationStatistics, irRoutineCoordinator.Add),
                 _ => target,
             };
-            if (result is IrRoutineBuilder irRoutine)
             symbols.Add(name, "routine");
 
             if (entryPoint)
@@ -451,8 +449,7 @@ namespace Zilf.Emit.Glulx
 
         public void Finish()
         {
-            IrRoutineBuilder.FinalizeRoutines(irRoutines);
-            irRoutines.Clear();
+            irRoutineCoordinator.FinalizeRoutines();
 
 #if DEBUG
             using (UseWriter(TextSegmentWriter))
@@ -999,12 +996,6 @@ namespace Zilf.Emit.Glulx
         }
 
 #if DEBUG
-        internal void RecordIrOptimizationStats(IEnumerable<IrOptimizationStat> stats)
-        {
-            foreach (var stat in stats)
-                irOptimizationStats[stat.Name] = irOptimizationStats.GetValueOrDefault(stat.Name) + stat.Count;
-        }
-
         internal void RecordPeepholeStats(IEnumerable<PeepholeOptimizationStat> stats)
         {
             foreach (var stat in stats)
@@ -1027,13 +1018,7 @@ namespace Zilf.Emit.Glulx
 
         void WritePeepholeStats()
         {
-            if (irOptimizationStats.Count != 0)
-            {
-                writer.WriteLine(INDENT + "; Routine IR optimization statistics (debug build)");
-                foreach (var entry in irOptimizationStats.OrderBy(static entry => entry.Key, StringComparer.Ordinal))
-                    writer.WriteLine(INDENT + $";   {entry.Key}: {entry.Value}");
-                writer.WriteLine();
-            }
+            irRoutineCoordinator.WriteOptimizationStatistics(writer, INDENT);
 
             if (peepholeStats.Count == 0)
                 return;
@@ -1054,10 +1039,5 @@ namespace Zilf.Emit.Glulx
         }
 #endif
 
-#if !DEBUG
-        private static void RecordIrOptimizationStats(IEnumerable<IrOptimizationStat> stats)
-        {
-        }
-#endif
     }
 }

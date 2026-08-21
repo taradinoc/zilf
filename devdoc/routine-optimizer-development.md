@@ -8,9 +8,11 @@ The shared implementation is in `src/Zilf.Emit/Intermediate`:
 
 - `RoutineIr.cs` defines values, instructions, effects, memory regions, basic blocks, terminators, lowering payloads,
   verification, and per-routine call-effect summaries.
-- `IrRoutineBuilder.cs` implements `IRoutineBuilder`. It records Zap and Glulx operations, tracks promoted values and
-  virtual stack results, builds the CFG, invokes optimization, and replays surviving operations into the target builder.
-- `RoutineIrOptimizer.cs` contains the optimization and physical-home preparation passes.
+- `IrRoutineBuilder*.cs` implements `IRoutineBuilder` as a partial class. The files separate the builder adapter,
+  recording, operation classification, control flow, lifecycle/finalization, and lowering responsibilities.
+- `RoutineIrOptimizer*.cs` contains the optimizer coordinator and partial-class files for value preparation, loops,
+  CFG and memory analysis, GVN, physical-home preparation, and final simplification.
+- `IrRoutineCoordinator.cs` provides the shared Zap/Glulx deferred-finalization and optimizer-statistics lifecycle.
 
 `Zap.GameBuilder` wraps its target routine builder in `IrRoutineBuilder`. `Glulx.GameBuilder` uses
 `GlulxIrRoutineBuilder` or `Glulx16IrRoutineBuilder`; these subclasses also record backend capability operations.
