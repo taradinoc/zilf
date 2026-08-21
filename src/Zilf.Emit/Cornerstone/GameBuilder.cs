@@ -94,6 +94,9 @@ namespace Zilf.Emit.Cornerstone
         private readonly List<RamBytesDefinition> ramBytes = [];
         private readonly List<ObjDataDefinition> objData = [];
         private readonly Dictionary<char, long> packedTextHistogram = [];
+#if DEBUG
+        private readonly Dictionary<string, int> compilerOptimizationStats = new(StringComparer.Ordinal);
+#endif
         private readonly NamedVariable consoleRow;
         private readonly NamedVariable consoleColumn;
         private readonly NamedVariable commandInputChannel;
@@ -320,6 +323,13 @@ namespace Zilf.Emit.Cornerstone
             return globalDefinitions.TryGetValue(name, out type);
         }
 
+        public void RecordCompilerOptimizationStatistic(string name, int count)
+        {
+#if DEBUG
+            compilerOptimizationStats[name] = compilerOptimizationStats.GetValueOrDefault(name) + count;
+#endif
+        }
+
         public void Finish()
         {
             if (finished)
@@ -339,9 +349,25 @@ namespace Zilf.Emit.Cornerstone
             PrepareMetadata();
             EmitRam(writer);
             EmitObjData(writer);
+#if DEBUG
+            WriteCompilerOptimizationStatistics(writer);
+#endif
 
             finished = true;
         }
+
+#if DEBUG
+        private void WriteCompilerOptimizationStatistics(TextWriter writer)
+        {
+            if (compilerOptimizationStats.Count == 0)
+                return;
+
+            writer.WriteLine();
+            writer.WriteLine("; Compiler optimization statistics (debug build)");
+            foreach (var entry in compilerOptimizationStats.OrderBy(static entry => entry.Key, StringComparer.Ordinal))
+                writer.WriteLine($";   {entry.Key}: {entry.Value}");
+        }
+#endif
 
         public void Dispose()
         {

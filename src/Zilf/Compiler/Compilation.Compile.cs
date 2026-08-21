@@ -106,6 +106,9 @@ namespace Zilf.Compiler
             WarnAboutUnusedGlobals();
             WarnAboutUnusedDefinitionSections();
 
+#if DEBUG
+            RecordInliningStatistics();
+#endif
             Game.Finish();
         }
 

@@ -29,7 +29,8 @@ namespace Zilf.Tests.Integration
         {
             await AssertRoutine("", "<TINY-ADD 41>")
                 .WithGlobal("<ROUTINE TINY-ADD (VALUE) <+ .VALUE 1>>")
-                .GeneratesCodeNotMatchingAsync(@"CALL.*TINY-ADD");
+                .GeneratesCodeMatchingAsync(@"calls inlined: 1")
+                .AndNotMatching(@"CALL.*TINY-ADD");
 
             await AssertRoutine("", "<TINY-CONSTANT>")
                 .WithGlobal("<ROUTINE TINY-CONSTANT () 123>")
@@ -79,7 +80,8 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("\"AUX\" A B C D E F G H I J K L M N O", "<LOOKUP .A>")
                 .WithGlobal("<GLOBAL VALUES <TABLE 1 2 3>>")
                 .WithGlobal("<ROUTINE LOOKUP (X) <GET ,VALUES <+ .X 1>>>")
-                .GeneratesCodeMatchingAsync(@"CALL.*LOOKUP");
+                .GeneratesCodeMatchingAsync(@"CALL.*LOOKUP")
+                .AndMatching(@"calls not inlined: local variable limit: 1");
         }
 
         [TestMethod]

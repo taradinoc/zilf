@@ -66,6 +66,7 @@ namespace Zilf.Emit.Glulx
 
 #if DEBUG
         readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
+        readonly Dictionary<string, int> compilerOptimizationStats = new(StringComparer.Ordinal);
 #endif
 
         protected IRoutineBuilder? entryRoutine;
@@ -446,6 +447,13 @@ namespace Zilf.Emit.Glulx
         public IConstantOperand VocabularyTable => VOCAB;
 
         public bool IsGloballyDefined(string name, [NotNullWhen(true)] out string? type) => symbols.TryGetValue(name, out type);
+
+        public void RecordCompilerOptimizationStatistic(string name, int count)
+        {
+#if DEBUG
+            compilerOptimizationStats[name] = compilerOptimizationStats.GetValueOrDefault(name) + count;
+#endif
+        }
 
         public void Finish()
         {
@@ -1018,6 +1026,7 @@ namespace Zilf.Emit.Glulx
 
         void WritePeepholeStats()
         {
+            WriteCompilerOptimizationStats();
             irRoutineCoordinator.WriteOptimizationStatistics(writer, INDENT);
 
             if (peepholeStats.Count == 0)
@@ -1035,6 +1044,17 @@ namespace Zilf.Emit.Glulx
                 writer.WriteLine(INDENT + $";   {name}: applied {applications}x, saved {saved} {instructionWord}");
             }
 
+            writer.WriteLine();
+        }
+
+        void WriteCompilerOptimizationStats()
+        {
+            if (compilerOptimizationStats.Count == 0)
+                return;
+
+            writer.WriteLine(INDENT + "; Compiler optimization statistics (debug build)");
+            foreach (var entry in compilerOptimizationStats.OrderBy(static entry => entry.Key, StringComparer.Ordinal))
+                writer.WriteLine(INDENT + $";   {entry.Key}: {entry.Value}");
             writer.WriteLine();
         }
 #endif

@@ -37,6 +37,11 @@ namespace Zilf.Compiler
 
         private readonly Dictionary<ZilRoutine, ZilRoutine> rewrittenRoutines = [];
 
+#if DEBUG
+        private int inlineCalls;
+        private int inlineCallsRejectedForLocalLimit;
+#endif
+
         private ZilRoutine GetRewrittenRoutine(ZilRoutine routine)
         {
             if (!rewrittenRoutines.TryGetValue(routine, out var rewritten))
@@ -226,7 +231,15 @@ namespace Zilf.Compiler
             if (arguments.Length < minimumArguments || arguments.Length > maximumArguments)
                 return false;
 
-            if (!HasInlineTemporaryCapacity(candidate, arguments) || !activeInlineRoutines.Add(name))
+            if (!HasInlineTemporaryCapacity(candidate, arguments))
+            {
+#if DEBUG
+                inlineCallsRejectedForLocalLimit++;
+#endif
+                return false;
+            }
+
+            if (!activeInlineRoutines.Add(name))
                 return false;
 
             if (compilingEntryPoint && candidate.Body is ZilForm)
@@ -289,6 +302,9 @@ namespace Zilf.Compiler
                             ? CompileForm(rb, form, wantResult, resultStorage)
                             : wantResult ? CompileAsOperand(rb, candidate.Body, sourceLine, resultStorage) : null;
                     }
+#if DEBUG
+                    inlineCalls++;
+#endif
                     return true;
                 }
                 finally
@@ -331,6 +347,15 @@ namespace Zilf.Compiler
             return argument is ZilForm && !argument.IsVariableRef() && (candidate.HasNestedForm || uses != 1) ||
                 candidate.HasNestedForm && argument.IsGVAL(out _);
         }
+
+#if DEBUG
+        private void RecordInliningStatistics()
+        {
+            Game.RecordCompilerOptimizationStatistic("calls inlined", inlineCalls);
+            Game.RecordCompilerOptimizationStatistic("calls not inlined: local variable limit",
+                inlineCallsRejectedForLocalLimit);
+        }
+#endif
 
         private void PushInlineLocal(ZilAtom atom, IOperand value)
         {
