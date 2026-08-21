@@ -84,14 +84,36 @@ namespace Zilf.Emit.Intermediate
         All = Globals | Tables | Properties | ObjectTree | Attributes,
     }
 
-    internal sealed record IrMemoryIdentity(IrMemoryRegion Region, object Key);
+    internal sealed record IrMemoryIdentity(IrMemoryRegion Region, object Key, int? Offset = null, int? Length = null)
+    {
+        public bool MayAlias(IrMemoryIdentity other)
+        {
+            if (Region != other.Region || !Equals(Key, other.Key))
+                return false;
+            if (Offset == null || Length == null || other.Offset == null || other.Length == null)
+                return true;
+            return (long)Offset.Value < (long)other.Offset.Value + other.Length.Value &&
+                (long)other.Offset.Value < (long)Offset.Value + Length.Value;
+        }
+    }
 
     internal sealed class IrRoutineEffectSummary
     {
         private readonly List<IrRoutineEffectSummary> callees = [];
         private readonly HashSet<IrMemoryIdentity> directWriteIdentities = [];
+        private readonly HashSet<IrMemoryIdentity> directReadIdentities = [];
+        private readonly HashSet<IrEffect> directEffects = [];
         private IrMemoryRegion directWrites;
         private IrMemoryRegion directUnknownWrites;
+        private IrMemoryRegion directReads;
+        private IrMemoryRegion directUnknownReads;
+        private IrMemoryRegion? closedWrites;
+        private IrMemoryRegion? closedUnknownWrites;
+        private IrMemoryRegion? closedReads;
+        private IrMemoryRegion? closedUnknownReads;
+        private HashSet<IrMemoryIdentity>? closedWriteIdentities;
+        private HashSet<IrMemoryIdentity>? closedReadIdentities;
+        private HashSet<IrEffect>? closedEffects;
 
         public IrMemoryRegion DirectWrites
         {
@@ -116,15 +138,123 @@ namespace Zilf.Emit.Intermediate
                 directWriteIdentities.Add(identity);
         }
 
-        public IrMemoryRegion GetWrittenRegions() => GetWrittenRegions([]);
+        public void AddRead(IrMemoryRegion regions, IrMemoryIdentity? identity = null)
+        {
+            directReads |= regions;
+            if (identity == null)
+                directUnknownReads |= regions;
+            else
+                directReadIdentities.Add(identity);
+        }
 
-        public IrMemoryRegion GetUnknownWrittenRegions() => GetUnknownWrittenRegions([]);
+        public void AddEffect(IrEffect effect) => directEffects.Add(effect);
+
+        public IrMemoryRegion GetWrittenRegions() => closedWrites ?? GetWrittenRegions([]);
+
+        public IrMemoryRegion GetUnknownWrittenRegions() => closedUnknownWrites ?? GetUnknownWrittenRegions([]);
 
         public IReadOnlySet<IrMemoryIdentity> GetWrittenIdentities()
         {
+            if (closedWriteIdentities != null)
+                return closedWriteIdentities;
             var result = new HashSet<IrMemoryIdentity>();
             CollectWrittenIdentities(result, []);
             return result;
+        }
+
+        public IrMemoryRegion GetReadRegions() => closedReads ?? CollectRegions(summary => summary.directReads, []);
+
+        public IrMemoryRegion GetUnknownReadRegions() =>
+            closedUnknownReads ?? CollectRegions(summary => summary.directUnknownReads, []);
+
+        public IReadOnlySet<IrMemoryIdentity> GetReadIdentities()
+        {
+            if (closedReadIdentities != null)
+                return closedReadIdentities;
+            var result = new HashSet<IrMemoryIdentity>();
+            CollectSet(result, summary => summary.directReadIdentities, []);
+            return result;
+        }
+
+        public IReadOnlySet<IrEffect> GetEffects()
+        {
+            if (closedEffects != null)
+                return closedEffects;
+            var result = new HashSet<IrEffect>();
+            CollectSet(result, summary => summary.directEffects, []);
+            return result;
+        }
+
+        public static void Close(IEnumerable<IrRoutineEffectSummary> summaries)
+        {
+            var all = summaries.Distinct().ToArray();
+            foreach (var summary in all)
+            {
+                summary.closedWrites = summary.IsComplete ? summary.directWrites : IrMemoryRegion.All;
+                summary.closedUnknownWrites = summary.IsComplete ? summary.directUnknownWrites : IrMemoryRegion.All;
+                summary.closedReads = summary.IsComplete ? summary.directReads : IrMemoryRegion.All;
+                summary.closedUnknownReads = summary.IsComplete ? summary.directUnknownReads : IrMemoryRegion.All;
+                summary.closedWriteIdentities = [.. summary.directWriteIdentities];
+                summary.closedReadIdentities = [.. summary.directReadIdentities];
+                summary.closedEffects = [.. summary.directEffects];
+            }
+            var changed = true;
+            while (changed)
+            {
+                changed = false;
+                foreach (var summary in all.Where(summary => summary.IsComplete))
+                {
+                    foreach (var callee in summary.callees)
+                    {
+                        changed |= Union(ref summary.closedWrites, callee.GetWrittenRegions());
+                        changed |= Union(ref summary.closedUnknownWrites, callee.GetUnknownWrittenRegions());
+                        changed |= Union(ref summary.closedReads, callee.GetReadRegions());
+                        changed |= Union(ref summary.closedUnknownReads, callee.GetUnknownReadRegions());
+                        changed |= Union(summary.closedWriteIdentities!, callee.GetWrittenIdentities());
+                        changed |= Union(summary.closedReadIdentities!, callee.GetReadIdentities());
+                        changed |= Union(summary.closedEffects!, callee.GetEffects());
+                    }
+                }
+            }
+        }
+
+        private static bool Union(ref IrMemoryRegion? target, IrMemoryRegion value)
+        {
+            var previous = target!.Value;
+            target = previous | value;
+            return target != previous;
+        }
+
+        private static bool Union<T>(HashSet<T> target, IEnumerable<T> values)
+        {
+            var previous = target.Count;
+            target.UnionWith(values);
+            return target.Count != previous;
+        }
+
+        private IrMemoryRegion CollectRegions(Func<IrRoutineEffectSummary, IrMemoryRegion> selector,
+            HashSet<IrRoutineEffectSummary> active)
+        {
+            if (!IsComplete)
+                return IrMemoryRegion.All;
+            if (!active.Add(this))
+                return selector(this);
+            var result = selector(this);
+            foreach (var callee in callees)
+                result |= callee.CollectRegions(selector, active);
+            active.Remove(this);
+            return result;
+        }
+
+        private void CollectSet<T>(HashSet<T> result, Func<IrRoutineEffectSummary, IEnumerable<T>> selector,
+            HashSet<IrRoutineEffectSummary> active)
+        {
+            if (!IsComplete || !active.Add(this))
+                return;
+            result.UnionWith(selector(this));
+            foreach (var callee in callees)
+                callee.CollectSet(result, selector, active);
+            active.Remove(this);
         }
 
         private IrMemoryRegion GetWrittenRegions(HashSet<IrRoutineEffectSummary> active)
@@ -269,9 +399,9 @@ namespace Zilf.Emit.Intermediate
 
         public IrRoutineEffectSummary? CallSummary { get; }
 
-        public IrMemoryIdentity? ReadIdentity { get; }
+        public IrMemoryIdentity? ReadIdentity { get; set; }
 
-        public IrMemoryIdentity? WriteIdentity { get; }
+        public IrMemoryIdentity? WriteIdentity { get; set; }
 
         public bool IsPure => Effect == IrEffect.None;
 

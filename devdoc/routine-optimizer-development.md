@@ -17,6 +17,12 @@ The shared implementation is in `src/Zilf.Emit/Intermediate`:
 Cornerstone still emits directly and does not use this IR. Zap and Glulx retain their peephole optimizers after IR
 lowering for target-specific instruction selection and encoding idioms.
 
+For Zap and Glulx, routine `Finish` seals and verifies the IR. The game builder retains sealed routines until its own
+`Finish`, then optimizes and lowers them in routine-finish order, matching the historical emission order. This gives
+every optimizer invocation a closed set of
+completed call summaries. Directly constructed `IrRoutineBuilder` instances still finalize immediately for isolated
+backend and unit-test use.
+
 `IRoutineBuilder` is the boundary between the compiler and emission layer. Keep that public interface source-compatible
 unless a task explicitly requires an API change.
 
@@ -102,18 +108,26 @@ Current memory regions are globals, tables, properties, object tree, and attribu
 model, not documentation: an incorrect narrow region can miscompile a game. Use `All` until a narrower classification
 is proven.
 
-Within those regions, the recorder assigns exact identities to directly addressed globals. Global identities use the
-canonical `IGlobalBuilder` supplied by the game builder, so they remain stable across routine builders. Dynamic or
-indirect addresses retain region-wide dependencies. Routine summaries record exact writes, but callers currently
-consume their transitive effects at region granularity: the call graph and its summaries are still being completed while
-routines are recorded. Incomplete calls, opaque operations, and unclassified writes remain region-wide barriers.
+Within those regions, the recorder assigns exact identities to directly addressed globals and allocated tables. Global
+identities use the canonical `IGlobalBuilder` supplied by the game builder. Table identities use internal allocation
+metadata preserved through constant address addition; they never depend on rendered operand text. Constant table
+indices produce byte ranges, while dynamic indices retain allocation identity with an unknown range. Different table
+allocations do not alias, and ranges in one allocation alias only when they overlap or either range is unknown.
+Properties, attributes, and object-tree state remain region-wide.
 
-GVN computes a stable version for each memory region at every instruction. Writes and calls produce new versions for
-the regions they may change, while joins use a stable merge version when predecessor versions differ. Memory-dependent
-expressions include these versions in their value-numbering keys. This avoids repeated path searches and makes loop
-back-edge invalidation explicit. Dependencies inherited through mutable external values are included. The versions
-remain region-versioned for GVN; exact identities currently refine LICM for writes visible in the same routine.
-Extending GVN's version keys and closed-call-graph summaries to these identities remains future work.
+Routine summaries record exact and unknown reads and writes plus non-memory effects. Once all sealed routines are
+available, recursive summary queries compute transitive effects over the closed direct-call graph. Optimizer call
+handling consumes exact effects; indirect, external, incomplete, and opaque calls remain region-wide barriers. The IR
+recorder itself still invalidates cached mutable global operands at region granularity while recording, because this
+happens before closed-world finalization.
+
+A global initialized with an allocated table address can provide table points-to identity when the closed summaries
+prove that no routine can write that global. This is alias evidence only: lowering still reads the global normally.
+
+GVN computes stable versions for region-wide unknown-write epochs and every exact location used by a routine. Exact
+writes update aliasing locations; unknown writes update the region epoch and all exact locations in that region. Joins
+use stable merge versions when predecessor versions differ. Read keys contain both their exact-location versions and
+the enclosing unknown-write epochs. LICM uses the same alias test for loop-local and summarized call writes.
 
 A call does not inherently overwrite the caller's routine locals. However, values captured from globals or memory must
 remain snapshots when required. Never move a local materialization from before a call to after it if the local exists to
@@ -226,8 +240,8 @@ These are directions, not assumptions that the prerequisites already exist:
 - **More aggressive phi lowering.** The current edge materializations avoid critical-edge and parallel-copy hazards
   without consuming extra Z locals. A future pass could remove more of those stores by splitting critical edges and
   resolving parallel-copy cycles with stack-backed scratch storage when profitable.
-- **More precise versioned memory.** Add exact global and constant-base identities to GVN's version keys, extend proven
-  identities to objects and properties, and add store-to-load forwarding where address and value are available.
+- **More precise versioned memory.** Extend proven identities to objects and properties, model additional derived and
+  escaping table pointers, and add store-to-load forwarding where address and value are available.
 - **A target cost model.** Compare immediate size, variable operands, instruction form, required copies, stack traffic,
   and local pressure. An algebraic or CSE rewrite should be rejected when it merely replaces an instruction with an
   equal-cost copy or forces a worse encoding.
@@ -235,8 +249,8 @@ These are directions, not assumptions that the prerequisites already exist:
   can expose constants and common subexpressions but can also change overflow behavior if modeled incorrectly.
 - **More loop optimization.** Extend basic induction recognition to derived induction variables and strength reduction
   after a target cost model is available, and teach branch lowering to retarget every conditional edge form.
-- **Stronger interprocedural summaries.** More precise read/write and purity summaries can preserve values across known
-  calls. Recursive and indirect calls require conservative fixed-point handling.
+- **Stronger interprocedural summaries.** Add points-to target sets for indirect calls and use closed-world summaries to
+  classify more calls as pure. Unknown indirect targets remain conservative.
 - **Global and memory value promotion.** Defer this until aliasing, calls, save/restore behavior, and observable physical
   state are modeled well enough to prove correctness.
 The usual priority is to improve semantic modeling before adding a more aggressive rewrite. Existing SCCP, GVN, CFG

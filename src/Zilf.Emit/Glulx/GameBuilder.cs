@@ -53,6 +53,7 @@ namespace Zilf.Emit.Glulx
         private protected readonly List<TableBuilder> pureTables = new(10);
         private protected readonly List<(TableBuilder Table, string OriginalName)> tracedTables = new(10);
         private protected readonly List<WordBuilder> vocabulary = new(100);
+        private protected readonly List<IrRoutineBuilder> irRoutines = [];
         private protected readonly HashSet<char> siBreaks = new();
         private protected readonly Dictionary<string, IOperand> stringPool = new(100);
         private protected readonly Dictionary<int, NumericOperand> numberPool = new(50);
@@ -235,11 +236,12 @@ namespace Zilf.Emit.Glulx
             var result = target switch
             {
                 RoutineBuilder16 rb16 => new Glulx16IrRoutineBuilder(rb16, OptimizeRoutineIr, MakeOperand,
-                    RecordIrOptimizationStats),
+                    RecordIrOptimizationStats, irRoutines.Add),
                 RoutineBuilder rb => new GlulxIrRoutineBuilder(rb, IrNumericSemantics.Glulx32, OptimizeRoutineIr,
-                    MakeOperand, RecordIrOptimizationStats),
+                    MakeOperand, RecordIrOptimizationStats, irRoutines.Add),
                 _ => target,
             };
+            if (result is IrRoutineBuilder irRoutine)
             symbols.Add(name, "routine");
 
             if (entryPoint)
@@ -449,6 +451,9 @@ namespace Zilf.Emit.Glulx
 
         public void Finish()
         {
+            IrRoutineBuilder.FinalizeRoutines(irRoutines);
+            irRoutines.Clear();
+
 #if DEBUG
             using (UseWriter(TextSegmentWriter))
             {

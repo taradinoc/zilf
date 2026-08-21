@@ -18,7 +18,7 @@
 
 namespace Zilf.Emit.Glulx
 {
-    class SumOperand(IConstantOperand left, IConstantOperand right) : IConstantOperand
+    class SumOperand(IConstantOperand left, IConstantOperand right) : IConstantOperand, IMemoryAddressOperand
     {
         public IConstantOperand Left => left;
 
@@ -32,6 +32,32 @@ namespace Zilf.Emit.Glulx
         public IConstantOperand Add(IConstantOperand other)
         {
             return new SumOperand(this, other);
+        }
+
+        public bool TryGetMemoryAddress(out object allocation, out int offset)
+        {
+            if (left is IMemoryAddressOperand address && right is INumericOperand numeric &&
+                address.TryGetMemoryAddress(out allocation, out offset))
+            {
+                return TryAddOffset(numeric.Value, ref offset);
+            }
+            if (right is IMemoryAddressOperand reverseAddress && left is INumericOperand reverseNumeric &&
+                reverseAddress.TryGetMemoryAddress(out allocation, out offset))
+            {
+                return TryAddOffset(reverseNumeric.Value, ref offset);
+            }
+            allocation = null!;
+            offset = 0;
+            return false;
+        }
+
+        private static bool TryAddOffset(int value, ref int offset)
+        {
+            var result = (long)offset + value;
+            if (result is < int.MinValue or > int.MaxValue)
+                return false;
+            offset = (int)result;
+            return true;
         }
     }
 }

@@ -56,6 +56,12 @@ namespace Zilf.Emit.Intermediate
             statistics["Input instructions"] = routine.Blocks.Sum(block => block.Instructions.Count);
             statistics["Input opaque operations"] = routine.Blocks.Sum(block => block.Instructions.Count(instruction =>
                 instruction.Effect == IrEffect.Opaque));
+            Record("Exact memory locations", routine.Blocks.SelectMany(block => block.Instructions)
+                .SelectMany(instruction => new[] { instruction.ReadIdentity, instruction.WriteIdentity })
+                .OfType<IrMemoryIdentity>().Distinct().Count());
+            Record("Calls with precise effects", routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Effect == IrEffect.Call && instruction.CallSummary != null &&
+                    instruction.CallSummary.GetUnknownWrittenRegions() != IrMemoryRegion.All));
             ProtectCopiesAcrossClobbers(routine);
             CoalesceMaterializationDestinations(routine);
             RemoveRedundantMaterializations(routine);
@@ -610,10 +616,16 @@ namespace Zilf.Emit.Intermediate
                             Record("LICM candidates");
                             var dependencies = stateDependencies.GetValueOrDefault(instruction.Result);
                             var identities = identityDependencies.GetValueOrDefault(instruction.Result);
-                            if ((dependencies & writtenRegions) != 0 || identities != null && identities.Any(identity =>
-                                (writtenRegions & identity.Region) != 0 || writtenIdentities.Contains(identity)))
+                            var unknownMemoryChanged = (dependencies & writtenRegions) != 0 || identities != null &&
+                                identities.Any(identity => (writtenRegions & identity.Region) != 0);
+                            var exactMemoryChanged = identities != null && identities.Any(identity =>
+                                writtenIdentities.Any(written => identity.MayAlias(written)));
+                            if (unknownMemoryChanged || exactMemoryChanged)
                             {
                                 Record("LICM rejected: memory changed");
+                                Record(unknownMemoryChanged
+                                    ? "LICM rejected: unknown memory changed"
+                                    : "LICM rejected: exact memory changed");
                                 continue;
                             }
                             if (!IsSafeToSpeculate(instruction) &&
@@ -708,7 +720,7 @@ namespace Zilf.Emit.Intermediate
 
         private static IrMemoryRegion GetUnknownWrittenRegions(IrInstruction instruction) => instruction.Effect switch
         {
-            IrEffect.Call => instruction.CallSummary?.GetWrittenRegions() ?? IrMemoryRegion.All,
+            IrEffect.Call => instruction.CallSummary?.GetUnknownWrittenRegions() ?? IrMemoryRegion.All,
             IrEffect.Opaque => IrMemoryRegion.All,
             IrEffect.WriteMemory when instruction.WriteIdentity != null => IrMemoryRegion.None,
             IrEffect.WriteMemory when instruction.WriteRegions == IrMemoryRegion.None => IrMemoryRegion.All,
@@ -719,6 +731,7 @@ namespace Zilf.Emit.Intermediate
         private static IEnumerable<IrMemoryIdentity> GetWrittenIdentities(IrInstruction instruction) =>
             instruction.Effect switch
             {
+                IrEffect.Call when instruction.CallSummary != null => instruction.CallSummary.GetWrittenIdentities(),
                 IrEffect.WriteMemory when instruction.WriteIdentity != null => [instruction.WriteIdentity],
                 _ => [],
             };
@@ -809,28 +822,68 @@ namespace Zilf.Emit.Intermediate
             ];
 
             private readonly Dictionary<IrInstruction, Dictionary<IrMemoryRegion, int>> before;
+            private readonly Dictionary<IrInstruction, Dictionary<IrMemoryIdentity, int>> exactBefore;
 
-            private MemoryVersionAnalysis(Dictionary<IrInstruction, Dictionary<IrMemoryRegion, int>> before) =>
+            private MemoryVersionAnalysis(Dictionary<IrInstruction, Dictionary<IrMemoryRegion, int>> before,
+                Dictionary<IrInstruction, Dictionary<IrMemoryIdentity, int>> exactBefore)
+            {
                 this.before = before;
+                this.exactBefore = exactBefore;
+            }
 
-            public string GetKey(IrInstruction instruction, IrMemoryRegion dependencies) => string.Join(",",
-                Regions.Where(region => (dependencies & region) != 0).Select(region => before[instruction][region]));
+            public int ExactMergeCount { get; private init; }
+
+            public string GetKey(IrInstruction instruction, IrMemoryRegion dependencies,
+                IEnumerable<IrMemoryIdentity> exactDependencies)
+            {
+                var regionKey = string.Join(",", Regions.Where(region => (dependencies & region) != 0)
+                    .Select(region => before[instruction][region]));
+                var exactKey = string.Join(",", exactDependencies.OrderBy(identity => identity.GetHashCode())
+                    .Select(identity => exactBefore[instruction].GetValueOrDefault(identity)));
+                return $"{regionKey}|{exactKey}";
+            }
 
             public static MemoryVersionAnalysis Create(RoutineIr routine)
             {
                 routine.RebuildPredecessors();
                 var nextVersion = 1;
                 var initial = Regions.ToDictionary(region => region, _ => nextVersion++);
+                var instructions = routine.Blocks.SelectMany(block => block.Instructions).ToArray();
+                var exactIdentities = instructions.Select(instruction => instruction.ReadIdentity)
+                    .OfType<IrMemoryIdentity>()
+                    .Concat(instructions.SelectMany(instruction => instruction.Operands.Append(instruction.Result))
+                        .Where(value => value?.MemoryIdentity != null).Select(value => value!.MemoryIdentity!))
+                    .Distinct().ToArray();
+                var unknownWritesByInstruction = instructions.ToDictionary(instruction => instruction,
+                    GetUnknownWrittenRegions);
+                var writtenIdentitiesByInstruction = instructions.ToDictionary(instruction => instruction,
+                    instruction => GetWrittenIdentities(instruction).ToArray());
+                var affectedIdentitiesByInstruction = instructions.ToDictionary(instruction => instruction,
+                    instruction => exactIdentities.Where(identity => writtenIdentitiesByInstruction[instruction]
+                        .Any(written => identity.MayAlias(written))).ToArray());
+                var exactInitial = exactIdentities.ToDictionary(identity => identity, _ => nextVersion++);
                 var writeVersions = routine.Blocks.SelectMany(block => block.Instructions)
-                    .SelectMany(instruction => Regions.Where(region => (GetWrittenRegions(instruction) & region) != 0)
+                    .SelectMany(instruction => Regions.Where(region =>
+                            (unknownWritesByInstruction[instruction] & region) != 0)
                         .Select(region => (instruction, region)))
                     .ToDictionary(pair => pair, _ => nextVersion++);
+                var exactWriteVersions = routine.Blocks.SelectMany(block => block.Instructions)
+                    .SelectMany(instruction => affectedIdentitiesByInstruction[instruction]
+                        .Select(identity => (instruction, identity)))
+                    .ToDictionary(pair => pair, _ => nextVersion++);
                 var mergeVersions = routine.Blocks.SelectMany(block => Regions.Select(region => (block, region)))
+                    .ToDictionary(pair => pair, _ => nextVersion++);
+                var exactMergeVersions = routine.Blocks
+                    .SelectMany(block => exactIdentities.Select(identity => (block, identity)))
                     .ToDictionary(pair => pair, _ => nextVersion++);
                 var incoming = routine.Blocks.ToDictionary(block => block,
                     _ => new Dictionary<IrMemoryRegion, int>(initial));
                 var outgoing = routine.Blocks.ToDictionary(block => block,
                     _ => new Dictionary<IrMemoryRegion, int>(initial));
+                var exactIncoming = routine.Blocks.ToDictionary(block => block,
+                    _ => new Dictionary<IrMemoryIdentity, int>(exactInitial));
+                var exactOutgoing = routine.Blocks.ToDictionary(block => block,
+                    _ => new Dictionary<IrMemoryIdentity, int>(exactInitial));
 
                 var changed = true;
                 while (changed)
@@ -850,11 +903,34 @@ namespace Zilf.Emit.Intermediate
                                 nextIn[region] = versions.Length == 1 ? versions[0] : mergeVersions[(block, region)];
                             }
                         }
+                        var nextExactIn = new Dictionary<IrMemoryIdentity, int>();
+                        foreach (var identity in exactIdentities)
+                        {
+                            if (ReferenceEquals(block, routine.Entry) || block.Predecessors.Count == 0)
+                                nextExactIn[identity] = exactInitial[identity];
+                            else
+                            {
+                                var versions = block.Predecessors
+                                    .Select(predecessor => exactOutgoing[predecessor][identity]).Distinct().ToArray();
+                                nextExactIn[identity] = versions.Length == 1
+                                    ? versions[0]
+                                    : exactMergeVersions[(block, identity)];
+                            }
+                        }
                         var nextOut = new Dictionary<IrMemoryRegion, int>(nextIn);
+                        var nextExactOut = new Dictionary<IrMemoryIdentity, int>(nextExactIn);
                         foreach (var instruction in block.Instructions)
-                            foreach (var region in Regions.Where(region =>
-                                (GetWrittenRegions(instruction) & region) != 0))
+                        {
+                            var unknownWrites = unknownWritesByInstruction[instruction];
+                            foreach (var region in Regions.Where(region => (unknownWrites & region) != 0))
+                            {
                                 nextOut[region] = writeVersions[(instruction, region)];
+                                foreach (var identity in exactIdentities.Where(identity => identity.Region == region))
+                                    nextExactOut[identity] = writeVersions[(instruction, region)];
+                            }
+                            foreach (var identity in affectedIdentitiesByInstruction[instruction])
+                                nextExactOut[identity] = exactWriteVersions[(instruction, identity)];
+                        }
                         if (!nextIn.SequenceEqual(incoming[block]))
                         {
                             incoming[block] = nextIn;
@@ -865,22 +941,46 @@ namespace Zilf.Emit.Intermediate
                             outgoing[block] = nextOut;
                             changed = true;
                         }
+                        if (!nextExactIn.SequenceEqual(exactIncoming[block]))
+                        {
+                            exactIncoming[block] = nextExactIn;
+                            changed = true;
+                        }
+                        if (!nextExactOut.SequenceEqual(exactOutgoing[block]))
+                        {
+                            exactOutgoing[block] = nextExactOut;
+                            changed = true;
+                        }
                     }
                 }
 
                 var before = new Dictionary<IrInstruction, Dictionary<IrMemoryRegion, int>>();
+                var exactBefore = new Dictionary<IrInstruction, Dictionary<IrMemoryIdentity, int>>();
                 foreach (var block in routine.Blocks)
                 {
                     var current = new Dictionary<IrMemoryRegion, int>(incoming[block]);
+                    var exactCurrent = new Dictionary<IrMemoryIdentity, int>(exactIncoming[block]);
                     foreach (var instruction in block.Instructions)
                     {
                         before[instruction] = new Dictionary<IrMemoryRegion, int>(current);
-                        foreach (var region in Regions.Where(region =>
-                            (GetWrittenRegions(instruction) & region) != 0))
+                        exactBefore[instruction] = new Dictionary<IrMemoryIdentity, int>(exactCurrent);
+                        var unknownWrites = unknownWritesByInstruction[instruction];
+                        foreach (var region in Regions.Where(region => (unknownWrites & region) != 0))
+                        {
                             current[region] = writeVersions[(instruction, region)];
+                            foreach (var identity in exactIdentities.Where(identity => identity.Region == region))
+                                exactCurrent[identity] = writeVersions[(instruction, region)];
+                        }
+                        foreach (var identity in affectedIdentitiesByInstruction[instruction])
+                            exactCurrent[identity] = exactWriteVersions[(instruction, identity)];
                     }
                 }
-                return new MemoryVersionAnalysis(before);
+                return new MemoryVersionAnalysis(before, exactBefore)
+                {
+                    ExactMergeCount = routine.Blocks.Sum(block => exactIdentities.Count(identity =>
+                        block.Predecessors.Select(predecessor => exactOutgoing[predecessor][identity]).Distinct()
+                            .Skip(1).Any())),
+                };
             }
         }
 
@@ -889,7 +989,10 @@ namespace Zilf.Emit.Intermediate
             routine.RebuildPredecessors();
             var blocks = routine.Blocks.ToArray();
             var stateDependencies = FindStateDependencies(blocks);
+            var unknownStateDependencies = FindUnknownStateDependencies(blocks);
+            var identityDependencies = FindIdentityDependencies(blocks);
             var memoryVersions = MemoryVersionAnalysis.Create(routine);
+            Record("Exact memory version merges", memoryVersions.ExactMergeCount);
             var liveHomesAfter = FindLiveHomesAfter(blocks);
             var instructionBlocks = blocks.SelectMany(block => block.Instructions.Select(instruction =>
                 (instruction, block))).ToDictionary(pair => pair.instruction, pair => pair.block);
@@ -973,16 +1076,23 @@ namespace Zilf.Emit.Intermediate
                             available.Clear();
                         else
                         {
-                            var writtenRegions = instruction.Effect == IrEffect.Call
-                                ? instruction.CallSummary?.GetWrittenRegions() ?? IrMemoryRegion.All
-                                : instruction.WriteRegions == IrMemoryRegion.None
-                                    ? IrMemoryRegion.All
-                                    : instruction.WriteRegions;
-                            foreach (var invalidKey in available
-                                .Where(pair => (stateDependencies.GetValueOrDefault(pair.Value.Value) &
-                                    writtenRegions) != 0)
-                                .Select(pair => pair.Key).ToArray())
-                                available.Remove(invalidKey);
+                            var writtenRegions = GetUnknownWrittenRegions(instruction);
+                            var writtenIdentities = GetWrittenIdentities(instruction).ToArray();
+                            foreach (var pair in available.ToArray())
+                            {
+                                var unknownInvalidation =
+                                    (unknownStateDependencies.GetValueOrDefault(pair.Value.Value) & writtenRegions) != 0 ||
+                                    identityDependencies.GetValueOrDefault(pair.Value.Value)?.Any(identity =>
+                                        (writtenRegions & identity.Region) != 0) == true;
+                                var exactInvalidation = identityDependencies.GetValueOrDefault(pair.Value.Value)
+                                    ?.Any(identity => writtenIdentities.Any(identity.MayAlias)) == true;
+                                if (!unknownInvalidation && !exactInvalidation)
+                                    continue;
+                                available.Remove(pair.Key);
+                                Record(unknownInvalidation
+                                    ? "GVN invalidated: unknown memory"
+                                    : "GVN invalidated: exact memory");
+                            }
                         }
                     }
                     var resultHome = (instruction.Payload as IrLoweringOperation)?.ResultHome;
@@ -996,7 +1106,8 @@ namespace Zilf.Emit.Intermediate
                             Array.Sort(currentIds);
                         var dependencies = stateDependencies.GetValueOrDefault(instruction.Result);
                         currentKey = (instruction.Opcode,
-                            $"{string.Join(",", currentIds)}|{memoryVersions.GetKey(instruction, dependencies)}");
+                            $"{string.Join(",", currentIds)}|{memoryVersions.GetKey(instruction, dependencies,
+                                identityDependencies.GetValueOrDefault(instruction.Result) ?? [])}");
                     }
                     if (resultHome != null && !isStackResult)
                     {

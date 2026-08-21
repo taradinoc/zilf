@@ -36,6 +36,8 @@ namespace Zilf.Emit.Intermediate
         private readonly Func<IOperand, bool>? preferConstantHome;
         private readonly Action<IEnumerable<IrOptimizationStat>>? recordOptimizationStats;
         private readonly Func<int, INumericOperand> makeOperand;
+        private readonly Action<IrRoutineBuilder>? deferFinalization;
+        private readonly int wordSize;
         private readonly Dictionary<ILabel, IrBlock> labelBlocks = [];
         private readonly Dictionary<IrBlock, ILabel> blockLabels = [];
         private readonly HashSet<IVariable> locals = [];
@@ -50,17 +52,22 @@ namespace Zilf.Emit.Intermediate
         private readonly List<IrBlock> layout = [];
         private IrBlock current;
         private bool finished;
+        private bool finalized;
         private int nextIrTemporary;
+        private int readOnlyPointerGlobals;
 
         public IrRoutineBuilder(IRoutineBuilder target, IrNumericSemantics numericSemantics, bool optimize,
             Func<int, INumericOperand>? makeOperand = null, Func<IOperand, bool>? preferConstantHome = null,
-            Action<IEnumerable<IrOptimizationStat>>? recordOptimizationStats = null)
+            Action<IEnumerable<IrOptimizationStat>>? recordOptimizationStats = null,
+            Action<IrRoutineBuilder>? deferFinalization = null)
         {
             this.target = target;
             this.optimize = optimize;
             this.preferConstantHome = preferConstantHome;
             this.recordOptimizationStats = recordOptimizationStats;
             this.makeOperand = makeOperand ?? (value => new DeferredNumericOperand(value));
+            this.deferFinalization = deferFinalization;
+            wordSize = numericSemantics == IrNumericSemantics.ZMachine16 ? 2 : 4;
             optimizer = new RoutineIrOptimizer(numericSemantics, () =>
             {
                 if (numericSemantics == IrNumericSemantics.ZMachine16 && locals.Count >= 15)
@@ -364,7 +371,8 @@ namespace Zilf.Emit.Intermediate
                     operands => target.EmitBinary(op, operands[0], operands[1], result), resultHome: result,
                     emitTo: (operands, home) => target.EmitBinary(op, operands[0], operands[1], home),
                     readRegions: GetReadRegions(loadOpcode),
-                    readIdentity: TryGetMemoryIdentity(left, GetReadRegions(loadOpcode)));
+                    readIdentity: TryGetTableMemoryIdentity(left, right, loadOpcode == IrOpcode.LoadByte ? 1 : wordSize,
+                        loadOpcode == IrOpcode.LoadByte ? 1 : wordSize));
                 SetProducedValue(result, instruction.Result!);
                 return;
             }
@@ -395,7 +403,12 @@ namespace Zilf.Emit.Intermediate
                 RecordEffectfulOperation([left, center, right],
                     operands => target.EmitTernary(op, operands[0], operands[1], operands[2], result), effect, result,
                     (operands, home) => target.EmitTernary(op, operands[0], operands[1], operands[2], home),
-                    GetWriteRegions(op), TryGetMemoryIdentity(left, GetWriteRegions(op)));
+                    GetWriteRegions(op), op switch
+                    {
+                        TernaryOp.PutByte => TryGetTableMemoryIdentity(left, center, 1, 1),
+                        TernaryOp.PutWord => TryGetTableMemoryIdentity(left, center, wordSize, wordSize),
+                        _ => TryGetMemoryIdentity(left, GetWriteRegions(op)),
+                    });
                 return;
             }
             RecordTemporaryOperation([left, center, right],
@@ -562,6 +575,24 @@ namespace Zilf.Emit.Intermediate
             FlushPromotedLocals();
             effectSummary.IsComplete = true;
 
+            if (deferFinalization != null)
+            {
+                routine.Verify();
+                deferFinalization(this);
+                return;
+            }
+
+            FinalizeRoutine();
+        }
+
+        internal void FinalizeRoutine()
+        {
+            if (!finished)
+                throw new InvalidOperationException("The routine has not been finished.");
+            if (finalized)
+                throw new InvalidOperationException("The routine has already been finalized.");
+            finalized = true;
+
             IEnumerable<IrOptimizationStat> optimizationStatistics;
             var phiCount = routine.PromoteLocalsToSsa(locals);
             if (optimize)
@@ -577,7 +608,9 @@ namespace Zilf.Emit.Intermediate
                 optimizationStatistics = [];
             }
             recordOptimizationStats?.Invoke(optimizationStatistics.Concat(recordingStatistics.Select(pair =>
-                new IrOptimizationStat($"Recorded opaque: {pair.Key}", pair.Value))));
+                new IrOptimizationStat($"Recorded opaque: {pair.Key}", pair.Value))).Concat(
+                readOnlyPointerGlobals == 0 ? [] :
+                [new IrOptimizationStat("Read-only table-pointer globals", readOnlyPointerGlobals)]));
 
             var availableConstantHomes = preferConstantHome != null
                 ? FindAvailableConstantHomes()
@@ -612,6 +645,56 @@ namespace Zilf.Emit.Intermediate
             }
 
             target.Finish();
+        }
+
+        internal static void FinalizeRoutines(IReadOnlyCollection<IrRoutineBuilder> routines)
+        {
+            IrRoutineEffectSummary.Close(routines.Select(routine => routine.effectSummary));
+            var hasUnknownGlobalWrite = routines.Any(routine =>
+                (routine.effectSummary.GetUnknownWrittenRegions() & IrMemoryRegion.Globals) != 0);
+            var writtenGlobals = routines.SelectMany(routine => routine.effectSummary.GetWrittenIdentities())
+                .Where(identity => identity.Region == IrMemoryRegion.Globals).Select(identity => identity.Key)
+                .ToHashSet();
+            var readOnlyGlobals = hasUnknownGlobalWrite
+                ? []
+                : routines.SelectMany(routine => routine.routine.Blocks).SelectMany(block => block.Instructions)
+                    .SelectMany(instruction => instruction.Operands).Select(value => value.PhysicalHome)
+                    .OfType<IGlobalBuilder>()
+                    .Where(global => global.DefaultValue is IMemoryAddressOperand && !writtenGlobals.Contains(global))
+                    .ToHashSet();
+            foreach (var routine in routines)
+            {
+                routine.PrepareReadOnlyPointerGlobals(readOnlyGlobals);
+                routine.FinalizeRoutine();
+            }
+        }
+
+        private void PrepareReadOnlyPointerGlobals(IReadOnlySet<IGlobalBuilder> readOnlyGlobals)
+        {
+            var used = new HashSet<IGlobalBuilder>();
+            foreach (var instruction in routine.Blocks.SelectMany(block => block.Instructions)
+                .Where(instruction => instruction.Opcode is IrOpcode.LoadByte or IrOpcode.LoadWord &&
+                    instruction.Operands.Count >= 2 && instruction.ReadIdentity == null))
+            {
+                if (instruction.Operands[0].PhysicalHome is not IGlobalBuilder global ||
+                    !readOnlyGlobals.Contains(global) ||
+                    global.DefaultValue is not IMemoryAddressOperand address ||
+                    !address.TryGetMemoryAddress(out var allocation, out var baseOffset))
+                    continue;
+                var width = instruction.Opcode == IrOpcode.LoadByte ? 1 : wordSize;
+                if (instruction.Operands[1].Constant is int index)
+                {
+                    var offset = (long)baseOffset + (long)index * width;
+                    if (offset is < int.MinValue or > int.MaxValue)
+                        continue;
+                    instruction.ReadIdentity = new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, (int)offset,
+                        width);
+                }
+                else
+                    instruction.ReadIdentity = new IrMemoryIdentity(IrMemoryRegion.Tables, allocation);
+                used.Add(global);
+            }
+            readOnlyPointerGlobals = used.Count;
         }
 
         public override string ToString() => target.ToString()!;
@@ -771,8 +854,14 @@ namespace Zilf.Emit.Intermediate
             };
             if (writtenRegions != IrMemoryRegion.None)
                 effectSummary.AddWrite(writtenRegions, writeIdentity);
+            if (readRegions != IrMemoryRegion.None)
+                effectSummary.AddRead(readRegions, readIdentity);
             if (callSummary != null)
                 effectSummary.AddCallee(callSummary);
+            else if (effect == IrEffect.Call)
+                effectSummary.AddEffect(IrEffect.Opaque);
+            else if (effect is not (IrEffect.None or IrEffect.ReadMemory or IrEffect.WriteMemory))
+                effectSummary.AddEffect(effect);
             if (instruction.Result != null)
                 definitions[instruction.Result] = instruction;
             return instruction;
@@ -827,6 +916,20 @@ namespace Zilf.Emit.Intermediate
             region == IrMemoryRegion.Globals && operand is IConstantOperand
                 ? new IrMemoryIdentity(region, GetStableMemoryKey(operand))
                 : null;
+
+        private static IrMemoryIdentity? TryGetTableMemoryIdentity(IOperand address, IOperand index, int scale,
+            int length)
+        {
+            if (address is not IMemoryAddressOperand memoryAddress ||
+                !memoryAddress.TryGetMemoryAddress(out var allocation, out var baseOffset))
+                return null;
+            if (index is not INumericOperand numeric)
+                return new IrMemoryIdentity(IrMemoryRegion.Tables, allocation);
+            var offset = (long)baseOffset + (long)numeric.Value * scale;
+            return offset is >= int.MinValue and <= int.MaxValue
+                ? new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, (int)offset, length)
+                : null;
+        }
 
         private static object GetStableMemoryKey(IOperand operand) => operand switch
         {

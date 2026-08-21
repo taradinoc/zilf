@@ -28,9 +28,10 @@ namespace Zilf.Emit.Glulx
         protected readonly RoutineBuilder GlulxTarget;
 
         public GlulxIrRoutineBuilder(RoutineBuilder target, IrNumericSemantics numericSemantics, bool optimize,
-            Func<int, INumericOperand> makeOperand, Action<IEnumerable<IrOptimizationStat>>? recordOptimizationStats)
+            Func<int, INumericOperand> makeOperand, Action<IEnumerable<IrOptimizationStat>>? recordOptimizationStats,
+            Action<IrRoutineBuilder>? deferFinalization = null)
             : base(target, numericSemantics, optimize, makeOperand,
-                recordOptimizationStats: recordOptimizationStats)
+                recordOptimizationStats: recordOptimizationStats, deferFinalization: deferFinalization)
         {
             GlulxTarget = target;
         }
@@ -93,8 +94,10 @@ namespace Zilf.Emit.Glulx
         private int compilationDepth;
 
         public Glulx16IrRoutineBuilder(RoutineBuilder16 target, bool optimize, Func<int, INumericOperand> makeOperand,
-            Action<IEnumerable<IrOptimizationStat>>? recordOptimizationStats)
-            : base(target, IrNumericSemantics.ZMachine16, optimize, makeOperand, recordOptimizationStats)
+            Action<IEnumerable<IrOptimizationStat>>? recordOptimizationStats,
+            Action<IrRoutineBuilder>? deferFinalization = null)
+            : base(target, IrNumericSemantics.ZMachine16, optimize, makeOperand, recordOptimizationStats,
+                deferFinalization)
         {
             wideTarget = target;
         }

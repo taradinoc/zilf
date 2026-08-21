@@ -881,6 +881,7 @@ namespace Zilf.Emit.Tests
             };
             first.AddCallee(second);
             second.AddCallee(first);
+            IrRoutineEffectSummary.Close([first, second]);
 
             Assert.AreEqual(IrMemoryRegion.Globals | IrMemoryRegion.Tables, first.GetWrittenRegions());
             Assert.AreEqual(IrMemoryRegion.Globals | IrMemoryRegion.Tables, second.GetWrittenRegions());
@@ -1063,6 +1064,112 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Gvn_Reuses_Exact_Table_Read_Across_Nonoverlapping_Write()
+        {
+            var routine = new RoutineIr();
+            var allocation = new object();
+            var table = routine.CreateValue();
+            var index = routine.CreateConstant(0);
+            var home = Mock.Of<IVariable>();
+            var read = new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 0, 1);
+            var first = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables, readIdentity: read);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.InputOutput,
+                hasResult: false);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, hasResult: false,
+                writeRegions: IrMemoryRegion.Tables,
+                writeIdentity: new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 4, 1));
+            var second = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables, readIdentity: read);
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsFalse(routine.Entry.Instructions.Contains(second));
+        }
+
+        [TestMethod]
+        public void Gvn_Does_Not_Reuse_Exact_Table_Read_Across_Overlapping_Write()
+        {
+            var routine = new RoutineIr();
+            var allocation = new object();
+            var table = routine.CreateValue();
+            var index = routine.CreateConstant(0);
+            var home = Mock.Of<IVariable>();
+            var read = new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 2, 2);
+            var first = routine.Append(routine.Entry, IrOpcode.LoadWord, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables, readIdentity: read);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.InputOutput,
+                hasResult: false);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, hasResult: false,
+                writeRegions: IrMemoryRegion.Tables,
+                writeIdentity: new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 3, 1));
+            var second = routine.Append(routine.Entry, IrOpcode.LoadWord, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables, readIdentity: read);
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsTrue(routine.Entry.Instructions.Contains(second));
+        }
+
+        [TestMethod]
+        public void Gvn_Reuses_Global_Derived_Value_Across_Unrelated_Diamond_Write()
+        {
+            var routine = new RoutineIr();
+            var changed = routine.CreateBlock();
+            var unchanged = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            var firstIdentity = new IrMemoryIdentity(IrMemoryRegion.Globals, new object());
+            var secondIdentity = new IrMemoryIdentity(IrMemoryRegion.Globals, new object());
+            var global = routine.CreateExternalValue(mutable: true, memoryIdentity: firstIdentity);
+            var home = Mock.Of<IVariable>();
+            var first = routine.Append(routine.Entry, IrOpcode.Add, [global, routine.CreateConstant(1)], payload:
+                new IrLoweringOperation(_ => { }, home));
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.InputOutput,
+                hasResult: false);
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), changed, unchanged);
+            routine.Append(changed, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, hasResult: false,
+                writeRegions: IrMemoryRegion.Globals, writeIdentity: secondIdentity);
+            changed.Terminator = new IrTerminator.Jump(join);
+            unchanged.Terminator = new IrTerminator.Jump(join);
+            var second = routine.Append(join, IrOpcode.Add, [global, routine.CreateConstant(1)], payload:
+                new IrLoweringOperation(_ => { }, home));
+            join.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsFalse(join.Instructions.Contains(second));
+        }
+
+        [TestMethod]
+        public void Gvn_Reuses_Exact_Table_Read_Across_Unrelated_Complete_Call()
+        {
+            var routine = new RoutineIr();
+            var readAllocation = new object();
+            var summary = new IrRoutineEffectSummary { IsComplete = true };
+            summary.AddWrite(IrMemoryRegion.Tables,
+                new IrMemoryIdentity(IrMemoryRegion.Tables, new object(), 0, 1));
+            var table = routine.CreateValue();
+            var index = routine.CreateConstant(0);
+            var home = Mock.Of<IVariable>();
+            var identity = new IrMemoryIdentity(IrMemoryRegion.Tables, readAllocation, 0, 1);
+            var first = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables, readIdentity: identity);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.InputOutput,
+                hasResult: false);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.Call, hasResult: false,
+                callSummary: summary);
+            var second = routine.Append(routine.Entry, IrOpcode.LoadByte, [table, index], IrEffect.ReadMemory,
+                new IrLoweringOperation(_ => { }, home), readRegions: IrMemoryRegion.Tables, readIdentity: identity);
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer().Optimize(routine);
+
+            Assert.IsFalse(routine.Entry.Instructions.Contains(second));
+        }
+
+        [TestMethod]
         public void Licm_Does_Not_Hoist_Exact_Global_Across_Same_Global_Write()
         {
             var routine = new RoutineIr();
@@ -1087,7 +1194,7 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
-        public void Licm_Conservatively_Uses_Regions_From_Complete_Callee()
+        public void Licm_Uses_Exact_Global_Writes_From_Complete_Callee()
         {
             var routine = new RoutineIr();
             var header = routine.CreateBlock();
@@ -1109,7 +1216,7 @@ namespace Zilf.Emit.Tests
 
             new RoutineIrOptimizer().Optimize(routine);
 
-            Assert.IsTrue(header.Instructions.Contains(expression));
+            Assert.IsTrue(routine.Entry.Instructions.Contains(expression));
         }
 
         [TestMethod]
@@ -1482,6 +1589,34 @@ namespace Zilf.Emit.Tests
             target.Verify(t => t.MarkLabel(label), Times.Once);
             target.Verify(t => t.EmitQuit(), Times.Once);
             target.Verify(t => t.Finish(), Times.Once);
+        }
+
+        [TestMethod]
+        public void IrRoutineBuilder_Deferred_Finalization_Preserves_Finish_Order()
+        {
+            var finalizationOrder = new List<string>();
+
+            IrRoutineBuilder CreateBuilder(string name)
+            {
+                var target = new Mock<IRoutineBuilder>();
+                target.SetupGet(item => item.RoutineStart).Returns(Mock.Of<ILabel>());
+                target.SetupGet(item => item.RTrue).Returns(Mock.Of<ILabel>());
+                target.SetupGet(item => item.RFalse).Returns(Mock.Of<ILabel>());
+                target.Setup(item => item.Finish()).Callback(() => finalizationOrder.Add(name));
+                return new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, optimize: true,
+                    deferFinalization: _ => { });
+            }
+
+            var definedFirst = CreateBuilder("defined-first");
+            var finishedFirst = CreateBuilder("finished-first");
+            finishedFirst.EmitQuit();
+            finishedFirst.Finish();
+            definedFirst.EmitQuit();
+            definedFirst.Finish();
+
+            IrRoutineBuilder.FinalizeRoutines([finishedFirst, definedFirst]);
+
+            CollectionAssert.AreEqual(new[] { "finished-first", "defined-first" }, finalizationOrder);
         }
 
         [TestMethod]

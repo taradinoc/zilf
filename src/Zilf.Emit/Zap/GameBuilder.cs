@@ -62,6 +62,7 @@ namespace Zilf.Emit.Zap
         readonly List<TableBuilder> impureTables = new(10);
         readonly List<TableBuilder> pureTables = new(10);
         readonly List<WordBuilder> vocabulary = new(100);
+        readonly List<IrRoutineBuilder> irRoutines = [];
         readonly HashSet<char> siBreaks = new();
         readonly Dictionary<string, IOperand> stringPool = new(100);
         readonly Dictionary<int, NumericOperand> numberPool = new(50);
@@ -365,7 +366,7 @@ namespace Zilf.Emit.Zap
             var result = new IrRoutineBuilder(target, IrNumericSemantics.ZMachine16, optimizeRoutineIr, MakeOperand,
                 preferConstantHome: operand => operand is not INumericOperand numeric ||
                     (ushort)numeric.Value > byte.MaxValue,
-                recordOptimizationStats: RecordIrOptimizationStats);
+                recordOptimizationStats: RecordIrOptimizationStats, deferFinalization: irRoutines.Add);
             symbols.Add(name, "routine");
 
             if (entryPoint)
@@ -543,6 +544,9 @@ namespace Zilf.Emit.Zap
 
         public void Finish()
         {
+            IrRoutineBuilder.FinalizeRoutines(irRoutines);
+            irRoutines.Clear();
+
             // finish main file
             writer.WriteLine();
 #if DEBUG

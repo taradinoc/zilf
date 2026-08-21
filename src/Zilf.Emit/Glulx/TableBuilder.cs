@@ -23,7 +23,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace Zilf.Emit.Glulx
 {
-    class TableBuilder : ConstantOperandBase, ITableBuilder, INonzeroConstantOperand
+    class TableBuilder : ConstantOperandBase, ITableBuilder, INonzeroConstantOperand, IMemoryAddressOperand
     {
         readonly List<int> numericValues = new();
         readonly List<IOperand> operandValues = new();
@@ -45,6 +45,13 @@ namespace Zilf.Emit.Glulx
         public TableBuilder(string name)
         {
             Name = name;
+        }
+
+        bool IMemoryAddressOperand.TryGetMemoryAddress(out object allocation, out int offset)
+        {
+            allocation = this;
+            offset = 0;
+            return true;
         }
 
         public string Name { get; }
