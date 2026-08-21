@@ -122,6 +122,26 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Stack_Call_Result_Add_One_Forwards_Destination_And_Becomes_INC()
+        {
+            await AssertRoutine("\"AUX\" X", "<SET X <+ <WHATEVER 123> 1>>")
+                .WithGlobal("<ROUTINE WHATEVER (VALUE) .VALUE>")
+                .InV5()
+                .GeneratesCodeMatchingAsync(@"CALL2 WHATEVER,123 >X\r?\n\s*INC 'X")
+                .AndNotMatching(@"CALL2 WHATEVER,123 >STACK\r?\n\s*ADD (?:1,STACK|STACK,1) >X");
+        }
+
+        [TestMethod]
+        public async Task Stack_Call_Result_Subtract_One_Forwards_Destination_And_Becomes_DEC()
+        {
+            await AssertRoutine("\"AUX\" X", "<SET X <- <WHATEVER 123> 1>>")
+                .WithGlobal("<ROUTINE WHATEVER (VALUE) .VALUE>")
+                .InV5()
+                .GeneratesCodeMatchingAsync(@"CALL2 WHATEVER,123 >X\r?\n\s*DEC 'X")
+                .AndNotMatching(@"CALL2 WHATEVER,123 >STACK\r?\n\s*SUB STACK,1 >X");
+        }
+
+        [TestMethod]
         public async Task TestRoutineResultIntoVariable()
         {
             await AssertRoutine("\"AUX\" FOO", "<SET FOO <WHATEVER>>")

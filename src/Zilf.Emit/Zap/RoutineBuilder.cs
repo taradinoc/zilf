@@ -1441,6 +1441,7 @@ namespace Zilf.Emit.Zap
                 new("eliminate stack pop pair", TryEliminateStackPopPair),
                 new("replace push+pop with set", TryReplacePushPopWithSet),
                 new("substitute pushed value", TrySubstitutePushedValue),
+                new("forward stack result through inc/dec arithmetic", TryForwardStackResultThroughIncDecArithmetic),
                 new("eliminate inc/dec pair", TryEliminateIncDecPair),
                 new("rewrite stack inc/dec arithmetic to pop", TryRewriteStackIncDecArithmeticToPop),
                 new("fold inc branch", TryFoldIncBranch),
@@ -1707,6 +1708,45 @@ namespace Zilf.Emit.Zap
                              variable != null && variable.Equals(secondVariable)))
                     {
                         result = Consume(2);
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryForwardStackResultThroughIncDecArithmetic(IEnumerable<CombinableLine<ZapCode>> lines,
+                out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    string? destination = null;
+
+                    if (Match(
+                        a => a.Code.Instruction.StoreTarget == "STACK",
+                        b => IsAddStackOne(b.Code.Instruction, out destination)))
+                    {
+                        result = Combine2To2(
+                            matches![0].Code.Instruction.WithStoreTarget(destination),
+                            new Instruction("INC", new QuoteExpr(new SymbolExpr(destination!))));
+                        return true;
+                    }
+
+                    destination = null;
+
+                    if (Match(
+                        a => a.Code.Instruction.StoreTarget == "STACK",
+                        b => IsSubStackOne(b.Code.Instruction, out destination)))
+                    {
+                        result = Combine2To2(
+                            matches![0].Code.Instruction.WithStoreTarget(destination),
+                            new Instruction("DEC", new QuoteExpr(new SymbolExpr(destination!))));
                         return true;
                     }
 
