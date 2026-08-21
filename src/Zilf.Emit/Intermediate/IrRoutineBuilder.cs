@@ -59,7 +59,7 @@ namespace Zilf.Emit.Intermediate
         public IrRoutineBuilder(IRoutineBuilder target, IrNumericSemantics numericSemantics, bool optimize,
             Func<int, INumericOperand>? makeOperand = null, Func<IOperand, bool>? preferConstantHome = null,
             Action<IEnumerable<IrOptimizationStat>>? recordOptimizationStats = null,
-            Action<IrRoutineBuilder>? deferFinalization = null)
+            Action<IrRoutineBuilder>? deferFinalization = null, IIrOptimizationCostPolicy? costPolicy = null)
         {
             this.target = target;
             this.optimize = optimize;
@@ -76,7 +76,7 @@ namespace Zilf.Emit.Intermediate
                 compilerTemporaries.Add(temporary);
                 return temporary;
             }, (destination, value) => target.EmitStore(destination, value), () => compilerTemporaries,
-                CreateOptimizerPreheader);
+                CreateOptimizerPreheader, costPolicy);
             current = routine.Entry;
             layout.Add(current);
             labelBlocks.Add(target.RoutineStart, current);
@@ -185,7 +185,11 @@ namespace Zilf.Emit.Intermediate
                 PreserveStackValues();
                 FlushPromotedLocals();
                 var instruction = AppendLowering(opcode, values, IrEffect.Control,
-                    resolved => target.Branch(cond, resolved[0], right == null ? null : resolved[1], label, polarity));
+                    resolved => target.Branch(cond, resolved[0], right == null ? null : resolved[1], label, polarity),
+                    readRegions: GetReadRegions(opcode),
+                    readIdentity: cond == Condition.TestAttr && right != null
+                        ? TryGetObjectMemberIdentity(left, right, IrMemoryRegion.Attributes)
+                        : null);
                 FinishConditional(label, instruction.Result!, polarity, instruction);
                 return;
             }
@@ -327,24 +331,47 @@ namespace Zilf.Emit.Intermediate
 
         public void EmitUnary(UnaryOp op, IOperand value, IVariable? result)
         {
-            if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
-                TryMap(op, out var opcode))
+            if (result != null && TryMap(op, out var opcode))
             {
+                var promotedResult = locals.Contains(result) || ReferenceEquals(result, Stack);
+                var writeIdentity = promotedResult ? null : GetDestinationIdentity(result);
                 var instruction = AppendLowering(opcode, [GetValue(value)], IrEffect.None,
                     operands => target.EmitUnary(op, operands[0], result), resultHome: result,
-                    emitTo: (operands, home) => target.EmitUnary(op, operands[0], home));
-                SetProducedValue(result, instruction.Result!);
+                    emitTo: (operands, home) => target.EmitUnary(op, operands[0], home),
+                    writeRegions: promotedResult ? IrMemoryRegion.None : IrMemoryRegion.Globals,
+                    writeIdentity: writeIdentity);
+                ((IrLoweringOperation)instruction.Payload!).RequiredHome = !promotedResult;
+                if (!promotedResult)
+                    instruction.WrittenValue = instruction.Result;
+                if (promotedResult)
+                    SetProducedValue(result, instruction.Result!);
+                else
+                {
+                    valueHomes[instruction.Result!] = result;
+                    InvalidateMutableExternalValues();
+                }
                 return;
             }
-            if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
-                TryMapMemoryRead(op, out opcode))
+            if (result != null && TryMapMemoryRead(op, out opcode))
             {
+                var promotedResult = locals.Contains(result) || ReferenceEquals(result, Stack);
+                var writeIdentity = promotedResult ? null : GetDestinationIdentity(result);
                 var instruction = AppendLowering(opcode, [GetValue(value)], IrEffect.ReadMemory,
                     operands => target.EmitUnary(op, operands[0], result), resultHome: result,
                     emitTo: (operands, home) => target.EmitUnary(op, operands[0], home),
                     readRegions: GetReadRegions(opcode),
-                    readIdentity: TryGetMemoryIdentity(value, GetReadRegions(opcode)));
-                SetProducedValue(result, instruction.Result!);
+                    writeRegions: promotedResult ? IrMemoryRegion.None : IrMemoryRegion.Globals,
+                    readIdentity: TryGetMemoryIdentity(value, GetReadRegions(opcode)), writeIdentity: writeIdentity);
+                ((IrLoweringOperation)instruction.Payload!).RequiredHome = !promotedResult;
+                if (!promotedResult)
+                    instruction.WrittenValue = instruction.Result;
+                if (promotedResult)
+                    SetProducedValue(result, instruction.Result!);
+                else
+                {
+                    valueHomes[instruction.Result!] = result;
+                    InvalidateMutableExternalValues();
+                }
                 return;
             }
             if (TryClassify(op, out var effect))
@@ -364,32 +391,68 @@ namespace Zilf.Emit.Intermediate
                     $"Binary.{op}.IndirectLocal");
                 return;
             }
-            if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
-                TryMapMemoryRead(op, out var loadOpcode))
+            if (result != null && TryMapMemoryRead(op, out var loadOpcode))
             {
-                var instruction = AppendLowering(loadOpcode, [GetValue(left), GetValue(right)], IrEffect.ReadMemory,
+                var promotedResult = locals.Contains(result) || ReferenceEquals(result, Stack);
+                var writeIdentity = promotedResult ? null : GetDestinationIdentity(result);
+                var leftValue = GetValue(left);
+                var rightValue = GetValue(right);
+                var instruction = AppendLowering(loadOpcode, [leftValue, rightValue], IrEffect.ReadMemory,
                     operands => target.EmitBinary(op, operands[0], operands[1], result), resultHome: result,
                     emitTo: (operands, home) => target.EmitBinary(op, operands[0], operands[1], home),
                     readRegions: GetReadRegions(loadOpcode),
-                    readIdentity: TryGetTableMemoryIdentity(left, right, loadOpcode == IrOpcode.LoadByte ? 1 : wordSize,
-                        loadOpcode == IrOpcode.LoadByte ? 1 : wordSize));
-                SetProducedValue(result, instruction.Result!);
+                    writeRegions: promotedResult ? IrMemoryRegion.None : IrMemoryRegion.Globals,
+                    readIdentity: loadOpcode == IrOpcode.LoadProperty
+                        ? TryGetObjectMemberIdentity(left, right, IrMemoryRegion.Properties)
+                        : TryGetTableMemoryIdentity(left, right,
+                            loadOpcode == IrOpcode.LoadByte ? 1 : wordSize,
+                            loadOpcode == IrOpcode.LoadByte ? 1 : wordSize) ??
+                            TryGetTableMemoryIdentity(leftValue, rightValue,
+                                loadOpcode == IrOpcode.LoadByte ? 1 : wordSize,
+                                loadOpcode == IrOpcode.LoadByte ? 1 : wordSize),
+                    writeIdentity: writeIdentity);
+                ((IrLoweringOperation)instruction.Payload!).RequiredHome = !promotedResult;
+                if (!promotedResult)
+                    instruction.WrittenValue = instruction.Result;
+                if (promotedResult)
+                    SetProducedValue(result, instruction.Result!);
+                else
+                {
+                    valueHomes[instruction.Result!] = result;
+                    InvalidateMutableExternalValues();
+                }
                 return;
             }
-            if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
-                TryMap(op, out var opcode))
+            if (result != null && TryMap(op, out var opcode))
             {
+                var promotedResult = locals.Contains(result) || ReferenceEquals(result, Stack);
+                var writeIdentity = promotedResult ? null : GetDestinationIdentity(result);
                 var instruction = AppendLowering(opcode, [GetValue(left), GetValue(right)], IrEffect.None,
                     operands => target.EmitBinary(op, operands[0], operands[1], result), resultHome: result,
-                    emitTo: (operands, home) => target.EmitBinary(op, operands[0], operands[1], home));
-                SetProducedValue(result, instruction.Result!);
+                    emitTo: (operands, home) => target.EmitBinary(op, operands[0], operands[1], home),
+                    writeRegions: promotedResult ? IrMemoryRegion.None : IrMemoryRegion.Globals,
+                    writeIdentity: writeIdentity);
+                SetDerivedAddressIdentity(instruction);
+                ((IrLoweringOperation)instruction.Payload!).RequiredHome = !promotedResult;
+                if (!promotedResult)
+                    instruction.WrittenValue = instruction.Result;
+                if (promotedResult)
+                    SetProducedValue(result, instruction.Result!);
+                else
+                {
+                    valueHomes[instruction.Result!] = result;
+                    InvalidateMutableExternalValues();
+                }
                 return;
             }
             if (TryClassify(op, out var effect))
             {
                 RecordEffectfulOperation([left, right],
                     operands => target.EmitBinary(op, operands[0], operands[1], result), effect, result,
-                    (operands, home) => target.EmitBinary(op, operands[0], operands[1], home), GetWriteRegions(op));
+                    (operands, home) => target.EmitBinary(op, operands[0], operands[1], home), GetWriteRegions(op),
+                    op is BinaryOp.SetFlag or BinaryOp.ClearFlag
+                        ? TryGetObjectMemberIdentity(left, right, IrMemoryRegion.Attributes)
+                        : null);
                 return;
             }
             RecordTemporaryOperation([left, right],
@@ -407,8 +470,10 @@ namespace Zilf.Emit.Intermediate
                     {
                         TernaryOp.PutByte => TryGetTableMemoryIdentity(left, center, 1, 1),
                         TernaryOp.PutWord => TryGetTableMemoryIdentity(left, center, wordSize, wordSize),
+                        TernaryOp.PutProperty =>
+                            TryGetObjectMemberIdentity(left, center, IrMemoryRegion.Properties),
                         _ => TryGetMemoryIdentity(left, GetWriteRegions(op)),
-                    });
+                    }, op is TernaryOp.PutByte or TernaryOp.PutWord or TernaryOp.PutProperty ? 2 : null);
                 return;
             }
             RecordTemporaryOperation([left, center, right],
@@ -564,4 +629,3 @@ namespace Zilf.Emit.Intermediate
 
     }
 }
-

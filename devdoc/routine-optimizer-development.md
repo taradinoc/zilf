@@ -224,6 +224,13 @@ and opaque-operation counts, applications by optimization, GVN physical-availabi
 fallbacks grouped by operation. Use them to determine whether the source truly lacks candidates, recording left the
 operation opaque, an effect invalidated availability, or physical-home profitability rejected the rewrite.
 
+Memory rejection statistics are also grouped by optimization, candidate opcode, memory region, and a bounded barrier
+kind (`exact write`, `unknown write`, `summarized call`, `incomplete call`, or `opaque operation`). Profitability
+rejections distinguish GVN and LICM. These aggregate categories intentionally omit routine and operand names so debug
+assembly remains deterministic and reasonably compact. When evaluating a change, regenerate `sample/rascal` and
+`sample/zork1` with optimization enabled and disabled, then compare these counters before inspecting the affected
+routines and assembling both outputs.
+
 Run the fast solution suite after changes:
 
 ```powershell

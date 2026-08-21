@@ -35,18 +35,20 @@ namespace Zilf.Emit.Intermediate
         private readonly Func<IEnumerable<IVariable>> reusableTemporaries;
         private readonly Action<IVariable, IOperand>? emitCopy;
         private readonly Func<IrBlock, IrBlock>? createPreheader;
+        private readonly IIrOptimizationCostPolicy costPolicy;
         private readonly Dictionary<string, int> statistics = new(StringComparer.Ordinal);
 
         public RoutineIrOptimizer(IrNumericSemantics numericSemantics = IrNumericSemantics.Glulx32,
             Func<IVariable?>? acquireTemporary = null, Action<IVariable, IOperand>? emitCopy = null,
             Func<IEnumerable<IVariable>>? reusableTemporaries = null,
-            Func<IrBlock, IrBlock>? createPreheader = null)
+            Func<IrBlock, IrBlock>? createPreheader = null, IIrOptimizationCostPolicy? costPolicy = null)
         {
             this.numericSemantics = numericSemantics;
             this.acquireTemporary = acquireTemporary ?? (() => null);
             this.emitCopy = emitCopy;
             this.reusableTemporaries = reusableTemporaries ?? (() => []);
             this.createPreheader = createPreheader;
+            this.costPolicy = costPolicy ?? NeutralIrOptimizationCostPolicy.Instance;
         }
 
         public void Optimize(RoutineIr routine)
@@ -72,6 +74,8 @@ namespace Zilf.Emit.Intermediate
             CreateLoopPreheaders(routine);
             SimplifyInductionVariables(routine);
             LoopInvariantCodeMotion(routine);
+            EliminatePartialRedundancies(routine);
+            ForwardStoredConstants(routine);
             GlobalValueNumbering(routine);
             var changed = true;
             while (changed)
@@ -99,4 +103,3 @@ namespace Zilf.Emit.Intermediate
 
     }
 }
-

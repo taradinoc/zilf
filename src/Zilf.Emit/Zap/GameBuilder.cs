@@ -366,7 +366,7 @@ namespace Zilf.Emit.Zap
                 preferConstantHome: operand => operand is not INumericOperand numeric ||
                     (ushort)numeric.Value > byte.MaxValue,
                 recordOptimizationStats: irRoutineCoordinator.RecordOptimizationStatistics,
-                deferFinalization: irRoutineCoordinator.Add);
+                deferFinalization: irRoutineCoordinator.Add, costPolicy: ZapIrOptimizationCostPolicy.Instance);
             symbols.Add(name, "routine");
 
             if (entryPoint)

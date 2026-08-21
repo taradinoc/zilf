@@ -24,6 +24,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Zilf.Emit;
 using Zilf.Emit.Intermediate;
+using Zilf.Emit.Zap;
 
 namespace Zilf.Emit.Tests
 {
@@ -1911,7 +1912,7 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
-        public void IrRoutineBuilder_Reports_Unstructured_Binary_As_Opaque()
+        public void IrRoutineBuilder_Structures_Binary_With_Required_Global_Destination()
         {
             var target = new Mock<IRoutineBuilder>();
             var left = Mock.Of<IVariable>();
@@ -1933,8 +1934,8 @@ namespace Zilf.Emit.Tests
             builder.Return(destination);
             builder.Finish();
 
-            Assert.AreEqual(1, stats["Input opaque operations"]);
-            Assert.AreEqual(1, stats["Recorded opaque: Binary.Add"]);
+            Assert.AreEqual(0, stats["Input opaque operations"]);
+            Assert.IsFalse(stats.ContainsKey("Recorded opaque: Binary.Add"));
             target.Verify(t => t.EmitBinary(BinaryOp.Add, left, one.Object, destination), Times.Once);
             target.Verify(t => t.Return(destination), Times.Once);
         }
@@ -2389,6 +2390,148 @@ namespace Zilf.Emit.Tests
             target.Verify(t => t.EmitBinary(BinaryOp.Sub, index, one.Object, stack), Times.Never);
             target.Verify(t => t.EmitBinary(BinaryOp.GetByte, firstTable, irTemporary, firstResult), Times.Once);
             target.Verify(t => t.EmitBinary(BinaryOp.GetByte, secondTable, irTemporary, secondResult), Times.Once);
+        }
+
+        [TestMethod]
+        public void ZapCostPolicy_Promotes_Repeated_LoadParent_Stack_Result()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var stack = Mock.Of<IVariable>();
+            var obj = Mock.Of<ILocalBuilder>();
+            var temporary = Mock.Of<ILocalBuilder>();
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.Stack).Returns(stack);
+            target.Setup(t => t.DefineRequiredParameter("OBJ")).Returns(obj);
+            target.Setup(t => t.DefineLocal("?IR0")).Returns(temporary);
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true,
+                costPolicy: ZapIrOptimizationCostPolicy.Instance);
+            var objectParameter = builder.DefineRequiredParameter("OBJ");
+            builder.EmitUnary(UnaryOp.GetParent, objectParameter, builder.Stack);
+            builder.EmitPrint(PrintOp.Number, builder.Stack);
+            builder.EmitUnary(UnaryOp.GetParent, objectParameter, builder.Stack);
+            builder.EmitPrint(PrintOp.Number, builder.Stack);
+            builder.Finish();
+
+            target.Verify(t => t.EmitUnary(UnaryOp.GetParent, obj, temporary), Times.Once);
+            target.Verify(t => t.EmitUnary(UnaryOp.GetParent, obj, stack), Times.Never);
+            target.Verify(t => t.EmitPrint(PrintOp.Number, temporary), Times.Exactly(2));
+        }
+
+        [TestMethod]
+        public void ZapCostPolicy_Preserves_InPlace_Increment_After_Equivalent_Stack_Add()
+        {
+            var target = new Mock<IRoutineBuilder>();
+            var stack = Mock.Of<IVariable>();
+            var matches = Mock.Of<ILocalBuilder>();
+            var obj = Mock.Of<ILocalBuilder>();
+            var table = Mock.Of<IOperand>();
+            var one = new Mock<INumericOperand>();
+            one.SetupGet(operand => operand.Value).Returns(1);
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.Stack).Returns(stack);
+            target.Setup(t => t.DefineLocal("MATCHES")).Returns(matches);
+            target.Setup(t => t.DefineLocal("OBJ")).Returns(obj);
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true,
+                costPolicy: ZapIrOptimizationCostPolicy.Instance);
+            var matchesLocal = builder.DefineLocal("MATCHES");
+            var objectLocal = builder.DefineLocal("OBJ");
+            builder.EmitBinary(BinaryOp.Add, matchesLocal, one.Object, builder.Stack);
+            builder.EmitTernary(TernaryOp.PutWord, table, builder.Stack, objectLocal, null);
+            builder.EmitBinary(BinaryOp.Add, matchesLocal, one.Object, matchesLocal);
+            builder.Finish();
+
+            target.Verify(t => t.DefineLocal("?IR0"), Times.Never);
+            target.Verify(t => t.EmitBinary(BinaryOp.Add, matches, one.Object, stack), Times.Once);
+            target.Verify(t => t.EmitTernary(TernaryOp.PutWord, table, stack, obj, null), Times.Once);
+            target.Verify(t => t.EmitBinary(BinaryOp.Add, matches, one.Object, matches), Times.Once);
+        }
+
+        [TestMethod]
+        public void StoreToLoad_Forwards_Exact_Constant_Through_Equal_Join()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            var condition = routine.CreateValue();
+            var identity = new IrMemoryIdentity(IrMemoryRegion.Tables, new object(), 4, 1);
+            var value = routine.CreateConstant(42);
+            routine.Entry.Terminator = new IrTerminator.Branch(condition, left, right);
+            foreach (var block in new[] { left, right })
+            {
+                var store = routine.Append(block, IrOpcode.TargetOperation, [value], IrEffect.WriteMemory,
+                    () => { }, hasResult: false, writeRegions: IrMemoryRegion.Tables, writeIdentity: identity);
+                store.WrittenValue = value;
+                block.Terminator = new IrTerminator.Jump(join);
+            }
+            var load = routine.Append(join, IrOpcode.LoadByte, [routine.CreateValue(), routine.CreateConstant(4)],
+                IrEffect.ReadMemory, new IrLoweringOperation(_ => { }), readRegions: IrMemoryRegion.Tables,
+                readIdentity: identity);
+            join.Terminator = new IrTerminator.Return(load.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreEqual(42, ((IrTerminator.Return)join.Terminator).Value!.Constant);
+            Assert.AreEqual(0, routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
+        public void Gvn_Canonicalizes_FixedWidth_Constant_Address_Chains()
+        {
+            var routine = new RoutineIr();
+            var home = Mock.Of<IVariable>();
+            var address = routine.CreateExternalValue(false);
+            var plusOne = routine.Append(routine.Entry, IrOpcode.Add, [address, routine.CreateConstant(1)],
+                payload: new IrLoweringOperation(_ => { }, home));
+            var plusThreeChained = routine.Append(routine.Entry, IrOpcode.Add,
+                [plusOne.Result!, routine.CreateConstant(2)], payload: new IrLoweringOperation(_ => { }, home));
+            var plusThreeDirect = routine.Append(routine.Entry, IrOpcode.Add,
+                [address, routine.CreateConstant(3)], payload: new IrLoweringOperation(_ => { }, home));
+            routine.Entry.Terminator = new IrTerminator.Return(plusThreeDirect.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreSame(plusThreeChained.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
+            Assert.AreEqual(2, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Add));
+        }
+
+        [TestMethod]
+        public void Pre_Inserts_One_Missing_Edge_Computation()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            var stack = Mock.Of<IVariable>();
+            var temporary = Mock.Of<IVariable>();
+            var address = routine.CreateExternalValue(false);
+            var one = routine.CreateConstant(1);
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), left, right);
+            var leftExpression = routine.Append(left, IrOpcode.Add, [address, one], payload:
+                new IrLoweringOperation(_ => { }, stack, true, (_, _) => { }));
+            left.Terminator = new IrTerminator.Jump(join);
+            right.Terminator = new IrTerminator.Jump(join);
+            var joinExpression = routine.Append(join, IrOpcode.Add, [address, one], payload:
+                new IrLoweringOperation(_ => { }, stack, true, (_, _) => { }));
+            join.Terminator = new IrTerminator.Return(joinExpression.Result);
+            var optimizer = new RoutineIrOptimizer(IrNumericSemantics.ZMachine16, () => temporary);
+
+            optimizer.Optimize(routine);
+
+            Assert.AreEqual(1, optimizer.GetStatistics().Single(stat =>
+                stat.Name == "PRE eliminated expressions").Count);
+            Assert.AreEqual(1, optimizer.GetStatistics().Single(stat =>
+                stat.Name == "PRE inserted expressions").Count);
+            Assert.AreSame(temporary, leftExpression.Result!.PhysicalHome);
+            Assert.AreEqual(1, right.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Add));
+            Assert.AreEqual(0, join.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Add));
         }
 
         private static void AssertFoldedBinary(

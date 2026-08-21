@@ -25,6 +25,32 @@ namespace Zilf.Emit.Intermediate
 {
     internal readonly record struct IrOptimizationStat(string Name, int Count);
 
+    internal interface IIrOptimizationCostPolicy
+    {
+        bool ShouldPromoteStackResult(IrInstruction instruction, IrInstruction repeatedInstruction,
+            bool reusesExistingTemporary);
+
+        bool ShouldRewriteAsCopy(IrInstruction instruction, IrValue source);
+
+        bool ShouldHoist(IrInstruction instruction, bool requiresNewTemporary);
+
+        bool ShouldPlacePartialRedundancy(IrInstruction instruction, int insertedEdges);
+    }
+
+    internal sealed class NeutralIrOptimizationCostPolicy : IIrOptimizationCostPolicy
+    {
+        public static NeutralIrOptimizationCostPolicy Instance { get; } = new();
+
+        public bool ShouldPromoteStackResult(IrInstruction instruction, IrInstruction repeatedInstruction,
+            bool reusesExistingTemporary) => true;
+
+        public bool ShouldRewriteAsCopy(IrInstruction instruction, IrValue source) => true;
+
+        public bool ShouldHoist(IrInstruction instruction, bool requiresNewTemporary) => true;
+
+        public bool ShouldPlacePartialRedundancy(IrInstruction instruction, int insertedEdges) => insertedEdges == 1;
+    }
+
     internal sealed class IrLoweringOperation
     {
         public IrLoweringOperation(Action<IReadOnlyList<IOperand>> emit, IVariable? resultHome = null,
@@ -96,6 +122,8 @@ namespace Zilf.Emit.Intermediate
                 (long)other.Offset.Value < (long)Offset.Value + Length.Value;
         }
     }
+
+    internal readonly record struct IrObjectMemberKey(object Object, object Member);
 
     internal sealed class IrRoutineEffectSummary
     {
@@ -355,7 +383,7 @@ namespace Zilf.Emit.Intermediate
 
         public bool KnownNonzero { get; }
 
-        public IrMemoryIdentity? MemoryIdentity { get; }
+        public IrMemoryIdentity? MemoryIdentity { get; set; }
 
         public IOperand? PhysicalHome { get; set; }
 
@@ -402,6 +430,8 @@ namespace Zilf.Emit.Intermediate
         public IrMemoryIdentity? ReadIdentity { get; set; }
 
         public IrMemoryIdentity? WriteIdentity { get; set; }
+
+        public IrValue? WrittenValue { get; set; }
 
         public bool IsPure => Effect == IrEffect.None;
 

@@ -25,6 +25,100 @@ namespace Zilf.Emit.Intermediate
 {
     internal sealed partial class RoutineIrOptimizer
     {
+        private void ForwardStoredConstants(RoutineIr routine)
+        {
+            routine.RebuildPredecessors();
+            var input = routine.Blocks.ToDictionary(block => block,
+                _ => new Dictionary<IrMemoryIdentity, IrValue>());
+            var output = routine.Blocks.ToDictionary(block => block,
+                _ => new Dictionary<IrMemoryIdentity, IrValue>());
+            var changed = true;
+            while (changed)
+            {
+                changed = false;
+                foreach (var block in routine.Blocks)
+                {
+                    var incoming = MergeStoredValues(block.Predecessors.Select(predecessor => output[predecessor]));
+                    if (!StoredValuesEqual(input[block], incoming))
+                    {
+                        input[block] = incoming;
+                        changed = true;
+                    }
+                    var current = new Dictionary<IrMemoryIdentity, IrValue>(incoming);
+                    foreach (var instruction in block.Instructions)
+                    {
+                        KillStoredValues(current, instruction);
+                        if (instruction.WriteIdentity is { } identity && instruction.WrittenValue is
+                            { Constant: not null } value)
+                            current[identity] = value;
+                    }
+                    if (!StoredValuesEqual(output[block], current))
+                    {
+                        output[block] = current;
+                        changed = true;
+                    }
+                }
+            }
+
+            var replacements = new Dictionary<IrValue, IrValue>();
+            foreach (var block in routine.Blocks)
+            {
+                var current = new Dictionary<IrMemoryIdentity, IrValue>(input[block]);
+                foreach (var instruction in block.Instructions)
+                {
+                    if (instruction.ReadIdentity is { } readIdentity && instruction.Result != null &&
+                        instruction.Payload is not IrLoweringOperation { RequiredHome: true } &&
+                        current.TryGetValue(readIdentity, out var stored))
+                    {
+                        replacements[instruction.Result] = stored;
+                        Record("Store-to-load forwarded constants");
+                    }
+                    KillStoredValues(current, instruction);
+                    if (instruction.WriteIdentity is { } writeIdentity && instruction.WrittenValue is
+                        { Constant: not null } value)
+                        current[writeIdentity] = value;
+                }
+            }
+            ReplaceValues(routine, replacements);
+        }
+
+        private static Dictionary<IrMemoryIdentity, IrValue> MergeStoredValues(
+            IEnumerable<Dictionary<IrMemoryIdentity, IrValue>> predecessors)
+        {
+            using var enumerator = predecessors.GetEnumerator();
+            if (!enumerator.MoveNext())
+                return [];
+            var result = new Dictionary<IrMemoryIdentity, IrValue>(enumerator.Current);
+            while (enumerator.MoveNext())
+            {
+                foreach (var pair in result.ToArray())
+                {
+                    if (!enumerator.Current.TryGetValue(pair.Key, out var value) ||
+                        value.Constant != pair.Value.Constant)
+                        result.Remove(pair.Key);
+                }
+            }
+            return result;
+        }
+
+        private static bool StoredValuesEqual(Dictionary<IrMemoryIdentity, IrValue> left,
+            Dictionary<IrMemoryIdentity, IrValue> right) => left.Count == right.Count && left.All(pair =>
+                right.TryGetValue(pair.Key, out var value) && value.Constant == pair.Value.Constant);
+
+        private static void KillStoredValues(Dictionary<IrMemoryIdentity, IrValue> values, IrInstruction instruction)
+        {
+            if (instruction.Effect == IrEffect.Opaque)
+            {
+                values.Clear();
+                return;
+            }
+            var unknown = GetUnknownWrittenRegions(instruction);
+            var exact = GetWrittenIdentities(instruction).ToArray();
+            foreach (var identity in values.Keys.Where(identity => (unknown & identity.Region) != 0 ||
+                exact.Any(identity.MayAlias)).ToArray())
+                values.Remove(identity);
+        }
+
         private sealed class CfgAnalysis
         {
             private readonly IReadOnlyDictionary<IrBlock, HashSet<IrBlock>> dominators;
@@ -287,6 +381,8 @@ namespace Zilf.Emit.Intermediate
                 (instruction, block))).ToDictionary(pair => pair.instruction, pair => pair.block);
             var instructionIndices = blocks.SelectMany(block => block.Instructions.Select((instruction, index) =>
                 (instruction, index))).ToDictionary(pair => pair.instruction, pair => pair.index);
+            var definitions = instructionBlocks.Keys.Where(instruction => instruction.Result != null)
+                .ToDictionary(instruction => instruction.Result!, instruction => instruction);
             var lastUseIndices = new Dictionary<IrValue, int>();
             foreach (var block in blocks)
             {
@@ -359,7 +455,8 @@ namespace Zilf.Emit.Intermediate
                 {
                     for (var i = 0; i < instruction.Operands.Count; i++)
                         instruction.Operands[i] = Resolve(instruction.Operands[i]);
-                    if (instruction.Effect is IrEffect.WriteMemory or IrEffect.Call or IrEffect.Opaque)
+                    if (instruction.WriteRegions != IrMemoryRegion.None ||
+                        instruction.Effect is IrEffect.WriteMemory or IrEffect.Call or IrEffect.Opaque)
                     {
                         if (instruction.Effect == IrEffect.Opaque)
                             available.Clear();
@@ -381,6 +478,10 @@ namespace Zilf.Emit.Intermediate
                                 Record(unknownInvalidation
                                     ? "GVN invalidated: unknown memory"
                                     : "GVN invalidated: exact memory");
+                                RecordMemoryRejection("GVN", pair.Value.Instruction.Opcode,
+                                    unknownInvalidation ? writtenRegions : writtenIdentities.Aggregate(
+                                        IrMemoryRegion.None, (regions, identity) => regions | identity.Region),
+                                    GetBarrierKind(instruction, unknownInvalidation));
                             }
                         }
                     }
@@ -393,8 +494,15 @@ namespace Zilf.Emit.Intermediate
                         var currentIds = instruction.Operands.Select(OperandKey).ToArray();
                         if (IsCommutative(instruction.Opcode))
                             Array.Sort(currentIds);
+                        var keyOpcode = instruction.Opcode;
+                        if (TryGetConstantOffsetExpression(instruction.Result, definitions, out var addressBase,
+                            out var addressOffset))
+                        {
+                            keyOpcode = IrOpcode.Add;
+                            currentIds = [$"A{addressBase.Id}", $"O{addressOffset}"];
+                        }
                         var dependencies = stateDependencies.GetValueOrDefault(instruction.Result);
-                        currentKey = (instruction.Opcode,
+                        currentKey = (keyOpcode,
                             $"{string.Join(",", currentIds)}|{memoryVersions.GetKey(instruction, dependencies,
                                 identityDependencies.GetValueOrDefault(instruction.Result) ?? [])}");
                     }
@@ -480,6 +588,43 @@ namespace Zilf.Emit.Intermediate
             }
             ReplaceValues(routine, replacements);
 
+            bool TryGetConstantOffsetExpression(IrValue? value,
+                IReadOnlyDictionary<IrValue, IrInstruction> valueDefinitions, out IrValue baseValue, out int offset)
+            {
+                baseValue = null!;
+                offset = 0;
+                if (value == null || !valueDefinitions.TryGetValue(value, out var definition) ||
+                    definition.Opcode is not (IrOpcode.Add or IrOpcode.Subtract) || definition.Operands.Count != 2)
+                    return false;
+                IrValue nested;
+                int delta;
+                if (definition.Operands[1].Constant is int right)
+                {
+                    nested = definition.Operands[0];
+                    delta = definition.Opcode == IrOpcode.Add ? right : -right;
+                }
+                else if (definition.Opcode == IrOpcode.Add && definition.Operands[0].Constant is int left)
+                {
+                    nested = definition.Operands[1];
+                    delta = left;
+                }
+                else
+                {
+                    return false;
+                }
+                if (TryGetConstantOffsetExpression(nested, valueDefinitions, out var nestedBase, out var nestedOffset))
+                {
+                    baseValue = nestedBase;
+                    offset = Normalize(nestedOffset + delta);
+                }
+                else
+                {
+                    baseValue = nested;
+                    offset = Normalize(delta);
+                }
+                return true;
+            }
+
             IVariable? FindReusableTemporary(IrInstruction definition, IrInstruction use)
             {
                 if (!instructionBlocks.TryGetValue(definition, out var definitionBlock) ||
@@ -548,9 +693,27 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        private void RecordMemoryRejection(string optimization, IrOpcode opcode, IrMemoryRegion regions,
+            string barrier)
+        {
+            foreach (var region in Enum.GetValues<IrMemoryRegion>().Where(region => region != IrMemoryRegion.None &&
+                region != IrMemoryRegion.All && (regions & region) != 0))
+                Record($"{optimization} rejected: {opcode}: {region}: {barrier}");
+        }
+
+        private static string GetBarrierKind(IrInstruction instruction, bool unknown) => instruction.Effect switch
+        {
+            IrEffect.Opaque => "opaque operation",
+            IrEffect.Call when instruction.CallSummary == null || !instruction.CallSummary.IsComplete =>
+                "incomplete call",
+            IrEffect.Call => "summarized call",
+            _ => unknown ? "unknown write" : "exact write",
+        };
+
         private bool TryRewriteAsCopy(IrValue priorValue, IrInstruction priorInstruction, IrInstruction instruction)
         {
             if (emitCopy == null ||
+                !costPolicy.ShouldRewriteAsCopy(instruction, priorValue) ||
                 priorInstruction.Payload is IrLoweringOperation { IsStackResult: true } ||
                 instruction.Payload is not IrLoweringOperation
                 {
@@ -681,6 +844,12 @@ namespace Zilf.Emit.Intermediate
                 current.Payload is not IrLoweringOperation currentLowering ||
                 currentLowering.IsStackResult && currentLowering.StackEscapes)
                 return false;
+
+            if (!costPolicy.ShouldPromoteStackResult(prior, current, reusableTemporary != null))
+            {
+                Record("GVN rejected: unprofitable rewrite");
+                return false;
+            }
 
             var temporary = reusableTemporary ?? acquireTemporary();
             if (temporary == null)
@@ -818,8 +987,6 @@ namespace Zilf.Emit.Intermediate
         }
 
         private static bool IsValueNumberable(IrInstruction instruction) =>
-            (instruction.Payload is not IrLoweringOperation { RequiredHome: true } ||
-             IsMemoryRead(instruction.Opcode)) &&
             (instruction.IsPure || instruction.Effect == IrEffect.ReadMemory) && instruction.Opcode is
             IrOpcode.Add or IrOpcode.Subtract or IrOpcode.Multiply or IrOpcode.Divide or IrOpcode.Modulo or
             IrOpcode.BitwiseAnd or IrOpcode.BitwiseOr or IrOpcode.BitwiseNot or IrOpcode.Negate or

@@ -95,7 +95,8 @@ namespace Zilf.Emit.Intermediate
         protected void RecordEffectfulOperation(IReadOnlyList<IOperand> operands,
             Action<IReadOnlyList<IOperand>> emit, IrEffect effect, IVariable? result,
             Action<IReadOnlyList<IOperand>, IVariable?> emitTo,
-            IrMemoryRegion writeRegions = IrMemoryRegion.None, IrMemoryIdentity? writeIdentity = null)
+            IrMemoryRegion writeRegions = IrMemoryRegion.None, IrMemoryIdentity? writeIdentity = null,
+            int? writtenOperandIndex = null)
         {
             if (result != null && (locals.Contains(result) || ReferenceEquals(result, Stack)) &&
                 !operands.Any(IsEffectBarrierOperand))
@@ -103,6 +104,8 @@ namespace Zilf.Emit.Intermediate
                 var instruction = AppendLowering(IrOpcode.TargetOperation, operands.Select(GetValue).ToArray(), effect,
                     emit, resultHome: result, emitTo: emitTo, writeRegions: writeRegions,
                     writeIdentity: writeIdentity);
+                if (writtenOperandIndex is int index)
+                    instruction.WrittenValue = instruction.Operands[index];
                 SetProducedValue(result, instruction.Result!);
                 return;
             }
@@ -110,8 +113,12 @@ namespace Zilf.Emit.Intermediate
             if (writeIdentity == null)
                 RecordOrderedOperation(operands, emit, effect, writeRegions);
             else
-                AppendLowering(IrOpcode.TargetOperation, operands.Select(GetValue).ToArray(), effect, emit,
-                    hasResult: false, writeRegions: writeRegions, writeIdentity: writeIdentity);
+            {
+                var instruction = AppendLowering(IrOpcode.TargetOperation, operands.Select(GetValue).ToArray(), effect,
+                    emit, hasResult: false, writeRegions: writeRegions, writeIdentity: writeIdentity);
+                if (writtenOperandIndex is int index)
+                    instruction.WrittenValue = instruction.Operands[index];
+            }
         }
 
         private void RecordEffectfulOptionalOperation(IReadOnlyList<IOperand?> operands,
@@ -228,9 +235,12 @@ namespace Zilf.Emit.Intermediate
                 return existing;
             var mutable = operand is IVariable or IIndirectOperand;
             var external = routine.CreateExternalValue(mutable, operand is INonzeroConstantOperand,
-                mutable && operand is not IIndirectOperand
-                    ? new IrMemoryIdentity(IrMemoryRegion.Globals, GetStableMemoryKey(operand))
-                    : null);
+                operand is IMemoryAddressOperand memoryAddress &&
+                    memoryAddress.TryGetMemoryAddress(out var allocation, out var offset)
+                    ? new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, offset)
+                    : mutable && operand is not IIndirectOperand
+                        ? new IrMemoryIdentity(IrMemoryRegion.Globals, GetStableMemoryKey(operand))
+                        : null);
             external.PhysicalHome = operand;
             valueHomes[external] = operand;
             if (!ReferenceEquals(operand, Stack))
@@ -241,6 +251,12 @@ namespace Zilf.Emit.Intermediate
         private static IrMemoryIdentity? TryGetMemoryIdentity(IOperand operand, IrMemoryRegion region) =>
             region == IrMemoryRegion.Globals && operand is IConstantOperand
                 ? new IrMemoryIdentity(region, GetStableMemoryKey(operand))
+                : null;
+
+        private static IrMemoryIdentity? TryGetObjectMemberIdentity(IOperand obj, IOperand member,
+            IrMemoryRegion region) => obj is IConstantOperand && member is IConstantOperand
+                ? new IrMemoryIdentity(region,
+                    new IrObjectMemberKey(GetStableMemoryKey(obj), GetStableMemoryKey(member)))
                 : null;
 
         private static IrMemoryIdentity? TryGetTableMemoryIdentity(IOperand address, IOperand index, int scale,
@@ -257,12 +273,59 @@ namespace Zilf.Emit.Intermediate
                 : null;
         }
 
+        private static IrMemoryIdentity? TryGetTableMemoryIdentity(IrValue address, IrValue index, int scale,
+            int length)
+        {
+            if (address.MemoryIdentity is not { Region: IrMemoryRegion.Tables } identity)
+                return null;
+            if (index.Constant is not int numeric)
+                return identity with { Offset = null, Length = null };
+            var offset = (long)(identity.Offset ?? 0) + (long)numeric * scale;
+            return offset is >= int.MinValue and <= int.MaxValue
+                ? identity with { Offset = (int)offset, Length = length }
+                : null;
+        }
+
+        private void SetDerivedAddressIdentity(IrInstruction instruction)
+        {
+            if (instruction.Result == null || instruction.Opcode is not (IrOpcode.Add or IrOpcode.Subtract) ||
+                instruction.Operands.Count != 2)
+                return;
+            IrValue address;
+            int delta;
+            if (instruction.Operands[1].Constant is int right &&
+                instruction.Operands[0].MemoryIdentity is { Region: IrMemoryRegion.Tables })
+            {
+                address = instruction.Operands[0];
+                delta = instruction.Opcode == IrOpcode.Add ? right : -right;
+            }
+            else if (instruction.Opcode == IrOpcode.Add && instruction.Operands[0].Constant is int left &&
+                instruction.Operands[1].MemoryIdentity is { Region: IrMemoryRegion.Tables })
+            {
+                address = instruction.Operands[1];
+                delta = left;
+            }
+            else
+            {
+                return;
+            }
+            var identity = address.MemoryIdentity!;
+            var offset = (long)(identity.Offset ?? 0) + delta;
+            if (offset is >= int.MinValue and <= int.MaxValue)
+                instruction.Result.MemoryIdentity = identity with { Offset = (int)offset, Length = null };
+        }
+
         private static object GetStableMemoryKey(IOperand operand) => operand switch
         {
             IGlobalBuilder => operand,
             INumericOperand numeric => numeric.Value,
             _ => operand.ToString()!,
         };
+
+        private static IrMemoryIdentity? GetDestinationIdentity(IVariable destination) =>
+            destination is IIndirectOperand
+                ? null
+                : new IrMemoryIdentity(IrMemoryRegion.Globals, GetStableMemoryKey(destination));
 
         private void SetLocalValue(IVariable variable, IrValue value)
         {
@@ -337,4 +400,3 @@ namespace Zilf.Emit.Intermediate
 
     }
 }
-

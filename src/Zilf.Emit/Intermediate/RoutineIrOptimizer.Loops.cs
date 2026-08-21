@@ -251,6 +251,10 @@ namespace Zilf.Emit.Intermediate
                                 Record(unknownMemoryChanged
                                     ? "LICM rejected: unknown memory changed"
                                     : "LICM rejected: exact memory changed");
+                                RecordMemoryRejection("LICM", instruction.Opcode,
+                                    unknownMemoryChanged ? writtenRegions : writtenIdentities.Aggregate(
+                                        IrMemoryRegion.None, (regions, identity) => regions | identity.Region),
+                                    unknownMemoryChanged ? "unknown write" : "exact write");
                                 continue;
                             }
                             if (!IsSafeToSpeculate(instruction) &&
@@ -365,7 +369,13 @@ namespace Zilf.Emit.Intermediate
                 return !clobberedHomes.Contains(home);
             if (lowering.StackEscapes || lowering.EmitTo == null)
                 return false;
-            var temporary = acquireTemporary();
+            var reusable = reusableTemporaries().FirstOrDefault(candidate => !clobberedHomes.Contains(candidate));
+            if (!costPolicy.ShouldHoist(instruction, reusable == null))
+            {
+                Record("LICM rejected: unprofitable rewrite");
+                return false;
+            }
+            var temporary = reusable ?? acquireTemporary();
             if (temporary == null)
                 return false;
             lowering.ResultHome = temporary;
@@ -373,6 +383,90 @@ namespace Zilf.Emit.Intermediate
             instruction.Result!.PhysicalHome = temporary;
             Record("LICM promoted stack results");
             return true;
+        }
+
+        private void EliminatePartialRedundancies(RoutineIr routine)
+        {
+            routine.RebuildPredecessors();
+            var cfg = CfgAnalysis.Create(routine);
+            var definitions = routine.Blocks.SelectMany(block => block.Instructions.Select(instruction =>
+                (instruction, block))).Where(pair => pair.instruction.Result != null)
+                .ToDictionary(pair => pair.instruction.Result!, pair => pair.block);
+            var replacements = new Dictionary<IrValue, IrValue>();
+            foreach (var block in routine.Blocks.Where(block => block.Predecessors.Count > 1).ToArray())
+            {
+                var candidate = block.Instructions.FirstOrDefault(instruction => instruction.Opcode != IrOpcode.Phi);
+                if (candidate?.Result == null || !IsSafeToSpeculate(candidate) ||
+                    candidate.Payload is not IrLoweringOperation
+                    {
+                        IsStackResult: true,
+                        StackEscapes: false,
+                        EmitTo: not null,
+                        RequiredHome: false,
+                    } candidateLowering ||
+                    block.Predecessors.Any(predecessor => predecessor.Terminator is not IrTerminator.Jump jump ||
+                        !ReferenceEquals(jump.Target, block)) ||
+                    candidate.Operands.Any(operand => definitions.TryGetValue(operand, out var definitionBlock) &&
+                        block.Predecessors.Any(predecessor => !cfg.Dominates(definitionBlock, predecessor))))
+                    continue;
+
+                var incoming = new Dictionary<IrBlock, IrInstruction?>();
+                foreach (var predecessor in block.Predecessors)
+                {
+                    var prior = predecessor.Instructions.LastOrDefault(instruction =>
+                        instruction.Result != null && EquivalentLoopInvariantExpression(instruction, candidate) &&
+                        instruction.Payload is IrLoweringOperation
+                        {
+                            IsStackResult: true,
+                            StackEscapes: false,
+                            EmitTo: not null,
+                            RequiredHome: false,
+                        });
+                    incoming[predecessor] = prior;
+                }
+                var insertedEdges = incoming.Count(pair => pair.Value == null);
+                if (insertedEdges == 0 || insertedEdges == incoming.Count ||
+                    !costPolicy.ShouldPlacePartialRedundancy(candidate, insertedEdges))
+                    continue;
+                var temporary = acquireTemporary();
+                if (temporary == null)
+                {
+                    Record("PRE rejected: local limit");
+                    continue;
+                }
+
+                var phi = new IrInstruction(IrOpcode.Phi, routine.CreateValue(), [], payload: new IrPhi(temporary));
+                phi.Result!.PhysicalHome = temporary;
+                var phiPayload = (IrPhi)phi.Payload!;
+                foreach (var pair in incoming)
+                {
+                    var expression = pair.Value;
+                    if (expression == null)
+                    {
+                        expression = new IrInstruction(candidate.Opcode, routine.CreateValue(), candidate.Operands,
+                            candidate.Effect, new IrLoweringOperation(candidateLowering.Emit, temporary,
+                                emitTo: candidateLowering.EmitTo), candidate.ReadRegions, candidate.WriteRegions,
+                            candidate.CallSummary, candidate.ReadIdentity, candidate.WriteIdentity);
+                        expression.Result!.PhysicalHome = temporary;
+                        pair.Key.Instructions.Add(expression);
+                        Record("PRE inserted expressions");
+                    }
+                    else
+                    {
+                        var lowering = (IrLoweringOperation)expression.Payload!;
+                        lowering.ResultHome = temporary;
+                        lowering.IsStackResult = false;
+                        expression.Result!.PhysicalHome = temporary;
+                    }
+                    phiPayload.Incoming[pair.Key] = expression.Result!;
+                }
+                block.Instructions.Insert(0, phi);
+                block.Instructions.Remove(candidate);
+                replacements[candidate.Result] = phi.Result;
+                Record("PRE eliminated expressions");
+            }
+            routine.RebuildPredecessors();
+            ReplaceValues(routine, replacements);
         }
 
         private static bool IsSafeToSpeculate(IrInstruction instruction) => instruction.IsPure && instruction.Opcode
@@ -385,7 +479,7 @@ namespace Zilf.Emit.Intermediate
             IrEffect.Opaque => IrMemoryRegion.All,
             IrEffect.WriteMemory when instruction.WriteRegions == IrMemoryRegion.None => IrMemoryRegion.All,
             IrEffect.WriteMemory => instruction.WriteRegions,
-            _ => IrMemoryRegion.None,
+            _ => instruction.WriteRegions,
         };
 
         private static IrMemoryRegion GetUnknownWrittenRegions(IrInstruction instruction) => instruction.Effect switch
@@ -395,7 +489,7 @@ namespace Zilf.Emit.Intermediate
             IrEffect.WriteMemory when instruction.WriteIdentity != null => IrMemoryRegion.None,
             IrEffect.WriteMemory when instruction.WriteRegions == IrMemoryRegion.None => IrMemoryRegion.All,
             IrEffect.WriteMemory => instruction.WriteRegions,
-            _ => IrMemoryRegion.None,
+            _ => instruction.WriteIdentity != null ? IrMemoryRegion.None : instruction.WriteRegions,
         };
 
         private static IEnumerable<IrMemoryIdentity> GetWrittenIdentities(IrInstruction instruction) =>
@@ -403,6 +497,7 @@ namespace Zilf.Emit.Intermediate
             {
                 IrEffect.Call when instruction.CallSummary != null => instruction.CallSummary.GetWrittenIdentities(),
                 IrEffect.WriteMemory when instruction.WriteIdentity != null => [instruction.WriteIdentity],
+                _ when instruction.WriteIdentity != null => [instruction.WriteIdentity],
                 _ => [],
             };
 
