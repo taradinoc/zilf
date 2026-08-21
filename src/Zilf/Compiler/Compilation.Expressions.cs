@@ -179,6 +179,12 @@ namespace Zilf.Compiler
                             ScheduleRoutineForCompilation(rtn.Name);
                         }
 
+                        if (rtn.Name != null && TryCompileInlineCall(rb, rtn.Name, args, wantResult,
+                            resultStorage, form.SourceLine, out var inlineResult))
+                        {
+                            return inlineResult;
+                        }
+
                         // compile routine call
                         resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
                         using (var argOperands = CompileOperands(rb, form.SourceLine, args))

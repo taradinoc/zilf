@@ -2263,6 +2263,9 @@ namespace Zilf.Compiler.Builtins
         [Builtin("LVAL")]
         public static IOperand LvalOp(ValueCall c, ZilAtom atom)
         {
+            if (c.cc.TryGetInlineLocal(atom, out var inlineValue))
+                return inlineValue;
+
             // local
             if (c.cc.Locals.TryGetValue(atom, out var lbr))
             {

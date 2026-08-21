@@ -245,6 +245,7 @@ namespace Zilf.Compiler
 
         void GenerateRoutineCode()
         {
+            PrepareInlineRoutines();
             var compiled = new HashSet<ZilAtom>(new AtomNameEqualityComparer(Context.IgnoreCase));
             IRoutineBuilder? mainRoutine = null;
 

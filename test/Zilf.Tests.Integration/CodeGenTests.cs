@@ -25,6 +25,64 @@ namespace Zilf.Tests.Integration
     public class CodeGenTests : IntegrationTestClass
     {
         [TestMethod]
+        public async Task Tiny_Routine_Calls_Are_Inlined()
+        {
+            await AssertRoutine("", "<TINY-ADD 41>")
+                .WithGlobal("<ROUTINE TINY-ADD (VALUE) <+ .VALUE 1>>")
+                .GeneratesCodeNotMatchingAsync(@"CALL.*TINY-ADD");
+
+            await AssertRoutine("", "<TINY-CONSTANT>")
+                .WithGlobal("<ROUTINE TINY-CONSTANT () 123>")
+                .GeneratesCodeMatchingAsync(@"RETURN 123")
+                .AndNotMatching(@"CALL.*TINY-CONSTANT");
+
+            await AssertRoutine("", "<TINY-OPTIONAL>")
+                .WithGlobal("<ROUTINE TINY-OPTIONAL (\"OPT\" (VALUE 7)) <+ .VALUE 1>>")
+                .GeneratesCodeMatchingAsync(@"RETURN 8")
+                .AndNotMatching(@"CALL.*TINY-OPTIONAL");
+
+            await AssertRoutine("", "<DOUBLE <RANDOM 10>>")
+                .WithGlobal("<ROUTINE DOUBLE (VALUE) <+ .VALUE .VALUE>>")
+                .GeneratesCodeMatchingAsync(@"RANDOM 10")
+                .AndNotMatching(@"CALL.*DOUBLE");
+
+        }
+
+        [TestMethod]
+        public async Task Tiny_Predicate_Routine_Preserves_Predicate_Context()
+        {
+            await AssertRoutine("\"AUX\" FOO", "<COND (<BIG? .FOO> <PRINTI \"big\">)>")
+                .WithGlobal("<ROUTINE BIG? (X) <G? .X 100>>")
+                .GeneratesCodeMatchingAsync(@"GRTR\? FOO,100 [\\/](?:FALSE|\?L\d+)")
+                .AndNotMatching(@"CALL.*BIG\?|ZERO\?");
+        }
+
+        [TestMethod]
+        public async Task Larger_Routine_Calls_Are_Not_Inlined()
+        {
+            await AssertRoutine("", "<NOT-TINY>")
+                .WithGlobal("<ROUTINE NOT-TINY () <+ <RANDOM 10> <RANDOM 20>>>")
+                .GeneratesCodeMatchingAsync(@"CALL.*NOT-TINY");
+        }
+
+        [TestMethod]
+        public async Task Recursive_Tiny_Routine_Calls_Are_Not_Inlined()
+        {
+            await AssertRoutine("", "<RECUR 1>")
+                .WithGlobal("<ROUTINE RECUR (VALUE) <RECUR .VALUE>>")
+                .GeneratesCodeMatchingAsync(@"CALL.*RECUR");
+        }
+
+        [TestMethod]
+        public async Task Tiny_Routine_Is_Not_Inlined_When_Caller_Has_No_Temporary_Locals()
+        {
+            await AssertRoutine("\"AUX\" A B C D E F G H I J K L M N O", "<LOOKUP .A>")
+                .WithGlobal("<GLOBAL VALUES <TABLE 1 2 3>>")
+                .WithGlobal("<ROUTINE LOOKUP (X) <GET ,VALUES <+ .X 1>>>")
+                .GeneratesCodeMatchingAsync(@"CALL.*LOOKUP");
+        }
+
+        [TestMethod]
         public async Task TestAddToVariable()
         {
             await AssertRoutine("\"AUX\" X Y", "<SET X <+ .X .Y>>")
@@ -125,7 +183,7 @@ namespace Zilf.Tests.Integration
         public async Task Stack_Call_Result_Add_One_Forwards_Destination_And_Becomes_INC()
         {
             await AssertRoutine("\"AUX\" X", "<SET X <+ <WHATEVER 123> 1>>")
-                .WithGlobal("<ROUTINE WHATEVER (VALUE) .VALUE>")
+                .WithGlobal("<ROUTINE WHATEVER (VALUE) <> .VALUE>")
                 .InV5()
                 .GeneratesCodeMatchingAsync(@"CALL2 WHATEVER,123 >X\r?\n\s*INC 'X")
                 .AndNotMatching(@"CALL2 WHATEVER,123 >STACK\r?\n\s*ADD (?:1,STACK|STACK,1) >X");
@@ -135,7 +193,7 @@ namespace Zilf.Tests.Integration
         public async Task Stack_Call_Result_Subtract_One_Forwards_Destination_And_Becomes_DEC()
         {
             await AssertRoutine("\"AUX\" X", "<SET X <- <WHATEVER 123> 1>>")
-                .WithGlobal("<ROUTINE WHATEVER (VALUE) .VALUE>")
+                .WithGlobal("<ROUTINE WHATEVER (VALUE) <> .VALUE>")
                 .InV5()
                 .GeneratesCodeMatchingAsync(@"CALL2 WHATEVER,123 >X\r?\n\s*DEC 'X")
                 .AndNotMatching(@"CALL2 WHATEVER,123 >STACK\r?\n\s*SUB STACK,1 >X");
@@ -145,7 +203,7 @@ namespace Zilf.Tests.Integration
         public async Task TestRoutineResultIntoVariable()
         {
             await AssertRoutine("\"AUX\" FOO", "<SET FOO <WHATEVER>>")
-                .WithGlobal("<ROUTINE WHATEVER () 123>")
+                .WithGlobal("<ROUTINE WHATEVER () <> 123>")
                 .InV3()
                 .GeneratesCodeMatchingAsync("CALL WHATEVER >FOO");
         }
@@ -205,7 +263,7 @@ namespace Zilf.Tests.Integration
         public async Task TestValuePredicateContext_Calls()
         {
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X <FOO>>> <RTRUE>)>")
-                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithGlobal("<ROUTINE FOO () <> <>>")
                 .GeneratesCodeMatchingAsync(@"CALL FOO >X\r?\n\s*ZERO\? X /TRUE");
         }
 
@@ -273,7 +331,7 @@ namespace Zilf.Tests.Integration
         public async Task TestReturnOrWithPred()
         {
             await AssertRoutine("\"AUX\" X", "<OR <EQUAL? .X 123> <FOO>>")
-                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithGlobal("<ROUTINE FOO () <> <>>")
                 .GeneratesCodeNotMatchingAsync(@"PUSH|ZERO\?");
         }
 
@@ -311,8 +369,8 @@ namespace Zilf.Tests.Integration
         public async Task TestSimpleAND_2()
         {
             await AssertRoutine("\"AUX\" A", "<AND <OR <0? .A> <FOO>> <BAR>>")
-                .WithGlobal("<ROUTINE FOO () <>>")
-                .WithGlobal("<ROUTINE BAR () <>>")
+                .WithGlobal("<ROUTINE FOO () <> <>>")
+                .WithGlobal("<ROUTINE BAR () <> <>>")
                 .GeneratesCodeNotMatchingAsync(@"\?TMP");
         }
 
@@ -320,7 +378,7 @@ namespace Zilf.Tests.Integration
         public async Task TestSimpleOR_1()
         {
             await AssertRoutine("\"AUX\" A", "<OR .A <FOO>>")
-                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithGlobal("<ROUTINE FOO () <> <>>")
                 .GeneratesCodeNotMatchingAsync(@"\?TMP");
         }
 
@@ -328,7 +386,7 @@ namespace Zilf.Tests.Integration
         public async Task TestSimpleOR_2()
         {
             await AssertRoutine("\"AUX\" OBJ", "<OR <FIRST? .OBJ> <FOO>>")
-                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithGlobal("<ROUTINE FOO () <> <>>")
                 .GeneratesCodeMatchingAsync(@"RETURN \?TMP.*RSTACK");
         }
 
@@ -336,8 +394,8 @@ namespace Zilf.Tests.Integration
         public async Task TestSimpleOR_3()
         {
             await AssertRoutine("\"AUX\" A", "<OR <SET A <FOO>> <BAR>>")
-                .WithGlobal("<ROUTINE FOO () <>>")
-                .WithGlobal("<ROUTINE BAR () <>>")
+                .WithGlobal("<ROUTINE FOO () <> <>>")
+                .WithGlobal("<ROUTINE BAR () <> <>>")
                 .GeneratesCodeNotMatchingAsync(@"\?TMP");
         }
 
@@ -351,8 +409,8 @@ namespace Zilf.Tests.Integration
 
             await AssertRoutine("\"AUX\" X", @"<PUT ,GLOB <FOO> <+ .X <GET ,GLOB <BAR>>>>")
                 .WithGlobal("<GLOBAL GLOB <>>")
-                .WithGlobal("<ROUTINE FOO () <>>")
-                .WithGlobal("<ROUTINE BAR () <>>")
+                .WithGlobal("<ROUTINE FOO () <> <>>")
+                .WithGlobal("<ROUTINE BAR () <> <>>")
                 .GeneratesCodeMatchingAsync(@"\?TMP\?2");
         }
 
@@ -569,20 +627,20 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("",
                 "<=? 50 10 <- 100 50> <FOO>>")
                 .WithGlobal("<FILE-FLAGS CLEAN-STACK?>")
-                .WithGlobal("<ROUTINE FOO () 100>")
+                .WithGlobal("<ROUTINE FOO () <> 100>")
                 .GeneratesCodeMatchingAsync(@"\.FUNCT TEST\?ROUTINE\r?\n\s*CALL FOO >STACK\r?\n\s*FSTACK\r?\n\s*RTRUE");
 
             // here we can't simplify the branch, because <FOO> might return 49, but we can skip testing the constants
             await AssertRoutine("",
                 "<=? 49 10 <- 100 50> <FOO>>")
                 .WithGlobal("<FILE-FLAGS CLEAN-STACK?>")
-                .WithGlobal("<ROUTINE FOO () 100>")
+                .WithGlobal("<ROUTINE FOO () <> 100>")
                 .GeneratesCodeMatchingAsync(@"EQUAL\? 49,STACK (/TRUE|\\FALSE)");
 
             await AssertRoutine("",
                 "<=? 49 1 <FOO> 2 <FOO> 3 <FOO> 4 <FOO> 5>")
                 .WithGlobal("<FILE-FLAGS CLEAN-STACK?>")
-                .WithGlobal("<ROUTINE FOO () 100>")
+                .WithGlobal("<ROUTINE FOO () <> 100>")
                 .GeneratesCodeMatchingAsync(@"EQUAL\? 49(,(STACK|\?TMP(\?\d+)?)){3} /TRUE\r?\n\s*EQUAL\? 49,(STACK|\?TMP(\?\d+)?) (/TRUE|\\FALSE)");
         }
 
@@ -653,7 +711,7 @@ namespace Zilf.Tests.Integration
         {
             await AssertRoutine("\"AUX\" X",
                 "<SETG .X <FOO>> <RTRUE>")
-                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithGlobal("<ROUTINE FOO () <> <>>")
                 .InV5()
                 .GeneratesCodeMatchingAsync(@"POP X");
         }
@@ -663,7 +721,7 @@ namespace Zilf.Tests.Integration
         {
             await AssertRoutine("\"AUX\" X",
                 "<SETG .X <FOO>> <RTRUE>")
-                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithGlobal("<ROUTINE FOO () <> <>>")
                 .InV6()
                 .GeneratesCodeMatchingAsync(@"SET X,STACK");
         }
@@ -787,7 +845,7 @@ namespace Zilf.Tests.Integration
 
             await AssertRoutine(ArgSpec, Body)
                 .InV5()
-                .WithGlobal("<ROUTINE FOO () <>>")
+                .WithGlobal("<ROUTINE FOO () <> <>>")
                 .WithDebugInfo()
                 .GeneratesCodeMatchingAsync(@"\.DEBUG-LINE ([^\r\n]*)\r?\n\s*ASSIGNED\? 'A")
                 .AndMatching(@"\.DEBUG-LINE ([^\r\n]*)\r?\n\s*(\S+:\s*)?CALL1 FOO >B");
