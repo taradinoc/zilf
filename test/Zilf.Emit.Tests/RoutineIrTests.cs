@@ -558,6 +558,97 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Gvn_Reuses_Compiler_Temporary_For_Nonoverlapping_Expression_Lifetimes()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateValue();
+            var stack = Mock.Of<IVariable>();
+            var temporary = Mock.Of<IVariable>();
+            var allocated = new List<IVariable>();
+            IrInstruction Subtract(int right) => routine.Append(routine.Entry, IrOpcode.Subtract,
+                [left, routine.CreateConstant(right)], payload:
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }));
+            var first = Subtract(1);
+            var firstDuplicate = Subtract(1);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [firstDuplicate.Result!], IrEffect.Control,
+                hasResult: false);
+            var second = Subtract(2);
+            var secondDuplicate = Subtract(2);
+            routine.Entry.Terminator = new IrTerminator.Return(secondDuplicate.Result);
+            var allocations = 0;
+
+            new RoutineIrOptimizer(acquireTemporary: () =>
+            {
+                allocations++;
+                allocated.Add(temporary);
+                return temporary;
+            }, reusableTemporaries: () => allocated).Optimize(routine);
+
+            Assert.AreEqual(1, allocations);
+            Assert.AreSame(temporary, ((IrLoweringOperation)first.Payload!).ResultHome);
+            Assert.AreSame(temporary, ((IrLoweringOperation)second.Payload!).ResultHome);
+        }
+
+        [TestMethod]
+        public void Gvn_Can_Scavenge_Phi_Home_When_Every_Path_Defines_It_Before_Use()
+        {
+            var routine = new RoutineIr();
+            var header = routine.CreateBlock();
+            var middle = routine.CreateBlock();
+            var body = routine.CreateBlock();
+            var exit = routine.CreateBlock();
+            var temporary = Mock.Of<IVariable>();
+            var stack = Mock.Of<IVariable>();
+            var initial = routine.CreateValue();
+            initial.PhysicalHome = temporary;
+            var backEdge = routine.CreateValue();
+            backEdge.PhysicalHome = temporary;
+            var phiPayload = new IrPhi(temporary);
+            phiPayload.Incoming[routine.Entry] = initial;
+            phiPayload.Incoming[body] = backEdge;
+            var phi = new IrInstruction(IrOpcode.Phi, routine.CreateValue(), [], payload: phiPayload);
+            phi.Result!.PhysicalHome = temporary;
+            header.Instructions.Add(phi);
+            var loopVariable = Mock.Of<IVariable>();
+            var initialLeft = routine.CreateValue();
+            initialLeft.PhysicalHome = loopVariable;
+            var backEdgeLeft = routine.CreateValue();
+            backEdgeLeft.PhysicalHome = loopVariable;
+            var loopPhiPayload = new IrPhi(loopVariable);
+            loopPhiPayload.Incoming[routine.Entry] = initialLeft;
+            loopPhiPayload.Incoming[body] = backEdgeLeft;
+            var loopPhi = new IrInstruction(IrOpcode.Phi, routine.CreateValue(), [], payload: loopPhiPayload);
+            loopPhi.Result!.PhysicalHome = loopVariable;
+            header.Instructions.Add(loopPhi);
+            routine.Entry.Terminator = new IrTerminator.Jump(header);
+            var left = loopPhi.Result!;
+            var first = routine.Append(header, IrOpcode.Subtract, [left, routine.CreateConstant(1)], payload:
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }));
+            header.Terminator = new IrTerminator.Jump(middle);
+            var duplicate = routine.Append(middle, IrOpcode.Subtract, [left, routine.CreateConstant(1)], payload:
+                new IrLoweringOperation(_ => { }, stack, isStackResult: true, emitTo: (_, _) => { }));
+            routine.Append(middle, IrOpcode.TargetOperation, [duplicate.Result!], IrEffect.Control, hasResult: false);
+            middle.Terminator = new IrTerminator.Branch(routine.CreateValue(), body, exit);
+            var replacement = routine.CreateValue();
+            replacement.PhysicalHome = temporary;
+            routine.Append(body, IrOpcode.TargetOperation, [], payload:
+                new IrLoweringOperation(_ => { }, temporary), hasResult: false);
+            routine.Append(body, IrOpcode.TargetOperation, [replacement], IrEffect.Control, hasResult: false);
+            body.Terminator = new IrTerminator.Jump(header);
+            exit.Terminator = new IrTerminator.Return(first.Result);
+            var allocations = 0;
+
+            new RoutineIrOptimizer(acquireTemporary: () =>
+            {
+                allocations++;
+                return Mock.Of<IVariable>();
+            }, reusableTemporaries: () => [temporary]).Optimize(routine);
+
+            Assert.AreEqual(0, allocations);
+            Assert.AreSame(temporary, ((IrLoweringOperation)first.Payload!).ResultHome);
+        }
+
+        [TestMethod]
         public void Gvn_Preserves_Dominating_Stack_Value_Across_Cfg_Edge()
         {
             var routine = new RoutineIr();
