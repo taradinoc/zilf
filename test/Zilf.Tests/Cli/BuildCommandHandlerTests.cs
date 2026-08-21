@@ -24,6 +24,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Zilf.Cli;
 using Zilf.Common;
 using Zilf.Compiler;
+using Zilf.Interpreter;
 
 namespace Zilf.Tests.Cli
 {
@@ -86,6 +87,48 @@ namespace Zilf.Tests.Cli
             CollectionAssert.AreEqual(
                 new[] { "assemble", asmPath, "--mme", Path.ChangeExtension(asmPath, ".mme") },
                 (System.Collections.ICollection)args);
+        }
+
+        [TestMethod]
+        public void Optimization_Level_Switches_Select_Requested_Level_And_Default_To_One()
+        {
+            var hostFileSystem = new HostFileSystem();
+            var contextFactory = new ContextFactory(hostFileSystem);
+            var frontEndFactory = new TestFrontEndFactory(new InMemoryFileSystem(), Path.GetFullPath("story.zil"));
+            var handler = new BuildCommandHandler(
+                contextFactory, frontEndFactory, new RecordingExternalToolService(), hostFileSystem);
+            var spec = CreateCommandSpec(handler, contextFactory, frontEndFactory, hostFileSystem);
+
+            Assert.AreEqual(1, CreateContext().OptimizationLevel);
+            Assert.AreEqual(0, CreateContext("-O0").OptimizationLevel);
+            Assert.AreEqual(1, CreateContext("-O1").OptimizationLevel);
+            Assert.AreEqual(2, CreateContext("-O2").OptimizationLevel);
+            Assert.AreEqual(3, CreateContext("-O3").OptimizationLevel);
+            var sizeContext = CreateContext("-Oz");
+            Assert.AreEqual(1, sizeContext.OptimizationLevel);
+            Assert.IsTrue(sizeContext.OptimizeForSize);
+
+            Context CreateContext(params string[] args)
+            {
+                var parseResult = ParseBuild(spec, args);
+                return contextFactory.Create(parseResult, spec, RunMode.Compiler, "story.zil");
+            }
+        }
+
+        [TestMethod]
+        public void Optimization_Level_Switches_Are_Mutually_Exclusive()
+        {
+            var hostFileSystem = new HostFileSystem();
+            var contextFactory = new ContextFactory(hostFileSystem);
+            var frontEndFactory = new TestFrontEndFactory(new InMemoryFileSystem(), Path.GetFullPath("story.zil"));
+            var handler = new BuildCommandHandler(
+                contextFactory, frontEndFactory, new RecordingExternalToolService(), hostFileSystem);
+            var spec = CreateCommandSpec(handler, contextFactory, frontEndFactory, hostFileSystem);
+
+            var parseResult = spec.RootCommand.Parse(["build", "-O2", "-Oz"]);
+
+            Assert.AreEqual(1, parseResult.Errors.Count);
+            StringAssert.Contains(parseResult.Errors[0].Message, "mutually exclusive", StringComparison.Ordinal);
         }
 
         private static ZilfCommandSpec CreateCommandSpec(

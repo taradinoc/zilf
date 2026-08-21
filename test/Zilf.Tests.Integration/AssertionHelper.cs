@@ -39,6 +39,8 @@ namespace Zilf.Tests.Integration
         protected bool wantDebugInfo;
         protected bool useGlulx;
         protected bool useGlulx16;
+        protected int optimizationLevel = 1;
+        protected bool optimizeForSize;
 
         public TThis InV3()
         {
@@ -95,6 +97,18 @@ namespace Zilf.Tests.Integration
         public TThis WithVersionDirective(string versionStr)
         {
             versionDirective = versionStr;
+            return (TThis)this;
+        }
+
+        public TThis WithOptimizationLevel(int level)
+        {
+            optimizationLevel = level;
+            return (TThis)this;
+        }
+
+        public TThis OptimizeForSize()
+        {
+            optimizeForSize = true;
             return (TThis)this;
         }
 
@@ -395,7 +409,7 @@ namespace Zilf.Tests.Integration
             if (useGlulx)
             {
                 var helper = new FyreHelper(testCode, null);
-                Assert.IsTrue(helper.Compile(wantDebugInfo: wantDebugInfo), "Failed to compile");
+                Assert.IsTrue(helper.Compile(optimizationLevel, wantDebugInfo, optimizeForSize), "Failed to compile");
 
                 output = helper.GetAsmCode();
                 checkGeneratedCode(output);
@@ -410,7 +424,7 @@ namespace Zilf.Tests.Integration
             else
             {
                 var helper = new ZlrHelper(testCode, null);
-                Assert.IsTrue(helper.Compile(wantDebugInfo: wantDebugInfo), "Failed to compile");
+                Assert.IsTrue(helper.Compile(optimizationLevel, wantDebugInfo, optimizeForSize), "Failed to compile");
 
                 output = helper.GetZapCode();
                 checkGeneratedCode(output);

@@ -41,5 +41,10 @@ namespace Zilf.Emit.Glulx
         /// Intended for diagnostics and optimizer differential tests.
         /// </summary>
         public bool DisableIrOptimization { get; init; }
+
+        /// <summary>
+        /// Disables routine IR construction and emits directly to the target routine builder.
+        /// </summary>
+        public bool DisableRoutineIr { get; init; }
     }
 }

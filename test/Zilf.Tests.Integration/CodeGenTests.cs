@@ -50,6 +50,16 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async Task Size_Optimization_Disables_Inlining_But_Enables_Routine_Ir()
+        {
+            await AssertRoutine("\"AUX\" X", "<SET X <>> <TINY-CONSTANT>")
+                .OptimizeForSize()
+                .WithGlobal("<ROUTINE TINY-CONSTANT () 123>")
+                .GeneratesCodeMatchingAsync(@"CALL.*TINY-CONSTANT")
+                .AndNotMatching(@"SET 'X,0");
+        }
+
+        [TestMethod]
         public async Task Tiny_Predicate_Routine_Preserves_Predicate_Context()
         {
             await AssertRoutine("\"AUX\" FOO", "<COND (<BIG? .FOO> <PRINTI \"big\">)>")
@@ -64,6 +74,12 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("", "<NOT-TINY>")
                 .WithGlobal("<ROUTINE NOT-TINY () <+ <RANDOM 10> <RANDOM 20>>>")
                 .GeneratesCodeMatchingAsync(@"CALL.*NOT-TINY");
+
+            await AssertRoutine("", "<ROOM-OFFSET 2 3>")
+                .WithOptimizationLevel(3)
+                .WithGlobal("<CONSTANT ROOM-STRIDE 8>")
+                .WithGlobal("<ROUTINE ROOM-OFFSET (R O) <+ <* <- .R 1> ,ROOM-STRIDE> .O>>")
+                .GeneratesCodeMatchingAsync(@"CALL.*ROOM-OFFSET");
         }
 
         [TestMethod]
@@ -80,8 +96,21 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("\"AUX\" A B C D E F G H I J K L M N O", "<LOOKUP .A>")
                 .WithGlobal("<GLOBAL VALUES <TABLE 1 2 3>>")
                 .WithGlobal("<ROUTINE LOOKUP (X) <GET ,VALUES <+ .X 1>>>")
-                .GeneratesCodeMatchingAsync(@"CALL.*LOOKUP")
-                .AndMatching(@"calls not inlined: local variable limit: 1");
+                .GeneratesCodeMatchingAsync(@"CALL.*LOOKUP");
+        }
+
+        [TestMethod]
+        public async Task Inlined_Nested_Call_Does_Not_Copy_Global_Arguments_Read_By_That_Call()
+        {
+            await AssertRoutine("", "<LOOKUP ,PLAYER-X ,PLAYER-Y>")
+                .WithOptimizationLevel(3)
+                .WithGlobal("<GLOBAL PLAYER-X 1>")
+                .WithGlobal("<GLOBAL PLAYER-Y 2>")
+                .WithGlobal("<GLOBAL VALUES <TABLE 1 2 3>>")
+                .WithGlobal("<ROUTINE INDEX (X Y) <+ .X .Y>>")
+                .WithGlobal("<ROUTINE LOOKUP (X Y) <GETB ,VALUES <INDEX .X .Y>>>")
+                .GeneratesCodeMatchingAsync(@"ADD PLAYER-X,PLAYER-Y >STACK\r?\n\s*GETB VALUES,STACK")
+                .AndNotMatching(@"SET '[^,]+,(?:PLAYER-X|PLAYER-Y|VALUES)|CALL.*(?:INDEX|LOOKUP)");
         }
 
         [TestMethod]
@@ -273,9 +302,9 @@ namespace Zilf.Tests.Integration
         public async Task TestValuePredicateContext_Constants()
         {
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X <>>> <RTRUE>)>")
-                .GeneratesCodeMatchingAsync(@"RTRUE").AndNotMatching(@"SET 'X,");
+                .GeneratesCodeMatchingAsync(@"SET 'X,0\r?\n\s*RTRUE");
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X 0>> <RTRUE>)>")
-                .GeneratesCodeMatchingAsync(@"RTRUE").AndNotMatching(@"SET 'X,");
+                .GeneratesCodeMatchingAsync(@"SET 'X,0\r?\n\s*RTRUE");
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X 100>> <RTRUE>)>")
                 .GeneratesCodeMatchingAsync(@"SET 'X,100\r?\n\s*RFALSE");
             await AssertRoutine("\"AUX\" X", "<COND (<NOT <SET X T>> <RTRUE>)>")

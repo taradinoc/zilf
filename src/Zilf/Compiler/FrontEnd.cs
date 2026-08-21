@@ -365,6 +365,8 @@ namespace Zilf.Compiler
                         var streamFactory = new ZapStreamFactory(this, outputFileName);
 
                         var builderOptions = wantDebugInfo ? GameBuilderOptions.WantDebugInfo : GameBuilderOptions.None;
+                        if (ctx.OptimizationLevel < 2 && !ctx.OptimizeForSize)
+                            builderOptions |= GameBuilderOptions.DisableRoutineIr;
                         if (!streamFactory.FrequentWordsFileExists)
                             builderOptions |= GameBuilderOptions.WantFrequentWords;
 
@@ -405,12 +407,16 @@ namespace Zilf.Compiler
                     ZCompatibilityMode = true,
                     ZMachineVersion = zenv.ZVersion,
                     TimeStatusLine = zenv.TimeStatusLine,
+                    DisableRoutineIr = ctx.OptimizationLevel < 2 && !ctx.OptimizeForSize,
                 };
             }
 
             if (zenv.TargetPlatform == TargetPlatform.Glulx32 || zenv.ZVersion == ZEnvironment.GLULX_ZVERSION)
             {
-                return new GlulxGameOptions();
+                return new GlulxGameOptions
+                {
+                    DisableRoutineIr = ctx.OptimizationLevel < 2 && !ctx.OptimizeForSize
+                };
             }
 
             if (zenv.TargetPlatform == TargetPlatform.Cornerstone)

@@ -39,6 +39,11 @@ namespace Zilf.Emit.Zap
         /// Intended for diagnostics and optimizer differential tests.
         /// </summary>
         DisableIrOptimization = 4,
+
+        /// <summary>
+        /// Emits directly to the target routine builder without constructing routine IR.
+        /// </summary>
+        DisableRoutineIr = 8,
     }
 
     public sealed partial class GameBuilder : IGameBuilder
@@ -77,6 +82,7 @@ namespace Zilf.Emit.Zap
         internal readonly DebugFileBuilder? debug;
         internal readonly AbbrevFinder? abbrevs;
         internal readonly bool optimizeRoutineIr;
+        internal readonly bool useRoutineIr;
         readonly GameOptions options;
 
 #if DEBUG
@@ -122,6 +128,7 @@ namespace Zilf.Emit.Zap
             debug = builderOptions.HasFlag(GameBuilderOptions.WantDebugInfo) ? new DebugFileBuilder() : null;
             abbrevs = builderOptions.HasFlag(GameBuilderOptions.WantFrequentWords) ? new AbbrevFinder() : null;
             optimizeRoutineIr = !builderOptions.HasFlag(GameBuilderOptions.DisableIrOptimization);
+            useRoutineIr = !builderOptions.HasFlag(GameBuilderOptions.DisableRoutineIr);
 
             stream = streamFactory.CreateMainStream();
             writer = new StreamWriter(stream);
@@ -363,11 +370,13 @@ namespace Zilf.Emit.Zap
                 throw new ArgumentException("Entry routine already defined");
 
             var target = new RoutineBuilder(this, name, entryPoint, cleanStack);
-            var result = new IrRoutineBuilder(target, IrNumericSemantics.ZMachine16, optimizeRoutineIr, MakeOperand,
+            IRoutineBuilder result = useRoutineIr
+                ? new IrRoutineBuilder(target, IrNumericSemantics.ZMachine16, optimizeRoutineIr, MakeOperand,
                 preferConstantHome: operand => operand is not INumericOperand numeric ||
                     (ushort)numeric.Value > byte.MaxValue,
                 recordOptimizationStats: irRoutineCoordinator.RecordOptimizationStatistics,
-                deferFinalization: irRoutineCoordinator.Add, costPolicy: ZapIrOptimizationCostPolicy.Instance);
+                deferFinalization: irRoutineCoordinator.Add, costPolicy: ZapIrOptimizationCostPolicy.Instance)
+                : target;
             symbols.Add(name, "routine");
 
             if (entryPoint)

@@ -33,7 +33,7 @@ namespace Zilf.Compiler
     sealed partial class Compilation
     {
         private sealed record InlineRoutine(ZilObject Body, IReadOnlyList<ArgItem> Parameters, bool HasNestedForm,
-            Dictionary<ZilAtom, int> ParameterUseCounts);
+            Dictionary<ZilAtom, int> ParameterUseCounts, HashSet<ZilAtom> ParametersReadAfterSideEffect);
 
         private readonly Dictionary<ZilRoutine, ZilRoutine> rewrittenRoutines = [];
 
@@ -55,6 +55,12 @@ namespace Zilf.Compiler
 
         private void PrepareInlineRoutines()
         {
+            if (Context.OptimizationLevel == 0 || Context.OptimizeForSize)
+            {
+                _inlineRoutines = null;
+                return;
+            }
+
             var comparer = new AtomNameEqualityComparer(Context.IgnoreCase);
             var candidates = new Dictionary<ZilAtom, InlineRoutine>(comparer);
 
@@ -73,9 +79,11 @@ namespace Zilf.Compiler
                 var body = routine.Body.Single().Unwrap(Context);
                 if (parameters.Any(parameter => body.ModifiesLocal(parameter.Atom)) || ContainsString(body))
                     continue;
-                if (IsInlineExpression(body))
-                    candidates.Add(routine.Name, new InlineRoutine(body, parameters, HasNestedInlineForm(body),
-                        CountParameterUses(body, parameters)));
+                var hasNestedForm = HasNestedInlineForm(body);
+                if (IsInlineExpression(body) && CountInlineForms(body) <= 2 &&
+                    (Context.OptimizationLevel >= 3 || !hasNestedForm))
+                    candidates.Add(routine.Name, new InlineRoutine(body, parameters, hasNestedForm,
+                        CountParameterUses(body, parameters), FindParametersReadAfterSideEffect(body, parameters)));
             }
 
             var recursive = FindRecursiveInlineRoutines(candidates);
@@ -124,6 +132,14 @@ namespace Zilf.Compiler
             expression is ZilForm { Rest: { } arguments } &&
             arguments.Select(argument => argument.Unwrap(Context)).Any(argument => argument.IsNonVariableForm());
 
+        private int CountInlineForms(ZilObject expression)
+        {
+            expression = expression.Unwrap(Context);
+            if (expression.IsVariableRef() || expression is not ZilForm form)
+                return 0;
+            return 1 + form.Skip(1).Sum(CountInlineForms);
+        }
+
         private static bool ContainsString(ZilObject expression) => expression is ZilString ||
             expression is IEnumerable<ZilObject> sequence && sequence.Any(ContainsString);
 
@@ -144,6 +160,48 @@ namespace Zilf.Compiler
                 {
                     foreach (var child in children)
                         Count(child);
+                }
+            }
+        }
+
+        private HashSet<ZilAtom> FindParametersReadAfterSideEffect(ZilObject expression,
+            IReadOnlyList<ArgItem> parameters)
+        {
+            var comparer = new AtomNameEqualityComparer(Context.IgnoreCase);
+            var parameterAtoms = parameters.Select(parameter => parameter.Atom).ToHashSet(comparer);
+            var result = new HashSet<ZilAtom>(comparer);
+            var sideEffectOccurred = false;
+
+            if (expression.Unwrap(Context) is ZilForm { Rest: { } arguments })
+            {
+                foreach (var argument in arguments)
+                {
+                    Visit(argument.Unwrap(Context), ref sideEffectOccurred);
+                    if (HasSideEffects(argument))
+                        sideEffectOccurred = true;
+                }
+            }
+
+            return result;
+
+            void Visit(ZilObject item, ref bool precedingSideEffect)
+            {
+                item = item.Unwrap(Context);
+                if (item.IsLVAL(out var atom))
+                {
+                    if (precedingSideEffect && parameterAtoms.Contains(atom))
+                        result.Add(atom);
+                    return;
+                }
+
+                if (item is not ZilForm { Rest: { } children })
+                    return;
+
+                foreach (var child in children)
+                {
+                    Visit(child.Unwrap(Context), ref precedingSideEffect);
+                    if (HasSideEffects(child))
+                        precedingSideEffect = true;
                 }
             }
         }
@@ -345,7 +403,7 @@ namespace Zilf.Compiler
             var parameter = candidate.Parameters[argumentIndex];
             var uses = candidate.ParameterUseCounts.GetValueOrDefault(parameter.Atom);
             return argument is ZilForm && !argument.IsVariableRef() && (candidate.HasNestedForm || uses != 1) ||
-                candidate.HasNestedForm && argument.IsGVAL(out _);
+                argument.IsGVAL(out _) && candidate.ParametersReadAfterSideEffect.Contains(parameter.Atom);
         }
 
 #if DEBUG

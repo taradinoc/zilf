@@ -102,6 +102,31 @@ namespace Zilf.Cli
                 Description = "Include debug information in output."
             };
 
+            var buildOptimizationLevel0Option = new Option<bool>("-O0")
+            {
+                Description = "Disable inlining and routine IR optimization."
+            };
+
+            var buildOptimizationLevel1Option = new Option<bool>("-O1")
+            {
+                Description = "Inline routines expected to replace a call with at most one instruction (default)."
+            };
+
+            var buildOptimizationLevel2Option = new Option<bool>("-O2")
+            {
+                Description = "Enable routine IR optimization and conservative inlining."
+            };
+
+            var buildOptimizationLevel3Option = new Option<bool>("--optimize-speed", "-O3")
+            {
+                Description = "Enable routine IR optimization and more aggressive inlining."
+            };
+
+            var buildOptimizeForSizeOption = new Option<bool>("--optimize-size", "-Oz")
+            {
+                Description = "Enable routine IR optimization but disable inlining to minimize code size."
+            };
+
             var buildGlulxOption = new Option<bool>("--glulx", "-g")
             {
                 Description = "Target Glulx VM instead of Z-machine (experimental)."
@@ -184,6 +209,11 @@ namespace Zilf.Cli
             buildCommand.Options.Add(buildIncludePathOption);
             buildCommand.Options.Add(buildTraceRoutinesOption);
             buildCommand.Options.Add(buildDebugInfoOption);
+            buildCommand.Options.Add(buildOptimizationLevel0Option);
+            buildCommand.Options.Add(buildOptimizationLevel1Option);
+            buildCommand.Options.Add(buildOptimizationLevel2Option);
+            buildCommand.Options.Add(buildOptimizationLevel3Option);
+            buildCommand.Options.Add(buildOptimizeForSizeOption);
             buildCommand.Options.Add(buildGlulxOption);
             buildCommand.Options.Add(buildGlulx16Option);
             buildCommand.Options.Add(buildCornerstoneOption);
@@ -216,6 +246,15 @@ namespace Zilf.Cli
                 {
                     commandResult.AddError("Options --glulx, --glulx16, and --cornerstone are mutually exclusive.");
                 }
+
+                var optimizationLevels =
+                    (commandResult.GetResult(buildOptimizationLevel0Option) is not null ? 1 : 0) +
+                    (commandResult.GetResult(buildOptimizationLevel1Option) is not null ? 1 : 0) +
+                    (commandResult.GetResult(buildOptimizationLevel2Option) is not null ? 1 : 0) +
+                    (commandResult.GetResult(buildOptimizationLevel3Option) is not null ? 1 : 0) +
+                    (commandResult.GetResult(buildOptimizeForSizeOption) is not null ? 1 : 0);
+                if (optimizationLevels > 1)
+                    commandResult.AddError("Options -O0, -O1, -O2, -O3, and -Oz are mutually exclusive.");
 
                 var wantsPublish = commandResult.GetResult(buildPublishOption) is not null;
                 var stopAfterCompile = commandResult.GetResult(buildStopAfterCompileOption) is not null;
@@ -395,6 +434,11 @@ namespace Zilf.Cli
                 buildIncludePathOption,
                 buildTraceRoutinesOption,
                 buildDebugInfoOption,
+                buildOptimizationLevel0Option,
+                buildOptimizationLevel1Option,
+                buildOptimizationLevel2Option,
+                buildOptimizationLevel3Option,
+                buildOptimizeForSizeOption,
                 buildGlulxOption,
                 buildGlulx16Option,
                 buildCornerstoneOption,

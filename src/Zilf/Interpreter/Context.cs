@@ -220,6 +220,16 @@ namespace Zilf.Interpreter
 
         public bool WantDebugInfo { get; set; }
 
+        /// <summary>
+        /// Gets or sets the compiler optimization level.
+        /// </summary>
+        public int OptimizationLevel { get; set; } = 1;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether optimization should prioritize minimum code size.
+        /// </summary>
+        public bool OptimizeForSize { get; set; }
+
         public bool WarningsAsErrors
         {
             // ReSharper disable once UnusedMember.Global

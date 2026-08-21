@@ -77,7 +77,10 @@ numbers and vocabulary addresses, must not be assumed to fit in a small-constant
 Z-machine value is not known yet.
 
 `DisableIrOptimization` skips the optimizer stages but still records, verifies, lowers, and runs target cleanup. This is
-the primary differential-debugging switch; it is not a request to bypass the IR.
+the primary differential-debugging switch; it is not a request to bypass the IR. `DisableRoutineIr` bypasses recording
+and emits directly to the target builder; the CLI uses it for `-O0` and `-O1`. Target peephole optimization remains
+enabled at every CLI optimization level. `-Oz` runs the IR optimizer but disables inlining to prioritize minimum code
+size.
 
 ## Numeric semantics
 

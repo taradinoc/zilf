@@ -63,6 +63,7 @@ namespace Zilf.Emit.Glulx
         private protected readonly bool zCompatibilityMode;
         private protected readonly int zCompatVersion;
         internal bool OptimizeRoutineIr => !options.DisableIrOptimization;
+        internal bool UseRoutineIr => !options.DisableRoutineIr;
 
 #if DEBUG
         readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
@@ -233,14 +234,14 @@ namespace Zilf.Emit.Glulx
                 throw new ArgumentException("Entry routine already defined");
 
             var target = CreateRoutineBuilder(name, entryPoint, cleanStack);
-            var result = target switch
+            var result = UseRoutineIr ? target switch
             {
                 RoutineBuilder16 rb16 => new Glulx16IrRoutineBuilder(rb16, OptimizeRoutineIr, MakeOperand,
                     irRoutineCoordinator.RecordOptimizationStatistics, irRoutineCoordinator.Add),
                 RoutineBuilder rb => new GlulxIrRoutineBuilder(rb, IrNumericSemantics.Glulx32, OptimizeRoutineIr,
                     MakeOperand, irRoutineCoordinator.RecordOptimizationStatistics, irRoutineCoordinator.Add),
                 _ => target,
-            };
+            } : target;
             symbols.Add(name, "routine");
 
             if (entryPoint)
