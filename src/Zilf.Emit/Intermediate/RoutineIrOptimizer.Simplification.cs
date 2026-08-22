@@ -19,6 +19,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Zilf.Emit.Intermediate
@@ -119,9 +120,9 @@ namespace Zilf.Emit.Intermediate
         private bool CanReplaceRequiredHome(IrInstruction instruction) =>
             instruction.Payload is not IrLoweringOperation { RequiredHome: true } || emitCopy != null;
 
-        private bool TrySimplifyIdentity(IrInstruction instruction, out IrValue replacement)
+        private bool TrySimplifyIdentity(IrInstruction instruction, [NotNullWhen(true)] out IrValue? replacement)
         {
-            replacement = null!;
+            replacement = null;
             if (instruction.Operands.Count != 2)
                 return false;
 

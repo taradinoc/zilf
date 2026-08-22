@@ -19,6 +19,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Zilf.Compiler.Builtins;
 using Zilf.Emit;
@@ -1006,11 +1007,11 @@ namespace Zilf.Compiler
                 inlineLocalBindings.Remove(atom);
         }
 
-        internal bool TryGetInlineLocal(ZilAtom atom, out IOperand value)
+        internal bool TryGetInlineLocal(ZilAtom atom, [NotNullWhen(true)] out IOperand? value)
         {
-            if (inlineLocalBindings.TryGetValue(atom, out var bindings) && bindings.TryPeek(out value!))
+            if (inlineLocalBindings.TryGetValue(atom, out var bindings) && bindings.TryPeek(out value))
                 return true;
-            value = null!;
+            value = null;
             return false;
         }
     }

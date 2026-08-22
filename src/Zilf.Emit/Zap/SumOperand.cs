@@ -16,6 +16,8 @@
  * along with ZILF.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Zilf.Emit.Zap
 {
     class SumOperand : IConstantOperand, IMemoryAddressOperand
@@ -40,7 +42,7 @@ namespace Zilf.Emit.Zap
             return new SumOperand(this, other);
         }
 
-        public bool TryGetMemoryAddress(out object allocation, out int offset)
+        public bool TryGetMemoryAddress([NotNullWhen(true)] out object? allocation, out int offset)
             => MemoryAddressOperand.TryGetSumAddress(Left, Right, out allocation, out offset);
     }
 }

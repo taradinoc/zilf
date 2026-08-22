@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Zilf.Emit
 {
     /// <summary>
@@ -5,13 +7,13 @@ namespace Zilf.Emit
     /// </summary>
 internal interface IMemoryAddressOperand
 {
-    bool TryGetMemoryAddress(out object allocation, out int offset);
+    bool TryGetMemoryAddress([NotNullWhen(true)] out object? allocation, out int offset);
 }
 
 internal static class MemoryAddressOperand
 {
     public static bool TryGetSumAddress(IConstantOperand left, IConstantOperand right,
-        out object allocation, out int offset)
+        [NotNullWhen(true)] out object? allocation, out int offset)
     {
         if (left is IMemoryAddressOperand address && right is INumericOperand numeric &&
             address.TryGetMemoryAddress(out allocation, out offset))

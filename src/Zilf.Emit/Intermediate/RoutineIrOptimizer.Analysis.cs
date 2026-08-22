@@ -19,6 +19,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Zilf.Emit.Intermediate
@@ -695,7 +696,7 @@ namespace Zilf.Emit.Intermediate
             ReplaceValues(routine, replacements);
 
             bool TryGetConstantOffsetExpression(IrValue? value,
-                IReadOnlyDictionary<IrValue, IrInstruction> valueDefinitions, out IrValue baseValue, out int offset)
+                IReadOnlyDictionary<IrValue, IrInstruction> valueDefinitions, [NotNullWhen(true)] out IrValue? baseValue, out int offset)
             {
                 baseValue = null!;
                 offset = 0;

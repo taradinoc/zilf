@@ -300,7 +300,7 @@ namespace Zilf.Emit.Intermediate
         private IrMemoryIdentity? TryGetTableMemoryIdentity(IOperand address, IOperand index, int scale,
             int length)
         {
-            object allocation;
+            object? allocation;
             int baseOffset;
             if (address is IMemoryAddressOperand memoryAddress &&
                 memoryAddress.TryGetMemoryAddress(out allocation, out baseOffset))
