@@ -96,13 +96,14 @@ stores, and branch data. Unknown symbolic constants conservatively use the large
 sequences whose final form depends on lowering remain deliberately pessimistic; pricing callee removal and the
 lowered sequence together remains future work.
 
-Under `-Oz`, a routine with exactly one reachable direct call can receive conservative whole-program removal credit.
-The routine must not escape as a value or be retained by data, syntax, entry-point, or `KEEP` references. Its compilation
-is deferred until its caller has been processed, and it is omitted only when that exact site actually inlines. The credit
-prices the candidate body and return but excludes uncertain routine-header and alignment savings. Candidate-to-candidate
-chains do not receive removal credit yet, which keeps deferred compilation and nested transplantation conservative.
-Candidate discovery counts syntactic calls in every expanded routine, including routines scheduled later during
-compilation; limiting this scan to the initial reachable set can incorrectly credit a callee whose definition remains.
+At each inlining level, the compiler can omit a routine when one caller contains all its direct calls and every call is
+inlined. The routine must not escape as a value or be retained by data, syntax, entry-point, or `KEEP` references. Its
+compilation is deferred until its caller has been processed, and it is omitted only when no call remains. Under `-Oz`,
+this removal also counts toward the estimated size reduction for a routine with one direct call. The credit prices the
+candidate body and return but excludes uncertain routine-header and alignment savings. Candidate-to-candidate chains
+do not receive removal credit yet, which keeps deferred compilation and nested transplantation conservative. Candidate
+discovery counts syntactic calls in every expanded routine, including routines scheduled later during compilation.
+Limiting this scan to the initial reachable set can incorrectly omit a callee whose definition remains.
 
 This cost-guided source transplantation does not make routine IR relocatable. Late-IR inlining would first require
 structured, cloneable lowering data for labels, returns, physical homes, and stack state instead of backend delegates

@@ -96,6 +96,30 @@ namespace Zilf.Tests.Integration
                 .AndMatching(@"routines removed by inlining: 0");
         }
 
+        [DataTestMethod]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        public async Task Inlining_Removes_Callee_When_All_Calls_Are_Inlined(int optimizationLevel)
+        {
+            await AssertRoutine("", "<+ <TINY-ADD 1> <TINY-ADD 2>>")
+                .WithOptimizationLevel(optimizationLevel)
+                .WithGlobal("<ROUTINE TINY-ADD (VALUE) <+ .VALUE 1>>")
+                .GeneratesCodeMatchingAsync(@"routines removed by inlining: 1")
+                .AndNotMatching(@"CALL.*TINY-ADD");
+        }
+
+        [TestMethod]
+        public async Task Inlining_Keeps_Callee_When_It_Is_Referenced_As_A_Value()
+        {
+            await AssertRoutine("", "<SETG SAVED-ROUTINE TINY-ADD> <TINY-ADD 1>")
+                .WithOptimizationLevel(2)
+                .WithGlobal("<GLOBAL SAVED-ROUTINE <>>")
+                .WithGlobal("<ROUTINE TINY-ADD (VALUE) <+ .VALUE 1>>")
+                .GeneratesCodeMatchingAsync(@"routines removed by inlining: 0")
+                .AndNotMatching(@"CALL.*TINY-ADD");
+        }
+
         [TestMethod]
         public async Task Tiny_Predicate_Routine_Preserves_Predicate_Context()
         {

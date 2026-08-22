@@ -8,12 +8,15 @@ and this project adheres to
 
 ### Added
 
-- Added new command-line switches to control the new optimizations added in this
+- Added command-line switches to control the new optimizations added in this
   version. `-O0` disables all of them, retaining the behavior from ZILF 1.9.
-  `-O1` is the default, trading a slight code size increase for faster
-  execution. `-O2` optimizes more aggressively for a balance between code size
-  and performance. `-O3` selects maximum optimization for performance. `-Oz`
-  selects maximum optimization for code size.
+  `-O1` trades a slight code size increase for faster execution. `-O2` optimizes
+  more aggressively while keeping a balance between code size and performance.
+  `-O3` selects maximum optimization for performance. `-Oz` selects maximum
+  optimization for code size.
+
+  The default is usually `-O1`. When generating debug information, the default
+  is `-O0`, and when publishing, the default is `-O2`.
 
 - Added a new optimizer layer that analyzes control and data flow, allowing for
   optimizations like common subexpression elimination. For Rascal, this saves
@@ -21,11 +24,12 @@ and this project adheres to
   saves ~50 instructions and ~70 bytes in the compiled story file. This layer
   is disabled by default or with `-O0`, and enabled with `-O2`, `-O3`, or `-Oz`.
 
-- Added routine inlining. With `-O1` (the default) or `-O2`, calls to very
-  simple routines are inlined, usually replacing the call with one instruction.
-  With `-O3`, calls to slightly more complex routines are inlined, usually
-  replacing the call with 1-3 instructions. With `-O0` or `-Oz`, inlining is
-  disabled.
+- Added routine inlining. `-O0` disables inlining. `-O1` and `-O2` inline simple
+  routines and other calls that do not increase the estimated encoded size.
+  `-O3` also permits limited size growth when inlining reduces the instruction
+  count. `-Oz` only inlines calls that reduce the estimated encoded size. At
+  any optimization level, ZILF can omit a routine if one caller contains all
+  its calls, every call is inlined, and no other references require it.
 
 ### Changed
 

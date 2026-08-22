@@ -274,7 +274,7 @@ namespace Zilf.Compiler
                         continue;
 
                     if (_wholeProgramInlineCallers != null &&
-                        _wholeProgramInlineCallers.TryGetValue(routine.Name, out var caller))
+                        _wholeProgramInlineCallers.TryGetValue(routine.Name, out var callers))
                     {
                         if (initialInlineDeferralPass)
                         {
@@ -290,7 +290,7 @@ namespace Zilf.Compiler
 #endif
                             continue;
                         }
-                        if (!compiled.Contains(caller))
+                        if (!callers.All(compiled.Contains))
                         {
                             compiled.Remove(routine.Name);
                             deferredInlineCandidate = true;

@@ -116,6 +116,34 @@ namespace Zilf.Tests.Cli
         }
 
         [TestMethod]
+        public void Debug_And_Publish_Select_Default_Optimization_Levels_Unless_Explicitly_Overridden()
+        {
+            var hostFileSystem = new HostFileSystem();
+            var contextFactory = new ContextFactory(hostFileSystem);
+            var frontEndFactory = new TestFrontEndFactory(new InMemoryFileSystem(), Path.GetFullPath("story.zil"));
+            var handler = new BuildCommandHandler(
+                contextFactory, frontEndFactory, new RecordingExternalToolService(), hostFileSystem);
+            var spec = CreateCommandSpec(handler, contextFactory, frontEndFactory, hostFileSystem);
+
+            Assert.AreEqual(0, CreateContext("-d").OptimizationLevel);
+            Assert.AreEqual(2, CreateContext("--publish").OptimizationLevel);
+            Assert.AreEqual(0, CreateContext("-d", "--publish").OptimizationLevel);
+            Assert.AreEqual(3, CreateContext("-d", "-O3").OptimizationLevel);
+            Assert.AreEqual(2, CreateContext("-d", "-O2").OptimizationLevel);
+            Assert.AreEqual(0, CreateContext("--publish", "-O0").OptimizationLevel);
+            Assert.AreEqual(1, CreateContext("-d", "-O1").OptimizationLevel);
+            var sizeContext = CreateContext("--publish", "-Oz");
+            Assert.AreEqual(1, sizeContext.OptimizationLevel);
+            Assert.IsTrue(sizeContext.OptimizeForSize);
+
+            Context CreateContext(params string[] args)
+            {
+                var parseResult = ParseBuild(spec, args);
+                return contextFactory.Create(parseResult, spec, RunMode.Compiler, "story.zil");
+            }
+        }
+
+        [TestMethod]
         public void Optimization_Level_Switches_Are_Mutually_Exclusive()
         {
             var hostFileSystem = new HostFileSystem();

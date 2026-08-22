@@ -407,7 +407,7 @@ namespace Zilf.Compiler
 #if DEBUG
                     inlineCalls++;
 #endif
-                    if (Context.OptimizeForSize && IsWholeProgramInlineSite(name))
+                    if (IsWholeProgramInlineSite(name))
                         eliminatedInlineRoutines.Add(name);
                     return true;
                 }
@@ -428,12 +428,14 @@ namespace Zilf.Compiler
         private void PlanWholeProgramInlineCandidates(HashSet<ZilAtom> externallyReferenced)
         {
             _wholeProgramInlineCallers = null;
-            if (!Context.OptimizeForSize || _inlineRoutines == null)
+            _wholeProgramInlineRemovalCredit = null;
+            if (_inlineRoutines == null)
                 return;
 
             var comparer = new AtomNameEqualityComparer(Context.IgnoreCase);
             var callCounts = _inlineRoutines.Keys.ToDictionary(name => name, _ => 0, comparer);
-            var callers = new Dictionary<ZilAtom, ZilAtom>(comparer);
+            var callers = _inlineRoutines.Keys.ToDictionary(
+                name => name, _ => new HashSet<ZilAtom>(comparer), comparer);
             var escaped = new HashSet<ZilAtom>(externallyReferenced, comparer);
 
             foreach (var original in Context.ZEnvironment.Routines)
@@ -453,31 +455,37 @@ namespace Zilf.Compiler
             var eligible = new HashSet<ZilAtom>(comparer);
             foreach (var pair in callCounts)
             {
-                if (pair.Value == 1 && !escaped.Contains(pair.Key) && callers.TryGetValue(pair.Key, out var caller))
+                if (pair.Value > 0 && callers[pair.Key].Count == 1 && !escaped.Contains(pair.Key) &&
+                    CountSyntacticCalls(pair.Key) == pair.Value)
                     eligible.Add(pair.Key);
             }
-            var result = new Dictionary<ZilAtom, ZilAtom>(comparer);
+            var result = new Dictionary<ZilAtom, HashSet<ZilAtom>>(comparer);
+            var removalCredit = new HashSet<ZilAtom>(comparer);
             foreach (var name in eligible)
             {
-                var caller = callers[name];
-                if (!eligible.Contains(caller) && CountSyntacticCalls(name) == 1)
-                    result.Add(name, caller);
+                var candidateCallers = callers[name];
+                var allCallersScheduled = _routinesToCompile == null || candidateCallers.All(_routinesToCompile.Contains);
+                if (allCallersScheduled && !candidateCallers.Overlaps(eligible))
+                {
+                    result.Add(name, candidateCallers);
+                    if (callCounts[name] == 1)
+                        removalCredit.Add(name);
+                }
             }
             _wholeProgramInlineCallers = result;
+            _wholeProgramInlineRemovalCredit = removalCredit;
             return;
 
             void Visit(ZilObject expression, ZilAtom caller, bool allowDirectCall)
             {
                 expression = expression.Unwrap(Context);
-                if (expression.IsVariableRef())
-                    return;
                 if (expression is ZilForm { First: ZilAtom head } form)
                 {
                     if (allowDirectCall && TryResolveRoutineName(head, out var called) &&
                         callCounts.TryGetValue(called, out var count))
                     {
                         callCounts[called] = count + 1;
-                        callers[called] = caller;
+                        callers[called].Add(caller);
                     }
                     foreach (var argument in form.Skip(1))
                         Visit(argument, caller, true);
@@ -494,6 +502,8 @@ namespace Zilf.Compiler
                     escaped.Add(referenced);
                     return;
                 }
+                if (expression.IsVariableRef())
+                    return;
                 if (expression is IEnumerable<ZilObject> children)
                 {
                     foreach (var child in children)
@@ -618,7 +628,8 @@ namespace Zilf.Compiler
             var inlineCost = argumentCost + bodyEstimate.Cost;
             growth = inlineCost.Bytes - callCost.Bytes;
             var removableBytes = 0;
-            if (Context.OptimizeForSize && IsWholeProgramInlineSite(name) &&
+            if (Context.OptimizeForSize && _wholeProgramInlineRemovalCredit?.Contains(name) == true &&
+                IsWholeProgramInlineSite(name) &&
                 TryEstimateRemovableRoutineCost(model, candidate, out var removableCost))
             {
                 removableBytes = removableCost.Bytes;
@@ -678,8 +689,8 @@ namespace Zilf.Compiler
 
         private bool IsWholeProgramInlineSite(ZilAtom name) =>
             compilingRoutineName != null && _wholeProgramInlineCallers != null &&
-            _wholeProgramInlineCallers.TryGetValue(name, out var caller) &&
-            new AtomNameEqualityComparer(Context.IgnoreCase).Equals(caller, compilingRoutineName);
+            _wholeProgramInlineCallers.TryGetValue(name, out var callers) &&
+            callers.Contains(compilingRoutineName);
 
         private void RecordNonInlinedCall(ZilAtom name)
         {
