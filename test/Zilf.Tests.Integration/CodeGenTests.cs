@@ -86,6 +86,14 @@ namespace Zilf.Tests.Integration
                 .WithGlobal(routine)
                 .GeneratesCodeMatchingAsync(@"CALL.*OFFSET")
                 .AndMatching(@"routines removed by inlining: 0");
+
+            await AssertRoutine("", "<SETG VALUE ,VALUE> <OFFSET ,VALUE>")
+                .OptimizeForSize()
+                .WithGlobal("<GLOBAL VALUE 10>")
+                .WithGlobal(routine)
+                .WithGlobal("<ROUTINE LATE-CALLER () <OFFSET 4>>")
+                .GeneratesCodeMatchingAsync(@"CALL.*OFFSET")
+                .AndMatching(@"routines removed by inlining: 0");
         }
 
         [TestMethod]

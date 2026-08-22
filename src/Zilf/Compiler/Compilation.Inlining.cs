@@ -425,8 +425,7 @@ namespace Zilf.Compiler
             }
         }
 
-        private void PlanWholeProgramInlineCandidates(HashSet<ZilAtom> reachable,
-            HashSet<ZilAtom> externallyReferenced)
+        private void PlanWholeProgramInlineCandidates(HashSet<ZilAtom> externallyReferenced)
         {
             _wholeProgramInlineCallers = null;
             if (!Context.OptimizeForSize || _inlineRoutines == null)
@@ -439,7 +438,7 @@ namespace Zilf.Compiler
 
             foreach (var original in Context.ZEnvironment.Routines)
             {
-                if (original.Name is not { } routineName || !reachable.Contains(routineName))
+                if (original.Name is not { } routineName)
                     continue;
                 var routine = GetRewrittenRoutine(original);
                 foreach (var parameter in routine.ArgSpec)
@@ -461,7 +460,7 @@ namespace Zilf.Compiler
             foreach (var name in eligible)
             {
                 var caller = callers[name];
-                if (!eligible.Contains(caller))
+                if (!eligible.Contains(caller) && CountSyntacticCalls(name) == 1)
                     result.Add(name, caller);
             }
             _wholeProgramInlineCallers = result;
@@ -513,8 +512,54 @@ namespace Zilf.Compiler
                     name = routine.Name;
                     return true;
                 }
+                if (_inlineRoutines.ContainsKey(interned))
+                {
+                    name = interned;
+                    return true;
+                }
                 name = null!;
                 return false;
+            }
+
+            int CountSyntacticCalls(ZilAtom target)
+            {
+                var count = 0;
+                foreach (var routine in Context.ZEnvironment.Routines)
+                {
+                    foreach (var expression in routine.Body)
+                        Count(expression);
+                }
+                return count;
+
+                void Count(ZilObject expression)
+                {
+                    if (expression is ZilForm { First: ZilAtom head } form)
+                    {
+                        if (comparer.Equals(Context.ZEnvironment.InternGlobalName(head), target))
+                            count++;
+                        CountList(form.Rest);
+                        return;
+                    }
+                    if (expression is ZilListoidBase list)
+                    {
+                        CountList(list);
+                        return;
+                    }
+                    if (expression is IEnumerable<ZilObject> children)
+                    {
+                        foreach (var child in children)
+                            Count(child);
+                    }
+                }
+
+                void CountList(ZilListoidBase? list)
+                {
+                    while (list is { IsEmpty: false, First: not null, Rest: not null })
+                    {
+                        Count(list.First);
+                        list = list.Rest;
+                    }
+                }
             }
         }
 

@@ -532,7 +532,7 @@ namespace Zilf.Compiler
                 if (syntax.Preaction != null)
                     externallyReferencedRoutines.Add(syntax.Preaction);
             }
-            PlanWholeProgramInlineCandidates(reachable, externallyReferencedRoutines);
+            PlanWholeProgramInlineCandidates(externallyReferencedRoutines);
 
             _routinesToCompile = reachable;
             _maybeUnusedRoutineNames = new HashSet<ZilAtom>(allRoutineNames, comparer);
