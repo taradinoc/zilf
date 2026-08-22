@@ -555,7 +555,8 @@ namespace Zilf.Compiler
             // A call that will be inlined has the effects of its arguments and transplanted body, not the
             // conservative effects of an opaque routine call. This lets operand preservation see through pure
             // nested inline calls instead of allocating temporaries that become unnecessary after transplantation.
-            if (_inlineRoutines != null && _inlineRoutines.TryGetValue(head, out var inlineRoutine))
+            if (_inlineRoutines != null && _inlineRoutines.TryGetValue(head, out var inlineRoutine) &&
+                inlineRoutine.LegacyEligible)
                 return form.Rest.Any(HasSideEffects) || HasSideEffects(inlineRoutine.Body);
 
             // routines are presumed to have side effects

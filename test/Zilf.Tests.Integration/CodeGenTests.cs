@@ -74,12 +74,35 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("", "<NOT-TINY>")
                 .WithGlobal("<ROUTINE NOT-TINY () <+ <RANDOM 10> <RANDOM 20>>>")
                 .GeneratesCodeMatchingAsync(@"CALL.*NOT-TINY");
+        }
 
+        [TestMethod]
+        public async Task Cost_Model_Inlines_Larger_Constant_Specialized_Routine()
+        {
             await AssertRoutine("", "<ROOM-OFFSET 2 3>")
-                .WithOptimizationLevel(3)
                 .WithGlobal("<CONSTANT ROOM-STRIDE 8>")
                 .WithGlobal("<ROUTINE ROOM-OFFSET (R O) <+ <* <- .R 1> ,ROOM-STRIDE> .O>>")
-                .GeneratesCodeMatchingAsync(@"CALL.*ROOM-OFFSET");
+                .GeneratesCodeMatchingAsync(@"RETURN 11")
+                .AndNotMatching(@"CALL.*ROOM-OFFSET");
+        }
+
+        [TestMethod]
+        public async Task Cost_Model_Uses_Different_O2_And_O3_Profitability()
+        {
+            const string routine = "<ROUTINE OFFSET (X) <+ <* <- .X 1> 2> 3>>";
+
+            await AssertRoutine("", "<OFFSET ,VALUE>")
+                .WithOptimizationLevel(2)
+                .WithGlobal("<GLOBAL VALUE 10>")
+                .WithGlobal(routine)
+                .GeneratesCodeMatchingAsync(@"CALL.*OFFSET");
+
+            await AssertRoutine("", "<OFFSET ,VALUE>")
+                .WithOptimizationLevel(3)
+                .WithGlobal("<GLOBAL VALUE 10>")
+                .WithGlobal(routine)
+                .GeneratesCodeMatchingAsync(@"SUB VALUE,1")
+                .AndNotMatching(@"CALL.*OFFSET");
         }
 
         [TestMethod]

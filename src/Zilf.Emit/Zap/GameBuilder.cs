@@ -46,7 +46,7 @@ namespace Zilf.Emit.Zap
         DisableRoutineIr = 8,
     }
 
-    public sealed partial class GameBuilder : IGameBuilder
+    public sealed partial class GameBuilder : IGameBuilder, IInliningCostModel
     {
         const string INDENT = "\t";
 
@@ -84,6 +84,10 @@ namespace Zilf.Emit.Zap
         internal readonly bool optimizeRoutineIr;
         internal readonly bool useRoutineIr;
         readonly GameOptions options;
+
+        InliningCost IInliningCostModel.EstimateOperation(InliningOperationClass operation,
+            IReadOnlyList<InliningOperandClass> operands, bool storesResult, bool branches) =>
+            ZapInstructionCost.Estimate(operation, operands, storesResult, branches);
 
 #if DEBUG
         readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);

@@ -44,12 +44,12 @@ namespace Zilf.Emit.Zap
             return ReferenceEquals(variable.PhysicalHome, lowering.ResultHome);
         }
 
-        private static int EstimateOperand(IrValue value) => value.Constant switch
+        private static int EstimateOperand(IrValue value) => ZapInstructionCost.EstimateOperand(value.Constant switch
         {
-            >= 0 and <= byte.MaxValue => 1,
-            not null => 2,
-            _ when value.PhysicalHome is ILocalBuilder => 1,
-            _ => 2,
-        };
+            >= 0 and <= byte.MaxValue => InliningOperandClass.SmallConstant,
+            not null => InliningOperandClass.LargeConstant,
+            _ when value.PhysicalHome is ILocalBuilder => InliningOperandClass.Local,
+            _ => InliningOperandClass.Global,
+        });
     }
 }

@@ -109,5 +109,6 @@ namespace Zilf.Compiler
     private readonly Dictionary<ZilAtom, Stack<IOperand>> inlineLocalBindings = new();
     private readonly HashSet<ZilAtom> activeInlineRoutines = new();
     private bool compilingEntryPoint;
+    private int inlineCallerGrowth;
     }
 }

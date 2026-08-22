@@ -82,6 +82,19 @@ and emits directly to the target builder; the CLI uses it for `-O0` and `-O1`. T
 enabled at every CLI optimization level. `-Oz` runs the IR optimizer but disables inlining to prioritize minimum code
 size.
 
+Routine inlining remains a compiler-level transformation before IR construction. Zap exposes an optional target cost
+model which prices the normal call and the argument-specialized transplanted body in estimated encoded bytes and
+dynamic instructions. `-O2` accepts only non-growing sites, while `-O3` permits bounded growth when dynamic instruction
+cost falls. The resulting body then passes through the normal routine IR pipeline, allowing SCCP, GVN, and DCE to
+consume constant arguments. Unsupported expressions, unresolved target costs, recursion, and local pressure reject the
+site conservatively. Calls accepted by the earlier source-shape policy remain accepted for compatibility; target costing
+governs the broader candidate set. Other backends retain the earlier conservative source-shape policy, and `-Oz`
+disables inlining.
+
+This cost-guided source transplantation does not make routine IR relocatable. Late-IR inlining would first require
+structured, cloneable lowering data for labels, returns, physical homes, and stack state instead of backend delegates
+captured from the original routine.
+
 ## Numeric semantics
 
 Always use the routine's `IrNumericSemantics` when evaluating an operation:

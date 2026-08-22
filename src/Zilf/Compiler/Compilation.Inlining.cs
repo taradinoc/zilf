@@ -33,13 +33,26 @@ namespace Zilf.Compiler
     sealed partial class Compilation
     {
         private sealed record InlineRoutine(ZilObject Body, IReadOnlyList<ArgItem> Parameters, bool HasNestedForm,
-            Dictionary<ZilAtom, int> ParameterUseCounts, HashSet<ZilAtom> ParametersReadAfterSideEffect);
+            Dictionary<ZilAtom, int> ParameterUseCounts, HashSet<ZilAtom> ParametersReadAfterSideEffect,
+            bool LegacyEligible);
+
+        private const int MaximumInlineCandidateForms = 32;
+        private const int MaximumInlineEstimateDepth = 3;
+        private const int MaximumSpeedInlineSiteGrowth = 8;
+        private const int MaximumSpeedInlineCallerGrowth = 64;
 
         private readonly Dictionary<ZilRoutine, ZilRoutine> rewrittenRoutines = [];
 
 #if DEBUG
         private int inlineCalls;
         private int inlineCallsRejectedForLocalLimit;
+        private int inlineCallsRejectedForSize;
+        private int inlineCallsRejectedForSpeed;
+        private int inlineCallsRejectedForCallerBudget;
+        private int inlineCallsRejectedForUnsupportedCost;
+        private int inlineCallsAcceptedWithConstantSpecialization;
+        private int inlineEstimatedBytesSaved;
+        private int inlineEstimatedBytesGrown;
 #endif
 
         private ZilRoutine GetRewrittenRoutine(ZilRoutine routine)
@@ -80,10 +93,13 @@ namespace Zilf.Compiler
                 if (parameters.Any(parameter => body.ModifiesLocal(parameter.Atom)) || ContainsString(body))
                     continue;
                 var hasNestedForm = HasNestedInlineForm(body);
-                if (IsInlineExpression(body) && CountInlineForms(body) <= 2 &&
-                    (Context.OptimizationLevel >= 3 || !hasNestedForm))
+                var formCount = CountInlineForms(body);
+                var legacyEligible = formCount <= 2 && (Context.OptimizationLevel >= 3 || !hasNestedForm);
+                if (IsInlineExpression(body) &&
+                    (Game is IInliningCostModel ? formCount <= MaximumInlineCandidateForms : legacyEligible))
                     candidates.Add(routine.Name, new InlineRoutine(body, parameters, hasNestedForm,
-                        CountParameterUses(body, parameters), FindParametersReadAfterSideEffect(body, parameters)));
+                        CountParameterUses(body, parameters), FindParametersReadAfterSideEffect(body, parameters),
+                        legacyEligible));
             }
 
             var recursive = FindRecursiveInlineRoutines(candidates);
@@ -306,6 +322,30 @@ namespace Zilf.Compiler
                 return false;
             }
 
+            if (Game is IInliningCostModel costModel && !candidate.LegacyEligible)
+            {
+                if (!TryEvaluateInlineProfitability(costModel, candidate, arguments, wantResult,
+                    predicateLabel != null, out var estimatedGrowth, out var constantSpecialization))
+                {
+                    activeInlineRoutines.Remove(name);
+                    return false;
+                }
+                inlineCallerGrowth += Math.Max(0, estimatedGrowth);
+#if DEBUG
+                if (constantSpecialization)
+                    inlineCallsAcceptedWithConstantSpecialization++;
+                if (estimatedGrowth > 0)
+                    inlineEstimatedBytesGrown += estimatedGrowth;
+                else
+                    inlineEstimatedBytesSaved -= estimatedGrowth;
+#endif
+            }
+            else if (Game is not IInliningCostModel && !candidate.LegacyEligible)
+            {
+                activeInlineRoutines.Remove(name);
+                return false;
+            }
+
             try
             {
                 var bindings = new List<ZilAtom>();
@@ -379,6 +419,323 @@ namespace Zilf.Compiler
             }
         }
 
+        private readonly record struct InlineEstimate(InliningCost Cost, InliningOperandClass Operand,
+            int? Constant = null, bool ConstantSpecialization = false);
+
+        private bool TryEvaluateInlineProfitability(IInliningCostModel model, InlineRoutine candidate,
+            ZilObject[] arguments, bool wantResult, bool predicateContext, out int growth,
+            out bool constantSpecialization)
+        {
+            var comparer = new AtomNameEqualityComparer(Context.IgnoreCase);
+            var bindings = new Dictionary<ZilAtom, InlineEstimate>(comparer);
+            var argumentCost = new InliningCost();
+            var callOperands = new List<InliningOperandClass> { InliningOperandClass.UnresolvedConstant };
+            constantSpecialization = false;
+
+            for (var i = 0; i < candidate.Parameters.Count; i++)
+            {
+                var parameter = candidate.Parameters[i];
+                var argument = i < arguments.Length ? arguments[i].Unwrap(Context) : parameter.DefaultValue;
+                argument ??= ZilFix.Zero;
+                if (!TryEstimateInlineExpression(model, argument,
+                    new Dictionary<ZilAtom, InlineEstimate>(comparer), 0, true, false, out var estimate))
+                {
+#if DEBUG
+                    inlineCallsRejectedForUnsupportedCost++;
+#endif
+                    growth = 0;
+                    return false;
+                }
+
+                argumentCost += estimate.Cost;
+                callOperands.Add(estimate.Operand);
+                var bound = estimate with { Cost = new InliningCost() };
+                if (i < arguments.Length && NeedsInlineTemporary(candidate, i, argument))
+                {
+                    // The snapshot replaces the call argument's stack/operand handoff. Charge its local operand
+                    // through uses in the body, but do not charge a second complete operation here.
+                    bound = bound with { Operand = InliningOperandClass.Local, Constant = null };
+                }
+                bindings[parameter.Atom] = bound;
+            }
+
+            if (!TryEstimateInlineExpression(model, candidate.Body, bindings, 0, wantResult, predicateContext,
+                out var bodyEstimate))
+            {
+#if DEBUG
+                inlineCallsRejectedForUnsupportedCost++;
+#endif
+                growth = 0;
+                return false;
+            }
+
+            var callCost = argumentCost + model.EstimateOperation(InliningOperationClass.DirectCall,
+                callOperands, wantResult, predicateContext);
+            var inlineCost = argumentCost + bodyEstimate.Cost;
+            growth = inlineCost.Bytes - callCost.Bytes;
+            constantSpecialization = bodyEstimate.ConstantSpecialization ||
+                bindings.Values.Any(binding => binding.Constant != null);
+
+            if (Context.OptimizationLevel < 3)
+            {
+                if (growth <= 0)
+                    return true;
+#if DEBUG
+                inlineCallsRejectedForSize++;
+#endif
+                return false;
+            }
+
+            if (inlineCost.Instructions >= callCost.Instructions)
+            {
+#if DEBUG
+                inlineCallsRejectedForSpeed++;
+#endif
+                return false;
+            }
+            if (growth > MaximumSpeedInlineSiteGrowth)
+            {
+#if DEBUG
+                inlineCallsRejectedForSize++;
+#endif
+                return false;
+            }
+            if (inlineCallerGrowth + Math.Max(0, growth) > MaximumSpeedInlineCallerGrowth)
+            {
+#if DEBUG
+                inlineCallsRejectedForCallerBudget++;
+#endif
+                return false;
+            }
+            return true;
+        }
+
+        private bool TryEstimateInlineExpression(IInliningCostModel model, ZilObject expression,
+            IReadOnlyDictionary<ZilAtom, InlineEstimate> bindings, int depth, bool wantResult,
+            bool predicateContext, out InlineEstimate estimate)
+        {
+            expression = expression.Unwrap(Context);
+            if (expression.IsLVAL(out var local))
+            {
+                if (bindings.TryGetValue(local, out var binding))
+                    estimate = binding;
+                else if (TryGetInlineLocal(local, out var inlineValue))
+                    estimate = ClassifyOperand(inlineValue);
+                else
+                    estimate = new InlineEstimate(new InliningCost(), InliningOperandClass.Local);
+                return true;
+            }
+            if (expression.IsGVAL(out var global))
+            {
+                var globalValue = Context.GetZVal(Context.ZEnvironment.InternGlobalName(global));
+                while (globalValue is ZilConstant constant)
+                    globalValue = constant.Value;
+                if (globalValue is ZilFix globalFix)
+                {
+                    estimate = new InlineEstimate(new InliningCost(), ClassifyConstant(globalFix.Value),
+                        globalFix.Value);
+                    return true;
+                }
+                estimate = new InlineEstimate(new InliningCost(), InliningOperandClass.Global);
+                return true;
+            }
+            if (expression is ZilFix fix)
+            {
+                estimate = new InlineEstimate(new InliningCost(), ClassifyConstant(fix.Value), fix.Value);
+                return true;
+            }
+            if (expression is not ZilForm { First: ZilAtom head } form)
+            {
+                estimate = new InlineEstimate(new InliningCost(), InliningOperandClass.UnresolvedConstant);
+                return expression is not ZilString;
+            }
+
+            var operands = new List<InliningOperandClass>();
+            var cost = new InliningCost();
+            var constants = new List<int>();
+            var allConstant = true;
+            var specialized = false;
+            foreach (var argument in form.Skip(1))
+            {
+                if (!TryEstimateInlineExpression(model, argument, bindings, depth + 1, true, false,
+                    out var argumentEstimate))
+                {
+                    estimate = default;
+                    return false;
+                }
+                cost += argumentEstimate.Cost;
+                operands.Add(argumentEstimate.Operand);
+                specialized |= argumentEstimate.ConstantSpecialization;
+                if (argumentEstimate.Constant is { } constant)
+                    constants.Add(constant);
+                else
+                    allConstant = false;
+            }
+
+            if (allConstant && TryFoldInlineOperation(head.Text, constants, out var folded))
+            {
+                estimate = new InlineEstimate(cost, ClassifyConstant(folded), folded, true);
+                return true;
+            }
+
+            var interned = Context.ZEnvironment.InternGlobalName(head);
+            var calledValue = Context.GetZVal(interned);
+            while (calledValue is ZilConstant calledConstant)
+                calledValue = calledConstant.Value;
+            if (depth < MaximumInlineEstimateDepth && calledValue is ZilRoutine { Name: not null } calledRoutine &&
+                _inlineRoutines != null && _inlineRoutines.TryGetValue(calledRoutine.Name, out var nestedCandidate) &&
+                TryEstimateNestedInline(model, nestedCandidate, form.Skip(1).ToArray(), bindings, depth + 1,
+                    wantResult, predicateContext, cost, operands, out estimate))
+                return true;
+
+            var operation = ClassifyInlineOperation(head, form.Skip(1).Count());
+            if (operation == null)
+            {
+                estimate = default;
+                return false;
+            }
+            cost += model.EstimateOperation(operation.Value, operands, wantResult, predicateContext);
+            estimate = new InlineEstimate(cost,
+                predicateContext ? InliningOperandClass.SmallConstant : InliningOperandClass.Stack,
+                ConstantSpecialization: specialized);
+            return true;
+        }
+
+        private bool TryEstimateNestedInline(IInliningCostModel model, InlineRoutine candidate,
+            ZilObject[] arguments, IReadOnlyDictionary<ZilAtom, InlineEstimate> outerBindings, int depth,
+            bool wantResult, bool predicateContext, InliningCost argumentCost,
+            IReadOnlyList<InliningOperandClass> argumentOperands, out InlineEstimate estimate)
+        {
+            var comparer = new AtomNameEqualityComparer(Context.IgnoreCase);
+            var bindings = new Dictionary<ZilAtom, InlineEstimate>(comparer);
+            for (var i = 0; i < candidate.Parameters.Count; i++)
+            {
+                InlineEstimate argument;
+                if (i < arguments.Length)
+                {
+                    if (!TryEstimateInlineExpression(model, arguments[i], outerBindings, depth, true, false,
+                        out argument))
+                    {
+                        estimate = default;
+                        return false;
+                    }
+                    argument = argument with { Cost = new InliningCost() };
+                }
+                else
+                {
+                    var defaultValue = candidate.Parameters[i].DefaultValue ?? ZilFix.Zero;
+                    if (!TryEstimateInlineExpression(model, defaultValue, outerBindings, depth, true, false,
+                        out argument))
+                    {
+                        estimate = default;
+                        return false;
+                    }
+                    argument = argument with { Cost = new InliningCost() };
+                }
+                bindings[candidate.Parameters[i].Atom] = argument;
+            }
+
+            if (!TryEstimateInlineExpression(model, candidate.Body, bindings, depth, wantResult, predicateContext,
+                out var body))
+            {
+                estimate = default;
+                return false;
+            }
+
+            var callOperands = new List<InliningOperandClass> { InliningOperandClass.UnresolvedConstant };
+            callOperands.AddRange(argumentOperands);
+            var call = argumentCost + model.EstimateOperation(InliningOperationClass.DirectCall, callOperands,
+                wantResult, predicateContext);
+            var inline = argumentCost + body.Cost;
+            var growth = inline.Bytes - call.Bytes;
+            var profitable = Context.OptimizationLevel < 3
+                ? growth <= 0
+                : inline.Instructions < call.Instructions && growth <= MaximumSpeedInlineSiteGrowth;
+            if (!profitable)
+            {
+                estimate = default;
+                return false;
+            }
+
+            estimate = body with
+            {
+                Cost = inline,
+                ConstantSpecialization = body.ConstantSpecialization || bindings.Values.Any(value => value.Constant != null),
+            };
+            return true;
+        }
+
+        private InliningOperationClass? ClassifyInlineOperation(ZilAtom head, int argumentCount)
+        {
+            var platform = ZBuiltins.GetCurrentBuiltinPlatform(Context.ZEnvironment.TargetPlatform);
+            if (ZBuiltins.IsBuiltinPredCall(head.Text, Context.ZEnvironment.ZVersion, argumentCount, platform) ||
+                ZBuiltins.IsBuiltinValuePredCall(head.Text, Context.ZEnvironment.ZVersion, argumentCount, platform))
+                return InliningOperationClass.Predicate;
+            if (ZBuiltins.IsBuiltinValueCall(head.Text, Context.ZEnvironment.ZVersion, argumentCount, platform))
+                return head.Text is "GET" or "GETB" or "GETP" or "GETPT" or "NEXTP" or "FIRST?" or "NEXT?"
+                    ? InliningOperationClass.MemoryRead
+                    : InliningOperationClass.Arithmetic;
+            if (ZBuiltins.IsBuiltinVoidCall(head.Text, Context.ZEnvironment.ZVersion, argumentCount, platform))
+                return InliningOperationClass.MemoryWrite;
+
+            var interned = Context.ZEnvironment.InternGlobalName(head);
+            var value = Context.GetZVal(interned);
+            while (value is ZilConstant constant)
+                value = constant.Value;
+            return value is ZilRoutine ? InliningOperationClass.DirectCall : null;
+        }
+
+        private static InliningOperandClass ClassifyConstant(int value) => value is >= 0 and <= byte.MaxValue
+            ? InliningOperandClass.SmallConstant
+            : InliningOperandClass.LargeConstant;
+
+        private static InlineEstimate ClassifyOperand(IOperand operand) => operand switch
+        {
+            INumericOperand numeric => new InlineEstimate(new InliningCost(), ClassifyConstant(numeric.Value),
+                numeric.Value),
+            ILocalBuilder => new InlineEstimate(new InliningCost(), InliningOperandClass.Local),
+            IGlobalBuilder => new InlineEstimate(new InliningCost(), InliningOperandClass.Global),
+            IIndirectOperand => new InlineEstimate(new InliningCost(), InliningOperandClass.Indirect),
+            IConstantOperand => new InlineEstimate(new InliningCost(), InliningOperandClass.UnresolvedConstant),
+            _ => new InlineEstimate(new InliningCost(), InliningOperandClass.Stack),
+        };
+
+        private static bool TryFoldInlineOperation(string name, List<int> operands, out int result)
+        {
+            result = 0;
+            if (operands.Count == 0)
+                return false;
+            long value = operands[0];
+            try
+            {
+                switch (name)
+                {
+                    case "+":
+                        value = operands.Aggregate(0L, static (current, operand) => current + operand);
+                        break;
+                    case "*":
+                        value = operands.Aggregate(1L, static (current, operand) => current * operand);
+                        break;
+                    case "-":
+                        for (var i = 1; i < operands.Count; i++)
+                            value -= operands[i];
+                        break;
+                    case "/" when operands.Skip(1).All(static operand => operand != 0):
+                        for (var i = 1; i < operands.Count; i++)
+                            value /= operands[i];
+                        break;
+                    default:
+                        return false;
+                }
+                result = (short)value;
+                return true;
+            }
+            catch (OverflowException)
+            {
+                return false;
+            }
+        }
+
         private bool HasInlineTemporaryCapacity(InlineRoutine candidate, ZilObject[] arguments)
         {
             // A nested operand is compiled before the outer operation and therefore needs a local of its own.
@@ -412,6 +769,15 @@ namespace Zilf.Compiler
             Game.RecordCompilerOptimizationStatistic("calls inlined", inlineCalls);
             Game.RecordCompilerOptimizationStatistic("calls not inlined: local variable limit",
                 inlineCallsRejectedForLocalLimit);
+            Game.RecordCompilerOptimizationStatistic("calls not inlined: estimated size", inlineCallsRejectedForSize);
+            Game.RecordCompilerOptimizationStatistic("calls not inlined: estimated speed", inlineCallsRejectedForSpeed);
+            Game.RecordCompilerOptimizationStatistic("calls not inlined: caller growth budget",
+                inlineCallsRejectedForCallerBudget);
+            Game.RecordCompilerOptimizationStatistic("calls not inlined: unsupported cost", inlineCallsRejectedForUnsupportedCost);
+            Game.RecordCompilerOptimizationStatistic("calls inlined: constant-specialized",
+                inlineCallsAcceptedWithConstantSpecialization);
+            Game.RecordCompilerOptimizationStatistic("inlining estimated bytes saved", inlineEstimatedBytesSaved);
+            Game.RecordCompilerOptimizationStatistic("inlining estimated bytes grown", inlineEstimatedBytesGrown);
         }
 #endif
 

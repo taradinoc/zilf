@@ -75,6 +75,7 @@ namespace Zilf.Compiler
             routine = GetRewrittenRoutine(routine);
 
             compilingEntryPoint = entryPoint;
+            inlineCallerGrowth = 0;
 
             // set up arguments and locals
             ClearLocalsAndBlocks();
