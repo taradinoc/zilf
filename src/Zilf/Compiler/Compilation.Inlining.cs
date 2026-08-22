@@ -68,7 +68,8 @@ namespace Zilf.Compiler
 
         private void PrepareInlineRoutines()
         {
-            if (Context.OptimizationLevel == 0 || Context.OptimizeForSize)
+            if (Context.OptimizationLevel == 0 && !Context.OptimizeForSize ||
+                Context.OptimizeForSize && Game is not IInliningCostModel)
             {
                 _inlineRoutines = null;
                 return;
@@ -322,7 +323,8 @@ namespace Zilf.Compiler
                 return false;
             }
 
-            if (Game is IInliningCostModel costModel && !candidate.LegacyEligible)
+            if (Game is IInliningCostModel costModel &&
+                (Context.OptimizeForSize || !candidate.LegacyEligible))
             {
                 if (!TryEvaluateInlineProfitability(costModel, candidate, arguments, wantResult,
                     predicateLabel != null, out var estimatedGrowth, out var constantSpecialization))
@@ -475,6 +477,16 @@ namespace Zilf.Compiler
             growth = inlineCost.Bytes - callCost.Bytes;
             constantSpecialization = bodyEstimate.ConstantSpecialization ||
                 bindings.Values.Any(binding => binding.Constant != null);
+
+            if (Context.OptimizeForSize)
+            {
+                if (growth < 0)
+                    return true;
+#if DEBUG
+                inlineCallsRejectedForSize++;
+#endif
+                return false;
+            }
 
             if (Context.OptimizationLevel < 3)
             {

@@ -79,17 +79,17 @@ Z-machine value is not known yet.
 `DisableIrOptimization` skips the optimizer stages but still records, verifies, lowers, and runs target cleanup. This is
 the primary differential-debugging switch; it is not a request to bypass the IR. `DisableRoutineIr` bypasses recording
 and emits directly to the target builder; the CLI uses it for `-O0` and `-O1`. Target peephole optimization remains
-enabled at every CLI optimization level. `-Oz` runs the IR optimizer but disables inlining to prioritize minimum code
-size.
+enabled at every CLI optimization level. `-Oz` runs the IR optimizer and accepts only calls whose target model predicts
+a strict encoded-size reduction.
 
 Routine inlining remains a compiler-level transformation before IR construction. Zap exposes an optional target cost
 model which prices the normal call and the argument-specialized transplanted body in estimated encoded bytes and
 dynamic instructions. `-O2` accepts only non-growing sites, while `-O3` permits bounded growth when dynamic instruction
 cost falls. The resulting body then passes through the normal routine IR pipeline, allowing SCCP, GVN, and DCE to
 consume constant arguments. Unsupported expressions, unresolved target costs, recursion, and local pressure reject the
-site conservatively. Calls accepted by the earlier source-shape policy remain accepted for compatibility; target costing
-governs the broader candidate set. Other backends retain the earlier conservative source-shape policy, and `-Oz`
-disables inlining.
+site conservatively. Calls accepted by the earlier source-shape policy remain accepted under `-O2` and `-O3` for
+compatibility; target costing governs every `-Oz` candidate and the broader candidate set. Backends without an inlining
+cost model continue to disable inlining under `-Oz`.
 
 This cost-guided source transplantation does not make routine IR relocatable. Late-IR inlining would first require
 structured, cloneable lowering data for labels, returns, physical homes, and stack state instead of backend delegates

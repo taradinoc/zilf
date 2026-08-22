@@ -50,13 +50,21 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
-        public async Task Size_Optimization_Disables_Inlining_But_Enables_Routine_Ir()
+        public async Task Size_Optimization_Inlines_Only_Strictly_Smaller_Calls()
         {
             await AssertRoutine("\"AUX\" X", "<SET X <>> <TINY-CONSTANT>")
                 .OptimizeForSize()
                 .WithGlobal("<ROUTINE TINY-CONSTANT () 123>")
-                .GeneratesCodeMatchingAsync(@"CALL.*TINY-CONSTANT")
+                .GeneratesCodeMatchingAsync(@"RETURN 123")
+                .AndNotMatching(@"CALL.*TINY-CONSTANT")
                 .AndNotMatching(@"SET 'X,0");
+
+            await AssertRoutine("", "<OFFSET ,VALUE>")
+                .OptimizeForSize()
+                .WithGlobal("<GLOBAL VALUE 10>")
+                .WithGlobal("<ROUTINE OFFSET (X) <+ <* <- .X 1> 2> 3>>")
+                .GeneratesCodeMatchingAsync(@"CALL.*OFFSET")
+                .AndNotMatching(@"SUB VALUE,1");
         }
 
         [TestMethod]
