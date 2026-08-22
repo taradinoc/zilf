@@ -42,5 +42,16 @@ namespace Zilf.Emit.Tests
             Assert.AreEqual(plain.Bytes + 3, storedAndBranched.Bytes);
             Assert.AreEqual(4, storedAndBranched.Instructions);
         }
+
+        [TestMethod]
+        public void Large_Operand_Uses_Two_Encoded_Bytes()
+        {
+            var small = ZapInstructionCost.Estimate(InliningOperationClass.Arithmetic,
+                [InliningOperandClass.SmallConstant, InliningOperandClass.Local], true, false);
+            var large = ZapInstructionCost.Estimate(InliningOperationClass.Arithmetic,
+                [InliningOperandClass.LargeConstant, InliningOperandClass.Local], true, false);
+
+            Assert.AreEqual(small.Bytes + 1, large.Bytes);
+        }
     }
 }

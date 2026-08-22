@@ -91,6 +91,11 @@ site conservatively. Calls accepted by the earlier source-shape policy remain ac
 compatibility; target costing governs every `-Oz` candidate and the broader candidate set. Backends without an inlining
 cost model continue to disable inlining under `-Oz`.
 
+Zap's encoded-size estimate distinguishes call forms, operand bytes, operand-type bytes, result
+stores, and branch data. Unknown symbolic constants conservatively use the large-constant cost. Instruction
+sequences whose final form depends on lowering remain deliberately pessimistic; pricing callee removal and the
+lowered sequence together is future whole-program work.
+
 This cost-guided source transplantation does not make routine IR relocatable. Late-IR inlining would first require
 structured, cloneable lowering data for labels, returns, physical homes, and stack state instead of backend delegates
 captured from the original routine.

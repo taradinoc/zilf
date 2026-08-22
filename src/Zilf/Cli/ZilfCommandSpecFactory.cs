@@ -124,7 +124,7 @@ namespace Zilf.Cli
 
             var buildOptimizeForSizeOption = new Option<bool>("--optimize-size", "-Oz")
             {
-                Description = "Enable routine IR optimization but disable inlining to minimize code size."
+                Description = "Enable routine IR optimization and only inline calls estimated to reduce encoded size."
             };
 
             var buildGlulxOption = new Option<bool>("--glulx", "-g")
