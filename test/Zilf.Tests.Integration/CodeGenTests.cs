@@ -59,12 +59,33 @@ namespace Zilf.Tests.Integration
                 .AndNotMatching(@"CALL.*TINY-CONSTANT")
                 .AndNotMatching(@"SET 'X,0");
 
-            await AssertRoutine("", "<OFFSET ,VALUE>")
+            await AssertRoutine("", "<+ <OFFSET ,VALUE> <OFFSET 4>>")
                 .OptimizeForSize()
                 .WithGlobal("<GLOBAL VALUE 10>")
                 .WithGlobal("<ROUTINE OFFSET (X) <+ <* <- .X 1> 2> 3>>")
                 .GeneratesCodeMatchingAsync(@"CALL.*OFFSET")
                 .AndNotMatching(@"SUB VALUE,1");
+        }
+
+        [TestMethod]
+        public async Task Size_Optimization_Credits_Removal_Of_Single_Call_Callee()
+        {
+            const string routine = "<ROUTINE OFFSET (X) <+ <* <- .X 1> 2> 3>>";
+
+            await AssertRoutine("", "<SETG VALUE ,VALUE> <OFFSET ,VALUE>")
+                .OptimizeForSize()
+                .WithGlobal("<GLOBAL VALUE 10>")
+                .WithGlobal(routine)
+                .GeneratesCodeMatchingAsync(@"SUB VALUE,1")
+                .AndMatching(@"routines removed by inlining: 1")
+                .AndNotMatching(@"CALL.*OFFSET");
+
+            await AssertRoutine("", "<+ <OFFSET ,VALUE> <OFFSET 4>>")
+                .OptimizeForSize()
+                .WithGlobal("<GLOBAL VALUE 10>")
+                .WithGlobal(routine)
+                .GeneratesCodeMatchingAsync(@"CALL.*OFFSET")
+                .AndMatching(@"routines removed by inlining: 0");
         }
 
         [TestMethod]

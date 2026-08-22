@@ -106,8 +106,12 @@ namespace Zilf.Compiler
     private HashSet<ZilAtom>? _suppressUnusedRoutineWarnings;
     private Dictionary<ZilAtom, ZilRoutine>? _routineDefinitionsByName;
     private Dictionary<ZilAtom, InlineRoutine>? _inlineRoutines;
+    private Dictionary<ZilAtom, ZilAtom>? _wholeProgramInlineCallers;
+    private readonly HashSet<ZilAtom> eliminatedInlineRoutines = new();
+    private readonly Dictionary<ZilAtom, int> nonInlinedCallCounts = new();
     private readonly Dictionary<ZilAtom, Stack<IOperand>> inlineLocalBindings = new();
     private readonly HashSet<ZilAtom> activeInlineRoutines = new();
+    private ZilAtom? compilingRoutineName;
     private bool compilingEntryPoint;
     private int inlineCallerGrowth;
     }

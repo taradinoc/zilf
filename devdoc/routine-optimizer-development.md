@@ -94,7 +94,13 @@ cost model continue to disable inlining under `-Oz`.
 Zap's encoded-size estimate distinguishes call forms, operand bytes, operand-type bytes, result
 stores, and branch data. Unknown symbolic constants conservatively use the large-constant cost. Instruction
 sequences whose final form depends on lowering remain deliberately pessimistic; pricing callee removal and the
-lowered sequence together is future whole-program work.
+lowered sequence together remains future work.
+
+Under `-Oz`, a routine with exactly one reachable direct call can receive conservative whole-program removal credit.
+The routine must not escape as a value or be retained by data, syntax, entry-point, or `KEEP` references. Its compilation
+is deferred until its caller has been processed, and it is omitted only when that exact site actually inlines. The credit
+prices the candidate body and return but excludes uncertain routine-header and alignment savings. Candidate-to-candidate
+chains do not receive removal credit yet, which keeps deferred compilation and nested transplantation conservative.
 
 This cost-guided source transplantation does not make routine IR relocatable. Late-IR inlining would first require
 structured, cloneable lowering data for labels, returns, physical homes, and stack state instead of backend delegates

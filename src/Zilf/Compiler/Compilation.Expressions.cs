@@ -184,6 +184,8 @@ namespace Zilf.Compiler
                         {
                             return inlineResult;
                         }
+                        if (rtn.Name != null)
+                            RecordNonInlinedCall(rtn.Name);
 
                         // compile routine call
                         resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;

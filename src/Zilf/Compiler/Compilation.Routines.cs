@@ -75,6 +75,7 @@ namespace Zilf.Compiler
             routine = GetRewrittenRoutine(routine);
 
             compilingEntryPoint = entryPoint;
+            compilingRoutineName = routine.Name;
             inlineCallerGrowth = 0;
 
             // set up arguments and locals
@@ -116,6 +117,7 @@ namespace Zilf.Compiler
             WarnAboutUnusedLocals();
             ClearLocalsAndBlocks();
             compilingEntryPoint = false;
+            compilingRoutineName = null;
 
             // helpers
             void DefineLocalsFromArgSpec()
