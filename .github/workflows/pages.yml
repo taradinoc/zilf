@@ -53,6 +53,21 @@ jobs:
       - name: Publish site
         run: dotnet publish src/Zilf.Playground -c Release -o public --nologo
 
+      - name: Build ZilfPub
+        run: dotnet build src/ZilfPub -c Release --no-restore --nologo
+
+      - name: Publish Advent site
+        working-directory: sample/advent
+        run: dotnet ../../bin/Release/net10.0/zilf.dll publish advent.zil --publish-output ../../public/wwwroot/advent
+
+      - name: Publish Cloak site
+        working-directory: sample/cloak
+        run: dotnet ../../bin/Release/net10.0/zilf.dll publish cloak.zil --publish-output ../../public/wwwroot/cloak
+
+      - name: Publish Rascal site
+        working-directory: sample/rascal
+        run: dotnet ../../bin/Release/net10.0/zilf.dll publish rascal.zil --publish-output ../../public/wwwroot/rascal
+
       - name: Prepare Pages artifact
         run: |
           touch public/.nojekyll
