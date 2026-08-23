@@ -256,6 +256,8 @@ namespace Zilf.Emit.Intermediate
                     return value;
                 var localValue = routine.CreateValue();
                 localValue.PhysicalHome = variable;
+                if (parameters.TryGetValue(variable, out var parameter))
+                    localValue.StableIdentity = parameter;
                 localValues[variable] = localValue;
                 valueHomes[localValue] = variable;
                 return localValue;
@@ -271,6 +273,10 @@ namespace Zilf.Emit.Intermediate
                         ? new IrMemoryIdentity(IrMemoryRegion.Globals, GetStableMemoryKey(operand))
                         : null);
             external.PhysicalHome = operand;
+            if (operand is IConstantOperand)
+                external.StableIdentity = GetStableMemoryKey(operand);
+            if (operand is IrRoutineBuilder routineTarget)
+                external.RoutineTargets = new HashSet<IrRoutineEffectSummary> { routineTarget.EffectSummary };
             valueHomes[external] = operand;
             if (!ReferenceEquals(operand, Stack))
                 externalValues[operand] = external;

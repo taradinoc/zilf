@@ -2458,6 +2458,52 @@ namespace Zilf.Emit.Tests
             target.Verify(t => t.EmitBinary(BinaryOp.GetByte, secondTable, irTemporary, secondResult), Times.Once);
         }
 
+        [DataTestMethod]
+        [DataRow(Condition.IncCheck, true)]
+        [DataRow(Condition.IncCheck, false)]
+        [DataRow(Condition.DecCheck, true)]
+        [DataRow(Condition.DecCheck, false)]
+        public void IrRoutineBuilder_Does_Not_Hoist_Load_Dependent_On_InPlace_Loop_Update(
+            Condition condition, bool polarity)
+        {
+            var emitted = new List<string>();
+            var target = new Mock<IRoutineBuilder>();
+            var stack = Mock.Of<IVariable>();
+            var label = Mock.Of<ILabel>();
+            var counter = Mock.Of<ILocalBuilder>();
+            var table = Mock.Of<ILocalBuilder>();
+            var size = Mock.Of<ILocalBuilder>();
+            var result = Mock.Of<ILocalBuilder>();
+            target.SetupGet(t => t.RoutineStart).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RTrue).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.RFalse).Returns(Mock.Of<ILabel>());
+            target.SetupGet(t => t.Stack).Returns(stack);
+            target.Setup(t => t.DefineLabel()).Returns(label);
+            target.Setup(t => t.DefineLocal("COUNTER")).Returns(counter);
+            target.Setup(t => t.DefineRequiredParameter("TABLE")).Returns(table);
+            target.Setup(t => t.DefineRequiredParameter("SIZE")).Returns(size);
+            target.Setup(t => t.DefineLocal("RESULT")).Returns(result);
+            target.Setup(t => t.MarkLabel(label)).Callback(() => emitted.Add("label"));
+            target.Setup(t => t.EmitBinary(BinaryOp.GetByte, table, counter, result))
+                .Callback(() => emitted.Add("load"));
+            target.Setup(t => t.Branch(condition, counter, size, label, polarity))
+                .Callback(() => emitted.Add("branch"));
+
+            var builder = new IrRoutineBuilder(target.Object, IrNumericSemantics.ZMachine16, true);
+            var counterLocal = builder.DefineLocal("COUNTER");
+            var tableParameter = builder.DefineRequiredParameter("TABLE");
+            var sizeParameter = builder.DefineRequiredParameter("SIZE");
+            var resultLocal = builder.DefineLocal("RESULT");
+            var loop = builder.DefineLabel();
+            builder.MarkLabel(loop);
+            builder.EmitBinary(BinaryOp.GetByte, tableParameter, counterLocal, resultLocal);
+            builder.Branch(condition, counterLocal, sizeParameter, loop, polarity);
+            builder.Return(resultLocal);
+            builder.Finish();
+
+            CollectionAssert.AreEqual(new[] { "label", "load", "branch" }, emitted.Take(3).ToArray());
+        }
+
         [TestMethod]
         public void ZapCostPolicy_Promotes_Repeated_LoadParent_Stack_Result()
         {
@@ -2567,6 +2613,126 @@ namespace Zilf.Emit.Tests
 
             Assert.AreSame(value, ((IrTerminator.Return)routine.Entry.Terminator).Value);
             Assert.AreEqual(0, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.LoadByte));
+        }
+
+        [TestMethod]
+        public void Object_Identity_Propagates_Through_Agreeing_Phi()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            var objectKey = new object();
+            var firstObject = routine.CreateValue();
+            firstObject.StableIdentity = objectKey;
+            var secondObject = routine.CreateValue();
+            secondObject.StableIdentity = objectKey;
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), left, right);
+            left.Terminator = new IrTerminator.Jump(join);
+            right.Terminator = new IrTerminator.Jump(join);
+            var phiPayload = new IrPhi(Mock.Of<ILocalBuilder>());
+            phiPayload.Incoming[left] = firstObject;
+            phiPayload.Incoming[right] = secondObject;
+            var phi = new IrInstruction(IrOpcode.Phi, routine.CreateValue(), [], payload: phiPayload);
+            join.Instructions.Add(phi);
+            var load = routine.Append(join, IrOpcode.LoadProperty, [phi.Result!, routine.CreateConstant(7)],
+                IrEffect.ReadMemory, new IrLoweringOperation(_ => { }, Mock.Of<ILocalBuilder>()),
+                readRegions: IrMemoryRegion.Properties);
+            join.Terminator = new IrTerminator.Return(load.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreEqual(new IrMemoryIdentity(IrMemoryRegion.Properties,
+                new IrObjectMemberKey(objectKey, 7)), load.ReadIdentity);
+        }
+
+        [TestMethod]
+        public void Object_Identity_Does_Not_Propagate_Through_Disagreeing_Phi()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            var firstObject = routine.CreateValue();
+            firstObject.StableIdentity = new object();
+            var secondObject = routine.CreateValue();
+            secondObject.StableIdentity = new object();
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), left, right);
+            left.Terminator = new IrTerminator.Jump(join);
+            right.Terminator = new IrTerminator.Jump(join);
+            var phiPayload = new IrPhi(Mock.Of<ILocalBuilder>());
+            phiPayload.Incoming[left] = firstObject;
+            phiPayload.Incoming[right] = secondObject;
+            var phi = new IrInstruction(IrOpcode.Phi, routine.CreateValue(), [], payload: phiPayload);
+            join.Instructions.Add(phi);
+            var load = routine.Append(join, IrOpcode.LoadProperty, [phi.Result!, routine.CreateConstant(7)],
+                IrEffect.ReadMemory, new IrLoweringOperation(_ => { }, Mock.Of<ILocalBuilder>()),
+                readRegions: IrMemoryRegion.Properties);
+            join.Terminator = new IrTerminator.Return(load.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.IsNull(load.ReadIdentity);
+        }
+
+        [TestMethod]
+        public void Finite_Indirect_Call_Targets_Use_Merged_Effect_Summary()
+        {
+            var routine = new RoutineIr();
+            var targetValue = routine.CreateValue();
+            var firstTarget = new IrRoutineEffectSummary { IsComplete = true };
+            var secondTarget = new IrRoutineEffectSummary { IsComplete = true };
+            firstTarget.AddWrite(IrMemoryRegion.Globals,
+                new IrMemoryIdentity(IrMemoryRegion.Globals, new object()));
+            secondTarget.AddWrite(IrMemoryRegion.Tables,
+                new IrMemoryIdentity(IrMemoryRegion.Tables, new object(), 0, 1));
+            targetValue.RoutineTargets = new HashSet<IrRoutineEffectSummary> { firstTarget, secondTarget };
+            var call = routine.Append(routine.Entry, IrOpcode.TargetOperation, [targetValue], IrEffect.Call,
+                new IrLoweringOperation(_ => { }), hasResult: false);
+            routine.Entry.Terminator = new IrTerminator.Return(null);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.IsNotNull(call.CallSummary);
+            Assert.AreEqual(IrMemoryRegion.None, call.CallSummary.GetUnknownWrittenRegions());
+            Assert.AreEqual(2, call.CallSummary.GetWrittenIdentities().Count);
+        }
+
+        [TestMethod]
+        public void Phi_Coalescing_Removes_Edge_Copies_When_All_Incoming_Values_Share_A_Safe_Home()
+        {
+            var routine = new RoutineIr();
+            var left = routine.CreateBlock();
+            var right = routine.CreateBlock();
+            var join = routine.CreateBlock();
+            var phiHome = Mock.Of<ILocalBuilder>();
+            var sharedHome = Mock.Of<ILocalBuilder>();
+            var leftValue = routine.CreateValue();
+            leftValue.PhysicalHome = sharedHome;
+            var rightValue = routine.CreateValue();
+            rightValue.PhysicalHome = sharedHome;
+            routine.Entry.Terminator = new IrTerminator.Branch(routine.CreateValue(), left, right);
+            foreach (var item in new[] { (Block: left, Value: leftValue), (Block: right, Value: rightValue) })
+            {
+                routine.Append(item.Block, IrOpcode.TargetOperation, [item.Value], IrEffect.Control,
+                    new IrLoweringOperation(_ => { }, phiHome) { IsMaterialization = true }, hasResult: false);
+                item.Block.Terminator = new IrTerminator.Jump(join);
+            }
+            var phiPayload = new IrPhi(phiHome);
+            phiPayload.Incoming[left] = leftValue;
+            phiPayload.Incoming[right] = rightValue;
+            var phi = new IrInstruction(IrOpcode.Phi, routine.CreateValue(), [], payload: phiPayload);
+            phi.Result!.PhysicalHome = phiHome;
+            join.Instructions.Add(phi);
+            routine.Append(join, IrOpcode.TargetOperation, [phi.Result], IrEffect.InputOutput,
+                new IrLoweringOperation(_ => { }), hasResult: false);
+            join.Terminator = new IrTerminator.Return(null);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreSame(sharedHome, phi.Result.PhysicalHome);
+            Assert.AreEqual(0, new[] { left, right }.SelectMany(block => block.Instructions).Count(instruction =>
+                instruction.Payload is IrLoweringOperation { IsMaterialization: true }));
         }
 
         [TestMethod]

@@ -45,6 +45,22 @@ namespace Zilf.Emit.Intermediate
                         Record("Pointer identities propagated");
                     }
 
+                    if (instruction.Result != null && TryInferStableIdentity(instruction) is { } stableIdentity &&
+                        !Equals(instruction.Result.StableIdentity, stableIdentity))
+                    {
+                        instruction.Result.StableIdentity = stableIdentity;
+                        changed = true;
+                        Record("Stable identities propagated");
+                    }
+
+                    if (instruction.Result != null && TryInferRoutineTargets(instruction) is { } routineTargets &&
+                        !RoutineTargetsEqual(instruction.Result.RoutineTargets, routineTargets))
+                    {
+                        instruction.Result.RoutineTargets = routineTargets;
+                        changed = true;
+                        Record("Routine target sets propagated");
+                    }
+
                     if (instruction.ReadIdentity == null && instruction.Opcode is IrOpcode.LoadByte or IrOpcode.LoadWord &&
                         TryGetAccessIdentity(instruction) is { } readIdentity)
                     {
@@ -52,9 +68,75 @@ namespace Zilf.Emit.Intermediate
                         changed = true;
                         Record("Derived memory reads identified");
                     }
+
+                    if (instruction.ReadIdentity == null && TryGetObjectReadIdentity(instruction) is { } objectIdentity)
+                    {
+                        instruction.ReadIdentity = objectIdentity;
+                        changed = true;
+                        Record("Exact object-member reads identified");
+                    }
                 }
             }
+
+
+            foreach (var instruction in routine.Blocks.SelectMany(block => block.Instructions)
+                .Where(instruction => instruction.Effect == IrEffect.Call && instruction.CallSummary == null &&
+                    instruction.Operands.Count > 0 && instruction.Operands[0].RoutineTargets is { Count: > 0 }))
+            {
+                var summary = new IrRoutineEffectSummary { IsComplete = true };
+                foreach (var target in instruction.Operands[0].RoutineTargets!)
+                    summary.AddCallee(target, instruction.CallBindings);
+                IrRoutineEffectSummary.Close([summary]);
+                instruction.CallSummary = summary;
+                Record("Indirect calls resolved");
+            }
         }
+
+        private static object? TryInferStableIdentity(IrInstruction instruction)
+        {
+            if (instruction.Opcode == IrOpcode.Copy && instruction.Operands.Count == 1)
+                return instruction.Operands[0].StableIdentity;
+            if (instruction.Opcode != IrOpcode.Phi || instruction.Operands.Count == 0)
+                return null;
+            var identity = instruction.Operands[0].StableIdentity;
+            return identity != null && instruction.Operands.Skip(1).All(operand =>
+                Equals(operand.StableIdentity, identity)) ? identity : null;
+        }
+
+        private static IReadOnlySet<IrRoutineEffectSummary>? TryInferRoutineTargets(IrInstruction instruction)
+        {
+            if (instruction.Opcode == IrOpcode.Copy && instruction.Operands.Count == 1)
+                return instruction.Operands[0].RoutineTargets;
+            if (instruction.Opcode != IrOpcode.Phi || instruction.Operands.Count == 0 ||
+                instruction.Operands.Any(operand => operand.RoutineTargets == null))
+                return null;
+            var targets = instruction.Operands.SelectMany(operand => operand.RoutineTargets!).ToHashSet();
+            return targets.Count <= 8 ? targets : null;
+        }
+
+        private static bool RoutineTargetsEqual(IReadOnlySet<IrRoutineEffectSummary>? left,
+            IReadOnlySet<IrRoutineEffectSummary> right) => left != null && left.SetEquals(right);
+
+        private static IrMemoryIdentity? TryGetObjectReadIdentity(IrInstruction instruction)
+        {
+            if (instruction.Operands.Count == 0 || GetStableIdentity(instruction.Operands[0]) is not { } objectKey)
+                return null;
+            if (instruction.Opcode is IrOpcode.LoadParent or IrOpcode.LoadChild or IrOpcode.LoadSibling)
+                return new IrMemoryIdentity(IrMemoryRegion.ObjectTree, objectKey);
+            var region = instruction.Opcode switch
+            {
+                IrOpcode.HasAttribute => IrMemoryRegion.Attributes,
+                IrOpcode.LoadProperty or IrOpcode.LoadPropertyAddress or IrOpcode.LoadNextProperty =>
+                    IrMemoryRegion.Properties,
+                _ => IrMemoryRegion.None,
+            };
+            if (region == IrMemoryRegion.None || instruction.Operands.Count < 2 ||
+                GetStableIdentity(instruction.Operands[1]) is not { } memberKey)
+                return null;
+            return new IrMemoryIdentity(region, new IrObjectMemberKey(objectKey, memberKey));
+        }
+
+        private static object? GetStableIdentity(IrValue value) => value.StableIdentity ?? value.Constant;
 
         private IrMemoryIdentity? TryInferMemoryIdentity(IrInstruction instruction)
         {

@@ -40,12 +40,23 @@ indirect variables, story memory, and the evaluation stack are not ordinary prom
 are materialized before an operation that requires their physical state. A local accessed indirectly forces a
 conservative flush because the indirect access aliases its physical home.
 
+Combined increment/decrement branches are recorded as local read-modify-write definitions as well as control-flow
+operations. The updated local therefore participates in SSA and loop phis even though lowering still emits one target
+`IGRTR?` or `DLESS?` instruction. Treating the branch as control-only can make a loop-carried local appear undefined
+and must not be reintroduced: it allowed LICM to hoist a load indexed by the old local value.
+
 The current representation uses explicit SSA for eligible routine locals and compiler temporaries. After recording,
 `RoutineIr.PromoteLocalsToSsa` computes reaching local definitions, inserts predecessor-aligned `Phi` instructions at
 joins and loop headers, and rewrites local snapshots to their SSA definitions. Globals, indirect variables, story
 memory, and the evaluation stack remain outside this promotion. Phi results retain the promoted local as their
 physical home; the recorder's edge materializations establish those homes before control transfers, so phi
 instructions do not emit target operations during lowering.
+
+After the main optimization fixed point, conservative phi-home coalescing can select a shared incoming local and
+remove the corresponding edge materializations. It currently requires plain jump predecessors, every incoming value
+to have the same local home, and every use to occur before that home is clobbered in the join block. The Zap cost policy
+accepts the rewrite only when it removes more copies than it adds. Critical-edge splitting and parallel-copy cycles are
+not handled by this pass.
 
 CFG rewrites must call `RebuildPredecessors`, which also removes obsolete phi inputs. A phi's operands are ordered to
 match its block's predecessor list. Optimizations may use this correspondence, but must not treat a phi like an
@@ -165,6 +176,11 @@ incoming offset agrees. A differing or unknown offset never becomes zero implici
 stored SSA value to a later matching load when all paths agree, no overlapping write intervenes, and the value still
 has a stable non-stack local home. Constants remain forwardable without a physical home.
 
+Stable constant-object and formal-parameter identities also propagate through copies and agreeing phi nodes. This lets
+property, attribute, and object-tree reads recover exact identities after SSA rewriting instead of relying only on the
+original backend operand. Values may likewise carry a bounded set of known routine targets. A call through such a value
+uses the merged closed summaries of those targets; a merge containing an unknown target remains conservative.
+
 GVN computes stable versions for region-wide unknown-write epochs and every exact location used by a routine. Exact
 writes update aliasing locations; unknown writes update the region epoch and all exact locations in that region. Joins
 use stable merge versions when predecessor versions differ. Read keys contain both their exact-location versions and
@@ -281,26 +297,30 @@ Always run tests through `Zilf.sln`.
 
 ## Promising future work
 
-These are directions, not assumptions that the prerequisites already exist:
+An August 2026 Debug `-O2` measurement after adding exact object-read provenance found 653 exact memory locations in
+Zork1 (73 recovered object-member reads) and 1,079 in Rascal (228 recovered object-member reads). Unknown-memory GVN
+invalidations remained high: 506 in Zork1 and 755 in Rascal. GVN eliminated only 3 of 730 candidates in Zork1 and 76 of
+2,331 in Rascal. The assembled `-O2` stories were 84,208 and 137,352 bytes respectively, compared with 84,258 and
+138,008 bytes at `-O1`. These results suggest the following order:
 
-- **De-opaquify remaining operations.** First classify operations that are ordered but do not mutate story memory, then
-  structure result-producing reads and predicates. This often unlocks existing GVN without adding a new pass.
-- **More aggressive phi lowering.** The current edge materializations avoid critical-edge and parallel-copy hazards
-  without consuming extra Z locals. A future pass could remove more of those stores by splitting critical edges and
-  resolving parallel-copy cycles with stack-backed scratch storage when profitable.
-- **More precise versioned memory.** Extend proven identities to objects and properties, model additional derived and
-  escaping table pointers, and add store-to-load forwarding where address and value are available.
-- **A target cost model.** Compare immediate size, variable operands, instruction form, required copies, stack traffic,
-  and local pressure. An algebraic or CSE rewrite should be rejected when it merely replaces an instruction with an
-  equal-cost copy or forces a worse encoding.
-- **Algebraic simplification and reassociation.** Extend identities cautiously under fixed-width semantics. Reassociation
-  can expose constants and common subexpressions but can also change overflow behavior if modeled incorrectly.
-- **More loop optimization.** Extend basic induction recognition to derived induction variables and strength reduction
-  after a target cost model is available, and teach branch lowering to retarget every conditional edge form.
-- **Stronger interprocedural summaries.** Add points-to target sets for indirect calls and use closed-world summaries to
-  classify more calls as pure. Unknown indirect targets remain conservative.
-- **Global and memory value promotion.** Defer this until aliasing, calls, save/restore behavior, and observable physical
-  state are modeled well enough to prove correctness.
-The usual priority is to improve semantic modeling before adding a more aggressive rewrite. Existing SCCP, GVN, CFG
-cleanup, and DCE become more effective as fewer operations are opaque and as memory and physical availability become
-more precise.
+1. **Stronger interprocedural summaries and points-to flow.** Finite routine-target sets now propagate through local
+   copies and agreeing phis, but targets loaded through globals, tables, or escaping structures remain unknown. Extend
+   this carefully so more calls receive closed summaries without guessing an indirect target.
+2. **More precise writes and escaping memory identities.** Exact object-member reads are recovered after SSA, but writes
+   through copied object values and additional derived or escaping table pointers still degrade whole regions. Preserve
+   those identities and extend store-to-load forwarding where the stored value remains physically available.
+3. **Complete cost-aware phi lowering.** Split redirectable critical edges, schedule parallel copies, and resolve cycles
+   with balanced stack scratch storage. Do this only after every combined conditional edge has cloneable retargeting
+   metadata and the target policy can price added jumps and stack traffic.
+4. **Complete the target cost model.** Price instruction forms, required copies, stack traffic, and local pressure as one
+   rewrite. Reject algebraic, PRE, and CSE changes that replace work with an equal-cost copy or worse encoding.
+5. **Algebraic and loop transformations.** Add fixed-width-safe reassociation, derived induction variables, and strength
+   reduction only after the cost model can reject neutral or larger target sequences.
+6. **De-opaquify remaining operations selectively.** The remaining opaque operations in these games are mostly reads,
+   save/restore, throw, and indirect access. Structure an operation only when its ordering and alias semantics are known;
+   the low counts make broad de-opaquification less valuable than call and memory precision.
+7. **Global and memory value promotion.** Defer this until aliases, calls, save/restore behavior, and observable physical
+   state are modeled well enough to prove correctness.
+
+Continue to improve semantic modeling before adding aggressive rewrites. Existing SCCP, GVN, CFG cleanup, PRE, LICM,
+and DCE benefit automatically when fewer calls and memory accesses become region-wide barriers.

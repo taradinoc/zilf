@@ -26,6 +26,8 @@ namespace Zilf.Emit.Zap
         public bool ShouldPlacePartialRedundancy(IrInstruction instruction, int insertedEdges) =>
             insertedEdges == 1 && EstimateInstruction(instruction) > 2;
 
+        public bool ShouldCoalescePhi(int removedCopies, int addedCopies) => removedCopies > addedCopies;
+
         private static int EstimateInstruction(IrInstruction instruction) =>
             1 + instruction.Operands.Sum(EstimateOperand);
 

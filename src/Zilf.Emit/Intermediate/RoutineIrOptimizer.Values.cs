@@ -211,6 +211,92 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        private void CoalescePhiHomes(RoutineIr routine)
+        {
+            routine.RebuildPredecessors();
+            foreach (var block in routine.Blocks)
+            {
+                foreach (var phi in block.Instructions.Where(instruction =>
+                    instruction.Opcode == IrOpcode.Phi && instruction.Result != null &&
+                    instruction.Payload is IrPhi).ToArray())
+                {
+                    var payload = (IrPhi)phi.Payload!;
+                    var incoming = block.Predecessors.Select(predecessor =>
+                        (Predecessor: predecessor, Value: payload.Incoming[predecessor])).ToArray();
+                    if (incoming.Length == 0 || incoming.Any(item =>
+                        item.Value.PhysicalHome is not ILocalBuilder ||
+                        item.Predecessor.Terminator is not IrTerminator.Jump jump ||
+                        !ReferenceEquals(jump.Target, block)))
+                        continue;
+                    var candidate = (ILocalBuilder)incoming[0].Value.PhysicalHome!;
+                    if (incoming.Skip(1).Any(item => !ReferenceEquals(item.Value.PhysicalHome, candidate)) ||
+                        ReferenceEquals(candidate, payload.Variable) || !PhiUsesAreSafeInBlock(routine, block, phi,
+                            candidate))
+                        continue;
+
+                    var copies = new List<(IrBlock Block, IrInstruction Instruction)>();
+                    foreach (var item in incoming)
+                    {
+                        var materialization = item.Predecessor.Instructions.LastOrDefault(instruction =>
+                            instruction.Operands.Count == 1 && ReferenceEquals(instruction.Operands[0], item.Value) &&
+                            instruction.Payload is IrLoweringOperation
+                            {
+                                IsMaterialization: true,
+                                ResultHome: not null,
+                            } lowering && ReferenceEquals(lowering.ResultHome, payload.Variable));
+                        if (materialization == null)
+                        {
+                            copies.Clear();
+                            break;
+                        }
+                        copies.Add((item.Predecessor, materialization));
+                    }
+                    if (copies.Count != incoming.Length || !costPolicy.ShouldCoalescePhi(copies.Count, 0))
+                    {
+                        if (copies.Count == incoming.Length)
+                            Record("Phi coalescing rejected: unprofitable");
+                        continue;
+                    }
+
+                    phi.Result!.PhysicalHome = candidate;
+                    foreach (var copy in copies)
+                        copy.Block.Instructions.Remove(copy.Instruction);
+                    Record("Phi homes coalesced");
+                    Record("Phi edge copies removed", copies.Count);
+                }
+            }
+        }
+
+        private static bool PhiUsesAreSafeInBlock(RoutineIr routine, IrBlock block, IrInstruction phi,
+            ILocalBuilder candidate)
+        {
+            var result = phi.Result!;
+            if (routine.Blocks.Where(other => !ReferenceEquals(other, block)).Any(other =>
+                other.Instructions.Any(instruction => instruction.Operands.Any(operand =>
+                    ReferenceEquals(operand, result))) || other.Terminator switch
+                {
+                    IrTerminator.Branch branch => ReferenceEquals(branch.Condition, result),
+                    IrTerminator.Return ret => ReferenceEquals(ret.Value, result),
+                    _ => false,
+                }))
+                return false;
+
+            var lastUse = -1;
+            for (var i = 0; i < block.Instructions.Count; i++)
+            {
+                if (block.Instructions[i].Operands.Any(operand => ReferenceEquals(operand, result)))
+                    lastUse = i;
+            }
+            if (block.Terminator is IrTerminator.Branch branch && ReferenceEquals(branch.Condition, result) ||
+                block.Terminator is IrTerminator.Return ret && ReferenceEquals(ret.Value, result))
+                lastUse = block.Instructions.Count;
+            if (lastUse < 0)
+                return false;
+            return !block.Instructions.Take(lastUse + 1).Any(instruction =>
+                !ReferenceEquals(instruction, phi) && instruction.Payload is IrLoweringOperation
+                { ResultHome: not null } lowering && ReferenceEquals(lowering.ResultHome, candidate));
+        }
+
         private enum LatticeKind
         {
             Undefined,
@@ -330,4 +416,3 @@ namespace Zilf.Emit.Intermediate
 
     }
 }
-

@@ -101,6 +101,7 @@ namespace Zilf.Emit.Intermediate
                 changed |= RemoveDeadInstructions(routine);
                 changed |= RemoveUnreachableBlocks(routine);
             }
+            CoalescePhiHomes(routine);
             routine.Verify();
 #if DEBUG
             statistics["Output instructions"] = routine.Blocks.Sum(block => block.Instructions.Count);

@@ -167,13 +167,13 @@ namespace Zilf.Emit.Intermediate
         {
             if (cond is Condition.IncCheck or Condition.DecCheck && left is IVariable variable && right != null)
             {
-                var rightValue = GetValue(right);
+                var leftValue = GetValue(variable);
                 PreserveStackValues();
                 FlushPromotedLocals();
-                AppendLowering(IrOpcode.TargetOperation, [rightValue], IrEffect.Control,
-                    operands => target.Branch(cond, variable, operands[0], label, polarity), hasResult: false,
-                    resultHome: variable);
-                localValues.Remove(variable);
+                var updateOpcode = cond == Condition.IncCheck ? IrOpcode.Add : IrOpcode.Subtract;
+                var instruction = AppendLowering(updateOpcode, [leftValue, routine.CreateConstant(1)], IrEffect.Control,
+                    _ => target.Branch(cond, variable, right, label, polarity), resultHome: variable);
+                SetLocalValue(variable, instruction.Result!);
                 dirtyLocals.Remove(variable);
                 FinishConditional(label);
                 return;
@@ -560,14 +560,16 @@ namespace Zilf.Emit.Intermediate
                     resolved => target.EmitCall(resolved[0], resolved.Skip(1).ToArray(), result), resultHome: result,
                     emitTo: (resolved, home) => target.EmitCall(resolved[0], resolved.Skip(1).ToArray(), home),
                     callSummary: callSummary);
+                instruction.CallBindings = values.Skip(1).Select(GetMemoryBinding).ToArray();
                 SetProducedValue(result, instruction.Result!);
                 dirtyLocals.Remove(result);
             }
             else
             {
-                AppendLowering(IrOpcode.TargetOperation, values, IrEffect.Call,
+                var instruction = AppendLowering(IrOpcode.TargetOperation, values, IrEffect.Call,
                     resolved => target.EmitCall(resolved[0], resolved.Skip(1).ToArray(), result), hasResult: false,
                     callSummary: callSummary);
+                instruction.CallBindings = values.Skip(1).Select(GetMemoryBinding).ToArray();
             }
             InvalidateMutableExternalValues(callSummary);
         }

@@ -35,6 +35,8 @@ namespace Zilf.Emit.Intermediate
         bool ShouldHoist(IrInstruction instruction, bool requiresNewTemporary);
 
         bool ShouldPlacePartialRedundancy(IrInstruction instruction, int insertedEdges);
+
+        bool ShouldCoalescePhi(int removedCopies, int addedCopies);
     }
 
     internal sealed class NeutralIrOptimizationCostPolicy : IIrOptimizationCostPolicy
@@ -49,6 +51,8 @@ namespace Zilf.Emit.Intermediate
         public bool ShouldHoist(IrInstruction instruction, bool requiresNewTemporary) => true;
 
         public bool ShouldPlacePartialRedundancy(IrInstruction instruction, int insertedEdges) => insertedEdges == 1;
+
+        public bool ShouldCoalescePhi(int removedCopies, int addedCopies) => removedCopies > addedCopies;
     }
 
     internal sealed class IrLoweringOperation
@@ -557,6 +561,10 @@ namespace Zilf.Emit.Intermediate
 
         public IrMemoryIdentity? MemoryIdentity { get; set; }
 
+        public object? StableIdentity { get; set; }
+
+        public IReadOnlySet<IrRoutineEffectSummary>? RoutineTargets { get; set; }
+
         public IOperand? PhysicalHome { get; set; }
 
         public override string ToString() => Constant is int value ? value.ToString() : $"%{Id}";
@@ -597,7 +605,9 @@ namespace Zilf.Emit.Intermediate
 
         public IrMemoryRegion WriteRegions { get; }
 
-        public IrRoutineEffectSummary? CallSummary { get; }
+        public IrRoutineEffectSummary? CallSummary { get; set; }
+
+        public IReadOnlyList<IrMemoryBinding?>? CallBindings { get; set; }
 
         public IrMemoryIdentity? ReadIdentity { get; set; }
 
