@@ -309,7 +309,8 @@ namespace Zilf.Emit.Intermediate
 
         private static bool IsRemovable(IrInstruction instruction) =>
             instruction.Payload is not IrLoweringOperation { RequiredHome: true } &&
-            (instruction.IsPure || instruction.Effect == IrEffect.ReadMemory && IsMemoryRead(instruction.Opcode));
+            (instruction.IsPure || instruction.Effect == IrEffect.ReadMemory && IsMemoryRead(instruction.Opcode) ||
+                IsReadOnlyCall(instruction));
 
         private bool RemoveUnreachableBlocks(RoutineIr routine)
         {

@@ -453,10 +453,12 @@ namespace Zilf.Emit.Intermediate
                 var valueNumberable = instructions.Where(instruction => instruction.Result != null &&
                     IsValueNumberable(instruction)).ToHashSet();
                 var relevantRegions = valueNumberable.Aggregate(IrMemoryRegion.None, (regions, instruction) =>
-                    regions | stateDependencies.GetValueOrDefault(instruction.Result!));
+                    regions | stateDependencies.GetValueOrDefault(instruction.Result!) |
+                    (IsReadOnlyCall(instruction) ? instruction.CallSummary!.GetReadRegions() : IrMemoryRegion.None));
                 var regions = Regions.Where(region => (relevantRegions & region) != 0).ToArray();
                 var exactIdentities = valueNumberable.SelectMany(instruction =>
-                        identityDependencies.GetValueOrDefault(instruction.Result!) ?? [])
+                        (identityDependencies.GetValueOrDefault(instruction.Result!) ?? []).Concat(
+                            IsReadOnlyCall(instruction) ? instruction.CallSummary!.GetReadIdentities() : []))
                     .Distinct().ToArray();
                 if (regions.Length == 0 && exactIdentities.Length == 0)
                     return new([], []);
@@ -569,15 +571,23 @@ namespace Zilf.Emit.Intermediate
                     foreach (var instruction in block.Instructions)
                     {
                         if (valueNumberable.Contains(instruction) &&
-                            stateDependencies.GetValueOrDefault(instruction.Result!) is var dependencies &&
+                            (stateDependencies.GetValueOrDefault(instruction.Result!) |
+                                (IsReadOnlyCall(instruction)
+                                    ? instruction.CallSummary!.GetReadRegions()
+                                    : IrMemoryRegion.None)) is var dependencies &&
                             dependencies != IrMemoryRegion.None)
                             before[instruction] = regions.Where(region => (dependencies & region) != 0)
                                 .ToDictionary(region => region, region => current[region]);
-                        if (valueNumberable.Contains(instruction) &&
-                            identityDependencies.TryGetValue(instruction.Result!, out var identities) &&
-                            identities.Count != 0)
-                            exactBefore[instruction] = identities.ToDictionary(identity => identity,
-                                identity => exactCurrent[identity]);
+                        if (valueNumberable.Contains(instruction))
+                        {
+                            var identities = (identityDependencies.GetValueOrDefault(instruction.Result!) ?? []).Concat(
+                                IsReadOnlyCall(instruction)
+                                    ? instruction.CallSummary!.GetReadIdentities()
+                                    : []).ToHashSet();
+                            if (identities.Count != 0)
+                                exactBefore[instruction] = identities.ToDictionary(identity => identity,
+                                    identity => exactCurrent[identity]);
+                        }
                         var unknownWrites = unknownWritesByInstruction[instruction];
                         foreach (var region in regions.Where(region => (unknownWrites & region) != 0))
                         {
@@ -598,7 +608,7 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
-        private void GlobalValueNumbering(RoutineIr routine, CfgAnalysis cfg)
+        private void GlobalValueNumbering(RoutineIr routine, CfgAnalysis cfg, bool callsOnly)
         {
             routine.RebuildPredecessors();
             var blocks = routine.Blocks.ToArray();
@@ -674,12 +684,23 @@ namespace Zilf.Emit.Intermediate
                             var writtenIdentities = GetWrittenIdentities(instruction).ToArray();
                             foreach (var pair in available.ToArray())
                             {
+                                var availableSummary = pair.Value.Instruction.CallSummary;
+                                var availableUnknownReads = IsReadOnlyCall(pair.Value.Instruction)
+                                    ? availableSummary!.GetUnknownReadRegions()
+                                    : IrMemoryRegion.None;
+                                IEnumerable<IrMemoryIdentity> availableExactReads = IsReadOnlyCall(pair.Value.Instruction)
+                                    ? availableSummary!.GetReadIdentities()
+                                    : [];
                                 var unknownInvalidation =
-                                    (unknownStateDependencies.GetValueOrDefault(pair.Value.Value) & writtenRegions) != 0 ||
+                                    ((unknownStateDependencies.GetValueOrDefault(pair.Value.Value) |
+                                        availableUnknownReads) & writtenRegions) != 0 ||
                                     identityDependencies.GetValueOrDefault(pair.Value.Value)?.Any(identity =>
-                                        (writtenRegions & identity.Region) != 0) == true;
-                                var exactInvalidation = identityDependencies.GetValueOrDefault(pair.Value.Value)
-                                    ?.Any(identity => writtenIdentities.Any(identity.MayAlias)) == true;
+                                        (writtenRegions & identity.Region) != 0) == true ||
+                                    availableExactReads.Any(identity => (writtenRegions & identity.Region) != 0);
+                                var exactInvalidation =
+                                    (identityDependencies.GetValueOrDefault(pair.Value.Value) ?? [])
+                                    .Concat(availableExactReads)
+                                    .Any(identity => writtenIdentities.Any(identity.MayAlias));
                                 if (!unknownInvalidation && !exactInvalidation)
                                     continue;
                                 available.Remove(pair.Key);
@@ -696,7 +717,7 @@ namespace Zilf.Emit.Intermediate
                     var resultHome = (instruction.Payload as IrLoweringOperation)?.ResultHome;
                     var isStackResult = instruction.Payload is IrLoweringOperation { IsStackResult: true };
                     (IrOpcode Opcode, string Operands)? currentKey = null;
-                    if (instruction.Result != null && IsValueNumberable(instruction))
+                    if (instruction.Result != null && IsGvnCandidate(instruction))
                     {
                         Record("GVN candidates");
                         var currentIds = instruction.Operands.Select(OperandKey).ToArray();
@@ -710,9 +731,16 @@ namespace Zilf.Emit.Intermediate
                             currentIds = [$"A{addressBase.Id}", $"O{addressOffset}"];
                         }
                         var dependencies = stateDependencies.GetValueOrDefault(instruction.Result);
+                        var exactDependencies = identityDependencies.GetValueOrDefault(instruction.Result) ?? [];
+                        if (IsReadOnlyCall(instruction))
+                        {
+                            dependencies |= instruction.CallSummary!.GetReadRegions();
+                            exactDependencies = exactDependencies.Concat(
+                                instruction.CallSummary.GetReadIdentities()).ToHashSet();
+                        }
                         currentKey = (keyOpcode,
                             $"{string.Join(",", currentIds)}|{memoryVersions.GetKey(instruction, dependencies,
-                                identityDependencies.GetValueOrDefault(instruction.Result) ?? [])}");
+                                exactDependencies)}");
                     }
                     if (resultHome != null && !isStackResult)
                     {
@@ -723,7 +751,7 @@ namespace Zilf.Emit.Intermediate
                             .Select(pair => pair.Key).ToArray())
                             available.Remove(staleKey);
                     }
-                    if (instruction.Result == null || !IsValueNumberable(instruction))
+                    if (instruction.Result == null || !IsGvnCandidate(instruction))
                         continue;
                     var key = currentKey!.Value;
                     if (available.TryGetValue(key, out var prior) &&
@@ -794,6 +822,9 @@ namespace Zilf.Emit.Intermediate
                 Visit(block, available);
             }
             ReplaceValues(routine, replacements);
+
+            bool IsGvnCandidate(IrInstruction instruction) =>
+                callsOnly ? IsReadOnlyCall(instruction) : IsValueNumberable(instruction) && !IsReadOnlyCall(instruction);
 
             bool TryGetConstantOffsetExpression(IrValue? value,
                 IReadOnlyDictionary<IrValue, IrInstruction> valueDefinitions, [NotNullWhen(true)] out IrValue? baseValue, out int offset)
@@ -1212,7 +1243,7 @@ namespace Zilf.Emit.Intermediate
             if (priorLowering.IsStackResult)
                 return false;
             if (currentLowering.IsStackResult)
-                return !currentLowering.StackEscapes && priorLowering.ResultHome != null;
+                return priorLowering.ResultHome != null;
             if (IsMemoryRead(prior.Opcode) && prior.Opcode == current.Opcode)
                 return priorLowering.ResultHome != null && currentLowering.ResultHome != null;
             return priorLowering.ResultHome != null &&
@@ -1220,6 +1251,7 @@ namespace Zilf.Emit.Intermediate
         }
 
         private static bool IsValueNumberable(IrInstruction instruction) =>
+            IsReadOnlyCall(instruction) ||
             (instruction.IsPure || instruction.Effect == IrEffect.ReadMemory) && instruction.Opcode is
             IrOpcode.Add or IrOpcode.Subtract or IrOpcode.Multiply or IrOpcode.Divide or IrOpcode.Modulo or
             IrOpcode.BitwiseAnd or IrOpcode.BitwiseOr or IrOpcode.BitwiseNot or IrOpcode.Negate or
@@ -1229,6 +1261,13 @@ namespace Zilf.Emit.Intermediate
             IrOpcode.LoadByte or IrOpcode.LoadWord or IrOpcode.LoadProperty or IrOpcode.LoadPropertyAddress or
             IrOpcode.LoadNextProperty or IrOpcode.LoadPropertySize or IrOpcode.LoadParent or IrOpcode.LoadChild or
             IrOpcode.LoadSibling;
+
+        private static bool IsReadOnlyCall(IrInstruction instruction) =>
+            instruction.Effect == IrEffect.Call && instruction.Result != null &&
+            instruction.CallSummary is { IsComplete: true } summary &&
+            summary.GetWrittenRegions() == IrMemoryRegion.None &&
+            summary.GetUnknownWrittenRegions() == IrMemoryRegion.None &&
+            summary.GetEffects().All(effect => effect == IrEffect.Control);
 
         private static bool IsMemoryRead(IrOpcode opcode) => opcode is IrOpcode.LoadByte or IrOpcode.LoadWord or
             IrOpcode.LoadProperty or IrOpcode.LoadPropertyAddress or IrOpcode.LoadNextProperty or

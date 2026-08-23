@@ -79,6 +79,8 @@ namespace Zilf.Emit.Intermediate
             Record("Calls with unresolved bound writes", routine.Blocks.SelectMany(block => block.Instructions)
                 .Count(instruction => instruction.CallSummary is { HasArgumentBindings: true } summary &&
                     summary.GetUnknownWrittenRegions() != IrMemoryRegion.None));
+            Record("Read-only calls", routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(IsReadOnlyCall));
 #endif
             ProtectCopiesAcrossClobbers(routine);
             CoalesceMaterializationDestinations(routine);
@@ -94,7 +96,8 @@ namespace Zilf.Emit.Intermediate
             LoopInvariantCodeMotion(routine, cfg);
             EliminatePartialRedundancies(routine, cfg);
             ForwardStoredValues(routine);
-            GlobalValueNumbering(routine, cfg);
+            GlobalValueNumbering(routine, cfg, false);
+            GlobalValueNumbering(routine, cfg, true);
             var changed = true;
             while (changed)
             {

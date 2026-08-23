@@ -152,7 +152,7 @@ namespace Zilf.Emit.Intermediate
             current = block;
             if (!layout.Contains(block))
                 layout.Add(block);
-            RecordOrderedOperation([], _ => target.MarkLabel(label), IrEffect.InputOutput);
+            RecordOrderedOperation([], _ => target.MarkLabel(label), IrEffect.Control);
             localValues.Clear();
             dirtyLocals.Clear();
         }

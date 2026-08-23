@@ -68,7 +68,7 @@ namespace Zilf.Emit.Intermediate
             if (headerIndex < 0)
                 throw new InvalidOperationException($"Cannot insert a preheader before non-layout block {header}.");
             layout.Insert(headerIndex, block);
-            routine.Append(block, IrOpcode.TargetOperation, [], IrEffect.InputOutput,
+            routine.Append(block, IrOpcode.TargetOperation, [], IrEffect.Control,
                 new IrLoweringOperation(_ => target.MarkLabel(label)), hasResult: false);
             block.Terminator = new IrTerminator.Jump(header);
             return block;

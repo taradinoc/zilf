@@ -2736,6 +2736,121 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Gvn_Reuses_ReadOnly_Call_Result_Across_Dominated_Branch()
+        {
+            var routine = new RoutineIr();
+            var next = routine.CreateBlock();
+            var callee = routine.CreateValue();
+            var argument = routine.CreateValue();
+            var temporary = Mock.Of<ILocalBuilder>();
+            var summary = new IrRoutineEffectSummary { IsComplete = true };
+            summary.AddRead(IrMemoryRegion.Tables,
+                new IrMemoryIdentity(IrMemoryRegion.Tables, new object(), 0, 1));
+            summary.AddEffect(IrEffect.Control);
+            IrRoutineEffectSummary.Close([summary]);
+            var first = routine.Append(routine.Entry, IrOpcode.TargetOperation, [callee, argument], IrEffect.Call,
+                new IrLoweringOperation(_ => { }, Mock.Of<IVariable>(), true, (_, _) => { }),
+                callSummary: summary);
+            routine.Entry.Terminator = new IrTerminator.Branch(first.Result!, next, next);
+            var second = routine.Append(next, IrOpcode.TargetOperation, [callee, argument], IrEffect.Call,
+                new IrLoweringOperation(_ => { }, Mock.Of<IVariable>(), true, (_, _) => { }),
+                callSummary: summary);
+            next.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16, () => temporary).Optimize(routine);
+
+            Assert.AreEqual(1, routine.Blocks.SelectMany(block => block.Instructions)
+                .Count(instruction => instruction.Effect == IrEffect.Call));
+            Assert.AreSame(first.Result, ((IrTerminator.Return)next.Terminator).Value);
+            Assert.AreSame(temporary, ((IrLoweringOperation)first.Payload!).ResultHome);
+        }
+
+        [TestMethod]
+        public void Gvn_Does_Not_Reuse_ReadOnly_Call_Across_Aliasing_Write()
+        {
+            var routine = new RoutineIr();
+            var callee = routine.CreateValue();
+            var argument = routine.CreateValue();
+            var identity = new IrMemoryIdentity(IrMemoryRegion.Tables, new object(), 0, 1);
+            var summary = new IrRoutineEffectSummary { IsComplete = true };
+            summary.AddRead(IrMemoryRegion.Tables, identity);
+            IrRoutineEffectSummary.Close([summary]);
+            var first = routine.Append(routine.Entry, IrOpcode.TargetOperation, [callee, argument], IrEffect.Call,
+                new IrLoweringOperation(_ => { }, Mock.Of<ILocalBuilder>()), callSummary: summary);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [first.Result!], IrEffect.InputOutput,
+                () => { }, hasResult: false);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [], IrEffect.WriteMemory, () => { },
+                hasResult: false, writeRegions: IrMemoryRegion.Tables, writeIdentity: identity);
+            var second = routine.Append(routine.Entry, IrOpcode.TargetOperation, [callee, argument], IrEffect.Call,
+                new IrLoweringOperation(_ => { }, Mock.Of<ILocalBuilder>()), callSummary: summary);
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreEqual(2, routine.Entry.Instructions.Count(instruction => instruction.Effect == IrEffect.Call));
+        }
+
+        [TestMethod]
+        public void Gvn_Reuses_Local_For_Repeated_Expression_Materialized_As_Stack_Argument()
+        {
+            var routine = new RoutineIr();
+            var local = Mock.Of<ILocalBuilder>();
+            var left = routine.CreateValue();
+            var one = routine.CreateConstant(1);
+            var first = routine.Append(routine.Entry, IrOpcode.Add, [left, one], IrEffect.None,
+                new IrLoweringOperation(_ => { }, local));
+            var secondLowering = new IrLoweringOperation(_ => { }, Mock.Of<IVariable>(), true, (_, _) => { })
+            {
+                StackEscapes = true,
+            };
+            var second = routine.Append(routine.Entry, IrOpcode.Add, [left, one], IrEffect.None, secondLowering);
+            var materialization = routine.Append(routine.Entry, IrOpcode.TargetOperation, [second.Result!],
+                IrEffect.Stack, () => { }, hasResult: false);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [second.Result!], IrEffect.Call,
+                () => { }, hasResult: false);
+            routine.Entry.Terminator = new IrTerminator.Return(first.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreEqual(1, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Add));
+            Assert.AreSame(first.Result, materialization.Operands[0]);
+        }
+
+        [TestMethod]
+        public void Gvn_Derived_Snapshot_Does_Not_Acquire_Call_Memory_Dependency()
+        {
+            var routine = new RoutineIr();
+            var tableReader = routine.CreateValue();
+            var otherReader = routine.CreateValue();
+            var tableSummary = new IrRoutineEffectSummary { IsComplete = true };
+            tableSummary.AddRead(IrMemoryRegion.Tables);
+            var globalSummary = new IrRoutineEffectSummary { IsComplete = true };
+            globalSummary.AddRead(IrMemoryRegion.Globals);
+            IrRoutineEffectSummary.Close([tableSummary, globalSummary]);
+            var snapshot = routine.Append(routine.Entry, IrOpcode.TargetOperation, [tableReader], IrEffect.Call,
+                new IrLoweringOperation(_ => { }, Mock.Of<ILocalBuilder>()), callSummary: tableSummary);
+            var local = Mock.Of<ILocalBuilder>();
+            var one = routine.CreateConstant(1);
+            var first = routine.Append(routine.Entry, IrOpcode.Add, [snapshot.Result!, one], IrEffect.None,
+                new IrLoweringOperation(_ => { }, local));
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [otherReader], IrEffect.Call,
+                new IrLoweringOperation(_ => { }, Mock.Of<ILocalBuilder>()), callSummary: globalSummary);
+            var second = routine.Append(routine.Entry, IrOpcode.Add, [snapshot.Result!, one], IrEffect.None,
+                new IrLoweringOperation(_ => { }, Mock.Of<IVariable>(), true, (_, _) => { })
+                {
+                    StackEscapes = true,
+                });
+            var materialization = routine.Append(routine.Entry, IrOpcode.TargetOperation, [second.Result!],
+                IrEffect.Stack, () => { }, hasResult: false);
+            routine.Entry.Terminator = new IrTerminator.Return(first.Result);
+
+            new RoutineIrOptimizer(IrNumericSemantics.ZMachine16).Optimize(routine);
+
+            Assert.AreEqual(1, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.Add));
+            Assert.AreSame(first.Result, materialization.Operands[0]);
+        }
+
+        [TestMethod]
         public void Phi_Coalescing_Removes_Edge_Copies_When_All_Incoming_Values_Share_A_Safe_Home()
         {
             var routine = new RoutineIr();

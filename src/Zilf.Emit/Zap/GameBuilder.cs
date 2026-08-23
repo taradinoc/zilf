@@ -1052,6 +1052,18 @@ namespace Zilf.Emit.Zap
             writer.WriteLine();
         }
 
+        void WriteCompilerOptimizationStats()
+        {
+            if (compilerOptimizationStats.Count == 0)
+                return;
+
+            writer.WriteLine(INDENT + "; Compiler optimization statistics (debug build)");
+            foreach (var entry in compilerOptimizationStats.OrderBy(static entry => entry.Key, StringComparer.Ordinal))
+                writer.WriteLine(INDENT + $";   {entry.Key}: {entry.Value}");
+            writer.WriteLine();
+        }
+#endif
+
         private IReadOnlyDictionary<object, IReadOnlySet<IrRoutineEffectSummary>> BuildPropertyRoutineTargets()
         {
             var result = new Dictionary<object, IReadOnlySet<IrRoutineEffectSummary>>();
@@ -1104,18 +1116,5 @@ namespace Zilf.Emit.Zap
             }
             return result;
         }
-
-        void WriteCompilerOptimizationStats()
-        {
-            if (compilerOptimizationStats.Count == 0)
-                return;
-
-            writer.WriteLine(INDENT + "; Compiler optimization statistics (debug build)");
-            foreach (var entry in compilerOptimizationStats.OrderBy(static entry => entry.Key, StringComparer.Ordinal))
-                writer.WriteLine(INDENT + $";   {entry.Key}: {entry.Value}");
-            writer.WriteLine();
-        }
-#endif
-
     }
 }

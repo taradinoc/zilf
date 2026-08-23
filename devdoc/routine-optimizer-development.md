@@ -190,6 +190,14 @@ A call does not inherently overwrite the caller's routine locals. However, value
 remain snapshots when required. Never move a local materialization from before a call to after it if the local exists to
 preserve a pre-call value.
 
+Complete calls whose closed summaries contain no writes, I/O, nondeterminism, stack effects, or opaque effects are
+value-numberable. Internal control flow does not make a call effectful. Their result keys include the routine target,
+arguments, unknown-read region versions, and exact read-identity versions. GVN may therefore reuse a result across
+dominated control flow, but an overlapping summarized or direct write invalidates it. These dependencies belong to the
+call expression, not to values subsequently derived from its immutable result; propagating them into derived values can
+spuriously block arithmetic CSE after unrelated calls. Emitted labels are structural control operations rather than I/O;
+classifying labels as I/O contaminates every routine summary that contains a label.
+
 ## Loop-invariant code motion
 
 The optimizer recognizes natural loops from dominance back edges and processes nested loops from inner to outer. When
@@ -306,20 +314,28 @@ calls in Zork1 and 20 in Rascal.
 Neither change altered emitted instructions: after removing the statistics block and path-dependent `.INSERT` lines,
 both games' `-O2` ZAP was identical to the immediately preceding `-O2` revision. GVN still eliminated only 3 of 730
 candidates in Zork1 and 76 of 2,331 in Rascal. This shows that aggregate candidate and barrier counts do not establish
-usefulness; always compare generated routines against the previous revision at the same optimization level. The next
-work should follow this order:
+usefulness; always compare generated routines against the previous revision at the same optimization level.
+
+A follow-up demand-driven change made complete write-free calls value-numberable and stopped treating emitted labels as
+I/O. In Rascal this identified 591 read-only calls and reduced the assembled `-O2` story from 137,352 to 136,956 bytes
+(-396). For example, `VALID-INTERIOR-TILE?` now calls `TILE-AT` once instead of three times, while `FLOOR?` calls it
+twice instead of six times. Zork1 identified 32 read-only calls but remained 84,208 bytes with no instruction change in
+the spot-checked `FIGHT-STRENGTH` sites because their argument lists differ. This is useful evidence that call-result
+CSE should precede more elaborate expression summaries. The next work should follow this order:
 
 1. **More precise writes and escaping memory identities.** Exact object-member reads are recovered after SSA, but writes
    through copied object values and additional derived or escaping table pointers still degrade whole regions. Preserve
    those identities and extend store-to-load forwarding where the stored value remains physically available.
-2. **Demand-driven interprocedural optimization.** The points-to catalog is sufficient for the observed property and
-   table call patterns, but resolving those calls exposed no repeated value in these games. Before extending target flow
-   to more escaping structures, record actual redundant expressions blocked by each call and optimize only target sets
-   that can unlock a concrete rewrite.
+2. **Small expression summaries and specialization.** Call-result CSE handles identical targets and arguments. Add a
+   bounded representation for simple return expressions only when it exposes a measured common subexpression. The
+   duplicated base calculation in Zork1's `FIGHT-STRENGTH` and `FIGHT-STRENGTH,0` calls is the current acceptance case.
+   Keep recursion, control-dependent returns, trapping operations, and increased local pressure conservative.
 3. **Complete cost-aware phi lowering.** Split redirectable critical edges, schedule parallel copies, and resolve cycles
    with balanced stack scratch storage. Do this only after every combined conditional edge has cloneable retargeting
    metadata and the target policy can price added jumps and stack traffic.
-4. **Complete the target cost model.** Price instruction forms, required copies, stack traffic, and local pressure as one
+4. **Stack-aware result reuse and the target cost model.** The adjacent repeated `GET SPEC,1` in Rascal remains because
+   the second stack result escapes as a call argument. Support rewriting such operands without changing stack order,
+   and price instruction forms, required copies, stack traffic, and local pressure as one
    rewrite. Reject algebraic, PRE, and CSE changes that replace work with an equal-cost copy or worse encoding.
 5. **Algebraic and loop transformations.** Add fixed-width-safe reassociation, derived induction variables, and strength
    reduction only after the cost model can reject neutral or larger target sequences.
