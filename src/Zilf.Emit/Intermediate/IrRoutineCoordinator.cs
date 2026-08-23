@@ -35,6 +35,13 @@ namespace Zilf.Emit.Intermediate
 
         public void Add(IrRoutineBuilder routine) => routines.Add(routine);
 
+        public void SetPropertyRoutineTargets(
+            IReadOnlyDictionary<object, IReadOnlySet<IrRoutineEffectSummary>> targets)
+        {
+            foreach (var routine in routines)
+                routine.SetPropertyRoutineTargets(targets);
+        }
+
         public void FinalizeRoutines()
         {
             IrRoutineBuilder.FinalizeRoutines(routines);

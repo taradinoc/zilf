@@ -2699,6 +2699,43 @@ namespace Zilf.Emit.Tests
         }
 
         [TestMethod]
+        public void Property_PointsTo_Summary_Preserves_Unrelated_Table_Load_Across_Indirect_Call()
+        {
+            var routine = new RoutineIr();
+            var objectValue = routine.CreateValue();
+            objectValue.StableIdentity = new object();
+            var property = routine.CreateConstant(7);
+            var routineLoad = routine.Append(routine.Entry, IrOpcode.LoadProperty, [objectValue, property],
+                IrEffect.ReadMemory, new IrLoweringOperation(_ => { }, Mock.Of<ILocalBuilder>()),
+                readRegions: IrMemoryRegion.Properties);
+            var allocation = new object();
+            var tableIdentity = new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 0, 2);
+            var address = routine.CreateValue();
+            address.MemoryIdentity = new IrMemoryIdentity(IrMemoryRegion.Tables, allocation, 0);
+            var first = routine.Append(routine.Entry, IrOpcode.LoadWord, [address, routine.CreateConstant(0)],
+                IrEffect.ReadMemory, new IrLoweringOperation(_ => { }, Mock.Of<ILocalBuilder>()),
+                readRegions: IrMemoryRegion.Tables, readIdentity: tableIdentity);
+            routine.Append(routine.Entry, IrOpcode.TargetOperation, [routineLoad.Result!], IrEffect.Call,
+                new IrLoweringOperation(_ => { }), hasResult: false);
+            var second = routine.Append(routine.Entry, IrOpcode.LoadWord, [address, routine.CreateConstant(0)],
+                IrEffect.ReadMemory, new IrLoweringOperation(_ => { }, Mock.Of<ILocalBuilder>()),
+                readRegions: IrMemoryRegion.Tables, readIdentity: tableIdentity);
+            routine.Entry.Terminator = new IrTerminator.Return(second.Result);
+            var target = new IrRoutineEffectSummary { IsComplete = true };
+            target.AddWrite(IrMemoryRegion.Properties);
+            var optimizer = new RoutineIrOptimizer(IrNumericSemantics.ZMachine16);
+            optimizer.SetPropertyRoutineTargets(new Dictionary<object, IReadOnlySet<IrRoutineEffectSummary>>
+            {
+                [7] = new HashSet<IrRoutineEffectSummary> { target },
+            });
+
+            optimizer.Optimize(routine);
+
+            Assert.AreSame(first.Result, ((IrTerminator.Return)routine.Entry.Terminator).Value);
+            Assert.AreEqual(1, routine.Entry.Instructions.Count(instruction => instruction.Opcode == IrOpcode.LoadWord));
+        }
+
+        [TestMethod]
         public void Phi_Coalescing_Removes_Edge_Copies_When_All_Incoming_Values_Share_A_Safe_Home()
         {
             var routine = new RoutineIr();

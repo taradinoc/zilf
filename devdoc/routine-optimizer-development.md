@@ -298,17 +298,24 @@ Always run tests through `Zilf.sln`.
 ## Promising future work
 
 An August 2026 Debug `-O2` measurement after adding exact object-read provenance found 653 exact memory locations in
-Zork1 (73 recovered object-member reads) and 1,079 in Rascal (228 recovered object-member reads). Unknown-memory GVN
-invalidations remained high: 506 in Zork1 and 755 in Rascal. GVN eliminated only 3 of 730 candidates in Zork1 and 76 of
-2,331 in Rascal. The assembled `-O2` stories were 84,208 and 137,352 bytes respectively, compared with 84,258 and
-138,008 bytes at `-O1`. These results suggest the following order:
+Zork1 (73 recovered object-member reads) and 1,079 in Rascal (228 recovered object-member reads). A subsequent
+closed-world points-to catalog propagated routine targets from scalar object properties, exact table entries, small
+homogeneous routine tables, immutable routine-pointer globals, local copies, and agreeing phis. It resolved 2 indirect
+calls in Zork1 and 20 in Rascal.
 
-1. **Stronger interprocedural summaries and points-to flow.** Finite routine-target sets now propagate through local
-   copies and agreeing phis, but targets loaded through globals, tables, or escaping structures remain unknown. Extend
-   this carefully so more calls receive closed summaries without guessing an indirect target.
-2. **More precise writes and escaping memory identities.** Exact object-member reads are recovered after SSA, but writes
+Neither change altered emitted instructions: after removing the statistics block and path-dependent `.INSERT` lines,
+both games' `-O2` ZAP was identical to the immediately preceding `-O2` revision. GVN still eliminated only 3 of 730
+candidates in Zork1 and 76 of 2,331 in Rascal. This shows that aggregate candidate and barrier counts do not establish
+usefulness; always compare generated routines against the previous revision at the same optimization level. The next
+work should follow this order:
+
+1. **More precise writes and escaping memory identities.** Exact object-member reads are recovered after SSA, but writes
    through copied object values and additional derived or escaping table pointers still degrade whole regions. Preserve
    those identities and extend store-to-load forwarding where the stored value remains physically available.
+2. **Demand-driven interprocedural optimization.** The points-to catalog is sufficient for the observed property and
+   table call patterns, but resolving those calls exposed no repeated value in these games. Before extending target flow
+   to more escaping structures, record actual redundant expressions blocked by each call and optimize only target sets
+   that can unlock a concrete rewrite.
 3. **Complete cost-aware phi lowering.** Split redirectable critical edges, schedule parallel copies, and resolve cycles
    with balanced stack scratch storage. Do this only after every combined conditional edge has cloneable retargeting
    metadata and the target policy can price added jumps and stack traffic.

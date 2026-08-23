@@ -144,6 +144,15 @@ namespace Zilf.Emit.Zap
             writer.WriteLine(INDENT + ".BYTE 0");
         }
 
+        internal IEnumerable<(PropertyBuilder Property, IOperand Value)> GetScalarProperties()
+        {
+            foreach (var entry in props)
+            {
+                if (entry.Kind != PropertyEntry.TABLE)
+                    yield return (entry.Property, entry.Value);
+            }
+        }
+
         public override string ToString()
         {
             return SymbolicName;

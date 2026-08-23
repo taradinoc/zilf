@@ -565,6 +565,7 @@ namespace Zilf.Emit.Zap
 
         public void Finish()
         {
+            irRoutineCoordinator.SetPropertyRoutineTargets(BuildPropertyRoutineTargets());
             irRoutineCoordinator.FinalizeRoutines();
 
             // finish main file
@@ -1049,6 +1050,59 @@ namespace Zilf.Emit.Zap
             }
 
             writer.WriteLine();
+        }
+
+        private IReadOnlyDictionary<object, IReadOnlySet<IrRoutineEffectSummary>> BuildPropertyRoutineTargets()
+        {
+            var result = new Dictionary<object, IReadOnlySet<IrRoutineEffectSummary>>();
+            var propertyValues = objects.SelectMany(obj => obj.GetScalarProperties()
+                .Select(entry => (Object: obj, entry.Property, entry.Value))).ToArray();
+            foreach (var entry in propertyValues)
+            {
+                if (entry.Value.StripIndirect() is IrRoutineBuilder routine)
+                {
+                    result[new IrObjectMemberKey(entry.Object.ToString()!, entry.Property.ToString()!)] =
+                        new HashSet<IrRoutineEffectSummary> { routine.EffectSummary };
+                }
+            }
+
+            foreach (var property in props.Values)
+            {
+                var values = propertyValues.Where(entry => ReferenceEquals(entry.Property, property))
+                    .Select(entry => entry.Value).Append(property.DefaultValue ?? ZERO).ToArray();
+                var targets = new HashSet<IrRoutineEffectSummary>();
+                var unknown = false;
+                foreach (var value in values.Select(value => value.StripIndirect()))
+                {
+                    if (value is IrRoutineBuilder routine)
+                        targets.Add(routine.EffectSummary);
+                    else if (value is not INumericOperand { Value: 0 })
+                        unknown = true;
+                }
+                if (!unknown && targets.Count is > 0 and <= 64)
+                    result[property.ToString()!] = targets;
+            }
+
+
+            foreach (var table in impureTables.Concat(pureTables))
+            {
+                var targets = new HashSet<IrRoutineEffectSummary>();
+                var unknown = false;
+                foreach (var entry in table.GetEntries())
+                {
+                    if (entry.Operand?.StripIndirect() is IrRoutineBuilder routine)
+                    {
+                        targets.Add(routine.EffectSummary);
+                        result[new IrMemoryIdentity(IrMemoryRegion.Tables, table, entry.Offset, entry.Length)] =
+                            new HashSet<IrRoutineEffectSummary> { routine.EffectSummary };
+                    }
+                    else if (entry.Operand != null || entry.Numeric is not (null or 0))
+                        unknown = true;
+                }
+                if (!unknown && targets.Count is > 0 and <= 64)
+                    result[table] = targets;
+            }
+            return result;
         }
 
         void WriteCompilerOptimizationStats()

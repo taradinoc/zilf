@@ -93,6 +93,10 @@ namespace Zilf.Emit.Intermediate
 
         internal IrRoutineEffectSummary EffectSummary => effectSummary;
 
+        internal void SetPropertyRoutineTargets(
+            IReadOnlyDictionary<object, IReadOnlySet<IrRoutineEffectSummary>> targets) =>
+            optimizer.SetPropertyRoutineTargets(targets);
+
         public bool CleanStack => target.CleanStack;
 
         public ILabel RTrue => target.RTrue;

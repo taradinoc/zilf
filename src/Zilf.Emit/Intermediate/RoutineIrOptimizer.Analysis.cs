@@ -53,7 +53,9 @@ namespace Zilf.Emit.Intermediate
                         Record("Stable identities propagated");
                     }
 
-                    if (instruction.Result != null && TryInferRoutineTargets(instruction) is { } routineTargets &&
+                    if (instruction.Result != null &&
+                        (TryInferRoutineTargets(instruction) ?? TryInferMemoryRoutineTargets(instruction)) is
+                            { } routineTargets &&
                         !RoutineTargetsEqual(instruction.Result.RoutineTargets, routineTargets))
                     {
                         instruction.Result.RoutineTargets = routineTargets;
@@ -111,7 +113,23 @@ namespace Zilf.Emit.Intermediate
                 instruction.Operands.Any(operand => operand.RoutineTargets == null))
                 return null;
             var targets = instruction.Operands.SelectMany(operand => operand.RoutineTargets!).ToHashSet();
-            return targets.Count <= 8 ? targets : null;
+            return targets.Count <= 64 ? targets : null;
+        }
+
+        private IReadOnlySet<IrRoutineEffectSummary>? TryInferMemoryRoutineTargets(IrInstruction instruction)
+        {
+            if (instruction.Opcode == IrOpcode.LoadProperty && instruction.Operands.Count >= 2 &&
+                GetStableIdentity(instruction.Operands[1]) is { } propertyKey)
+            {
+                if (GetStableIdentity(instruction.Operands[0]) is { } objectKey &&
+                    propertyRoutineTargets.TryGetValue(new IrObjectMemberKey(objectKey, propertyKey), out var exact))
+                    return exact;
+                return propertyRoutineTargets.GetValueOrDefault(propertyKey);
+            }
+            if (instruction.Opcode is IrOpcode.LoadByte or IrOpcode.LoadWord && instruction.ReadIdentity is { } identity)
+                return propertyRoutineTargets.GetValueOrDefault(identity) ??
+                    propertyRoutineTargets.GetValueOrDefault(identity.Key);
+            return null;
         }
 
         private static bool RoutineTargetsEqual(IReadOnlySet<IrRoutineEffectSummary>? left,

@@ -129,11 +129,37 @@ namespace Zilf.Emit.Intermediate
                     .OfType<IGlobalBuilder>()
                     .Where(global => global.DefaultValue is IMemoryAddressOperand && !writtenGlobals.Contains(global))
                     .ToHashSet();
+            var readOnlyRoutineGlobals = hasUnknownGlobalWrite
+                ? new Dictionary<IGlobalBuilder, IrRoutineEffectSummary>()
+                : routines.SelectMany(routine => routine.routine.Blocks).SelectMany(block => block.Instructions)
+                    .SelectMany(instruction => instruction.Operands).Select(value => value.PhysicalHome)
+                    .OfType<IGlobalBuilder>().Distinct().Where(global => !writtenGlobals.Contains(global) &&
+                        global.DefaultValue is IrRoutineBuilder)
+                    .ToDictionary(global => global,
+                        global => ((IrRoutineBuilder)global.DefaultValue!).EffectSummary);
             foreach (var routine in routines)
             {
                 routine.PrepareReadOnlyPointerGlobals(readOnlyGlobals);
+                routine.PrepareReadOnlyRoutineGlobals(readOnlyRoutineGlobals);
                 routine.FinalizeRoutine();
             }
+        }
+
+        private void PrepareReadOnlyRoutineGlobals(
+            IReadOnlyDictionary<IGlobalBuilder, IrRoutineEffectSummary> readOnlyGlobals)
+        {
+            var used = new HashSet<IGlobalBuilder>();
+            foreach (var value in routine.Blocks.SelectMany(block => block.Instructions)
+                .SelectMany(instruction => instruction.Operands))
+            {
+                if (value.PhysicalHome is not IGlobalBuilder global ||
+                    !readOnlyGlobals.TryGetValue(global, out var summary))
+                    continue;
+                value.RoutineTargets = new HashSet<IrRoutineEffectSummary> { summary };
+                used.Add(global);
+            }
+            if (used.Count > 0)
+                recordingStatistics["Read-only routine-pointer globals"] = used.Count;
         }
 
         private void PrepareReadOnlyPointerGlobals(IReadOnlySet<IGlobalBuilder> readOnlyGlobals)

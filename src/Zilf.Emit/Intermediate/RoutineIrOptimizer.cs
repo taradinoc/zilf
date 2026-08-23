@@ -36,6 +36,8 @@ namespace Zilf.Emit.Intermediate
         private readonly Action<IVariable, IOperand>? emitCopy;
         private readonly Func<IrBlock, IrBlock>? createPreheader;
         private readonly IIrOptimizationCostPolicy costPolicy;
+        private IReadOnlyDictionary<object, IReadOnlySet<IrRoutineEffectSummary>> propertyRoutineTargets =
+            new Dictionary<object, IReadOnlySet<IrRoutineEffectSummary>>();
         private readonly Dictionary<string, int> statistics = new(StringComparer.Ordinal);
 #if DEBUG
         private const bool CollectStatistics = true;
@@ -113,6 +115,10 @@ namespace Zilf.Emit.Intermediate
         public IEnumerable<IrOptimizationStat> GetStatistics() => statistics
             .OrderBy(pair => pair.Key, StringComparer.Ordinal)
             .Select(pair => new IrOptimizationStat(pair.Key, pair.Value));
+
+        internal void SetPropertyRoutineTargets(
+            IReadOnlyDictionary<object, IReadOnlySet<IrRoutineEffectSummary>> targets) =>
+            propertyRoutineTargets = targets;
 
         private void Record(string name, int count = 1)
         {
