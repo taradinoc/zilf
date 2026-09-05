@@ -1,4 +1,4 @@
-/* Copyright 2010-2023 Tara McGrew
+/* Copyright 2010-2026 Tara McGrew
  *
  * This file is part of ZILF.
  *
