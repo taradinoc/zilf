@@ -58,6 +58,12 @@ namespace Zilf.Compiler
         private int inlineEstimatedCalleeBytesRemoved;
 #endif
 
+        /// <summary>
+        /// Returns the routine produced by rewriting the given routine, caching the result so that each
+        /// routine is rewritten at most once.
+        /// </summary>
+        /// <param name="routine">The original routine.</param>
+        /// <returns>The rewritten routine.</returns>
         private ZilRoutine GetRewrittenRoutine(ZilRoutine routine)
         {
             if (!rewrittenRoutines.TryGetValue(routine, out var rewritten))
@@ -69,6 +75,10 @@ namespace Zilf.Compiler
             return rewritten;
         }
 
+        /// <summary>
+        /// Scans all routines in the environment and populates the inline routine table with the ones
+        /// that are eligible for inlining, excluding those that are mutually recursive.
+        /// </summary>
         private void PrepareInlineRoutines()
         {
             if (Context.OptimizationLevel == 0 && !Context.OptimizeForSize ||
@@ -114,6 +124,12 @@ namespace Zilf.Compiler
             _inlineRoutines = candidates;
         }
 
+        /// <summary>
+        /// Determines whether the given expression is simple enough to be inlined as the body of an
+        /// inline routine.
+        /// </summary>
+        /// <param name="expression">The expression to check.</param>
+        /// <returns><see langword="true"/> if the expression can be inlined; otherwise, <see langword="false"/>.</returns>
         private bool IsInlineExpression(ZilObject expression)
         {
             if (expression.IsVariableRef())
@@ -149,10 +165,20 @@ namespace Zilf.Compiler
             return value is ZilRoutine;
         }
 
+        /// <summary>
+        /// Determines whether the expression contains a nested form among its arguments.
+        /// </summary>
+        /// <param name="expression">The expression to check.</param>
+        /// <returns><see langword="true"/> if any argument is a non-variable form; otherwise, <see langword="false"/>.</returns>
         private bool HasNestedInlineForm(ZilObject expression) =>
             expression is ZilForm { Rest: { } arguments } &&
             arguments.Select(argument => argument.Unwrap(Context)).Any(argument => argument.IsNonVariableForm());
 
+        /// <summary>
+        /// Counts the number of forms in the expression, including nested forms.
+        /// </summary>
+        /// <param name="expression">The expression to count forms in.</param>
+        /// <returns>The total number of forms.</returns>
         private int CountInlineForms(ZilObject expression)
         {
             expression = expression.Unwrap(Context);
@@ -161,9 +187,20 @@ namespace Zilf.Compiler
             return 1 + form.Skip(1).Sum(CountInlineForms);
         }
 
+        /// <summary>
+        /// Determines whether the expression contains a <see cref="ZilString"/> anywhere in its structure.
+        /// </summary>
+        /// <param name="expression">The expression to check.</param>
+        /// <returns><see langword="true"/> if a string is present; otherwise, <see langword="false"/>.</returns>
         private static bool ContainsString(ZilObject expression) => expression is ZilString ||
             expression is IEnumerable<ZilObject> sequence && sequence.Any(ContainsString);
 
+        /// <summary>
+        /// Counts how many times each parameter atom of the given routine body is read.
+        /// </summary>
+        /// <param name="expression">The routine body expression.</param>
+        /// <param name="parameters">The routine's parameters.</param>
+        /// <returns>A map from each parameter atom to its use count.</returns>
         private Dictionary<ZilAtom, int> CountParameterUses(ZilObject expression,
             IReadOnlyList<ArgItem> parameters)
         {
@@ -185,6 +222,13 @@ namespace Zilf.Compiler
             }
         }
 
+        /// <summary>
+        /// Finds the parameter atoms that are read after a side effect occurs earlier in the expression,
+        /// which prevents their arguments from being substituted directly.
+        /// </summary>
+        /// <param name="expression">The routine body expression.</param>
+        /// <param name="parameters">The routine's parameters.</param>
+        /// <returns>The set of parameter atoms read after a side effect.</returns>
         private HashSet<ZilAtom> FindParametersReadAfterSideEffect(ZilObject expression,
             IReadOnlyList<ArgItem> parameters)
         {
@@ -227,6 +271,12 @@ namespace Zilf.Compiler
             }
         }
 
+        /// <summary>
+        /// Finds the inline routine candidates that participate in a recursion cycle, either directly or
+        /// indirectly.
+        /// </summary>
+        /// <param name="candidates">The candidate routines keyed by name.</param>
+        /// <returns>The set of candidate names that are recursive.</returns>
         private HashSet<ZilAtom> FindRecursiveInlineRoutines(IReadOnlyDictionary<ZilAtom, InlineRoutine> candidates)
         {
             var comparer = new AtomNameEqualityComparer(Context.IgnoreCase);
@@ -266,6 +316,11 @@ namespace Zilf.Compiler
             }
         }
 
+        /// <summary>
+        /// Enumerates the routines that are called directly by the given expression.
+        /// </summary>
+        /// <param name="expression">The expression to inspect.</param>
+        /// <returns>The names of the directly called routines.</returns>
         private IEnumerable<ZilAtom> GetDirectRoutineCalls(ZilObject expression)
         {
             expression = expression.Unwrap(Context);
@@ -286,15 +341,50 @@ namespace Zilf.Compiler
             }
         }
 
+        /// <summary>
+        /// Attempts to compile a call to the given inline routine as a value or void call.
+        /// </summary>
+        /// <param name="rb">The routine builder receiving the emitted code.</param>
+        /// <param name="name">The name of the routine being called.</param>
+        /// <param name="arguments">The call arguments.</param>
+        /// <param name="wantResult">Whether the call site needs a result value.</param>
+        /// <param name="resultStorage">The variable to store the result in, or <see langword="null"/>.</param>
+        /// <param name="sourceLine">The source line of the call.</param>
+        /// <param name="result">Receives the result operand if the call was inlined.</param>
+        /// <returns><see langword="true"/> if the call was inlined; otherwise, <see langword="false"/>.</returns>
         private bool TryCompileInlineCall(IRoutineBuilder rb, ZilAtom name, ZilObject[] arguments,
             bool wantResult, IVariable? resultStorage, ISourceLine sourceLine, out IOperand? result)
             => TryCompileInlineCall(rb, name, arguments, wantResult, resultStorage, sourceLine, null, false,
                 out result);
 
+        /// <summary>
+        /// Attempts to compile a call to the given inline routine as a predicate branch to a label.
+        /// </summary>
+        /// <param name="rb">The routine builder receiving the emitted code.</param>
+        /// <param name="name">The name of the routine being called.</param>
+        /// <param name="arguments">The call arguments.</param>
+        /// <param name="sourceLine">The source line of the call.</param>
+        /// <param name="label">The label to branch to.</param>
+        /// <param name="polarity">Whether to branch when the predicate is true or false.</param>
+        /// <returns><see langword="true"/> if the call was inlined; otherwise, <see langword="false"/>.</returns>
         private bool TryCompileInlineCondition(IRoutineBuilder rb, ZilAtom name, ZilObject[] arguments,
             ISourceLine sourceLine, ILabel label, bool polarity) =>
             TryCompileInlineCall(rb, name, arguments, false, null, sourceLine, label, polarity, out _);
 
+        /// <summary>
+        /// Attempts to compile a call to the given inline routine in place of a normal call, either as a
+        /// value/void call or as a predicate branch.
+        /// </summary>
+        /// <param name="rb">The routine builder receiving the emitted code.</param>
+        /// <param name="name">The name of the routine being called.</param>
+        /// <param name="arguments">The call arguments.</param>
+        /// <param name="wantResult">Whether the call site needs a result value.</param>
+        /// <param name="resultStorage">The variable to store the result in, or <see langword="null"/>.</param>
+        /// <param name="sourceLine">The source line of the call.</param>
+        /// <param name="predicateLabel">The label to branch to for a predicate call, or <see langword="null"/>.</param>
+        /// <param name="predicatePolarity">Whether to branch when the predicate is true or false.</param>
+        /// <param name="result">Receives the result operand if the call was inlined and produced a value.</param>
+        /// <returns><see langword="true"/> if the call was inlined; otherwise, <see langword="false"/>.</returns>
         private bool TryCompileInlineCall(IRoutineBuilder rb, ZilAtom name, ZilObject[] arguments,
             bool wantResult, IVariable? resultStorage, ISourceLine sourceLine, ILabel? predicateLabel,
             bool predicatePolarity, out IOperand? result)
@@ -427,6 +517,11 @@ namespace Zilf.Compiler
             }
         }
 
+        /// <summary>
+        /// Analyzes all routines to determine which inline candidates are called from exactly one caller,
+        /// enabling whole-program inlining and, for size optimization, removal of the callee.
+        /// </summary>
+        /// <param name="externallyReferenced">Routine names referenced from outside the compiled program.</param>
         private void PlanWholeProgramInlineCandidates(HashSet<ZilAtom> externallyReferenced)
         {
             _wholeProgramInlineCallers = null;
@@ -578,6 +673,19 @@ namespace Zilf.Compiler
         private readonly record struct InlineEstimate(InliningCost Cost, InliningOperandClass Operand,
             int? Constant = null, bool ConstantSpecialization = false);
 
+        /// <summary>
+        /// Estimates whether inlining the given call would reduce code size (or, at higher optimization
+        /// levels, improve speed within the configured growth budgets).
+        /// </summary>
+        /// <param name="model">The cost model used for estimates.</param>
+        /// <param name="name">The name of the routine being called.</param>
+        /// <param name="candidate">The inline candidate for the routine.</param>
+        /// <param name="arguments">The call arguments.</param>
+        /// <param name="wantResult">Whether the call site needs a result value.</param>
+        /// <param name="predicateContext">Whether the call site is a predicate branch.</param>
+        /// <param name="growth">Receives the estimated byte growth of inlining (negative means savings).</param>
+        /// <param name="constantSpecialization">Receives whether the inlined body benefits from constant arguments.</param>
+        /// <returns><see langword="true"/> if inlining is estimated to be profitable; otherwise, <see langword="false"/>.</returns>
         private bool TryEvaluateInlineProfitability(IInliningCostModel model, ZilAtom name, InlineRoutine candidate,
             ZilObject[] arguments, bool wantResult, bool predicateContext, out int growth,
             out bool constantSpecialization)
@@ -700,6 +808,14 @@ namespace Zilf.Compiler
             nonInlinedCallCounts[name] = count + 1;
         }
 
+        /// <summary>
+        /// Estimates the cost of the routine body plus its return instruction, to compute the size credit
+        /// available when a whole-program inlining candidate is removed.
+        /// </summary>
+        /// <param name="model">The cost model used for estimates.</param>
+        /// <param name="candidate">The inline candidate whose routine may be removed.</param>
+        /// <param name="cost">Receives the estimated cost of the removable routine.</param>
+        /// <returns><see langword="true"/> if the cost was estimated; otherwise, <see langword="false"/>.</returns>
         private bool TryEstimateRemovableRoutineCost(IInliningCostModel model, InlineRoutine candidate,
             out InliningCost cost)
         {
@@ -716,6 +832,17 @@ namespace Zilf.Compiler
             return true;
         }
 
+        /// <summary>
+        /// Estimates the cost and operand class of compiling the given expression inline.
+        /// </summary>
+        /// <param name="model">The cost model used for estimates.</param>
+        /// <param name="expression">The expression to estimate.</param>
+        /// <param name="bindings">The current parameter-to-estimate bindings.</param>
+        /// <param name="depth">The current nesting depth, used to bound recursive estimation.</param>
+        /// <param name="wantResult">Whether the result value of the expression is needed.</param>
+        /// <param name="predicateContext">Whether the expression is used as a predicate branch.</param>
+        /// <param name="estimate">Receives the estimated cost and operand class.</param>
+        /// <returns><see langword="true"/> if the expression could be estimated; otherwise, <see langword="false"/>.</returns>
         private bool TryEstimateInlineExpression(IInliningCostModel model, ZilObject expression,
             IReadOnlyDictionary<ZilAtom, InlineEstimate> bindings, int depth, bool wantResult,
             bool predicateContext, out InlineEstimate estimate)
@@ -807,6 +934,20 @@ namespace Zilf.Compiler
             return true;
         }
 
+        /// <summary>
+        /// Estimates the cost of inlining a nested routine call within an outer expression being estimated.
+        /// </summary>
+        /// <param name="model">The cost model used for estimates.</param>
+        /// <param name="candidate">The inline candidate for the nested routine.</param>
+        /// <param name="arguments">The nested call arguments.</param>
+        /// <param name="outerBindings">The parameter bindings from the enclosing expression.</param>
+        /// <param name="depth">The current nesting depth, used to bound recursive estimation.</param>
+        /// <param name="wantResult">Whether the result value of the nested call is needed.</param>
+        /// <param name="predicateContext">Whether the nested call is used as a predicate branch.</param>
+        /// <param name="argumentCost">The accumulated cost of the nested call's arguments.</param>
+        /// <param name="argumentOperands">The operand classes of the nested call's arguments.</param>
+        /// <param name="estimate">Receives the estimated cost of the inlined nested call.</param>
+        /// <returns><see langword="true"/> if the nested inlining is profitable; otherwise, <see langword="false"/>.</returns>
         private bool TryEstimateNestedInline(IInliningCostModel model, InlineRoutine candidate,
             ZilObject[] arguments, IReadOnlyDictionary<ZilAtom, InlineEstimate> outerBindings, int depth,
             bool wantResult, bool predicateContext, InliningCost argumentCost,
@@ -871,6 +1012,12 @@ namespace Zilf.Compiler
             return true;
         }
 
+        /// <summary>
+        /// Determines the cost-model operation class for a form head and its argument count.
+        /// </summary>
+        /// <param name="head">The head atom of the form.</param>
+        /// <param name="argumentCount">The number of arguments in the form.</param>
+        /// <returns>The operation class, or <see langword="null"/> if the head is not recognized.</returns>
         private InliningOperationClass? ClassifyInlineOperation(ZilAtom head, int argumentCount)
         {
             var platform = ZBuiltins.GetCurrentBuiltinPlatform(Context.ZEnvironment.TargetPlatform);
@@ -906,8 +1053,16 @@ namespace Zilf.Compiler
             _ => new InlineEstimate(new InliningCost(), InliningOperandClass.Stack),
         };
 
+        /// <summary>
+        /// Attempts to constant-fold an arithmetic operation over constant operands using 16-bit arithmetic.
+        /// </summary>
+        /// <param name="name">The operation name (one of <c>+</c>, <c>*</c>, <c>-</c>, <c>/</c>).</param>
+        /// <param name="operands">The constant operands.</param>
+        /// <param name="result">Receives the folded 16-bit result.</param>
+        /// <returns><see langword="true"/> if the operation was folded; otherwise, <see langword="false"/>.</returns>
         private static bool TryFoldInlineOperation(string name, List<int> operands, out int result)
         {
+            // TODO: do we need another version of TryFoldInlineOperation for Glulx?
             result = 0;
             if (operands.Count == 0)
                 return false;
@@ -942,6 +1097,13 @@ namespace Zilf.Compiler
             }
         }
 
+        /// <summary>
+        /// Determines whether the routine builder has enough free locals to inline the given call, considering
+        /// the temporaries required for nested forms and reused arguments.
+        /// </summary>
+        /// <param name="candidate">The inline candidate being considered.</param>
+        /// <param name="arguments">The call arguments.</param>
+        /// <returns><see langword="true"/> if there is capacity; otherwise, <see langword="false"/>.</returns>
         private bool HasInlineTemporaryCapacity(InlineRoutine candidate, ZilObject[] arguments)
         {
             // A nested operand is compiled before the outer operation and therefore needs a local of its own.
@@ -961,6 +1123,14 @@ namespace Zilf.Compiler
             return required <= available;
         }
 
+        /// <summary>
+        /// Determines whether the given argument must be snapshotted into a temporary local before the inline
+        /// body is compiled, because it is evaluated multiple times or read after a side effect.
+        /// </summary>
+        /// <param name="candidate">The inline candidate being considered.</param>
+        /// <param name="argumentIndex">The index of the argument within the call.</param>
+        /// <param name="argument">The argument expression.</param>
+        /// <returns><see langword="true"/> if the argument needs a temporary; otherwise, <see langword="false"/>.</returns>
         private static bool NeedsInlineTemporary(InlineRoutine candidate, int argumentIndex, ZilObject argument)
         {
             var parameter = candidate.Parameters[argumentIndex];
@@ -970,6 +1140,10 @@ namespace Zilf.Compiler
         }
 
 #if DEBUG
+        /// <summary>
+        /// Records debug-only compiler optimization statistics for the inlining decisions made during this
+        /// compilation.
+        /// </summary>
         private void RecordInliningStatistics()
         {
             Game.RecordCompilerOptimizationStatistic("calls inlined", inlineCalls);
