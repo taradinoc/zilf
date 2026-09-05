@@ -25,6 +25,11 @@ namespace Zilf.Emit.Intermediate
 {
     internal sealed partial class RoutineIrOptimizer
     {
+        /// <summary>
+        /// Inserts a preheader block before each natural loop that lacks one, rerouting the loop's external
+        /// predecessor edges and merging their phi contributions in the new preheader.
+        /// </summary>
+        /// <param name="routine">The routine to transform.</param>
         private void CreateLoopPreheaders(RoutineIr routine)
         {
             if (createPreheader == null)
@@ -71,6 +76,13 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        /// <summary>
+        /// Determines whether an edge from the given predecessor to the target can be redirected, based on the
+        /// predecessor's terminator.
+        /// </summary>
+        /// <param name="predecessor">The source block of the edge.</param>
+        /// <param name="target">The current target block.</param>
+        /// <returns><see langword="true"/> if the edge can be redirected; otherwise, <see langword="false"/>.</returns>
         private static bool CanRedirectEdge(IrBlock predecessor, IrBlock target) => predecessor.Terminator switch
         {
             IrTerminator.Jump jump when ReferenceEquals(jump.Target, target) =>
@@ -81,6 +93,13 @@ namespace Zilf.Emit.Intermediate
             _ => false,
         };
 
+        /// <summary>
+        /// Redirects a predecessor's edge from the old target to the new target.
+        /// </summary>
+        /// <param name="predecessor">The source block of the edge.</param>
+        /// <param name="oldTarget">The current target block.</param>
+        /// <param name="newTarget">The block to target instead.</param>
+        /// <exception cref="InvalidOperationException">Thrown when the predecessor has no edge to the old target.</exception>
         private static void RedirectEdge(IrBlock predecessor, IrBlock oldTarget, IrBlock newTarget)
         {
             predecessor.Terminator = predecessor.Terminator switch
@@ -96,6 +115,13 @@ namespace Zilf.Emit.Intermediate
             };
         }
 
+        /// <summary>
+        /// Updates a jump terminator to target the new block, rewrapping its lowering operation so the emitted
+        /// jump targets the same block.
+        /// </summary>
+        /// <param name="jump">The jump terminator to redirect.</param>
+        /// <param name="newTarget">The block to jump to instead.</param>
+        /// <returns>The redirected jump.</returns>
         private static IrTerminator.Jump RedirectJump(IrTerminator.Jump jump, IrBlock newTarget)
         {
             if (jump.Instruction?.Payload is IrLoweringOperation lowering && jump.EmitJump != null)
@@ -104,6 +130,12 @@ namespace Zilf.Emit.Intermediate
             return jump with { Target = newTarget };
         }
 
+        /// <summary>
+        /// Removes redundant induction variables within each loop by rewriting uses of duplicate phis and updates
+        /// to a canonical equivalent.
+        /// </summary>
+        /// <param name="routine">The routine to transform.</param>
+        /// <param name="cfg">The control-flow analysis of the routine.</param>
         private void SimplifyInductionVariables(RoutineIr routine, CfgAnalysis cfg)
         {
             var definitions = routine.Blocks.SelectMany(block => block.Instructions)
@@ -165,6 +197,14 @@ namespace Zilf.Emit.Intermediate
         private static bool StateValuesEquivalent(IrValue left, IrValue right) => ReferenceEquals(left, right) ||
             left.Constant is int leftConstant && right.Constant == leftConstant;
 
+        /// <summary>
+        /// Determines the constant step of an induction variable by recognizing its update as an add or subtract
+        /// of the phi value by a constant.
+        /// </summary>
+        /// <param name="phi">The induction variable's phi value.</param>
+        /// <param name="update">The instruction that updates the induction variable.</param>
+        /// <param name="step">Receives the normalized step amount.</param>
+        /// <returns><see langword="true"/> if the update is a recognized induction step; otherwise, <see langword="false"/>.</returns>
         private bool TryGetInductionStep(IrValue phi, IrInstruction update, out int step)
         {
             step = 0;
@@ -187,6 +227,12 @@ namespace Zilf.Emit.Intermediate
             return false;
         }
 
+        /// <summary>
+        /// Hoists loop-invariant instructions out of each loop into its preheader, when the instruction is safe to
+        /// speculate and its memory dependencies do not change within the loop.
+        /// </summary>
+        /// <param name="routine">The routine to transform.</param>
+        /// <param name="cfg">The control-flow analysis of the routine.</param>
         private void LoopInvariantCodeMotion(RoutineIr routine, CfgAnalysis cfg)
         {
             Record("Loops detected", cfg.Loops.Count);
@@ -295,6 +341,13 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        /// <summary>
+        /// Determines whether two value-numberable instructions compute the same expression, honoring
+        /// commutativity.
+        /// </summary>
+        /// <param name="left">The first instruction.</param>
+        /// <param name="right">The second instruction.</param>
+        /// <returns><see langword="true"/> if the instructions are equivalent; otherwise, <see langword="false"/>.</returns>
         private static bool EquivalentExpression(IrInstruction left, IrInstruction right)
         {
             if (left.Result == null || !IsValueNumberable(left) || left.Opcode != right.Opcode ||
@@ -314,6 +367,13 @@ namespace Zilf.Emit.Intermediate
             return true;
         }
 
+        /// <summary>
+        /// Determines whether two loop-invariant instructions compute the same expression, honoring commutativity
+        /// and treating equivalent memory addresses as matching operands.
+        /// </summary>
+        /// <param name="left">The first instruction.</param>
+        /// <param name="right">The second instruction.</param>
+        /// <returns><see langword="true"/> if the instructions are equivalent; otherwise, <see langword="false"/>.</returns>
         private static bool EquivalentLoopInvariantExpression(IrInstruction left, IrInstruction right)
         {
             if (left.Result == null || !IsValueNumberable(left) || left.Opcode != right.Opcode ||
@@ -333,6 +393,11 @@ namespace Zilf.Emit.Intermediate
             return true;
         }
 
+        /// <summary>
+        /// Rewrites a duplicate instruction's operands to match the canonical operand ordering.
+        /// </summary>
+        /// <param name="canonical">The canonical instruction.</param>
+        /// <param name="duplicate">The instruction whose operands should be rewritten.</param>
         private static void CanonicalizeLoopInvariantOperands(IrInstruction canonical, IrInstruction duplicate)
         {
             if (!IsCommutative(canonical.Opcode))
@@ -355,6 +420,13 @@ namespace Zilf.Emit.Intermediate
             StateValuesEquivalent(left, right) || left.MutableExternal && right.MutableExternal &&
             left.MemoryIdentity != null && left.MemoryIdentity.Equals(right.MemoryIdentity);
 
+        /// <summary>
+        /// Prepares an instruction to be hoisted by assigning it a non-clobbered local result home, promoting its
+        /// stack result to a temporary if necessary.
+        /// </summary>
+        /// <param name="instruction">The instruction being hoisted.</param>
+        /// <param name="clobberedHomes">The variable homes that are written multiple times in the loop.</param>
+        /// <returns><see langword="true"/> if a home was prepared; otherwise, <see langword="false"/>.</returns>
         private bool TryPrepareLicmHome(IrInstruction instruction, IReadOnlySet<IVariable> clobberedHomes)
         {
             if (instruction.Payload is not IrLoweringOperation
@@ -383,6 +455,12 @@ namespace Zilf.Emit.Intermediate
             return true;
         }
 
+        /// <summary>
+        /// Eliminates partially redundant expressions by inserting them on the paths where they are missing and
+        /// joining the results with a phi.
+        /// </summary>
+        /// <param name="routine">The routine to transform.</param>
+        /// <param name="cfg">The control-flow analysis of the routine.</param>
         private void EliminatePartialRedundancies(RoutineIr routine, CfgAnalysis cfg)
         {
             routine.RebuildPredecessors();
@@ -466,10 +544,21 @@ namespace Zilf.Emit.Intermediate
             ReplaceValues(routine, replacements);
         }
 
+        /// <summary>
+        /// Determines whether an instruction is safe to speculatively execute, requiring it to be pure and not a
+        /// division or variable shift.
+        /// </summary>
+        /// <param name="instruction">The instruction to check.</param>
+        /// <returns><see langword="true"/> if speculation is safe; otherwise, <see langword="false"/>.</returns>
         private static bool IsSafeToSpeculate(IrInstruction instruction) => instruction.IsPure && instruction.Opcode
             is not IrOpcode.Divide and not IrOpcode.Modulo and not IrOpcode.ShiftLeft and not IrOpcode.ShiftRight
             and not IrOpcode.ArithmeticShift and not IrOpcode.LogicalShift;
 
+        /// <summary>
+        /// Returns the memory regions an instruction may write.
+        /// </summary>
+        /// <param name="instruction">The instruction to inspect.</param>
+        /// <returns>The written memory regions.</returns>
         private static IrMemoryRegion GetWrittenRegions(IrInstruction instruction) => instruction.Effect switch
         {
             IrEffect.Call => instruction.CallSummary?.GetWrittenRegions() ?? IrMemoryRegion.All,
@@ -479,6 +568,11 @@ namespace Zilf.Emit.Intermediate
             _ => instruction.WriteRegions,
         };
 
+        /// <summary>
+        /// Returns the memory regions an instruction may write to an unknown identity.
+        /// </summary>
+        /// <param name="instruction">The instruction to inspect.</param>
+        /// <returns>The unknown written memory regions.</returns>
         private static IrMemoryRegion GetUnknownWrittenRegions(IrInstruction instruction) => instruction.Effect switch
         {
             IrEffect.Call => instruction.CallSummary?.GetUnknownWrittenRegions() ?? IrMemoryRegion.All,
@@ -489,6 +583,11 @@ namespace Zilf.Emit.Intermediate
             _ => instruction.WriteIdentity != null ? IrMemoryRegion.None : instruction.WriteRegions,
         };
 
+        /// <summary>
+        /// Returns the exact memory identities an instruction writes.
+        /// </summary>
+        /// <param name="instruction">The instruction to inspect.</param>
+        /// <returns>The written memory identities.</returns>
         private static IEnumerable<IrMemoryIdentity> GetWrittenIdentities(IrInstruction instruction) =>
             instruction.Effect switch
             {
