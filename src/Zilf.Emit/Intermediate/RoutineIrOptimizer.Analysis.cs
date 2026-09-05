@@ -26,6 +26,11 @@ namespace Zilf.Emit.Intermediate
 {
     internal sealed partial class RoutineIrOptimizer
     {
+        /// <summary>
+        /// Iteratively propagates memory, stable, and routine-target identities through copy, phi, and
+        /// address-arithmetic instructions, then resolves indirect calls whose targets are now known.
+        /// </summary>
+        /// <param name="routine">The routine to analyze.</param>
         private void PropagateMemoryIdentities(RoutineIr routine)
         {
             var changed = true;
@@ -94,6 +99,12 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        /// <summary>
+        /// Infers the stable identity of an instruction's result from a copy or a phi whose operands all share
+        /// the same identity.
+        /// </summary>
+        /// <param name="instruction">The instruction whose result should be analyzed.</param>
+        /// <returns>The inferred stable identity, or <see langword="null"/> if one cannot be determined.</returns>
         private static object? TryInferStableIdentity(IrInstruction instruction)
         {
             if (instruction.Opcode == IrOpcode.Copy && instruction.Operands.Count == 1)
@@ -105,6 +116,11 @@ namespace Zilf.Emit.Intermediate
                 Equals(operand.StableIdentity, identity)) ? identity : null;
         }
 
+        /// <summary>
+        /// Infers the set of possible routine targets for an instruction's result from a copy or a phi.
+        /// </summary>
+        /// <param name="instruction">The instruction whose result should be analyzed.</param>
+        /// <returns>The inferred routine targets, or <see langword="null"/> if they cannot be determined.</returns>
         private static IReadOnlySet<IrRoutineEffectSummary>? TryInferRoutineTargets(IrInstruction instruction)
         {
             if (instruction.Opcode == IrOpcode.Copy && instruction.Operands.Count == 1)
@@ -116,6 +132,12 @@ namespace Zilf.Emit.Intermediate
             return targets.Count <= 64 ? targets : null;
         }
 
+        /// <summary>
+        /// Infers the routine targets for a property or table load based on the loaded identity and the known
+        /// property routine targets.
+        /// </summary>
+        /// <param name="instruction">The load instruction to analyze.</param>
+        /// <returns>The inferred routine targets, or <see langword="null"/> if none apply.</returns>
         private IReadOnlySet<IrRoutineEffectSummary>? TryInferMemoryRoutineTargets(IrInstruction instruction)
         {
             if (instruction.Opcode == IrOpcode.LoadProperty && instruction.Operands.Count >= 2 &&
@@ -135,6 +157,12 @@ namespace Zilf.Emit.Intermediate
         private static bool RoutineTargetsEqual(IReadOnlySet<IrRoutineEffectSummary>? left,
             IReadOnlySet<IrRoutineEffectSummary> right) => left != null && left.SetEquals(right);
 
+        /// <summary>
+        /// Computes the exact memory identity read by an object-tree, attribute, or property load whose object
+        /// and member resolve to stable identities.
+        /// </summary>
+        /// <param name="instruction">The load instruction to analyze.</param>
+        /// <returns>The read identity, or <see langword="null"/> if it cannot be determined.</returns>
         private static IrMemoryIdentity? TryGetObjectReadIdentity(IrInstruction instruction)
         {
             if (instruction.Operands.Count == 0 || GetStableIdentity(instruction.Operands[0]) is not { } objectKey)
@@ -156,7 +184,12 @@ namespace Zilf.Emit.Intermediate
 
         private static object? GetStableIdentity(IrValue value) => value.StableIdentity ?? value.Constant;
 
-        private IrMemoryIdentity? TryInferMemoryIdentity(IrInstruction instruction)
+        /// <summary>
+        /// Infers the table memory identity of an instruction's result from a copy, phi, or address arithmetic.
+        /// </summary>
+        /// <param name="instruction">The instruction whose result should be analyzed.</param>
+        /// <returns>The inferred memory identity, or <see langword="null"/> if one cannot be determined.</returns>
+        private static IrMemoryIdentity? TryInferMemoryIdentity(IrInstruction instruction)
         {
             if (instruction.Opcode == IrOpcode.Copy && instruction.Operands.Count == 1)
                 return instruction.Operands[0].MemoryIdentity;
@@ -197,6 +230,11 @@ namespace Zilf.Emit.Intermediate
                 : null;
         }
 
+        /// <summary>
+        /// Computes the exact memory identity read by a byte or word load from a table with a constant index.
+        /// </summary>
+        /// <param name="instruction">The load instruction to analyze.</param>
+        /// <returns>The read identity, or <see langword="null"/> if it cannot be determined.</returns>
         private IrMemoryIdentity? TryGetAccessIdentity(IrInstruction instruction)
         {
             if (instruction.Operands.Count < 2 ||
@@ -215,6 +253,11 @@ namespace Zilf.Emit.Intermediate
                 : null;
         }
 
+        /// <summary>
+        /// Performs store-to-load forwarding, replacing loads whose exact source was recently stored with the
+        /// stored value.
+        /// </summary>
+        /// <param name="routine">The routine to transform.</param>
         private void ForwardStoredValues(RoutineIr routine)
         {
             routine.RebuildPredecessors();
@@ -285,6 +328,12 @@ namespace Zilf.Emit.Intermediate
         private static bool IsReusableStoredValue(IrValue value) =>
             value.Constant != null || value.PhysicalHome is ILocalBuilder;
 
+        /// <summary>
+        /// Merges the stored-value maps of several predecessor blocks, keeping only the identities stored to the
+        /// same value along every path.
+        /// </summary>
+        /// <param name="predecessors">The predecessor maps to merge.</param>
+        /// <returns>The merged stored-value map.</returns>
         private static Dictionary<IrMemoryIdentity, IrValue> MergeStoredValues(
             IEnumerable<Dictionary<IrMemoryIdentity, IrValue>> predecessors)
         {
@@ -311,6 +360,11 @@ namespace Zilf.Emit.Intermediate
         private static bool StoredValueEqual(IrValue left, IrValue right) => ReferenceEquals(left, right) ||
             left.Constant is int constant && right.Constant == constant;
 
+        /// <summary>
+        /// Removes stored values from the map that the given instruction may overwrite.
+        /// </summary>
+        /// <param name="values">The stored-value map to update.</param>
+        /// <param name="instruction">The instruction whose writes invalidate entries.</param>
         private static void KillStoredValues(Dictionary<IrMemoryIdentity, IrValue> values, IrInstruction instruction)
         {
             if (instruction.Effect == IrEffect.Opaque)
@@ -345,8 +399,19 @@ namespace Zilf.Emit.Intermediate
 
             public IReadOnlyDictionary<IrBlock, HashSet<IrBlock>> Dominators => dominators;
 
+            /// <summary>
+            /// Determines whether one block dominates another.
+            /// </summary>
+            /// <param name="dominator">The candidate dominator.</param>
+            /// <param name="block">The block to check.</param>
+            /// <returns><see langword="true"/> if <paramref name="dominator"/> dominates <paramref name="block"/>; otherwise, <see langword="false"/>.</returns>
             public bool Dominates(IrBlock dominator, IrBlock block) => dominators[block].Contains(dominator);
 
+            /// <summary>
+            /// Computes dominator sets and natural loops for the given routine.
+            /// </summary>
+            /// <param name="routine">The routine to analyze.</param>
+            /// <returns>The computed control-flow analysis.</returns>
             public static CfgAnalysis Create(RoutineIr routine)
             {
                 routine.RebuildPredecessors();
@@ -429,6 +494,14 @@ namespace Zilf.Emit.Intermediate
 
             public int ExactMergeCount { get; private init; }
 
+            /// <summary>
+            /// Builds a version key describing the memory state an instruction depends on, combining region
+            /// versions with exact identity versions.
+            /// </summary>
+            /// <param name="instruction">The instruction being numbered.</param>
+            /// <param name="dependencies">The memory regions the instruction depends on.</param>
+            /// <param name="exactDependencies">The exact identities the instruction depends on.</param>
+            /// <returns>The version key string.</returns>
             public string GetKey(IrInstruction instruction, IrMemoryRegion dependencies,
                 IEnumerable<IrMemoryIdentity> exactDependencies)
             {
@@ -443,6 +516,14 @@ namespace Zilf.Emit.Intermediate
                 return $"{regionKey}|{exactKey}";
             }
 
+            /// <summary>
+            /// Assigns SSA-style version numbers to memory regions and exact identities, and computes the
+            /// version state observed before each value-numberable instruction.
+            /// </summary>
+            /// <param name="routine">The routine to analyze.</param>
+            /// <param name="stateDependencies">The region dependencies of each value.</param>
+            /// <param name="identityDependencies">The exact identity dependencies of each value.</param>
+            /// <returns>The computed memory version analysis.</returns>
             public static MemoryVersionAnalysis Create(RoutineIr routine,
                 IReadOnlyDictionary<IrValue, IrMemoryRegion> stateDependencies,
                 IReadOnlyDictionary<IrValue, HashSet<IrMemoryIdentity>> identityDependencies)
@@ -608,6 +689,13 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        /// <summary>
+        /// Performs global value numbering, eliminating redundant computations (or redundant read-only calls)
+        /// by tracking available expressions along the dominator tree.
+        /// </summary>
+        /// <param name="routine">The routine to transform.</param>
+        /// <param name="cfg">The control-flow analysis of the routine.</param>
+        /// <param name="callsOnly">Whether to number only read-only calls.</param>
         private void GlobalValueNumbering(RoutineIr routine, CfgAnalysis cfg, bool callsOnly)
         {
             routine.RebuildPredecessors();
@@ -931,6 +1019,13 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        /// <summary>
+        /// Records debug-only rejection statistics for each memory region an optimization was blocked by.
+        /// </summary>
+        /// <param name="optimization">The name of the optimization.</param>
+        /// <param name="opcode">The opcode of the rejected instruction.</param>
+        /// <param name="regions">The memory regions that caused the rejection.</param>
+        /// <param name="barrier">A description of the write barrier encountered.</param>
         private void RecordMemoryRejection(string optimization, IrOpcode opcode, IrMemoryRegion regions,
             string barrier)
         {
@@ -941,6 +1036,12 @@ namespace Zilf.Emit.Intermediate
 #endif
         }
 
+        /// <summary>
+        /// Returns a human-readable description of the write barrier an instruction represents.
+        /// </summary>
+        /// <param name="instruction">The instruction acting as a barrier.</param>
+        /// <param name="unknown">Whether the barrier is an unknown write rather than an exact one.</param>
+        /// <returns>The barrier description.</returns>
         private static string GetBarrierKind(IrInstruction instruction, bool unknown) => instruction.Effect switch
         {
             IrEffect.Opaque => "opaque operation",
@@ -950,6 +1051,13 @@ namespace Zilf.Emit.Intermediate
             _ => unknown ? "unknown write" : "exact write",
         };
 
+        /// <summary>
+        /// Attempts to rewrite the given instruction as a copy of a previously computed value.
+        /// </summary>
+        /// <param name="priorValue">The value to copy.</param>
+        /// <param name="priorInstruction">The instruction that produced the value.</param>
+        /// <param name="instruction">The instruction to rewrite.</param>
+        /// <returns><see langword="true"/> if the instruction was rewritten; otherwise, <see langword="false"/>.</returns>
         private bool TryRewriteAsCopy(IrValue priorValue, IrInstruction priorInstruction, IrInstruction instruction)
         {
             if (emitCopy == null ||
@@ -972,6 +1080,11 @@ namespace Zilf.Emit.Intermediate
             return true;
         }
 
+        /// <summary>
+        /// Computes, for each value, the memory regions its computation transitively depends on.
+        /// </summary>
+        /// <param name="blocks">The blocks to analyze.</param>
+        /// <returns>A map from each value to its dependent regions.</returns>
         private static Dictionary<IrValue, IrMemoryRegion> FindStateDependencies(IEnumerable<IrBlock> blocks)
         {
             var instructions = blocks.SelectMany(block => block.Instructions).ToArray();
@@ -1003,6 +1116,11 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Computes, for each value, the memory regions it depends on through reads with unknown identities.
+        /// </summary>
+        /// <param name="blocks">The blocks to analyze.</param>
+        /// <returns>A map from each value to its unknown dependent regions.</returns>
         private static Dictionary<IrValue, IrMemoryRegion> FindUnknownStateDependencies(IEnumerable<IrBlock> blocks)
         {
             var instructions = blocks.SelectMany(block => block.Instructions).ToArray();
@@ -1036,6 +1154,11 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Computes, for each value, the set of exact memory identities its computation transitively depends on.
+        /// </summary>
+        /// <param name="blocks">The blocks to analyze.</param>
+        /// <returns>A map from each value to its dependent identities.</returns>
         private static Dictionary<IrValue, HashSet<IrMemoryIdentity>> FindIdentityDependencies(
             IEnumerable<IrBlock> blocks)
         {
@@ -1071,6 +1194,11 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Builds a map from each value to the instructions that use it.
+        /// </summary>
+        /// <param name="instructions">The instructions to index.</param>
+        /// <returns>The use-definition map.</returns>
         private static Dictionary<IrValue, List<IrInstruction>> BuildUsers(IEnumerable<IrInstruction> instructions)
         {
             var result = new Dictionary<IrValue, List<IrInstruction>>();
@@ -1086,6 +1214,12 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Returns the memory region read by an opcode, or <see cref="IrMemoryRegion.None"/> if the opcode does
+        /// not read memory.
+        /// </summary>
+        /// <param name="opcode">The opcode to classify.</param>
+        /// <returns>The read memory region.</returns>
         private static IrMemoryRegion GetReadRegions(IrOpcode opcode) => opcode switch
         {
             IrOpcode.LoadByte or IrOpcode.LoadWord or IrOpcode.ScanTable => IrMemoryRegion.Tables,
@@ -1097,6 +1231,14 @@ namespace Zilf.Emit.Intermediate
             _ => IrMemoryRegion.None,
         };
 
+        /// <summary>
+        /// Attempts to promote a stack result computed by an earlier instruction into a temporary local so it can
+        /// be reused by the current instruction.
+        /// </summary>
+        /// <param name="prior">The instruction that computed the stack result.</param>
+        /// <param name="current">The instruction that wants to reuse it.</param>
+        /// <param name="reusableTemporary">An already-available temporary to use, or <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the promotion succeeded; otherwise, <see langword="false"/>.</returns>
         private bool TryPromoteStackValue(IrInstruction prior, IrInstruction current, IVariable? reusableTemporary)
         {
             if (prior.Payload is not IrLoweringOperation
@@ -1126,6 +1268,11 @@ namespace Zilf.Emit.Intermediate
             return true;
         }
 
+        /// <summary>
+        /// Computes, for each instruction, the set of variable homes whose values are live immediately after it.
+        /// </summary>
+        /// <param name="blocks">The blocks to analyze.</param>
+        /// <returns>A map from each instruction to its live homes.</returns>
         private static Dictionary<IrInstruction, HashSet<IVariable>> FindLiveHomesAfter(IEnumerable<IrBlock> blocks)
         {
             var blockArray = blocks.ToArray();
@@ -1235,6 +1382,13 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Determines whether the physical result home of a prior instruction can be reused for the current
+        /// instruction.
+        /// </summary>
+        /// <param name="prior">The earlier instruction.</param>
+        /// <param name="current">The later instruction.</param>
+        /// <returns><see langword="true"/> if the home can be reused; otherwise, <see langword="false"/>.</returns>
         private static bool CanReusePhysicalHome(IrInstruction prior, IrInstruction current)
         {
             if (prior.Payload is not IrLoweringOperation priorLowering ||
@@ -1250,6 +1404,11 @@ namespace Zilf.Emit.Intermediate
                 ReferenceEquals(priorLowering.ResultHome, currentLowering.ResultHome);
         }
 
+        /// <summary>
+        /// Determines whether an instruction's result is eligible for value numbering.
+        /// </summary>
+        /// <param name="instruction">The instruction to check.</param>
+        /// <returns><see langword="true"/> if the instruction can be value-numbered; otherwise, <see langword="false"/>.</returns>
         private static bool IsValueNumberable(IrInstruction instruction) =>
             IsReadOnlyCall(instruction) ||
             (instruction.IsPure || instruction.Effect == IrEffect.ReadMemory) && instruction.Opcode is
@@ -1262,6 +1421,12 @@ namespace Zilf.Emit.Intermediate
             IrOpcode.LoadNextProperty or IrOpcode.LoadPropertySize or IrOpcode.LoadParent or IrOpcode.LoadChild or
             IrOpcode.LoadSibling;
 
+        /// <summary>
+        /// Determines whether an instruction is a call whose effect summary shows it reads memory without
+        /// writing and has no effects beyond control flow.
+        /// </summary>
+        /// <param name="instruction">The instruction to check.</param>
+        /// <returns><see langword="true"/> if the instruction is a read-only call; otherwise, <see langword="false"/>.</returns>
         private static bool IsReadOnlyCall(IrInstruction instruction) =>
             instruction.Effect == IrEffect.Call && instruction.Result != null &&
             instruction.CallSummary is { IsComplete: true } summary &&
@@ -1280,6 +1445,11 @@ namespace Zilf.Emit.Intermediate
             ? $"C{constant}"
             : $"V{value.Id}";
 
+        /// <summary>
+        /// Replaces all uses of the given values throughout the routine with their replacements.
+        /// </summary>
+        /// <param name="routine">The routine to transform.</param>
+        /// <param name="replacements">The value replacement map.</param>
         private static void ReplaceValues(RoutineIr routine, IReadOnlyDictionary<IrValue, IrValue> replacements)
         {
             IrValue Resolve(IrValue value)
