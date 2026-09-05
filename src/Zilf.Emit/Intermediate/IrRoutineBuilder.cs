@@ -130,6 +130,7 @@ namespace Zilf.Emit.Intermediate
         public ILocalBuilder DefineLocal(string localName)
         {
             var local = TrackLocal(target.DefineLocal(localName));
+            // TODO: detect compiler temporaries with a flag, not by name
             if (localName.StartsWith("?TMP", StringComparison.Ordinal))
                 compilerTemporaries.Add(local);
             return local;

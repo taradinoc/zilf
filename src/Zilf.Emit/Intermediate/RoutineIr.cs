@@ -80,6 +80,11 @@ namespace Zilf.Emit.Intermediate
 
         public Action<IReadOnlyList<IOperand>, IVariable?>? EmitTo { get; }
 
+        /// <summary>
+        /// Re-emits this lowering operation with the given operands, routing through the emit-to callback when
+        /// one is present.
+        /// </summary>
+        /// <param name="operands">The resolved operands for the operation.</param>
         public void Replay(IReadOnlyList<IOperand> operands)
         {
             if (EmitTo != null)
@@ -119,6 +124,11 @@ namespace Zilf.Emit.Intermediate
         public bool IsParameterRelative => Key is IrParameterMemoryKey ||
             Key is IrObjectMemberKey { Object: IrParameterMemoryKey };
 
+        /// <summary>
+        /// Determines whether this memory identity may overlap another.
+        /// </summary>
+        /// <param name="other">The identity to compare against.</param>
+        /// <returns><see langword="true"/> if the two identities may refer to overlapping memory; otherwise, <see langword="false"/>.</returns>
         public bool MayAlias(IrMemoryIdentity other)
         {
             if (Region != other.Region || !Equals(Key, other.Key))
@@ -174,6 +184,12 @@ namespace Zilf.Emit.Intermediate
         private bool IsBoundView => directWrites == IrMemoryRegion.None && directReads == IrMemoryRegion.None &&
             directEffects.Count == 0 && callees.Count == 1 && callees[0].Arguments.Count > 0;
 
+        /// <summary>
+        /// Records a call to the given callee, unwrapping a bound view callee into its underlying callee when no
+        /// arguments are supplied.
+        /// </summary>
+        /// <param name="callee">The callee's effect summary.</param>
+        /// <param name="arguments">The memory bindings for the call arguments, or <see langword="null"/>.</param>
         public void AddCallee(IrRoutineEffectSummary callee, IReadOnlyList<IrMemoryBinding?>? arguments = null)
         {
             if (arguments == null && callee.IsBoundView)
@@ -182,6 +198,10 @@ namespace Zilf.Emit.Intermediate
                 callees.Add(new IrSummaryCall(callee, arguments ?? []));
         }
 
+        /// <summary>
+        /// Precomputes the closed effect sets for this summary when it is a bound view of a single call,
+        /// binding the callee's identities to this view's arguments.
+        /// </summary>
         public void CloseBoundView()
         {
             if (!IsBoundView)
@@ -200,6 +220,12 @@ namespace Zilf.Emit.Intermediate
 
         public IrParameterMemoryKey GetParameterKey(int index) => new(this, index);
 
+        /// <summary>
+        /// Records that this summary directly writes the given memory regions, either as an unknown write or as a
+        /// write to a specific identity.
+        /// </summary>
+        /// <param name="regions">The memory regions written.</param>
+        /// <param name="identity">The written identity, or <see langword="null"/> if the exact identity is unknown.</param>
         public void AddWrite(IrMemoryRegion regions, IrMemoryIdentity? identity = null)
         {
             directWrites |= regions;
@@ -209,6 +235,12 @@ namespace Zilf.Emit.Intermediate
                 directWriteIdentities.Add(identity);
         }
 
+        /// <summary>
+        /// Records that this summary directly reads the given memory regions, either as an unknown read or as a
+        /// read from a specific identity.
+        /// </summary>
+        /// <param name="regions">The memory regions read.</param>
+        /// <param name="identity">The read identity, or <see langword="null"/> if the exact identity is unknown.</param>
         public void AddRead(IrMemoryRegion regions, IrMemoryIdentity? identity = null)
         {
             directReads |= regions;
@@ -220,10 +252,23 @@ namespace Zilf.Emit.Intermediate
 
         public void AddEffect(IrEffect effect) => directEffects.Add(effect);
 
+        /// <summary>
+        /// Returns the closed set of written memory regions, computing it on demand if it has not been closed.
+        /// </summary>
+        /// <returns>The union of the memory regions written by this summary and its callees.</returns>
         public IrMemoryRegion GetWrittenRegions() => closedWrites ?? GetWrittenRegions([]);
 
+        /// <summary>
+        /// Returns the closed set of unknown written memory regions, computing it on demand if it has not been
+        /// closed.
+        /// </summary>
+        /// <returns>The union of the unknown written regions of this summary and its callees.</returns>
         public IrMemoryRegion GetUnknownWrittenRegions() => closedUnknownWrites ?? GetUnknownWrittenRegions([]);
 
+        /// <summary>
+        /// Returns the set of memory identities written by this summary and its callees.
+        /// </summary>
+        /// <returns>The written memory identities.</returns>
         public IReadOnlySet<IrMemoryIdentity> GetWrittenIdentities()
         {
             if (closedWriteIdentities != null)
@@ -233,11 +278,24 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Returns the closed set of read memory regions, computing it on demand if it has not been closed.
+        /// </summary>
+        /// <returns>The union of the memory regions read by this summary and its callees.</returns>
         public IrMemoryRegion GetReadRegions() => closedReads ?? CollectRegions(summary => summary.directReads, []);
 
+        /// <summary>
+        /// Returns the closed set of unknown read memory regions, computing it on demand if it has not been
+        /// closed.
+        /// </summary>
+        /// <returns>The union of the unknown read regions of this summary and its callees.</returns>
         public IrMemoryRegion GetUnknownReadRegions() =>
             closedUnknownReads ?? CollectRegions(summary => summary.directUnknownReads, []);
 
+        /// <summary>
+        /// Returns the set of memory identities read by this summary and its callees.
+        /// </summary>
+        /// <returns>The read memory identities.</returns>
         public IReadOnlySet<IrMemoryIdentity> GetReadIdentities()
         {
             if (closedReadIdentities != null)
@@ -247,6 +305,10 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Returns the set of effects produced by this summary and its callees.
+        /// </summary>
+        /// <returns>The produced effects.</returns>
         public IReadOnlySet<IrEffect> GetEffects()
         {
             if (closedEffects != null)
@@ -256,6 +318,11 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Closes the effect summaries for the given routines by iteratively propagating each callee's effects
+        /// into its callers until a fixed point is reached, widening any summary that grows too large or cycles.
+        /// </summary>
+        /// <param name="summaries">The summaries to close.</param>
         public static void Close(IEnumerable<IrRoutineEffectSummary> summaries)
         {
             var discovered = new HashSet<IrRoutineEffectSummary>();
@@ -323,6 +390,12 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        /// <summary>
+        /// Finds the call edges that participate in a recursion cycle using Tarjan's strongly connected component
+        /// algorithm.
+        /// </summary>
+        /// <param name="summaries">The summaries whose call graph should be analyzed.</param>
+        /// <returns>The set of call edges that lie within a cycle.</returns>
         private static HashSet<IrSummaryCall> FindCyclicCalls(IEnumerable<IrRoutineEffectSummary> summaries)
         {
             var nextIndex = 0;
@@ -342,13 +415,13 @@ namespace Zilf.Emit.Intermediate
                 foreach (var call in summary.callees)
                 {
                     var callee = call.Callee;
-                    if (!indices.ContainsKey(callee))
+                    if (!indices.TryGetValue(callee, out int value))
                     {
                         Visit(callee);
                         lowLinks[summary] = Math.Min(lowLinks[summary], lowLinks[callee]);
                     }
                     else if (onStack.Contains(callee))
-                        lowLinks[summary] = Math.Min(lowLinks[summary], indices[callee]);
+                        lowLinks[summary] = Math.Min(lowLinks[summary], value);
                 }
                 if (lowLinks[summary] != indices[summary])
                     return;
@@ -376,10 +449,27 @@ namespace Zilf.Emit.Intermediate
                 .ToHashSet();
         }
 
-        private static IEnumerable<IrMemoryIdentity> BindIdentities(IEnumerable<IrMemoryIdentity> identities,
+        /// <summary>
+        /// Binds a set of callee-relative memory identities to the arguments of a call site, dropping any that
+        /// cannot be resolved.
+        /// </summary>
+        /// <param name="identities">The identities to bind.</param>
+        /// <param name="call">The call whose arguments supply the bindings.</param>
+        /// <param name="cyclic">Whether the call participates in a cycle.</param>
+        /// <returns>The resolved identities.</returns>
+        private static IrMemoryIdentity[] BindIdentities(IEnumerable<IrMemoryIdentity> identities,
             IrSummaryCall call, bool cyclic) => identities
                 .Select(identity => BindIdentity(identity, call, cyclic)).OfType<IrMemoryIdentity>().ToArray();
 
+        /// <summary>
+        /// Widens a callee's unknown-region set by adding the regions of any parameter-relative identity that
+        /// cannot be resolved to a concrete argument.
+        /// </summary>
+        /// <param name="unknown">The callee's unknown regions.</param>
+        /// <param name="identities">The callee's concrete identities.</param>
+        /// <param name="call">The call whose arguments supply the bindings.</param>
+        /// <param name="cyclic">Whether the call participates in a cycle.</param>
+        /// <returns>The widened unknown-region set.</returns>
         private static IrMemoryRegion BindUnknownRegions(IrMemoryRegion unknown,
             IEnumerable<IrMemoryIdentity> identities, IrSummaryCall call, bool cyclic)
         {
@@ -391,6 +481,12 @@ namespace Zilf.Emit.Intermediate
             return unknown;
         }
 
+        /// <summary>
+        /// Determines whether a memory identity key references a call parameter, either directly or through an
+        /// object member key.
+        /// </summary>
+        /// <param name="key">The identity key to check.</param>
+        /// <returns><see langword="true"/> if the key references a parameter; otherwise, <see langword="false"/>.</returns>
         private static bool ContainsParameter(object key) => key switch
         {
             IrParameterMemoryKey => true,
@@ -398,6 +494,14 @@ namespace Zilf.Emit.Intermediate
             _ => false,
         };
 
+        /// <summary>
+        /// Binds a single callee-relative memory identity to a call site, replacing parameter keys with their
+        /// argument bindings and widening offsets when the call is cyclic.
+        /// </summary>
+        /// <param name="identity">The identity to bind.</param>
+        /// <param name="call">The call whose arguments supply the bindings.</param>
+        /// <param name="cyclic">Whether the call participates in a cycle.</param>
+        /// <returns>The bound identity, or <see langword="null"/> if the parameter cannot be resolved.</returns>
         private static IrMemoryIdentity? BindIdentity(IrMemoryIdentity identity, IrSummaryCall call,
             bool cyclic = false)
         {
@@ -436,6 +540,12 @@ namespace Zilf.Emit.Intermediate
             return target.Count != previous;
         }
 
+        /// <summary>
+        /// Recursively collects a region value from this summary and all of its callees.
+        /// </summary>
+        /// <param name="selector">A function selecting the region value from each summary.</param>
+        /// <param name="active">The set of summaries on the current recursion path.</param>
+        /// <returns>The union of the selected regions.</returns>
         private IrMemoryRegion CollectRegions(Func<IrRoutineEffectSummary, IrMemoryRegion> selector,
             HashSet<IrRoutineEffectSummary> active)
         {
@@ -450,6 +560,13 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Recursively collects a set of items from this summary and all of its callees.
+        /// </summary>
+        /// <typeparam name="T">The type of the collected items.</typeparam>
+        /// <param name="result">The set receiving the collected items.</param>
+        /// <param name="selector">A function selecting the items from each summary.</param>
+        /// <param name="active">The set of summaries on the current recursion path.</param>
         private void CollectSet<T>(HashSet<T> result, Func<IrRoutineEffectSummary, IEnumerable<T>> selector,
             HashSet<IrRoutineEffectSummary> active)
         {
@@ -461,6 +578,11 @@ namespace Zilf.Emit.Intermediate
             active.Remove(this);
         }
 
+        /// <summary>
+        /// Recursively computes the written memory regions of this summary and its callees.
+        /// </summary>
+        /// <param name="active">The set of summaries on the current recursion path.</param>
+        /// <returns>The union of the written regions.</returns>
         private IrMemoryRegion GetWrittenRegions(HashSet<IrRoutineEffectSummary> active)
         {
             if (!IsComplete)
@@ -474,6 +596,11 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Recursively computes the unknown written memory regions of this summary and its callees.
+        /// </summary>
+        /// <param name="active">The set of summaries on the current recursion path.</param>
+        /// <returns>The union of the unknown written regions.</returns>
         private IrMemoryRegion GetUnknownWrittenRegions(HashSet<IrRoutineEffectSummary> active)
         {
             if (!IsComplete)
@@ -487,6 +614,11 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Recursively collects the written memory identities of this summary and its callees.
+        /// </summary>
+        /// <param name="result">The set receiving the collected identities.</param>
+        /// <param name="active">The set of summaries on the current recursion path.</param>
         private void CollectWrittenIdentities(HashSet<IrMemoryIdentity> result,
             HashSet<IrRoutineEffectSummary> active)
         {
@@ -617,6 +749,11 @@ namespace Zilf.Emit.Intermediate
 
         public bool IsPure => Effect == IrEffect.None;
 
+        /// <summary>
+        /// Replaces every occurrence of one operand value with another in this instruction.
+        /// </summary>
+        /// <param name="oldValue">The value to replace.</param>
+        /// <param name="newValue">The replacement value.</param>
         public void ReplaceOperand(IrValue oldValue, IrValue newValue)
         {
             for (var i = 0; i < operands.Count; i++)
@@ -663,6 +800,10 @@ namespace Zilf.Emit.Intermediate
 
         public IrTerminator? Terminator { get; set; }
 
+        /// <summary>
+        /// Adds a predecessor block, ignoring duplicates.
+        /// </summary>
+        /// <param name="block">The predecessor to add.</param>
         internal void AddPredecessor(IrBlock block)
         {
             if (!predecessors.Contains(block))
@@ -704,6 +845,21 @@ namespace Zilf.Emit.Intermediate
 
         public IrValue CreateConstant(int value) => new(nextValueId++, value);
 
+        /// <summary>
+        /// Appends a new instruction to the given block, creating a result value when requested.
+        /// </summary>
+        /// <param name="block">The block to append to.</param>
+        /// <param name="opcode">The instruction opcode.</param>
+        /// <param name="operands">The instruction operand values.</param>
+        /// <param name="effect">The effect the instruction has on the routine.</param>
+        /// <param name="payload">An optional payload describing how the instruction is lowered.</param>
+        /// <param name="hasResult">Whether to allocate a result value for the instruction.</param>
+        /// <param name="readRegions">The memory regions the instruction may read.</param>
+        /// <param name="writeRegions">The memory regions the instruction may write.</param>
+        /// <param name="callSummary">The effect summary of the called routine, for call instructions.</param>
+        /// <param name="readIdentity">The memory identity read by the instruction, or <see langword="null"/>.</param>
+        /// <param name="writeIdentity">The memory identity written by the instruction, or <see langword="null"/>.</param>
+        /// <returns>The appended instruction.</returns>
         public IrInstruction Append(IrBlock block, IrOpcode opcode, IEnumerable<IrValue> operands,
             IrEffect effect = IrEffect.None, object? payload = null, bool hasResult = true,
             IrMemoryRegion readRegions = IrMemoryRegion.None, IrMemoryRegion writeRegions = IrMemoryRegion.None,
@@ -716,6 +872,10 @@ namespace Zilf.Emit.Intermediate
             return instruction;
         }
 
+        /// <summary>
+        /// Recomputes each block's predecessor list from the current terminators and refreshes the operand lists
+        /// of phi instructions to match.
+        /// </summary>
         public void RebuildPredecessors()
         {
             foreach (var block in blocks)
@@ -743,6 +903,12 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        /// <summary>
+        /// Promotes the given local variables to SSA form by inserting phi instructions where control flow joins
+        /// and rewriting operand references to the current reaching value.
+        /// </summary>
+        /// <param name="variables">The locals to promote.</param>
+        /// <returns>The number of phi instructions inserted.</returns>
         public int PromoteLocalsToSsa(IEnumerable<IVariable> variables)
         {
             RebuildPredecessors();
@@ -863,6 +1029,14 @@ namespace Zilf.Emit.Intermediate
             return phis.Count;
         }
 
+        /// <summary>
+        /// Computes the outgoing local-value map for a block by applying the block's definitions to the incoming
+        /// map.
+        /// </summary>
+        /// <param name="block">The block to process.</param>
+        /// <param name="incoming">The incoming local-value map.</param>
+        /// <param name="promotable">The set of locals being promoted.</param>
+        /// <returns>The outgoing local-value map.</returns>
         private static Dictionary<IVariable, IrValue> TransferLocalValues(IrBlock block,
             IReadOnlyDictionary<IVariable, IrValue> incoming, IReadOnlySet<IVariable> promotable)
         {
@@ -872,6 +1046,13 @@ namespace Zilf.Emit.Intermediate
             return result;
         }
 
+        /// <summary>
+        /// Updates a local-value map with the value produced by a single instruction, if the instruction defines
+        /// one of the promoted locals.
+        /// </summary>
+        /// <param name="instruction">The instruction to inspect.</param>
+        /// <param name="values">The local-value map to update.</param>
+        /// <param name="promotable">The set of locals being promoted.</param>
         private static void ApplyLocalDefinition(IrInstruction instruction, IDictionary<IVariable, IrValue> values,
             IReadOnlySet<IVariable> promotable)
         {
@@ -889,6 +1070,14 @@ namespace Zilf.Emit.Intermediate
                 values[variable] = instruction.Operands[0];
         }
 
+        /// <summary>
+        /// Rewrites a reference to a promoted local into its current SSA value, leaving other values unchanged.
+        /// </summary>
+        /// <param name="value">The value to rewrite.</param>
+        /// <param name="values">The current local-value map.</param>
+        /// <param name="definitions">The set of values that are defined by instructions.</param>
+        /// <param name="promotable">The set of locals being promoted.</param>
+        /// <returns>The rewritten value.</returns>
         private static IrValue RewriteLocal(IrValue value, IReadOnlyDictionary<IVariable, IrValue> values,
             IReadOnlySet<IrValue> definitions, IReadOnlySet<IVariable> promotable) =>
             !definitions.Contains(value) && value.PhysicalHome is IVariable variable && promotable.Contains(variable)
@@ -900,6 +1089,11 @@ namespace Zilf.Emit.Intermediate
             left.Count == right.Count && left.All(pair => right.TryGetValue(pair.Key, out var value) &&
                 ReferenceEquals(pair.Value, value));
 
+        /// <summary>
+        /// Returns the successor blocks of a block based on its terminator.
+        /// </summary>
+        /// <param name="block">The block whose successors are requested.</param>
+        /// <returns>The successor blocks.</returns>
         public static IEnumerable<IrBlock> GetSuccessors(IrBlock block) => block.Terminator switch
         {
             IrTerminator.Jump jump => [jump.Target],
@@ -908,6 +1102,10 @@ namespace Zilf.Emit.Intermediate
             _ => [],
         };
 
+        /// <summary>
+        /// Validates the structure of the routine, throwing if any invariant is violated.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown when the routine is malformed.</exception>
         public void Verify()
         {
             if (!blocks.Contains(Entry))
