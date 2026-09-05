@@ -33,6 +33,13 @@ namespace Zilf.Emit.Intermediate
         internal void RecordTargetAction(Action action) =>
             RecordOrderedOperation([], _ => action(), IrEffect.Control);
 
+        /// <summary>
+        /// Records an opaque extension operation, flushing any pending promoted local values and stack values
+        /// first so the operation observes the correct machine state.
+        /// </summary>
+        /// <param name="action">The lowering action that emits the operation.</param>
+        /// <param name="writeRegions">The memory regions the operation may write.</param>
+        /// <param name="diagnosticName">An optional name under which to count this operation for diagnostics.</param>
         private void Record(Action action, IrMemoryRegion writeRegions = IrMemoryRegion.All,
             string? diagnosticName = null)
         {
@@ -43,6 +50,12 @@ namespace Zilf.Emit.Intermediate
             dirtyLocals.Clear();
         }
 
+        /// <summary>
+        /// Appends a raw opaque target operation to the routine without flushing pending state.
+        /// </summary>
+        /// <param name="action">The lowering action that emits the operation.</param>
+        /// <param name="writeRegions">The memory regions the operation may write.</param>
+        /// <param name="diagnosticName">An optional name under which to count this operation for diagnostics.</param>
         private void RecordRaw(Action action, IrMemoryRegion writeRegions, string? diagnosticName = null)
         {
             if (diagnosticName != null)
@@ -51,6 +64,13 @@ namespace Zilf.Emit.Intermediate
             routine.Append(current, IrOpcode.TargetOperation, [], IrEffect.Opaque, action, hasResult: false);
         }
 
+        /// <summary>
+        /// Records a temporary operation whose result, if requested, is kept as a compiler temporary local.
+        /// </summary>
+        /// <param name="operands">The operation operands.</param>
+        /// <param name="emit">The lowering action that emits the operation.</param>
+        /// <param name="result">The temporary local to receive the result, or <see langword="null"/>.</param>
+        /// <param name="diagnosticName">An optional name under which to count this operation for diagnostics.</param>
         private void RecordTemporaryOperation(IReadOnlyList<IOperand> operands,
             Action<IReadOnlyList<IOperand>> emit, IVariable? result = null, string? diagnosticName = null)
         {
@@ -78,6 +98,13 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        /// <summary>
+        /// Records an operation whose operands are evaluated in source order.
+        /// </summary>
+        /// <param name="operands">The operation operands.</param>
+        /// <param name="emit">The lowering action that emits the operation.</param>
+        /// <param name="effect">The effect the operation has on the routine.</param>
+        /// <param name="writeRegions">The memory regions the operation may write.</param>
         protected void RecordOrderedOperation(IReadOnlyList<IOperand> operands,
             Action<IReadOnlyList<IOperand>> emit, IrEffect effect,
             IrMemoryRegion writeRegions = IrMemoryRegion.None)
@@ -92,6 +119,18 @@ namespace Zilf.Emit.Intermediate
                 hasResult: false, writeRegions: writeRegions);
         }
 
+        /// <summary>
+        /// Records an operation that produces a result and may write memory, routing the result either to a
+        /// local/stack home or through a separate emit callback.
+        /// </summary>
+        /// <param name="operands">The operation operands.</param>
+        /// <param name="emit">The lowering action that emits the operation.</param>
+        /// <param name="effect">The effect the operation has on the routine.</param>
+        /// <param name="result">The variable to receive the result, or <see langword="null"/>.</param>
+        /// <param name="emitTo">The lowering action used when the result is routed to a specific home.</param>
+        /// <param name="writeRegions">The memory regions the operation may write.</param>
+        /// <param name="writeIdentity">The memory identity written by the operation, or <see langword="null"/>.</param>
+        /// <param name="writtenOperandIndex">The operand index that identifies the written value.</param>
         protected void RecordEffectfulOperation(IReadOnlyList<IOperand> operands,
             Action<IReadOnlyList<IOperand>> emit, IrEffect effect, IVariable? result,
             Action<IReadOnlyList<IOperand>, IVariable?> emitTo,
@@ -121,6 +160,14 @@ namespace Zilf.Emit.Intermediate
             }
         }
 
+        /// <summary>
+        /// Records an operation with a mix of required and optional operands, reconstructing the original
+        /// null-preserving operand list when lowering.
+        /// </summary>
+        /// <param name="operands">The operation operands, some of which may be <see langword="null"/>.</param>
+        /// <param name="emit">The lowering action that emits the operation.</param>
+        /// <param name="effect">The effect the operation has on the routine.</param>
+        /// <param name="writeRegions">The memory regions the operation may write.</param>
         private void RecordEffectfulOptionalOperation(IReadOnlyList<IOperand?> operands,
             Action<IReadOnlyList<IOperand?>> emit, IrEffect effect,
             IrMemoryRegion writeRegions = IrMemoryRegion.None)
@@ -140,6 +187,13 @@ namespace Zilf.Emit.Intermediate
             }, hasResult: false, writeRegions: writeRegions);
         }
 
+        /// <summary>
+        /// Records an equality comparison that conditionally branches to a label.
+        /// </summary>
+        /// <param name="operands">The operands to compare.</param>
+        /// <param name="label">The branch target label.</param>
+        /// <param name="polarity">Whether to branch when the comparison is true or false.</param>
+        /// <param name="emit">The lowering action that emits the comparison.</param>
         private void RecordEqualityBranch(IReadOnlyList<IOperand> operands, ILabel label, bool polarity,
             Action<IReadOnlyList<IOperand>> emit)
         {
@@ -150,6 +204,17 @@ namespace Zilf.Emit.Intermediate
             FinishConditional(label, instruction.Result!, polarity, instruction);
         }
 
+        /// <summary>
+        /// Records a read operation whose result is both produced into a variable and used to conditionally
+        /// branch to a label.
+        /// </summary>
+        /// <param name="opcode">The opcode of the read operation.</param>
+        /// <param name="operands">The operation operands.</param>
+        /// <param name="result">The variable to receive the result.</param>
+        /// <param name="label">The branch target label.</param>
+        /// <param name="polarity">Whether to branch when the result is true or false.</param>
+        /// <param name="emit">The lowering action that emits the read.</param>
+        /// <param name="emitTo">The lowering action used when routing the result to a specific home.</param>
         private void RecordReadBranch(IrOpcode opcode, IReadOnlyList<IOperand> operands, IVariable result,
             ILabel label, bool polarity, Action<IReadOnlyList<IOperand>> emit,
             Action<IReadOnlyList<IOperand>, IVariable?> emitTo)
@@ -167,6 +232,23 @@ namespace Zilf.Emit.Intermediate
         private bool IsEffectBarrierOperand(IOperand operand) =>
             operand is IIndirectOperand { Variable: var variable } && locals.Contains(variable);
 
+        /// <summary>
+        /// Appends a lowering instruction to the routine and updates the effect summary with its read and
+        /// write effects.
+        /// </summary>
+        /// <param name="opcode">The instruction opcode.</param>
+        /// <param name="operands">The instruction operand values.</param>
+        /// <param name="effect">The effect the instruction has on the routine.</param>
+        /// <param name="emit">The lowering action that emits the instruction.</param>
+        /// <param name="hasResult">Whether the instruction produces a result value.</param>
+        /// <param name="resultHome">The variable the result is assigned to, or <see langword="null"/>.</param>
+        /// <param name="emitTo">The lowering action used when routing the result to a specific home.</param>
+        /// <param name="readRegions">The memory regions the instruction may read.</param>
+        /// <param name="writeRegions">The memory regions the instruction may write.</param>
+        /// <param name="callSummary">The effect summary of the called routine, for call instructions.</param>
+        /// <param name="readIdentity">The memory identity read by the instruction, or <see langword="null"/>.</param>
+        /// <param name="writeIdentity">The memory identity written by the instruction, or <see langword="null"/>.</param>
+        /// <returns>The appended instruction.</returns>
         private IrInstruction AppendLowering(IrOpcode opcode, IReadOnlyList<IrValue> operands, IrEffect effect,
             Action<IReadOnlyList<IOperand>> emit, bool hasResult = true, IVariable? resultHome = null,
             Action<IReadOnlyList<IOperand>, IVariable?>? emitTo = null,
@@ -215,6 +297,13 @@ namespace Zilf.Emit.Intermediate
             return parameter;
         }
 
+        /// <summary>
+        /// Produces a complete effect summary for a call site by binding the callee's summary to the call
+        /// arguments.
+        /// </summary>
+        /// <param name="callee">The callee's effect summary.</param>
+        /// <param name="args">The call argument values.</param>
+        /// <returns>The bound call-site summary.</returns>
         private IrRoutineEffectSummary BindCallSummary(IrRoutineEffectSummary callee,
             IReadOnlyList<IrValue> args)
         {
@@ -223,6 +312,12 @@ namespace Zilf.Emit.Intermediate
             return summary;
         }
 
+        /// <summary>
+        /// Resolves the memory binding for a value, describing which identity it aliases for call-effect
+        /// tracking.
+        /// </summary>
+        /// <param name="value">The value to bind.</param>
+        /// <returns>The memory binding, or <see langword="null"/> if none can be determined.</returns>
         private IrMemoryBinding? GetMemoryBinding(IrValue value)
         {
             if (value.MemoryIdentity is { } identity)
@@ -234,6 +329,12 @@ namespace Zilf.Emit.Intermediate
                 : null;
         }
 
+        /// <summary>
+        /// Resolves an operand into an <see cref="IrValue"/>, reusing an existing value when the operand maps
+        /// to a live stack, local, or external value and otherwise creating (and caching) a new one.
+        /// </summary>
+        /// <param name="operand">The operand to resolve.</param>
+        /// <returns>The corresponding IR value.</returns>
         private IrValue GetValue(IOperand operand)
         {
             if (ReferenceEquals(operand, Stack) && stackValues.Count > 0)
@@ -288,6 +389,14 @@ namespace Zilf.Emit.Intermediate
                 ? new IrMemoryIdentity(region, GetStableMemoryKey(operand))
                 : null;
 
+        /// <summary>
+        /// Computes a memory identity for an object member access when both the object and member resolve to
+        /// stable keys.
+        /// </summary>
+        /// <param name="obj">The object operand.</param>
+        /// <param name="member">The member operand.</param>
+        /// <param name="region">The memory region being accessed.</param>
+        /// <returns>The memory identity, or <see langword="null"/> if one cannot be determined.</returns>
         private IrMemoryIdentity? TryGetObjectMemberIdentity(IOperand obj, IOperand member,
             IrMemoryRegion region)
         {
@@ -303,6 +412,15 @@ namespace Zilf.Emit.Intermediate
                 : null;
         }
 
+        /// <summary>
+        /// Computes a memory identity for a table access given an address operand and a constant or symbolic
+        /// index.
+        /// </summary>
+        /// <param name="address">The table base address operand.</param>
+        /// <param name="index">The index operand.</param>
+        /// <param name="scale">The size in bytes of each table element.</param>
+        /// <param name="length">The length in bytes of the access.</param>
+        /// <returns>The memory identity, or <see langword="null"/> if one cannot be determined.</returns>
         private IrMemoryIdentity? TryGetTableMemoryIdentity(IOperand address, IOperand index, int scale,
             int length)
         {
@@ -327,6 +445,15 @@ namespace Zilf.Emit.Intermediate
                 : null;
         }
 
+        /// <summary>
+        /// Refines an existing table memory identity with a constant index and length, or widens it when the
+        /// index is not constant.
+        /// </summary>
+        /// <param name="address">The table base address value.</param>
+        /// <param name="index">The index value.</param>
+        /// <param name="scale">The size in bytes of each table element.</param>
+        /// <param name="length">The length in bytes of the access.</param>
+        /// <returns>The refined or widened memory identity, or <see langword="null"/> if the address is not a table.</returns>
         private static IrMemoryIdentity? TryGetTableMemoryIdentity(IrValue address, IrValue index, int scale,
             int length)
         {
@@ -342,7 +469,12 @@ namespace Zilf.Emit.Intermediate
                 : null;
         }
 
-        private void SetDerivedAddressIdentity(IrInstruction instruction)
+        /// <summary>
+        /// Propagates a table address identity through an addition or subtraction instruction, so that a
+        /// computed pointer keeps the identity of the address it was derived from.
+        /// </summary>
+        /// <param name="instruction">The add or subtract instruction to analyze.</param>
+        private static void SetDerivedAddressIdentity(IrInstruction instruction)
         {
             if (instruction.Result == null || instruction.Opcode is not (IrOpcode.Add or IrOpcode.Subtract) ||
                 instruction.Operands.Count != 2)
@@ -402,6 +534,11 @@ namespace Zilf.Emit.Intermediate
                 externalValues.Remove(pair.Key);
         }
 
+        /// <summary>
+        /// Drops cached external values that may have been modified by a call, either all of them when the
+        /// callee writes an unknown set of globals or only those whose identities the callee is known to write.
+        /// </summary>
+        /// <param name="summary">The callee's effect summary, or <see langword="null"/> to invalidate all globals.</param>
         private void InvalidateMutableExternalValues(IrRoutineEffectSummary? summary)
         {
             if (summary == null || (summary.GetWrittenRegions() & IrMemoryRegion.Globals) != 0)
@@ -424,6 +561,10 @@ namespace Zilf.Emit.Intermediate
                 SetLocalValue(variable, value);
         }
 
+        /// <summary>
+        /// Stores any live stack values into the machine stack so that a subsequent operation with unknown
+        /// effects cannot corrupt them.
+        /// </summary>
         private void PreserveStackValues()
         {
             if (stackValues.Count == 0)
@@ -447,6 +588,10 @@ namespace Zilf.Emit.Intermediate
             stackValues.Clear();
         }
 
+        /// <summary>
+        /// Materializes the current values of dirty promoted locals back to their local variable storage.
+        /// </summary>
+        /// <param name="predicate">An optional filter selecting which locals to flush.</param>
         private void FlushPromotedLocals(Func<IVariable, bool>? predicate = null)
         {
             foreach (var variable in dirtyLocals.Where(variable => predicate == null || predicate(variable)).ToArray())
