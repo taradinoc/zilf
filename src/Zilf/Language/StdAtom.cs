@@ -40,12 +40,15 @@ namespace Zilf.Language
         ADECL,
         ADJ,
         ADJECTIVE,
+        AGAIN,
         ALL,
         AND,
         ANY,
         APPLICABLE,
         APPLY,
         ASOC,
+        [Atom("ASSIGNED?")]
+        ASSIGNED_P,
         ATBL,
         ATOM,
         BIG,
@@ -211,6 +214,7 @@ namespace Zilf.Language
         PRESERVE_SPACES_P,
         PRIMTYPE,
         PRINT,
+        PRINTR,
         PRINTTYPE,
         [Atom("PRMANY-CRLF")]
         PRMANY_CRLF,
@@ -236,6 +240,7 @@ namespace Zilf.Language
         PUBLISH_TITLE,
         PURE,
         PUT,
+        QUIT,
         QUOTE,
         READ,
         REDEFINE,
@@ -243,9 +248,14 @@ namespace Zilf.Language
         [Atom("REPLACE-DEFINITION")]
         REPLACE_DEFINITION,
         REST,
+        RETURN,
         [Atom("REVERSE-DEFINED")]
         REVERSE_DEFINED,
+        RFALSE,
+        RFATAL,
         ROOM,
+        RSTACK,
+        RTRUE,
         ROOMS,
         [Atom("ROOMS-AND-LGS-FIRST")]
         ROOMS_AND_LGS_FIRST,

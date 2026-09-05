@@ -101,9 +101,11 @@ namespace Zilf.Compiler
                 var legacyEligible = formCount <= 2 && (Context.OptimizationLevel >= 3 || !hasNestedForm);
                 if (IsInlineExpression(body) &&
                     (Game is IInliningCostModel ? formCount <= MaximumInlineCandidateForms : legacyEligible))
+                {
                     candidates.Add(routine.Name, new InlineRoutine(body, parameters, hasNestedForm,
                         CountParameterUses(body, parameters), FindParametersReadAfterSideEffect(body, parameters),
                         legacyEligible));
+                }
             }
 
             var recursive = FindRecursiveInlineRoutines(candidates);
@@ -120,10 +122,9 @@ namespace Zilf.Compiler
                 return true;
             if (expression is not ZilForm { First: ZilAtom head, Rest: { } rest })
                 return false;
-            if (head.StdAtom is StdAtom.BIND or StdAtom.PROG or StdAtom.REPEAT)
-                return false;
-            if (head.Text is "AGAIN" or "ASSIGNED?" or "PRINTR" or "QUIT" or "RETURN" or "RFALSE" or
-                "RFATAL" or "RSTACK" or "RTRUE")
+            if (head.StdAtom is StdAtom.AGAIN or StdAtom.ASSIGNED_P or StdAtom.BIND or StdAtom.PRINTR or
+                StdAtom.PROG or StdAtom.QUIT or StdAtom.REPEAT or StdAtom.RETURN or StdAtom.RFALSE or
+                StdAtom.RFATAL or StdAtom.RSTACK or StdAtom.RTRUE)
                 return false;
 
             var arguments = rest.Select(argument => argument.Unwrap(Context)).ToArray();
