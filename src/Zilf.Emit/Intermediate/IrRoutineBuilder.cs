@@ -26,7 +26,7 @@ namespace Zilf.Emit.Intermediate
     /// Records the target-independent routine-builder protocol as a control-flow graph and lowers it into a target
     /// builder after verification and optimization.
     /// </summary>
-    internal partial class IrRoutineBuilder : IRoutineBuilder, INonzeroConstantOperand
+    internal partial class IrRoutineBuilder : IRoutineBuilder, INonzeroConstantOperand, IProvideArcturusEmit
     {
         private readonly IRoutineBuilder target;
         private readonly RoutineIr routine = new();
@@ -118,6 +118,8 @@ namespace Zilf.Emit.Intermediate
         public bool HasExtendedSave => target.HasExtendedSave;
 
         public bool HasUndo => target.HasUndo;
+
+        public bool HasArcImage => target is IProvideArcturusEmit pae && pae.HasArcImage;
 
         public IConstantOperand Add(IConstantOperand other) =>
             target.Add(other is IrRoutineBuilder ir ? (IConstantOperand)ir.Target : other);
@@ -531,6 +533,12 @@ namespace Zilf.Emit.Intermediate
             RecordEffectfulOptionalOperation([number, effect, volume, routineOperand],
                 operands => target.EmitPlaySound(operands[0]!, operands[1], operands[2], operands[3]),
                 routineOperand == null ? IrEffect.InputOutput : IrEffect.Call);
+
+        public void EmitArcImage(IOperand imageId, IOperand mode) =>
+            RecordEffectfulOperation([imageId, mode],
+                operands => ((IProvideArcturusEmit)target).EmitArcImage(operands[0]!, operands[1]!),
+                IrEffect.InputOutput, null,
+                (_, _) => throw new InvalidOperationException("EmitArcImage does not produce a result"));
 
         public void EmitEncodeText(IOperand src, IOperand length, IOperand srcOffset, IOperand dest) =>
             RecordOrderedOperation([src, length, srcOffset, dest],

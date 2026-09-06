@@ -31,7 +31,7 @@ using Zilf.Emit;
 namespace Zilf.Emit.Zap
 {
     // TODO: make sure RoutineBuilder is guaranteed nonzero in V6/V7
-    class RoutineBuilder : ConstantOperandBase, IRoutineBuilder, INonzeroConstantOperand
+    class RoutineBuilder : ConstantOperandBase, IRoutineBuilder, INonzeroConstantOperand, IProvideArcturusEmit
     {
         internal static readonly Label RTRUE = new("TRUE");
         internal static readonly Label RFALSE = new("FALSE");
@@ -725,6 +725,14 @@ namespace Zilf.Emit.Zap
                 }
             }
 
+            AddLine(inst, null, PeepholeLineType.Plain);
+        }
+
+        public bool HasArcImage => game.zversion is >= 5 and not 6;
+
+        public void EmitArcImage(IOperand imageId, IOperand mode)
+        {
+            var inst = new Instruction("ARCIMG", imageId.ToAsmExpr(), mode.ToAsmExpr());
             AddLine(inst, null, PeepholeLineType.Plain);
         }
 

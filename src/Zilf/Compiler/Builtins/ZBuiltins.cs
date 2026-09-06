@@ -2550,6 +2550,19 @@ namespace Zilf.Compiler.Builtins
             }
         }
 
+        [Builtin("ARCIMG", HasSideEffect = true, Platform = BuiltinPlatform.ZMachine, MinVersion = 5, MaxVersion = 5)]
+        public static void ArcImgVoidOp(VoidCall c, IOperand imageId, IOperand mode)
+        {
+            if (c.rb is IProvideArcturusEmit emitter && emitter.HasArcImage)
+            {
+                emitter.EmitArcImage(imageId, mode);
+            }
+            else
+            {
+                throw new NotSupportedException("ARCIMG is not supported for this target");
+            }
+        }
+
         #endregion
 
         #region Vocab Opcodes

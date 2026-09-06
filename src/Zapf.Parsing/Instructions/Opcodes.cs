@@ -18,10 +18,21 @@
 
 namespace Zapf.Parsing.Instructions
 {
+    /// <summary>
+    /// Holds constants decorated with <see cref="ZOpAttribute"/> for all the
+    /// supported Z-machine opcodes.
+    /// </summary>
+    /// <remarks>
+    /// For 0OP, 1OP, 2OP, and VAR opcodes, the constant values match the
+    /// numbers in the Z-Machine Standards Document's table of opcodes. For EXT
+    /// opcodes, the constant value is 256 plus the number from the document.
+    /// </remarks>
     public static class Opcodes
     {
         [ZOp("ADD", "add", 1, 6, ZOpFlags.Store)]
         public const ushort Add = 20;
+        [ZOp("ARCIMG", "draw_image", 5, 5, 0)]
+        public const ushort ArcImg = 384;
         [ZOp("ASHIFT", "art_shift", 5, 6, ZOpFlags.Store)]
         public const ushort Ashift = 259;
         [ZOp("ASSIGNED?", "check_arg_count", 5, 6, ZOpFlags.Branch | ZOpFlags.IndirectVar)]

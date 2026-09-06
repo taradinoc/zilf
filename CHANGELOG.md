@@ -31,6 +31,8 @@ and this project adheres to
   any optimization level, ZILF can omit a routine if one caller contains all
   its calls, every call is inlined, and no other references require it.
 
+- Added support for the `ARCIMG` opcode in ZAPF and ZILF.
+
 ### Changed
 
 - ZILF's behavior when reading a mismatched closing bracket is now closer to
