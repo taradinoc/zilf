@@ -60,7 +60,7 @@ namespace Zilf.Emit.Glulx
                 Combiner = new PeepholeCombiner(LocalExists),
                 LabelFactory = DefineLabel,
                 TracingEnabled = shouldTrace,
-                TracingName = shouldTrace ? name : null
+                TracingName = shouldTrace ? name : null,
             };
             RoutineStart = DefineLabel();
         }
@@ -965,54 +965,79 @@ namespace Zilf.Emit.Glulx
 
         public virtual bool TryEmitLowCoreRead(string field, IVariable resultStorage)
         {
-            switch (field)
+            switch (GetLowCoreRead(field))
             {
-                case "SCRH":    // screen width
+                case LowCoreRead.ScreenWidth:
                     Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_screen_width))} -> {FormatStore(resultStorage)}", "callf");
                     return true;
-                case "SCRV":    // screen height
+                case LowCoreRead.ScreenHeight:
                     Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_screen_height))} -> {FormatStore(resultStorage)}", "callf");
                     return true;
-                case "RELEASEID":
-                case "ZORKID":
+                case LowCoreRead.ReleaseId:
                     Emit($"aloads metadata_releaseid 0 -> {FormatStore(resultStorage)}", "aloads");
                     return true;
-                case "MEMSIZE":
+                case LowCoreRead.MemorySize:
                     Emit($"getmemsize -> {FormatStore(resultStorage)}", "getmemsize");
                     return true;
-                case "FLAGS":
+                case LowCoreRead.Flags:
                     Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_lowcore_flags))} -> {FormatStore(resultStorage)}", "callf");
                     return true;
-                case "ZVERSION":
+                case LowCoreRead.ZVersion:
                     Emit($"callf {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.get_lowcore_zversion))} -> {FormatStore(resultStorage)}", "callf");
+                    return true;
+                case LowCoreRead.StandardRevision:
+                    Emit($"copy 0x101 -> {FormatStore(resultStorage)}", "copy");
                     return true;
             }
 
             return false;
         }
+
+        internal bool SupportsLowCoreRead(string field) => GetLowCoreRead(field) != LowCoreRead.Unsupported;
+
+        private protected virtual LowCoreRead GetLowCoreRead(string field) => field switch
+        {
+            "SCRH" => LowCoreRead.ScreenWidth,
+            "SCRV" => LowCoreRead.ScreenHeight,
+            "RELEASEID" or "ZORKID" => LowCoreRead.ReleaseId,
+            "MEMSIZE" => LowCoreRead.MemorySize,
+            "FLAGS" => LowCoreRead.Flags,
+            "ZVERSION" => LowCoreRead.ZVersion,
+            _ => LowCoreRead.Unsupported,
+        };
 
         public bool TryEmitLowCoreWrite(string field, IOperand value)
         {
-            switch (field)
-            {
-                case "FLAGS":
-                    Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.set_lowcore_flags))} {FormatLoad(value)}", "callfi");
-                    return true;
-            }
+            if (!SupportsLowCoreWrite(field))
+                return false;
 
-            return false;
+            Emit($"callfi {gameBuilder.RuntimeLib.Use(nameof(RuntimeLib.set_lowcore_flags))} {FormatLoad(value)}", "callfi");
+            return true;
         }
+
+        internal bool SupportsLowCoreWrite(string field) => field == "FLAGS";
 
         public virtual bool TryEmitLowCoreGetTable(string field, IVariable resultStorage)
         {
-            switch (field)
-            {
-                case "SERIAL":
-                    Emit($"copy metadata_serial -> {FormatStore(resultStorage)}", "copy");
-                    return true;
-            }
+            if (!SupportsLowCoreGetTable(field))
+                return false;
 
-            return false;
+            Emit($"copy metadata_serial -> {FormatStore(resultStorage)}", "copy");
+            return true;
+        }
+
+        internal virtual bool SupportsLowCoreGetTable(string field) => field == "SERIAL";
+
+        private protected enum LowCoreRead
+        {
+            Unsupported,
+            ScreenWidth,
+            ScreenHeight,
+            ReleaseId,
+            MemorySize,
+            Flags,
+            ZVersion,
+            StandardRevision,
         }
 
         protected virtual void WriteOptionalPreamble(StringBuilder sb)

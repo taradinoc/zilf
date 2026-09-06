@@ -203,6 +203,16 @@ namespace Zilf.Tests.Integration
         }
 
         [MemberNotNull(nameof(Diagnostics))]
+        public bool Compile(int optimizationLevel, bool wantDebugInfo = false, bool optimizeForSize = false)
+        {
+            return Compile(frontEnd => frontEnd.InitializeContext += (_, e) =>
+            {
+                e.Context.OptimizationLevel = optimizationLevel;
+                e.Context.OptimizeForSize = optimizeForSize;
+            }, wantDebugInfo);
+        }
+
+        [MemberNotNull(nameof(Diagnostics))]
         bool Compile(Action<FrontEnd>? initializeFrontEnd, bool wantDebugInfo = false)
         {
             fileSystem.Clear();

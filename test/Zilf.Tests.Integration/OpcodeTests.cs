@@ -147,6 +147,20 @@ namespace Zilf.Tests.Integration
         }
 
         [TestMethod]
+        public async System.Threading.Tasks.Task ConstantFolding_Uses_Target_Word_SizeAsync()
+        {
+            await AssertExpr("<+ 32767 1>").GivesNumberAsync("-32768");
+            await AssertExpr("<+ 32767 1>").InGlulx16().GivesNumberAsync("-32768");
+            await AssertExpr("<+ 32767 1>").InGlulx().GivesNumberAsync("32768");
+
+            await AssertExpr("<* 256 256>").GivesNumberAsync("0");
+            await AssertExpr("<* 256 256>").InGlulx().GivesNumberAsync("65536");
+
+            await AssertExpr("<+ 65535 0>").GivesNumberAsync("-1");
+            await AssertExpr("<+ 65535 0>").InGlulx().GivesNumberAsync("65535");
+        }
+
+        [TestMethod]
         public async System.Threading.Tasks.Task TestADD_RESTAsync()
         {
             // alias where 2nd operand defaults to 1

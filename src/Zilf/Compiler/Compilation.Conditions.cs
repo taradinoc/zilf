@@ -138,6 +138,11 @@ namespace Zilf.Compiler
                 return;
             }
 
+            var internedHead = Context.ZEnvironment.InternGlobalName(head);
+            if (TryCompileInlineCondition(rb, internedHead, form.Skip(1).ToArray(), form.SourceLine,
+                label, polarity))
+                return;
+
             // special cases
             var op1 = CompileAsOperand(rb, form, form.SourceLine);
             BranchIfNonZero(op1);

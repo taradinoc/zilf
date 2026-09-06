@@ -195,6 +195,13 @@ namespace Zilf.Emit
         bool IsGloballyDefined(string name, [NotNullWhen(true)] out string? type);
 
         /// <summary>
+        /// Records a compiler-level optimization statistic for inclusion in debug assembly output.
+        /// </summary>
+        /// <param name="name">The statistic name.</param>
+        /// <param name="count">The amount to add.</param>
+        void RecordCompilerOptimizationStatistic(string name, int count);
+
+        /// <summary>
         /// Writes the final output and closes the game builder.
         /// </summary>
         void Finish();

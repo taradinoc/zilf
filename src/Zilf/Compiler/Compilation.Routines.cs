@@ -72,7 +72,11 @@ namespace Zilf.Compiler
         void BuildRoutine(ZilRoutine routine, IRoutineBuilder rb, bool entryPoint, bool traceRoutines)
         {
             // give the user a chance to rewrite the routine
-            routine = MaybeRewriteRoutine(Context, routine);
+            routine = GetRewrittenRoutine(routine);
+
+            compilingEntryPoint = entryPoint;
+            compilingRoutineName = routine.Name;
+            inlineCallerGrowth = 0;
 
             // set up arguments and locals
             ClearLocalsAndBlocks();
@@ -112,6 +116,8 @@ namespace Zilf.Compiler
             // clean up
             WarnAboutUnusedLocals();
             ClearLocalsAndBlocks();
+            compilingEntryPoint = false;
+            compilingRoutineName = null;
 
             // helpers
             void DefineLocalsFromArgSpec()

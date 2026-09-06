@@ -269,12 +269,12 @@ namespace Zilf.Emit
             }
         }
 
-    ILabel? pendingLabel;
-    readonly Dictionary<ILabel, ILabel> aliases = new();
-    readonly LinkedList<Line> lines = new();
-    readonly OptimizationDescriptor[] optimizationPipeline;
+        ILabel? pendingLabel;
+        readonly Dictionary<ILabel, ILabel> aliases = new();
+        readonly LinkedList<Line> lines = new();
+        readonly OptimizationDescriptor[] optimizationPipeline;
 #if DEBUG
-    readonly OptimizationStats[] optimizationStats;
+        readonly OptimizationStats[] optimizationStats;
 #endif
 
         /// <summary>

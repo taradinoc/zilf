@@ -179,6 +179,14 @@ namespace Zilf.Compiler
                             ScheduleRoutineForCompilation(rtn.Name);
                         }
 
+                        if (rtn.Name != null && TryCompileInlineCall(rb, rtn.Name, args, wantResult,
+                            resultStorage, form.SourceLine, out var inlineResult))
+                        {
+                            return inlineResult;
+                        }
+                        if (rtn.Name != null)
+                            RecordNonInlinedCall(rtn.Name);
+
                         // compile routine call
                         resultStorage = wantResult ? (resultStorage ?? rb.Stack) : null;
                         using (var argOperands = CompileOperands(rb, form.SourceLine, args))
@@ -545,6 +553,13 @@ namespace Zilf.Compiler
             var argCount = form.Rest.Count();
             if (ZBuiltins.IsBuiltinWithSideEffects(head.Text, zversion, argCount))
                 return true;
+
+            // A call that will be inlined has the effects of its arguments and transplanted body, not the
+            // conservative effects of an opaque routine call. This lets operand preservation see through pure
+            // nested inline calls instead of allocating temporaries that become unnecessary after transplantation.
+            if (_inlineRoutines != null && _inlineRoutines.TryGetValue(head, out var inlineRoutine) &&
+                inlineRoutine.LegacyEligible && !Context.OptimizeForSize)
+                return form.Rest.Any(HasSideEffects) || HasSideEffects(inlineRoutine.Body);
 
             // routines are presumed to have side effects
             if (Routines.ContainsKey(head))

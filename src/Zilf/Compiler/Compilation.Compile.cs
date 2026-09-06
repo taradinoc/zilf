@@ -84,6 +84,7 @@ namespace Zilf.Compiler
             try
             {
                 ExpandRoutineBodies();
+                PrepareInlineRoutines();
                 AnalyzeAndPlanRoutines();
                 GenerateRoutineCode();
                 WarnAboutUnusedRoutines();
@@ -106,6 +107,9 @@ namespace Zilf.Compiler
             WarnAboutUnusedGlobals();
             WarnAboutUnusedDefinitionSections();
 
+#if DEBUG
+            RecordInliningStatistics();
+#endif
             Game.Finish();
         }
 
@@ -247,12 +251,14 @@ namespace Zilf.Compiler
         {
             var compiled = new HashSet<ZilAtom>(new AtomNameEqualityComparer(Context.IgnoreCase));
             IRoutineBuilder? mainRoutine = null;
+            var initialInlineDeferralPass = true;
 
             bool compiledNew;
             do
             {
                 compiledNew = false;
 
+                var deferredInlineCandidate = false;
                 foreach (var routine in Context.ZEnvironment.Routines)
                 {
                     if (routine.Name == null)
@@ -266,6 +272,31 @@ namespace Zilf.Compiler
 
                     if (!compiled.Add(routine.Name))
                         continue;
+
+                    if (_wholeProgramInlineCallers != null &&
+                        _wholeProgramInlineCallers.TryGetValue(routine.Name, out var callers))
+                    {
+                        if (initialInlineDeferralPass)
+                        {
+                            compiled.Remove(routine.Name);
+                            deferredInlineCandidate = true;
+                            continue;
+                        }
+                        if (eliminatedInlineRoutines.Contains(routine.Name) &&
+                            nonInlinedCallCounts.GetValueOrDefault(routine.Name) == 0)
+                        {
+#if DEBUG
+                            inlineEliminatedRoutines++;
+#endif
+                            continue;
+                        }
+                        if (!callers.All(compiled.Contains))
+                        {
+                            compiled.Remove(routine.Name);
+                            deferredInlineCandidate = true;
+                            continue;
+                        }
+                    }
 
                     var entryPoint = routine.Name == Context.ZEnvironment.EntryRoutineName;
                     Debug.Assert(Routines.ContainsKey(routine.Name));
@@ -311,6 +342,8 @@ namespace Zilf.Compiler
                     }
                     _operandReferencedRoutineNames.Clear();
                 }
+                compiledNew |= deferredInlineCandidate;
+                initialInlineDeferralPass = false;
             }
             while (compiledNew);
 
@@ -482,6 +515,24 @@ namespace Zilf.Compiler
                         stack.Push(tgt);
                 }
             }
+
+            var externallyReferencedRoutines = new HashSet<ZilAtom>(keepRoutines, comparer);
+            externallyReferencedRoutines.UnionWith(dataReferencedRoutines);
+            foreach (var name in ReadAccessedGlobalNames)
+            {
+                if (allRoutineNames.Contains(name))
+                    externallyReferencedRoutines.Add(name);
+            }
+            if (Context.ZEnvironment.EntryRoutineName != null)
+                externallyReferencedRoutines.Add(Context.ZEnvironment.EntryRoutineName);
+            foreach (var syntax in Context.ZEnvironment.Syntaxes)
+            {
+                if (syntax.Action != null)
+                    externallyReferencedRoutines.Add(syntax.Action);
+                if (syntax.Preaction != null)
+                    externallyReferencedRoutines.Add(syntax.Preaction);
+            }
+            PlanWholeProgramInlineCandidates(externallyReferencedRoutines);
 
             _routinesToCompile = reachable;
             _maybeUnusedRoutineNames = new HashSet<ZilAtom>(allRoutineNames, comparer);

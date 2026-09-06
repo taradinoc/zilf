@@ -21,7 +21,7 @@ using System.IO;
 
 namespace Zilf.Emit.Zap
 {
-    class TableBuilder : ConstantOperandBase, ITableBuilder, INonzeroConstantOperand
+    class TableBuilder : ConstantOperandBase, ITableBuilder, INonzeroConstantOperand, IMemoryAddressOperand
     {
         readonly List<short> numericValues = new();
         readonly List<IOperand> operandValues = new();
@@ -41,6 +41,13 @@ namespace Zilf.Emit.Zap
         public TableBuilder(string name)
         {
             Name = name;
+        }
+
+        bool IMemoryAddressOperand.TryGetMemoryAddress(out object allocation, out int offset)
+        {
+            allocation = this;
+            offset = 0;
+            return true;
         }
 
         public string Name { get; }
@@ -73,6 +80,22 @@ namespace Zilf.Emit.Zap
             types.Add(T_OP_WORD);
             operandValues.Add(value);
             size += 2;
+        }
+
+        internal IEnumerable<(int Offset, int Length, IOperand? Operand, int? Numeric)> GetEntries()
+        {
+            var offset = 0;
+            var numericIndex = 0;
+            var operandIndex = 0;
+            foreach (var type in types)
+            {
+                var length = (type & WORD_FLAG) != 0 ? 2 : 1;
+                var isOperand = (type & OPERAND_FLAG) != 0;
+                yield return isOperand
+                    ? (offset, length, operandValues[operandIndex++], null)
+                    : (offset, length, null, numericValues[numericIndex++]);
+                offset += length;
+            }
         }
 
         public override string ToString()

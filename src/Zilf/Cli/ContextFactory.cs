@@ -44,6 +44,11 @@ namespace Zilf.Cli
             Option<string[]> suppressWarningsOption;
             Option<bool> traceRoutinesOption;
             Option<bool> debugInfoOption;
+            Option<bool> optimizationLevel0Option;
+            Option<bool> optimizationLevel1Option;
+            Option<bool> optimizationLevel2Option;
+            Option<bool> optimizationLevel3Option;
+            Option<bool> optimizeForSizeOption;
             Option<bool> glulxOption;
             Option<bool> glulx16Option;
             Option<bool> cornerstoneOption;
@@ -62,6 +67,11 @@ namespace Zilf.Cli
                 suppressWarningsOption = spec.BuildSuppressWarningsOption;
                 traceRoutinesOption = spec.BuildTraceRoutinesOption;
                 debugInfoOption = spec.BuildDebugInfoOption;
+                optimizationLevel0Option = spec.BuildOptimizationLevel0Option;
+                optimizationLevel1Option = spec.BuildOptimizationLevel1Option;
+                optimizationLevel2Option = spec.BuildOptimizationLevel2Option;
+                optimizationLevel3Option = spec.BuildOptimizationLevel3Option;
+                optimizeForSizeOption = spec.BuildOptimizeForSizeOption;
                 glulxOption = spec.BuildGlulxOption;
                 glulx16Option = spec.BuildGlulx16Option;
                 cornerstoneOption = spec.BuildCornerstoneOption;
@@ -79,6 +89,11 @@ namespace Zilf.Cli
                 suppressWarningsOption = default!;
                 traceRoutinesOption = default!;
                 debugInfoOption = default!;
+                optimizationLevel0Option = default!;
+                optimizationLevel1Option = default!;
+                optimizationLevel2Option = default!;
+                optimizationLevel3Option = default!;
+                optimizeForSizeOption = default!;
                 glulxOption = default!;
                 glulx16Option = default!;
                 cornerstoneOption = default!;
@@ -96,6 +111,11 @@ namespace Zilf.Cli
                 suppressWarningsOption = spec.ExecSuppressWarningsOption;
                 traceRoutinesOption = default!;
                 debugInfoOption = default!;
+                optimizationLevel0Option = default!;
+                optimizationLevel1Option = default!;
+                optimizationLevel2Option = default!;
+                optimizationLevel3Option = default!;
+                optimizeForSizeOption = default!;
                 glulxOption = default!;
                 glulx16Option = default!;
                 cornerstoneOption = default!;
@@ -124,6 +144,19 @@ namespace Zilf.Cli
 
             var traceRoutines = traceRoutinesOption != null && parseResult.GetValue(traceRoutinesOption);
             var debugInfo = debugInfoOption != null && parseResult.GetValue(debugInfoOption);
+            var hasExplicitOptimizationLevel =
+                optimizationLevel0Option != null && parseResult.GetValue(optimizationLevel0Option) ||
+                optimizationLevel1Option != null && parseResult.GetValue(optimizationLevel1Option) ||
+                optimizationLevel2Option != null && parseResult.GetValue(optimizationLevel2Option) ||
+                optimizationLevel3Option != null && parseResult.GetValue(optimizationLevel3Option) ||
+                optimizeForSizeOption != null && parseResult.GetValue(optimizeForSizeOption);
+            var publish = commandResult.Command == spec.BuildCommand && parseResult.GetValue(spec.BuildPublishOption);
+            var optimizationLevel = optimizationLevel0Option != null && parseResult.GetValue(optimizationLevel0Option) ? 0 :
+                optimizationLevel2Option != null && parseResult.GetValue(optimizationLevel2Option) ? 2 :
+                optimizationLevel3Option != null && parseResult.GetValue(optimizationLevel3Option) ? 3 :
+                !hasExplicitOptimizationLevel && debugInfo ? 0 :
+                !hasExplicitOptimizationLevel && publish ? 2 : 1;
+            var optimizeForSize = optimizeForSizeOption != null && parseResult.GetValue(optimizeForSizeOption);
             var suppressNoisyWarnings = enableAllWarningsOption == null || !parseResult.GetValue(enableAllWarningsOption);
             var warningsAsErrors = warningsAsErrorsOption != null && parseResult.GetValue(warningsAsErrorsOption);
 
@@ -134,6 +167,8 @@ namespace Zilf.Cli
             {
                 TraceRoutines = traceRoutines,
                 WantDebugInfo = debugInfo,
+                OptimizationLevel = optimizationLevel,
+                OptimizeForSize = optimizeForSize,
                 WarningsAsErrors = warningsAsErrors,
                 SuppressNoisyWarnings = suppressNoisyWarnings,
                 RunMode = mode,

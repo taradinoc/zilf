@@ -62,7 +62,7 @@ namespace Zilf.Emit.Zap
             peep = new PeepholeBuffer<ZapCode>
             {
                 Combiner = new PeepholeCombiner(game),
-                LabelFactory = DefineLabel
+                LabelFactory = DefineLabel,
             };
             RoutineStart = DefineLabel();
         }
@@ -1434,12 +1434,14 @@ namespace Zilf.Emit.Zap
             private CombinerOptimizationDescriptor[] BuildOptimizationPipeline() =>
             [
                 new("simplify zero test", TrySimplifyEqualZero),
+                new("fold known nonzero branch", TryFoldKnownNonzeroBranch),
                 new("remove redundant zero? after set", TryRemoveZeroAfterNonzeroSet),
                 new("rewrite jump to boolean", TryRewriteJumpToBoolean),
                 new("fold push/rstack pair", TrySimplifyPushRStack),
                 new("eliminate stack pop pair", TryEliminateStackPopPair),
                 new("replace push+pop with set", TryReplacePushPopWithSet),
                 new("substitute pushed value", TrySubstitutePushedValue),
+                new("forward stack result through inc/dec arithmetic", TryForwardStackResultThroughIncDecArithmetic),
                 new("eliminate inc/dec pair", TryEliminateIncDecPair),
                 new("rewrite stack inc/dec arithmetic to pop", TryRewriteStackIncDecArithmeticToPop),
                 new("fold inc branch", TryFoldIncBranch),
@@ -1505,6 +1507,31 @@ namespace Zilf.Emit.Zap
                                 matches[0].Target);
                         }
 
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryFoldKnownNonzeroBranch(IEnumerable<CombinableLine<ZapCode>> lines,
+                out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    if (Match(line => line.Code.Instruction.Name == "ZERO?" &&
+                        line.Code.Instruction.Operands.Count == 1 &&
+                        IsKnownNonzeroValue(line.Code.Instruction.Operands[0]) &&
+                        line.Type == PeepholeLineType.BranchNegative && line.Target != null))
+                    {
+                        result = Combine1To1(new Instruction("JUMP"), PeepholeLineType.BranchAlways,
+                            matches![0].Target);
                         return true;
                     }
 
@@ -1681,6 +1708,45 @@ namespace Zilf.Emit.Zap
                              variable != null && variable.Equals(secondVariable)))
                     {
                         result = Consume(2);
+                        return true;
+                    }
+
+                    result = default;
+                    return false;
+                }
+                finally
+                {
+                    EndMatch();
+                }
+            }
+
+            bool TryForwardStackResultThroughIncDecArithmetic(IEnumerable<CombinableLine<ZapCode>> lines,
+                out CombinerResult<ZapCode> result)
+            {
+                BeginMatch(lines);
+                try
+                {
+                    string? destination = null;
+
+                    if (Match(
+                        a => a.Code.Instruction.StoreTarget == "STACK",
+                        b => IsAddStackOne(b.Code.Instruction, out destination)))
+                    {
+                        result = Combine2To2(
+                            matches![0].Code.Instruction.WithStoreTarget(destination),
+                            new Instruction("INC", new QuoteExpr(new SymbolExpr(destination!))));
+                        return true;
+                    }
+
+                    destination = null;
+
+                    if (Match(
+                        a => a.Code.Instruction.StoreTarget == "STACK",
+                        b => IsSubStackOne(b.Code.Instruction, out destination)))
+                    {
+                        result = Combine2To2(
+                            matches![0].Code.Instruction.WithStoreTarget(destination),
+                            new Instruction("DEC", new QuoteExpr(new SymbolExpr(destination!))));
                         return true;
                     }
 

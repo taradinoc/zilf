@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Zilf.Common.StringEncoding;
+using Zilf.Emit.Intermediate;
 
 namespace Zilf.Emit.Zap
 {
@@ -32,9 +33,20 @@ namespace Zilf.Emit.Zap
         None = 0,
         WantDebugInfo = 1,
         WantFrequentWords = 2,
+
+        /// <summary>
+        /// Disables routine IR optimization while retaining normal IR construction and lowering.
+        /// Intended for diagnostics and optimizer differential tests.
+        /// </summary>
+        DisableIrOptimization = 4,
+
+        /// <summary>
+        /// Emits directly to the target routine builder without constructing routine IR.
+        /// </summary>
+        DisableRoutineIr = 8,
     }
 
-    public sealed partial class GameBuilder : IGameBuilder
+    public sealed partial class GameBuilder : IGameBuilder, IInliningCostModel
     {
         const string INDENT = "\t";
 
@@ -55,6 +67,7 @@ namespace Zilf.Emit.Zap
         readonly List<TableBuilder> impureTables = new(10);
         readonly List<TableBuilder> pureTables = new(10);
         readonly List<WordBuilder> vocabulary = new(100);
+        readonly IrRoutineCoordinator irRoutineCoordinator = new();
         readonly HashSet<char> siBreaks = new();
         readonly Dictionary<string, IOperand> stringPool = new(100);
         readonly Dictionary<int, NumericOperand> numberPool = new(50);
@@ -68,10 +81,17 @@ namespace Zilf.Emit.Zap
         internal readonly int zversion;
         internal readonly DebugFileBuilder? debug;
         internal readonly AbbrevFinder? abbrevs;
+        internal readonly bool optimizeRoutineIr;
+        internal readonly bool useRoutineIr;
         readonly GameOptions options;
 
+        InliningCost IInliningCostModel.EstimateOperation(InliningOperationClass operation,
+            IReadOnlyList<InliningOperandClass> operands, bool storesResult, bool branches) =>
+            ZapInstructionCost.Estimate(operation, operands, storesResult, branches);
+
 #if DEBUG
-    readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
+        readonly Dictionary<string, (int Applications, int InstructionsSaved)> peepholeStats = new(StringComparer.Ordinal);
+        readonly Dictionary<string, int> compilerOptimizationStats = new(StringComparer.Ordinal);
 #endif
 
         IRoutineBuilder? entryRoutine;
@@ -111,6 +131,8 @@ namespace Zilf.Emit.Zap
 
             debug = builderOptions.HasFlag(GameBuilderOptions.WantDebugInfo) ? new DebugFileBuilder() : null;
             abbrevs = builderOptions.HasFlag(GameBuilderOptions.WantFrequentWords) ? new AbbrevFinder() : null;
+            optimizeRoutineIr = !builderOptions.HasFlag(GameBuilderOptions.DisableIrOptimization);
+            useRoutineIr = !builderOptions.HasFlag(GameBuilderOptions.DisableRoutineIr);
 
             stream = streamFactory.CreateMainStream();
             writer = new StreamWriter(stream);
@@ -351,7 +373,14 @@ namespace Zilf.Emit.Zap
             if (entryPoint && entryRoutine != null)
                 throw new ArgumentException("Entry routine already defined");
 
-            var result = new RoutineBuilder(this, name, entryPoint, cleanStack);
+            var target = new RoutineBuilder(this, name, entryPoint, cleanStack);
+            IRoutineBuilder result = useRoutineIr
+                ? new IrRoutineBuilder(target, IrNumericSemantics.ZMachine16, optimizeRoutineIr, MakeOperand,
+                preferConstantHome: operand => operand is not INumericOperand numeric ||
+                    (ushort)numeric.Value > byte.MaxValue,
+                recordOptimizationStats: irRoutineCoordinator.RecordOptimizationStatistics,
+                deferFinalization: irRoutineCoordinator.Add, costPolicy: ZapIrOptimizationCostPolicy.Instance)
+                : target;
             symbols.Add(name, "routine");
 
             if (entryPoint)
@@ -527,8 +556,18 @@ namespace Zilf.Emit.Zap
 
         public bool IsGloballyDefined(string name, [NotNullWhen(true)] out string? type) => symbols.TryGetValue(name, out type);
 
+        public void RecordCompilerOptimizationStatistic(string name, int count)
+        {
+#if DEBUG
+            compilerOptimizationStats[name] = compilerOptimizationStats.GetValueOrDefault(name) + count;
+#endif
+        }
+
         public void Finish()
         {
+            irRoutineCoordinator.SetPropertyRoutineTargets(BuildPropertyRoutineTargets());
+            irRoutineCoordinator.FinalizeRoutines();
+
             // finish main file
             writer.WriteLine();
 #if DEBUG
@@ -992,6 +1031,9 @@ namespace Zilf.Emit.Zap
 
         void WritePeepholeStats()
         {
+            WriteCompilerOptimizationStats();
+            irRoutineCoordinator.WriteOptimizationStatistics(writer, INDENT);
+
             if (peepholeStats.Count == 0)
                 return;
 
@@ -1009,6 +1051,70 @@ namespace Zilf.Emit.Zap
 
             writer.WriteLine();
         }
+
+        void WriteCompilerOptimizationStats()
+        {
+            if (compilerOptimizationStats.Count == 0)
+                return;
+
+            writer.WriteLine(INDENT + "; Compiler optimization statistics (debug build)");
+            foreach (var entry in compilerOptimizationStats.OrderBy(static entry => entry.Key, StringComparer.Ordinal))
+                writer.WriteLine(INDENT + $";   {entry.Key}: {entry.Value}");
+            writer.WriteLine();
+        }
 #endif
+
+        private IReadOnlyDictionary<object, IReadOnlySet<IrRoutineEffectSummary>> BuildPropertyRoutineTargets()
+        {
+            var result = new Dictionary<object, IReadOnlySet<IrRoutineEffectSummary>>();
+            var propertyValues = objects.SelectMany(obj => obj.GetScalarProperties()
+                .Select(entry => (Object: obj, entry.Property, entry.Value))).ToArray();
+            foreach (var entry in propertyValues)
+            {
+                if (entry.Value.StripIndirect() is IrRoutineBuilder routine)
+                {
+                    result[new IrObjectMemberKey(entry.Object.ToString()!, entry.Property.ToString()!)] =
+                        new HashSet<IrRoutineEffectSummary> { routine.EffectSummary };
+                }
+            }
+
+            foreach (var property in props.Values)
+            {
+                var values = propertyValues.Where(entry => ReferenceEquals(entry.Property, property))
+                    .Select(entry => entry.Value).Append(property.DefaultValue ?? ZERO).ToArray();
+                var targets = new HashSet<IrRoutineEffectSummary>();
+                var unknown = false;
+                foreach (var value in values.Select(value => value.StripIndirect()))
+                {
+                    if (value is IrRoutineBuilder routine)
+                        targets.Add(routine.EffectSummary);
+                    else if (value is not INumericOperand { Value: 0 })
+                        unknown = true;
+                }
+                if (!unknown && targets.Count is > 0 and <= 64)
+                    result[property.ToString()!] = targets;
+            }
+
+
+            foreach (var table in impureTables.Concat(pureTables))
+            {
+                var targets = new HashSet<IrRoutineEffectSummary>();
+                var unknown = false;
+                foreach (var entry in table.GetEntries())
+                {
+                    if (entry.Operand?.StripIndirect() is IrRoutineBuilder routine)
+                    {
+                        targets.Add(routine.EffectSummary);
+                        result[new IrMemoryIdentity(IrMemoryRegion.Tables, table, entry.Offset, entry.Length)] =
+                            new HashSet<IrRoutineEffectSummary> { routine.EffectSummary };
+                    }
+                    else if (entry.Operand != null || entry.Numeric is not (null or 0))
+                        unknown = true;
+                }
+                if (!unknown && targets.Count is > 0 and <= 64)
+                    result[table] = targets;
+            }
+            return result;
+        }
     }
 }

@@ -75,6 +75,9 @@ Include path auto-augmentation: `Program.AddImplicitIncludePaths` heuristically 
 
 ## 4. Compilation Pipeline Nuances
 
+For work on routine IR, SSA-style value promotion, SCCP, GVN, effect classification, memory availability, or lowering,
+read [devdoc/routine-optimizer-development.md](devdoc/routine-optimizer-development.md) before making changes.
+
 - Evaluation (interpreting top-level forms) precedes emission; errors during evaluation abort emission (`FrontEnd.InterpretOrCompile`). Only proceed when `ctx.ErrorCount == 0`.
 - Hooks: `ctx.RunHook("PRE-COMPILE")` then `ctx.SetDefaultConstants()` before building game image; if extending pipeline (e.g., extra transformation), insert after PRE-COMPILE but before `GameBuilder` instantiation.
 - `ZapStreamFactory` names related segment files using suffixes `_data`, `_str`, and `_freq` (or `freq` w/o underscore) and will request frequent words generation if none exists. When adding new emission outputs, mirror this naming pattern.
