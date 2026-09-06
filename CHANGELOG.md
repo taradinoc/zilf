@@ -45,6 +45,11 @@ and this project adheres to
 
 - Various `zillib` routines now document their return values.
 
+### Fixed
+
+- You can set the constants `GAME-TITLE` and `GAME-DESCRIPTION` separately,
+  instead of `GAME-BANNER`. (This was implemented long ago, but now it works.)
+
 ## [1.9] (June 13, 2026)
 
 ### Added
