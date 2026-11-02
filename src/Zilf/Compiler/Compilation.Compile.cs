@@ -259,7 +259,11 @@ namespace Zilf.Compiler
                 compiledNew = false;
 
                 var deferredInlineCandidate = false;
-                foreach (var routine in Context.ZEnvironment.Routines)
+                // Keep START near the beginning, since on Z-code, its address must fit in 16 bits.
+                // OrderByDescending is stable, so the other routines retain their definition order.
+                var routines = Context.ZEnvironment.Routines.OrderByDescending(
+                    routine => routine.Name == Context.ZEnvironment.EntryRoutineName);
+                foreach (var routine in routines)
                 {
                     if (routine.Name == null)
                         continue;

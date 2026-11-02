@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-2023 Tara McGrew
+/* Copyright 2010-2026 Tara McGrew
  * 
  * This file is part of ZILF.
  * 
@@ -17,6 +17,8 @@
  */
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Zilf.Tests.Integration
@@ -25,27 +27,56 @@ namespace Zilf.Tests.Integration
     public class CodeGenTests : IntegrationTestClass
     {
         [TestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        public void Entry_Routine_Is_Emitted_First(int optimizationLevel)
+        {
+            int[] versions = [3, 4, 5, 6, 7, 8];
+            foreach (var version in versions)
+            {
+                var helper = new ZlrHelper($"""
+                    <VERSION {version}>
+                    <ROUTINE BEFORE () <RTRUE>>
+                    <ROUTINE ALSO-BEFORE () <RFALSE>>
+                    <ROUTINE GO () <PRINTN <GET ,ROUTINES 0>> <QUIT>>
+                    <ROUTINE AFTER () <RTRUE>>
+                    <CONSTANT ROUTINES <PTABLE BEFORE ALSO-BEFORE AFTER>>
+                    """, null);
+
+                Assert.IsTrue(helper.Compile(optimizationLevel), $"Compilation failed for V{version}");
+                var names = Regex.Matches(helper.GetZapCode(), @"\.FUNCT ([^,\s]+)")
+                    .Select(match => match.Groups[1].Value).ToArray();
+                string[] expectedNames = ["GO", "BEFORE", "ALSO-BEFORE", "AFTER"];
+                CollectionAssert.AreEqual(expectedNames, names,
+                    $"Unexpected routine order for V{version}");
+                Assert.IsTrue(helper.Assemble(), $"Assembly failed for V{version}");
+            }
+        }
+
+        [TestMethod]
         public async Task Tiny_Routine_Calls_Are_Inlined()
         {
             await AssertRoutine("", "<TINY-ADD 41>")
                 .WithGlobal("<ROUTINE TINY-ADD (VALUE) <+ .VALUE 1>>")
                 .GeneratesCodeMatchingAsync(@"calls inlined: 1")
-                .AndNotMatching(@"CALL.*TINY-ADD");
+                .AndNotMatching(@"CALL[^\r\n]*TINY-ADD");
 
             await AssertRoutine("", "<TINY-CONSTANT>")
                 .WithGlobal("<ROUTINE TINY-CONSTANT () 123>")
                 .GeneratesCodeMatchingAsync(@"RETURN 123")
-                .AndNotMatching(@"CALL.*TINY-CONSTANT");
+                .AndNotMatching(@"CALL[^\r\n]*TINY-CONSTANT");
 
             await AssertRoutine("", "<TINY-OPTIONAL>")
                 .WithGlobal("<ROUTINE TINY-OPTIONAL (\"OPT\" (VALUE 7)) <+ .VALUE 1>>")
                 .GeneratesCodeMatchingAsync(@"RETURN 8")
-                .AndNotMatching(@"CALL.*TINY-OPTIONAL");
+                .AndNotMatching(@"CALL[^\r\n]*TINY-OPTIONAL");
 
             await AssertRoutine("", "<DOUBLE <RANDOM 10>>")
                 .WithGlobal("<ROUTINE DOUBLE (VALUE) <+ .VALUE .VALUE>>")
                 .GeneratesCodeMatchingAsync(@"RANDOM 10")
-                .AndNotMatching(@"CALL.*DOUBLE");
+                .AndNotMatching(@"CALL[^\r\n]*DOUBLE");
 
         }
 
@@ -56,14 +87,14 @@ namespace Zilf.Tests.Integration
                 .OptimizeForSize()
                 .WithGlobal("<ROUTINE TINY-CONSTANT () 123>")
                 .GeneratesCodeMatchingAsync(@"RETURN 123")
-                .AndNotMatching(@"CALL.*TINY-CONSTANT")
+                .AndNotMatching(@"CALL[^\r\n]*TINY-CONSTANT")
                 .AndNotMatching(@"SET 'X,0");
 
             await AssertRoutine("", "<+ <OFFSET ,VALUE> <OFFSET 4>>")
                 .OptimizeForSize()
                 .WithGlobal("<GLOBAL VALUE 10>")
                 .WithGlobal("<ROUTINE OFFSET (X) <+ <* <- .X 1> 2> 3>>")
-                .GeneratesCodeMatchingAsync(@"CALL.*OFFSET")
+                .GeneratesCodeMatchingAsync(@"CALL[^\r\n]*OFFSET")
                 .AndNotMatching(@"SUB VALUE,1");
         }
 
@@ -78,13 +109,13 @@ namespace Zilf.Tests.Integration
                 .WithGlobal(routine)
                 .GeneratesCodeMatchingAsync(@"SUB VALUE,1")
                 .AndMatching(@"routines removed by inlining: 1")
-                .AndNotMatching(@"CALL.*OFFSET");
+                .AndNotMatching(@"CALL[^\r\n]*OFFSET");
 
             await AssertRoutine("", "<+ <OFFSET ,VALUE> <OFFSET 4>>")
                 .OptimizeForSize()
                 .WithGlobal("<GLOBAL VALUE 10>")
                 .WithGlobal(routine)
-                .GeneratesCodeMatchingAsync(@"CALL.*OFFSET")
+                .GeneratesCodeMatchingAsync(@"CALL[^\r\n]*OFFSET")
                 .AndMatching(@"routines removed by inlining: 0");
 
             await AssertRoutine("", "<SETG VALUE ,VALUE> <OFFSET ,VALUE>")
@@ -92,7 +123,7 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<GLOBAL VALUE 10>")
                 .WithGlobal(routine)
                 .WithGlobal("<ROUTINE LATE-CALLER () <OFFSET 4>>")
-                .GeneratesCodeMatchingAsync(@"CALL.*OFFSET")
+                .GeneratesCodeMatchingAsync(@"CALL[^\r\n]*OFFSET")
                 .AndMatching(@"routines removed by inlining: 0");
         }
 
@@ -106,7 +137,7 @@ namespace Zilf.Tests.Integration
                 .WithOptimizationLevel(optimizationLevel)
                 .WithGlobal("<ROUTINE TINY-ADD (VALUE) <+ .VALUE 1>>")
                 .GeneratesCodeMatchingAsync(@"routines removed by inlining: 1")
-                .AndNotMatching(@"CALL.*TINY-ADD");
+                .AndNotMatching(@"CALL[^\r\n]*TINY-ADD");
         }
 
         [TestMethod]
@@ -117,7 +148,7 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<GLOBAL SAVED-ROUTINE <>>")
                 .WithGlobal("<ROUTINE TINY-ADD (VALUE) <+ .VALUE 1>>")
                 .GeneratesCodeMatchingAsync(@"routines removed by inlining: 0")
-                .AndNotMatching(@"CALL.*TINY-ADD");
+                .AndNotMatching(@"CALL[^\r\n]*TINY-ADD");
         }
 
         [TestMethod]
@@ -126,7 +157,7 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("\"AUX\" FOO", "<COND (<BIG? .FOO> <PRINTI \"big\">)>")
                 .WithGlobal("<ROUTINE BIG? (X) <G? .X 100>>")
                 .GeneratesCodeMatchingAsync(@"GRTR\? FOO,100 [\\/](?:FALSE|\?L\d+)")
-                .AndNotMatching(@"CALL.*BIG\?|ZERO\?");
+                .AndNotMatching(@"CALL[^\r\n]*BIG\?|ZERO\?");
         }
 
         [TestMethod]
@@ -134,7 +165,7 @@ namespace Zilf.Tests.Integration
         {
             await AssertRoutine("", "<NOT-TINY>")
                 .WithGlobal("<ROUTINE NOT-TINY () <+ <RANDOM 10> <RANDOM 20>>>")
-                .GeneratesCodeMatchingAsync(@"CALL.*NOT-TINY");
+                .GeneratesCodeMatchingAsync(@"CALL[^\r\n]*NOT-TINY");
         }
 
         [TestMethod]
@@ -144,7 +175,7 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<CONSTANT ROOM-STRIDE 8>")
                 .WithGlobal("<ROUTINE ROOM-OFFSET (R O) <+ <* <- .R 1> ,ROOM-STRIDE> .O>>")
                 .GeneratesCodeMatchingAsync(@"RETURN 11")
-                .AndNotMatching(@"CALL.*ROOM-OFFSET");
+                .AndNotMatching(@"CALL[^\r\n]*ROOM-OFFSET");
         }
 
         [TestMethod]
@@ -156,14 +187,14 @@ namespace Zilf.Tests.Integration
                 .WithOptimizationLevel(2)
                 .WithGlobal("<GLOBAL VALUE 10>")
                 .WithGlobal(routine)
-                .GeneratesCodeMatchingAsync(@"CALL.*OFFSET");
+                .GeneratesCodeMatchingAsync(@"CALL[^\r\n]*OFFSET");
 
             await AssertRoutine("", "<OFFSET ,VALUE>")
                 .WithOptimizationLevel(3)
                 .WithGlobal("<GLOBAL VALUE 10>")
                 .WithGlobal(routine)
                 .GeneratesCodeMatchingAsync(@"SUB VALUE,1")
-                .AndNotMatching(@"CALL.*OFFSET");
+                .AndNotMatching(@"CALL[^\r\n]*OFFSET");
         }
 
         [TestMethod]
@@ -171,7 +202,7 @@ namespace Zilf.Tests.Integration
         {
             await AssertRoutine("", "<RECUR 1>")
                 .WithGlobal("<ROUTINE RECUR (VALUE) <RECUR .VALUE>>")
-                .GeneratesCodeMatchingAsync(@"CALL.*RECUR");
+                .GeneratesCodeMatchingAsync(@"CALL[^\r\n]*RECUR");
         }
 
         [TestMethod]
@@ -180,7 +211,7 @@ namespace Zilf.Tests.Integration
             await AssertRoutine("\"AUX\" A B C D E F G H I J K L M N O", "<LOOKUP .A>")
                 .WithGlobal("<GLOBAL VALUES <TABLE 1 2 3>>")
                 .WithGlobal("<ROUTINE LOOKUP (X) <GET ,VALUES <+ .X 1>>>")
-                .GeneratesCodeMatchingAsync(@"CALL.*LOOKUP");
+                .GeneratesCodeMatchingAsync(@"CALL[^\r\n]*LOOKUP");
         }
 
         [TestMethod]
@@ -194,7 +225,7 @@ namespace Zilf.Tests.Integration
                 .WithGlobal("<ROUTINE INDEX (X Y) <+ .X .Y>>")
                 .WithGlobal("<ROUTINE LOOKUP (X Y) <GETB ,VALUES <INDEX .X .Y>>>")
                 .GeneratesCodeMatchingAsync(@"ADD PLAYER-X,PLAYER-Y >STACK\r?\n\s*GETB VALUES,STACK")
-                .AndNotMatching(@"SET '[^,]+,(?:PLAYER-X|PLAYER-Y|VALUES)|CALL.*(?:INDEX|LOOKUP)");
+                .AndNotMatching(@"SET '[^,]+,(?:PLAYER-X|PLAYER-Y|VALUES)|CALL[^\r\n]*(?:INDEX|LOOKUP)");
         }
 
         [TestMethod]

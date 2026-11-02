@@ -45,6 +45,8 @@ and this project adheres to
 
 - Various `zillib` routines now document their return values.
 
+- `GO` is now always the first routine emitted in the assembly output.
+
 ### Fixed
 
 - You can set the constants `GAME-TITLE` and `GAME-DESCRIPTION` separately,
