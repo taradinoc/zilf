@@ -161,6 +161,8 @@ namespace Zilf.Diagnostics
         public const int They_Would_Be_Distinguishable_In_Zmachine_V4_Or_Above = 311;
         [Error("TOPIC in SYNTAX requires non-compact old parser syntax tables")]
         public const int TOPIC_In_SYNTAX_Requires_Noncompact_Old_Parser_Syntax_Tables = 312;
+        [Warning("room has no parent object: {0}")]
+        public const int Room_Has_No_Parent_Object_0 = 313;
 
 
         // Platform Limits - 0400

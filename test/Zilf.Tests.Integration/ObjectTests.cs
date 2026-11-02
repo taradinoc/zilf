@@ -622,7 +622,9 @@ namespace Zilf.Tests.Integration
         {
             await AssertGlobals(
                     "<FILE-FLAGS UNUSED-ROUTINES?>",
+                    "<OBJECT ROOMS>",
                     @"<ROOM WEST-SIDE-OF-FISSURE
+                      (IN ROOMS)
                       (DESC ""West Side of Fissure"")>",
                     @"<ROUTINE WEST-SIDE-OF-FISSURE-F (RARG) <>>",
                     @"<OBJECT DIAMONDS (DESC ""diamonds"") (IN WEST-SIDE-OF-FISSURE-F)>")
@@ -720,6 +722,21 @@ namespace Zilf.Tests.Integration
                 .DoesNotCompileAsync(
                     "ZIL0207",
                     diag => diag.SubDiagnostics.Any(sub => sub.Code == "ZIL0514"));
+        }
+
+        [TestMethod]
+        public async Task Room_With_No_Location_Should_Warn()
+        {
+            await AssertGlobals(@"<ROOM FOO (DESC ""foo"")>")
+                .WithWarnings("ZIL0313")
+                .CompilesAsync();
+
+            await AssertGlobals(
+                "<OBJECT ROOMS>",
+                @"<ROOM FOO (IN ROOMS) (DESC ""foo"")>"
+            )
+                .WithoutWarnings("ZIL0313")
+                .CompilesAsync();
         }
     }
 }

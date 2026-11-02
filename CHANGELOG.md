@@ -33,6 +33,9 @@ and this project adheres to
 
 - Added support for the `ARCIMG` opcode in ZAPF and ZILF.
 
+- Added warning ZIL0313 for `ROOM` definitions with no location (`IN` or `LOC`
+  pseudo-property). Rooms are generally expected to be `(IN ROOMS)`.
+
 ### Changed
 
 - ZILF's behavior when reading a mismatched closing bracket is now closer to

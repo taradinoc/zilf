@@ -504,6 +504,31 @@ namespace Zilf.Interpreter
             var zmo = new ZilModelObject(atom, props, isRoom) { SourceLine = ctx.TopFrame.SourceLine };
             ctx.SetZVal(atom, zmo);
             ctx.ZEnvironment.Objects.Add(zmo);
+
+            if (isRoom)
+            {
+                // warn if it has no IN/LOC pseudo-property
+                bool found = false;
+
+                foreach (var prop in zmo.Properties)
+                {
+                    if (prop is { First: ZilAtom { StdAtom: StdAtom.IN or StdAtom.LOC }, Rest: ZilList { Rest: ZilList { IsEmpty: true } } })
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    ctx.HandleError(new CompilerError(
+                        zmo.SourceLine,
+                        CompilerMessages.Room_Has_No_Parent_Object_0,
+                        atom
+                    ));
+                }
+            }
+
             return zmo;
         }
 

@@ -350,7 +350,8 @@ namespace Zilf.Tests.Integration
         public async Task Unused_MAP_CONTENTS_Variables_Should_Not_Warn()
         {
             await AssertRoutine("\"AUX\" CNT", "<MAP-CONTENTS (I ,STARTROOM) <SET CNT <+ .CNT 1>>>")
-                .WithGlobal("<ROOM STARTROOM>")
+                .WithGlobal("<OBJECT ROOMS>")
+                .WithGlobal("<ROOM STARTROOM (IN ROOMS)>")
                 .WithGlobal("<OBJECT CHIMP (IN STARTROOM)>")
                 .WithGlobal("<OBJECT CHAMP (IN STARTROOM)>")
                 .WithGlobal("<OBJECT CHUMP (IN STARTROOM)>")
@@ -358,7 +359,8 @@ namespace Zilf.Tests.Integration
                 .CompilesAsync();
 
             await AssertRoutine("", "<MAP-CONTENTS (I N ,STARTROOM) <REMOVE .I>>")
-                .WithGlobal("<ROOM STARTROOM>")
+                .WithGlobal("<OBJECT ROOMS>")
+                .WithGlobal("<ROOM STARTROOM (IN ROOMS)>")
                 .WithGlobal("<OBJECT CHIMP (IN STARTROOM)>")
                 .WithGlobal("<OBJECT CHAMP (IN STARTROOM)>")
                 .WithGlobal("<OBJECT CHUMP (IN STARTROOM)>")
