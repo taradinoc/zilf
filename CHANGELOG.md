@@ -4,7 +4,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to
 [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.10] (November 10, 2026)
 
 ### Added
 
@@ -1028,3 +1028,4 @@ and this project adheres to
 [1.7]: https://foss.heptapod.net/zilf/zilf/-/compare/1.6.1...1.7
 [1.8]: https://foss.heptapod.net/zilf/zilf/-/compare/1.7...1.8
 [1.9]: https://foss.heptapod.net/zilf/zilf/-/compare/1.8...1.9
+[1.10]: https://foss.heptapod.net/zilf/zilf/-/compare/1.9...1.10
